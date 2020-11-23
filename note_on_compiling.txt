@@ -1,0 +1,32 @@
+# Compiling LispE
+
+The first step before compiling LispE is to launch: python checklib.py
+
+
+This Python program will check for the following libs on your platforms:
+
+* regex: this library exists in two versions. Either as a part of the gcc compiler (for the most recent versions) or as a boost library (boost_regex). 'checklib.py' does a dummy compilation to check, which version is available.
+
+* xml2
+* curl
+* python: In the case of Python, 'checklib.py' scans the directories for a Python3 dynamic library. It then creates within the 'Makefile.in' two environment variables:
+** INCLUDEPYTHON, which points to the directory that contains Python.h
+** PYTHONLIB, which points to the directory where python3.so is stored
+
+When library names contain version number at the end such as: python.so.3.8m, 'checklib.py' creates a virtual link to the actual library name in the local directory: 'check'.
+
+The library path then integrates: -Lcheck and -L../check to point to these virtual links.
+
+## Make
+
+* make all compiles both the static library; liblispe.a and the executable: LispE
+* make libs compiles the libraries: curl, xml2 and python.
+
+### directories
+
+The resulting libraries and executables are stored in: bin
+
+The intermediate objects are stored in: objs
+
+
+

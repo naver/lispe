@@ -1,0 +1,6 @@
+CURLLIB = -lcurl
+SQLITELIB = -lsqlite3
+REGEX = -DPOSIXREGEX
+LIBBOOST = -L/usr/lib/
+INCLUDEPYTHON = -I/Library/Frameworks/Python.framework/Versions/3.8/Headers
+PYTHONLIB = /Library/Frameworks/Python.framework/Versions/3.8/Python

@@ -1,0 +1,418 @@
+{
+        "goal": {
+            "taxi": {}, 
+            "police": {}, 
+            "hospital": {}, 
+            "hotel": {}, 
+            "attraction": {}, 
+            "train": {}, 
+            "message": "Task 08496: You are looking for an expensive restaurant and it should serve world food. If there is no such venue how about italian type of food. Make sure you get the address, phone number, and area.", 
+            "restaurant": {
+                "info": {
+                    "food": "italian", 
+                    "pricerange": "expensive"
+                }, 
+                "reqt": [
+                    "address", 
+                    "phone", 
+                    "area"
+                ], 
+                "fail_info": {}
+            }
+        }, 
+        "log": [
+            {
+                "text": "I would like a restaurant that serves world food. It should be a really good restaurant, and it's OK if it's expensive.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Restaurant-Inform": [
+                        [
+                            "Food", 
+                            "world"
+                        ], 
+                        [
+                            "Price", 
+                            "do n't care"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Restaurant-Inform", 
+                        "Food", 
+                        "world", 
+                        7, 
+                        7
+                    ]
+                ]
+            }, 
+            {
+                "text": "There are no matching restaurants", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "time": "", 
+                            "day": "", 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "food": "world", 
+                            "pricerange": "dontcare", 
+                            "name": "not mentioned", 
+                            "area": "not mentioned"
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "stay": "", 
+                            "day": "", 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "name": "", 
+                            "area": "", 
+                            "parking": "", 
+                            "pricerange": "", 
+                            "stars": "", 
+                            "internet": "", 
+                            "type": ""
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "", 
+                            "name": "", 
+                            "area": ""
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Restaurant-NoOffer": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "How about Italian ? I would like to go to nice place with great atmosphere and expensive, I would like the address, phone number and area", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Restaurant-Inform": [
+                        [
+                            "Food", 
+                            "italian"
+                        ], 
+                        [
+                            "Price", 
+                            "expensive"
+                        ]
+                    ], 
+                    "Restaurant-Request": [
+                        [
+                            "Area", 
+                            "?"
+                        ], 
+                        [
+                            "Phone", 
+                            "?"
+                        ], 
+                        [
+                            "Addr", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Restaurant-Inform", 
+                        "Food", 
+                        "italian", 
+                        2, 
+                        2
+                    ], 
+                    [
+                        "Restaurant-Inform", 
+                        "Price", 
+                        "expensive", 
+                        16, 
+                        16
+                    ]
+                ]
+            }, 
+            {
+                "text": "Caffe Uno is located at 32 Bridge Street City Centre and their phone number is 01223 448620.", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "time": "", 
+                            "day": "", 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "food": "italian", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "not mentioned"
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "stay": "", 
+                            "day": "", 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "name": "", 
+                            "area": "", 
+                            "parking": "", 
+                            "pricerange": "", 
+                            "stars": "", 
+                            "internet": "", 
+                            "type": ""
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "", 
+                            "name": "", 
+                            "area": ""
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Restaurant-Inform": [
+                        [
+                            "Addr", 
+                            "32 Bridge Street City Centre"
+                        ], 
+                        [
+                            "Name", 
+                            "Caffe Uno"
+                        ], 
+                        [
+                            "Phone", 
+                            "01223 448620"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Restaurant-Inform", 
+                        "Addr", 
+                        "32 Bridge Street City Centre", 
+                        5, 
+                        9
+                    ], 
+                    [
+                        "Restaurant-Inform", 
+                        "Name", 
+                        "Caffe Uno", 
+                        0, 
+                        1
+                    ], 
+                    [
+                        "Restaurant-Inform", 
+                        "Phone", 
+                        "01223 448620", 
+                        15, 
+                        16
+                    ]
+                ]
+            }, 
+            {
+                "text": "Thank you goodbye", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "general-thank": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "enjoy your meal!", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "time": "", 
+                            "day": "", 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "food": "italian", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "not mentioned"
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "stay": "", 
+                            "day": "", 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "name": "", 
+                            "area": "", 
+                            "parking": "", 
+                            "pricerange": "", 
+                            "stars": "", 
+                            "internet": "", 
+                            "type": ""
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "", 
+                            "name": "", 
+                            "area": ""
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "general-bye": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }
+        ]
+    }
