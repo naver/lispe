@@ -2021,7 +2021,7 @@ public:
                     cout.flush();
                     debugmode = false;
                     lispe->releasing_trace_lock();
-                    lispe->trace = false;
+                    lispe->stop_trace();
                     line = L"";
                     continue;
                 }

@@ -216,10 +216,12 @@ public:
     bool isThread;
     bool hasThread;
     char trace;
+    bool endtrace;
 
     LispE() {
         line_error = -1;
         trace = false;
+        endtrace = false;
         delegation = new Delegation;
         isThread = false;
         hasThread = false;
@@ -266,7 +268,19 @@ public:
         delegation->lock.unlocking(checkforLock());
     }
     
+    void stop_trace() {
+        endtrace = true;
+        trace = false;
+        delegation->next_stop = false;
+    }
+    
     void stop_at_next_line(char tr) {
+        if (endtrace) {
+            trace = 0;
+            delegation->next_stop = false;
+            return;
+        }
+        
         trace = tr;
         delegation->next_stop = true;
     }

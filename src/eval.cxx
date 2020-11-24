@@ -1226,6 +1226,7 @@ Element* List::eval(LispE* lisp) {
             case l_while: {
                 first_element = liste[1]->eval(lisp);
                 element = null_;
+                test = lisp->trace;
                 while (first_element->Boolean()) {
                     first_element->release();
                     for (long i = 2; i < listsize && element->type != l_return; i++) {
@@ -1235,6 +1236,7 @@ Element* List::eval(LispE* lisp) {
                     
                     //In case a 'return' has been placed in the code
                     if (element->type == l_return) {
+                        lisp->stop_at_next_line(test);
                         if (element->isBreak())
                             return null_;
                         //this is a return, it goes back to the function call
@@ -1243,6 +1245,7 @@ Element* List::eval(LispE* lisp) {
                     first_element = liste[1]->eval(lisp);
                 }
                 first_element->release();
+                lisp->stop_at_next_line(test);
                 return element;
             }
             case l_set_max_stack_size: {
@@ -1771,9 +1774,11 @@ Element* List::eval(LispE* lisp) {
                 label = liste[1]->label();
                 if (label == v_null)
                     throw new Error(L"Error: Missing label for 'loop'");
+                test = lisp->trace;
                 element = liste[2]->eval(lisp);
                 first_element = element->loop(lisp, label, this);
                 element->release();
+                lisp->stop_at_next_line(test);
                 return first_element;
             }
             case l_loopcount: {
@@ -2902,9 +2907,8 @@ Element* Listcallfunction::eval(LispE* lisp) {
         short label = function->index(0)->label();
         if (label == l_defun || label == l_defpat) {
             if (lisp->trace == 2) {
-                lisp->trace = 1;
                 lisp->display_trace(this);
-                lisp->delegation->next_stop = true;
+                lisp->stop_at_next_line(1);
             }
             else
                 lisp->trace = 0;
@@ -2914,9 +2918,8 @@ Element* Listcallfunction::eval(LispE* lisp) {
             function = evalpattern(lisp, function->index(1)->label());
         else
             function = evalfunction(function, lisp);
-        
-        lisp->trace = 1;
-        lisp->delegation->next_stop = true;
+
+        lisp->stop_at_next_line(1);
         return function;
     }
 
