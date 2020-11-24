@@ -1116,13 +1116,12 @@ public:
                     lispe->arguments(arguments);
                     lispe->set_pathname(thecurrentfilename);
                     //We initialize the breakpoints and the trace mode
-                    lispe->trace = true;
                     if (breakpoints.size()) {
                         lispe->delegation->breakpoints = breakpoints;
-                        lispe->stop_at_next_line(3);
+                        lispe->stop_at_next_line(debug_goto);
                     }
                     else
-                        lispe->stop_at_next_line(true);
+                        lispe->stop_at_next_line(debug_next);
                     line = L"";
                     editmode = false;
                     debugmode = true;
@@ -2034,15 +2033,16 @@ public:
                 if (buff == "!") {
                     debugmode = false;
                     lispe->stop();
+                    lispe->stop_trace();
+                    lispe->trace = debug_none;
                     lispe->releasing_trace_lock();
-                    lispe->trace = false;
                     line = L"";
                     continue;
                 }
                 
                 if (buff == ">") {
                     current_line_debugger = -1;
-                    lispe->stop_at_next_line(3);
+                    lispe->stop_at_next_line(debug_goto);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
                     continue;
@@ -2058,7 +2058,7 @@ public:
                 }
                 
                 if (buff == down) {
-                    lispe->stop_at_next_line(2);
+                    lispe->stop_at_next_line(debug_inside_function);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
                     cout.flush();
@@ -2066,7 +2066,7 @@ public:
                 }
                 
                 if (buff == up) {
-                    lispe->stop_at_next_line(0);
+                    lispe->stop_at_next_line(debug_none);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
                     cout.flush();
@@ -2075,7 +2075,8 @@ public:
 
                 if (buff[0] == 10 || buff[0] == 13) {
                     if (line.size()) {
-                        lispe->trace = false;
+                        char tr = lispe->trace;
+                        lispe->trace = debug_none;
                         string var = "%";
                         if (line.find(L"(") == -1) {
                             var = "";
@@ -2085,12 +2086,12 @@ public:
                         Element* e = lispe->eval(line);
                         cout << endl << endl << colors[2] << var << ": " <<  e->toString(lispe) << m_red << endl << endl;
                         e->release();
-                        lispe->trace = true;
+                        lispe->trace = tr;
                         line = L"";
                         displaygo(true);
                         continue;
                     }
-                    lispe->stop_at_next_line(1);
+                    lispe->stop_at_next_line(debug_next);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
                     cout.flush();

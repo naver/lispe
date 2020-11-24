@@ -1056,7 +1056,8 @@ Element* Atom::eval(LispE* lisp) {
 //------------------------------------------------------------------------------
 void LispE::display_trace(List* e) {
     if (trace) {
-        if (trace == 3)
+        //in the case of a goto, we only take into account breakpoints
+        if (trace == debug_goto)
             delegation->next_stop = false;
         
         if (!activate_on_breakpoints(e)) {
@@ -1248,8 +1249,8 @@ Element* List::eval(LispE* lisp) {
                     first_element = liste[1]->eval(lisp);
                 }
                 first_element->release();
-                if (test && lisp->trace != 3)
-                    lisp->stop_at_next_line(1);
+                if (test && lisp->trace != debug_goto)
+                    lisp->stop_at_next_line(debug_next);
                 return element;
             }
             case l_set_max_stack_size: {
@@ -1782,8 +1783,8 @@ Element* List::eval(LispE* lisp) {
                 element = liste[2]->eval(lisp);
                 first_element = element->loop(lisp, label, this);
                 element->release();
-                if (test && lisp->trace != 3)
-                    lisp->stop_at_next_line(1);
+                if (test && lisp->trace != debug_goto)
+                    lisp->stop_at_next_line(debug_next);
                 return first_element;
             }
             case l_loopcount: {
@@ -2909,14 +2910,14 @@ Element* Listcallfunction::eval(LispE* lisp) {
     
     set_current_line(lisp);
     if (lisp->trace) {
-        char tr = 1;
+        char tr = debug_next;
         short label = function->index(0)->label();
         if (label == l_defun || label == l_defpat) {
-            if (lisp->trace == 2)
-                lisp->stop_at_next_line(1);
+            if (lisp->trace == debug_inside_function)
+                lisp->stop_at_next_line(debug_next);
             else {
-                if (lisp->trace == 1) {
-                    lisp->trace = 0;
+                if (lisp->trace == debug_next) {
+                    lisp->trace = debug_none;
                 }
             }
         }
@@ -2926,7 +2927,7 @@ Element* Listcallfunction::eval(LispE* lisp) {
         else
             function = evalfunction(function, lisp);
 
-        if (lisp->trace != 3)
+        if (lisp->trace != debug_goto)
             lisp->stop_at_next_line(tr);
         return function;
     }

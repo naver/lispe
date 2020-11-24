@@ -199,18 +199,13 @@ public:
         }
     }
     
-    bool addtolisting(long l, string& e) {
-        if (add_to_listing) {
-            try {
-                listing.at(i_current_file).at(l);
-                return true;
-            }
-            catch(const std::out_of_range& oor) {
-                listing[i_current_file][l] = e;
-                return false;
-            }
+    void addtolisting(long l, string& e) {
+        try {
+            listing.at(i_current_file).at(l);
         }
-        return false;
+        catch(const std::out_of_range& oor) {
+            listing[i_current_file][l] = e;
+        }
     }
     
     inline short checkLispState(long sz) {

@@ -20,6 +20,12 @@
 #include <stack>
 
 //------------------------------------------------------------
+#define debug_none 0
+#define debug_next 1
+#define debug_inside_function 2
+#define debug_goto 3
+//------------------------------------------------------------
+
 string LispVersion();
 //------------------------------------------------------------
 // The main class to handle the Lisp Interpreter
@@ -220,7 +226,7 @@ public:
 
     LispE() {
         line_error = -1;
-        trace = false;
+        trace = debug_none;
         endtrace = false;
         delegation = new Delegation;
         isThread = false;
@@ -270,7 +276,7 @@ public:
     
     void stop_trace() {
         endtrace = true;
-        trace = false;
+        trace = debug_none;
         delegation->next_stop = false;
     }
     
