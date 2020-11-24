@@ -1113,11 +1113,11 @@ public:
                     lispe->arguments(arguments);
                     lispe->set_pathname(thecurrentfilename);
                     //We initialize the breakpoints and the trace mode
+                    lispe->trace = true;
                     if (breakpoints.size())
                         lispe->delegation->breakpoints = breakpoints;
                     else
-                        lispe->stop_at_next_line();
-                    lispe->trace = true;
+                        lispe->stop_at_next_line(true);
                     line = L"";
                     editmode = false;
                     debugmode = true;
@@ -2050,6 +2050,22 @@ public:
                     continue;
                 }
                 
+                if (buff == down) {
+                    lispe->stop_at_next_line(2);
+                    lispe->releasing_trace_lock();
+                    cout << endl << endl;
+                    cout.flush();
+                    continue;
+                }
+                
+                if (buff == up) {
+                    lispe->stop_at_next_line(0);
+                    lispe->releasing_trace_lock();
+                    cout << endl << endl;
+                    cout.flush();
+                    continue;
+                }
+
                 if (buff[0] == 10 || buff[0] == 13) {
                     if (line.size()) {
                         lispe->trace = false;
@@ -2067,7 +2083,7 @@ public:
                         displaygo(true);
                         continue;
                     }
-                    lispe->stop_at_next_line();
+                    lispe->stop_at_next_line(1);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
                     cout.flush();
@@ -2227,13 +2243,13 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     lispe_editor* editor = (lispe_editor*)o;
     
     long current_line = lisp->delegation->current_line;
-    long line =  current_line - 20;
+    long line =  current_line - 15;
     if (line < 1)
         line = 1;
     
     string theline;
     map<long, string>::iterator it = lisp->delegation->listing[lisp->delegation->i_current_file].upper_bound(line);
-    line = current_line + 20;
+    line = current_line + 15;
     for (; it != lisp->delegation->listing[lisp->delegation->i_current_file].end(); it++) {
         if (it->first > line)
             break;
@@ -2244,7 +2260,14 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
             cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
     }
     cout << endl;
-    cout << m_selectgray << instructions->toString(lisp) << m_current << endl;
+
+    string thevalue = instructions->toString(lisp);
+    if (thevalue.size() > 64) {
+        thevalue = thevalue.substr(0,64);
+        thevalue += "...";
+    }
+
+    cout << m_selectgray << thevalue << m_current << endl;
     
     vector<Element*> atomes;
     lisp->extractAllAtoms(instructions, atomes);
@@ -2260,7 +2283,6 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         uniques[a->toString(lisp)] = a;
     }
     Element* e;
-    string thevalue;
     for (auto& a: uniques) {
         e = a.second;
         value = lisp->getvalue(e->label());
@@ -2274,7 +2296,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         }
     }
     
-    cout << endl << m_gray << "$:end !:stop >:go %:variables: " << m_red;
+    cout << endl << m_gray << "$:end !:stop down:inside up:out >:go %:variables: " << m_red;
     cout.flush();
     lisp->blocking_trace_lock();
 }

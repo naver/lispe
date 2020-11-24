@@ -2895,11 +2895,33 @@ Element* Listcallfunction::eval(LispE* lisp) {
             throw lisp->delegation->_THEEND;
         throw new Error("Error: stack overflow");
     }
+    Element* function = liste[0]->eval(lisp);
+    
     set_current_line(lisp);
-    lisp->display_trace(this);
+    if (lisp->trace) {
+        short label = function->index(0)->label();
+        if (label == l_defun || label == l_defpat) {
+            if (lisp->trace == 2) {
+                lisp->trace = 1;
+                lisp->display_trace(this);
+                lisp->delegation->next_stop = true;
+            }
+            else
+                lisp->trace = 0;
+        }
+        
+        if (label == l_defpat)
+            function = evalpattern(lisp, function->index(1)->label());
+        else
+            function = evalfunction(function, lisp);
+        
+        lisp->trace = 1;
+        lisp->delegation->next_stop = true;
+        return function;
+    }
+
 
     //In this case, it must be a function
-    Element* function = liste[0]->eval(lisp);
     if (function->index(0)->label() == l_defpat)
         return evalpattern(lisp, function->index(1)->label());
     return evalfunction(function, lisp);

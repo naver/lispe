@@ -215,7 +215,7 @@ public:
     
     bool isThread;
     bool hasThread;
-    bool trace;
+    char trace;
 
     LispE() {
         line_error = -1;
@@ -266,9 +266,11 @@ public:
         delegation->lock.unlocking(checkforLock());
     }
     
-    void stop_at_next_line() {
+    void stop_at_next_line(char tr) {
+        trace = tr;
         delegation->next_stop = true;
     }
+    
     void set_pathname(string pathname);
     
     void add_to_listing(long l, string& e) {

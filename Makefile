@@ -51,5 +51,6 @@ libs:
 	$(MAKE) -C xml clean all
 	$(MAKE) -C sqlite clean all
 	$(MAKE) -C pythonlispe clean all
+	$(MAKE) -C transducer clean all
 
 
