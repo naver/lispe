@@ -268,6 +268,10 @@ public:
     }
     void set_pathname(string pathname);
     
+    void add_to_listing(long l, string& e) {
+        delegation->addtolisting(l, e);
+    }
+    
     List* create_instruction(short label,
                              Element* e = NULL,
                              Element* ee = NULL,

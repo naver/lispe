@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <fstream>
 #include <thread>
+#include <map>
 
 #ifndef WIN32
 #include <unistd.h>   //_getch
@@ -152,8 +153,13 @@ public:
         return false;
     }
     
+    
     string coloringline(wstring& l) {
         string line = convert(l);
+        return coloringline(line);
+    }
+    
+    string coloringline(string line) {
         if (line == "")
             return line;
         
@@ -172,6 +178,7 @@ public:
         }
         bool add = false;
         parse.clear();
+        lispe->delegation->add_to_listing = false;
         lispe->segmenting(line, parse);
         long left, right = -1;
         for (long isegment = parse.tokens.size() - 1, ipos = parse.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
@@ -1129,7 +1136,8 @@ public:
                 }
                 else
                     cerr << m_redbold << "Cannot load: " << thecurrentfilename << m_current << endl;
-                return pos;            case cmd_cls:
+                return pos;
+            case cmd_cls:
                 clearscreen();
                 return pos;
             case cmd_echo:
@@ -2206,10 +2214,39 @@ public:
 // Debug Functions
 //-------------------------------------------------------------------------------------------
 void debug_function_lispe(LispE* lisp, List* instructions, void* o) {        
-    long nb = lisp->stackSize();
-    string space(nb, ' ');
 
-    cout << endl << m_selectgray << "(" << lisp->delegation->current_line << ") " << nb << ":" << space << instructions->toString(lisp) << m_current << endl;
+#ifdef WIN32
+    system("cls");
+#else
+    cout << m_clear << m_home;
+#endif
+
+    cout << endl << m_current;
+    lispe_editor* editor = (lispe_editor*)o;
+    
+    long current_line = lisp->delegation->current_line;
+    long line =  current_line - 20;
+    if (line < 1)
+        line = 1;
+    
+    lisp->delegation->add_to_listing = false;
+    
+    string theline;
+    map<long, string>::iterator it = lisp->delegation->listing[lisp->delegation->i_current_file].upper_bound(line);
+    line = current_line + 20;
+    for (; it != lisp->delegation->listing[lisp->delegation->i_current_file].end(); it++) {
+        if (it->first > line)
+            break;
+        
+        if (it->first == current_line)
+            cout << m_selectgray << "[" << it->first << "] " << it->second << m_current;
+        else
+            cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
+    }
+    lisp->delegation->current_line = current_line;
+
+    cout << endl;
+    cout << m_selectgray << instructions->toString(lisp) << m_current << endl;
     
     vector<Element*> atomes;
     lisp->extractAllAtoms(instructions, atomes);
@@ -2218,7 +2255,6 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     if (atomes.size())
         cout << endl;
     
-    lispe_editor* editor = (lispe_editor*)o;
     std::map<string, Element*> uniques;
     for (auto& a: atomes) {
         if (a->label() == v_true)

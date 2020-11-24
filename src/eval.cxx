@@ -1080,6 +1080,7 @@ Element* Instruction::eval(LispE* lisp) {
 //------------------------------------------------------------------------------
 Element* LispE::eval(string code) {
     long garbage_size = garbages.size();
+    delegation->add_to_listing = false;
     
     //First we compile it, some elements will be stored in the garbage
     //essentially lists and dictionaries

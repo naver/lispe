@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.23.14.30";
+static std::string version = "1.2020.11.24.11.30";
 string LispVersion() {
     return version;
 }
@@ -44,6 +44,7 @@ List* Stackelement::atomes(LispE* lisp) {
 //------------------------------------------------------------
 
 Delegation::Delegation() {
+    add_to_listing = true;
     stop_execution = 0;
     allfiles["main"] = 0;
     allfiles_names[0] = "main";
@@ -487,6 +488,8 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
     long line_number = 1;
     long culprit = -1;
     uchar c;
+    string current_line;
+    string tampon;
     for (i = 0; i < sz; i++) {
         c = code[i];
         switch (c) {
@@ -494,20 +497,26 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
             case '#': //comments (we accept both with ; and #)
                 while (i < sz && code[i] != '\n') i++;
                 line_number++;
+                current_line = "";
                 break;
             case '\n':
+                current_line += c;
+                add_to_listing(line_number, current_line);
                 line_number++;
+                current_line = "";
                 break;
             case '\t':
             case '\r':
             case ' ':
+                current_line += c;
                 continue;
             case '\'':
+                current_line += c;
                 infos.append(c, e_quote, line_number, i, i+1);
                 break;
             case '`': { // a string containing what we want...
                 idx = i + 1;
-                string tampon = "";
+                tampon = "";
                 while (idx < sz && code[idx] != '`') {
                     tampon += code[idx];
                     idx++;
@@ -519,12 +528,13 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     infos.append(tampon, e_emptystring, line_number, i, idx);
                 else
                     infos.append(tampon, e_string, line_number, i, idx);
+                current_line += tampon;
                 i = idx;
                 break;
             }
             case '"': {
                 idx = i + 1;
-                string tampon = "";
+                tampon = "";
                 while (idx < sz && code[idx] != '"') {
                     c = code[idx];
                     if (c < 32) {
@@ -557,14 +567,17 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     infos.append(tampon, e_emptystring, line_number, i, idx);
                 else
                     infos.append(tampon, e_string, line_number, i, idx);
+                current_line += tampon;
                 i = idx;
                 break;
             }
             case '(':
+                current_line += c;
                 nb_parentheses++;
                 infos.append(c, e_opening_parenthesis, line_number, i, i + 1);
                 break;
             case ')':
+                current_line += c;
                 nb_parentheses--;
                 if (nb_parentheses <= 0) {
                     if (culprit == -1)
@@ -573,6 +586,7 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 infos.append(c, e_closing_parenthesis, line_number, i, i + 1);
                 break;
             case ']': { //(+ 10 (* 20 (/40 2]
+                current_line += c;
                 nb_parentheses--;
                 if (nb_parentheses <= 0) {
                     if (culprit == -1)
@@ -585,13 +599,16 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 break;
             }
             case ':':
+                current_line += c;
                 infos.append(c, e_colon, line_number, i, i + 1);
                 break;
             case '{':
+                current_line += c;
                 nb_braces++;
                 infos.append(c, e_opening_brace, line_number, i, i + 1);
                 break;
             case '}':
+                current_line += c;
                 nb_braces--;
                 if (nb_braces <= 0) {
                     if (culprit == -1)
@@ -604,19 +621,24 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
             case '*':
             case '%':
             case '/':
+                current_line += c;
                 if (code[i+1] == '=') {
                     string ope;
                     ope = c;
                     ope += "=";
                     infos.append(ope, e_operator, line_number, i, i + 2);
+                    current_line += "=";
                     i++;
                 }
                 else
                     infos.append(c, e_operator, line_number, i, i + 1);
                 break;
             case '^':
+                current_line += c;
                 if (code[i+1] == '^') {
+                    current_line += c;
                     if (code[i+2] == '=') {
+                        current_line += "=";
                         infos.append("^^=", e_operator, line_number, i, i + 3);
                         i+=2;
                     }
@@ -627,6 +649,7 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 }
                 else {
                     if (code[i+1] == '=') {
+                        current_line += "=";
                         infos.append("^=", e_operator, line_number, i, i + 2);
                         i++;
                     }
@@ -635,12 +658,15 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 }
                 break;
             case '<':
+                current_line += c;
                 if (code[i+1] == '<') {
+                    current_line += c;
                     infos.append("<<", e_operator, line_number, i, i + 2);
                     i++;
                 }
                 else {
                     if (code[i+1] == '=') {
+                        current_line += "=";
                         infos.append("<=", e_operator, line_number, i, i + 2);
                         i++;
                     }
@@ -649,12 +675,15 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 }
                 break;
             case '>':
+                current_line += c;
                 if (code[i+1] == '>') {
+                    current_line += c;
                     infos.append(">>", e_operator, line_number, i, i + 2);
                     i++;
                 }
                 else {
                     if (code[i+1] == '=') {
+                        current_line += "=";
                         infos.append(">=", e_operator, line_number, i, i + 2);
                         i++;
                     }
@@ -663,7 +692,9 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 }
                 break;
             case '!':
+                current_line += c;
                 if (code[i+1] == '=') {
+                    current_line += "=";
                     infos.append("!=", e_operator, line_number, i, i + 2);
                     i++;
                 }
@@ -671,11 +702,14 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     infos.append(c, e_character, line_number, i, i + 1);
                 break;
             case '=':
+                current_line += c;
                 infos.append(c, e_operator, line_number, i, i + 1);
                 break;
             case '+':
+                current_line += c;
                 if (!isdigit(code[i+1])) {
                     if (code[i+1] == '=') {
+                        current_line += "=";
                         infos.append("+=", e_operator, line_number, i, i + 2);
                         i++;
                     }
@@ -684,8 +718,10 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     break;
                 }
             case '-':
+                current_line += c;
                 if (!isdigit(code[i+1])) {
                     if (code[i+1] == '=') {
+                        current_line += "=";
                         infos.append("-=", e_operator, line_number, i, i + 2);
                         i++;
                     }
@@ -704,19 +740,24 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
             case '8':
             case '9': {
                 double d = convertingfloathexa(code.c_str() + i, idx);
-                infos.append(d, code.substr(i, idx), e_digits, line_number, i, idx);
+                tampon = code.substr(i, idx);
+                current_line += tampon;
+                infos.append(d, tampon, e_digits, line_number, i, idx);
                 i += idx - 1;
                 break;
             }
             default: {
                 long pos = i;
                 idx = i;
-                string tampon;
+                tampon = "";
                 if (!handlingutf8->est_une_lettre(USTR(code), idx))  {
-                    if (idx == i)
+                    if (idx == i) {
+                        current_line += c;
                         infos.append(c, e_character, line_number, pos, pos + 1);
+                    }
                     else {
                         tampon = code.substr(i, idx - i + 1);
+                        current_line += tampon;
                         infos.append(tampon, e_character, line_number, pos, idx-i+1);
                         i = idx;
                     }
@@ -738,10 +779,12 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                         idx++;
                     }
                     if (ok) {
+                        current_line += tampon;
                         infos.append(tampon, e_cadr, line_number, pos, idx);
                         break;
                     }
                 }
+                current_line += tampon;
                 infos.append(tampon, e_token, line_number, pos, idx);
                 break;
             }
@@ -756,6 +799,9 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
         delegation->current_line = culprit;
         return e_error_brace;
     }
+    
+    if (current_line != "")
+        add_to_listing(line_number, current_line);
     
     return e_no_error;
 }

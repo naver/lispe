@@ -121,6 +121,7 @@ public:
 
     unordered_map<long, string> allfiles_names;
     unordered_map<long, unordered_map<long, bool> > breakpoints;
+    map<long, map<long, string> > listing;
 
     Element* _BOOLEANS[2];
     
@@ -159,6 +160,7 @@ public:
     short stop_execution;
 
     bool next_stop;
+    bool add_to_listing;
 
     
     Delegation();
@@ -195,6 +197,20 @@ public:
             allfiles[pathname] = i_current_file;
             allfiles_names[i_current_file] = pathname;
         }
+    }
+    
+    bool addtolisting(long l, string& e) {
+        if (add_to_listing) {
+            try {
+                listing.at(i_current_file).at(l);
+                return true;
+            }
+            catch(const std::out_of_range& oor) {
+                listing[i_current_file][l] = e;
+                return false;
+            }
+        }
+        return false;
     }
     
     inline short checkLispState(long sz) {
