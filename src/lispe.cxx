@@ -706,8 +706,8 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 infos.append(c, e_operator, line_number, i, i + 1);
                 break;
             case '+':
-                current_line += c;
                 if (!isdigit(code[i+1])) {
+                    current_line += c;
                     if (code[i+1] == '=') {
                         current_line += "=";
                         infos.append("+=", e_operator, line_number, i, i + 2);
@@ -718,8 +718,8 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     break;
                 }
             case '-':
-                current_line += c;
                 if (!isdigit(code[i+1])) {
+                    current_line += c;
                     if (code[i+1] == '=') {
                         current_line += "=";
                         infos.append("-=", e_operator, line_number, i, i + 2);
