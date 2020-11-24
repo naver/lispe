@@ -177,9 +177,11 @@ public:
             lispe->set_pathname(thecurrentfilename);
         }
         bool add = false;
+        
         parse.clear();
         lispe->delegation->add_to_listing = false;
         lispe->segmenting(line, parse);
+        
         long left, right = -1;
         for (long isegment = parse.tokens.size() - 1, ipos = parse.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
             left = parse.positions[ipos-1];
@@ -2229,8 +2231,6 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     if (line < 1)
         line = 1;
     
-    lisp->delegation->add_to_listing = false;
-    
     string theline;
     map<long, string>::iterator it = lisp->delegation->listing[lisp->delegation->i_current_file].upper_bound(line);
     line = current_line + 20;
@@ -2243,8 +2243,6 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         else
             cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
     }
-    lisp->delegation->current_line = current_line;
-
     cout << endl;
     cout << m_selectgray << instructions->toString(lisp) << m_current << endl;
     

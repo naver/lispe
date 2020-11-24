@@ -442,6 +442,8 @@ LispE::LispE(LispE* lisp, List* function, Element* body) {
 
     thread_ancestor = lisp;
 
+    line_error = -1;
+    
     delegation = lisp->delegation;
     handlingutf8 = lisp->handlingutf8;
 
@@ -479,6 +481,7 @@ LispE::LispE(LispE* lisp, List* function, Element* body) {
 
 e_type LispE::segmenting(string& code, Tokenizer& infos) {
     
+    line_error = -1;
     long idx;
     long sz = code.size();
     long i;
@@ -791,12 +794,12 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
         }
     }
     if (nb_parentheses) {
-        delegation->current_line = culprit;
+        line_error = culprit;
         return e_error_parenthesis;
     }
     
     if (nb_braces) {
-        delegation->current_line = culprit;
+        line_error = culprit;
         return e_error_brace;
     }
     
@@ -1231,8 +1234,10 @@ Element* LispE::compile(string& code) {
     long index;
     switch (retour) {
         case e_error_brace:
+            delegation->current_line = line_error;
             throw new Error("Error: Braces do not balance");
         case e_error_parenthesis:
+            delegation->current_line = line_error;
             throw new Error("Error: parentheses do not balance");
         case e_error_string:
             delegation->current_line = 1;
@@ -1276,9 +1281,11 @@ Element* LispE::extension(string code, Element* etendre) {
     switch (retour) {
         case e_error_brace:
             etendre->release();
+            delegation->current_line = line_error;
             throw new Error("Error: Braces do not balance");
         case e_error_parenthesis:
             etendre->release();
+            delegation->current_line = line_error;
             throw new Error("Error: parentheses do not balance");
         case e_error_string:
             etendre->release();

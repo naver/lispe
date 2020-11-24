@@ -211,11 +211,14 @@ public:
 
     std::atomic<short> nbjoined;
 
+    long line_error;
+    
     bool isThread;
     bool hasThread;
     bool trace;
 
     LispE() {
+        line_error = -1;
         trace = false;
         delegation = new Delegation;
         isThread = false;
