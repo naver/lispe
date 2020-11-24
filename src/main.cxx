@@ -1117,8 +1117,10 @@ public:
                     lispe->set_pathname(thecurrentfilename);
                     //We initialize the breakpoints and the trace mode
                     lispe->trace = true;
-                    if (breakpoints.size())
+                    if (breakpoints.size()) {
                         lispe->delegation->breakpoints = breakpoints;
+                        lispe->stop_at_next_line(3);
+                    }
                     else
                         lispe->stop_at_next_line(true);
                     line = L"";
@@ -2039,6 +2041,8 @@ public:
                 }
                 
                 if (buff == ">") {
+                    current_line_debugger = -1;
+                    lispe->stop_at_next_line(3);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
                     continue;

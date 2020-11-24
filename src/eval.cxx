@@ -1056,6 +1056,9 @@ Element* Atom::eval(LispE* lisp) {
 //------------------------------------------------------------------------------
 void LispE::display_trace(List* e) {
     if (trace) {
+        if (trace == 3)
+            delegation->next_stop = false;
+        
         if (!activate_on_breakpoints(e)) {
             long nb = stackSize();
             string space(nb, ' ');
@@ -1158,7 +1161,7 @@ Element* List::eval(LispE* lisp) {
     Element* a = null_;
     long listsize;
     short label;
-    bool test = true;
+    char test = true;
 
     
     try {
@@ -1245,7 +1248,8 @@ Element* List::eval(LispE* lisp) {
                     first_element = liste[1]->eval(lisp);
                 }
                 first_element->release();
-                lisp->stop_at_next_line(test);
+                if (test && lisp->trace != 3)
+                    lisp->stop_at_next_line(1);
                 return element;
             }
             case l_set_max_stack_size: {
@@ -1778,7 +1782,8 @@ Element* List::eval(LispE* lisp) {
                 element = liste[2]->eval(lisp);
                 first_element = element->loop(lisp, label, this);
                 element->release();
-                lisp->stop_at_next_line(test);
+                if (test && lisp->trace != 3)
+                    lisp->stop_at_next_line(1);
                 return first_element;
             }
             case l_loopcount: {
@@ -2904,14 +2909,16 @@ Element* Listcallfunction::eval(LispE* lisp) {
     
     set_current_line(lisp);
     if (lisp->trace) {
+        char tr = 1;
         short label = function->index(0)->label();
         if (label == l_defun || label == l_defpat) {
-            if (lisp->trace == 2) {
-                lisp->display_trace(this);
+            if (lisp->trace == 2)
                 lisp->stop_at_next_line(1);
+            else {
+                if (lisp->trace == 1) {
+                    lisp->trace = 0;
+                }
             }
-            else
-                lisp->trace = 0;
         }
         
         if (label == l_defpat)
@@ -2919,10 +2926,10 @@ Element* Listcallfunction::eval(LispE* lisp) {
         else
             function = evalfunction(function, lisp);
 
-        lisp->stop_at_next_line(1);
+        if (lisp->trace != 3)
+            lisp->stop_at_next_line(tr);
         return function;
     }
-
 
     //In this case, it must be a function
     if (function->index(0)->label() == l_defpat)

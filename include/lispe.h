@@ -280,7 +280,6 @@ public:
             delegation->next_stop = false;
             return;
         }
-        
         trace = tr;
         delegation->next_stop = true;
     }
