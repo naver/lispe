@@ -113,9 +113,11 @@ class lispe_editor : public jag_editor {
 public:
     
     LispE* lispe;
+    long current_line_debugger;
     bool debugmode;
 
     lispe_editor() {
+        current_line_debugger = -1;
         debugmode = false;
         currentfileid = -1;
         editmode = false;
@@ -1101,6 +1103,7 @@ public:
                     cerr << m_redbold << "Cannot load: " << thecurrentfilename << m_current << endl;
                 return pos;
             case cmd_debug:
+                current_line_debugger = -1;
                 addcommandline(line);
                 if (v.size() == 1) {
                     if (isempty(current_code))
@@ -2243,6 +2246,12 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     lispe_editor* editor = (lispe_editor*)o;
     
     long current_line = lisp->delegation->current_line;
+    if (editor->current_line_debugger == current_line) {
+        lisp->delegation->next_stop = true;
+        return;
+    }
+    
+    editor->current_line_debugger = current_line;
     long line =  current_line - 15;
     if (line < 1)
         line = 1;
