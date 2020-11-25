@@ -2509,8 +2509,7 @@ int main(int argc, char *argv[]) {
 
         call->lispe->set_pathname(argv[1]);
         //We initialize the breakpoints and the trace mode
-        call->lispe->stop_at_next_line(debug_next);
-        debuggerthread(call);
+        call->runcode();
         return 0;
     }
 

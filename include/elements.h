@@ -822,6 +822,11 @@ public:
     bool isOperator() {
         return true;
     }
+    
+    bool isExecutable(LispE*) {
+        return true;
+    }
+
 };
 
 
@@ -1740,6 +1745,18 @@ public:
         return liste[1];
     }
 };
+
+class Listtwo : public Listincode {
+public:
+    
+    Listtwo(Listincode* l) : Listincode(l->line, l->fileidx) {
+        liste = l->liste;
+    }
+
+    Element* eval(LispE* lisp);
+};
+
+
 
 class Listcallfunction : public Listincode {
 public:

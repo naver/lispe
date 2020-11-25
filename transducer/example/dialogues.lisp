@@ -15,6 +15,7 @@
 (transducer_load english (+ _current "english.tra"))
 
 ; This is a dictionary
+; note $:z, which acts as a "rest of dictionary" operator
 (defpat traversing({k:l $:z} result)
    (traversing l result)
    (traversing z result)
@@ -26,12 +27,12 @@
    (traversing r result)
 )
 
-; This is a string, we want all our nouns
-(defpat traversing ((string_ sentence) result)
-   (check (size sentence)
-      (setq words (transducer_parse english sentence 2))
-      (scanning words result)
-   )
+; This is a string, we want all our preposition for sentences
+; of at least 20 characters...
+(defpat traversing ((string_ (< 20 (size sentence))) result)
+   ;we parse our sentence with our lexicon
+   (setq words (transducer_parse english sentence 2))
+   (scanning words result)
 )
 
 ; the fall back function, when nothing matches
@@ -47,7 +48,7 @@
 )
 
 ; scanning all words from the parse list
-(defpat scanning(parse result)
+(defun scanning(parse result)
    (loop x parse
       (check (isprep x)
          (push result (at x 0))
@@ -55,13 +56,8 @@
    )
 )
 
-; fall back
-(defpat scanning(_ _) nil)
-
 (setq result ())
 (traversing (json_read (+ _current "dialogue.json")) result)
 (println (unique result))
-
-
 
 

@@ -2487,7 +2487,6 @@ Element* List::eval(LispE* lisp) {
             }
             case l_load:
                 element = liste[1]->eval(lisp);
-                
                 first_element = lisp->load(element->toString(lisp));
                 element->release();
                 return first_element;
@@ -2551,7 +2550,6 @@ Element* List::eval(LispE* lisp) {
                 first_element = lisp->provideNumber(element->size());
                 element->release();
                 return first_element;
-                
             }
             case l_use: {
                 element = liste[1]->eval(lisp);
@@ -3225,4 +3223,253 @@ Element* Listcompose::eval(LispE* lisp) {
 
     loop->liste[2]->eval(lisp)->loop(lisp, loop->liste[1]->label(), loop);
     return lisp->get(label);
+}
+
+
+Element* Listtwo::eval(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+    
+    set_current_line(lisp);
+    lisp->display_trace(this);
+    
+    Element* first_element = liste[1]->eval(lisp);
+    Element* element = null_;
+    
+    try {
+        switch (liste[0]->type) {
+            case l_atomise:
+                element = liste[1]->eval(lisp);
+                first_element = lisp->atomise(element->asString(lisp));
+                element->release();
+                return first_element;
+            case l_atomp: {
+                element = liste[1]->eval(lisp);
+                bool test = element->isAtom();
+                element->release();
+                return booleans_[test];
+            }
+            case l_cadr:
+                element = liste[1]->eval(lisp);
+                first_element = first_element->cadr(lisp, element);
+                element->release();
+                return first_element;
+            case l_car:
+                element = liste[1]->eval(lisp);
+                first_element = element->car(lisp);
+                element->release();
+                return first_element;
+            case l_cdr:
+                element = liste[1]->eval(lisp);
+                first_element = element->cdr(lisp);
+                element->release();
+                return first_element;
+            case l_catch: {
+                try {
+                    first_element = liste[1]->eval(lisp);
+                }
+                catch (Error* err) {
+                    //This error is converted into a non-blocking error message .
+                    element = new Maybe(lisp, err);
+                    err->release();
+                    return element;
+                }
+                return first_element;
+            }
+            case l_consp: {
+                element = liste[1]->eval(lisp);
+                bool test = element->isList();
+                element->release();
+                return booleans_[test];
+            }
+            case l_converttoatom: {
+                wstring a;
+                evalAsString(1,lisp,a);
+                return lisp->provideAtomProtected(a);
+            }
+            case l_converttointeger:
+                element = liste[1]->eval(lisp);
+                first_element = lisp->provideInteger(element->asInteger());
+                element->release();
+                return first_element;
+            case l_converttonumber:
+                element = liste[1]->eval(lisp);
+                first_element = lisp->provideNumber(element->asNumber());
+                element->release();
+                return first_element;
+            case l_converttostring: {
+                element = liste[1]->eval(lisp);
+                wstring strvalue = element->asString(lisp);
+                first_element = lisp->provideString(strvalue);
+                element->release();
+                return first_element;
+            }
+            case l_eval: {
+                element = liste[1]->eval(lisp);
+                
+                //This is a specific case, when the element is a string
+                //we need then to call the a meta-eval, the one that
+                //comes with Lisp itself
+                if (element->isString()) {
+                    first_element = lisp->eval(element->toString(lisp));
+                    element->release();
+                    if (first_element->isError())
+                        throw first_element;
+                    return first_element;
+                }
+                //We just need to evaluate this element...
+                first_element = element->eval(lisp);
+                if (first_element != element)
+                    element->release();
+                return first_element;
+            }
+            case l_flip: {
+                if (liste[1]->isList() && liste[1]->size() >= 3) {
+                    List* l = (List*)liste[1];
+                    //We reverse the two first arguments
+                    List call;
+                    call.liste.push_back(l->liste[0]);
+                    call.liste.push_back(l->liste[2]);
+                    call.liste.push_back(l->liste[1]);
+                    for (long i = 3; i < liste[1]->size(); i++)
+                    call.liste.push_back(l->liste[i]);
+                    return call.eval(lisp);
+                }
+                first_element = liste[1]->eval(lisp);
+                if (first_element->isDictionary()) {
+                    element = first_element->reverse(lisp, true);
+                    first_element->release();
+                    return element;
+                }
+                first_element->release();
+                throw new Error("Error: Cannot apply flip on this structure");
+            }
+            case l_fread: {
+                first_element = liste[1]->eval(lisp);
+                
+                element = new String("");
+                string nom = first_element->toString(lisp);
+                first_element->release();
+                first_element = element->charge(lisp, nom);
+                return element;
+            }
+            case l_reverse:
+                element = liste[1]->eval(lisp);
+                first_element = element->reverse(lisp, true);
+                element->release();
+                return first_element;
+            case l_keys:
+                first_element = liste[1]->eval(lisp);
+                if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
+                    first_element->release();
+                    throw new Error(L"Error: the first argument must be a dictionary");
+                }
+                element = first_element->thekeys(lisp);
+                first_element->release();
+                return element;
+            case l_last: {
+                first_element = liste[1]->eval(lisp);
+                return first_element->last_element(lisp);
+            }
+            case l_load:
+                element = liste[1]->eval(lisp);
+                first_element = lisp->load(element->toString(lisp));
+                element->release();
+                return first_element;
+            case l_not: {
+                first_element = liste[1]->eval(lisp);
+                bool test = first_element->Boolean();
+                first_element->release();
+                return booleans_[!test];
+            }
+            case l_nullp: {
+                element = liste[1]->eval(lisp);
+                if (element == null_)
+                    return true_;
+                element->release();
+                return false_;
+            }
+            case l_numberp: {
+                element = liste[1]->eval(lisp);
+                bool test = element->isNumber();
+                element->release();
+                return booleans_[test];
+            }
+            case l_prettify: {
+                first_element = liste[1]->eval(lisp);
+                string s = first_element->prettify(lisp);
+                first_element->release();
+                return new String(s);
+            }
+            case l_size: {
+                element = liste[1]->eval(lisp);
+                first_element = lisp->provideNumber(element->size());
+                element->release();
+                return first_element;
+            }
+            case l_stringp: {
+                element = liste[1]->eval(lisp);
+                bool test = element->isString();
+                element->release();
+                return booleans_[test];
+            }
+            case l_throw: {
+                wstring msg;
+                throw new Error(msg);
+            }
+            case l_trigger: {
+                wstring key;
+                evalAsString(1, lisp, key);
+                return booleans_[lisp->delegation->trigger(key)];
+            }
+            case l_type: {
+                element = liste[1]->eval(lisp);
+                first_element = lisp->provideAtom(element->type);
+                element->release();
+                return first_element;
+            }
+            case l_unique:
+                first_element = liste[1]->eval(lisp);
+                element = first_element->unique(lisp);
+                first_element->release();
+                return element;
+            case l_use: {
+                element = liste[1]->eval(lisp);
+                string nom_bib = element->toString(lisp);
+                element->release();
+                return lisp->load_library(nom_bib);
+            }
+            case l_values:
+                first_element = liste[1]->eval(lisp);
+                if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
+                    first_element->release();
+                    throw new Error(L"Error: the first argument must be a dictionary");
+                }
+                element = first_element->thevalues(lisp);
+                first_element->release();
+                return element;
+            case l_waiton: {
+                wstring key;
+                evalAsString(1, lisp, key);
+                lisp->delegation->waiton(key);
+                return true_;
+            }
+            case l_zerop: {
+                element = liste[1]->eval(lisp);
+                double n = element->asNumber();
+                element->release();
+                return booleans_[!n];
+            }
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        element->release();
+        throw err;
+    }
+    
+    return List::eval(lisp);
 }

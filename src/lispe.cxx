@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.25.15.14";
+static std::string version = "1.2020.11.25.16.12";
 string LispVersion() {
     return version;
 }
@@ -191,7 +191,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_nullp, "nullp", P_TWO);
     set_instruction(l_numberp, "numberp", P_TWO);
     set_instruction(l_or, "or", P_ATLEASTTHREE);
-    set_instruction(l_pipe, "pipe", P_TWO);
+    set_instruction(l_pipe, "pipe", P_ONE);
     set_instruction(l_plus, "+", P_ATLEASTTHREE);
     set_instruction(l_plusequal, "+=", P_ATLEASTTHREE);
     set_instruction(l_pop, "pop", P_TWO | P_THREE);
@@ -1012,22 +1012,26 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 if (e->size() >= 1) {
                     //these are specialized calls, for which we do not need to go through List::eval
                     short lab = e->index(0)->type;
-                    if (lab == t_atom) {
-                        e = regarbaging(e, new Listcallfunction((Listincode*)e));
-                    }
+                    if (is_instruction(lab) && delegation->arities[lab] == P_TWO)
+                        e = regarbaging(e, new Listtwo((Listincode*)e));
                     else {
-                        if (lab == l_break) {
-                            removefromgarbage(e);
-                            e = &delegation->_BREAKEVAL;
+                        if (lab == t_atom) {
+                            e = regarbaging(e, new Listcallfunction((Listincode*)e));
                         }
                         else {
-                            if (e->size() >= 3 && lab >= l_plus && lab <= l_modequal) {
-                                e = regarbaging(e, new Listoperation((Listincode*)e));
+                            if (lab == l_break) {
+                                removefromgarbage(e);
+                                e = &delegation->_BREAKEVAL;
+                            }
+                            else {
+                                if (e->size() >= 3 && lab >= l_plus && lab <= l_modequal) {
+                                    e = regarbaging(e, new Listoperation((Listincode*)e));
+                                }
                             }
                         }
                     }
                 }
-
+                
                 if (quote == NULL)
                     courant->append(e);
                 else {
@@ -1520,6 +1524,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

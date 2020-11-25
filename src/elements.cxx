@@ -454,6 +454,9 @@ Element* List::insert(LispE* lisp, Element* e, long idx) {
 }
 
 Element* List::unique(LispE* lisp) {
+    if (liste.size() == 0)
+        return this;
+    
     List* list = new List;
     long i, j;
     bool found;
