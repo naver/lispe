@@ -3236,7 +3236,7 @@ Element* Listtwo::eval(LispE* lisp) {
     set_current_line(lisp);
     lisp->display_trace(this);
     
-    Element* first_element = liste[1]->eval(lisp);
+    Element* first_element = liste[0];
     Element* element = null_;
     
     try {
