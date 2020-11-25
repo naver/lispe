@@ -349,6 +349,15 @@ public:
         return false;
     }
 
+    bool check_breakpoints(long i_file, long i_line) {
+        try {
+            return breakpoints.at(i_file).at(i_line);
+        }
+        catch(const std::out_of_range& oor) {
+            return false;
+        }
+    }
+    
     inline Element* recordingMethod(Stackelement* stack, Element* e, short label, short sublabel) {
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...

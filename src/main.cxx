@@ -2044,7 +2044,20 @@ public:
                     continue;
                 }
                 
-                if (buff == ">") {
+                if (buff == left) {
+                    //Adding or removing breakpoints
+                    try {
+                        breakpoints.at(current_file_debugger).at(current_line_debugger) =
+                            1 - breakpoints.at(current_file_debugger).at(current_line_debugger);
+                    }
+                    catch(const std::out_of_range& oor) {
+                        breakpoints[current_file_debugger][current_line_debugger] = true;
+                    }
+                    lispe->delegation->breakpoints = breakpoints;
+                    continue;
+                }
+                
+                if (buff == right) {
                     current_line_debugger = -1;
                     current_file_debugger = -1;
                     lispe->stop_at_next_line(debug_goto);
@@ -2275,10 +2288,18 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         if (it->first > line)
             break;
         
-        if (it->first == current_line)
-            cout << m_selectgray << "[" << it->first << "] " << it->second << m_current;
-        else
-            cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
+        if (it->first == current_line) {
+            if (lisp->delegation->check_breakpoints(editor->current_file_debugger, it->first))
+                cout << m_selectgray << "[^^" << it->first << "] " << it->second << m_current;
+            else
+                cout << m_selectgray << "[" << it->first << "] " << it->second << m_current;
+        }
+        else {
+            if (lisp->delegation->check_breakpoints(editor->current_file_debugger, it->first))
+                cout << "(^^" << it->first << ") " << editor->coloringline(it->second) << m_current;
+            else
+                cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
+        }
     }
     cout << endl;
     
@@ -2317,7 +2338,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         }
     }
     
-    cout << endl << m_gray << "$:end !:stop down:inside up:out >:go %:variables: " << m_red;
+    cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
     cout.flush();
     lisp->blocking_trace_lock();
 }
