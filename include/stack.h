@@ -141,6 +141,11 @@ public:
         return this;
     }
     
+    void atoms(vector<short>& v_atoms) {
+        for (auto& a: labels)
+            v_atoms.push_back(a.first);
+    }
+    
     ~Stackelement() {
         for (auto& a: labels)
             a.second->decrementstatus(1, true);

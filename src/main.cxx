@@ -76,6 +76,7 @@ void resizewindow(int theSignal);
 
 void debuggerthread(lispe_editor* call);
 void displaying_current_lines(LispE* lisp, long current_file, long current_line, lispe_editor* editor);
+void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor, bool full);
 
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
@@ -2070,11 +2071,8 @@ public:
                 }
                 
                 if (buff == "%") {
-                    wstring wvars = lispe->stackAsString();
-                    string vars;
-                    s_unicode_to_utf8(vars, wvars);
-                    cout << endl << endl << colors[2] << vars << m_red << endl;
-                    displaygo(true);
+                    display_variables(lispe, NULL, this, true);
+                    cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
                     continue;
                 }
                 
@@ -2298,6 +2296,40 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
     cout << endl;
 }
 
+void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor, bool full) {
+    vector<Element*> atomes;
+    if (instructions == NULL)
+        lisp->atomsOnStack(atomes);
+    else
+        lisp->extractAllAtoms(instructions, atomes);
+    
+    Element* value;
+    
+    if (atomes.size())
+        cout << endl;
+
+    std::map<string, Element*> uniques;
+    for (auto& a: atomes) {
+        if (a->label() == v_true)
+            continue;
+        uniques[a->toString(lisp)] = a;
+    }
+    string thevalue;
+    Element* e;
+    for (auto& a: uniques) {
+        e = a.second;
+        value = lisp->getvalue(e->label());
+        if (!value->isFunction()) {
+            thevalue =  value->toString(lisp);
+            if (!full && thevalue.size() > 80) {
+                thevalue = thevalue.substr(0,80);
+                thevalue += "...";
+            }
+            cout << editor->colors[2] << e->toString(lisp) << ":" << m_red << thevalue << m_current << endl;
+        }
+    }
+}
+
 void debug_function_lispe(LispE* lisp, List* instructions, void* o) {        
 
     lispe_editor* editor = (lispe_editor*)o;
@@ -2311,41 +2343,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     editor->current_file_debugger = lisp->delegation->i_current_file;
     
     displaying_current_lines(lisp, lisp->delegation->i_current_file, current_line, editor);
-    
-    string thevalue = instructions->toString(lisp);
-    if (thevalue.size() > 64) {
-        thevalue = thevalue.substr(0,64);
-        thevalue += "...";
-    }
-
-    cout << m_selectgray << thevalue << m_current << endl;
-    
-    vector<Element*> atomes;
-    lisp->extractAllAtoms(instructions, atomes);
-    Element* value;
-    
-    if (atomes.size())
-        cout << endl;
-    
-    std::map<string, Element*> uniques;
-    for (auto& a: atomes) {
-        if (a->label() == v_true)
-            continue;
-        uniques[a->toString(lisp)] = a;
-    }
-    Element* e;
-    for (auto& a: uniques) {
-        e = a.second;
-        value = lisp->getvalue(e->label());
-        if (!value->isFunction()) {
-            thevalue =  value->toString(lisp);
-            if (thevalue.size() > 512) {
-                thevalue = thevalue.substr(0,512);
-                thevalue += "...";
-            }
-            cout << editor->colors[2] << e->toString(lisp) << ":" << m_red << thevalue << m_current << endl;
-        }
-    }
+    display_variables(lisp, instructions, editor, false);
     
     cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
     cout.flush();

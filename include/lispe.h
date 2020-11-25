@@ -449,12 +449,21 @@ public:
         return execution_stack.top()->size();
     }
     
+    inline void atomsOnStack(vector<Element*>& v_atoms) {
+        vector<short> labels;
+        execution_stack.top()->atoms(labels);
+        for (short i = 0; i < labels.size(); i++) {
+            if (delegation->is_atom_code(labels[i]))
+                v_atoms.push_back(delegation->provideAtom(labels[i]));
+        }
+    }
+    
     inline long stackSize() {
         return execution_stack.size();
     }
     
     wstring stackAsString() {
-        return (execution_stack.size() == 1?L"":execution_stack.top()->asString(this));
+        return execution_stack.top()->asString(this);
     }
     
     inline Element* called() {

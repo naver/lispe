@@ -251,7 +251,7 @@ public:
             return idx;
         }
     }
-    
+
     short is_atom(wstring& s) {
         try {
             short code = string_to_code.at(s);
@@ -302,6 +302,19 @@ public:
             return false;
         }
     }
+
+    bool is_atom_code(short code) {
+        if (code < l_final)
+            return false;
+        try {
+            atom_pool.at(code);
+            return true;
+        }
+        catch(const std::out_of_range& oor) {
+            return false;
+        }
+    }
+
 
     long id_file(string& pathname) {
         try {
