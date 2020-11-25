@@ -75,6 +75,7 @@ class lispe_editor;
 void resizewindow(int theSignal);
 
 void debuggerthread(lispe_editor* call);
+void displaying_current_lines(LispE* lisp, long current_file, long current_line, lispe_editor* editor);
 
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
@@ -2054,6 +2055,8 @@ public:
                         breakpoints[current_file_debugger][current_line_debugger] = true;
                     }
                     lispe->delegation->breakpoints = breakpoints;
+                    displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
+                    cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
                     continue;
                 }
                 
@@ -2257,8 +2260,7 @@ public:
 //-------------------------------------------------------------------------------------------
 // Debug Functions
 //-------------------------------------------------------------------------------------------
-void debug_function_lispe(LispE* lisp, List* instructions, void* o) {        
-
+void displaying_current_lines(LispE* lisp, long current_file, long current_line, lispe_editor* editor) {
 #ifdef WIN32
     system("cls");
 #else
@@ -2266,42 +2268,49 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
 #endif
 
     cout << endl << m_current;
-    lispe_editor* editor = (lispe_editor*)o;
     
-    long current_line = lisp->delegation->i_current_line;
-    if (editor->current_line_debugger == current_line && editor->current_file_debugger == lisp->delegation->i_current_file) {
-        lisp->delegation->next_stop = true;
-        return;
-    }
     
-    editor->current_line_debugger = current_line;
-    editor->current_file_debugger = lisp->delegation->i_current_file;
     
     long line =  current_line - 15;
     if (line < 1)
         line = 1;
     
     string theline;
-    map<long, string>::iterator it = lisp->delegation->listing[lisp->delegation->i_current_file].upper_bound(line);
+    map<long, string>::iterator it = lisp->delegation->listing[current_file].upper_bound(line);
     line = current_line + 15;
-    for (; it != lisp->delegation->listing[lisp->delegation->i_current_file].end(); it++) {
+    for (; it != lisp->delegation->listing[current_file].end(); it++) {
         if (it->first > line)
             break;
         
         if (it->first == current_line) {
-            if (lisp->delegation->check_breakpoints(editor->current_file_debugger, it->first))
+            if (lisp->delegation->check_breakpoints(current_file, it->first))
                 cout << m_selectgray << "[^^" << it->first << "] " << it->second << m_current;
             else
                 cout << m_selectgray << "[" << it->first << "] " << it->second << m_current;
         }
         else {
-            if (lisp->delegation->check_breakpoints(editor->current_file_debugger, it->first))
+            if (lisp->delegation->check_breakpoints(current_file, it->first))
                 cout << "(^^" << it->first << ") " << editor->coloringline(it->second) << m_current;
             else
                 cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
         }
     }
     cout << endl;
+}
+
+void debug_function_lispe(LispE* lisp, List* instructions, void* o) {        
+
+    lispe_editor* editor = (lispe_editor*)o;
+    long current_line = lisp->delegation->i_current_line;
+    if (editor->current_line_debugger == current_line && editor->current_file_debugger == lisp->delegation->i_current_file) {
+        lisp->delegation->next_stop = true;
+        return;
+    }
+
+    editor->current_line_debugger = current_line;
+    editor->current_file_debugger = lisp->delegation->i_current_file;
+    
+    displaying_current_lines(lisp, lisp->delegation->i_current_file, current_line, editor);
     
     string thevalue = instructions->toString(lisp);
     if (thevalue.size() > 64) {
