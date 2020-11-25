@@ -77,6 +77,7 @@ void resizewindow(int theSignal);
 void debuggerthread(lispe_editor* call);
 void displaying_current_lines(LispE* lisp, long current_file, long current_line, lispe_editor* editor);
 void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor, bool full);
+void lispe_displaystring(string& code, void*);
 
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
@@ -121,6 +122,7 @@ public:
     long current_file_debugger;
     std::atomic<bool> reading;
     string input_string;
+    string output_string;
     bool debugmode;
 
     lispe_editor() {
@@ -2072,6 +2074,7 @@ public:
                     cout << endl << endl;
                     cout.flush();
                     debugmode = false;
+                    lispe->delegation->display_string_function = &lispe_displaystring;
                     lispe->releasing_trace_lock();
                     lispe->stop_trace();
                     line = L"";
@@ -2385,10 +2388,19 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         return;
     }
 
+    
     editor->current_line_debugger = current_line;
     editor->current_file_debugger = lisp->delegation->i_current_file;
     
     displaying_current_lines(lisp, lisp->delegation->i_current_file, current_line, editor);
+
+    if (editor->output_string != "") {
+        cout << "----------------------------------------" << endl;
+        cout << m_blue << editor->output_string << m_current << endl;
+        cout << "----------------------------------------" << endl;
+        editor->output_string = "";
+    }
+
     display_variables(lisp, instructions, editor, false);
     
     cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
@@ -2411,9 +2423,15 @@ void local_readfromkeyboard(string& code, void* o) {
     code = editor->input_string;
 }
 
+void local_display(string& code, void* o) {
+    lispe_editor* editor = (lispe_editor*)o;
+    editor->output_string += code;
+}
+
 //This is the debugger thread
 void debuggerthread(lispe_editor* call) {
     call->lispe->delegation->reading_string_function = local_readfromkeyboard;
+    call->lispe->delegation->display_string_function = local_display;
     call->lispe->delegation->reading_string_function_object = (void*)call;
     call->lispe->set_debug_function(debug_function_lispe, call);
     cout << m_red;

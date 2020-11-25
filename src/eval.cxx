@@ -2394,9 +2394,11 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_print: {
+                string val;
                 for (long i = 1; i < listsize; i++) {
                     element = liste[i]->eval(lisp);
-                    std::cout << element->toString(lisp);
+                    val = element->toString(lisp);
+                    lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
                     _releasing(element);
                 }
                 if (lisp->isThread)
@@ -2404,14 +2406,21 @@ Element* List::eval(LispE* lisp) {
                 return emptyatom_;
             }
             case l_println: {
+                string val;
                 for (long i = 1; i < listsize; i++) {
                     if (i != 1)
-                        std::cout << " ";
+                        val = " ";
                     element = liste[i]->eval(lisp);
-                    std::cout << element->toString(lisp);
+                    val += element->toString(lisp);
+                    lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
                     _releasing(element);
                 }
-                std::cout << std::endl;
+#ifdef WIN32
+                val = "\r";
+#else
+                val = "\n";
+#endif
+                lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
                 if (lisp->isThread)
                     std::cout.flush();
                 return emptyatom_;

@@ -126,6 +126,7 @@ public:
     map<long, map<long, string> > listing;
 
     reading_string reading_string_function;
+    reading_string display_string_function;
     void* reading_string_function_object;
     
     Element* _BOOLEANS[2];

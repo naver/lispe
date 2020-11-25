@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.25.18.25";
+static std::string version = "1.2020.11.25.18.57";
 string LispVersion() {
     return version;
 }
@@ -42,13 +42,18 @@ List* Stackelement::atomes(LispE* lisp) {
 }
 
 //------------------------------------------------------------
-void readfromkeyboard(string& code, void*) {
+void lispe_readfromkeyboard(string& code, void*) {
     getline(std::cin, code);
+}
+
+void lispe_displaystring(string& code, void*) {
+    cout << code;
 }
 //------------------------------------------------------------
 
 Delegation::Delegation() {
-    reading_string_function = &readfromkeyboard;
+    reading_string_function = &lispe_readfromkeyboard;
+    display_string_function = &lispe_displaystring;
     reading_string_function_object = NULL;
     
     add_to_listing = false;
@@ -1533,6 +1538,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 
