@@ -325,7 +325,7 @@ public:
     
   
     inline void set_current_line(long l, long f) {
-        delegation->current_line = l;
+        delegation->i_current_line = l;
         delegation->i_current_file = f;
     }
     
@@ -412,6 +412,7 @@ public:
     }
     
     void set_debug_function (lispe_debug_function ldf, void* o) {
+        delegation->add_to_listing = true;
         delegation->debugfunction = ldf;
         delegation->debugobject = o;
     }

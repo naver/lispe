@@ -155,7 +155,7 @@ public:
     void* debugobject;
 
     long max_stack_size;
-    long current_line;
+    long i_current_line;
     long i_current_file;
     short stop_execution;
 
@@ -335,7 +335,7 @@ public:
             }
         }
         try {
-            if (breakpoints.at(i_current_file).at(current_line) == true) {
+            if (breakpoints.at(i_current_file).at(i_current_line) == true) {
                 next_stop = false;
                 if (debugfunction != NULL) {
                     (*debugfunction)(lisp, e, debugobject);

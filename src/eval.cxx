@@ -1063,7 +1063,7 @@ void LispE::display_trace(List* e) {
         if (!activate_on_breakpoints(e)) {
             long nb = stackSize();
             string space(nb, ' ');
-            cout << "(" << delegation->current_line << ") " << nb << ":" << space << e->toString(this) << endl;
+            cout << "(" << delegation->i_current_line << ") " << nb << ":" << space << e->toString(this) << endl;
         }
     }
 }
@@ -1084,6 +1084,7 @@ Element* Instruction::eval(LispE* lisp) {
 //------------------------------------------------------------------------------
 Element* LispE::eval(string code) {
     long garbage_size = garbages.size();
+    bool add = delegation->add_to_listing;
     delegation->add_to_listing = false;
     
     //First we compile it, some elements will be stored in the garbage
@@ -1102,9 +1103,11 @@ Element* LispE::eval(string code) {
     catch (Error* err) {
         if (!locked)
             unlock();
-        e = err;        
+        e = err;
     }
-    
+
+    delegation->add_to_listing = add;
+
     //If nothing has been added to the garbage collector, we return the obtained value.
     if (garbage_size == garbages.size())
         return e;
@@ -2913,6 +2916,7 @@ Element* Listcallfunction::eval(LispE* lisp) {
         char tr = debug_next;
         short label = function->index(0)->label();
         if (label == l_defun || label == l_defpat) {
+            lisp->display_trace(this);
             if (lisp->trace == debug_inside_function)
                 lisp->stop_at_next_line(debug_next);
             else {

@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.24.17.05";
+static std::string version = "1.2020.11.25.10.30";
 string LispVersion() {
     return version;
 }
@@ -44,7 +44,7 @@ List* Stackelement::atomes(LispE* lisp) {
 //------------------------------------------------------------
 
 Delegation::Delegation() {
-    add_to_listing = true;
+    add_to_listing = false;
     stop_execution = 0;
     allfiles["main"] = 0;
     allfiles_names[0] = "main";
@@ -52,7 +52,7 @@ Delegation::Delegation() {
     debugobject = NULL;
     next_stop = false;
     max_stack_size = 20000;
-    current_line = -1;
+    i_current_line = -1;
     i_current_file = -1;
 #ifdef UNIX
     const rlim_t kStackSize = 32 * 1024 * 1024;   // min stack size = 32 MB
@@ -1235,7 +1235,7 @@ Element* LispE::load(string pathname) {
     }
     catch (const std::out_of_range& oor) {}
     
-    delegation->current_line = 0;
+    delegation->i_current_line = 0;
     std::ifstream f(pathname.c_str(),std::ios::in|std::ios::binary);
     if (f.fail()) {
         string err = "Unknown file: ";
@@ -1276,15 +1276,15 @@ Element* LispE::compile(string& code) {
     long index;
     switch (retour) {
         case e_error_brace:
-            delegation->current_line = line_error;
+            delegation->i_current_line = line_error;
             throw new Error("Error: Braces do not balance");
         case e_error_parenthesis:
-            delegation->current_line = line_error;
+            delegation->i_current_line = line_error;
             throw new Error("Error: parentheses do not balance");
         case e_error_string:
-            delegation->current_line = 1;
+            delegation->i_current_line = 1;
             if (parse.lines.size())
-                delegation->current_line = parse.lines.back();
+                delegation->i_current_line = parse.lines.back();
             throw new Error("Error: missing end of string");
         default:
             index = 0;
@@ -1294,9 +1294,9 @@ Element* LispE::compile(string& code) {
         abstractSyntaxTree(&courant, parse, index);
     }
     catch(Error* err) {
-        delegation->current_line = 1;
+        delegation->i_current_line = 1;
         if (parse.lines.size())
-            delegation->current_line = parse.lines.back();
+            delegation->i_current_line = parse.lines.back();
         return err;
     }
         
@@ -1323,17 +1323,17 @@ Element* LispE::extension(string code, Element* etendre) {
     switch (retour) {
         case e_error_brace:
             etendre->release();
-            delegation->current_line = line_error;
+            delegation->i_current_line = line_error;
             throw new Error("Error: Braces do not balance");
         case e_error_parenthesis:
             etendre->release();
-            delegation->current_line = line_error;
+            delegation->i_current_line = line_error;
             throw new Error("Error: parentheses do not balance");
         case e_error_string:
             etendre->release();
-            delegation->current_line = 1;
+            delegation->i_current_line = 1;
             if (parse.lines.size())
-                delegation->current_line = parse.lines.back();
+                delegation->i_current_line = parse.lines.back();
             throw new Error("Error: missing end of string");
         default:
             current_list = new List;
@@ -1354,7 +1354,7 @@ Element* LispE::extension(string code, Element* etendre) {
 }
 
 Element* LispE::execute(string code) {
-    delegation->current_line = 0;
+    delegation->i_current_line = 0;
     delegation->i_current_file = 0;
     clearStop();
     try {
@@ -1366,7 +1366,7 @@ Element* LispE::execute(string code) {
 }
 
 Element* LispE::execute(string code, string pathname) {
-    delegation->current_line = 0;
+    delegation->i_current_line = 0;
     delegation->i_current_file = 0;
     clearStop();
     if (pathname != "") {
@@ -1387,7 +1387,7 @@ Element* LispE::execute(string code, string pathname) {
 }
 
 void LispE::set_pathname(string pathname) {
-    delegation->current_line = 0;
+    delegation->i_current_line = 0;
     delegation->i_current_file = 0;
     clearStop();
     if (pathname != "") {

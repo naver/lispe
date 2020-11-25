@@ -107,13 +107,14 @@ class lispe_editor : public jag_editor {
     long lastline;
     bool editmode;
     
-    string current_code;
 
     
 public:
     
     LispE* lispe;
+    string current_code;
     long current_line_debugger;
+    long current_file_debugger;
     bool debugmode;
 
     lispe_editor() {
@@ -130,7 +131,7 @@ public:
     
     bool checkbreakpoint() {
         try {
-            return breakpoints.at(lispe->delegation->i_current_file).at(lispe->delegation->current_line);
+            return breakpoints.at(lispe->delegation->i_current_file).at(lispe->delegation->i_current_line);
         }
         catch(const std::out_of_range& oor) {
             return false;
@@ -180,9 +181,11 @@ public:
         }
         bool add = false;
         
-        parse.clear();
+        bool addlisting = lispe->delegation->add_to_listing;
         lispe->delegation->add_to_listing = false;
+        parse.clear();
         lispe->segmenting(line, parse);
+        lispe->delegation->add_to_listing = addlisting;
         
         long left, right = -1;
         for (long isegment = parse.tokens.size() - 1, ipos = parse.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
@@ -1104,6 +1107,7 @@ public:
                 return pos;
             case cmd_debug:
                 current_line_debugger = -1;
+                current_file_debugger = -1;
                 addcommandline(line);
                 if (v.size() == 1) {
                     if (isempty(current_code))
@@ -2042,6 +2046,7 @@ public:
                 
                 if (buff == ">") {
                     current_line_debugger = -1;
+                    current_file_debugger = -1;
                     lispe->stop_at_next_line(debug_goto);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
@@ -2250,13 +2255,15 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     cout << endl << m_current;
     lispe_editor* editor = (lispe_editor*)o;
     
-    long current_line = lisp->delegation->current_line;
-    if (editor->current_line_debugger == current_line) {
+    long current_line = lisp->delegation->i_current_line;
+    if (editor->current_line_debugger == current_line && editor->current_file_debugger == lisp->delegation->i_current_file) {
         lisp->delegation->next_stop = true;
         return;
     }
     
     editor->current_line_debugger = current_line;
+    editor->current_file_debugger = lisp->delegation->i_current_file;
+    
     long line =  current_line - 15;
     if (line < 1)
         line = 1;
@@ -2274,7 +2281,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
             cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
     }
     cout << endl;
-
+    
     string thevalue = instructions->toString(lisp);
     if (thevalue.size() > 64) {
         thevalue = thevalue.substr(0,64);
@@ -2450,16 +2457,36 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
 #ifdef DEBUG
 //Minimale version without the internal editor
 int main(int argc, char *argv[]) {
-    LispE lisp;
-    Element* e;
     
     if (argc == 2) {
-        string fichier = argv[1];
-        e = lisp.load(fichier);
-        std::cout << e->toString(&lisp) << std::endl;
-        e->release();
+        string pathname = argv[1];
+        JAGEDITOR = new lispe_editor();
+        lispe_editor* call = (lispe_editor*)JAGEDITOR;
+        call->lispe = new LispE;
+        std::ifstream f(pathname.c_str(),std::ios::in|std::ios::binary);
+        if (f.fail()) {
+            string err = "Unknown file: ";
+            err += pathname;
+            cerr << err << endl;
+            exit(-1);
+        }
+
+        call->current_code = "";
+        string ln;
+        while (!f.eof()) {
+            getline(f, ln);
+            call->current_code += ln + "\n";
+        }
+
+        call->lispe->set_pathname(argv[1]);
+        //We initialize the breakpoints and the trace mode
+        call->lispe->stop_at_next_line(debug_next);
+        debuggerthread(call);
         return 0;
     }
+
+    LispE lisp;
+    Element* e;
 
     string code;
 
