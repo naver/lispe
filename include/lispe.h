@@ -290,6 +290,7 @@ public:
         delegation->next_stop = true;
     }
     
+    void add_pathname(string pathname);
     void set_pathname(string pathname);
     
     void add_to_listing(long l, string& e) {
@@ -335,6 +336,15 @@ public:
     
     long id_file(string pathname) {
         return delegation->id_file(pathname);
+    }
+    
+    inline string name_file(long i) {
+        try {
+            return delegation->allfiles_names.at(i);
+        }
+        catch(const std::out_of_range& oor) {
+            return "";
+        }
     }
     
     inline bool activate_on_breakpoints(List* e) {

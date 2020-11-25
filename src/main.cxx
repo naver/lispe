@@ -97,8 +97,9 @@ class lispe_editor : public jag_editor {
 
     std::thread* tid;
     
-    unordered_map<long, unordered_map<long, bool> > breakpoints;
-    
+    unordered_map<string, unordered_map<long, bool> > editor_breakpoints;
+    //unordered_map<long, unordered_map<long, bool> > breakpoints;
+
     vector<string> displaying;
     
     string historyfilename;
@@ -129,15 +130,6 @@ public:
         lastline = 0;
         lispe = NULL;
         tid = NULL;
-    }
-    
-    bool checkbreakpoint() {
-        try {
-            return breakpoints.at(lispe->delegation->i_current_file).at(lispe->delegation->i_current_line);
-        }
-        catch(const std::out_of_range& oor) {
-            return false;
-        }
     }
     
     void LispSetCode(string& c) {
@@ -446,15 +438,12 @@ public:
     //Cursor movements...
     //------------------------------------------------------------------------------------------------
     string prefixstring(long n) {
-        if (breakpoints.size() && lispe != NULL) {
-            long idfile = lispe->id_file(thecurrentfilename);
-            if (idfile != -1) {
-                try {
-                    if (breakpoints.at(idfile).at(n))
-                        return "^^";
-                }
-                catch(const std::out_of_range& oor) {}
+        if (editor_breakpoints.size() && lispe != NULL) {
+            try {
+                if (editor_breakpoints.at(thecurrentfilename).at(n))
+                    return "^^";
             }
+            catch(const std::out_of_range& oor) {}
         }
         return prefix;
     }
@@ -1121,13 +1110,25 @@ public:
                     lispe = new LispE;
                     lispe->arguments(arguments);
                     lispe->set_pathname(thecurrentfilename);
+                    for (i = 0; i < ifilenames.size(); i++) {
+                        if (ifilenames[i] == thecurrentfilename)
+                            continue;
+                        lispe->add_pathname(ifilenames[i]);
+                    }
+                    
                     //We initialize the breakpoints and the trace mode
-                    if (breakpoints.size()) {
-                        lispe->delegation->breakpoints = breakpoints;
+                    if (editor_breakpoints.size()) {
+                        for (auto& a: editor_breakpoints) {
+                            long idfile = lispe->id_file(a.first);
+                            for (auto& e: editor_breakpoints[a.first])
+                                lispe->delegation->breakpoints[idfile][e.first] = true;
+                        }
+                        
                         lispe->stop_at_next_line(debug_goto);
                     }
                     else
                         lispe->stop_at_next_line(debug_next);
+                    
                     line = L"";
                     editmode = false;
                     debugmode = true;
@@ -1468,7 +1469,7 @@ public:
                 lispe = new LispE;
                 lispe->arguments(arguments);
                 lispe->set_pathname(thecurrentfilename);
-                breakpoints.clear();
+                editor_breakpoints.clear();
                 pos = 0;
                 return pos;
         }
@@ -1843,16 +1844,12 @@ public:
         switch ((uchar)buff[0]) {
             case 2:  //ctrl-b, adding breakpoints
                 if (emode() && lispe != NULL) {
-                    long idfile = lispe->id_file(thecurrentfilename);
-                    if (idfile == -1)
-                        return true;
                     long idline = lines.numeros[pos];
-                    
                     try {
-                        breakpoints.at(idfile).at(idline) = 1 - breakpoints.at(idfile).at(idline);
+                        editor_breakpoints.at(thecurrentfilename).at(idline) = 1 - editor_breakpoints.at(thecurrentfilename).at(idline);
                     }
                     catch(const std::out_of_range& oor) {
-                        breakpoints[idfile][idline] = true;
+                        editor_breakpoints[thecurrentfilename][idline] = true;
                     }
 
                     cout << back << m_dore << prefixstring(idline) << m_current;
@@ -2048,14 +2045,18 @@ public:
                 
                 if (buff == left) {
                     //Adding or removing breakpoints
+                    string file_name = lispe->name_file(current_file_debugger);
                     try {
-                        breakpoints.at(current_file_debugger).at(current_line_debugger) =
-                            1 - breakpoints.at(current_file_debugger).at(current_line_debugger);
+                        editor_breakpoints.at(file_name).at(current_line_debugger) =
+                            1 - editor_breakpoints.at(file_name).at(current_line_debugger);
+                        lispe->delegation->breakpoints[current_file_debugger][current_line_debugger] =
+                            1 - lispe->delegation->breakpoints[current_file_debugger][current_line_debugger];
                     }
                     catch(const std::out_of_range& oor) {
-                        breakpoints[current_file_debugger][current_line_debugger] = true;
+                        editor_breakpoints[file_name][current_line_debugger] = true;
+                        lispe->delegation->breakpoints[current_file_debugger][current_line_debugger] = true;
                     }
-                    lispe->delegation->breakpoints = breakpoints;
+                    
                     displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
                     cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
                     continue;

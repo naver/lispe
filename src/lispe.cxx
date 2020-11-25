@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.25.12.35";
+static std::string version = "1.2020.11.25.14.20";
 string LispVersion() {
     return version;
 }
@@ -1397,6 +1397,15 @@ void LispE::set_pathname(string pathname) {
     current_path();
 }
 
+void LispE::add_pathname(string pathname) {
+    long i_file = delegation->i_current_file;
+    if (pathname != "") {
+        pathname = NormalizePathname(pathname);
+        delegation->updatepathname(pathname);
+    }
+    delegation->i_current_file = i_file;
+}
+
 //------------------------------------------------------------------------------------------
 // Macro section
 //------------------------------------------------------------------------------------------
@@ -1510,6 +1519,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 
