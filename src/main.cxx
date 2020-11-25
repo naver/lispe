@@ -83,7 +83,6 @@ void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor,
 // The main editor class for handling LispE expressions and debugger
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
-
 class lispe_editor : public jag_editor {
     Tokenizer parse;
     
@@ -108,6 +107,8 @@ class lispe_editor : public jag_editor {
     long pcursor;
     long idCode;
     long lastline;
+    
+    
     bool editmode;
     
 
@@ -118,9 +119,12 @@ public:
     string current_code;
     long current_line_debugger;
     long current_file_debugger;
+    std::atomic<bool> reading;
+    string input_string;
     bool debugmode;
 
     lispe_editor() {
+        reading = false;
         current_line_debugger = -1;
         debugmode = false;
         currentfileid = -1;
@@ -1948,6 +1952,39 @@ public:
         return false;
     }
     
+    void reading_a_string(string& buff) {
+        static char m_deletechar[] = { 27, 91, '1', 'P', 0 };
+        static char m_left[] = { 27, '[', '1', 68, 0 };
+#ifdef WIN32
+        static char m_delback = 8;
+        static char m_delbackbis = 8;
+#else
+        static char  m_delback = 127;
+        static char m_delbackbis = 15;
+#endif
+
+        cout << buff;
+        cout.flush();
+        input_string = buff;
+        while (true) {
+            buff = getch();
+            if (buff[0] == m_delback || buff[0] == m_delbackbis) {
+                if (!input_string.size())
+                    continue;
+                cout << m_left << m_deletechar;
+                input_string = input_string.substr(0, input_string.size()-1);
+                continue;
+            }
+            
+            cout << buff;
+            cout.flush();
+            if (buff[0] == 10 || buff[0] == 13)
+                break;
+            input_string += buff;
+        }
+        lispe->releasing_trace_lock();
+    }
+    
     void launchterminal(char noinit) {
         clearscreen();
 
@@ -2021,6 +2058,14 @@ public:
         
         while (1) {
             buff = getch();
+            
+            //This specific section below is used to
+            //read a string a pass it to "input" in the
+            //debugger thread...
+            if (reading) {
+                reading_a_string(buff);
+                continue;
+            }
             
             if (debugmode) {
                 if (buff == "$") {
@@ -2351,8 +2396,25 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     lisp->blocking_trace_lock();
 }
 
+//We use this version for input to deport input to main thread...
+void local_readfromkeyboard(string& code, void* o) {
+    lispe_editor* editor = (lispe_editor*)o;
+    //there is a section in launchterminal, which tests reading
+    //to detect if we are dealing with a keyboard input...
+    //We need this specific code to avoid a conflict between
+    //input from within a thread and getch in the main thread...
+    editor->reading = true;
+    cout << "> ";
+    cout.flush();
+    editor->lispe->blocking_trace_lock();
+    editor->reading = false;
+    code = editor->input_string;
+}
+
 //This is the debugger thread
 void debuggerthread(lispe_editor* call) {
+    call->lispe->delegation->reading_string_function = local_readfromkeyboard;
+    call->lispe->delegation->reading_string_function_object = (void*)call;
     call->lispe->set_debug_function(debug_function_lispe, call);
     cout << m_red;
     call->runcode();
@@ -2363,6 +2425,7 @@ void debuggerthread(lispe_editor* call) {
     call->displaygo(true);
     cout.flush();
 }
+
 //-------------------------------------------------------------------------------------------
 
 void execute_pipe(string& code, string& codeinitial, string& codefinal, string& rgx, bool with_file) {

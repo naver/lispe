@@ -87,6 +87,8 @@ public:
 //It basically stores everything that is common to all threads
 //and won't budge after loading or compilation
 //The only exception is when creating new atoms
+typedef void (*reading_string)(string&, void*);
+
 class Delegation {
 public:
     BlockThread trace_lock;
@@ -123,6 +125,9 @@ public:
     unordered_map<long, unordered_map<long, bool> > breakpoints;
     map<long, map<long, string> > listing;
 
+    reading_string reading_string_function;
+    void* reading_string_function_object;
+    
     Element* _BOOLEANS[2];
     
     Atom* _ERROR;

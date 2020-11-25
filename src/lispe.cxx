@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.25.16.12";
+static std::string version = "1.2020.11.25.18.25";
 string LispVersion() {
     return version;
 }
@@ -42,8 +42,15 @@ List* Stackelement::atomes(LispE* lisp) {
 }
 
 //------------------------------------------------------------
+void readfromkeyboard(string& code, void*) {
+    getline(std::cin, code);
+}
+//------------------------------------------------------------
 
 Delegation::Delegation() {
+    reading_string_function = &readfromkeyboard;
+    reading_string_function_object = NULL;
+    
     add_to_listing = false;
     stop_execution = 0;
     allfiles["main"] = 0;
@@ -86,6 +93,8 @@ void moduleSocket(LispE* lisp);
 //------------------------------------------------------------
 //We initialize our structures
 void Delegation::initialisation(LispE* lisp) {
+    
+    reading_string_function_object = lisp;
     
     //These are not exactly instruction, but we need to set their arity nonetheless
     //since they belong to the List::eval method
@@ -1524,6 +1533,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 

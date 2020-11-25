@@ -1061,9 +1061,11 @@ void LispE::display_trace(List* e) {
             delegation->next_stop = false;
         
         if (!activate_on_breakpoints(e)) {
-            long nb = stackSize();
-            string space(nb, ' ');
-            cout << "(" << delegation->i_current_line << ") " << nb << ":" << space << e->toString(this) << endl;
+            if (delegation->debugfunction == NULL) {
+                long nb = stackSize();
+                string space(nb, ' ');
+                cout << "(" << delegation->i_current_line << ") " << nb << ":" << space << e->toString(this) << endl;
+            }
         }
     }
 }
@@ -2492,7 +2494,7 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             case l_input: {
                 string code;
-                getline(std::cin, code);
+                lisp->delegation->reading_string_function(code, lisp->delegation->reading_string_function_object);
                 return lisp->provideString(code);
             }
             case l_pipe:

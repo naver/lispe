@@ -943,7 +943,7 @@ void jag_editor::displaygo(bool full) {
             break;
         case x_debug:
             clearline();
-            cout << back << m_gray << "$:end !:stop >:go %:variables: " << m_current << convert(line);
+            cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables:" << m_current << convert(line);
             break;
         default:
             if (full) {
