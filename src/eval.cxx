@@ -2098,6 +2098,11 @@ Element* List::eval(LispE* lisp) {
                 }
                 return first_element;
             }
+            case l_unique:
+                first_element = liste[1]->eval(lisp);
+                element = first_element->unique(lisp);
+                first_element->release();
+                return element;
             case l_pop: {
                 first_element = liste[1]->eval(lisp);
                 if (first_element->type == t_dictionary) {

@@ -55,7 +55,7 @@ typedef enum {
     l_and, l_or, l_xor, l_not, l_cond, l_eq, l_neq,
     
     //mutable operations
-    l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_push,l_insert,
+    l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_push, l_insert, l_unique,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify,
@@ -408,6 +408,10 @@ public:
     
     virtual Element* last_element(LispE* lisp);
     virtual Element* last() {
+        return this;
+    }
+    
+    virtual Element* unique(LispE* lisp) {
         return this;
     }
     
@@ -1414,6 +1418,8 @@ public:
         return l;
     }
     
+    Element* unique(LispE* lisp);
+
     virtual Element* copying(bool duplicate = true) {
         if (status == s_destructible)
             return this;

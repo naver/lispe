@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.25.14.20";
+static std::string version = "1.2020.11.25.15.14";
 string LispVersion() {
     return version;
 }
@@ -154,6 +154,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_input, "input", P_ONE);
     set_instruction(l_insert, "insert", P_FOUR);
     set_instruction(l_reverse, "reverse", P_TWO);
+    set_instruction(l_in, "in", P_THREE|P_FOUR);
     set_instruction(l_irange, "irange", P_THREE);
     set_instruction(l_join, "join", P_TWO | P_THREE);
     set_instruction(l_key, "key", P_ONE|P_THREE|P_FOUR);
@@ -214,7 +215,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_scanl1, "scanl1", P_THREE);
     set_instruction(l_scanr, "scanr", P_FOUR);
     set_instruction(l_scanr1, "scanr1", P_THREE);
-    set_instruction(l_in, "in", P_THREE|P_FOUR);
     set_instruction(l_search, "find", P_THREE|P_FOUR);
     set_instruction(l_searchall, "findall", P_THREE|P_FOUR);
     set_instruction(l_select, "select", P_ATLEASTTWO);
@@ -235,6 +235,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_trace, "trace", P_ONE | P_TWO);
     set_instruction(l_trigger, "trigger", P_TWO);
     set_instruction(l_type, "type", P_TWO);
+    set_instruction(l_unique, "unique", P_TWO);
     set_instruction(l_use, "use", P_TWO);
     set_instruction(l_values, "values", P_TWO);
     set_instruction(l_wait, "wait", P_ONE);
@@ -1519,6 +1520,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

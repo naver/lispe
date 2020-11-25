@@ -1,0 +1,3077 @@
+{
+        "goal": {
+            "taxi": {
+                "info": {
+                    "leaveAt": "15:15"
+                }, 
+                "reqt": [
+                    "car type", 
+                    "phone"
+                ], 
+                "fail_info": {}
+            }, 
+            "police": {}, 
+            "hospital": {}, 
+            "hotel": {
+                "info": {
+                    "pricerange": "expensive", 
+                    "area": "centre", 
+                    "type": "hotel", 
+                    "parking": "yes"
+                }, 
+                "fail_info": {
+                    "pricerange": "expensive", 
+                    "area": "centre", 
+                    "type": "guesthouse", 
+                    "parking": "yes"
+                }, 
+                "book": {
+                    "people": "4", 
+                    "day": "monday", 
+                    "invalid": false, 
+                    "stay": "3"
+                }, 
+                "fail_book": {}
+            }, 
+            "topic": {
+                "taxi": false, 
+                "police": false, 
+                "restaurant": false, 
+                "hospital": false, 
+                "hotel": false, 
+                "general": false, 
+                "attraction": false, 
+                "train": false, 
+                "booking": false
+            }, 
+            "attraction": {}, 
+            "train": {}, 
+            "message": [
+                "You are traveling to Cambridge and looking forward to try local restaurants", 
+                "You are looking for a <span class='emphasis'>restaurant</span>. The restaurant should be in the <span class='emphasis'>expensive</span> price range and should be in the <span class='emphasis'>centre</span>", 
+                "Make sure you get <span class='emphasis'>phone number</span>", 
+                "You are also looking for a <span class='emphasis'>place to stay</span>. The hotel should be in the <span class='emphasis'>same price range as the restaurant</span> and should be in the type of <span class='emphasis'>guesthouse</span>", 
+                "The hotel should be <span class='emphasis'>in the same area as the restaurant</span> and should <span class='emphasis'>include free parking</span>", 
+                "If there is no such hotel, how about one that is in <span class='emphasis'>the type of hotel</span>", 
+                "Once you find the <span class='emphasis'>hotel</span> you want to book it for <span class='emphasis'>4 people</span> and <span class='emphasis'>3 nights</span> starting from <span class='emphasis'>monday</span>", 
+                "Make sure you get the <span class='emphasis'>reference number</span>", 
+                "You also want to book a <span class='emphasis'>taxi</span> to commute between the two places", 
+                "You want to leave the <span class='emphasis'>hotel</span> by <span class='emphasis'>15:15</span>", 
+                "Make sure you get <span class='emphasis'>contact number</span> and <span class='emphasis'>car type</span>"
+            ], 
+            "restaurant": {
+                "info": {
+                    "pricerange": "expensive", 
+                    "area": "centre"
+                }, 
+                "reqt": [
+                    "phone"
+                ], 
+                "fail_info": {}, 
+                "fail_book": {}
+            }
+        }, 
+        "log": [
+            {
+                "text": "I have a business luncheon this week and need a place to host, preferably in the centre of the city.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Area", 
+                            "centre"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Area", 
+                        "centre", 
+                        17, 
+                        17
+                    ]
+                ]
+            }, 
+            {
+                "text": "There are plenty of hotels and guesthouses that would do the trick in that area. Do you have a price range?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "time": ""
+                        }, 
+                        "semi": {
+                            "food": "", 
+                            "pricerange": "", 
+                            "name": "", 
+                            "area": ""
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "not mentioned", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "not mentioned", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "not mentioned"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Request": [
+                        [
+                            "Price", 
+                            "?"
+                        ]
+                    ], 
+                    "Hotel-Inform": [
+                        [
+                            "Choice", 
+                            "plenty of"
+                        ], 
+                        [
+                            "Type", 
+                            "hotels"
+                        ], 
+                        [
+                            "Type", 
+                            "guesthouses"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Choice", 
+                        "plenty of", 
+                        2, 
+                        3
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "hotels", 
+                        4, 
+                        4
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "guesthouses", 
+                        6, 
+                        6
+                    ]
+                ]
+            }, 
+            {
+                "text": "I'd like it to be expensive.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Price", 
+                            "expensive"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Price", 
+                        "expensive", 
+                        6, 
+                        6
+                    ]
+                ]
+            }, 
+            {
+                "text": "I've found 2 hotels that fit your criteria. One is called Gonville Hotel and the other is University Arms Hotel.", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "time": ""
+                        }, 
+                        "semi": {
+                            "food": "", 
+                            "pricerange": "", 
+                            "name": "", 
+                            "area": ""
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "not mentioned", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "not mentioned"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Name", 
+                            "Gonville Hotel"
+                        ], 
+                        [
+                            "Name", 
+                            "University Arms Hotel"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Name", 
+                        "Gonville Hotel", 
+                        13, 
+                        14
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Name", 
+                        "University Arms Hotel", 
+                        19, 
+                        21
+                    ]
+                ]
+            }, 
+            {
+                "text": "Excellent.  Can I get the phone number for the Gonville Hotel?  ", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Type", 
+                            "hotel"
+                        ], 
+                        [
+                            "Name", 
+                            "gonville hotel"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "hotel", 
+                        11, 
+                        11
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Name", 
+                        "gonville hotel", 
+                        10, 
+                        11
+                    ]
+                ]
+            }, 
+            {
+                "text": "Sure thing. Their phone number is \t01223366611 . Is there anything else I can help you with?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "time": ""
+                        }, 
+                        "semi": {
+                            "food": "", 
+                            "pricerange": "", 
+                            "name": "", 
+                            "area": ""
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "gonville hotel", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "not mentioned"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Phone", 
+                            "01223366611"
+                        ]
+                    ], 
+                    "general-reqmore": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Phone", 
+                        "01223366611", 
+                        7, 
+                        7
+                    ]
+                ]
+            }, 
+            {
+                "text": "I am looking for a restaurant that is in the centre of city and is expensive. Can you help me with that?", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Restaurant-Inform": [
+                        [
+                            "Price", 
+                            "expensive"
+                        ], 
+                        [
+                            "Area", 
+                            "centre"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Restaurant-Inform", 
+                        "Price", 
+                        "expensive", 
+                        15, 
+                        15
+                    ], 
+                    [
+                        "Restaurant-Inform", 
+                        "Area", 
+                        "centre", 
+                        10, 
+                        10
+                    ]
+                ]
+            }, 
+            {
+                "text": "I sure can.  If there is a specific type of food you are interested in that would help to narrow down the possibilities. ", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "time": ""
+                        }, 
+                        "semi": {
+                            "food": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "gonville hotel", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "not mentioned"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Restaurant-Request": [
+                        [
+                            "Food", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "I don't really care. It's for a business meeting so just need to make sure it's expensive so it's nice.", 
+                "metadata": {}, 
+                "dialog_act": {}, 
+                "span_info": []
+            }, 
+            {
+                "text": "The Cambridge Chop House would be my recommendation, would you like me to book it for you?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "time": ""
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "gonville hotel", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "not mentioned"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Restaurant-Select": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ], 
+                    "Booking-Inform": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ], 
+                    "Restaurant-Recommend": [
+                        [
+                            "Name", 
+                            "The Cambridge Chop House"
+                        ]
+                    ], 
+                    "Restaurant-Inform": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Restaurant-Recommend", 
+                        "Name", 
+                        "The Cambridge Chop House", 
+                        0, 
+                        3
+                    ]
+                ]
+            }, 
+            {
+                "text": "Yes, I also need the reference number.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Request": [
+                        [
+                            "Ref", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "First I'll need to know how many are in your party, and what day and time you'd like?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "time": ""
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "gonville hotel", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "not mentioned"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Booking-Request": [
+                        [
+                            "People", 
+                            "?"
+                        ], 
+                        [
+                            "Day", 
+                            "?"
+                        ], 
+                        [
+                            "Time", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "There are 4 people. I would like it to be on Monday and arrive by 15:15.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Restaurant-Inform": [
+                        [
+                            "Time", 
+                            "15:15"
+                        ], 
+                        [
+                            "Day", 
+                            "monday"
+                        ], 
+                        [
+                            "People", 
+                            "4"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Restaurant-Inform", 
+                        "Time", 
+                        "15:15", 
+                        16, 
+                        16
+                    ], 
+                    [
+                        "Restaurant-Inform", 
+                        "Day", 
+                        "monday", 
+                        12, 
+                        12
+                    ], 
+                    [
+                        "Restaurant-Inform", 
+                        "People", 
+                        "4", 
+                        2, 
+                        2
+                    ]
+                ]
+            }, 
+            {
+                "text": "I was able to book your table. Your reference number is FFFW4HLE.", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "gonville hotel", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "not mentioned"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Booking-Book": [
+                        [
+                            "Ref", 
+                            "FFFW4HLE"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Booking-Book", 
+                        "Ref", 
+                        "FFFW4HLE", 
+                        12, 
+                        12
+                    ]
+                ]
+            }, 
+            {
+                "text": "Great, I am also looking for an expensive range guesthouse in the same area.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Type", 
+                            "guesthouse"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "guesthouse", 
+                        10, 
+                        10
+                    ]
+                ]
+            }, 
+            {
+                "text": "No, we don't have any guesthouses that are expensive. ", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "not mentioned", 
+                            "area": "centre", 
+                            "parking": "not mentioned", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "guesthouse"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-NoOffer": [
+                        [
+                            "Type", 
+                            "guesthouses"
+                        ], 
+                        [
+                            "Price", 
+                            "expensive"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-NoOffer", 
+                        "Type", 
+                        "guesthouses", 
+                        7, 
+                        7
+                    ], 
+                    [
+                        "Hotel-NoOffer", 
+                        "Price", 
+                        "expensive", 
+                        10, 
+                        10
+                    ]
+                ]
+            }, 
+            {
+                "text": "I need a guesthouse that is in the same area as the restaurant, centre, and has free parking, too.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Parking", 
+                            "yes"
+                        ], 
+                        [
+                            "Area", 
+                            "centre"
+                        ]
+                    ], 
+                    "Restaurant-Inform": [
+                        [
+                            "Area", 
+                            "centre"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Area", 
+                        "centre", 
+                        14, 
+                        14
+                    ], 
+                    [
+                        "Restaurant-Inform", 
+                        "Area", 
+                        "centre", 
+                        14, 
+                        14
+                    ]
+                ]
+            }, 
+            {
+                "text": "I am sorry we have no guesthouse hotels in the centre of town. Would you prefer another location?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "not mentioned", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "guesthouse"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Request": [
+                        [
+                            "Area", 
+                            "?"
+                        ]
+                    ], 
+                    "Hotel-NoOffer": [
+                        [
+                            "Area", 
+                            "centre of town"
+                        ], 
+                        [
+                            "Type", 
+                            "guesthouse hotels"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-NoOffer", 
+                        "Area", 
+                        "centre of town", 
+                        10, 
+                        12
+                    ], 
+                    [
+                        "Hotel-NoOffer", 
+                        "Type", 
+                        "guesthouse hotels", 
+                        6, 
+                        7
+                    ]
+                ]
+            }, 
+            {
+                "text": "I needed it to be in that side. anyway thanks for your help", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "general-thank": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "Are you sure you would not prefer another side of town?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "not mentioned", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Request": [
+                        [
+                            "Area", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "Are there any hotels like that in that area?", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Type", 
+                            "hotel"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "hotel", 
+                        3, 
+                        3
+                    ]
+                ]
+            }, 
+            {
+                "text": "We have two guesthouses in centre that are on the cheap side. The alexander bed and breakfast has a 4 star rating. Would you like that one?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "not mentioned", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "not mentioned", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Select": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ], 
+                    "Hotel-Inform": [
+                        [
+                            "Choice", 
+                            "two"
+                        ], 
+                        [
+                            "Area", 
+                            "centre"
+                        ], 
+                        [
+                            "Type", 
+                            "guesthouses"
+                        ], 
+                        [
+                            "Name", 
+                            "The alexander bed and breakfast"
+                        ], 
+                        [
+                            "Price", 
+                            "cheap side"
+                        ], 
+                        [
+                            "Stars", 
+                            "4"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Choice", 
+                        "two", 
+                        2, 
+                        2
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Area", 
+                        "centre", 
+                        5, 
+                        5
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "guesthouses", 
+                        3, 
+                        3
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Name", 
+                        "The alexander bed and breakfast", 
+                        13, 
+                        17
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Price", 
+                        "cheap side", 
+                        10, 
+                        11
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Stars", 
+                        "4", 
+                        20, 
+                        20
+                    ]
+                ]
+            }, 
+            {
+                "text": "Yes please just book that hotel for me.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Type", 
+                            "hotel"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "hotel", 
+                        5, 
+                        5
+                    ]
+                ]
+            }, 
+            {
+                "text": "What day would you be arriving at the guesthouse?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "alexander bed and breakfast", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Booking-Request": [
+                        [
+                            "Day", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "I get into town Monday. Is the guesthouse expensive?", 
+                "metadata": {}, 
+                "dialog_act": {}, 
+                "span_info": []
+            }, 
+            {
+                "text": "It is priced cheap. Would you like a different price range?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "monday", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "alexander bed and breakfast", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "none", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Request": [
+                        [
+                            "Area", 
+                            "?"
+                        ]
+                    ], 
+                    "Hotel-Inform": [
+                        [
+                            "Price", 
+                            "cheap"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Price", 
+                        "cheap", 
+                        3, 
+                        3
+                    ]
+                ]
+            }, 
+            {
+                "text": "No the price range is fine. Just make sure it is in the same area as the restaurant.", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Restaurant-Inform": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "Great, how many people do you want to book at Guesthouse and for how many days?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "monday", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "alexander bed and breakfast", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "none", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Booking-Inform": [
+                        [
+                            "Name", 
+                            "Guesthouse"
+                        ]
+                    ], 
+                    "Booking-Request": [
+                        [
+                            "Stay", 
+                            "?"
+                        ], 
+                        [
+                            "People", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Booking-Inform", 
+                        "Name", 
+                        "Guesthouse", 
+                        11, 
+                        11
+                    ]
+                ]
+            }, 
+            {
+                "text": "Sorry, I actually want an expensive hotel with parking in that same area", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Type", 
+                            "hotel"
+                        ], 
+                        [
+                            "Price", 
+                            "expensive"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "hotel", 
+                        7, 
+                        7
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Price", 
+                        "expensive", 
+                        6, 
+                        6
+                    ]
+                ]
+            }, 
+            {
+                "text": "There is one option. It is the university arms hotel.", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [], 
+                            "people": "", 
+                            "day": "monday", 
+                            "stay": ""
+                        }, 
+                        "semi": {
+                            "name": "not mentioned", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Name", 
+                            "the university arms hotel"
+                        ], 
+                        [
+                            "Choice", 
+                            "one"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Name", 
+                        "the university arms hotel", 
+                        7, 
+                        10
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Choice", 
+                        "one", 
+                        2, 
+                        2
+                    ]
+                ]
+            }, 
+            {
+                "text": "Okay, I want a reservation for 4 people starting monday, for 3 nights total", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Stay", 
+                            "3"
+                        ], 
+                        [
+                            "Day", 
+                            "monday"
+                        ], 
+                        [
+                            "People", 
+                            "4"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Stay", 
+                        "3", 
+                        13, 
+                        13
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "Day", 
+                        "monday", 
+                        10, 
+                        10
+                    ], 
+                    [
+                        "Hotel-Inform", 
+                        "People", 
+                        "4", 
+                        7, 
+                        7
+                    ]
+                ]
+            }, 
+            {
+                "text": "You are booked. Your reference number is PWFVG1HP", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "departure": "", 
+                            "arriveBy": ""
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "university arms hotel", 
+                                    "reference": "PWFVG1HP"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "stay": "3"
+                        }, 
+                        "semi": {
+                            "name": "university arms hotel", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Booking-Book": [
+                        [
+                            "Ref", 
+                            "PWFVG1HP"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Booking-Book", 
+                        "Ref", 
+                        "PWFVG1HP", 
+                        8, 
+                        8
+                    ]
+                ]
+            }, 
+            {
+                "text": "Thanks. Now I will be needing a taxi please. I want to depart from the hotel", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Hotel-Inform": [
+                        [
+                            "Type", 
+                            "hotel"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Hotel-Inform", 
+                        "Type", 
+                        "hotel", 
+                        17, 
+                        17
+                    ]
+                ]
+            }, 
+            {
+                "text": "What time do you want to leave or arrive by and what is your destination", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "leaveAt": "not mentioned", 
+                            "destination": "not mentioned", 
+                            "departure": "university arms hotel", 
+                            "arriveBy": "not mentioned"
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "university arms hotel", 
+                                    "reference": "PWFVG1HP"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "stay": "3"
+                        }, 
+                        "semi": {
+                            "name": "university arms hotel", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Taxi-Request": [
+                        [
+                            "Leave", 
+                            "?"
+                        ], 
+                        [
+                            "Arrive", 
+                            "?"
+                        ], 
+                        [
+                            "Dest", 
+                            "?"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "I want to leave at 15:15 and go to the cambridge chop house", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "Taxi-Inform": [
+                        [
+                            "Leave", 
+                            "15:15"
+                        ], 
+                        [
+                            "Dest", 
+                            "the cambridge chop house"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Taxi-Inform", 
+                        "Leave", 
+                        "15:15", 
+                        5, 
+                        5
+                    ], 
+                    [
+                        "Taxi-Inform", 
+                        "Dest", 
+                        "the cambridge chop house", 
+                        9, 
+                        12
+                    ]
+                ]
+            }, 
+            {
+                "text": "Booking completed! Booked red lexus and their contact number is 07732008521. \n", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "phone": "07732008521", 
+                                    "type": "red lexus"
+                                }
+                            ]
+                        }, 
+                        "semi": {
+                            "leaveAt": "15:15", 
+                            "destination": "cambridge chop house", 
+                            "departure": "university arms hotel", 
+                            "arriveBy": "not mentioned"
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "university arms hotel", 
+                                    "reference": "PWFVG1HP"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "stay": "3"
+                        }, 
+                        "semi": {
+                            "name": "university arms hotel", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "Taxi-Inform": [
+                        [
+                            "Phone", 
+                            "07732008521"
+                        ], 
+                        [
+                            "Car", 
+                            "red lexus"
+                        ]
+                    ]
+                }, 
+                "span_info": [
+                    [
+                        "Taxi-Inform", 
+                        "Phone", 
+                        "07732008521", 
+                        11, 
+                        11
+                    ], 
+                    [
+                        "Taxi-Inform", 
+                        "Car", 
+                        "red lexus", 
+                        4, 
+                        5
+                    ]
+                ]
+            }, 
+            {
+                "text": "Thanks so much!", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "general-thank": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "Is there anything else I can do for you?", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "phone": "07732008521", 
+                                    "type": "red lexus"
+                                }
+                            ]
+                        }, 
+                        "semi": {
+                            "leaveAt": "15:15", 
+                            "destination": "cambridge chop house", 
+                            "departure": "university arms hotel", 
+                            "arriveBy": "not mentioned"
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "university arms hotel", 
+                                    "reference": "PWFVG1HP"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "stay": "3"
+                        }, 
+                        "semi": {
+                            "name": "university arms hotel", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "general-reqmore": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "No that is all I needed. Thanks!", 
+                "metadata": {}, 
+                "dialog_act": {
+                    "general-thank": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }, 
+            {
+                "text": "You're welcome! Have a good day!", 
+                "metadata": {
+                    "taxi": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "phone": "07732008521", 
+                                    "type": "red lexus"
+                                }
+                            ]
+                        }, 
+                        "semi": {
+                            "leaveAt": "15:15", 
+                            "destination": "cambridge chop house", 
+                            "departure": "university arms hotel", 
+                            "arriveBy": "not mentioned"
+                        }
+                    }, 
+                    "police": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {}
+                    }, 
+                    "restaurant": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "the cambridge chop house", 
+                                    "reference": "FFFW4HLE"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "time": "15:15"
+                        }, 
+                        "semi": {
+                            "food": "dontcare", 
+                            "pricerange": "expensive", 
+                            "name": "not mentioned", 
+                            "area": "centre"
+                        }
+                    }, 
+                    "bus": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }, 
+                    "hospital": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "department": ""
+                        }
+                    }, 
+                    "hotel": {
+                        "book": {
+                            "booked": [
+                                {
+                                    "name": "university arms hotel", 
+                                    "reference": "PWFVG1HP"
+                                }
+                            ], 
+                            "people": "4", 
+                            "day": "monday", 
+                            "stay": "3"
+                        }, 
+                        "semi": {
+                            "name": "university arms hotel", 
+                            "area": "centre", 
+                            "parking": "yes", 
+                            "pricerange": "expensive", 
+                            "stars": "none", 
+                            "internet": "not mentioned", 
+                            "type": "hotel"
+                        }
+                    }, 
+                    "attraction": {
+                        "book": {
+                            "booked": []
+                        }, 
+                        "semi": {
+                            "type": "not mentioned", 
+                            "name": "none", 
+                            "area": "none"
+                        }
+                    }, 
+                    "train": {
+                        "book": {
+                            "booked": [], 
+                            "people": ""
+                        }, 
+                        "semi": {
+                            "leaveAt": "", 
+                            "destination": "", 
+                            "day": "", 
+                            "arriveBy": "", 
+                            "departure": ""
+                        }
+                    }
+                }, 
+                "dialog_act": {
+                    "general-bye": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ], 
+                    "general-welcome": [
+                        [
+                            "none", 
+                            "none"
+                        ]
+                    ]
+                }, 
+                "span_info": []
+            }
+        ]
+    }

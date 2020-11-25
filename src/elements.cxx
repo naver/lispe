@@ -453,6 +453,25 @@ Element* List::insert(LispE* lisp, Element* e, long idx) {
     return l;
 }
 
+Element* List::unique(LispE* lisp) {
+    List* list = new List;
+    long i, j;
+    bool found;
+    list->append(liste[0]->copying(false));
+    for (i = 1; i < liste.size(); i++) {
+        found = true;
+        for (j = 0; j < list->liste.size(); j++) {
+            if (liste[i]->unify(lisp, list->liste[j], false)) {
+                found = false;
+                break;
+            }
+        }
+        if (found)
+            list->append(liste[i]->copying(false));
+    }
+    return list;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::thekeys(LispE* lisp) {
     return emptylist_;
