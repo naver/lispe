@@ -18,7 +18,7 @@ I based a large part of this work on the following article: [The Root of Lisp](h
 
 __LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.2-Data-Structures)
 
-Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/naver/lispe/wiki/8.-Shell)
+Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/naver/lispe/wiki/7.-Shell)
 
 Come and discover __LispE__: the __Lisp Elémentaire__.
 
