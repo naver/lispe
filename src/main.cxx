@@ -116,6 +116,7 @@ class lispe_editor : public jag_editor {
     
 public:
     ThreadLock lock;
+    ThreadLock printlock;
 
     LispE* lispe;
     LispE* master_lisp;
@@ -2496,7 +2497,10 @@ void local_readfromkeyboard(string& code, void* o) {
 
 void local_display(string& code, void* o) {
     lispe_editor* editor = (lispe_editor*)o;
+    bool is_thread = editor->lispe->checkforLock();
+    editor->printlock.locking(is_thread);
     editor->output_string += code;
+    editor->printlock.unlocking(is_thread);
 }
 
 //This is the debugger thread
