@@ -22,6 +22,9 @@ Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/nav
 
 Come and discover __LispE__: the __Lisp Elémentaire__.
 
+```
+Due to the lockdown, we have not been able to fully test the Windows version.
+```
 
 ## License
 
