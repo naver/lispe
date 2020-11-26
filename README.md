@@ -13,6 +13,7 @@ I based a large part of this work on the following article: [The Root of Lisp](h
 
 * The description of the language is available here: [Introduction to LispE](https://github.com/naver/lispe/wiki/1.-Introduction)
 * A help to the available functions is here: [LispE Language Description](https://github.com/naver/lispe/wiki/6.-Help)
+* The wiki index is here: [HOME](https://github.com/naver/lispe/wiki)
 
 
 __LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.2-Data-Structures)
