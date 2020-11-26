@@ -115,11 +115,14 @@ class lispe_editor : public jag_editor {
 
     
 public:
-    
+    ThreadLock lock;
+
     LispE* lispe;
+    LispE* master_lisp;
     string current_code;
     long current_line_debugger;
     long current_file_debugger;
+    long current_thread_id;
     std::atomic<bool> reading;
     string input_string;
     string output_string;
@@ -163,12 +166,18 @@ public:
     
     string coloringline(wstring& l) {
         string line = convert(l);
-        return coloringline(line);
+        return coloringline(line, false);
     }
     
-    string coloringline(string line) {
+    string coloringline(string line, bool thread) {
         if (line == "")
             return line;
+        
+        Tokenizer* segments = &parse;
+        if (thread)
+            segments = new Tokenizer;
+        else
+            segments->clear();
         
         string sub = line;
         s_trimleft(sub);
@@ -184,20 +193,19 @@ public:
             lispe->set_pathname(thecurrentfilename);
         }
         bool add = false;
-        
+
         bool addlisting = lispe->delegation->add_to_listing;
         lispe->delegation->add_to_listing = false;
-        parse.clear();
-        lispe->segmenting(line, parse);
+        lispe->segmenting(line, *segments);
         lispe->delegation->add_to_listing = addlisting;
         
         long left, right = -1;
-        for (long isegment = parse.tokens.size() - 1, ipos = parse.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
-            left = parse.positions[ipos-1];
-            right = parse.positions[ipos];
+        for (long isegment = segments->tokens.size() - 1, ipos = segments->positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
+            left = segments->positions[ipos-1];
+            right = segments->positions[ipos];
             sub = line.substr(0, left);
             add = false;
-            switch (parse.types[isegment]) {
+            switch (segments->types[isegment]) {
                 case e_emptystring:
                 case e_string:
                     right += 1;
@@ -205,7 +213,7 @@ public:
                     add = true;
                     break;
                 case e_token: //methods
-                    if (lispe->is_instruction(parse.tokens[isegment])) {
+                    if (lispe->is_instruction(segments->tokens[isegment])) {
                         sub += colors[2];
                         add = true;
                     }
@@ -224,6 +232,10 @@ public:
             }
             
         }
+        
+        if (thread)
+            delete segments;
+        
         return line;
     }
     
@@ -1109,6 +1121,7 @@ public:
             case cmd_debug:
                 current_line_debugger = -1;
                 current_file_debugger = -1;
+                current_thread_id = 0;
                 addcommandline(line);
                 if (v.size() == 1) {
                     if (isempty(current_code))
@@ -2091,6 +2104,7 @@ public:
                     cout << endl << endl;
                     cout.flush();
                     debugmode = false;
+                    lispe = master_lisp;
                     lispe->delegation->display_string_function = &lispe_displaystring;
                     lispe->releasing_trace_lock();
                     lispe->stop_trace();
@@ -2100,6 +2114,7 @@ public:
                 
                 if (buff == "!") {
                     debugmode = false;
+                    lispe = master_lisp;
                     lispe->stop();
                     lispe->stop_trace();
                     lispe->trace = debug_none;
@@ -2110,6 +2125,10 @@ public:
                 
                 if (buff == left) {
                     //Adding or removing breakpoints
+                    //You cannot modify the breakpoints in multi-threading
+                    if (lispe->checkforLock())
+                        continue;
+                    
                     string file_name = lispe->name_file(current_file_debugger);
                     try {
                         editor_breakpoints.at(file_name).at(current_line_debugger) =
@@ -2130,6 +2149,7 @@ public:
                 if (buff == right) {
                     current_line_debugger = -1;
                     current_file_debugger = -1;
+                    current_thread_id = -1;
                     lispe->stop_at_next_line(debug_goto);
                     lispe->releasing_trace_lock();
                     cout << endl << endl;
@@ -2354,7 +2374,9 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
     editor->output_string = "";
     
     string file_name = lisp->name_file(current_file);
-    cout << m_red << "File: " << file_name << m_current << endl;
+    cout << m_red << "File: " << file_name << m_current << " thread: " << lisp->threadId() << endl;
+    
+    bool is_thread = lisp->checkforLock();
     
     long line =  current_line - 15;
     if (line < 1)
@@ -2375,9 +2397,9 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
         }
         else {
             if (lisp->delegation->check_breakpoints(current_file, it->first))
-                cout << "(^^" << it->first << ") " << editor->coloringline(it->second) << m_current;
+                cout << "(^^" << it->first << ") " << editor->coloringline(it->second, is_thread) << m_current;
             else
-                cout << "(" << it->first << ") " << editor->coloringline(it->second) << m_current;
+                cout << "(" << it->first << ") " << editor->coloringline(it->second, is_thread) << m_current;
         }
     }
     cout << endl;
@@ -2421,22 +2443,40 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
 
     lispe_editor* editor = (lispe_editor*)o;
     long current_line = lisp->delegation->i_current_line;
-    if (editor->current_line_debugger == current_line && editor->current_file_debugger == lisp->delegation->i_current_file) {
+     
+    if (editor->current_line_debugger == current_line &&
+        editor->current_file_debugger == lisp->delegation->i_current_file &&
+        editor->current_thread_id == lisp->threadId()) {
         lisp->delegation->next_stop = true;
         return;
     }
 
+    bool is_thread = lisp->checkforLock();
+    editor->lock.locking(is_thread);
+    //We have been waiting for the previous thread to yield
+    //However a stop was issued, we return
+    if (lisp->isEndTrace()) {
+        editor->lispe = editor->master_lisp;
+        editor->lock.unlocking(is_thread);
+        return;
+    }
+    
+    editor->lispe = lisp;
     
     editor->current_line_debugger = current_line;
     editor->current_file_debugger = lisp->delegation->i_current_file;
+    editor->current_thread_id = lisp->threadId();
     
     displaying_current_lines(lisp, lisp->delegation->i_current_file, current_line, editor);
     if (editor->displaying_local_variables)
         display_variables(lisp, instructions, editor, false);
 
     editor->display_indication();
+    
     cout.flush();
     lisp->blocking_trace_lock();
+    editor->lispe = editor->master_lisp;
+    editor->lock.unlocking(is_thread);
 }
 
 //We use this version for input to deport input to main thread...
@@ -2461,6 +2501,7 @@ void local_display(string& code, void* o) {
 
 //This is the debugger thread
 void debuggerthread(lispe_editor* call) {
+    call->master_lisp = call->lispe;
     call->displaying_print = true;
     call->displaying_local_variables = true;
     call->lispe->delegation->reading_string_function = local_readfromkeyboard;

@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.26.12.15";
+static std::string version = "1.2020.11.26.14.15";
 string LispVersion() {
     return version;
 }
@@ -56,6 +56,7 @@ Delegation::Delegation() {
     display_string_function = &lispe_displaystring;
     reading_string_function_object = NULL;
     
+    endtrace = false;
     add_to_listing = false;
     stop_execution = 0;
     allfiles["main"] = 0;
@@ -453,8 +454,12 @@ void LispE::cleaning() {
     }
 }
 
+std::atomic<long> id_pool(1);
+
 LispE::LispE(LispE* lisp, List* function, Element* body) {
 
+    id_thread = id_pool++;
+    
     thread_ancestor = lisp;
 
     line_error = -1;
@@ -1538,6 +1543,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

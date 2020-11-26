@@ -218,16 +218,16 @@ public:
     std::atomic<short> nbjoined;
 
     long line_error;
+    long id_thread;
     
     bool isThread;
     bool hasThread;
     char trace;
-    bool endtrace;
 
     LispE() {
+        id_thread = 0;
         line_error = -1;
         trace = debug_none;
-        endtrace = false;
         delegation = new Delegation;
         isThread = false;
         hasThread = false;
@@ -262,6 +262,10 @@ public:
         stack_pool[execution_stack.size()]->clear();
     }
     
+    inline long threadId() {
+        return id_thread;
+    }
+    
     inline bool checkforLock() {
         return (hasThread || isThread);
     }
@@ -275,13 +279,17 @@ public:
     }
     
     void stop_trace() {
-        endtrace = true;
+        delegation->endtrace = true;
         trace = debug_none;
         delegation->next_stop = false;
     }
+
+    bool isEndTrace() {
+        return delegation->isEndTrace();
+    }
     
     void stop_at_next_line(char tr) {
-        if (endtrace) {
+        if (delegation->endtrace) {
             trace = 0;
             delegation->next_stop = false;
             return;

@@ -1195,7 +1195,7 @@ Element* List::eval(LispE* lisp) {
         
     }
     
-#ifdef DEBUG
+#ifdef DEBUGG
     //(map 'eval (map 'atom (filter (\(x) (in x "socket")) (map 'string '(extract socket_read socket_create)))))
     //(map 'eval (map 'atom (map 'string '(extract socket_read socket_create))))
     //(map '* (take 4 (filter '(< 10) '(1 3 10 23 45 67 1 2 3 5 9))))

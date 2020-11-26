@@ -167,7 +167,7 @@ public:
 
     bool next_stop;
     bool add_to_listing;
-
+    std::atomic<bool> endtrace;
     
     Delegation();
     
@@ -218,6 +218,10 @@ public:
         return (sz >= max_stack_size?0x200:stop_execution);
     }
 
+    bool isEndTrace() {
+        return endtrace;
+    }
+    
     short encode(string& str) {
         wstring s;
         s_utf8_to_unicode(s, USTR(str), str.size());
