@@ -234,7 +234,7 @@ bool Au_state::match(wstring& w, long i) {
         return false;
     }
 
-    wchar_t c = Au_meta::met.getachar(w,i);
+    UWCHAR c = Au_meta::met.getachar(w,i);
 
     for (long j=0;j<arcs.last;j++) {
         switch(arcs[j]->action->compare(c)) {
@@ -292,7 +292,7 @@ long Au_state::loop(wstring& w, long i) {
     long l = au_error;
     long j;
 
-    wchar_t c = Au_meta::met.getachar(w,i);
+    UWCHAR c = Au_meta::met.getachar(w,i);
 
     for (j=0;j<arcs.last;j++) {
         switch(arcs[j]->action->compare(c)) {
@@ -404,7 +404,7 @@ bool Au_arc::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
     if (i==w.size())
         return false;
     
-    wchar_t c = Au_meta::met.getachar(w,i);
+    UWCHAR c = Au_meta::met.getachar(w,i);
 
     switch(action->compare(c)) {
         case 0:

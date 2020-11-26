@@ -32,6 +32,12 @@
 #endif
 #endif
 
+#ifdef WIN32
+#define UWCHAR uint32_t
+#else
+#define UWCHAR wchar_t
+#endif
+
 //------------------------------------------------------------
 
 class LispE;
@@ -58,7 +64,7 @@ using std::endl;
 //------------------------------------------------------------------------------------
 string jsonstring(string value);
 wstring wjsonstring(wstring value);
-string cs_unicode_to_utf8(wchar_t code);
+string cs_unicode_to_utf8(UWCHAR code);
 
 string NormalizePathname(string n);
 bool c_is_space(wchar_t code);
@@ -98,7 +104,7 @@ wstring& s_trimright(wstring& strvalue);
 void c_chars_get_next(unsigned char* m, char* str, size_t& i);
 bool c_char_index_insert(string& s, string c, size_t i);
 void s_utf8_to_unicode(wstring& s, unsigned char* str, long sz);
-unsigned char c_utf8_to_unicode(unsigned char* utf, wchar_t& code);
+unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code);
 void s_unicode_to_utf8(string& s, wstring& str);
 bool s_is_utf8(unsigned char* contenu, long longueur);
 Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second);
@@ -113,12 +119,12 @@ public:
     unordered_map<short, wchar_t> utf8codemin;
     unordered_map<short, wchar_t> utf8codemaj;
     unordered_map<short,bool> punctuations;
-    unordered_map<wchar_t, string> emojis;
-    unordered_map<wchar_t, bool> emojiscomplement;
     unordered_map<wchar_t, wchar_t> wvowels;
     unordered_map<wchar_t, wchar_t> wconsonants;
     
-    
+    unordered_map<UWCHAR, string> emojis;
+    unordered_map<UWCHAR, bool> emojiscomplement;
+
     bool c_is_punctuation(wchar_t str);
     bool s_is_punctuation(wstring& str);
     bool s_is_upper(wstring& s);
@@ -136,18 +142,19 @@ public:
     wchar_t c_to_upper(wchar_t c);
     
     void getchar(wstring& s, wstring& res, size_t& i, long sz);
-    wchar_t getachar(wstring& s, long& i);
+    UWCHAR getachar(wstring& s, long& i);
     
-    void l_emojis(map<wchar_t, string>& dico);
-    string emoji_description(wchar_t c);
+    void l_emojis(map<UWCHAR, string>& dico);
+    string emoji_description(UWCHAR c);
+    bool c_is_emojicomp(UWCHAR c);
+    bool c_is_emoji(UWCHAR c);
+    
     string emoji_description(wstring& s);
     string emoji_description(string& s);
     bool s_is_emoji(wstring& s);
     bool s_is_emoji(string& s);
     bool c_is_emojicomp(unsigned char* m, long& i);
     bool c_is_emoji(unsigned char* m, long& i);
-    bool c_is_emojicomp(wchar_t c);
-    bool c_is_emoji(wchar_t c);
     
     
     bool c_is_upper(wchar_t c) {
