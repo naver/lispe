@@ -124,9 +124,13 @@ public:
     string input_string;
     string output_string;
     bool debugmode;
+    bool displaying_print;
+    bool displaying_local_variables;
 
     lispe_editor() {
         reading = false;
+        displaying_print = true;
+        displaying_local_variables = true;
         current_line_debugger = -1;
         debugmode = false;
         currentfileid = -1;
@@ -1987,6 +1991,19 @@ public:
         lispe->releasing_trace_lock();
     }
     
+    void display_indication() {
+        cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables ";
+        if (displaying_local_variables)
+            cout << "#:local off ";
+        else
+            cout << "#:local on ";
+        
+        if (displaying_print)
+            cout << "&:display off: " << m_red;
+        else
+            cout << "&:display on: " << m_red;
+    }
+    
     void launchterminal(char noinit) {
         clearscreen();
 
@@ -2106,7 +2123,7 @@ public:
                     }
                     
                     displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
-                    cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
+                    display_indication();
                     continue;
                 }
                 
@@ -2121,10 +2138,24 @@ public:
                 
                 if (buff == "%") {
                     display_variables(lispe, NULL, this, true);
-                    cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
+                    display_indication();
                     continue;
                 }
                 
+                if (buff == "&") {
+                    displaying_print = 1 - displaying_print;
+                    displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
+                    display_indication();
+                    continue;
+                }
+
+                if (buff == "#") {
+                    displaying_local_variables = 1 - displaying_local_variables;
+                    displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
+                    display_indication();
+                    continue;
+                }
+
                 if (buff == down) {
                     lispe->stop_at_next_line(debug_inside_function);
                     lispe->releasing_trace_lock();
@@ -2313,10 +2344,17 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
 #else
     cout << m_clear << m_home;
 #endif
-
-    cout << endl << m_current;
     
+    if (editor->displaying_print && editor->output_string != "") {
+        cout << "----------------------------------------" << endl;
+        cout << m_blue << editor->output_string << m_current << endl;
+        cout << "----------------------------------------" << endl;
+    }
     
+    editor->output_string = "";
+    
+    string file_name = lisp->name_file(current_file);
+    cout << m_red << "File: " << file_name << m_current << endl;
     
     long line =  current_line - 15;
     if (line < 1)
@@ -2393,17 +2431,10 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     editor->current_file_debugger = lisp->delegation->i_current_file;
     
     displaying_current_lines(lisp, lisp->delegation->i_current_file, current_line, editor);
+    if (editor->displaying_local_variables)
+        display_variables(lisp, instructions, editor, false);
 
-    if (editor->output_string != "") {
-        cout << "----------------------------------------" << endl;
-        cout << m_blue << editor->output_string << m_current << endl;
-        cout << "----------------------------------------" << endl;
-        editor->output_string = "";
-    }
-
-    display_variables(lisp, instructions, editor, false);
-    
-    cout << endl << m_gray << "$:end !:stop ↓:inside ↑:out →:go ←:breakpoint %:variables: " << m_red;
+    editor->display_indication();
     cout.flush();
     lisp->blocking_trace_lock();
 }
@@ -2430,6 +2461,8 @@ void local_display(string& code, void* o) {
 
 //This is the debugger thread
 void debuggerthread(lispe_editor* call) {
+    call->displaying_print = true;
+    call->displaying_local_variables = true;
     call->lispe->delegation->reading_string_function = local_readfromkeyboard;
     call->lispe->delegation->display_string_function = local_display;
     call->lispe->delegation->reading_string_function_object = (void*)call;

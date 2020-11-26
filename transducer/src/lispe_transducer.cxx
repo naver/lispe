@@ -53,6 +53,25 @@ public:
         return true;
     }
 
+    Element* methodInitial(LispE* lisp) {
+        
+        Element* filename = lisp->get(L"filename");
+        if (filename == null_)
+            return this;
+        
+        automaton = new DoubleSideAutomaton;
+        string sname = filename->toString(lisp);
+        if (!automaton->load(sname)) {
+            sname += " cannot be loaded";
+            throw new Error(sname);
+        }
+        
+        automaton->fillencoding(false);
+        automaton->sorting();
+        automaton->start.shuffle();
+        return this;
+    }
+
     Element* methodLoad(LispE* lisp) {
         
         Element* filename = lisp->get(L"filename");
@@ -284,7 +303,8 @@ public:
         }
         switch (action) {
             case trans_trans:
-                return new Automaton(type);
+                automaton = new Automaton(type);
+                return automaton->methodInitial(lisp);
             case trans_load: {
                 return automaton->methodLoad(lisp);
             }
@@ -379,7 +399,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     inittableutf8(lisp->handlingutf8);
     wstring w = L"automaton";
     short type_automaton = lisp->encode(w);
-    lisp->extension("deflib transducer()", new Lispe_transducer(type_automaton, trans_trans));
+    lisp->extension("deflib transducer((filename))", new Lispe_transducer(type_automaton, trans_trans));
     lisp->extension("deflib transducer_load (trans filename)", new Lispe_transducer(type_automaton, trans_load));
     lisp->extension("deflib transducer_add(trans value (normalize true) (latintable 1))", new Lispe_transducer(type_automaton, trans_add));
     lisp->extension("deflib transducer_build(trans inputfile outputfile (normalize true) (latintable 1))", new Lispe_transducer(type_automaton, trans_build));

@@ -8,14 +8,12 @@
 
 (use 'lispe_transducer)
 
-; We need a transducer object to load our lexicon
-(setq english (transducer))
-
-; We load our dictionary into our transducer
-(transducer_load english (+ _current "english.tra"))
+; We load our lexicon in a transducer object: english
+(setq english (transducer (+ _current "english.tra")))
 
 ; This is a dictionary
 ; note $:z, which acts as a "rest of dictionary" operator
+; z contains the rest of the dictionary
 (defpat traversing({k:l $:z} result)
    (traversing l result)
    (traversing z result)
@@ -59,5 +57,7 @@
 (setq result ())
 (traversing (json_read (+ _current "dialogue.json")) result)
 (println (unique result))
+
+
 
 
