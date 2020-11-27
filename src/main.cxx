@@ -97,8 +97,6 @@ class lispe_editor : public jag_editor {
 
     std::thread* tid;
     
-    unordered_map<string, unordered_map<long, bool> > editor_breakpoints;
-    //unordered_map<long, unordered_map<long, bool> > breakpoints;
 
     vector<string> displaying;
     
@@ -117,6 +115,8 @@ class lispe_editor : public jag_editor {
 public:
     ThreadLock lock;
     ThreadLock printlock;
+
+    unordered_map<string, unordered_map<long, bool> > editor_breakpoints;
 
     LispE* lispe;
     LispE* master_lisp;
@@ -274,7 +274,7 @@ public:
             cerr << "   \t- " << m_redbold << "help n:" << m_current << " display one of the help sections (from 1 to 5)" << endl;
             cerr << "   \t- " << m_redbold << "cls:" << m_current << " clear screen" << endl;
             cerr << "   \t- " << m_redbold << "history:" << m_current << " display the command history" << endl;
-            cerr << "   \t- " << m_redbold << "load filename:" << m_current << " load the command history from a file" << endl;
+            cerr << "   \t- " << m_redbold << "retrieve filename:" << m_current << " load the command history from a file" << endl;
             cerr << "   \t- " << m_redbold << "store filename:" << m_current << " store the command history in a file" << endl;
             cerr << "   \t- " << m_redbold << "filename:" << m_current << " display the current file name" << endl;
             cerr << "   \t- " << m_redbold << "spaces:" << m_current << " display all the files stored in memory with their file space id" << endl;
@@ -890,9 +890,11 @@ public:
             commands[L"list"] = cmd_list;
             commands[L"rm"] = cmd_rm;
             commands[L"history"] = cmd_history;
-            commands[L"load"] = cmd_load_history;
+            commands[L"retrieve"] = cmd_load_history;
             commands[L"store"] = cmd_store_history;
             commands[L"open"] = cmd_open;
+            commands[L"load"] = cmd_open;
+            commands[L"read"] = cmd_open;
             commands[L"create"] = cmd_create;
             commands[L"save"] = cmd_save;
             commands[L"exit"] = cmd_exit;
@@ -2071,6 +2073,16 @@ public:
                 line = L"edit";
                 pos = handlingcommands(pos, dsp, noinit);
                 break;
+            case 4:
+                pos = 0;
+                //launch debug
+                line = L"debug";
+                pos = handlingcommands(pos, dsp, noinit);
+                prefix = "<>";
+                pos = 0;
+                line = L"";
+                printline(pos+1);
+                break;
             default:
 				prefix = "<>";
 				cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
@@ -2740,6 +2752,7 @@ int main(int argc, char *argv[]) {
             cout << "\t\t to be used with '-p' or '-P'. This condition must appear before -p" << m_current << endl;
 
             cout << m_red << "\tlispee -e program arg1 arg2:" << m_blue << "edit 'program' with optional list of arguments" << m_current << endl << endl;
+            cout << m_red << "\tlispee -d program -n line_number arg1 arg2:" << m_blue << "Launch the debugger with an optional breakpoint at line line_number. '-n' can be omitted." << m_current << endl << endl;
             cout << m_red << "\tlispee: " << m_blue <<" interactive interpreter" << m_current << endl << endl;
 
             return -1;
@@ -2820,6 +2833,43 @@ int main(int argc, char *argv[]) {
             exit(0);
         }
 
+        if (args == "-d") {
+            JAGEDITOR = new lispe_editor();
+            string nomfichier;
+            string line;
+            if (i < argc - 1) {
+                i++;
+                nomfichier = Normalizefilename(argv[i++]);
+                arguments.push_back(nomfichier);
+                JAGEDITOR->setpathname(nomfichier);
+                while (i < argc) {
+                    line = argv[i++];
+                    if (line == "-n") {
+                        if (i < argc) {
+                            line = argv[i++];
+                            long n = convertinginteger(line);
+                            ((lispe_editor*)JAGEDITOR)->editor_breakpoints[nomfichier][n] = true;
+                        }
+                        continue;
+                    }
+                    arguments.push_back(line);
+                }
+            }
+            else {
+                cerr << "Missing file name to start debugging" << endl;
+                exit(-1);
+            }
+            JAGEDITOR->loadfile(nomfichier);
+            ((lispe_editor*)JAGEDITOR)->addspace(nomfichier);
+            wstring w;
+            line = "debug ";
+            line += nomfichier;
+            w = JAGEDITOR->wconvert(line);
+            JAGEDITOR->addcommandline(w);
+            line = "";
+            JAGEDITOR->launchterminal(4);
+            return 0;
+        }
 
         if (args == "-e") {
             JAGEDITOR = new lispe_editor();
@@ -2836,7 +2886,7 @@ int main(int argc, char *argv[]) {
             JAGEDITOR->loadfile(nomfichier);
             ((lispe_editor*)JAGEDITOR)->addspace(nomfichier);
             wstring w;
-            string line = "read ";
+            string line = "open ";
             line += nomfichier;
             w = JAGEDITOR->wconvert(line);
             JAGEDITOR->addcommandline(w);
