@@ -66,9 +66,6 @@ void jag_get::initialisation() {
         return;
     initialized = true;
 #ifndef WIN32
-#ifndef DEBUG
-    freopen("/dev/tty", "rw", stdin);
-#endif
     tcgetattr(0, &oldterm);
     
     //We enable ctrl-s and ctrl-q within the editor

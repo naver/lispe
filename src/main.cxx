@@ -2664,7 +2664,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
     }
 }
 
-#ifdef DEBUG
+#ifdef DEBUGG
 //Minimale version without the internal editor
 int main(int argc, char *argv[]) {
     LispE lisp;
@@ -2756,6 +2756,9 @@ int main(int argc, char *argv[]) {
                 getline(std::cin, code);
                 arguments.push_back(code);
             }
+#ifndef WIN32
+            freopen("/dev/tty", "rw", stdin);
+#endif
             std::cin.clear();
             continue;
         }

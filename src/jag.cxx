@@ -33,7 +33,7 @@ void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 
 using std::stringstream;
 
-extern char* m_scrollmargin;
+extern char m_scrollmargin[];
 static char m_deletechar[] = { 27, 91, '1', 'P', 0 };
 static char m_left[] = { 27, '[', '1', 68, 0 };
 static char m_right[] = {27, '[', '0', '0', '1', 67, 0};
