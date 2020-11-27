@@ -60,22 +60,16 @@ string get_char(jag_get* h) {
 }
 //------------------------------------------------------------------------------------
 
-jag_get::jag_get(bool inside) {
-    if (inside)
-        main_handler = this;
-    
-    inside_editor = inside;
-    row_size = -1;
-    col_size = -1;
-    margin = 10;
-    spacemargin = 9;
-
+void jag_get::initialisation() {
+    if (initialized)
+        return;
+    initialized = true;
 #ifndef WIN32
 #ifndef DEBUG
     freopen("/dev/tty", "rw", stdin);
 #endif
     tcgetattr(0, &oldterm);
-
+    
     //We enable ctrl-s and ctrl-q within the editor
     termios theterm;
     tcgetattr(0, &theterm);
@@ -86,6 +80,21 @@ jag_get::jag_get(bool inside) {
     theterm.c_cc[VSUSP] = NULL;
     tcsetattr(0, TCSADRAIN, &theterm);
 #endif
+}
+
+jag_get::jag_get(bool inside) {
+    initialized = false;
+
+    if (inside) {
+        main_handler = this;
+        initialisation();
+    }
+    
+    inside_editor = inside;
+    row_size = -1;
+    col_size = -1;
+    margin = 10;
+    spacemargin = 9;
 }
 
 void jag_get::resetterminal() {
@@ -100,10 +109,12 @@ void jag_get::resetterminal() {
 string getwinchar(void(*f)());
 void resizewindow();
 string jag_get::getch() {
+    initialisation();
     return getwinchar(resizewindow);
 }
 #else
 string jag_get::getch(){
+    initialisation();
     static char buf[_getbuffsize+2];
     memset(buf,0, _getbuffsize);
 
@@ -192,6 +203,9 @@ void jag_get::reset() {
 #endif
 }
 
+//This our own implementation of a full input on screen
+//that is compatible with the debug mode and different from
+//std::cin
 void jag_get::get_a_string(string& input_string) {
     string buff;
     string sub;

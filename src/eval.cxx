@@ -2521,10 +2521,10 @@ Element* List::eval(LispE* lisp) {
             case l_pipe: {
                 //pipe returns a line read on std::cin
                 //It returns nil, if the stream is closed...
-                if (std::cin.eof())
-                    return null_;
                 string code;
                 getline(std::cin, code);
+                if (std::cin.eof())
+                    return null_;
                 return lisp->provideString(code);
             }
             case l_fread: {

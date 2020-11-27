@@ -154,6 +154,7 @@ public:
     long spacemargin;
 
     bool inside_editor;
+    bool initialized;
     
     jag_get(bool inside);
     ~jag_get() {
@@ -165,6 +166,7 @@ public:
     void screensizes();
     void reset();
     void get_a_string(string&);
+    void initialisation();
 
     
 };

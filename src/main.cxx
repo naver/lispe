@@ -2667,38 +2667,20 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
 #ifdef DEBUG
 //Minimale version without the internal editor
 int main(int argc, char *argv[]) {
+    LispE lisp;
+    Element* e;
     
     if (argc == 2) {
         string pathname = argv[1];
-        JAGEDITOR = new lispe_editor();
-        lispe_editor* call = (lispe_editor*)JAGEDITOR;
-        call->lispe = new LispE;
-        std::ifstream f(pathname.c_str(),std::ios::in|std::ios::binary);
-        if (f.fail()) {
-            string err = "Unknown file: ";
-            err += pathname;
-            cerr << err << endl;
-            exit(-1);
-        }
-
-        call->current_code = "";
-        string ln;
-        while (!f.eof()) {
-            getline(f, ln);
-            call->current_code += ln + "\n";
-        }
-
-        call->lispe->set_pathname(argv[1]);
-        //We initialize the breakpoints and the trace mode
-        call->runcode();
+        e = lisp.load(pathname);
+        std::cout << e->toString(&lisp) << std::endl;
+        e->release();
         return 0;
     }
-
-    LispE lisp;
-    Element* e;
-
+    
+    
     string code;
-
+    
     cout << endl << "Lisp Elémentaire (" << LispVersion() << ")" << endl << endl;
      
     while (true) {

@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.27.14.58";
+static std::string version = "1.2020.11.27.15.36";
 string LispVersion() {
     return version;
 }
@@ -119,9 +119,7 @@ void moduleSocket(LispE* lisp);
 //------------------------------------------------------------
 //We initialize our structures
 void Delegation::initialisation(LispE* lisp) {
-    
-    reading_string_function_object = lisp;
-    
+        
     //These are not exactly instruction, but we need to set their arity nonetheless
     //since they belong to the List::eval method
     arities[t_list] = P_ATLEASTONE;
@@ -1574,6 +1572,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 
