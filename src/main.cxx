@@ -2664,7 +2664,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
     }
 }
 
-#ifdef DEBUGG
+#ifdef DEBUG
 //Minimale version without the internal editor
 int main(int argc, char *argv[]) {
     LispE lisp;
