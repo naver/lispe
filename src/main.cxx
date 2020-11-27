@@ -299,7 +299,7 @@ public:
             cerr << "   \t- " << m_redbold << "Ctrl-f:" << m_current << " find a string" << endl;
             cerr << "   \t- " << m_redbold << "Ctrl-n:" << m_current << " find next" << endl;
             cerr << "   \t- " << m_redbold << "Ctrl-g:" << m_current << " move to a specific line, '$' is the end of the code" << endl;
-            cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " toggle between top and bottom of the screen" << endl;
+            cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " reload file from disk" << endl;
             cerr << "   \t- " << m_redbold << "Ctrl-t:" << m_current << " reindent the code" << endl;
 #ifdef WIN32
             cerr << "   \t- " << m_redbold << "Ctrl+Alt-h:" << m_current << " local help" << endl;
@@ -320,6 +320,7 @@ public:
             cerr << "   \t\t- " << m_redital << "l:" << m_current << " load a file" << endl;
             cerr << "   \t\t- " << m_redital << "m:" << m_current << " display meta-characters" << endl;
             cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
+            cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;
             cerr << "   \t\t- " << m_redital << "q:" << m_current << " quit" << endl << endl;
         }
         
@@ -768,6 +769,34 @@ public:
         return loadfile(convert(name));
     }
 
+    bool reloadfile() {
+        if (thecurrentfilename == "")
+            return false;
+        
+        ifstream rd(thecurrentfilename, openMode);
+        if (rd.fail()) {
+            cerr << m_redbold << " Cannot load: " << thecurrentfilename << m_current << endl;
+            return false;
+        }
+        string ln;
+        string cde;
+        while (!rd.eof()) {
+            getline(rd, ln);
+            ln = s_trimright(ln);
+            cde += ln + "\n";
+        }
+        LispSetCode(cde);
+        wstring code = WListing();
+        lines.setcode(code);
+        editors_undos[currentfileid].clear();
+        editors_redos[currentfileid].clear();
+        line = L"edit";
+        bool dsp = true;
+        pos = handlingcommands(pos, dsp);
+        displayonlast("Reloaded", true);
+        return true;
+    }
+    
     //We keep different files in memory...
     bool loadfile(string filename) {
         wstring code;
@@ -868,7 +897,7 @@ public:
         return true;
     }
     
-    long handlingcommands(long pos, bool& dsp, char initvar) {
+    long handlingcommands(long pos, bool& dsp) {
         typedef enum {cmd_none, cmd_args, cmd_filename, cmd_spaces, cmd_select, cmd_edit, cmd_run, cmd_debug, cmd_cls, cmd_echo, cmd_help, cmd_list,
             cmd_rm, cmd_history, cmd_open, cmd_create, cmd_save, cmd_exit, cmd_load_history, cmd_store_history, cmd_clear, cmd_reinit} thecommands;
 
@@ -1606,7 +1635,7 @@ public:
                         editmode = true;
                         clearscreen();
                         
-                        handlingcommands(pos, dsp, false);
+                        handlingcommands(pos, dsp);
                         editmode = false;
                         posinstring = 0;
                         pos = lines.size()-1;
@@ -1626,7 +1655,7 @@ public:
                         pos = 0;
                         editmode = true;
                         clearscreen();
-                        handlingcommands(pos, dsp, false);
+                        handlingcommands(pos, dsp);
                         editmode = false;
                         posinstring = 0;
                         pos = lines.size()-1;
@@ -1911,7 +1940,7 @@ public:
                     pos = handlingeditorline(true);
                     return true;
                 }
-                pos = handlingcommands(pos, dsp, noinit);
+                pos = handlingcommands(pos, dsp);
                 if (dsp) {
                     line = L"";
                     printline(pos+1);
@@ -1935,6 +1964,10 @@ public:
                     displaygo(true);
                 else
                     printline(pos+1, line);
+                return true;
+            case 12: //ctrl-l: reload file
+                if (emode())
+                    reloadfile();
                 return true;
             case 17:
                 if (emode()) {
@@ -1975,35 +2008,8 @@ public:
     }
     
     void reading_a_string(string& buff) {
-        static char m_deletechar[] = { 27, 91, '1', 'P', 0 };
-        static char m_left[] = { 27, '[', '1', 68, 0 };
-#ifdef WIN32
-        static char m_delback = 8;
-        static char m_delbackbis = 8;
-#else
-        static char  m_delback = 127;
-        static char m_delbackbis = 15;
-#endif
-
-        cout << buff;
-        cout.flush();
-        input_string = buff;
-        while (true) {
-            buff = getch();
-            if (buff[0] == m_delback || buff[0] == m_delbackbis) {
-                if (!input_string.size())
-                    continue;
-                cout << m_left << m_deletechar;
-                input_string = input_string.substr(0, input_string.size()-1);
-                continue;
-            }
-            
-            cout << buff;
-            cout.flush();
-            if (buff[0] == 10 || buff[0] == 13)
-                break;
-            input_string += buff;
-        }
+        input_string += buff;
+        get_a_string(input_string);
         lispe->releasing_trace_lock();
     }
     
@@ -2071,13 +2077,13 @@ public:
                 //switch to edit mode
                 pos = 0;
                 line = L"edit";
-                pos = handlingcommands(pos, dsp, noinit);
+                pos = handlingcommands(pos, dsp);
                 break;
             case 4:
                 pos = 0;
                 //launch debug
                 line = L"debug";
-                pos = handlingcommands(pos, dsp, noinit);
+                pos = handlingcommands(pos, dsp);
                 prefix = "<>";
                 pos = 0;
                 line = L"";
@@ -2118,7 +2124,7 @@ public:
                     cout.flush();
                     debugmode = false;
                     lispe = master_lisp;
-                    lispe->delegation->display_string_function = &lispe_displaystring;
+                    lispe->delegation->display_string_function = &lispe_displaystring;                    
                     lispe->releasing_trace_lock();
                     lispe->stop_trace();
                     line = L"";
@@ -2495,6 +2501,9 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
 //We use this version for input to deport input to main thread...
 void local_readfromkeyboard(string& code, void* o) {
     lispe_editor* editor = (lispe_editor*)o;
+    bool is_thread = editor->lispe->checkforLock();
+    editor->printlock.locking(is_thread);
+    editor->input_string = code;
     //there is a section in launchterminal, which tests reading
     //to detect if we are dealing with a keyboard input...
     //We need this specific code to avoid a conflict between
@@ -2505,6 +2514,7 @@ void local_readfromkeyboard(string& code, void* o) {
     editor->lispe->blocking_trace_lock();
     editor->reading = false;
     code = editor->input_string;
+    editor->printlock.unlocking(is_thread);
 }
 
 void local_display(string& code, void* o) {

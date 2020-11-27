@@ -164,6 +164,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\elements.cxx" />
+    <ClCompile Include="..\..\src\jagwin.cxx" />
+    <ClCompile Include="..\..\src\jagget.cxx" />
     <ClCompile Include="..\..\src\eval.cxx" />
     <ClCompile Include="..\..\src\composing.cxx" />
     <ClCompile Include="..\..\src\lispe.cxx" />

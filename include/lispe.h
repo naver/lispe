@@ -197,6 +197,7 @@ class LispE {
     vector<Stackelement*> stack_pool;
 
     std::stack<Stackelement*> execution_stack;
+    long max_stack_size;
 
 public:
     unordered_map<wstring, Element*> pools;
@@ -226,6 +227,7 @@ public:
 
     LispE() {
         id_thread = 0;
+        max_stack_size = 10000;
         line_error = -1;
         trace = debug_none;
         delegation = new Delegation;
@@ -426,7 +428,7 @@ public:
     }
     
     long stack_size_max() {
-        return delegation->max_stack_size;
+        return max_stack_size;
     }
     
     void set_debug_function (lispe_debug_function ldf, void* o) {
@@ -438,7 +440,7 @@ public:
     void set_stack_max_size(long m) {
         if (m <= 0)
             return;
-        delegation->max_stack_size = m;
+        max_stack_size = m;
     }
     
     inline void stop() {
@@ -454,7 +456,7 @@ public:
     }
     
     inline short checkLispState() {
-        return delegation->checkLispState(execution_stack.size());
+        return (execution_stack.size() >= max_stack_size?0x200:delegation->stop_execution);
     }
         
     void display_trace(List*);

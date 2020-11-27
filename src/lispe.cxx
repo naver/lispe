@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.11.27.9.30";
+static std::string version = "1.2020.11.27.14.58";
 string LispVersion() {
     return version;
 }
@@ -42,9 +42,9 @@ List* Stackelement::atomes(LispE* lisp) {
 }
 
 //------------------------------------------------------------
-void lispe_readfromkeyboard(string& code, void*) {
-    getline(std::cin, code);
-}
+jag_get* get_jag_handler();
+void clean_get_handler(jag_get*);
+void lispe_readfromkeyboard(string& code, void*);
 
 void lispe_displaystring(string& code, void*) {
     cout << code;
@@ -52,9 +52,10 @@ void lispe_displaystring(string& code, void*) {
 //------------------------------------------------------------
 
 Delegation::Delegation() {
+    input_handler = get_jag_handler();
     reading_string_function = &lispe_readfromkeyboard;
     display_string_function = &lispe_displaystring;
-    reading_string_function_object = NULL;
+    reading_string_function_object = input_handler;
     
     endtrace = false;
     add_to_listing = false;
@@ -64,7 +65,6 @@ Delegation::Delegation() {
     debugfunction = NULL;
     debugobject = NULL;
     next_stop = false;
-    max_stack_size = 20000;
     i_current_line = -1;
     i_current_file = -1;
 #ifdef UNIX
@@ -86,6 +86,26 @@ Delegation::Delegation() {
         }
     }
 #endif
+}
+
+Delegation::~Delegation() {
+    clean_get_handler(input_handler);
+    for (auto& a : thread_pool)
+        a.second.clear();
+    
+    for (auto& a: locks)
+        delete a.second;
+    
+    for (auto& a: atom_pool)
+        delete a.second;
+    
+    for (auto& a: waitons)
+        delete a.second;
+
+    delete _EMPTYLIST;
+    delete _EMPTYDICTIONARY;
+    delete _BREAK;
+    delete _THEEND;
 }
 
 //------------------------------------------------------------
@@ -163,10 +183,11 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_foldr1, "foldr1", P_THREE);
     set_instruction(l_fread, "fread", P_TWO);
     set_instruction(l_fwrite, "fwrite", P_THREE);
+    set_instruction(l_getchar, "getchar", P_ONE);
     set_instruction(l_if, "if", P_THREE | P_FOUR);
     set_instruction(l_ife, "ife", P_ATLEASTFOUR);
     set_instruction(l_index, "at", P_THREE|P_FOUR);
-    set_instruction(l_input, "input", P_ONE);
+    set_instruction(l_input, "input", P_ONE | P_TWO);
     set_instruction(l_insert, "insert", P_FOUR);
     set_instruction(l_reverse, "reverse", P_TWO);
     set_instruction(l_in, "in", P_THREE|P_FOUR);
@@ -457,6 +478,9 @@ void LispE::cleaning() {
 std::atomic<long> id_pool(1);
 
 LispE::LispE(LispE* lisp, List* function, Element* body) {
+
+    //For threads, the stack limit is much smaller
+    max_stack_size = 1000;
 
     id_thread = id_pool++;
     
@@ -1550,6 +1574,9 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
 
 
 

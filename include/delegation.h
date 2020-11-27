@@ -16,6 +16,7 @@
 
 //------------------------------------------------------------
 class LispE;
+class jag_get;
 typedef void (*lispe_debug_function)(LispE*, List* e, void*);
 //------------------------------------------------------------
 class BlockThread {
@@ -157,10 +158,11 @@ public:
     
     Error* _THEEND;
 
+    jag_get* input_handler;
+    
     lispe_debug_function debugfunction;
     void* debugobject;
 
-    long max_stack_size;
     long i_current_line;
     long i_current_file;
     short stop_execution;
@@ -214,10 +216,6 @@ public:
         }
     }
     
-    inline short checkLispState(long sz) {
-        return (sz >= max_stack_size?0x200:stop_execution);
-    }
-
     bool isEndTrace() {
         return endtrace;
     }
@@ -672,24 +670,7 @@ public:
         return e;
     }
     
-    ~Delegation() {
-        for (auto& a : thread_pool)
-            a.second.clear();
-        
-        for (auto& a: locks)
-            delete a.second;
-        
-        for (auto& a: atom_pool)
-            delete a.second;
-        
-        for (auto& a: waitons)
-            delete a.second;
-
-        delete _EMPTYLIST;
-        delete _EMPTYDICTIONARY;
-        delete _BREAK;
-        delete _THEEND;
-    }
+    ~Delegation();
 };
 
 #endif /* delegation_h */

@@ -33,11 +33,13 @@ void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 
 using std::stringstream;
 
-static char m_scrollmargin[] = { 27, 91, '0', '0', '0', ';', '0', '0','0', 'r', 0 };
+extern char* m_scrollmargin;
 static char m_deletechar[] = { 27, 91, '1', 'P', 0 };
 static char m_left[] = { 27, '[', '1', 68, 0 };
 static char m_right[] = {27, '[', '0', '0', '1', 67, 0};
 char m_down[] = {27, '[', '0', '0', '1', 66, 0};
+
+static const short _getbuffsize = 128;
 
 //Moving to a specific line/column
 char sys_row_column[] = { 27, 91, '0', '0', '0', ';', '0', '0','0', 'H', 0 };
@@ -117,7 +119,6 @@ void editor_keep::display() {
 }
 
 //--------------------------------------------------------
-static const short _getbuffsize = 128;
 static int xcursor = 0, ycursor = 0;
 
 static int getxcursor() {
@@ -142,63 +143,8 @@ static void scrollingdown(long rowsize) {
 	cout << m_scrollmargin;
 }
 
-#ifdef WIN32
-string getwinchar(void(*f)());
-void resizewindow();
-string jag_editor::getch() {
-    return getwinchar(resizewindow);
-}
-#else
-string jag_editor::getch(){
-    static char buf[_getbuffsize+2];
-    memset(buf,0, _getbuffsize);
-
-    struct termios old={0};
-    fflush(stdout);
-    if(tcgetattr(0, &old)<0) {
-        perror("tcsetattr()");
-        exit(-1);
-    }
-    
-    old.c_lflag&=~ICANON;
-    old.c_lflag&=~ECHO;
-    old.c_cc[VMIN]=1;
-    old.c_cc[VTIME]=0;
-    if(tcsetattr(0, TCSANOW, &old)<0) {
-        perror("tcsetattr ICANON");
-        return "";
-    }
-    
-    //If you need to get the absolute cursor position, you can decomment these lines
-    //cout << cursor_position;
-    //scanf("\033[%d;%dR", &xcursor, &ycursor);
-    
-    string res;
-    long nb;
-    
-    do {
-        nb = read(0,buf,_getbuffsize);
-        if (nb < 0)
-            perror("read()");
-        buf[nb] = 0;
-        res += buf;
-        memset(buf,0, _getbuffsize);
-    }
-    while (nb == _getbuffsize);
-    
-    old.c_lflag|=ICANON;
-    old.c_lflag|=ECHO;
-    if(tcsetattr(0, TCSADRAIN, &old)<0) {
-        perror ("tcsetattr ~ICANON");
-        return "";
-    }
-    
-    return res;
-}
-#endif
-
 //--------------------------------------------------------
-///------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 //We check if the buffer ends in an incomplete utf8 character...
 //In that case, we remove the ending and return it as a value to be added later
 bool jag_editor::check_utf8(string& buff, string& buffer) {
@@ -241,21 +187,21 @@ bool jag_editor::check_utf8(string& buff, string& buffer) {
     return false;
 }
 
-///------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 void jag_editor::vsplit(wstring& thestr, wstring thesplitter, vector<wstring>& vs) {
     s_split(thestr, thesplitter, vs, true);
 }
 
-///------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 static void displaychar(string& bf) {
     for (int i=0; i < bf.size(); i++)
         cout << (int)bf[i] << " ";
     cout << endl;
 }
 
-///------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 jag_editor* JAGEDITOR = NULL;
-///------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 #ifdef WIN32
 void resizewindow() {
 	JAGEDITOR->resetscreen();
@@ -265,29 +211,12 @@ void resizewindow(int theSignal) {
 	JAGEDITOR->resetscreen();
 }
 #endif
-///------------------------------------------------------------------------------------
 
-jag_editor::jag_editor() : lines(this) {
-#ifndef WIN32
-#ifndef DEBUG
-    freopen("/dev/tty", "rw", stdin);
-#endif
-    tcgetattr(0, &oldterm);
+//------------------------------------------------------------------------------------
 
-    //We enable ctrl-s and ctrl-q within the editor
-    termios theterm;
-    tcgetattr(0, &theterm);
-    theterm.c_iflag &= ~IXON;
-    theterm.c_iflag |= IXOFF;
-    theterm.c_cc[VSTART] = NULL;
-    theterm.c_cc[VSTOP] = NULL;
-    theterm.c_cc[VSUSP] = NULL;
-    tcsetattr(0, TCSADRAIN, &theterm);
-#endif
+jag_editor::jag_editor() : lines(this), jag_get(true) {
 
 	insertaline = false;
-    margin = 10;
-    spacemargin = 9;
 
     noprefix = false;
     tooglehelp = false;
@@ -328,10 +257,8 @@ jag_editor::jag_editor() : lines(this) {
     replaceall = false;
     modified = true;
     tobesaved = false;
-	row_size = -1;
-	col_size = -1;
     screensizes();
-    localhelp << m_red<< "^xh" << m_current << ":help " << m_red<< "^k" << m_current << ":del after " << m_red<< "^p" << m_current << ":k-buffer " <<  m_red<< "^d" << m_current << ":del line " << m_red<< "^uz/^r" << m_current << ":un/redo " << m_red<< "^f" << m_current << ":find " << m_red<< "^n" << m_current << ":next " << m_red<< "^g" << m_current << ":go " << m_red<< "^l" << m_current << ":top/bottom " << m_red<< "^t" << m_current << ":indent " << m_red<< "^s/w" << m_current << ":write " << m_red<< "^x" << m_current << ":commands ";
+    localhelp << m_red<< "^xh" << m_current << ":help " << m_red<< "^k" << m_current << ":del after " << m_red<< "^p" << m_current << ":k-buffer " <<  m_red<< "^d" << m_current << ":del line " << m_red<< "^uz/^r" << m_current << ":un/redo " << m_red<< "^f" << m_current << ":find " << m_red<< "^n" << m_current << ":next " << m_red<< "^g" << m_current << ":go " << m_red<< "^l" << m_current << ":reload " << m_red<< "^t" << m_current << ":indent " << m_red<< "^s/w" << m_current << ":write " << m_red<< "^x" << m_current << ":commands ";
 
     updateline = true;
     taskel = true;
@@ -346,48 +273,9 @@ jag_editor::~jag_editor() {
     #endif
 }
 
-///------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 
-void jag_editor::screensizes() {
-#ifdef WIN32
-	if (row_size == -1 && col_size == -1)
-		Getscreensizes();
-	Returnscreensize(row_size, col_size, size_row, size_col);
-	row_size -= 1;
-	col_size -= margin;
-#else
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &wns);
-	row_size = wns.ws_row - 2; //we need to keep a final line on screen for operators
-	col_size = wns.ws_col - margin;
-	if (row_size < 0)
-		row_size = 55;
-	if (col_size < 0)
-		col_size = 190;
-#endif
-	//We set the botton limit for scrolling
-	char buff[] = { 0,0,0,0,0,0 };
-	sprintf_s(buff,4, "%0.3ld", row_size+2);
-	m_scrollmargin[6] = buff[0];
-	m_scrollmargin[7] = buff[1];
-	m_scrollmargin[8] = buff[2];
-	cout << m_scrollmargin;
-}
 
-void jag_editor::reset() {
-#ifndef WIN32
-    tcsetattr(0, TCSADRAIN, &oldterm);
-    
-    termios theterm;
-    tcgetattr(0, &theterm);
-    theterm.c_iflag &= ~IXON;
-    theterm.c_iflag |= IXOFF;
-    //The next modifications allows for the use of ctrl-q and ctrl-s
-    theterm.c_cc[VSTART] = 0;
-    theterm.c_cc[VSTOP] = 0;
-    theterm.c_cc[VSUSP] = 0;
-    tcsetattr(0, TCSADRAIN, &theterm);
-#endif
-}
 
 void jag_editor::setscrolling() {
     getcursor();
@@ -1801,6 +1689,11 @@ bool jag_editor::checkcommand(char cmd) {
             posinstring = currentfind.size();
             option = x_load;
             return true;
+        case 'u':
+            if (emode())
+                toggletopbottom();
+            displayonlast("", true);
+            return true;
         case 'c': //copy
             clearst();
             st << "copy from:";
@@ -1875,14 +1768,6 @@ void jag_editor::handlecommands() {
         return;
     
     displayonlast("", true);
-}
-
-void jag_editor::resetterminal() {
-#ifdef WIN32    
-	ResetWindowsConsole();
-#else
-	tcsetattr(0, TCSADRAIN, &oldterm);
-#endif    
 }
 
 bool jag_editor::terminate() {
@@ -2610,4 +2495,4 @@ bool editor_lines::updatesize() {
     return false;
 }
 
-///------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------

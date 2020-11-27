@@ -15,6 +15,8 @@
 #include <chrono>
 
 //------------------------------------------------------------------------------------------
+string get_char(jag_get* h);
+//------------------------------------------------------------------------------------------
 #define _releasing(f) f->release();f=null_
 //------------------------------------------------------------------------------------------
 class Comparison {
@@ -2503,13 +2505,28 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             case l_input: {
                 string code;
+                if (listsize == 2) {
+                    wstring wcode;
+                    evalAsString(1, lisp, wcode);
+                    s_unicode_to_utf8(code, wcode);
+                }
+                
                 lisp->delegation->reading_string_function(code, lisp->delegation->reading_string_function_object);
                 return lisp->provideString(code);
             }
-            case l_pipe:
+            case l_getchar: {
+                string code = get_char(lisp->delegation->input_handler);
+                return lisp->provideString(code);
+            }
+            case l_pipe: {
+                //pipe returns a line read on std::cin
+                //It returns nil, if the stream is closed...
                 if (std::cin.eof())
-                    return false_;
-                return true_;
+                    return null_;
+                string code;
+                getline(std::cin, code);
+                return lisp->provideString(code);
+            }
             case l_fread: {
                 first_element = liste[1]->eval(lisp);
                 
