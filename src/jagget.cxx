@@ -10,6 +10,7 @@
 
 
 #include <stdio.h>
+#include <string.h>
 
 #ifndef WIN32
 #include <unistd.h>   //_getch
