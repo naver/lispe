@@ -93,9 +93,14 @@ jag_get::jag_get(bool inside) {
     col_size = -1;
     margin = 10;
     spacemargin = 9;
+    mouse_status = false;
 }
 
 void jag_get::resetterminal() {
+    if (!initialized)
+        return;
+    
+    mouseoff();
 #ifdef WIN32
     ResetWindowsConsole();
 #else
@@ -116,18 +121,18 @@ string jag_get::getch(){
     static char buf[_getbuffsize+2];
     memset(buf,0, _getbuffsize);
 
-    struct termios old={0};
+    struct termios remove_echo={0};
     fflush(stdout);
-    if(tcgetattr(0, &old)<0) {
+    if(tcgetattr(0, &remove_echo)<0) {
         perror("tcsetattr()");
         exit(-1);
     }
     
-    old.c_lflag&=~ICANON;
-    old.c_lflag&=~ECHO;
-    old.c_cc[VMIN]=1;
-    old.c_cc[VTIME]=0;
-    if(tcsetattr(0, TCSANOW, &old)<0) {
+    remove_echo.c_lflag&=~ICANON;
+    remove_echo.c_lflag&=~ECHO;
+    remove_echo.c_cc[VMIN]=1;
+    remove_echo.c_cc[VTIME]=0;
+    if(tcsetattr(0, TCSANOW, &remove_echo)<0) {
         perror("tcsetattr ICANON");
         return "";
     }
@@ -149,9 +154,11 @@ string jag_get::getch(){
     }
     while (nb == _getbuffsize);
     
-    old.c_lflag|=ICANON;
-    old.c_lflag|=ECHO;
-    if(tcsetattr(0, TCSADRAIN, &old)<0) {
+    
+    remove_echo.c_lflag|=ICANON;
+    if (!isMouseAction(res))
+        remove_echo.c_lflag|=ECHO;
+    if(tcsetattr(0, TCSADRAIN, &remove_echo)<0) {
         perror ("tcsetattr ~ICANON");
         return "";
     }

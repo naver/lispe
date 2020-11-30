@@ -42,6 +42,7 @@
 #include "jag.h"
 
 #include "lispe.h"
+#include "rgx.h"
 
 
 using std::stringstream;
@@ -124,6 +125,7 @@ public:
     long current_line_debugger;
     long current_file_debugger;
     long current_thread_id;
+    
     std::atomic<bool> reading;
     string input_string;
     string output_string;
@@ -132,6 +134,10 @@ public:
     bool displaying_local_variables;
 
     lispe_editor() {
+        selected_x = -1;
+        selected_y = -1;
+        selected_pos = -1;
+        double_click = 0;
         reading = false;
         displaying_print = true;
         displaying_local_variables = true;
@@ -170,6 +176,55 @@ public:
         return coloringline(line, false);
     }
     
+    long splitline(wstring& l, long linenumber, vector<wstring>& subs) {
+            //we compute the position of each segment of l on string...
+
+        long sz = prefixe();
+
+        if ( (sz + l.size()) < col_size) {
+            subs.push_back(l);
+            return 1;
+        }
+        
+        wstring code;
+        long j;
+        
+        for (long i = 0; i < l.size(); i++) {
+            code += l[i];
+            if (l[i] == 9) {//tab position
+                sz += (8 - (sz%8))%8;
+                sz--;
+            }
+            else {
+                if (ckjchar(l[i])) //double space on screen
+                    sz++;
+                else { //emoji with combination
+                    if (Au_meta::met.c_is_emojicomp(l[i])) {
+                        j = i + 1;
+                        sz++; //double space on screen
+                        while (Au_meta::met.c_is_emoji(l[j])) {
+                            code += l[j];
+                            j++;
+                            continue;
+                        }
+                        i = j - 1;
+                    }
+                }
+            }
+            sz++;
+            if (sz >= col_size) {
+                subs.push_back(code);
+                code = L"";
+                sz = prefixe();
+            }
+        }
+        
+        if (code != L"")
+            subs.push_back(code);
+        
+        return subs.size();
+    }
+
     string coloringline(string line, bool thread) {
         if (line == "")
             return line;
@@ -308,6 +363,9 @@ public:
 #endif
             cerr << "   \t- " << m_redbold << "Ctrl-w:" << m_current << " write file to disk" << endl;
             cerr << "   \t- " << m_redbold << "Ctrl-c:" << m_current << " exit the editor" << endl << endl;
+            cerr << "   \t- " << m_redbold << "Alt-x:" << m_current << " cut mouse selection" << endl;
+            cerr << "   \t- " << m_redbold << "Alt-c:" << m_current << " copy mouse selection" << endl;
+            cerr << "   \t- " << m_redbold << "Alt-v:" << m_current << " paste mouse selection" << endl << endl;
             cerr << "   \t- " << m_redbold << "Ctrl-x:" << m_redital << " Combined Commands" << m_current << endl;
             cerr << "   \t\t- " << m_redital << "D:" << m_current << " delete a bloc of lines" << endl;
             cerr << "   \t\t- " << m_redital << "n:" << m_current << " hide/display line numbers" << endl;
@@ -320,6 +378,7 @@ public:
             cerr << "   \t\t- " << m_redital << "l:" << m_current << " load a file" << endl;
             cerr << "   \t\t- " << m_redital << "m:" << m_current << " display meta-characters" << endl;
             cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
+            cerr << "   \t\t- " << m_redital << "m:" << m_current << " toggle mouse on/off" << endl;
             cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;
             cerr << "   \t\t- " << m_redital << "q:" << m_current << " quit" << endl << endl;
         }
@@ -342,16 +401,11 @@ public:
         long sz = s.size();
         long pref = prefixego() + 1;
         long pos = pref;
-        if (lispe == NULL) {
-            lispe = new LispE;
-            lispe->arguments(arguments);
-            lispe->set_pathname(thecurrentfilename);
-        }
         for (long i = 0; i < sz; i++) {
-            if (lispe->handlingutf8->c_is_emojicomp(s[i]))
+            if (Au_meta::met.c_is_emojicomp(s[i]))
                 continue;
             
-            if (lispe->handlingutf8->c_is_emoji(s[i])) {
+            if (Au_meta::met.c_is_emoji(s[i])) {
                 pos += 2;
                 continue;
             }
@@ -368,15 +422,10 @@ public:
     }
     
     long sizestring(wstring& s) {
-        if (lispe == NULL) {
-            lispe = new LispE;
-            lispe->arguments(arguments);
-            lispe->set_pathname(thecurrentfilename);
-        }
         long sz = s.size();
         long szstr = 0;
         for (long i = 0; i < sz; i++) {
-            if (lispe->handlingutf8->c_is_emojicomp(s[i]))
+            if (Au_meta::met.c_is_emojicomp(s[i]))
                 continue;
             szstr++;
         }
@@ -387,7 +436,7 @@ public:
         long i = 0;
         while (i < p) {
             cleaned += s[i++];
-            while (lispe->handlingutf8->c_is_emojicomp(s[i])) {i++;}
+            while (Au_meta::met.c_is_emojicomp(s[i])) {i++;}
         }
     }
 
@@ -396,24 +445,31 @@ public:
         if (l == L"")
             return pins;
 
-        if (lispe == NULL) {
-            lispe = new LispE;
-            lispe->arguments(arguments);
-            lispe->set_pathname(thecurrentfilename);
+        long mx = 1;
+        if (selected_pos != -1) {
+            pins = selected_x;
+            mx = selected_y - selected_x;
         }
 
         if (last) {
-            while (lispe->handlingutf8->c_is_emojicomp(l.back())) {
-                l.pop_back();
-                pins--;
+            while (mx) {
+                while (Au_meta::met.c_is_emojicomp(l.back())) {
+                    l.pop_back();
+                    pins--;
+                }
+                mx--;
             }
             l.pop_back();
         }
         else {
-            long nb = 1;
+            long nb = 0;
             long i = pins;
-            if (lispe->handlingutf8->c_is_emoji(l[i++])) {
-                while (lispe->handlingutf8->c_is_emojicomp(l[i++])) nb++;
+            while (mx) {
+                if (Au_meta::met.c_is_emoji(l[i++])) {
+                    while (Au_meta::met.c_is_emojicomp(l[i++])) nb++;
+                }
+                nb++;
+                mx--;
             }
             l.erase(pins, nb);
         }
@@ -421,15 +477,9 @@ public:
     }
     
     void forwardemoji() {
-        if (lispe == NULL) {
-            lispe = new LispE;
-            lispe->arguments(arguments);
-            lispe->set_pathname(thecurrentfilename);
-        }
-
-        if (lispe->handlingutf8->c_is_emoji(line[posinstring])) {
+        if (Au_meta::met.c_is_emoji(line[posinstring])) {
             posinstring++;
-            while (lispe->handlingutf8->c_is_emojicomp(line[posinstring]))
+            while (Au_meta::met.c_is_emojicomp(line[posinstring]))
                 posinstring++;
         }
         else
@@ -437,23 +487,17 @@ public:
     }
 
     void backwardemoji() {
-        if (lispe == NULL) {
-            lispe = new LispE;
-            lispe->arguments(arguments);
-            lispe->set_pathname(thecurrentfilename);
-        }
-
         posinstring--;
         long i = 0;
         if (posinstring < i)
             return;
         
         i = posinstring;
-        if (lispe->handlingutf8->c_is_emojicomp(line[i])) {
+        if (Au_meta::met.c_is_emojicomp(line[i])) {
             i--;
-            while (i > 0 && lispe->handlingutf8->c_is_emojicomp(line[i]))
+            while (i > 0 && Au_meta::met.c_is_emojicomp(line[i]))
                 i--;
-            if (i >= 0 && lispe->handlingutf8->c_is_emoji(line[i]))
+            if (i >= 0 && Au_meta::met.c_is_emoji(line[i]))
                 posinstring = i;
         }
     }
@@ -914,7 +958,6 @@ public:
             commands[L"run"] = cmd_run;
             commands[L"debug"] = cmd_debug;
             commands[L"cls"] = cmd_cls;
-            commands[L"echo"] = cmd_echo;
             commands[L"help"] = cmd_help;
             commands[L"list"] = cmd_list;
             commands[L"rm"] = cmd_rm;
@@ -1042,7 +1085,7 @@ public:
                 }
                 i = convertinginteger(v[1]);
                 if (i < 0 || i >= ifilenames.size()) {
-                    cout << back << m_redbold << "espace: " << i << " n'existe pas" << endl;
+                    cout << back << m_redbold << "space: " << i << " does not exist" << endl;
                     return pos;
                 }
                 if (i != currentfileid) {
@@ -1070,11 +1113,16 @@ public:
            case cmd_edit:
 #ifndef WIN32
                 signal(SIGWINCH, resizewindow);
+                mouseon();
+                selected_x = -1;
+                selected_y = -1;
+                selected_pos = -1;
+                double_click = 0;
 #endif
                 if (v.size() == 2) {
                     i = convertinginteger(v[1]);
                     if (i < 0 || i >= ifilenames.size()) {
-                        cout << back << m_redbold << "espace: " << i <<" n'existe pas" << endl;
+                        cout << back << m_redbold << "space: " << i << " does not exist" << endl;
                         return pos;
                     }
                     if (i != currentfileid) {
@@ -1120,6 +1168,7 @@ public:
                 return pos;
             case cmd_run:
                 addcommandline(line);
+                mouseoff();
                 if (v.size() == 1) {
                     if (isempty(current_code))
                         return pos;
@@ -1151,6 +1200,7 @@ public:
                     cerr << m_redbold << "Cannot load: " << thecurrentfilename << m_current << endl;
                 return pos;
             case cmd_debug:
+                mouseoff();
                 current_line_debugger = -1;
                 current_file_debugger = -1;
                 current_thread_id = 0;
@@ -1207,9 +1257,6 @@ public:
                 return pos;
             case cmd_cls:
                 clearscreen();
-                return pos;
-            case cmd_echo:
-                echochar = true;
                 return pos;
             case cmd_help:
                 i = 0;
@@ -1455,7 +1502,7 @@ public:
                 if (v.size() == 2) {
                     i = convertinginteger(v[1]);
                     if (i < 0 || i >= ifilenames.size()) {
-                        cout << back << m_redbold << "Cet espace de fichier n'existe pas" << endl;
+                        cout << back << m_redbold << "This file space does not exist" << endl;
                         return pos;
                     }
                     //In this case, we clear one space...
@@ -1563,9 +1610,9 @@ public:
         if (tobesaved) {
             tobesaved = false;
             if (emode())
-                displayonlast("Fichier non sauvé... même commande pour quitter true_ment", true);
+                displayonlast("File not saved...", true);
             else
-                printline(pos+1, "Fichier non sauvé... ctrl-d encore pour quitter");
+                printline(pos+1, "File not saved... ctrl-d to quit");
             return false;
         }
         
@@ -1580,7 +1627,6 @@ public:
     }
     
     void clear() {
-        echochar = false;
         pos = lines.size();
         if (!editmode) {
             cout << "^C" << endl;
@@ -2097,6 +2143,7 @@ public:
         
 
         clearst();
+        long selection_beginning = 0;
         wstring code;
         wstring b;
         string buffer;
@@ -2109,7 +2156,17 @@ public:
         
         while (1) {
             buff = getch();
-            
+
+
+#ifdef UNIX
+            if (emode()) {
+                while (isMouseAction(buff)) {
+                    handlemousectrl(buff);
+                    buff =  getch();
+                }
+            }
+#endif
+
             //This specific section below is used to
             //read a string a pass it to "input" in the
             //debugger thread...
@@ -2247,12 +2304,70 @@ public:
                     movetoposition();
                 }
             }
+            
+            if (buff == (char*)shift_right) {
+                //We select to the right...
+                if (selected_pos == -1) {
+                    selected_pos = pos;
+                    selected_posnext = pos;
+                    double_click = 0;
+                    selection_beginning = posinstring;
+                    selected_x = posinstring;
+                    selected_y = posinstring++;
+                }
+                
+                if (selected_y >= lines[pos].size())
+                    continue;
+                
+                unselectlines(pos, pos, selected_x, selected_y);
+                selected_y++;
+                posinstring = selected_y;
+                selectlines(pos, pos, selected_x, selected_y);
+                continue;
+            }
+
+            if (buff == (char*)shift_left) {
+                //We select to the left...
+                if (selected_pos == -1 || selected_y == selection_beginning) {
+                    continue;
+                }
+                
+                unselectlines(pos, pos, selected_x, selected_y);
+                selected_y--;
+                posinstring = selected_y;
+                selectlines(pos, pos, selected_x, selected_y);
+                continue;
+            }
+
+            selection_beginning = 0;
+            
+            //We clear the selection
+            if (selected_pos != -1 && buff[0] != 24)
+                unselectlines(selected_pos, selected_posnext, selected_x, selected_y);
 
             linematch = -1;
             dsp = true;
-            if (checkkeyboard(buff, first, last, dsp, noinit))
+            if (checkkeyboard(buff, first, last, dsp, noinit)) {
+                double_click = 0;
+                if (buff[0] != 24) {
+                    selected_x = -1;
+                    selected_y = -1;
+                    selected_pos = -1;
+                }
                 continue;
+            }
+
+            if (selected_pos == pos) {
+                //We are going to replace a sequence of characters
+                //we delete it first
+                deleteselection();
+            }
             
+            double_click = 0;
+            selected_x = -1;
+            selected_y = -1;
+            selected_pos = -1;
+
 #ifdef WIN32
             if (!buff[0] && buff[1] == '#') {
                 //Special case for ctrl+alt+h (ctrl-h is backdelete on windows
@@ -2664,7 +2779,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
     }
 }
 
-#ifdef DEBUG
+#ifdef DEBUGG
 //Minimale version without the internal editor
 int main(int argc, char *argv[]) {
     LispE lisp;

@@ -412,7 +412,7 @@ public:
 //--------------------------------------------------------------------------------
 
 
-typedef enum { x_none, x_goto, x_find, x_replace, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_deleting, x_cutting, x_load, x_exitprint, x_debug} x_option;
+typedef enum { x_none, x_goto, x_find, x_replace, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_copyingselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
 class Jag_automaton;
 
 class jag_editor : public jag_get {
@@ -443,6 +443,8 @@ public:
     wstring kbuffer;
     wstring copybuffer;
 
+    long selected_x, selected_y, selected_pos, selected_posnext, selected_firstline, double_click;
+    
     long poscommand;
     
     long linematch;
@@ -458,7 +460,6 @@ public:
 
     x_option option;
 
-    bool echochar;
     bool replaceall;
     bool modified;
     bool tobesaved;
@@ -479,7 +480,13 @@ public:
     }
 
     virtual void displaythehelp(long noclear = 0);
-
+    
+    void deleteselection();
+    void displayextract(wstring& sub, long pos, long from_pos, long to_pos, bool select = true);
+    void selectlines(long from_line, long to_line, long from_pos, long to_pos);
+    void unselectlines(long from_line, long to_line, long from_pos, long to_pos);
+    virtual void handlemousectrl(string& mousectrl);
+    
     void setpathname(string path) {
         thecurrentfilename =  path;
     }
@@ -737,7 +744,7 @@ public:
         return s.size();
     }
 
-    long splitline(wstring& l, long linenumber, vector<wstring>& subs) {
+    virtual long splitline(wstring& l, long linenumber, vector<wstring>& subs) {
             //we compute the position of each segment of l on string...
 
         long ps = pos;
@@ -986,24 +993,7 @@ public:
     void addabuffer(wstring& b, bool instring);
     void cleanheaders(wstring& w);
     
-    void handleblock(wstring& bl) {
-
-            //We keep track of the initial form of the line...
-        undo(lines[pos],pos, u_modif); //The value is negative to indicate a deletion
-
-        wstring b;
-        for (long j = 0; j < bl.size(); j++) {
-            b = bl[j];
-            if (b[0] == 10) {
-                pos = handlingeditorline(false);
-                continue;
-            }
-            addabuffer(b, false);
-        }
-        displaylist(poslines[0]);
-        movetoline(currentline);
-        movetoposition();
-    }
+    void handleblock(wstring& bl);
 
     //This section handles combined commands introduced with Ctrl-x
     virtual bool checkcommand(char);

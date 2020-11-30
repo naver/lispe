@@ -31,6 +31,7 @@ using std::string;
 using std::cout;
 using std::cerr;
 using std::endl;
+using std::vector;
 
 //--------------------------------------------------------------------------------
 
@@ -123,6 +124,13 @@ const char c_down[] = { 27, 91, 54, 126, 0 };
 const char c_up[] = { 27, 91, 49, 59, 53, 65, 0 }; //\033[1;5A
 const char c_down[] = { 27, 91, 49, 59, 53, 66, 0 }; //\033[1;5B
 #endif
+
+const char enablemouse[] = {27,91,'?','1','0','0','3','h',27,91,'?','1','0','1','5','h',27,91,'?','1','0','1','6','h',0};
+const char disablemouse[] = {27,91,'?','1','0','0','0','l',0};
+const char showcursor[] = {27,91,'?','2','5','h',0};
+const char hidecursor[] = {27,91,'?','2','5','l',0};
+const char cursor_position[] = { 27, 91, '6', 'n', 0 };
+
 const uchar is_up = 65;
 const uchar is_down = 66;
 const char right[] = { 27, 91, 67, 0 };
@@ -132,12 +140,16 @@ const char up[] = {27, 91, 65, 0};
 const char del[] = { 27, 91, 51, 126, 0 };
 const char homekey[] = { 27, 91, 72, 0 };
 const char endkey[] = { 27, 91, 70, 0 };
+
+const unsigned char alt_x[] = {226, 137, 136, 0};
+const unsigned char alt_c[] = {194, 169, 0};
+const unsigned char alt_v[] = {226, 151, 138, 0};
+const unsigned char shift_right[] = {27, 91, 49, 59, 50, 67, 0};
+const unsigned char shift_left[] = {27, 91, 49, 59, 50, 68, 0};
 #endif
 
 
 const char back = 13;
-
-const char cursor_position[] = {27, 91, '6', 'n', 0};
 
 //--------------------------------------------------------------------------------
 class jag_get {
@@ -155,6 +167,7 @@ public:
 
     bool inside_editor;
     bool initialized;
+    bool mouse_status;
     
     jag_get(bool inside);
     ~jag_get() {
@@ -168,6 +181,155 @@ public:
     void get_a_string(string&);
     void initialisation();
 
+    void sendcommand(string s) {
+        cout.flush();
+        cout << s;
+    }
+    
+#ifdef WIN32
+    void mouseon() {
+        mouse_status = true;
+    }
+    
+    void mouseoff() {
+        mouse_status = false;
+    }
+    
+    bool isMouseAction(std::wstring& mousectrl) {
+        return false;
+    }
+    
+    void togglemouse() {}
+    
+#else
+    
+    void mouseon() {
+        if (!mouse_status) {
+            sendcommand(enablemouse);
+            mouse_status = true;
+        }
+    }
+    
+    void mouseoff() {
+        if (mouse_status) {
+            sendcommand(disablemouse);
+            mouse_status = false;
+        }
+    }
+    
+    void togglemouse() {
+        if (!mouse_status) {
+            sendcommand(enablemouse);
+            mouse_status = true;
+        }
+        else {
+            sendcommand(disablemouse);
+            mouse_status = false;
+        }
+    }
+    
+    void mouseLocation(vector<int>& vect, string& mousectrl) {
+        int action, mxcursor, mycursor;
+        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+            //This a move
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+            if (action == 67) {
+                vect.push_back(mxcursor);
+                vect.push_back(mycursor);
+            }
+        }
+    }
+
+    bool isScrollingUp(vector<int>& vect, string& mousectrl) {
+        int action, mxcursor, mycursor;
+        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+            //This a move
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+            if (action == 96) {
+                vect.push_back(mxcursor);
+                vect.push_back(mycursor);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isScrollingDown(vector<int>& vect, string& mousectrl) {
+        int action, mxcursor, mycursor;
+        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+            //This a move
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+            if (action == 97) {
+                vect.push_back(mxcursor);
+                vect.push_back(mycursor);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isClickFirstMouseDown(vector<int>& vect, string& mousectrl) {
+        int action, mxcursor, mycursor;
+        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+            //This a move
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+            if (action == 32) {
+                vect.push_back(mxcursor);
+                vect.push_back(mycursor);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isClickSecondMouseDown(vector<int>& vect, string& mousectrl) {
+        int action, mxcursor, mycursor;
+        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+            //This a move
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+            if (action == 34) {
+                vect.push_back(mxcursor);
+                vect.push_back(mycursor);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isClickMouseUp(vector<int>& vect, string& mousectrl) {
+        int action, mxcursor, mycursor;
+        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+            //This a move
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+            if (action == 35) {
+                vect.push_back(mxcursor);
+                vect.push_back(mycursor);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool mouseTracking(string& mousectrl, int& mxcursor, int& mycursor) {
+        int action;
+        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+            //This a move
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+            if (action == 64)
+                return true;
+        }
+        return false;
+    }
+
+    bool isMouseAction(string mousectrl) {
+        return (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[');
+    }
+
+    bool isMouseAction(std::wstring& mousectrl) {
+        return (mousectrl.size() >= 8 && mousectrl.back() == L'M' && mousectrl[0] == 27 && mousectrl[1] == L'[');
+    }
+
+#endif
     
 };
 
