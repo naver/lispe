@@ -381,7 +381,6 @@ public:
             cerr << "   \t\t- " << m_redital << "r:" << m_current << " run the code" << endl;
             cerr << "   \t\t- " << m_redital << "w:" << m_current << " write and quit" << endl;
             cerr << "   \t\t- " << m_redital << "l:" << m_current << " load a file" << endl;
-            cerr << "   \t\t- " << m_redital << "m:" << m_current << " display meta-characters" << endl;
             cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
             cerr << "   \t\t- " << m_redital << "m:" << m_current << " toggle mouse on/off" << endl;
             cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;
