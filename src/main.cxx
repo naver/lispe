@@ -317,7 +317,12 @@ public:
             cerr << "   \t\t\t- " << m_redbold << "$: execute the program up to the end" << m_current << endl;
             cerr << "   \t\t\t- " << m_redbold << "!: stop the execution" << m_current << endl;
             cerr << "   \t\t\t- " << m_redbold << "%: display all variables" << m_current << endl;
-            cerr << "   \t\t\t- " << m_redbold << ">: jump to the next breakpoint" << m_current << endl;
+            cerr << "   \t\t\t- " << m_redbold << "#: toggle between displaying local variables on/off" << m_current << endl;
+            cerr << "   \t\t\t- " << m_redbold << "&: toggle between displaying 'print' operations on/off'" << m_current << endl;
+            cerr << "   \t\t\t- " << m_redbold << "↓: debug inside a function" << m_current << endl;
+            cerr << "   \t\t\t- " << m_redbold << "↑: out of a loop or a function" << m_current << endl;
+            cerr << "   \t\t\t- " << m_redbold << "←: set a breakpoint at the current line" << m_current << endl;
+            cerr << "   \t\t\t- " << m_redbold << "→: jump to the next breakpoint" << m_current << endl;
             cerr << "   \t\t\t- " << m_redbold << "CR: execute the next line" << m_current << endl;
             cerr << "   \t\t\t- " << m_redbold << "var: display the content of the variable 'var'" << m_current << endl;
             cerr << "   \t\t\t- " << m_redbold << "(...): execute some lisp code" << m_current << endl << endl;
