@@ -22,11 +22,11 @@ Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/nav
 
 Come and discover __LispE__: the __Lisp Elémentaire__.
 
-# Play with it
+## Play with it
 
 We provide a fun little program to discover some of the most interesting aspects of LispE: [minzorg](https://github.com/naver/lispe/blob/master/examples/patterns/minizorg.lisp)
 
-__Have a look and try it__
+_Have a look and try it_
 
 
 ## License
