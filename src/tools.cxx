@@ -508,7 +508,8 @@ static const char* temojis[] = { "0x1F004","mahjong red dragon","0x1F0CF","joker
     "", "" };
 
 
-static UWCHAR temojiscomplement[] = {0x1F1E6,0x1F1E7,0x1F1E8,0x1F1E9,0x1F1EA,0x1F1EB,0x1F1EC,0x1F1ED,0x1F1EE,0x1F1EF,
+static UWCHAR temojiscomplement[] = {
+    0x1F1E6,0x1F1E7,0x1F1E8,0x1F1E9,0x1F1EA,0x1F1EB,0x1F1EC,0x1F1ED,0x1F1EE,0x1F1EF,
     0x1F1F0,0x1F1F1,0x1F1F2,0x1F1F3,0x1F1F4,0x1F1F5,0x1F1F6,0x1F1F7,0x1F1F8,0x1F1F9,
     0x1F1FA,0x1F1FB,0x1F1FC,0x1F1FD,0x1F1FE,0x1F1FF,0x1F308,0x1F33E,0x1F373,0x1F393,
     0x1F3A4,0x1F3A8,0x1F3EB,0x1F3ED,0x1F3FB,0x1F3FC,0x1F3FD,0x1F3FE,0x1F3FF,0x1F466,
@@ -520,6 +521,9 @@ static UWCHAR temojiscomplement[] = {0x1F1E6,0x1F1E7,0x1F1E8,0x1F1E9,0x1F1EA,0x1
 
 
 bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
+    if (c < min_emoji)
+        return false;
+
     try {
         emojis.at(c);
         return true;
@@ -530,6 +534,9 @@ bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
 }
 
 bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
+    if (c < min_emojicomp)
+        return false;
+    
     try {
         emojiscomplement.at(c);
         return true;
@@ -537,6 +544,27 @@ bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
     catch(const std::out_of_range& oor) {
         return false;
     }
+}
+
+//We position on 'position' in the string
+long Chaine_UTF8::getonchar(wstring& w, long position) {
+    long i = 0;
+    long nb = 0;
+    UWCHAR c;
+    while (nb < position) {
+        c = getonewchar(w, i);
+        if (c_is_emoji(c)) {
+            i++;
+            c = getonewchar(w, i);
+            while (c_is_emojicomp(c)) {
+                i++;
+                c = getonewchar(w, i);
+            }
+        }
+        i++;
+        nb++;
+    }
+    return i;
 }
 
 #ifdef WIN32
@@ -548,13 +576,6 @@ inline UWCHAR getonechar(unsigned char* s, long& i) {
         c_utf16_to_unicode(result, code,  true);
     }
     return result;
-}
-
-inline UWCHAR getonewchar(wstring& s, long& i) {
-    UWCHAR c;
-    if (c_utf16_to_unicode(c, s[i], false))
-        c_utf16_to_unicode(c, s[++i], true);
-    return c;
 }
 
 inline UWCHAR getuwchar(wstring& s, long& i) {
@@ -607,8 +628,6 @@ inline UWCHAR getonechar(unsigned char* s, long& i) {
     i += c_utf8_to_unicode(s + i, code);
     return code;
 }
-
-#define getonewchar(w, i) w[i]
 
 void Chaine_UTF8::getchar(wstring& s, wstring& res,  size_t& i, long sz) {
     try {
@@ -922,16 +941,22 @@ Chaine_UTF8::Chaine_UTF8() {
     //emoji
     string code;
     uint32_t c;
+    min_emoji = 0xFFFFF;
     while (temojis[i][0] != 0) {
         code = temojis[i];
         c = (uint32_t)convertinginteger(code);
+        min_emoji = std::min(min_emoji, c);
         if (c > 127)
             emojis[c] = temojis[i + 1];
         i += 2;
     }
+    
     i = 0;
+    min_emojicomp = 0xFFFFF;;
     while (temojiscomplement[i]) {
-        emojiscomplement[temojiscomplement[i]] = true;
+        c = temojiscomplement[i];
+        min_emojicomp = std::min(min_emojicomp, c);
+        emojiscomplement[c] = true;
         i++;
     }
     

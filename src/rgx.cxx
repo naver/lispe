@@ -47,7 +47,7 @@ using std::wsregex_iterator;
 static Au_automatons* gAutomatons = NULL;
 
 //--------------------------------------------------------------------
-Chaine_UTF8 Au_meta::met;
+Chaine_UTF8* Au_meta::met = NULL;
 //--------------------------------------------------------------------
 #define au_error -1
 #define au_stop -2
@@ -234,7 +234,7 @@ bool Au_state::match(wstring& w, long i) {
         return false;
     }
 
-    UWCHAR c = Au_meta::met.getachar(w,i);
+    UWCHAR c = Au_meta::met->getachar(w,i);
 
     for (long j=0;j<arcs.last;j++) {
         switch(arcs[j]->action->compare(c)) {
@@ -292,7 +292,7 @@ long Au_state::loop(wstring& w, long i) {
     long l = au_error;
     long j;
 
-    UWCHAR c = Au_meta::met.getachar(w,i);
+    UWCHAR c = Au_meta::met->getachar(w,i);
 
     for (j=0;j<arcs.last;j++) {
         switch(arcs[j]->action->compare(c)) {
@@ -404,7 +404,7 @@ bool Au_arc::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
     if (i==w.size())
         return false;
     
-    UWCHAR c = Au_meta::met.getachar(w,i);
+    UWCHAR c = Au_meta::met->getachar(w,i);
 
     switch(action->compare(c)) {
         case 0:
@@ -951,13 +951,13 @@ Au_arc* Au_state::build(Au_automatons* aus, wstring& token, uchar type, Au_state
 }
 
 
-class ExpressionReguliere : public Element {
+class LispERegularExpressions : public Element {
 public:
     
     Au_automate au;
     wstring strvalue;
  
-    ExpressionReguliere(wstring str, short l_rgx) : au(str), strvalue(str), Element(l_rgx) {}
+    LispERegularExpressions(wstring str, short l_rgx) : au(str), strvalue(str), Element(l_rgx) {}
     
     bool verify() {
         if (au.first == NULL)
@@ -1013,13 +1013,13 @@ public:
 };
 
 #ifdef POSIXREGEX
-class ExpressionRegulierePosix : public Element {
+class LispEPosixRegularExpression : public Element {
 public:
     
     wregex* au;
     wstring strvalue;
  
-    ExpressionRegulierePosix(wstring str, short l_rgx) : strvalue(str), Element(l_rgx) {
+    LispEPosixRegularExpression(wstring str, short l_rgx) : strvalue(str), Element(l_rgx) {
         try {
             au = new wregex(strvalue);
         }
@@ -1028,7 +1028,7 @@ public:
         }
     }
     
-    ~ExpressionRegulierePosix() {
+    ~LispEPosixRegularExpression() {
         if (au != NULL)
             delete au;
     }
@@ -1114,12 +1114,12 @@ typedef enum {rgx_rgx, rgx_find, rgx_findall, rgx_match, rgx_replace
 #endif
 } rgx;
     
-class ExpressionReguliereConstructeur : public Element {
+class RegularExpressionConstructor : public Element {
 public:
     rgx reg;
     short l_rgx;
     
-    ExpressionReguliereConstructeur(LispE* lisp, rgx r) : reg(r), Element(l_lib, s_constant) {
+    RegularExpressionConstructor(LispE* lisp, rgx r) : reg(r), Element(l_lib, s_constant) {
         wstring wrgx = L"rgx";
 #ifdef POSIXREGEX
         if (r >= prgx_rgx)
@@ -1129,10 +1129,12 @@ public:
     }
     
     virtual Element* eval(LispE* lisp) {
+        Au_meta::met = lisp->handlingutf8;
+        
         switch (reg) {
             case rgx_rgx: {
                 wstring expression = lisp->get(L"exp")->asString(lisp);
-                ExpressionReguliere* e = new ExpressionReguliere(expression, l_rgx);
+                LispERegularExpressions* e = new LispERegularExpressions(expression, l_rgx);
                 if (!e->verify()) {
                     delete e;
                     throw new Error("Error: Unrecognized regular expression");
@@ -1145,7 +1147,7 @@ public:
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
                 long pos = lisp->get(L"pos")->asNumber();
-                return ((ExpressionReguliere*)e)->find(lisp,value, pos);
+                return ((LispERegularExpressions*)e)->find(lisp,value, pos);
             }
             case rgx_findall: {
                 Element* e = lisp->get(L"exp");
@@ -1153,14 +1155,14 @@ public:
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
                 long pos = lisp->get(L"pos")->asNumber();
-                return ((ExpressionReguliere*)e)->findall(lisp, value, pos);
+                return ((LispERegularExpressions*)e)->findall(lisp, value, pos);
             }
             case rgx_match: {
                 Element* e = lisp->get(L"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
-                return ((ExpressionReguliere*)e)->match(lisp, value);
+                return ((LispERegularExpressions*)e)->match(lisp, value);
             }
             case rgx_replace: {
                 Element* e = lisp->get(L"exp");
@@ -1168,12 +1170,12 @@ public:
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
                 wstring rep = lisp->get(L"rep")->asString(lisp);
-                return ((ExpressionReguliere*)e)->replace(lisp, value, rep);
+                return ((LispERegularExpressions*)e)->replace(lisp, value, rep);
             }
 #ifdef POSIXREGEX
             case prgx_rgx: {
                 wstring expression = lisp->get(L"exp")->asString(lisp);
-                ExpressionRegulierePosix* e = new ExpressionRegulierePosix(expression, l_rgx);
+                LispEPosixRegularExpression* e = new LispEPosixRegularExpression(expression, l_rgx);
                 if (!e->verifie()) {
                     delete e;
                     throw new Error("Error: Unrecognized regular expression");
@@ -1186,7 +1188,7 @@ public:
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
                 long pos = lisp->get(L"pos")->asNumber();
-                return ((ExpressionRegulierePosix*)e)->find(lisp,value, pos);
+                return ((LispEPosixRegularExpression*)e)->find(lisp,value, pos);
             }
             case prgx_findall: {
                 Element* e = lisp->get(L"exp");
@@ -1194,14 +1196,14 @@ public:
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
                 long pos = lisp->get(L"pos")->asNumber();
-                return ((ExpressionRegulierePosix*)e)->findall(lisp, value, pos);
+                return ((LispEPosixRegularExpression*)e)->findall(lisp, value, pos);
             }
             case prgx_match: {
                 Element* e = lisp->get(L"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
-                return ((ExpressionRegulierePosix*)e)->match(lisp, value);
+                return ((LispEPosixRegularExpression*)e)->match(lisp, value);
             }
             case prgx_replace: {
                 Element* e = lisp->get(L"exp");
@@ -1209,7 +1211,7 @@ public:
                     throw new Error("Error: the first element must be a regular expression");
                 wstring value = lisp->get(L"str")->asString(lisp);
                 wstring rep = lisp->get(L"rep")->asString(lisp);
-                return ((ExpressionRegulierePosix*)e)->replace(lisp, value, rep);
+                return ((LispEPosixRegularExpression*)e)->replace(lisp, value, rep);
             }
 #endif
         }
@@ -1256,12 +1258,14 @@ public:
     }
 };
 
-class ExpressionReguliereConstructeurPooling : public ExpressionReguliereConstructeur {
+class RegularExpressionPool : public RegularExpressionConstructor {
 public:
     
-    ExpressionReguliereConstructeurPooling(LispE* lisp, rgx r) : ExpressionReguliereConstructeur(lisp, r) {}
+    RegularExpressionPool(LispE* lisp, rgx r) : RegularExpressionConstructor(lisp, r) {}
     
     Element* eval(LispE* lisp) {
+        Au_meta::met = lisp->handlingutf8;
+        
         wstring expression = lisp->get(L"exp")->asString(lisp);
         // As the construction of an rgx is expensive, they are kept in a pool .
         Element* value = lisp->get(L"str");
@@ -1276,15 +1280,15 @@ public:
             wstring w = value->asString(lisp);
 #ifdef POSIXREGEX
             if (reg == prgx_rgx)
-                return ((ExpressionRegulierePosix*)rgx)->match(lisp, w);
+                return ((LispEPosixRegularExpression*)rgx)->match(lisp, w);
 #endif
-            return ((ExpressionReguliere*)rgx)->match(lisp, w);
+            return ((LispERegularExpressions*)rgx)->match(lisp, w);
         }
         
         
 #ifdef POSIXREGEX
         if (reg == prgx_rgx) {
-            ExpressionRegulierePosix* e = new ExpressionRegulierePosix(expression, l_rgx);
+            LispEPosixRegularExpression* e = new LispEPosixRegularExpression(expression, l_rgx);
             if (!e->verifie()) {
                 delete e;
                 throw new Error("Error: Unrecognized regular expression");
@@ -1299,7 +1303,7 @@ public:
 #endif
         
         
-        ExpressionReguliere* e = new ExpressionReguliere(expression, l_rgx);
+        LispERegularExpressions* e = new LispERegularExpressions(expression, l_rgx);
         if (!e->verify()) {
             delete e;
             throw new Error("Error: Unrecognized regular expression");
@@ -1315,17 +1319,19 @@ public:
 
 //We are also going to implement the body of the call
 void moduleRGX(LispE* lisp) {
-    lisp->extension("deflib rgx (exp (str))", new ExpressionReguliereConstructeurPooling(lisp, rgx_rgx));
-    lisp->extension("deflib rgx_find (exp str (pos 0))", new ExpressionReguliereConstructeur(lisp, rgx_find));
-    lisp->extension("deflib rgx_findall (exp str (pos 0))", new ExpressionReguliereConstructeur(lisp, rgx_findall));
-    lisp->extension("deflib rgx_match (exp str)", new ExpressionReguliereConstructeur(lisp, rgx_match));
-    lisp->extension("deflib rgx_replace (exp str rep)", new ExpressionReguliereConstructeur(lisp, rgx_replace));
+    Au_meta::met = lisp->handlingutf8;
+    
+    lisp->extension("deflib rgx (exp (str))", new RegularExpressionPool(lisp, rgx_rgx));
+    lisp->extension("deflib rgx_find (exp str (pos 0))", new RegularExpressionConstructor(lisp, rgx_find));
+    lisp->extension("deflib rgx_findall (exp str (pos 0))", new RegularExpressionConstructor(lisp, rgx_findall));
+    lisp->extension("deflib rgx_match (exp str)", new RegularExpressionConstructor(lisp, rgx_match));
+    lisp->extension("deflib rgx_replace (exp str rep)", new RegularExpressionConstructor(lisp, rgx_replace));
 
 #ifdef POSIXREGEX
-    lisp->extension("deflib prgx (exp (str))", new ExpressionReguliereConstructeurPooling(lisp, prgx_rgx));
-    lisp->extension("deflib prgx_find (exp str (pos 0))", new ExpressionReguliereConstructeur(lisp, prgx_find));
-    lisp->extension("deflib prgx_findall (exp str (pos 0))", new ExpressionReguliereConstructeur(lisp, prgx_findall));
-    lisp->extension("deflib prgx_match (exp str)", new ExpressionReguliereConstructeur(lisp, prgx_match));
-    lisp->extension("deflib prgx_replace (exp str rep)", new ExpressionReguliereConstructeur(lisp, prgx_replace));
+    lisp->extension("deflib prgx (exp (str))", new RegularExpressionPool(lisp, prgx_rgx));
+    lisp->extension("deflib prgx_find (exp str (pos 0))", new RegularExpressionConstructor(lisp, prgx_find));
+    lisp->extension("deflib prgx_findall (exp str (pos 0))", new RegularExpressionConstructor(lisp, prgx_findall));
+    lisp->extension("deflib prgx_match (exp str)", new RegularExpressionConstructor(lisp, prgx_match));
+    lisp->extension("deflib prgx_replace (exp str rep)", new RegularExpressionConstructor(lisp, prgx_replace));
 #endif
 }

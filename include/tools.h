@@ -111,6 +111,30 @@ Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second);
 Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code);
 
 #define c_is_digit(c) (c >= '0' && c <= '9')
+
+#ifdef WIN32
+inline UWCHAR getonewchar(wstring& s, long& i) {
+    UWCHAR c;
+    if (c_utf16_to_unicode(c, s[i], false))
+        c_utf16_to_unicode(c, s[++i], true);
+    return c;
+}
+
+inline void concat_to_wstring(wstring& res, UWCHAR code) {
+    if (!(code & 0xFFFF0000))
+        res += (wchar_t)code;
+    else {
+        TAMGUCHAR c16;
+        c_unicode_to_utf16(c16, code);
+        res += (wchar_t)(c16 >> 16);
+        res += (wchar_t)(c16 & 0xFFFF);
+    }
+}
+#else
+#define getonewchar(w, i) w[i]
+#define concat_to_wstring(res, code) res += code
+#endif
+
 //--------------------------------------------------------------------
 bool c_is_hexa(wchar_t code);
 //------------------------------------------------------------------------------------
@@ -148,6 +172,7 @@ public:
     string emoji_description(UWCHAR c);
     bool c_is_emojicomp(UWCHAR c);
     bool c_is_emoji(UWCHAR c);
+    long getonchar(wstring& w, long position);
     
     string emoji_description(wstring& s);
     string emoji_description(string& s);
@@ -156,6 +181,8 @@ public:
     bool c_is_emojicomp(unsigned char* m, long& i);
     bool c_is_emoji(unsigned char* m, long& i);
     
+    uint32_t min_emoji;
+    uint32_t min_emojicomp;
     
     bool c_is_upper(wchar_t c) {
         char ty = c_is_alpha(c);

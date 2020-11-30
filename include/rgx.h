@@ -102,7 +102,7 @@ public:
 
 class Au_meta : public Au_any {
 public:
-    static Chaine_UTF8 met;
+    static Chaine_UTF8* met;
     
     wchar_t action;
     
@@ -121,7 +121,7 @@ public:
         
         switch(action) {
             case 'C':
-                if (met.c_is_upper(car))
+                if (met->c_is_upper(car))
                     return vero;
                 return !vero;
             case 'S':
@@ -129,11 +129,11 @@ public:
                     return vero;
                 return !vero;
             case 'a':
-                if (car=='_' || met.c_is_alpha(car))
+                if (car=='_' || met->c_is_alpha(car))
                     return vero;
                 return !vero;
             case 'c':
-                if (met.c_is_lower(car))
+                if (met->c_is_lower(car))
                     return vero;
                 return !vero;
             case 'd':
@@ -141,11 +141,11 @@ public:
                     return vero;
                 return !vero;
             case 'e':
-                if (met.c_is_emoji(car))
+                if (met->c_is_emoji(car))
                     return vero;
                 return !vero;
             case 'E':
-                if (met.c_is_emojicomp(car))
+                if (met->c_is_emojicomp(car))
                     return vero;
                 return !vero;
             case 'n':
@@ -153,7 +153,7 @@ public:
                     return vero;
                 return !vero;
             case 'p':
-                if (met.c_is_punctuation(car))
+                if (met->c_is_punctuation(car))
                     return vero;
                 return !vero;
             case 'r':

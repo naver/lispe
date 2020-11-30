@@ -80,6 +80,8 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
 void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor, bool full);
 void lispe_displaystring(string& code, void*);
 
+static Chaine_UTF8 special_characters;
+
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
 // The main editor class for handling LispE expressions and debugger
@@ -180,37 +182,38 @@ public:
             //we compute the position of each segment of l on string...
 
         long sz = prefixe();
-
-        if ( (sz + l.size()) < col_size) {
+        
+        if ((l.size() + sz) < (col_size / 2)) {
             subs.push_back(l);
             return 1;
         }
-        
+
         wstring code;
+        UWCHAR c;
         long j;
-        
+
         for (long i = 0; i < l.size(); i++) {
-            code += l[i];
-            if (l[i] == 9) {//tab position
+            c = getonewchar(l, i);
+            concat_to_wstring(code, c);
+            if (special_characters.c_is_emojicomp(c))
+                continue;
+            
+            if (c == 9) {//tab position
                 sz += (8 - (sz%8))%8;
                 sz--;
             }
             else {
-                if (ckjchar(l[i])) //double space on screen
+                if (ckjchar(c)) //double space on screen
                     sz++;
                 else { //emoji with combination
-                    if (Au_meta::met.c_is_emojicomp(l[i])) {
+                    if (special_characters.c_is_emoji(c)) {
                         j = i + 1;
+                        c = getonewchar(l, j);
                         sz++; //double space on screen
-                        while (Au_meta::met.c_is_emoji(l[j])) {
-                            code += l[j];
-                            j++;
-                            continue;
-                        }
-                        i = j - 1;
                     }
                 }
             }
+            
             sz++;
             if (sz >= col_size) {
                 subs.push_back(code);
@@ -219,11 +222,12 @@ public:
             }
         }
         
-        if (code != L"")
+        if (code != L"" || !subs.size())
             subs.push_back(code);
         
         return subs.size();
     }
+
 
     string coloringline(string line, bool thread) {
         if (line == "")
@@ -406,10 +410,10 @@ public:
         long pref = prefixego() + 1;
         long pos = pref;
         for (long i = 0; i < sz; i++) {
-            if (Au_meta::met.c_is_emojicomp(s[i]))
+            if (special_characters.c_is_emojicomp(s[i]))
                 continue;
             
-            if (Au_meta::met.c_is_emoji(s[i])) {
+            if (special_characters.c_is_emoji(s[i])) {
                 pos += 2;
                 continue;
             }
@@ -429,7 +433,7 @@ public:
         long sz = s.size();
         long szstr = 0;
         for (long i = 0; i < sz; i++) {
-            if (Au_meta::met.c_is_emojicomp(s[i]))
+            if (special_characters.c_is_emojicomp(s[i]))
                 continue;
             szstr++;
         }
@@ -440,9 +444,35 @@ public:
         long i = 0;
         while (i < p) {
             cleaned += s[i++];
-            while (Au_meta::met.c_is_emojicomp(s[i])) {i++;}
+            while (special_characters.c_is_emojicomp(s[i])) {i++;}
         }
     }
+
+    long size_upto(wstring& s, long p) {
+        long pref = prefixego() + 1;
+        long pos = pref;
+        UWCHAR c;
+        for (long i = 0; i < p; i++) {
+            c = getonewchar(s, i);
+            if (special_characters.c_is_emojicomp(c))
+                continue;
+            
+            if (special_characters.c_is_emoji(c)) {
+                pos += 2;
+                continue;
+            }
+                
+            if (ckjchar(c)) {
+                pos += 2;
+                continue;
+            }
+            if (c == 9) //tab position
+                pos += (8 - (pos%8))%8;
+            pos++;
+        }
+        return (pos-pref);
+    }
+
 
     //The deletion of a character is different if it is an emoji...
     long deleteachar(wstring& l, bool last, long pins) {
@@ -457,7 +487,7 @@ public:
 
         if (last) {
             while (mx) {
-                while (Au_meta::met.c_is_emojicomp(l.back())) {
+                while (special_characters.c_is_emojicomp(l.back())) {
                     l.pop_back();
                     pins--;
                 }
@@ -469,8 +499,8 @@ public:
             long nb = 0;
             long i = pins;
             while (mx) {
-                if (Au_meta::met.c_is_emoji(l[i++])) {
-                    while (Au_meta::met.c_is_emojicomp(l[i++])) nb++;
+                if (special_characters.c_is_emoji(l[i++])) {
+                    while (special_characters.c_is_emojicomp(l[i++])) nb++;
                 }
                 nb++;
                 mx--;
@@ -481,9 +511,10 @@ public:
     }
     
     void forwardemoji() {
-        if (Au_meta::met.c_is_emoji(line[posinstring])) {
+        if (special_characters.c_is_emoji(line[posinstring])) {
             posinstring++;
-            while (Au_meta::met.c_is_emojicomp(line[posinstring]))
+            long sz = line.size();
+            while (posinstring < sz && special_characters.c_is_emojicomp(line[posinstring]))
                 posinstring++;
         }
         else
@@ -497,11 +528,11 @@ public:
             return;
         
         i = posinstring;
-        if (Au_meta::met.c_is_emojicomp(line[i])) {
+        if (special_characters.c_is_emojicomp(line[i])) {
             i--;
-            while (i > 0 && Au_meta::met.c_is_emojicomp(line[i]))
+            while (i > 0 && special_characters.c_is_emojicomp(line[i]))
                 i--;
-            if (i >= 0 && Au_meta::met.c_is_emoji(line[i]))
+            if (i >= 0 && special_characters.c_is_emoji(line[i]))
                 posinstring = i;
         }
     }

@@ -805,7 +805,7 @@ public:
         return taille(l);
     }
 
-    long size_upto(wstring& l, long p) {
+    virtual long size_upto(wstring& l, long p) {
         wstring s;
         cleanlongemoji(l, s, p);
         return taille(s);
