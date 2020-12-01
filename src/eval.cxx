@@ -2940,13 +2940,24 @@ Element* Listcallfunction::eval(LispE* lisp) {
             throw lisp->delegation->_THEEND;
         throw new Error("Error: stack overflow");
     }
-    Element* function = liste[0]->eval(lisp);
-    
     set_current_line(lisp);
+    
+    Element* function;
+    
+    
+    if (liste[0]->label() == l_self) {
+        function = lisp->called();
+        if (!lisp->trace)
+            return evalfunction(function, lisp);
+    }
+    else
+        function = liste[0]->eval(lisp);
+
+    short label = function->index(0)->label();
+        
     if (lisp->trace) {
         char tr = debug_next;
-        short label = function->index(0)->label();
-        if (label == l_defun || label == l_defpat) {
+        if (label == l_defun || label == l_defpat || label == l_lambda) {
             lisp->display_trace(this);
             if (lisp->trace == debug_inside_function)
                 lisp->stop_at_next_line(debug_next);
@@ -2961,14 +2972,14 @@ Element* Listcallfunction::eval(LispE* lisp) {
             function = evalpattern(lisp, function->index(1)->label());
         else
             function = evalfunction(function, lisp);
-
+        
         if (lisp->trace != debug_goto)
             lisp->stop_at_next_line(tr);
         return function;
     }
 
     //In this case, it must be a function
-    if (function->index(0)->label() == l_defpat)
+    if (label == l_defpat)
         return evalpattern(lisp, function->index(1)->label());
     return evalfunction(function, lisp);
 }

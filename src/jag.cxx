@@ -1701,9 +1701,13 @@ bool jag_editor::evaluateescape(string& buff) {
                 deleteline(1);
                 return true;
             }
-        }
-        else
             deletechar(false);
+        }
+        else {
+            if (posinstring < line.size())
+                deletechar(false);
+        }
+        
         return true;
     }
     return false;
