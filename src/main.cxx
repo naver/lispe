@@ -1099,16 +1099,16 @@ public:
             }
                 return pos;
             case cmd_filename:
-                cout << back << m_redbold << "Fichier: " << m_red << thecurrentfilename << m_current << endl;
+                cout << back << m_redbold << "File: " << m_red << thecurrentfilename << m_current << endl;
                 return pos;
             case cmd_spaces:
                 if (v.size() == 1) {
-                    cout << back << m_redbold << "Espace:" << endl << endl;
+                    cout << back << m_redbold << "Space:" << endl << endl;
                     for (i = 0; i < ifilenames.size(); i++) {
                         if (i == currentfileid)
-                            cout << back << m_redbold << "Fichier " << i <<": " << m_red << ifilenames[i] << m_current << " <<< " << endl;
+                            cout << back << m_redbold << "File " << i <<": " << m_red << ifilenames[i] << m_current << " <<< " << endl;
                         else
-                            cout << back << m_redbold << "Fichier " << i <<": " << m_red << ifilenames[i] << m_current << endl;
+                            cout << back << m_redbold << "File " << i <<": " << m_red << ifilenames[i] << m_current << endl;
                     }
                     cout << endl;
                     return pos;
@@ -1116,7 +1116,7 @@ public:
             case cmd_select:
                 addcommandline(line);
                 if (v.size() == 1) {
-                    cout << back << m_redbold << "Identifiant espace manquant" << endl;
+                    cout << back << m_redbold << "Missing space id" << endl;
                     return pos;
                 }
                 i = convertinginteger(v[1]);
@@ -1141,7 +1141,7 @@ public:
                     LispSetCode(code);
                     posinstring = 0;
                     line = L"";
-                    cout << "Espace fichier: " << thecurrentfilename << " (" << i << ")" << endl;
+                    cout << "Space file: " << thecurrentfilename << " (" << i << ")" << endl;
                     pos = 0;
                     modified = true;
                 }
@@ -1568,7 +1568,7 @@ public:
                             LispSetCode(code);
                             posinstring = 0;
                             line = L"";
-                            cout << "Espace fichier: " << currentfileid << endl;
+                            cout << "Space file: " << currentfileid << endl;
                             pos = 0;
                             modified = true;
                         }
@@ -2988,20 +2988,20 @@ int main(int argc, char *argv[]) {
 
         if (args == "-d") {
             JAGEDITOR = new lispe_editor();
-            string nomfichier;
+            string a_file_name;
             string line;
             if (i < argc - 1) {
                 i++;
-                nomfichier = Normalizefilename(argv[i++]);
-                arguments.push_back(nomfichier);
-                JAGEDITOR->setpathname(nomfichier);
+                a_file_name = Normalizefilename(argv[i++]);
+                arguments.push_back(a_file_name);
+                JAGEDITOR->setpathname(a_file_name);
                 while (i < argc) {
                     line = argv[i++];
                     if (line == "-n") {
                         if (i < argc) {
                             line = argv[i++];
                             long n = convertinginteger(line);
-                            ((lispe_editor*)JAGEDITOR)->editor_breakpoints[nomfichier][n] = true;
+                            ((lispe_editor*)JAGEDITOR)->editor_breakpoints[a_file_name][n] = true;
                         }
                         continue;
                     }
@@ -3012,10 +3012,10 @@ int main(int argc, char *argv[]) {
                 cerr << "Missing file name to start debugging" << endl;
                 exit(-1);
             }
-            JAGEDITOR->loadfile(nomfichier);
+            JAGEDITOR->loadfile(a_file_name);
             wstring w;
             line = "debug ";
-            line += nomfichier;
+            line += a_file_name;
             w = JAGEDITOR->wconvert(line);
             JAGEDITOR->addcommandline(w);
             line = "";
@@ -3025,20 +3025,20 @@ int main(int argc, char *argv[]) {
 
         if (args == "-e") {
             JAGEDITOR = new lispe_editor();
-            string nomfichier;
+            string a_file_name;
             if (i < argc - 1) {
                 i++;
-                nomfichier = argv[i];
-                JAGEDITOR->setpathname(nomfichier);
+                a_file_name = argv[i];
+                JAGEDITOR->setpathname(a_file_name);
                 while (i < argc) {
                     arguments.push_back(argv[i]);
                     i++;
                 }
             }
-            JAGEDITOR->loadfile(nomfichier);
+            JAGEDITOR->loadfile(a_file_name);
             wstring w;
             string line = "open ";
-            line += nomfichier;
+            line += a_file_name;
             w = JAGEDITOR->wconvert(line);
             JAGEDITOR->addcommandline(w);
             line = "";
