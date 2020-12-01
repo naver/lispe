@@ -452,7 +452,7 @@ public:
         return copying(true);
     }
 
-    virtual Element* copyatom() {
+    virtual Element* copyatom(uchar s) {
         return this;
     }
     
@@ -1022,8 +1022,8 @@ public:
         return new Number(number);
     }
     
-    Element* copyatom() {
-        if (status != s_constant)
+    Element* copyatom(uchar s) {
+        if (status < s)
             return this;
         return new Number(number);
     }
@@ -1126,8 +1126,8 @@ public:
         return new Integer(integer);
     }
 
-    Element* copyatom() {
-        if (status != s_constant)
+    Element* copyatom(uchar s) {
+        if (status < s)
             return this;
         return new Integer(integer);
     }
@@ -1258,8 +1258,8 @@ public:
         return wjsonstring(content);
     }
     
-    Element* copyatom() {
-        if (status != s_constant)
+    Element* copyatom(uchar s) {
+        if (status < s)
             return this;
         return new String(content);
     }
@@ -1634,8 +1634,8 @@ public:
     Element* composing(LispE*, bool compose);
     Element* eval(LispE*);
     
-    Element* divide(LispE* l, bool local);
-    Element* mod(LispE* l, bool local);
+    Element* divide(LispE* l, uchar local);
+    Element* mod(LispE* l, uchar local);
     
     bool Boolean() {
         return (liste.size());

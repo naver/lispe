@@ -1425,12 +1425,12 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
     return lisp->provideInteger(integer>>e->asInteger());
 }
 
-Element* List::divide(LispE* lisp, bool local)  {
+Element* List::divide(LispE* lisp, uchar local)  {
     long listsize = liste.size();
     if (listsize <= 2)
         throw new Error("Error: Missing arguments for '/'");
 
-    Element* base = liste[1]->eval(lisp)->copyatom();
+    Element* base = liste[1]->eval(lisp)->copyatom(local);
     Element* element = null_;
     try {
         for (long i = 2; i < listsize; i++) {
@@ -1447,7 +1447,7 @@ Element* List::divide(LispE* lisp, bool local)  {
 
     element->release();
     
-    if (local) {
+    if (local == s_constant) {
         short label = liste[1]->label();
         if (label > l_final)
             return lisp->recording(base, label);
@@ -1456,12 +1456,12 @@ Element* List::divide(LispE* lisp, bool local)  {
 
 }
 
-Element* List::mod(LispE* lisp, bool local) {
+Element* List::mod(LispE* lisp, uchar local) {
     long listsize = liste.size();
     if (listsize <= 2)
         throw new Error("Error: Missing Arguments for '%'");
 
-    Element* base = liste[1]->eval(lisp)->copyatom();
+    Element* base = liste[1]->eval(lisp)->copyatom(local);
     Element* element = null_;
     try {
         for (long i = 2; i < listsize; i++) {
@@ -1478,7 +1478,7 @@ Element* List::mod(LispE* lisp, bool local) {
 
     element->release();
     
-    if (local) {
+    if (local == s_constant) {
         short label = liste[1]->label();
         if (label > l_final)
             return lisp->recording(base, label);
