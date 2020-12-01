@@ -829,6 +829,7 @@ public:
         thecurrentfilename = Normalizefilename(thecurrentfilename);
         currentfileid = ifilenames.size();
         ifilenames.push_back(thecurrentfilename);
+        lastlines.push_back(0);
         codes.push_back(L"");
         editor_keep kp;
         editors_undos.push_back(kp);
@@ -924,6 +925,7 @@ public:
             }
             currentfileid = ifilenames.size();
             ifilenames.push_back(thecurrentfilename);
+            lastlines.push_back(0);
             codes.push_back(code);
             
             //We create a new redo/undo section
@@ -1521,6 +1523,7 @@ public:
                     currentfileid = ifilenames.size();
                     ifilenames.push_back(thecurrentfilename);
                     filenames[thecurrentfilename] = currentfileid;
+                    lastlines.push_back(0);
                     code = wconvert(cd);
                     codes.push_back(code);
                     
@@ -2869,34 +2872,40 @@ int main(int argc, char *argv[]) {
     long i;
     for (i = 1; i < argc; i++) {
         args = argv[i];
-        if (args == "-h") {
-            cout << endl << m_red << "Different types of operation: " << m_current << endl;
-            cout << m_red << "\tlispee program arg1 arg2:" << m_blue <<" execution of 'program' with optional list of arguments" << m_current << endl << endl;
-            cout << m_red << "\tlispee -a:" << m_blue << "The entire pipe is stored in '_args'. Two uses:" << m_current << endl;
-            cout << m_red << "\t\t- lispee -a: " << m_blue <<"gives back the hand in the interactive interpreter" << m_current << endl;
-            cout << m_red << "\t\t- lispee program -a " << m_blue <<"execute 'program' with _args containing the output of the 'pipe'" << m_current << endl << endl;
-            cout << m_red << "\tlispee -pb/-pe/-p 'code' arg1 arg2:" << m_blue << "Execution of 'code' on a pipe output: ls -al | lisp -p '(+ l2 l3)'" << m_current << endl;
-            cout << m_red << "\t\t- '-pb' allows to execute an initial code (must be placed before '-p')" << m_current << endl;
-            cout << m_red << "\t\t- '-pe' allows to execute a final code (must be placed before '-p')" << m_current << endl;
-            cout << m_red << "\t\t- The lines are automatically cut along the spaces into variables: " << m_current << endl;
-            cout << m_red << "\t\t\t- accu1, accu2,..., accu9: " << m_blue <<"Nine predefined accumulators initialized to 0 at startup" << m_current << endl;
-            cout << m_red << "\t\t\t- ln: " << m_blue <<"is the number of fields" << m_current << endl;
-            cout << m_red << "\t\t\t- ll: " << m_blue <<"is the list of fields" << m_current << endl;
-            cout << m_red << "\t\t\t- l0: " << m_blue <<"is the full line" << m_current << endl;
-            cout << m_red << "\t\t\t\t- l1, l2, l3...: " << m_blue << "corresponds to a field in the line in the order in which these fields were cut" << m_current << endl;
-            cout << m_red << "\tlispe -P program.lisp arg1 arg2:" << m_blue << "Execution of program file on a pipe output: ls -al | lisp -P file" << m_current << endl;
-            cout << m_red << "\t\t- '-P' has the same variables as '-p'. m_current" << m_current << endl;
-            cout << m_red << "\t\t- '-P' 'program.lisp' must contain the function: (defun runpipe()...) which corresponds to the entry point of the processing. "<< m_current << endl << endl;
+        if (args == "-h" || args == "--help" || args == "-help" || args == "--h") {
+            cout << endl << m_red << "Different types of operation: " << m_current << endl << endl;
 
-            cout << m_red << "\tlispee -r 'rgx':" << m_blue << " Condition (posix regular expressions) on 'stdin'" << endl;
-            cout << "\t\t to be used with '-p' or '-P'. This condition must appear before -p" << m_current << endl;
-            cout << m_red << "\tlispee -R 'rgx':" << m_blue << "Condition (internal style regular expressions) on 'stdin'" << endl;
-            cout << "\t\t to be used with '-p' or '-P'. This condition must appear before -p" << m_current << endl;
-
-            cout << m_red << "\tlispee -e program arg1 arg2:" << m_blue << "edit 'program' with optional list of arguments" << m_current << endl << endl;
-            cout << m_red << "\tlispee -d program -n line_number arg1 arg2:" << m_blue << "Launch the debugger with an optional breakpoint at line line_number. '-n' can be omitted." << m_current << endl << endl;
-            cout << m_red << "\tlispee: " << m_blue <<" interactive interpreter" << m_current << endl << endl;
-
+            cout << m_red << "    Interactive mode" << m_current << endl;
+            cout << "    lispe"<< endl << endl;
+            cout << m_red << "    This help" << m_current << endl;
+            cout << "    lispe -h|-help|--h|--help"<< endl << endl;
+            cout << m_red << "    Execution of 'program' with optional list of arguments" << m_current << endl;
+            cout << "    lispe program arg1 arg2"<< endl<< endl;
+            cout << m_red << "    Launch the debugger. '-n' is optional" << m_current << endl;
+            cout << "    lispe -d program -n line_number arg1 arg2"<< endl<< endl;
+            cout << m_red << "    Edit 'program' with optional list of arguments" << m_current << endl;
+            cout << "    lispe -e program arg1 arg2"<< endl<< endl;
+            cout << m_red << "    The entire pipe is stored in '_args'" << m_current << endl;
+            cout << "    lispe -a:"<< endl;
+            cout << "        - lispe -a:" << m_blue << "gives back the hand in the interactive interpreter"<< endl;
+            cout << "        - lispe " << m_blue<< "program -a execute 'program' with _args containing the output of the 'pipe'"<< endl << endl;
+            cout << m_red << "    Execution of 'code' on a pipe output: ls -al | lisp -p '(+ l2 l3)'" << m_current << endl;
+            cout << "    lispe -pb/-pe/-p 'code' arg1 arg2:"<< endl;
+            cout << "        - '-pb' " << m_blue << "allows to execute an initial code (must be placed before '-p')" << m_current << endl;
+            cout << "        - '-pe' " << m_blue << "allows to execute a final code (must be placed before '-p')" << m_current << endl;
+            cout << m_red << "        The lines are automatically cut along the spaces into variables:" << m_current << endl;
+            cout << "            - accu1, accu2,..., accu9: " << m_blue << "Nine accumulators (= 0 at startup)" << m_current << endl;
+            cout << "            - ln: " << m_blue << "is the number of fields" << m_current << endl;
+            cout << "            - ll: " << m_blue << "is the list of fields" << m_current << endl;
+            cout << "            - l0: " << m_blue << "is the full line" << m_current << endl;
+            cout << "            - l1, l2, l3...: " << m_blue << "each variable corresponds to a field in the split line" << m_current << endl << endl;
+            cout << m_red << "    Execution of program file on a pipe output: ls -al | lisp -P file" << m_current << endl;
+            cout << "    lispe -P program.lisp arg1 arg2:"<< endl;
+            cout << "        - '-P' "<< m_blue << "has the same variables as '-p'. m_current" << m_current << endl;
+            cout << "        - '-P' 'program.lisp' " << m_blue << "must contain the function: (defun runpipe()...)" << m_current << endl << endl;
+            cout << "    lispe -r 'rgx': "<< m_blue << "Condition (posix regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
+            cout << "    lispe -R 'rgx': " << m_blue << "Condition (internal regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
+            cout << endl << endl;
             return -1;
         }
             
@@ -3005,7 +3014,6 @@ int main(int argc, char *argv[]) {
                 exit(-1);
             }
             JAGEDITOR->loadfile(nomfichier);
-            ((lispe_editor*)JAGEDITOR)->addspace(nomfichier);
             wstring w;
             line = "debug ";
             line += nomfichier;
@@ -3029,7 +3037,6 @@ int main(int argc, char *argv[]) {
                 }
             }
             JAGEDITOR->loadfile(nomfichier);
-            ((lispe_editor*)JAGEDITOR)->addspace(nomfichier);
             wstring w;
             string line = "open ";
             line += nomfichier;
