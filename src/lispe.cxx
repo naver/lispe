@@ -901,7 +901,7 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
 }
 
 
-Element* LispE::tokenize(wstring& code) {
+Element* LispE::tokenize(wstring& code, bool keepblanks) {
     List* res = new List;
     long idx;
     long sz = code.size();
@@ -915,7 +915,11 @@ Element* LispE::tokenize(wstring& code) {
             case '\t':
             case '\r':
             case ' ':
-                continue;
+                if (keepblanks) {
+                    tampon = c;
+                    res->append(provideString(tampon));
+                }
+                break;
             case ';':
             case '#':
             case '\'':
