@@ -834,7 +834,6 @@ public:
         editor_keep kp;
         editors_undos.push_back(kp);
         editors_redos.push_back(kp);
-        lastlines.push_back(0);
         filenames[thecurrentfilename] = currentfileid;
         if (!fromwrite) {
             //We create a local undos/redos section..
