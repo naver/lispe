@@ -451,7 +451,12 @@ public:
     virtual Element* fullcopy() {
         return copying(true);
     }
+
+    virtual Element* copyatom() {
+        return this;
+    }
     
+
     virtual Element* copying(bool duplicate = true) {
         return this;
     }
@@ -1017,6 +1022,12 @@ public:
         return new Number(number);
     }
     
+    Element* copyatom() {
+        if (status != s_constant)
+            return this;
+        return new Number(number);
+    }
+
     Element* copying(bool duplicate = true) {
         if (status == s_destructible || !duplicate)
             return this;
@@ -1112,6 +1123,12 @@ public:
     }
     
     Element* fullcopy() {
+        return new Integer(integer);
+    }
+
+    Element* copyatom() {
+        if (status != s_constant)
+            return this;
         return new Integer(integer);
     }
 
@@ -1239,6 +1256,12 @@ public:
     
     wstring stringInList(LispE* lisp) {
         return wjsonstring(content);
+    }
+    
+    Element* copyatom() {
+        if (status != s_constant)
+            return this;
+        return new String(content);
     }
     
     Element* fullcopy() {

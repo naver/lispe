@@ -16,6 +16,19 @@
 #include <algorithm>
 
 //------------------------------------------------------------------------------------------
+
+union double64 {
+public:
+    
+    uint64_t bits;
+    double v;
+    
+    double64(double d) {
+        v = d;
+    }
+};
+
+//------------------------------------------------------------------------------------------
 Infinitelist::Infinitelist(LispE* lisp) : Element(t_list) {
     value = null_;
 }
@@ -1184,19 +1197,35 @@ Element* Element::rightshift(LispE* lisp, Element* e) {
 }
 
 Element* String::plus(LispE* lisp, Element* e) {
+    if (status != s_constant) {
+        content += e->asString(lisp);
+        return this;
+    }
     wstring c = content + e->asString(lisp);
     return lisp->provideString(c);
 }
 
 Element* Number::plus(LispE* lisp, Element* e) {
+    if (status != s_constant) {
+        number += e->asNumber();
+        return this;
+    }
     return lisp->provideNumber(number+e->asNumber());
 }
 
 Element* Number::minus(LispE* lisp, Element* e) {
+    if (status != s_constant) {
+        number -= e->asNumber();
+        return this;
+    }
     return lisp->provideNumber(number-e->asNumber());
 }
 
 Element* Number::multiply(LispE* lisp, Element* e) {
+    if (status != s_constant) {
+        number *= e->asNumber();
+        return this;
+    }
     return lisp->provideNumber(number*e->asNumber());
 }
 
@@ -1204,6 +1233,10 @@ Element* Number::divide(LispE* lisp, Element* e) {
     double v = e->asNumber();
     if (v == 0)
         throw new Error("Error: division by zero");
+    if (status != s_constant) {
+        number /= v;
+        return this;
+    }
     return lisp->provideNumber(number/v);
 }
 
@@ -1211,50 +1244,112 @@ Element* Number::mod(LispE* lisp, Element* e) {
     long v = e->asInteger();
     if (v == 0)
         throw new Error("Error: division by zero");
+    if (status != s_constant) {
+        number = (long)number % v;
+        return this;
+    }
     return lisp->provideInteger((long)number%v);
 }
 
 Element* Number::power(LispE* lisp, Element* e) {
+    if (status != s_constant) {
+        number = pow(number, e->asNumber());
+        return this;
+    }
     return lisp->provideNumber(pow(number, e->asNumber()));
 }
 
 Element* Number::bit_and(LispE* lisp, Element* e)  {
-    return lisp->provideNumber((long)number & e->asInteger());
+    double64 d(number);
+    d.bits &= e->asInteger();
+    if (status != s_constant) {
+        number = d.v;
+        return this;
+    }
+
+    return lisp->provideNumber(d.v);
 }
 
 Element* Number::bit_or(LispE* lisp, Element* e)  {
-    return lisp->provideNumber((long)number | e->asInteger());
+    double64 d(number);
+    d.bits |= e->asInteger();
+    if (status != s_constant) {
+        number = d.v;
+        return this;
+    }
+
+    return lisp->provideNumber(d.v);
 }
 
 Element* Number::bit_xor(LispE* lisp, Element* e)  {
-    return lisp->provideNumber((long)number ^ e->asInteger());
+    double64 d(number);
+    d.bits ^= e->asInteger();
+    if (status != s_constant) {
+        number = d.v;
+        return this;
+    }
+
+    return lisp->provideNumber(d.v);
 }
 
 Element* Number::leftshift(LispE* lisp, Element* e)  {
-    return lisp->provideNumber((long)number << e->asInteger());
+    double64 d(number);
+    d.bits <<= e->asInteger();
+    if (status != s_constant) {
+        number = d.v;
+        return this;
+    }
+
+    return lisp->provideNumber(d.v);
 }
 
 Element* Number::rightshift(LispE* lisp, Element* e)  {
-    return lisp->provideNumber((long)number >> e->asInteger());
+    double64 d(number);
+    d.bits >>= e->asInteger();
+    if (status != s_constant) {
+        number = d.v;
+        return this;
+    }
+
+    return lisp->provideNumber(d.v);
 }
 
 Element* Integer::plus(LispE* lisp, Element* e) {
     if (e->type == t_number) {
-        return lisp->provideNumber((double)integer+e->asNumber());
+        double v = (double)integer + e->asNumber();
+        release();
+        return lisp->provideNumber(v);
     }
+    if (status != s_constant) {
+        integer += e->asInteger();
+        return this;
+    }
+        
     return lisp->provideInteger(integer+e->asInteger());
 }
 
 Element* Integer::minus(LispE* lisp, Element* e) {
     if (e->type == t_number) {
-        return lisp->provideNumber((double)integer-e->asNumber());
+        double v = (double)integer + e->asNumber();
+        release();
+        return lisp->provideNumber(v);
+    }
+    if (status != s_constant) {
+        integer -= e->asInteger();
+        return this;
     }
     return lisp->provideInteger(integer-e->asInteger());
 }
 
 Element* Integer::multiply(LispE* lisp, Element* e) {
     if (e->type == t_number) {
-        return lisp->provideNumber((double)integer*e->asNumber());
+        double v = (double)integer + e->asNumber();
+        release();
+        return lisp->provideNumber(v);
+    }
+    if (status != s_constant) {
+        integer *= e->asInteger();
+        return this;
     }
     return lisp->provideInteger(integer*e->asInteger());
 }
@@ -1264,6 +1359,7 @@ Element* Integer::divide(LispE* lisp, Element* e) {
     if (v == 0)
         throw new Error("Error: division by zero");
     v = (double)integer/v;
+    release();
     if (v == (long)v)
         return lisp->provideInteger(v);
     return lisp->provideNumber(v);
@@ -1274,32 +1370,58 @@ Element* Integer::mod(LispE* lisp, Element* e) {
     long v = e->asInteger();
     if (v == 0)
         throw new Error("Error: division by zero");
+    if (status != s_constant) {
+        integer %= v;
+        return this;
+    }
     return lisp->provideInteger(integer%v);
 }
 
 Element* Integer::power(LispE* lisp, Element* e) {
-    return lisp->provideNumber(pow((double)integer, e->asNumber()));
+    double v = pow((double)integer, e->asNumber());
+    release();
+    return lisp->provideNumber(v);
 }
 
 Element* Integer::bit_and(LispE* lisp, Element* e)  {
+    if (status != s_constant) {
+        integer &= e->asInteger();
+        return this;
+    }
     return lisp->provideInteger(integer&e->asInteger());
 }
 
 Element* Integer::bit_or(LispE* lisp, Element* e)  {
+    if (status != s_constant) {
+        integer |= e->asInteger();
+        return this;
+    }
     return lisp->provideInteger(integer|e->asInteger());
 }
 
 Element* Integer::bit_xor(LispE* lisp, Element* e)  {
+    if (status != s_constant) {
+        integer ^= e->asInteger();
+        return this;
+    }
     return lisp->provideInteger(integer^e->asInteger());
 }
 
 
 Element* Integer::leftshift(LispE* lisp, Element* e)  {
+    if (status != s_constant) {
+        integer <<= e->asInteger();
+        return this;
+    }
     return lisp->provideInteger(integer<<e->asInteger());
 }
 
 
 Element* Integer::rightshift(LispE* lisp, Element* e)  {
+    if (status != s_constant) {
+        integer >>= e->asInteger();
+        return this;
+    }
     return lisp->provideInteger(integer>>e->asInteger());
 }
 
@@ -1308,7 +1430,7 @@ Element* List::divide(LispE* lisp, bool local)  {
     if (listsize <= 2)
         throw new Error("Error: Missing arguments for '/'");
 
-    Element* base = liste[1]->eval(lisp);
+    Element* base = liste[1]->eval(lisp)->copyatom();
     Element* element = null_;
     try {
         for (long i = 2; i < listsize; i++) {
@@ -1339,7 +1461,7 @@ Element* List::mod(LispE* lisp, bool local) {
     if (listsize <= 2)
         throw new Error("Error: Missing Arguments for '%'");
 
-    Element* base = liste[1]->eval(lisp);
+    Element* base = liste[1]->eval(lisp)->copyatom();
     Element* element = null_;
     try {
         for (long i = 2; i < listsize; i++) {

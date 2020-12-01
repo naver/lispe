@@ -1269,7 +1269,7 @@ Element* List::eval(LispE* lisp) {
                 return true_;
             }
             case l_plus: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -1280,7 +1280,7 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_minus: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -1291,7 +1291,7 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_multiply: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -1302,7 +1302,7 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_power: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -1313,7 +1313,7 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_leftshift: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -1324,7 +1324,7 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_rightshift: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -1335,46 +1335,46 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitand: {
-                   first_element = liste[1]->eval(lisp);
-                   for (short i = 2; i < listsize; i++) {
-                       _releasing(element);
-                       element = liste[i]->eval(lisp);
-                       first_element = first_element->bit_and(lisp, element);
-                   }
-
-                   element->release();
-                   return first_element;
-               }
+                first_element = liste[1]->eval(lisp)->copyatom();
+                for (short i = 2; i < listsize; i++) {
+                    _releasing(element);
+                    element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_and(lisp, element);
+                }
+                
+                element->release();
+                return first_element;
+            }
             case l_bitor: {
-                   first_element = liste[1]->eval(lisp);
-                   for (short i = 2; i < listsize; i++) {
-                       _releasing(element);
-                       element = liste[i]->eval(lisp);
-                       first_element = first_element->bit_or(lisp, element);
-                   }
-
-                   element->release();
-                   return first_element;
-               }
+                first_element = liste[1]->eval(lisp)->copyatom();
+                for (short i = 2; i < listsize; i++) {
+                    _releasing(element);
+                    element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_or(lisp, element);
+                }
+                
+                element->release();
+                return first_element;
+            }
             case l_bitxor: {
-                   first_element = liste[1]->eval(lisp);
-                   for (short i = 2; i < listsize; i++) {
-                       _releasing(element);
-                       element = liste[i]->eval(lisp);
-                       first_element = first_element->bit_xor(lisp, element);
-                   }
-
-                   element->release();
-                   return first_element;
-               }
+                first_element = liste[1]->eval(lisp)->copyatom();
+                for (short i = 2; i < listsize; i++) {
+                    _releasing(element);
+                    element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_xor(lisp, element);
+                }
+                
+                element->release();
+                return first_element;
+            }
             case l_plusequal:{
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->plus(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -1382,13 +1382,13 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_minusequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->minus(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -1396,28 +1396,28 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_multiplyequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->multiply(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
                 return first_element;
-
+                
             }
             case l_powerequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->power(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -1425,13 +1425,13 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_leftshiftequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->leftshift(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -1439,13 +1439,13 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_rightshiftequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->rightshift(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -1453,13 +1453,13 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitandequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->bit_and(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -1467,13 +1467,13 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitorequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->bit_or(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -1481,13 +1481,13 @@ Element* List::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitxorequal: {
-                first_element = liste[1]->eval(lisp);
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (short i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
                     first_element = first_element->bit_xor(lisp, element);
                 }
-
+                
                 element->release();
                 label = liste[1]->label();
                 if (label > l_final)
@@ -2999,7 +2999,7 @@ Element* Listoperation::eval(LispE* lisp) {
     set_current_line(lisp);
     lisp->display_trace(this);
 
-    Element* first_element = liste[1]->eval(lisp);
+    Element* first_element;
     Element* element = null_;
     short listsize = liste.size();
     short i;
@@ -3007,6 +3007,7 @@ Element* Listoperation::eval(LispE* lisp) {
     try {
         switch (liste[0]->type) {
             case l_plus: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3017,6 +3018,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_minus: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3027,6 +3029,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_multiply: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3037,6 +3040,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_power: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3047,6 +3051,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_leftshift: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3057,6 +3062,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_rightshift: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3067,6 +3073,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitand: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3077,6 +3084,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitor: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3087,6 +3095,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitxor: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3097,6 +3106,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_plusequal:{
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3110,6 +3120,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_minusequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3123,6 +3134,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_multiplyequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3137,6 +3149,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 
             }
             case l_powerequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3150,6 +3163,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_leftshiftequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3163,6 +3177,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_rightshiftequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3176,6 +3191,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitandequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3189,6 +3205,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitorequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
@@ -3202,6 +3219,7 @@ Element* Listoperation::eval(LispE* lisp) {
                 return first_element;
             }
             case l_bitxorequal: {
+                first_element = liste[1]->eval(lisp)->copyatom();
                 for (i = 2; i < listsize; i++) {
                     _releasing(element);
                     element = liste[i]->eval(lisp);
