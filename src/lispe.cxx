@@ -840,7 +840,7 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 long pos = i;
                 idx = i;
                 tampon = "";
-                if (!handlingutf8->est_une_lettre(USTR(code), idx))  {
+                if (!handlingutf8->is_a_valid_letter(USTR(code), idx))  {
                     if (idx == i) {
                         if (add)
                             current_line += c;
@@ -856,7 +856,7 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     break;
                 }
                 idx++;
-                while (idx < sz && handlingutf8->est_une_lettre(USTR(code), idx)) idx++;
+                while (idx < sz && handlingutf8->is_a_valid_letter(USTR(code), idx)) idx++;
                 tampon = code.substr(i, idx - i);
                 i = idx-1;
                 if (tampon[0] == 'c' && tampon.back() == 'r') {
@@ -898,6 +898,96 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
         add_to_listing(line_number, current_line);
     
     return e_no_error;
+}
+
+
+Element* LispE::tokenize(wstring& code) {
+    List* res = new List;
+    long idx;
+    long sz = code.size();
+    long i;
+    wchar_t c;
+    wstring tampon;
+    for (i = 0; i < sz; i++) {
+        c = code[i];
+        switch (c) {
+            case '\n':
+            case '\t':
+            case '\r':
+            case ' ':
+                continue;
+            case ';':
+            case '#':
+            case '\'':
+            case '`':
+            case '"':
+            case '(':
+            case ')':
+            case '[':
+            case ']':
+            case ':':
+            case '{':
+            case '}':
+            case '&':
+            case '|':
+            case '*':
+            case '%':
+            case '/':
+            case '^':
+            case '<':
+            case '>':
+            case '!':
+            case '=':
+                tampon = c;
+                res->append(provideString(tampon));
+                break;
+            case '+':
+            case '-':
+                if (!isdigit(code[i+1])) {
+                    tampon = c;
+                    res->append(provideString(tampon));
+                    break;
+                }
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9': {
+                noconvertingfloathexa((wchar_t*)code.c_str() + i, idx);
+                tampon = code.substr(i, idx);
+                res->append(provideString(tampon));
+                i += idx - 1;
+                break;
+            }
+            default: {
+                idx = i;
+                if (!handlingutf8->is_a_valid_letter(code, idx))  {
+                    if (idx == i) {
+                        tampon = c;
+                        res->append(provideString(tampon));
+                    }
+                    else {
+                        tampon = code.substr(i, idx - i + 1);
+                        res->append(provideString(tampon));
+                        i = idx;
+                    }
+                    break;
+                }
+                idx++;
+                while (idx < sz && handlingutf8->is_a_valid_letter(code, idx)) idx++;
+                tampon = code.substr(i, idx - i);
+                i = idx-1;
+                res->append(provideString(tampon));
+                break;
+            }
+        }
+    }
+    return res;
 }
 
 /*

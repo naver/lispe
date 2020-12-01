@@ -89,7 +89,7 @@ static Element* toLispE(LispE* lisp, PyObject* po) {
         if (code != -1)
             return lisp->provideAtomOrInstruction(code);
         for (long i = 0; i < s.size(); i++) {
-            if (!lisp->handlingutf8->est_une_lettre(USTR(s), i))
+            if (!lisp->handlingutf8->is_a_valid_letter(USTR(s), i))
                 return lisp->provideString(s);
         }
         return lisp->provideAtomOrInstruction(s);
@@ -469,13 +469,13 @@ public:
     PyObject* pModule;
     PyObject* pDict;
     bool init_python;
-    
+
     Pythoninterpreter(short ty) : Element(ty) {
         pModule = NULL;
         pDict = NULL;
         init_python = false;
     }
-    
+
     ~Pythoninterpreter() {
         if (init_python)
             Py_Finalize();
@@ -487,7 +487,7 @@ public:
             Py_Initialize();
             init_python = true;
         }
-        
+
         stringstream code;
         code << "import sys\n";
 #ifdef WIN32
@@ -498,9 +498,9 @@ public:
 #else
         code << "sys.path.append('" << path << "')\n";
 #endif
-        
+
         PyRun_SimpleString(code.str().c_str());
-        
+
         if (PyErr_Occurred()) {
             string err = "Error: PYT(996):";
             err += python_error_string();
@@ -522,9 +522,9 @@ public:
         pModule = NULL;
         return true_;
     }
-    
+
     Element* methodRun(LispE* lisp, string& code) {
-        
+
         lisp->lock();
         if (!init_python) {
             Py_Initialize();
@@ -537,7 +537,7 @@ public:
         if (code != "") {
             if (pDict == NULL)
                 pDict = PyModule_GetDict(pModule);
-            
+
             PyObject* pstr  = PyRun_String(STR(code), Py_single_input, pDict, pDict);
             if (PyErr_Occurred()) {
                 string err = "Error: PYT(997):";
@@ -545,13 +545,13 @@ public:
                 lisp->unlock();
                 throw new Error(err);
             }
-            
+
             lisp->unlock();
             Element* e = toLispE(lisp, pstr);
             Py_DECREF(pstr);
             return e;
         }
-        
+
         lisp->unlock();
         //you may return any value of course...
         return true_;
@@ -590,7 +590,7 @@ public:
     Element* methodExecute(LispE* lisp, string& funcname, Element* arguments) {
         if (pModule == NULL)
             throw new Error("Error: PYT(002): No Python file in memory");
-        
+
         lisp->lock();
 
         PyObject* pFunc = PyObject_GetAttrString(pModule, STR(funcname));
@@ -598,7 +598,7 @@ public:
             lisp->unlock();
             throw new Error("Error: PYT(004): Unknown Python function");
         }
-        
+
         long nbelements = arguments->size();
         PyObject* pArgs = PyTuple_New(nbelements);
         PyObject* pe;
@@ -606,10 +606,10 @@ public:
             pe = toPython(lisp, arguments->index(i));
             PyTuple_SetItem(pArgs, i, pe);
         }
-        
+
         pe = PyObject_CallObject(pFunc, pArgs);
         Py_DECREF(pArgs);
-        
+
         if (PyErr_Occurred()) {
             if (pe != NULL)
                 Py_DECREF(pe);
@@ -618,18 +618,18 @@ public:
             lisp->unlock();
             throw new Error(err);
         }
-        
+
         if (pe != NULL) {
             Element* o = toLispE(lisp, pe);
             Py_DECREF(pe);
             lisp->unlock();
             return o;
         }
-        
+
         lisp->unlock();
         return true_;
     }
-    
+
 };
 
 typedef enum {python_new, python_run, python_setpath, python_import, python_execute, python_close} pythonery;
@@ -639,7 +639,7 @@ public:
     pythonery action;
     short py_var;
     short python_type;
-    
+
     Pythonmethod(LispE* lisp, pythonery p, short ty) : Element(ty) {
         action = p;
         wstring w = L"py";
@@ -647,7 +647,7 @@ public:
         w = L"python";
         python_type = lisp->encode(w);
     }
-    
+
     Element* eval(LispE* lisp) {
         switch (action) {
             case python_new:
@@ -680,11 +680,11 @@ public:
                 Element* args = lisp->get(L"arguments");
                 if (!args->isList())
                     throw new Error("Error: arguments should be a list");
-                
+
                 string funcname = lisp->get(L"name")->toString(lisp);
                 return ((Pythoninterpreter*)py)->methodExecute(lisp, funcname, args);
             }
-                
+
             case python_close:{
                 Element* py = lisp->get(py_var);
                 if (py->type != python_type)
@@ -694,8 +694,8 @@ public:
         }
         return null_;
     }
-    
-    
+
+
     wstring asString(LispE* lisp) {
         switch (action) {
             case python_new:
@@ -731,3 +731,4 @@ Exporting bool InitialisationModule(LispE* lisp) {
 }
 
 }
+

@@ -411,6 +411,7 @@ public:
     Element* compile(string& code);
     Element* load(string chemin);
     e_type segmenting(string& code, Tokenizer& s);
+    Element* tokenize(wstring& code);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index);
     void arguments(std::vector<string>& args);
     void current_path();

@@ -72,8 +72,11 @@ long size_c(string& s);
 long GetBlankSize();
 long VirtualIndentation(string& codestr);
 void IndentCode(string& codestr, string& codeindente, long blancs);
+
 long convertinginteger(wstring& number);
 long convertinginteger(string& number);
+void noconvertingfloathexa(wchar_t* s, long& l);
+
 void s_split(wstring& s, wstring& splitter, vector<wstring>& strs, bool keepblanks = false);
 void s_split(string& s, string& splitter, vector<string>& vs, bool keepblanks = false);
 long getindex(unsigned char* contenu, long lg, long i);
@@ -155,7 +158,8 @@ public:
     bool s_is_alpha(wstring& s);
     char c_is_alpha(wchar_t);
     char c_is_alpha(unsigned char* m, long& i);
-    char est_une_lettre(unsigned char* m, long& i);
+    char is_a_valid_letter(unsigned char* m, long& i);
+    char is_a_valid_letter(wstring& m, long& i);
     bool s_is_lower(wstring& s);
     bool s_is_digit(wstring& str);
     bool s_is_space(wstring& str);

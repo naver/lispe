@@ -20,7 +20,7 @@
 
 //This extension is done in two steps
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_read_json, str_parse_json, str_string_json} string_method;
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_read_json, str_parse_json, str_string_json} string_method;
 
 /*
  First of all we create a new Element derivation
@@ -143,6 +143,10 @@ public:
                 wstring strvalue =  lisp->get(v_str)->asString(lisp);
                 string res = lisp->handlingutf8->emoji_description(strvalue);
                 return lisp->provideString(res);
+            }
+            case str_tokenize: {
+                wstring strvalue =  lisp->get(v_str)->asString(lisp);
+                return lisp->tokenize(strvalue);
             }
             case str_split_empty: {
                 wstring strvalue =  lisp->get(v_str)->asString(lisp);
@@ -349,6 +353,8 @@ public:
                 return L"Check if a string only contains consonants";
             case str_deaccentuate:
                 return L"Remove the accents from letters in a string";
+            case str_tokenize:
+                return L"Tokenize a string into a list of tokens";
         }
 		return L"";
     }
@@ -373,6 +379,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib left (str nb)", new Stringmethod(lisp, str_left));
     lisp->extension("deflib right (str nb)", new Stringmethod(lisp, str_right));
     lisp->extension("deflib middle (str pos nb)", new Stringmethod(lisp, str_middle));
+    lisp->extension("deflib tokenize (str)", new Stringmethod(lisp, str_tokenize));
     lisp->extension("deflib split (str fnd)", new Stringmethod(lisp, str_split));
     lisp->extension("deflib splite (str fnd)", new Stringmethod(lisp, str_split_empty));
     lisp->extension("deflib ord (str)", new Stringmethod(lisp, str_ord));

@@ -1383,10 +1383,16 @@ char Chaine_UTF8::c_is_alpha(wchar_t v) {
 }
 
 
-char Chaine_UTF8::est_une_lettre(unsigned char* m, long& i) {
+char Chaine_UTF8::is_a_valid_letter(unsigned char* m, long& i) {
     if (m[i] == '_' || isadigit(m[i]))
         return 1;
     return c_is_alpha(m, i);
+}
+
+char Chaine_UTF8::is_a_valid_letter(wstring& m, long& i) {
+    if (m[i] == '_' || isadigit(m[i]))
+        return 1;
+    return c_is_alpha(m[i]);
 }
 
 bool Chaine_UTF8::s_is_alpha(wstring& s) {
@@ -2212,6 +2218,155 @@ void noconversiontofloathexa(const char* s, int sign, short& l) {
 }
 
 void noconvertingfloathexa(const char* s, short& l) {
+    l = 0;
+    //End of string...
+    if (*s ==0 )
+        return;
+    
+    int sign = 1;
+
+    //Sign
+    if (*s=='-') {
+        sign = -1;
+        l++;
+        ++s;
+    }
+    else
+        if (*s=='+') {
+            ++s;
+            l++;
+        }
+    
+    if (*s=='0' && s[1]=='x') {
+        s+=2;
+        l++;
+        noconversiontofloathexa(s, sign, l);
+        return;
+    }
+    
+    if (isadigit(*s)) {
+        s++;
+        l++;
+        while (isadigit(*s)) {
+            s++;
+            l++;
+        }
+        if (!*s)
+            return;
+    }
+    else
+        return;
+    
+    if (*s=='.') {
+        ++s;
+        l++;
+        if (isadigit(*s)) {
+            s++;
+            l++;
+            while (isadigit(*s)) {
+                s++;
+                l++;
+            }
+        }
+        else
+            return;
+    }
+        
+    if ((*s &0xDF) == 'E') {
+        ++s;
+        l++;
+        if (*s == '-') {
+            ++s;
+            l++;
+        }
+        else {
+            if (*s == '+') {
+                ++s;
+                ++l;
+            }
+        }
+        
+        if (isadigit(*s)) {
+            s++;
+            l++;
+            while (isadigit(*s)) {
+                s++;
+                l++;
+            }
+        }
+    }
+}
+
+void noconversiontofloathexa(wchar_t* s, int sign, long& l) {
+    bool cont = true;
+    wchar_t c = *s++;
+    l++;
+    while (cont) {
+        switch (digitaction[c]) {
+            case '0':
+                c = *s++;
+                l++;
+                continue;
+            case 'X':
+                c = *s++;
+                l++;
+                continue;
+            case 'x':
+                c = *s++;
+                l++;
+                continue;
+            default:
+                cont = false;
+        }
+    }
+    
+    if (c == '.') {
+        cont = true;
+        c = *s++;
+        l++;
+        while (cont) {
+            switch (digitaction[c]) {
+                case '0':
+                    c = *s++;
+                    l++;
+                    continue;
+                case 'X':
+                    c = *s++;
+                    l++;
+                    continue;
+                case 'x':
+                    c = *s++;
+                    l++;
+                    continue;
+                default:
+                    cont = false;
+            }
+        }
+    }
+    
+
+    if ((c &0xDF) == 'P') {
+        if (*s == '-') {
+            ++s;
+            l++;
+        }
+        else {
+            if (*s == '+') {
+                ++s;
+                ++l;
+            }
+        }
+        
+        s++;
+        l++;
+        while (isadigit(*s)) {
+            s++;
+            l++;
+        }
+    }
+}
+
+void noconvertingfloathexa(wchar_t* s, long& l) {
     l = 0;
     //End of string...
     if (*s ==0 )
