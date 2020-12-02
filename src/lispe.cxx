@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.2.9.45";
+static std::string version = "1.2020.12.2.15.38";
 string LispVersion() {
     return version;
 }
@@ -1154,21 +1154,17 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 if (e->size() >= 1) {
                     //these are specialized calls, for which we do not need to go through List::eval
                     short lab = e->index(0)->type;
-                    if (is_instruction(lab) && delegation->arities[lab] == P_TWO)
-                        e = regarbaging(e, new Listtwo((Listincode*)e));
+                    if (lab == t_atom || lab == l_self) {
+                        e = regarbaging(e, new Listcallfunction((Listincode*)e));
+                    }
                     else {
-                        if (lab == t_atom || lab == l_self) {
-                            e = regarbaging(e, new Listcallfunction((Listincode*)e));
+                        if (lab == l_break) {
+                            removefromgarbage(e);
+                            e = &delegation->_BREAKEVAL;
                         }
                         else {
-                            if (lab == l_break) {
-                                removefromgarbage(e);
-                                e = &delegation->_BREAKEVAL;
-                            }
-                            else {
-                                if (e->size() >= 3 && lab >= l_plus && lab <= l_modequal) {
-                                    e = regarbaging(e, new Listoperation((Listincode*)e));
-                                }
+                            if (e->size() >= 3 && lab >= l_plus && lab <= l_modequal) {
+                                e = regarbaging(e, new Listoperation((Listincode*)e));
                             }
                         }
                     }
@@ -1666,6 +1662,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

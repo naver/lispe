@@ -1766,18 +1766,6 @@ public:
     }
 };
 
-class Listtwo : public Listincode {
-public:
-    
-    Listtwo(Listincode* l) : Listincode(l->line, l->fileidx) {
-        liste = l->liste;
-    }
-
-    Element* eval(LispE* lisp);
-};
-
-
-
 class Listcallfunction : public Listincode {
 public:
     Listcallfunction(Listincode* l) : Listincode(l->line, l->fileidx) {
