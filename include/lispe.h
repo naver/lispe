@@ -675,8 +675,10 @@ public:
     
     inline Element* get(wstring nom) {
         short label = encode(nom);
-        Element* e = execution_stack.top()->get(label);
-        if (e == NULL) {
+        try {
+            return execution_stack.top()->variables.at(label);
+        }
+        catch(const std::out_of_range& oor) {
             //Is it a global variable?
             if (execution_stack.size() == 1) {
                 wstring err = L"Error: unknown label: '";
@@ -685,21 +687,24 @@ public:
                 throw new Error(err);
             }
             
-            e = stack_pool[0]->get(label);
-            if (e == NULL) {
+            try {
+                return stack_pool[0]->variables.at(label);
+            }
+            catch(const std::out_of_range& oor) {
                 wstring err = L"Error: unknown label: '";
                 err += nom;
                 err += L"'";
                 throw new Error(err);
             }
         }
-        return e;
     }
-    
+
     inline Element* get(string nom) {
         short label = encode(nom);
-        Element* e = execution_stack.top()->get(label);
-        if (e == NULL) {
+        try {
+            return execution_stack.top()->variables.at(label);
+        }
+        catch(const std::out_of_range& oor) {
             //Is it a global variable?
             if (execution_stack.size() == 1) {
                 string err = "Error: unknown label: '";
@@ -708,20 +713,23 @@ public:
                 throw new Error(err);
             }
             
-            e = stack_pool[0]->get(label);
-            if (e == NULL) {
+            try {
+                return stack_pool[0]->variables.at(label);
+            }
+            catch(const std::out_of_range& oor) {
                 string err = "Error: unknown label: '";
                 err += nom;
                 err += "'";
                 throw new Error(err);
             }
         }
-        return e;
     }
     
     inline Element* get(short label) {
-        Element* e = execution_stack.top()->get(label);
-        if (e == NULL) {
+        try {
+            return execution_stack.top()->variables.at(label);
+        }
+        catch(const std::out_of_range& oor) {
             //Is it a global variable?
             if (execution_stack.size() == 1) {
                 try {
@@ -735,9 +743,10 @@ public:
                     throw new Error(err);
                 }
             }
-            
-            e = stack_pool[0]->get(label);
-            if (e == NULL) {
+            try {
+                return stack_pool[0]->variables.at(label);
+            }
+            catch(const std::out_of_range& oor) {
                 try {
                     return delegation->data_pool.at(label);
                 }
@@ -750,19 +759,22 @@ public:
                 }
             }
         }
-        return e;
     }
     
     inline Element* getvalue(short label) {
-        Element* e = execution_stack.top()->get(label);
-        if (e == NULL) {
-            if (execution_stack.size() == 1)
-                return delegation->_NULL;            
-            e = stack_pool[0]->get(label);
-            if (e == NULL)
-                return delegation->_NULL;
+        try {
+            return execution_stack.top()->variables.at(label);
         }
-        return e;
+        catch(const std::out_of_range& oor) {
+            if (execution_stack.size() == 1)
+                return delegation->_NULL;
+            try {
+                return stack_pool[0]->variables.at(label);
+            }
+            catch(const std::out_of_range& oor) {
+                return delegation->_NULL;
+            }
+        }
     }
     
     inline Element* checkLabel(short label) {

@@ -50,7 +50,7 @@ public:
      */
     
     Element* function;
-    unordered_map<short, Element*> labels;
+    unordered_map<short, Element*> variables;
     
     Stackelement(Element* f) {
         function = f;
@@ -61,15 +61,15 @@ public:
     }
     
     long size() {
-        return labels.size();
+        return variables.size();
     }
     
     bool recordargument(LispE* lisp, Element* e, short label) {
         try {
-            return labels.at(label)->unify(lisp,e, false);
+            return variables.at(label)->unify(lisp,e, false);
         }
         catch(const std::out_of_range& oor) {
-            labels[label] = e;
+            variables[label] = e;
             e->incrementstatus(1, true);
         }
         return true;
@@ -77,18 +77,18 @@ public:
     
     bool recordingunique(Element* e, short label) {
         try {
-            labels.at(label);
+            variables.at(label);
             return false;
         }
         catch(const std::out_of_range& oor) {
-            labels[label] = e;
+            variables[label] = e;
             e->incrementstatus(1, true);
         }
         return true;
     }
     
     Element* recording(Element* e, short label) {
-        Element* previous = labels[label];
+        Element* previous = variables[label];
         if (previous != NULL) {
             if (previous == e)
                 return e;
@@ -96,14 +96,14 @@ public:
         }
         
         e = e->duplicate_constant_container();
-        labels[label] = e;
+        variables[label] = e;
         e->incrementstatus(1, true);
         return e;
     }
 
     Element* get(short label) {
         try {
-            return labels.at(label);
+            return variables.at(label);
         }
         catch(const std::out_of_range& oor) {
             return NULL;
@@ -112,8 +112,8 @@ public:
     
     void remove(short label) {
         try {
-            labels.at(label)->decrementstatus(1,true);
-            labels.erase(label);
+            variables.at(label)->decrementstatus(1,true);
+            variables.erase(label);
         }
         catch(const std::out_of_range& oor) {}
     }
@@ -123,16 +123,16 @@ public:
     
     void copy(Stackelement* stack) {
         //We only copy constant values...
-        for (auto& a: stack->labels) {
+        for (auto& a: stack->variables) {
             if (a.second->status == s_constant)
-                labels[a.first] = a.second;
+                variables[a.first] = a.second;
         }
     }
     
     void clear() {
-        for (auto& a: labels)
+        for (auto& a: variables)
             a.second->decrementstatus(1, true);
-        labels.clear();
+        variables.clear();
         function = NULL;
     }
 
@@ -142,12 +142,12 @@ public:
     }
     
     void atoms(vector<short>& v_atoms) {
-        for (auto& a: labels)
+        for (auto& a: variables)
             v_atoms.push_back(a.first);
     }
     
     ~Stackelement() {
-        for (auto& a: labels)
+        for (auto& a: variables)
             a.second->decrementstatus(1, true);
     }
 };

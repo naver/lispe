@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.2.9.19";
+static std::string version = "1.2020.12.2.9.45";
 string LispVersion() {
     return version;
 }
@@ -29,14 +29,14 @@ string LispVersion() {
 //------------------------------------------------------------
 wstring Stackelement::asString(LispE* lisp) {
     std::wstringstream message;
-    for (auto& a: labels)
+    for (auto& a: variables)
         message << lisp->asString(a.first) << L": " << a.second->stringInList(lisp) << endl;
     return message.str();
 }
 
 List* Stackelement::atomes(LispE* lisp) {
     List* liste = new List;
-    for (auto& a: labels)
+    for (auto& a: variables)
         liste->append(lisp->provideAtom(a.first));
     return liste;
 }
