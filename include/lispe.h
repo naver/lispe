@@ -73,7 +73,7 @@ class LispE {
      Element* load(string chemin);
      
      //load an external library
-     Element* load_library(string nom);
+     Element* load_library(string name);
      
      //These methods are used to handle data pools
      Element* provideAtom(short identifier);
@@ -99,8 +99,8 @@ class LispE {
      
      //gets the value of a variable
      inline Element* get(short label);
-     inline Element* get(string nom);
-     inline Element* get(wstring nom);
+     inline Element* get(string name);
+     inline Element* get(wstring name);
      
      //returns a data structure element known through its label
      inline Element* getDataStructure(short label);
@@ -393,7 +393,7 @@ public:
         return delegation->is_atom(s);
     }
     
-    Element* load_library(string nom);
+    Element* load_library(string name);
     Element* extension(string, Element*);
     Element* eval(string);
     Element* eval(wstring& w) {
@@ -673,8 +673,8 @@ public:
         execution_stack.top()->remove(label);
     }
     
-    inline Element* get(wstring nom) {
-        short label = encode(nom);
+    inline Element* get(wstring name) {
+        short label = encode(name);
         try {
             return execution_stack.top()->variables.at(label);
         }
@@ -682,7 +682,7 @@ public:
             //Is it a global variable?
             if (execution_stack.size() == 1) {
                 wstring err = L"Error: unknown label: '";
-                err += nom;
+                err += name;
                 err += L"'";
                 throw new Error(err);
             }
@@ -692,15 +692,15 @@ public:
             }
             catch(const std::out_of_range& oor) {
                 wstring err = L"Error: unknown label: '";
-                err += nom;
+                err += name;
                 err += L"'";
                 throw new Error(err);
             }
         }
     }
 
-    inline Element* get(string nom) {
-        short label = encode(nom);
+    inline Element* get(string name) {
+        short label = encode(name);
         try {
             return execution_stack.top()->variables.at(label);
         }
@@ -708,7 +708,7 @@ public:
             //Is it a global variable?
             if (execution_stack.size() == 1) {
                 string err = "Error: unknown label: '";
-                err += nom;
+                err += name;
                 err += "'";
                 throw new Error(err);
             }
@@ -718,7 +718,7 @@ public:
             }
             catch(const std::out_of_range& oor) {
                 string err = "Error: unknown label: '";
-                err += nom;
+                err += name;
                 err += "'";
                 throw new Error(err);
             }
@@ -736,9 +736,9 @@ public:
                     return delegation->data_pool.at(label);
                 }
                 catch(const std::out_of_range& oor) {
-                    wstring nom = delegation->code_to_string[label];
+                    wstring name = delegation->code_to_string[label];
                     wstring err = L"Error: unknown label: '";
-                    err += nom;
+                    err += name;
                     err += L"'";
                     throw new Error(err);
                 }
@@ -751,9 +751,9 @@ public:
                     return delegation->data_pool.at(label);
                 }
                 catch(const std::out_of_range& oor) {
-                    wstring nom = delegation->code_to_string[label];
+                    wstring name = delegation->code_to_string[label];
                     wstring err = L"Error: unknown label: '";
-                    err += nom;
+                    err += name;
                     err += L"'";
                     throw new Error(err);
                 }
@@ -782,8 +782,12 @@ public:
     }
 
     inline bool checkFunctionLabel(short label) {
-        Element* func = stack_pool[0]->get(label);
-        return (func != NULL && func->isFunction());
+        try {
+            return stack_pool[0]->variables.at(label)->isFunction();
+        }
+        catch(const std::out_of_range& oor) {
+            return false;
+        }
     }
     
 
