@@ -1633,10 +1633,7 @@ public:
     
     Element* composing(LispE*, bool compose);
     Element* eval(LispE*);
-    
-    Element* divide(LispE* l, uchar local);
-    Element* mod(LispE* l, uchar local);
-    
+        
     bool Boolean() {
         return (liste.size());
     }

@@ -1165,8 +1165,8 @@ void Listincode::set_current_line(LispE* lisp) {
 
 Element* List::eval(LispE* lisp) {
     Element* first_element = null_;
-    Element* element = null_;
-    Element* a = null_;
+    Element* second_element = null_;
+    Element* third_element = null_;
     long listsize;
     short label;
     char test = true;
@@ -1227,8 +1227,8 @@ Element* List::eval(LispE* lisp) {
             case l_return: {
                 first_element = new Return(null_);
                 if (listsize == 2) {
-                    element = liste[1]->eval(lisp);
-                    ((Return*)first_element)->value = element;
+                    second_element = liste[1]->eval(lisp);
+                    ((Return*)first_element)->value = second_element;
                 }
                 return first_element;
             }
@@ -1236,29 +1236,29 @@ Element* List::eval(LispE* lisp) {
                 return break_;
             case l_while: {
                 first_element = liste[1]->eval(lisp);
-                element = null_;
+                second_element = null_;
                 test = lisp->trace;
                 while (first_element->Boolean()) {
                     first_element->release();
-                    for (long i = 2; i < listsize && element->type != l_return; i++) {
-                        _releasing(element);
-                        element = liste[i]->eval(lisp);
+                    for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+                        _releasing(second_element);
+                        second_element = liste[i]->eval(lisp);
                     }
                     
                     //In case a 'return' has been placed in the code
-                    if (element->type == l_return) {
+                    if (second_element->type == l_return) {
                         lisp->stop_at_next_line(test);
-                        if (element->isBreak())
+                        if (second_element->isBreak())
                             return null_;
                         //this is a return, it goes back to the function call
-                        return element;
+                        return second_element;
                     }
                     first_element = liste[1]->eval(lisp);
                 }
                 first_element->release();
                 if (test && lisp->trace != debug_goto)
                     lisp->stop_at_next_line(debug_next);
-                return element;
+                return second_element;
             }
             case l_set_max_stack_size: {
                 long m;
@@ -1271,111 +1271,131 @@ Element* List::eval(LispE* lisp) {
             case l_plus: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->plus(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->plus(lisp, second_element);
                 }
 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_minus: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->minus(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->minus(lisp, second_element);
                 }
 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_multiply: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->multiply(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->multiply(lisp, second_element);
                 }
 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_power: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->power(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->power(lisp, second_element);
                 }
 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_leftshift: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->leftshift(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->leftshift(lisp, second_element);
                 }
 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_rightshift: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->rightshift(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->rightshift(lisp, second_element);
                 }
 
-                element->release();
+                second_element->release();
                 return first_element;
             }
+            case l_divide:
+                first_element = liste[1]->eval(lisp)->copyatom(1);
+                for (short i = 2; i < listsize; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->divide(lisp, second_element);
+                }
+
+                second_element->release();
+                return first_element;
+            case l_mod:
+                first_element = liste[1]->eval(lisp)->copyatom(1);
+                for (short i = 2; i < listsize; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->mod(lisp, second_element);
+                }
+
+                second_element->release();
+                return first_element;
             case l_bitand: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_and(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_and(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_bitor: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_or(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_or(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_bitxor: {
                 first_element = liste[1]->eval(lisp)->copyatom(1);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_xor(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_xor(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_plusequal:{
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->plus(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->plus(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1384,12 +1404,12 @@ Element* List::eval(LispE* lisp) {
             case l_minusequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->minus(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->minus(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1398,12 +1418,12 @@ Element* List::eval(LispE* lisp) {
             case l_multiplyequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->multiply(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->multiply(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1413,12 +1433,12 @@ Element* List::eval(LispE* lisp) {
             case l_powerequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->power(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->power(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1427,12 +1447,12 @@ Element* List::eval(LispE* lisp) {
             case l_leftshiftequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->leftshift(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->leftshift(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1441,12 +1461,12 @@ Element* List::eval(LispE* lisp) {
             case l_rightshiftequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->rightshift(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->rightshift(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1455,12 +1475,12 @@ Element* List::eval(LispE* lisp) {
             case l_bitandequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_and(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_and(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1469,12 +1489,12 @@ Element* List::eval(LispE* lisp) {
             case l_bitorequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_or(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_or(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
@@ -1483,32 +1503,50 @@ Element* List::eval(LispE* lisp) {
             case l_bitxorequal: {
                 first_element = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (short i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_xor(lisp, element);
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->bit_xor(lisp, second_element);
                 }
                 
-                element->release();
+                second_element->release();
                 label = liste[1]->label();
                 if (label > l_final)
                     return lisp->recording(first_element, label);
                 return first_element;
             }
-            case l_divide:
-                return divide(lisp,1);
-            case l_mod:
-                return mod(lisp,1);
             case l_divideequal:
-                return divide(lisp,s_constant);
+                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                for (short i = 2; i < listsize; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->divide(lisp, second_element);
+                }
+                
+                second_element->release();
+                label = liste[1]->label();
+                if (label > l_final)
+                    return lisp->recording(first_element, label);
+                return first_element;
             case l_modequal:
-                return mod(lisp,s_constant);
+                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                for (short i = 2; i < listsize; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    first_element = first_element->mod(lisp, second_element);
+                }
+                
+                second_element->release();
+                label = liste[1]->label();
+                if (label > l_final)
+                    return lisp->recording(first_element, label);
+                return first_element;
             case l_eq: {
                 for (long i = 1; i < listsize-1 && test; i++) {
                     first_element = liste[i]->eval(lisp);
-                    element = liste[i+1]->eval(lisp);
-                    test = ( (first_element == element) || first_element->equal(lisp, element)->Boolean());
+                    second_element = liste[i+1]->eval(lisp);
+                    test = ( (first_element == second_element) || first_element->equal(lisp, second_element)->Boolean());
                     _releasing(first_element);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
                 return booleans_[test];
             }
@@ -1516,10 +1554,10 @@ Element* List::eval(LispE* lisp) {
                 test = false;
                 for (long i = 1; i < listsize-1 && !test; i++) {
                     first_element = liste[i]->eval(lisp);
-                    element = liste[i+1]->eval(lisp);
-                    test = ( (first_element == element) || first_element->equal(lisp, element)->Boolean());
+                    second_element = liste[i+1]->eval(lisp);
+                    test = ( (first_element == second_element) || first_element->equal(lisp, second_element)->Boolean());
                     _releasing(first_element);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
                 return booleans_[!test];
             }
@@ -1533,9 +1571,9 @@ Element* List::eval(LispE* lisp) {
                 }
                 catch (Error* err) {
                     //This error is converted into a non-blocking error message .
-                    element = new Maybe(lisp, err);
+                    second_element = new Maybe(lisp, err);
                     err->release();
-                    return element;
+                    return second_element;
                 }
                 return first_element;
             }
@@ -1561,57 +1599,57 @@ Element* List::eval(LispE* lisp) {
             }
             case l_equal: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
-                test = first_element->unify(lisp, element, false);
+                second_element = liste[2]->eval(lisp);
+                test = first_element->unify(lisp, second_element, false);
                 first_element->release();
-                element->release();
+                second_element->release();
                 return booleans_[test];
             }
             case l_different: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
-                test = first_element->unify(lisp, element, false);
+                second_element = liste[2]->eval(lisp);
+                test = first_element->unify(lisp, second_element, false);
                 first_element->release();
-                element->release();
+                second_element->release();
                 return booleans_[!test];
             }
             case l_lower: {
                 for (long i = 1; i < listsize-1 && test; i++) {
                     first_element = liste[i]->eval(lisp);
-                    element = liste[i+1]->eval(lisp);
-                    test = first_element->less(lisp, element)->Boolean();
+                    second_element = liste[i+1]->eval(lisp);
+                    test = first_element->less(lisp, second_element)->Boolean();
                     _releasing(first_element);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
                 return booleans_[test];
             }
             case l_greater: {
                 for (long i = 1; i < listsize-1 && test; i++) {
                     first_element = liste[i]->eval(lisp);
-                    element = liste[i+1]->eval(lisp);
-                    test = first_element->more(lisp, element)->Boolean();
+                    second_element = liste[i+1]->eval(lisp);
+                    test = first_element->more(lisp, second_element)->Boolean();
                     _releasing(first_element);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
                 return booleans_[test];
             }
             case l_lowerorequal: {
                 for (long i = 1; i < listsize-1 && test; i++) {
                     first_element = liste[i]->eval(lisp);
-                    element = liste[i+1]->eval(lisp);
-                    test = first_element->lessorequal(lisp, element)->Boolean();
+                    second_element = liste[i+1]->eval(lisp);
+                    test = first_element->lessorequal(lisp, second_element)->Boolean();
                     _releasing(first_element);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
                 return booleans_[test];
             }
             case l_greaterorequal: {
                 for (long i = 1; i < listsize-1 && test; i++) {
                     first_element = liste[i]->eval(lisp);
-                    element = liste[i+1]->eval(lisp);
-                    test = first_element->moreorequal(lisp, element)->Boolean();
+                    second_element = liste[i+1]->eval(lisp);
+                    test = first_element->moreorequal(lisp, second_element)->Boolean();
                     _releasing(first_element);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
                 return booleans_[test];
             }
@@ -1623,26 +1661,26 @@ Element* List::eval(LispE* lisp) {
                         throw new Error("Error: the first argument must be a list");
                     if (first_element->size() == 0)
                         return null_;
-                    a = first_element->index(0);
+                    third_element = first_element->index(0);
                     if (first_element->size() == 1)
-                        return a->copying(false);
+                        return third_element->copying(false);
                     for (long i = 2; i < first_element->size(); i++) {
-                        element = first_element->index(i);
-                        if (a->less(lisp, element)->Boolean())
-                            a = element;
+                        second_element = first_element->index(i);
+                        if (third_element->less(lisp, second_element)->Boolean())
+                            third_element = second_element;
                     }
-                    return a->copying(false);
+                    return third_element->copying(false);
                 }
                 
                 first_element = liste[1]->eval(lisp);
                 for (long i = 2; i < listsize; i++) {
-                    element = liste[i]->eval(lisp);
-                    if (first_element->less(lisp, element)->Boolean()) {
+                    second_element = liste[i]->eval(lisp);
+                    if (first_element->less(lisp, second_element)->Boolean()) {
                         first_element->release();
-                        first_element=element;
+                        first_element=second_element;
                     }
                     else {
-                        _releasing(element);
+                        _releasing(second_element);
                     }
                 }
                 return first_element;
@@ -1655,65 +1693,65 @@ Element* List::eval(LispE* lisp) {
                         throw new Error("Error: the first argument must be a list");
                     if (first_element->size() == 0)
                         return null_;
-                    a = first_element->index(0);
+                    third_element = first_element->index(0);
                     if (first_element->size() == 1)
-                        return a->copying(false);
+                        return third_element->copying(false);
                     for (long i = 2; i < first_element->size(); i++) {
-                        element = first_element->index(i);
-                        if (a->more(lisp, element)->Boolean())
-                            a = element;
+                        second_element = first_element->index(i);
+                        if (third_element->more(lisp, second_element)->Boolean())
+                            third_element = second_element;
                     }
-                    return a->copying(false);
+                    return third_element->copying(false);
                 }
                 
                 first_element = liste[1]->eval(lisp);
                 for (long i = 2; i < listsize; i++) {
-                    element = liste[i]->eval(lisp);
-                    if (first_element->more(lisp, element)->Boolean()) {
+                    second_element = liste[i]->eval(lisp);
+                    if (first_element->more(lisp, second_element)->Boolean()) {
                         first_element->release();
-                        first_element=element;
+                        first_element=second_element;
                     }
                     else {
-                        _releasing(element);
+                        _releasing(second_element);
                     }
                 }
                 return first_element;
             }
             case l_atomp: {
-                element = liste[1]->eval(lisp);
-                test = element->isAtom();
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                test = second_element->isAtom();
+                second_element->release();
                 return booleans_[test];
             }
             case l_numberp: {
-                element = liste[1]->eval(lisp);
-                test = element->isNumber();
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                test = second_element->isNumber();
+                second_element->release();
                 return booleans_[test];
             }
             case l_stringp: {
-                element = liste[1]->eval(lisp);
-                test = element->isString();
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                test = second_element->isString();
+                second_element->release();
                 return booleans_[test];
             }
             case l_consp: {
-                element = liste[1]->eval(lisp);
-                test = element->isList();
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                test = second_element->isList();
+                second_element->release();
                 return booleans_[test];
             }
             case l_zerop: {
-                element = liste[1]->eval(lisp);
-                double n = element->asNumber();
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                double n = second_element->asNumber();
+                second_element->release();
                 return booleans_[!n];
             }
             case l_nullp: {
-                element = liste[1]->eval(lisp);
-                if (element == null_)
+                second_element = liste[1]->eval(lisp);
+                if (second_element == null_)
                     return true_;
-                element->release();
+                second_element->release();
                 return false_;
             }
             case l_data: {
@@ -1726,13 +1764,13 @@ Element* List::eval(LispE* lisp) {
                     i = 2;
                 }
                 for (; i < listsize; i++) {
-                    element = liste[i];
-                    if (!element->isList() || !element->size())
+                    second_element = liste[i];
+                    if (!second_element->isList() || !second_element->size())
                         throw new Error(L"Error: A data structure can only contain non empty lists");
-                    lab = element->index(0)->label();
+                    lab = second_element->index(0)->label();
                     if (lab == v_null)
                         throw new Error(L"Error: Missing definition name in data structure");
-                    lisp->recordingData(element, lab, ancestor);
+                    lisp->recordingData(second_element, lab, ancestor);
                 }
                 return true_;
             }
@@ -1750,18 +1788,18 @@ Element* List::eval(LispE* lisp) {
                 }
                 first_element = liste[1]->eval(lisp);
                 if (first_element->isDictionary()) {
-                    element = first_element->reverse(lisp, true);
+                    second_element = first_element->reverse(lisp, true);
                     first_element->release();
-                    return element;
+                    return second_element;
                 }
                 first_element->release();
                 throw new Error("Error: Cannot apply flip on this structure");
             }
             case l_select: { //we return the first non null value
-                element = null_;
-                for (long i = 1; i < listsize && element == null_; i++)
-                element = liste[i]->eval(lisp);
-                return element;
+                second_element = null_;
+                for (long i = 1; i < listsize && second_element == null_; i++)
+                second_element = liste[i]->eval(lisp);
+                return second_element;
             }
             case l_compose: {
                 
@@ -1778,7 +1816,7 @@ Element* List::eval(LispE* lisp) {
                 }
                 for (; i < listsize-1; i++)
                     liste[i]->eval(lisp);
-                element = liste.back()->eval(lisp);
+                second_element = liste.back()->eval(lisp);
                 return lisp->get(label);
             }
             case l_loop: {
@@ -1787,9 +1825,9 @@ Element* List::eval(LispE* lisp) {
                 if (label == v_null)
                     throw new Error(L"Error: Missing label for 'loop'");
                 test = lisp->trace;
-                element = liste[2]->eval(lisp);
-                first_element = element->loop(lisp, label, this);
-                element->release();
+                second_element = liste[2]->eval(lisp);
+                first_element = second_element->loop(lisp, label, this);
+                second_element->release();
                 if (test && lisp->trace != debug_goto)
                     lisp->stop_at_next_line(debug_next);
                 return first_element;
@@ -1797,61 +1835,61 @@ Element* List::eval(LispE* lisp) {
             case l_loopcount: {
                 long counter;
                 evalAsInteger(1, lisp, counter);
-                element = null_;
+                second_element = null_;
                 while (counter > 0) {
-                    for (long i = 2; i < listsize && element->type != l_return; i++) {
-                        _releasing(element);
-                        element = liste[i]->eval(lisp);
+                    for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+                        _releasing(second_element);
+                        second_element = liste[i]->eval(lisp);
                     }
                     //In case a 'return' or a 'break' has been placed in the code
-                    if (element->type == l_return) {
-                        if (element->isBreak())
+                    if (second_element->type == l_return) {
+                        if (second_element->isBreak())
                             return null_;
                         //this is a return, it goes back to the function call
-                        return element;
+                        return second_element;
                     }
                     counter--;
                 }
-                return element;
+                return second_element;
             }
             case l_or:
             {
-                element = null_;
+                second_element = null_;
                 for (long i = 1; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    if (element->Boolean()) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    if (second_element->Boolean()) {
                         return true_;
                     }
                 }
-                element->release();
+                second_element->release();
                 return false_;
             }
             case l_and:
             {
-                element = null_;
+                second_element = null_;
                 for (long i = 1; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    if (!element->Boolean()) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
+                    if (!second_element->Boolean()) {
                         return false_;
                     }
                 }
-                element->release();
+                second_element->release();
                 return true_;
             }
             case l_xor: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 
-                if (first_element->Boolean() == element->Boolean())
-                    a = false_;
+                if (first_element->Boolean() == second_element->Boolean())
+                    third_element = false_;
                 else
-                    a = true_;
+                    third_element = true_;
                 
                 first_element->release();
-                element->release();
-                return a;
+                second_element->release();
+                return third_element;
             }
             case l_ncheck: {
                 //A ncheck is like a check, but when the test fails
@@ -1863,12 +1901,12 @@ Element* List::eval(LispE* lisp) {
                 if (!test)
                     return liste[2]->eval(lisp);
                 
-                element = null_;
-                for (long i = 3; i < listsize && element->type != l_return; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
+                second_element = null_;
+                for (long i = 3; i < listsize && second_element->type != l_return; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
                 }
-                return element;
+                return second_element;
             }
             case l_check: {
                 first_element = liste[1]->eval(lisp);
@@ -1877,12 +1915,12 @@ Element* List::eval(LispE* lisp) {
                 if (!test)
                     return null_;
                 
-                element = null_;
-                for (long i = 2; i < listsize && element->type != l_return; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
+                second_element = null_;
+                for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
                 }
-                return element;
+                return second_element;
             }
             case l_ife: {
                 first_element = liste[1]->eval(lisp);
@@ -1891,86 +1929,86 @@ Element* List::eval(LispE* lisp) {
                 if (test)
                     return liste[2]->eval(lisp);
                 
-                element = null_;
-                for (long i = 3; i < listsize && element->type != l_return; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
+                second_element = null_;
+                for (long i = 3; i < listsize && second_element->type != l_return; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
                 }
-                return element;
+                return second_element;
             }
             case l_block:
                 if (listsize == 2)
                     return liste[1]->eval(lisp);
-                element = null_;
-                for (long i = 1; i < listsize && element->type != l_return; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
+                second_element = null_;
+                for (long i = 1; i < listsize && second_element->type != l_return; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
                 }
-                return element;
+                return second_element;
             case l_converttoatom: {
                 wstring a;
                 evalAsString(1,lisp,a);
                 return lisp->provideAtomProtected(a);
             }
             case l_converttointeger:
-                element = liste[1]->eval(lisp);
-                first_element = lisp->provideInteger(element->asInteger());
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = lisp->provideInteger(second_element->asInteger());
+                second_element->release();
                 return first_element;
             case l_converttonumber:
-                element = liste[1]->eval(lisp);
-                first_element = lisp->provideNumber(element->asNumber());
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = lisp->provideNumber(second_element->asNumber());
+                second_element->release();
                 return first_element;
             case l_converttostring: {
-                element = liste[1]->eval(lisp);
-                wstring strvalue = element->asString(lisp);
+                second_element = liste[1]->eval(lisp);
+                wstring strvalue = second_element->asString(lisp);
                 first_element = lisp->provideString(strvalue);
-                element->release();
+                second_element->release();
                 return first_element;
             }
             case l_list:
                 first_element = new List();
                 if (listsize == 1)
                     return first_element;
-                element = emptylist_;
+                second_element = emptylist_;
                 for (long i = 1; i < listsize; i++) {
-                    element = liste[i]->eval(lisp);
-                    first_element->append(element->copying());
+                    second_element = liste[i]->eval(lisp);
+                    first_element->append(second_element->copying());
                 }
                 return first_element;
             case l_reverse:
-                element = liste[1]->eval(lisp);
-                first_element = element->reverse(lisp, true);
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = second_element->reverse(lisp, true);
+                second_element->release();
                 return first_element;
             case l_cons: {
                 //merging an element into the next list
                 first_element = liste[1]->eval(lisp);
                 
-                element = liste[2]->eval(lisp);
-                if (element == null_) {
-                    a = new List();
-                    a->append(first_element);
-                    return a;
+                second_element = liste[2]->eval(lisp);
+                if (second_element == null_) {
+                    third_element = new List();
+                    third_element->append(first_element);
+                    return third_element;
                 }
                 
-                if (!element->isList()) {
-                    a = new Pair();
-                    a->append(first_element);
-                    a->append(element);
-                    return a;
+                if (!second_element->isList()) {
+                    third_element = new Pair();
+                    third_element->append(first_element);
+                    third_element->append(second_element);
+                    return third_element;
                 }
                                 
-                if (element->type == t_pair)
-                    a = new Pair();
+                if (second_element->type == t_pair)
+                    third_element = new Pair();
                 else
-                    a = new List();
-                a->append(first_element);
-                for (long i = 0; i < element->size(); i++)
-                    a->append(element->value_on_index(lisp, i));
-                element->release();
-                return a;
+                    third_element = new List();
+                third_element->append(first_element);
+                for (long i = 0; i < second_element->size(); i++)
+                    third_element->append(second_element->value_on_index(lisp, i));
+                second_element->release();
+                return third_element;
                 
             }
             case l_trace:
@@ -1996,16 +2034,16 @@ Element* List::eval(LispE* lisp) {
                     if (first_element->type == t_dictionary) {
                         wstring a_key;
                         evalAsString(2, lisp, a_key);
-                        element = first_element->value_on_index(a_key, lisp);
+                        second_element = first_element->value_on_index(a_key, lisp);
                         first_element->release();
-                        return element;
+                        return second_element;
                     }
                     if (first_element->type == t_dictionaryn) {
                         double a_key;
                         evalAsNumber(2, lisp, a_key);
-                        element = first_element->value_on_index(a_key, lisp);
+                        second_element = first_element->value_on_index(a_key, lisp);
                         first_element->release();
-                        return element;
+                        return second_element;
                     }
                     throw new Error(L"Error: the first argument must be a dictionary");
                 }
@@ -2016,19 +2054,19 @@ Element* List::eval(LispE* lisp) {
                     if (first_element->type == t_dictionary) {
                         wstring a_key;
                         evalAsString(2, lisp, a_key);
-                        element = liste[3]->eval(lisp);
+                        second_element = liste[3]->eval(lisp);
                         // It is out of question to manipulate a dictionary declared in the code
                         first_element = first_element->duplicate_constant_container();
-                        first_element->recording(a_key, element->copying(false));
+                        first_element->recording(a_key, second_element->copying(false));
                         return first_element;
                     }
                     if (first_element->type == t_dictionaryn) {
                         double a_key;
                         evalAsNumber(2, lisp, a_key);
-                        element = liste[3]->eval(lisp);
+                        second_element = liste[3]->eval(lisp);
                         // It is out of question to manipulate a dictionary declared in the code
                         first_element = first_element->duplicate_constant_container();
-                        first_element->recording(a_key, element->copying(false));
+                        first_element->recording(a_key, second_element->copying(false));
                         return first_element;
                     }
                     throw new Error(L"Error: the first argument must be a dictionary");
@@ -2049,9 +2087,9 @@ Element* List::eval(LispE* lisp) {
                     }
                     double a_key;
                     evalAsNumber(2, lisp, a_key);
-                    element = first_element->value_on_index(a_key, lisp);
+                    second_element = first_element->value_on_index(a_key, lisp);
                     first_element->release();
-                    return element;
+                    return second_element;
                 }
                 
                 if (listsize == 4) {
@@ -2063,10 +2101,10 @@ Element* List::eval(LispE* lisp) {
                     }
                     double a_key;
                     evalAsNumber(2, lisp, a_key);
-                    element = liste[3]->eval(lisp);
+                    second_element = liste[3]->eval(lisp);
                     // It is out of question to manipulate a dictionary declared in the code
                     first_element = first_element->duplicate_constant_container();
-                    first_element->recording(a_key, element->copying(false));
+                    first_element->recording(a_key, second_element->copying(false));
                     return first_element;
                 }
                 throw new Error(L"Error: Incorrect number of arguments for 'keyn'");
@@ -2083,45 +2121,45 @@ Element* List::eval(LispE* lisp) {
                     throw new Error(L"Error: missing list in 'push'");
                 }
                 first_element = first_element->duplicate_constant_container();
-                element = liste[2]->eval(lisp);
-                first_element->append(element->copying(false));
+                second_element = liste[2]->eval(lisp);
+                first_element->append(second_element->copying(false));
                 return first_element;
             }
             case l_insert: {
                 //We insert a value in a list
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 long idx;
                 evalAsInteger(3, lisp, idx);
-                a = first_element->insert(lisp, element, idx);
+                third_element = first_element->insert(lisp, second_element, idx);
                 
-                element->release();
-                if (a != first_element) {
+                second_element->release();
+                if (third_element != first_element) {
                     first_element->release();
-                    return a;
+                    return third_element;
                 }
                 return first_element;
             }
             case l_unique:
                 first_element = liste[1]->eval(lisp);
-                element = first_element->unique(lisp);
+                second_element = first_element->unique(lisp);
                 first_element->release();
-                return element;
+                return second_element;
             case l_pop: {
                 first_element = liste[1]->eval(lisp);
                 if (first_element->type == t_dictionary) {
-                    element = liste[2]->eval(lisp);
-                    wstring keyvalue = element->asString(lisp);
-                    element->release();
+                    second_element = liste[2]->eval(lisp);
+                    wstring keyvalue = second_element->asString(lisp);
+                    second_element->release();
                     if (first_element->remove(keyvalue))
                         return first_element;
                     first_element->release();
                     return null_;
                 }
                 if (first_element->type == t_dictionaryn) {
-                    element = liste[2]->eval(lisp);
-                    double keyvalue = element->asNumber();
-                    element->release();
+                    second_element = liste[2]->eval(lisp);
+                    double keyvalue = second_element->asNumber();
+                    second_element->release();
                     if (first_element->remove(keyvalue))
                         return first_element;
                     first_element->release();
@@ -2131,9 +2169,9 @@ Element* List::eval(LispE* lisp) {
                 if (first_element->isList()) {
                     long keyvalue;
                     if (listsize == 3) {
-                        element = liste[2]->eval(lisp);
-                        keyvalue = element->asInteger();
-                        element->release();
+                        second_element = liste[2]->eval(lisp);
+                        keyvalue = second_element->asInteger();
+                        second_element->release();
                     }
                     else
                         keyvalue = first_element->size();
@@ -2149,9 +2187,9 @@ Element* List::eval(LispE* lisp) {
                     long keyvalue;
                     wstring strvalue = first_element->asString(lisp);
                     if (listsize == 3) {
-                        element = liste[2]->eval(lisp);
-                        keyvalue = element->asInteger();
-                        element->release();
+                        second_element = liste[2]->eval(lisp);
+                        keyvalue = second_element->asInteger();
+                        second_element->release();
                     }
                     else {
                         if (!strvalue.size())
@@ -2175,31 +2213,31 @@ Element* List::eval(LispE* lisp) {
                     first_element->release();
                     throw new Error(L"Error: the first argument must be a dictionary");
                 }
-                element = first_element->thekeys(lisp);
+                second_element = first_element->thekeys(lisp);
                 first_element->release();
-                return element;
+                return second_element;
             case l_values:
                 first_element = liste[1]->eval(lisp);
                 if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
                     first_element->release();
                     throw new Error(L"Error: the first argument must be a dictionary");
                 }
-                element = first_element->thevalues(lisp);
+                second_element = first_element->thevalues(lisp);
                 first_element->release();
-                return element;
+                return second_element;
             case l_cond: {
                 long szv;
                 for (long i = 1; i < listsize; i++) {
-                    element = liste[i];
-                    szv = element->size();
+                    second_element = liste[i];
+                    szv = second_element->size();
                     
-                    if (!element->isList() || szv <= 1)
+                    if (!second_element->isList() || szv <= 1)
                         throw new Error(L"Error: in a 'cond' the first element must be a list");
                     
-                    List* code = (List*)element;
-                    a = code->liste[0]->eval(lisp);
-                    if (a->Boolean()) {
-                        _releasing(a);
+                    List* code = (List*)second_element;
+                    third_element = code->liste[0]->eval(lisp);
+                    if (third_element->Boolean()) {
+                        _releasing(third_element);
                         first_element = null_;
                         code->liste.back()->setterminal(terminal);
                         for (long int j = 1; j < szv; j++) {
@@ -2208,7 +2246,7 @@ Element* List::eval(LispE* lisp) {
                         }
                         return first_element;
                     }
-                    _releasing(a);
+                    _releasing(third_element);
                 }
                 return null_;
             }
@@ -2234,43 +2272,43 @@ Element* List::eval(LispE* lisp) {
                 return null_;
             }
             case l_car:
-                element = liste[1]->eval(lisp);
-                first_element = element->car(lisp);
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = second_element->car(lisp);
+                second_element->release();
                 return first_element;
             case l_cdr:
-                element = liste[1]->eval(lisp);
-                first_element = element->cdr(lisp);
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = second_element->cdr(lisp);
+                second_element->release();
                 return first_element;
             case l_cadr:
-                element = liste[1]->eval(lisp);
-                first_element = first_element->cadr(lisp, element);
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = first_element->cadr(lisp, second_element);
+                second_element->release();
                 return first_element;
             case l_label: {
                 label = liste[1]->label();
                 if (label == v_null)
                     throw new Error(L"Error: Missing label for 'label'");
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 //the difference with 'setq' is that only one version is recorded.
                 //of the variable... Without duplication
-                return lisp->recordingunique(element, label);
+                return lisp->recordingunique(second_element, label);
             }
             case l_setq: {
                 label = liste[1]->label();
                 if (label == v_null)
                     throw new Error(L"Error: Missing label for 'setq'");
-                element = liste[2]->eval(lisp);
-                lisp->recording(element, label);
+                second_element = liste[2]->eval(lisp);
+                lisp->recording(second_element, label);
                 return true_;
             }
             case l_setg: {
                 label = liste[1]->label();
                 if (label == v_null)
                     throw new Error(L"Error: Missing label for 'setg'");
-                element = liste[2]->eval(lisp);
-                lisp->recordingglobal(element, label);
+                second_element = liste[2]->eval(lisp);
+                lisp->recordingglobal(second_element, label);
                 return true_;
             }
             case l_self:
@@ -2336,23 +2374,23 @@ Element* List::eval(LispE* lisp) {
             case t_list:
                 first_element = first_element->eval(lisp);
                 //Execution of a lambda a priori, otherwise it's an error
-                element = evalfunction(first_element,lisp);
+                second_element = evalfunction(first_element,lisp);
                 first_element->release();
-                return element;
+                return second_element;
             }
             case l_lock: {
-                element = null_;
+                second_element = null_;
                 wstring key;
                 evalAsString(1, lisp, key);
                 ThreadLock* _lock = lisp->delegation->getlock(key);
                 test = lisp->checkforLock();
                 _lock->locking(test);
-                for (long i = 2; i < listsize && element->type != l_return; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
+                for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+                    _releasing(second_element);
+                    second_element = liste[i]->eval(lisp);
                 }
                 _lock->unlocking(test);
-                return element;
+                return second_element;
             }
             case l_waiton: {
                 wstring key;
@@ -2398,10 +2436,10 @@ Element* List::eval(LispE* lisp) {
             case l_print: {
                 string val;
                 for (long i = 1; i < listsize; i++) {
-                    element = liste[i]->eval(lisp);
-                    val = element->toString(lisp);
+                    second_element = liste[i]->eval(lisp);
+                    val = second_element->toString(lisp);
                     lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
                 if (lisp->isThread)
                     std::cout.flush();
@@ -2412,10 +2450,10 @@ Element* List::eval(LispE* lisp) {
                 for (long i = 1; i < listsize; i++) {
                     if (i != 1)
                         val = " ";
-                    element = liste[i]->eval(lisp);
-                    val += element->toString(lisp);
+                    second_element = liste[i]->eval(lisp);
+                    val += second_element->toString(lisp);
                     lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-                    _releasing(element);
+                    _releasing(second_element);
                 }
 #ifdef WIN32
                 val = "\r";
@@ -2429,9 +2467,9 @@ Element* List::eval(LispE* lisp) {
             }
             case l_printerr: {
                 for (long i = 1; i < listsize; i++) {
-                    element = liste[i]->eval(lisp);
-                    std::cerr << element->toString(lisp);
-                    _releasing(element);
+                    second_element = liste[i]->eval(lisp);
+                    std::cerr << second_element->toString(lisp);
+                    _releasing(second_element);
                 }
                 if (lisp->isThread)
                     std::cerr.flush();
@@ -2441,9 +2479,9 @@ Element* List::eval(LispE* lisp) {
                 for (long i = 1; i < listsize; i++) {
                     if (i != 1)
                         std::cerr << " ";
-                    element = liste[i]->eval(lisp);
-                    std::cerr << element->toString(lisp);
-                    _releasing(element);
+                    second_element = liste[i]->eval(lisp);
+                    std::cerr << second_element->toString(lisp);
+                    _releasing(second_element);
                 }
                 std::cerr << std::endl;
                 if (lisp->isThread)
@@ -2460,48 +2498,48 @@ Element* List::eval(LispE* lisp) {
                 return lisp->atomes();
             }
             case l_atomise:
-                element = liste[1]->eval(lisp);
-                first_element = lisp->atomise(element->asString(lisp));
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = lisp->atomise(second_element->asString(lisp));
+                second_element->release();
                 return first_element;
             case l_join: {
                 first_element = liste[1]->eval(lisp);
                 wstring sep;
                 if (listsize == 3)
                     evalAsString(2,lisp,sep);
-                element = first_element->join_in_list(lisp, sep);
+                second_element = first_element->join_in_list(lisp, sep);
                 first_element->release();
-                return element;
+                return second_element;
             }
             case l_eval: {
-                element = liste[1]->eval(lisp);
+                second_element = liste[1]->eval(lisp);
                 
                 //This is a specific case, when the element is a string
                 //we need then to call the a meta-eval, the one that
                 //comes with Lisp itself
-                if (element->isString()) {
-                    first_element = lisp->eval(element->toString(lisp));
-                    element->release();
+                if (second_element->isString()) {
+                    first_element = lisp->eval(second_element->toString(lisp));
+                    second_element->release();
                     if (first_element->isError())
                         throw first_element;
                     return first_element;
                 }
                 //We just need to evaluate this element...
-                first_element = element->eval(lisp);
-                if (first_element != element)
-                    element->release();
+                first_element = second_element->eval(lisp);
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             case l_type: {
-                element = liste[1]->eval(lisp);
-                first_element = lisp->provideAtom(element->type);
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = lisp->provideAtom(second_element->type);
+                second_element->release();
                 return first_element;
             }
             case l_load:
-                element = liste[1]->eval(lisp);
-                first_element = lisp->load(element->toString(lisp));
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = lisp->load(second_element->toString(lisp));
+                second_element->release();
                 return first_element;
             case l_input: {
                 string code;
@@ -2530,59 +2568,59 @@ Element* List::eval(LispE* lisp) {
             case l_fread: {
                 first_element = liste[1]->eval(lisp);
                 
-                element = new String("");
+                second_element = new String("");
                 string nom = first_element->toString(lisp);
                 first_element->release();
-                first_element = element->charge(lisp, nom);
-                return element;
+                first_element = second_element->charge(lisp, nom);
+                return second_element;
             }
             case l_fappend: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 string chemin = first_element->toString(lisp);
                 //We put ourselves in append mode
                 std::ofstream o(chemin.c_str(), std::ios::binary|std::ios::app);
                 if (o.fail()) {
-                    element->release();
+                    second_element->release();
                     first_element->release();
                     string erreur = "Error: Cannot write in file: ";
                     erreur += chemin;
                     throw new Error(erreur);
                 }
-                chemin = element->toString(lisp);
+                chemin = second_element->toString(lisp);
                 o << chemin;
                 first_element->release();
-                element->release();
+                second_element->release();
                 return true_;
             }
             case l_fwrite: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 string chemin = first_element->toString(lisp);
                 std::ofstream o(chemin.c_str(), std::ios::binary);
                 if (o.fail()) {
-                    element->release();
+                    second_element->release();
                     first_element->release();
                     string erreur = "Error: Cannot write in file: ";
                     erreur += chemin;
                     throw new Error(erreur);
                 }
-                chemin = element->toString(lisp);
+                chemin = second_element->toString(lisp);
                 o << chemin;
                 first_element->release();
-                element->release();
+                second_element->release();
                 return true_;
             }
             case l_size: {
-                element = liste[1]->eval(lisp);
-                first_element = lisp->provideNumber(element->size());
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = lisp->provideNumber(second_element->size());
+                second_element->release();
                 return first_element;
             }
             case l_use: {
-                element = liste[1]->eval(lisp);
-                string nom_bib = element->toString(lisp);
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                string nom_bib = second_element->toString(lisp);
+                second_element->release();
                 return lisp->load_library(nom_bib);
             }
             case l_index: {
@@ -2590,72 +2628,72 @@ Element* List::eval(LispE* lisp) {
                 if (listsize == 4) {
                     long idx;
                     evalAsInteger(2, lisp, idx);
-                    element = liste[3]->eval(lisp);
-                    a = first_element->replace(lisp, idx, element);
-                    element->release();
-                    return a;
+                    second_element = liste[3]->eval(lisp);
+                    third_element = first_element->replace(lisp, idx, second_element);
+                    second_element->release();
+                    return third_element;
                 }
-                element = liste[2]->eval(lisp);
-                a = first_element->value_on_index(lisp, element);
-                element->release();
+                second_element = liste[2]->eval(lisp);
+                third_element = first_element->value_on_index(lisp, second_element);
+                second_element->release();
                 first_element->release();
-                return a;
+                return third_element;
             }
             case l_extract: {
-                element = liste[1]->eval(lisp);
-                first_element = element->extraction(lisp, this);
-                element->release();
+                second_element = liste[1]->eval(lisp);
+                first_element = second_element->extraction(lisp, this);
+                second_element->release();
                 return first_element;
             }
             case l_in: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 long idx = 0;
                 if (listsize == 4)
                     evalAsInteger(3,lisp, idx);
-                a = first_element->search_element(lisp, element, idx);
+                third_element = first_element->search_element(lisp, second_element, idx);
                 first_element->release();
-                element->release();
-                if (a != null_) {
-                    a->release();
+                second_element->release();
+                if (third_element != null_) {
+                    third_element->release();
                     return true_;
                 }
-                return a;
+                return third_element;
             }
             case l_search: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 long idx = 0;
                 if (listsize == 4)
                     evalAsInteger(3,lisp, idx);
-                a = first_element->search_element(lisp, element, idx);
+                third_element = first_element->search_element(lisp, second_element, idx);
                 first_element->release();
-                element->release();
-                return a;
+                second_element->release();
+                return third_element;
             }
             case l_searchall: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 long idx = 0;
                 if (listsize == 4) {
                     evalAsInteger(3,lisp, idx);
                 }
-                a = first_element->search_all_elements(lisp, element, idx);
+                third_element = first_element->search_all_elements(lisp, second_element, idx);
                 first_element->release();
-                element->release();
-                return a;
+                second_element->release();
+                return third_element;
             }
             case l_revertsearch: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 long idx = 0;
                 if (listsize == 4) {
                     evalAsInteger(3,lisp, idx);
                 }
-                a = first_element->search_reverse(lisp, element, idx);
+                third_element = first_element->search_reverse(lisp, second_element, idx);
                 first_element->release();
-                element->release();
-                return a;
+                second_element->release();
+                return third_element;
             }
             case l_irange: {
                 double init, inc;
@@ -2683,35 +2721,35 @@ Element* List::eval(LispE* lisp) {
                     //Then we must duplicate the second element:
                     call.liste.push_back(liste[2]);
                 }
-                element = call.eval(lisp);
+                second_element = call.eval(lisp);
                 first_element->release();
-                return element;
+                return second_element;
             }
             case l_checking: {
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
+                second_element = liste[2]->eval(lisp);
                 List call;
                 if (first_element->isInstruction()) {
                     call.liste.push_back(first_element);
                     call.liste.push_back(liste[3]);
-                    call.liste.push_back(element);
+                    call.liste.push_back(second_element);
                 }
                 else {
-                    if (element->isInstruction()) {
-                        call.liste.push_back(element);
+                    if (second_element->isInstruction()) {
+                        call.liste.push_back(second_element);
                         call.liste.push_back(first_element);
                         call.liste.push_back(liste[3]);
                     }
                     else {
                         first_element->release();
-                        element->release();
+                        second_element->release();
                         throw new Error("Error: condition or operation cannot be evaluated: missing instruction");
                     }
                 }
-                a = call.eval(lisp);
+                third_element = call.eval(lisp);
                 first_element->release();
-                element->release();
-                return a;
+                second_element->release();
+                return third_element;
             }
             case l_folding: { //abus de langage: I agree
                 //We detect the type of the instruction on the fly
@@ -2729,31 +2767,31 @@ Element* List::eval(LispE* lisp) {
                 call.liste.push_back(first_element);
                 call.liste.push_back(liste[2]);
                 call.liste.push_back(liste[3]);
-                element = call.eval(lisp);
+                second_element = call.eval(lisp);
                 first_element->release();
-                return element;
+                return second_element;
             }
             case l_apply:  { //(apply func l)
-                element = liste[2]->eval(lisp);
-                if (!element->isList()) {
-                    element->release();
+                second_element = liste[2]->eval(lisp);
+                if (!second_element->isList()) {
+                    second_element->release();
                     throw new Error("Error: arguments to 'apply' should be given as a list");
                 }
                 
                 first_element = liste[1]->eval(lisp);
                 
-                if (element->status == s_constant) {
+                if (second_element->status == s_constant) {
                     List l;
-                    l.liste = ((List*)element)->liste;
+                    l.liste = ((List*)second_element)->liste;
                     l.liste.insert(l.liste.begin(), first_element);
-                    a = l.eval(lisp);
+                    third_element = l.eval(lisp);
                 }
                 else {
                     //We insert this element in our list
-                    List* l = (List*)element;
+                    List* l = (List*)second_element;
                     l->liste.insert(l->liste.begin(), first_element);
                     
-                    a = l->eval(lisp);
+                    third_element = l->eval(lisp);
                     
                     //We remove this first element
                     if (l->status)
@@ -2762,15 +2800,15 @@ Element* List::eval(LispE* lisp) {
                         l->release();
                 }
                 first_element->release();
-                return a;
+                return third_element;
             }
             case l_sort: {
                 //First element is the comparison function OR an operator
                 first_element = liste[1]->eval(lisp);
-                element = liste[2]->eval(lisp);
-                if (!element->isList()) {
+                second_element = liste[2]->eval(lisp);
+                if (!second_element->isList()) {
                     first_element->release();
-                    element->release();
+                    second_element->release();
                     throw new Error(L"Error: the second argument should be a list for 'sort'");
                 }
                 
@@ -2783,21 +2821,21 @@ Element* List::eval(LispE* lisp) {
                     //C Is either an atom or an operator
                     if (!first_element->isAtom()) {
                         first_element->release();
-                        element->release();
+                        second_element->release();
                         throw new Error(L"Error: incorrect comparison function in 'sort'");
                     }
                 }
                 
                 Comparison comp(lisp, first_element);
-                List* l = (List*)element;
+                List* l = (List*)second_element;
                 if (comp.checkComparison(l->liste[0])) {
                     first_element->release();
-                    element->release();
+                    second_element->release();
                     throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
                 }
                 sort(l->liste.begin(), l->liste.end(), comp);
                 first_element->release();
-                return element;
+                return second_element;
             }
             case l_zip: {
                 //We combine different lists together...
@@ -2805,42 +2843,42 @@ Element* List::eval(LispE* lisp) {
                 long szl = -1;
                 long i;
                 for (i = 1; i < listsize; i++) {
-                    element = liste[i]->eval(lisp);
-                    if (!element->isList()) {
-                        element->release();
-                        a = new Error(L"Error: 'zip' only accepts lists as arguments");
+                    second_element = liste[i]->eval(lisp);
+                    if (!second_element->isList()) {
+                        second_element->release();
+                        third_element = new Error(L"Error: 'zip' only accepts lists as arguments");
                         break;
                     }
                     if (i == 1)
-                        szl = element->size();
+                        szl = second_element->size();
                     else {
-                        if (szl != element->size()) {
-                            element->release();
-                            a = new Error(L"Error: Lists should all have the same size in 'zip'");
+                        if (szl != second_element->size()) {
+                            second_element->release();
+                            third_element = new Error(L"Error: Lists should all have the same size in 'zip'");
                             break;
                         }
                     }
-                    lists.push_back(element);
-                    element = null_;
+                    lists.push_back(second_element);
+                    second_element = null_;
                 }
                 
-                if (a->isError()) {
+                if (third_element->isError()) {
                     for (auto& x: lists)
                         x->release();
-                    throw a;
+                    throw third_element;
                 }
                 
-                a = new List;
+                third_element = new List;
                 List* sub;
                 for (long j = 0; j < szl; j++) {
                     sub = new List;
-                    a->append(sub);
+                    third_element->append(sub);
                     for (i = 0; i <lists.size(); i++)
                         sub->append(lists[i]->index(j));
                 }
                 for (i = 0; i < lists.size(); i++)
                     lists[i]->release();
-                return a;
+                return third_element;
             }
             case l_zipwith: {
                 //We combine different lists together with an operator
@@ -2851,31 +2889,31 @@ Element* List::eval(LispE* lisp) {
                 long szl = -1;
                 long i;
                 for (i = 2; i < listsize; i++) {
-                    element = liste[i]->eval(lisp);
-                    if (!element->isList()) {
-                        element->release();
-                        a = new Error(L"Error: 'zipwith' only accepts lists as arguments");
+                    second_element = liste[i]->eval(lisp);
+                    if (!second_element->isList()) {
+                        second_element->release();
+                        third_element = new Error(L"Error: 'zipwith' only accepts lists as arguments");
                         break;
                     }
                     if (i == 2)
-                        szl = element->size();
+                        szl = second_element->size();
                     else {
-                        if (szl != element->size()) {
-                            element->release();
-                            a = new Error(L"Error: Lists should all have the same size in 'zipwith'");
+                        if (szl != second_element->size()) {
+                            second_element->release();
+                            third_element = new Error(L"Error: Lists should all have the same size in 'zipwith'");
                             break;
                         }
                     }
-                    lists.push_back(element);
-                    element->incrementstatus(2,false);
-                    element = null_;
+                    lists.push_back(second_element);
+                    second_element->incrementstatus(2,false);
+                    second_element = null_;
                 }
                 
-                if (a->isError()) {
+                if (third_element->isError()) {
                     for (auto& e: lists) {
                         e->decrementstatus(2, false);
                     }
-                    throw a;
+                    throw third_element;
                 }
                 
                 //First element is the operation, second element the list
@@ -2901,19 +2939,19 @@ Element* List::eval(LispE* lisp) {
                     lsp.append(null_);
                 }
                 
-                element = new List;
+                second_element = new List;
                 
                 for (j = 0; j < szl; j++) {
                     for (i = 0; i < lsz; i++)
                         lsp.liste[i+1] = lists[i]->index(j);
-                    a = lsp.eval(lisp);
-                    element->append(a);
-                    a = null_;
+                    third_element = lsp.eval(lisp);
+                    second_element->append(third_element);
+                    third_element = null_;
                 }
                 
                 for (i = 0; i < lsz; i++)
                     lists[i]->decrementstatus(2, false);
-                return element;
+                return second_element;
             }
             default: {
                 if ((label & 0x1000) == 0x1000) {
@@ -2927,8 +2965,8 @@ Element* List::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        element->release();
-        a->release();
+        second_element->release();
+        third_element->release();
         throw err;
     }
     return null_;
@@ -2999,252 +3037,290 @@ Element* Listoperation::eval(LispE* lisp) {
     set_current_line(lisp);
     lisp->display_trace(this);
 
-    Element* first_element;
-    Element* element = null_;
+    Element* result;
+    Element* operand = null_;
     short listsize = liste.size();
     short i;
 
     try {
         switch (liste[0]->type) {
             case l_plus: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->plus(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->plus(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_minus: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->minus(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->minus(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_multiply: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->multiply(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->multiply(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
-            case l_power: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+            case l_divide:
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->power(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->divide(lisp, operand);
+                }
+                operand->release();
+                return result;
+            case l_mod:
+                result = liste[1]->eval(lisp)->copyatom(1);
+                for (i = 2; i < listsize; i++) {
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->mod(lisp, operand);
+                }
+                operand->release();
+                return result;
+            case l_power: {
+                result = liste[1]->eval(lisp)->copyatom(1);
+                for (i = 2; i < listsize; i++) {
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->power(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_leftshift: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->leftshift(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->leftshift(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_rightshift: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->rightshift(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->rightshift(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_bitand: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_and(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->bit_and(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_bitor: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_or(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->bit_or(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_bitxor: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
+                result = liste[1]->eval(lisp)->copyatom(1);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_xor(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->bit_xor(lisp, operand);
                 }
                 
-                element->release();
-                return first_element;
+                operand->release();
+                return result;
             }
             case l_plusequal:{
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->plus(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->plus(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
             case l_minusequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->minus(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->minus(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
             case l_multiplyequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->multiply(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->multiply(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
                 
             }
             case l_powerequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->power(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->power(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
             case l_leftshiftequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->leftshift(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->leftshift(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
             case l_rightshiftequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->rightshift(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->rightshift(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
             case l_bitandequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_and(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->bit_and(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
             case l_bitorequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_or(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->bit_or(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
             case l_bitxorequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
                 for (i = 2; i < listsize; i++) {
-                    _releasing(element);
-                    element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_xor(lisp, element);
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->bit_xor(lisp, operand);
                 }
                 
-                element->release();
+                operand->release();
                 short label = liste[1]->label();
                 if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
+                    return lisp->recording(result, label);
+                return result;
             }
-            case l_divide:
-                return divide(lisp,1);
-            case l_mod:
-                return mod(lisp,1);
-            case l_divideequal:
-                return divide(lisp,s_constant);
-            case l_modequal:
-                return mod(lisp,s_constant);
+            case l_divideequal: {
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
+                for (i = 2; i < listsize; i++) {
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->divide(lisp, operand);
+                }
+                
+                operand->release();
+                short label = liste[1]->label();
+                if (label > l_final)
+                    return lisp->recording(result, label);
+                return result;
+            }
+            case l_modequal: {
+                result = liste[1]->eval(lisp)->copyatom(s_constant);
+                for (i = 2; i < listsize; i++) {
+                    _releasing(operand);
+                    operand = liste[i]->eval(lisp);
+                    result = result->mod(lisp, operand);
+                }
+                
+                operand->release();
+                short label = liste[1]->label();
+                if (label > l_final)
+                    return lisp->recording(result, label);
+                return result;
+            }
         }
     }
     catch (Error* err) {
-        first_element->release();
-        element->release();
+        result->release();
+        operand->release();
         throw err;
     }
 
