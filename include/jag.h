@@ -821,7 +821,6 @@ public:
         //Display methods....
         //--------------------------------------------------------------------------------
     void clearscreen();
-    void clearline();
 	void clearlastline();
     void displayonlast(bool bck);
     void displayonlast(wstring w, bool bck = false);

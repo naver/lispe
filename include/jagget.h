@@ -180,6 +180,9 @@ public:
     void reset();
     void get_a_string(string&);
     void initialisation();
+    void clearline() {
+        cout << back << m_clear_line << back;
+    }
 
     void sendcommand(string s) {
         cout.flush();

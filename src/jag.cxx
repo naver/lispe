@@ -515,11 +515,6 @@ void jag_editor::clearscreen() {
 #endif
 }
 
-void jag_editor::clearline() {
-	cout << back << m_clear_line << back;
-}
-
-
 //We build a string with no composed emoji, to match the position of the cursor...
 void jag_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
     cleaned = s.substr(0, p);

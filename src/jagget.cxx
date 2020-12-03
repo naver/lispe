@@ -245,7 +245,7 @@ void jag_get::get_a_string(string& input_string) {
     }
 #endif
         
-        if (buff[0] == 1) {
+        if (buff[0] == 1) { //ctrl-a
             //beginning of the string
             while (cursor != 0) {
                 cout << m_oneleft;
@@ -254,7 +254,7 @@ void jag_get::get_a_string(string& input_string) {
             continue;
         }
         
-        if (buff[0] ==  5) { //at the end of the string
+        if (buff[0] ==  5) { ////ctrl-e: at the end of the string
             if (cursor < input_string.size()) {
                 i = cursor;
                 cursor = input_string.size();
@@ -264,6 +264,14 @@ void jag_get::get_a_string(string& input_string) {
                     i++;
                 }
             }
+            continue;
+        }
+        
+        if (buff[0] == 11) { //ctrl-k, delete the rest of the string
+            if (cursor == input_string.size())
+                continue;
+            cout << m_clear_line;
+            input_string = input_string.substr(0, cursor);
             continue;
         }
         
