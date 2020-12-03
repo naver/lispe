@@ -1204,6 +1204,7 @@ void jag_editor::handleblock(wstring& bl) {
     if (vs.size() == 1) {
         line = line.substr(0, posinstring) + bl + line.substr(posinstring, line.size());
         lines[pos] = line;
+        posinstring += bl.size();
     }
     else {
         lines[pos++] = line.substr(0, posinstring) + vs[0];
@@ -1214,11 +1215,11 @@ void jag_editor::handleblock(wstring& bl) {
         }
         currentline += vs.size()-1;
         pos = poslines[currentline];
+        posinstring = vs.back().size();
     }
     
     displaylist(poslines[0]);
     movetoline(currentline);
-    posinstring = vs.back().size();
     movetoposition();
 }
 
@@ -1662,7 +1663,7 @@ bool jag_editor::evaluateescape(string& buff) {
             pos = selected_posnext;
             movetoline(currentline);
             line = lines[pos];
-            posinstring = line.size();
+            posinstring = selected_y;
             movetoposition();
         }
         return true;
