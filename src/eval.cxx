@@ -1163,12 +1163,20 @@ void Listincode::set_current_line(LispE* lisp) {
 
 Element* List::eval(LispE* lisp) {
     try {
-        return (this->*lisp->delegation->evals.at(liste.at(0)->type))(lisp);
+        short label = liste.at(0)->type | lisp->checkLispState();
+        set_current_line(lisp);
+        return (this->*lisp->delegation->evals.at(label))(lisp);
     }
     catch (const std::out_of_range& oor) {
         if (!liste.size())
             return this;
         
+        if (lisp->checkLispState()) {
+            if (lisp->hasStopped())
+                throw lisp->delegation->_THEEND;
+            throw new Error("Error: stack overflow");
+        }
+
         wstring msg = L"Error: unknown instruction: '";
         msg += lisp->asString(liste[0]->type);
         msg += L"'";
@@ -1192,12 +1200,6 @@ Element* List::evall_quote(LispE* lisp) {
 
 
 Element* List::evall_return(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
@@ -1205,7 +1207,6 @@ Element* List::evall_return(LispE* lisp) {
     Element* first_element = new Return(null_);
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1225,18 +1226,11 @@ Element* List::evall_return(LispE* lisp) {
 }
 
 Element* List::evall_and(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1261,19 +1255,12 @@ Element* List::evall_and(LispE* lisp) {
 
 
 Element* List::evall_apply(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1320,18 +1307,11 @@ Element* List::evall_apply(LispE* lisp) {
 
 
 Element* List::evall_atomise(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1351,18 +1331,11 @@ Element* List::evall_atomise(LispE* lisp) {
 
 
 Element* List::evall_atomp(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1381,16 +1354,9 @@ Element* List::evall_atomp(LispE* lisp) {
 
 
 Element* List::evall_atoms(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 1)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     return lisp->atomes();
@@ -1578,16 +1544,9 @@ Element* List::evall_bitxorequal(LispE* lisp) {
 
 
 Element* List::evall_block(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1610,18 +1569,11 @@ Element* List::evall_block(LispE* lisp) {
 
 
 Element* List::evall_cadr(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1641,18 +1593,11 @@ Element* List::evall_cadr(LispE* lisp) {
 
 
 Element* List::evall_car(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1672,18 +1617,11 @@ Element* List::evall_car(LispE* lisp) {
 
 
 Element* List::evall_catch(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
     
     try {
@@ -1700,18 +1638,11 @@ Element* List::evall_catch(LispE* lisp) {
 
 
 Element* List::evall_cdr(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1731,12 +1662,6 @@ Element* List::evall_cdr(LispE* lisp) {
 
 
 Element* List::evall_check(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
@@ -1744,7 +1669,6 @@ Element* List::evall_check(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1772,19 +1696,12 @@ Element* List::evall_check(LispE* lisp) {
 
 
 Element* List::evall_checking(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1825,12 +1742,6 @@ Element* List::evall_checking(LispE* lisp) {
 
 
 Element* List::evall_compose(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     List* loop = (List*)liste.back();
 
     short i = 4;
@@ -1857,12 +1768,6 @@ Element* List::evall_compose(LispE* lisp) {
 
 
 Element* List::evall_cond(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
@@ -1870,7 +1775,6 @@ Element* List::evall_cond(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1909,19 +1813,12 @@ Element* List::evall_cond(LispE* lisp) {
 }
 
 Element* List::evall_cons(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1964,18 +1861,11 @@ Element* List::evall_cons(LispE* lisp) {
 
 
 Element* List::evall_consp(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -1994,16 +1884,9 @@ Element* List::evall_consp(LispE* lisp) {
 
 
 Element* List::evall_converttoatom(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     wstring a;
@@ -2013,18 +1896,11 @@ Element* List::evall_converttoatom(LispE* lisp) {
 
 
 Element* List::evall_converttointeger(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2044,18 +1920,11 @@ Element* List::evall_converttointeger(LispE* lisp) {
 
 
 Element* List::evall_converttonumber(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2075,18 +1944,11 @@ Element* List::evall_converttonumber(LispE* lisp) {
 
 
 Element* List::evall_converttostring(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2107,18 +1969,11 @@ Element* List::evall_converttostring(LispE* lisp) {
 
 
 Element* List::evall_data(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2181,7 +2036,6 @@ Element* List::evall_defpat(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     
     short label;
-    set_current_line(lisp);
     lisp->display_trace(this);
     
     //We declare a function
@@ -2208,19 +2062,12 @@ Element* List::evall_defun(LispE* lisp) {
 
 
 Element* List::evall_different(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() < 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2302,12 +2149,6 @@ Element* List::evall_divideequal(LispE* lisp) {
 
 
 Element* List::evall_eq(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -2315,7 +2156,6 @@ Element* List::evall_eq(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2339,19 +2179,12 @@ Element* List::evall_eq(LispE* lisp) {
 
 
 Element* List::evall_equal(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() < 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2373,18 +2206,11 @@ Element* List::evall_equal(LispE* lisp) {
 
 
 Element* List::evall_eval(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2417,18 +2243,11 @@ Element* List::evall_eval(LispE* lisp) {
 
 
 Element* List::evall_extract(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (!checkArity(P_THREE|P_FOUR, liste.size()))
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2448,18 +2267,11 @@ Element* List::evall_extract(LispE* lisp) {
 
 
 Element* List::evall_fappend(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2492,18 +2304,11 @@ Element* List::evall_fappend(LispE* lisp) {
 
 
 Element* List::evall_flip(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2538,18 +2343,11 @@ Element* List::evall_flip(LispE* lisp) {
 
 
 Element* List::evall_folding(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2584,18 +2382,11 @@ Element* List::evall_folding(LispE* lisp) {
 
 
 Element* List::evall_fread(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2618,18 +2409,11 @@ Element* List::evall_fread(LispE* lisp) {
 
 
 Element* List::evall_fwrite(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2661,16 +2445,9 @@ Element* List::evall_fwrite(LispE* lisp) {
 
 
 Element* List::evall_getchar(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 1)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     string code = get_char(lisp->delegation->input_handler);
@@ -2679,12 +2456,6 @@ Element* List::evall_getchar(LispE* lisp) {
 
 
 Element* List::evall_greater(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -2692,7 +2463,6 @@ Element* List::evall_greater(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2716,12 +2486,6 @@ Element* List::evall_greater(LispE* lisp) {
 
 
 Element* List::evall_greaterorequal(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -2729,7 +2493,6 @@ Element* List::evall_greaterorequal(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2753,19 +2516,12 @@ Element* List::evall_greaterorequal(LispE* lisp) {
 
 
 Element* List::evall_if(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2793,12 +2549,6 @@ Element* List::evall_if(LispE* lisp) {
 
 
 Element* List::evall_ife(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 4)
         throw new Error("Error: wrong number of arguments");
@@ -2806,7 +2556,6 @@ Element* List::evall_ife(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2834,12 +2583,6 @@ Element* List::evall_ife(LispE* lisp) {
 
 
 Element* List::evall_in(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
@@ -2847,7 +2590,6 @@ Element* List::evall_in(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2877,12 +2619,6 @@ Element* List::evall_in(LispE* lisp) {
 
 
 Element* List::evall_index(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
@@ -2890,7 +2626,6 @@ Element* List::evall_index(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2921,17 +2656,10 @@ Element* List::evall_index(LispE* lisp) {
 
 
 Element* List::evall_input(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     string code;
@@ -2947,19 +2675,12 @@ Element* List::evall_input(LispE* lisp) {
 
 
 Element* List::evall_insert(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -2989,16 +2710,9 @@ Element* List::evall_insert(LispE* lisp) {
 
 
 Element* List::evall_irange(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
     
     double init, inc;
@@ -3011,19 +2725,12 @@ Element* List::evall_irange(LispE* lisp) {
 
 
 Element* List::evall_join(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3046,19 +2753,12 @@ Element* List::evall_join(LispE* lisp) {
 
 
 Element* List::evall_key(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3122,19 +2822,12 @@ Element* List::evall_key(LispE* lisp) {
 
 
 Element* List::evall_keyn(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3184,18 +2877,11 @@ Element* List::evall_keyn(LispE* lisp) {
 
 
 Element* List::evall_keys(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3219,18 +2905,11 @@ Element* List::evall_keys(LispE* lisp) {
 
 
 Element* List::evall_label(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     short label;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3262,17 +2941,10 @@ Element* List::evall_lambda(LispE* lisp) {
 
 
 Element* List::evall_last(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3349,17 +3021,10 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
 
 
 Element* List::evall_list(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3384,18 +3049,11 @@ Element* List::evall_list(LispE* lisp) {
 
 
 Element* List::evall_load(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3415,19 +3073,12 @@ Element* List::evall_load(LispE* lisp) {
 
 
 Element* List::evall_lock(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3454,12 +3105,6 @@ Element* List::evall_lock(LispE* lisp) {
 
 
 Element* List::evall_loop(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() < 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
@@ -3467,7 +3112,6 @@ Element* List::evall_loop(LispE* lisp) {
     short label;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3494,18 +3138,11 @@ Element* List::evall_loop(LispE* lisp) {
 
 
 Element* List::evall_loopcount(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3538,12 +3175,6 @@ Element* List::evall_loopcount(LispE* lisp) {
 
 
 Element* List::evall_lower(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -3551,7 +3182,6 @@ Element* List::evall_lower(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3575,12 +3205,6 @@ Element* List::evall_lower(LispE* lisp) {
 
 
 Element* List::evall_lowerorequal(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -3588,7 +3212,6 @@ Element* List::evall_lowerorequal(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3612,18 +3235,11 @@ Element* List::evall_lowerorequal(LispE* lisp) {
 
 
 Element* List::evall_mapping(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3653,12 +3269,6 @@ Element* List::evall_mapping(LispE* lisp) {
 
 
 Element* List::evall_max(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -3666,7 +3276,6 @@ Element* List::evall_max(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3713,18 +3322,11 @@ Element* List::evall_max(LispE* lisp) {
 
 
 Element* List::evall_maybe(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
 
-    set_current_line(lisp);
     lisp->display_trace(this);
     
     if (listsize==2) {
@@ -3749,12 +3351,6 @@ Element* List::evall_maybe(LispE* lisp) {
 
 
 Element* List::evall_min(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -3762,7 +3358,6 @@ Element* List::evall_min(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -3989,12 +3584,6 @@ Element* List::evall_multiplyequal(LispE* lisp) {
 
 
 Element* List::evall_ncheck(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -4002,7 +3591,6 @@ Element* List::evall_ncheck(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4033,12 +3621,6 @@ Element* List::evall_ncheck(LispE* lisp) {
 
 
 Element* List::evall_neq(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -4046,7 +3628,6 @@ Element* List::evall_neq(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4071,18 +3652,11 @@ Element* List::evall_neq(LispE* lisp) {
 
 
 Element* List::evall_not(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4101,17 +3675,10 @@ Element* List::evall_not(LispE* lisp) {
 
 
 Element* List::evall_nullp(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4131,18 +3698,11 @@ Element* List::evall_nullp(LispE* lisp) {
 
 
 Element* List::evall_numberp(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4161,18 +3721,11 @@ Element* List::evall_numberp(LispE* lisp) {
 
 
 Element* List::evall_or(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4197,16 +3750,9 @@ Element* List::evall_or(LispE* lisp) {
 
 
 Element* List::evall_pipe(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 1)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     //pipe returns a line read on std::cin
@@ -4279,19 +3825,12 @@ Element* List::evall_plusequal(LispE* lisp) {
 
 
 Element* List::evall_pop(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4427,17 +3966,10 @@ Element* List::evall_powerequal(LispE* lisp) {
 
 
 Element* List::evall_prettify(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4456,16 +3988,9 @@ Element* List::evall_prettify(LispE* lisp) {
 
 
 Element* List::evall_print(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4490,16 +4015,9 @@ Element* List::evall_print(LispE* lisp) {
 
 
 Element* List::evall_printerr(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4522,16 +4040,9 @@ Element* List::evall_printerr(LispE* lisp) {
 
 
 Element* List::evall_printerrln(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4557,16 +4068,9 @@ Element* List::evall_printerrln(LispE* lisp) {
 
 
 Element* List::evall_println(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4599,18 +4103,11 @@ Element* List::evall_println(LispE* lisp) {
 
 
 Element* List::evall_push(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4636,16 +4133,9 @@ Element* List::evall_push(LispE* lisp) {
 
 
 Element* List::evall_range(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 4)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     double init, limit, inc;
@@ -4657,18 +4147,11 @@ Element* List::evall_range(LispE* lisp) {
 
 
 Element* List::evall_reverse(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4688,12 +4171,6 @@ Element* List::evall_reverse(LispE* lisp) {
 
 
 Element* List::evall_revertsearch(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
@@ -4701,7 +4178,6 @@ Element* List::evall_revertsearch(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4788,12 +4264,6 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
 
 
 Element* List::evall_search(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
@@ -4801,7 +4271,6 @@ Element* List::evall_search(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4827,12 +4296,6 @@ Element* List::evall_search(LispE* lisp) {
 
 
 Element* List::evall_searchall(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
@@ -4840,7 +4303,6 @@ Element* List::evall_searchall(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4867,18 +4329,11 @@ Element* List::evall_searchall(LispE* lisp) {
 
 
 Element* List::evall_select(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4897,17 +4352,10 @@ Element* List::evall_select(LispE* lisp) {
 }
 
 Element* List::evall_set_max_stack_size(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     long m;
@@ -4920,18 +4368,11 @@ Element* List::evall_set_max_stack_size(LispE* lisp) {
 
 
 Element* List::evall_setg(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     short label;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4952,18 +4393,11 @@ Element* List::evall_setg(LispE* lisp) {
 
 
 Element* List::evall_setq(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     short label;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -4984,18 +4418,11 @@ Element* List::evall_setq(LispE* lisp) {
 
 
 Element* List::evall_size(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5015,16 +4442,9 @@ Element* List::evall_size(LispE* lisp) {
 
 
 Element* List::evall_sleep(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     long tm;
@@ -5035,18 +4455,11 @@ Element* List::evall_sleep(LispE* lisp) {
 
 
 Element* List::evall_sort(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5095,18 +4508,11 @@ Element* List::evall_sort(LispE* lisp) {
 
 
 Element* List::evall_stringp(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5125,17 +4531,10 @@ Element* List::evall_stringp(LispE* lisp) {
 
 
 Element* List::evall_threadclear(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     if (listsize == 1) {
@@ -5150,18 +4549,11 @@ Element* List::evall_threadclear(LispE* lisp) {
 
 
 Element* List::evall_threadretrieve(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5186,17 +4578,10 @@ Element* List::evall_threadretrieve(LispE* lisp) {
 
 
 Element* List::evall_threadstore(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5217,16 +4602,9 @@ Element* List::evall_threadstore(LispE* lisp) {
 
 
 Element* List::evall_throw(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
     
     wstring msg;
@@ -5236,18 +4614,11 @@ Element* List::evall_throw(LispE* lisp) {
 
 
 Element* List::evall_trace(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize != 1 && listsize != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5273,16 +4644,9 @@ Element* List::evall_trace(LispE* lisp) {
 
 
 Element* List::evall_trigger(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     wstring key;
@@ -5292,18 +4656,11 @@ Element* List::evall_trigger(LispE* lisp) {
 
 
 Element* List::evall_type(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5323,18 +4680,11 @@ Element* List::evall_type(LispE* lisp) {
 
 
 Element* List::evall_unique(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5354,17 +4704,10 @@ Element* List::evall_unique(LispE* lisp) {
 
 
 Element* List::evall_use(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5383,18 +4726,11 @@ Element* List::evall_use(LispE* lisp) {
 
 
 Element* List::evall_values(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5418,16 +4754,9 @@ Element* List::evall_values(LispE* lisp) {
 
 
 Element* List::evall_wait(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 1)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
     
     //We wait for all threads to be finished
@@ -5437,16 +4766,9 @@ Element* List::evall_wait(LispE* lisp) {
 
 
 Element* List::evall_waiton(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     wstring key;
@@ -5457,12 +4779,6 @@ Element* List::evall_waiton(LispE* lisp) {
 
 
 Element* List::evall_while(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
@@ -5470,7 +4786,6 @@ Element* List::evall_while(LispE* lisp) {
     Element* second_element = null_;
     char test = true;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5510,19 +4825,12 @@ Element* List::evall_while(LispE* lisp) {
 
 
 Element* List::evall_xor(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5550,17 +4858,10 @@ Element* List::evall_xor(LispE* lisp) {
 
 
 Element* List::evall_zerop(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5579,19 +4880,12 @@ Element* List::evall_zerop(LispE* lisp) {
 
 
 Element* List::evall_zip(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5648,12 +4942,6 @@ Element* List::evall_zip(LispE* lisp) {
 
 
 Element* List::evall_zipwith(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-
     short listsize = liste.size();
     if (listsize < 4)
         throw new Error("Error: wrong number of arguments");
@@ -5661,7 +4949,6 @@ Element* List::evall_zipwith(LispE* lisp) {
     Element* second_element = null_;
     Element* third_element = null_;
 
-    set_current_line(lisp);
     lisp->display_trace(this);
 
     try {
@@ -5749,13 +5036,6 @@ Element* List::evall_zipwith(LispE* lisp) {
 
 
 Element* List::eval_call_function(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-    set_current_line(lisp);
-    
     Element* function;
     
     if (liste[0]->label() == l_self) {
@@ -5798,16 +5078,9 @@ Element* List::eval_call_function(LispE* lisp) {
 }
 
 Element* List::evalt_list(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
-    
     Element* first_element = liste[0];
     Element* second_element = null_;
     
-    set_current_line(lisp);
     lisp->display_trace(this);
     
     try {
