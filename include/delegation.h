@@ -89,6 +89,7 @@ public:
 //and won't budge after loading or compilation
 //The only exception is when creating new atoms
 typedef void (*reading_string)(string&, void*);
+typedef Element* (List::*methodEval)(LispE*);
 
 class Delegation {
 public:
@@ -110,6 +111,8 @@ public:
     unordered_map<long, unsigned long> arities;
     unordered_map<short, Element*> macros;
 
+    unordered_map<short, methodEval> evals;
+    
     unordered_map<List*, long> in_file;
     unordered_map<string, bool> libraries;
     unordered_map<string, long> allfiles;
@@ -338,9 +341,10 @@ public:
     }
 
 
-    inline void set_instruction(short instruction_code, string name,  unsigned long arity) {
+    inline void set_instruction(short instruction_code, string name,  unsigned long arity, methodEval m) {
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
+        evals[instruction_code] = m;
     }
 
     inline void clear_breakpoints() {

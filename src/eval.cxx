@@ -1148,11 +1148,9 @@ Element* LispE::eval(string code) {
     return e;
 }
 //------------------------------------------------------------------------------
-
-inline short Arity(const unsigned long arity, long sz) {
-    static short check[2] = {0x1000, 0};
+inline bool checkArity(const unsigned long arity, long sz) {
     unsigned long a = 1 << ((sz < 16)?sz:15);
-    return check[((arity&a) == a)];
+    return ((arity&a) == a);
 }
 
 void Listincode::set_current_line(LispE* lisp) {
@@ -1164,1804 +1162,151 @@ void Listincode::set_current_line(LispE* lisp) {
 //--------------------------------------------------------------------------------
 
 Element* List::eval(LispE* lisp) {
-    Element* first_element = null_;
-    Element* second_element = null_;
-    Element* third_element = null_;
-    long listsize;
-    short label;
-    char test = true;
-
-    
     try {
-        first_element = liste.at(0);
-        set_current_line(lisp);
-        lisp->display_trace(this);
-        listsize = liste.size();
-        label = lisp->checkLispState() | first_element->type;
-        label |=  Arity(lisp->delegation->arities.at(label), listsize) ;
+        return (this->*lisp->delegation->evals.at(liste.at(0)->type))(lisp);
     }
-    catch(const std::out_of_range& oor) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        
-        if (liste.size() == 0)
+    catch (const std::out_of_range& oor) {
+        if (!liste.size())
             return this;
         
-        if ((label & 0x200) == 0x200)
-            throw new Error("Error: stack overflow");
-        
         wstring msg = L"Error: unknown instruction: '";
-        msg += lisp->asString(first_element->type);
+        msg += lisp->asString(liste[0]->type);
         msg += L"'";
         throw new Error(msg);
-        
     }
-    
-#ifdef DEBUGG
-    //(map 'eval (map 'atom (filter (\(x) (in x "socket")) (map 'string '(extract socket_read socket_create)))))
-    //(map 'eval (map 'atom (map 'string '(extract socket_read socket_create))))
-    //(map '* (take 4 (filter '(< 10) '(1 3 10 23 45 67 1 2 3 5 9))))
-    //(take 4 (filter '(< 10) (map '* '(1 3 10 23 45 67 1 2 3 5 9))))
-    //(take 4 (filter '(< 10) (map '+ (map '* '(1 3 10 23 45 67 1 2 3 5 9)))))
-    //(map '(- 5) (take 4 (filter '(< 10) (map '* '(1 3 10 23 45 67 1 2 3 5 9]
-    cout << toString(lisp) << endl;
-    std::vector<Element*> atomes;
-    lisp->extractAllAtoms(this, atomes);
-    unordered_map<short, bool> uniques;
-    for (auto& a: atomes) {
-        if (uniques.find(a->label()) != uniques.end())
-            continue;
-        uniques[a->label()] = true;
-        Element* value = lisp->getvalue(a->label());
-        cout << a->toString(lisp) << ":" << value->toString(lisp) << endl;
+}
+
+Element* Listbreak::eval(LispE* lisp) {
+    return break_;
+}
+
+Element* List::evall_break(LispE* lisp) {
+    return break_;
+}
+
+Element* List::evall_quote(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    return liste[1];
+}
+
+
+Element* List::evall_return(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
     }
-#endif
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
     
-    //The first element tells us what to do...
-    //It must be an operator or a function
-    
+    Element* first_element = new Return(null_);
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
     try {
-        switch (label) {
-            case l_quote:
-                return liste[1];
-            case l_return: {
-                first_element = new Return(null_);
-                if (listsize == 2) {
-                    second_element = liste[1]->eval(lisp);
-                    ((Return*)first_element)->value = second_element;
-                }
-                return first_element;
-            }
-            case l_break:
-                return break_;
-            case l_while: {
-                first_element = liste[1]->eval(lisp);
-                second_element = null_;
-                test = lisp->trace;
-                while (first_element->Boolean()) {
-                    first_element->release();
-                    for (long i = 2; i < listsize && second_element->type != l_return; i++) {
-                        _releasing(second_element);
-                        second_element = liste[i]->eval(lisp);
-                    }
-                    
-                    //In case a 'return' has been placed in the code
-                    if (second_element->type == l_return) {
-                        lisp->stop_at_next_line(test);
-                        if (second_element->isBreak())
-                            return null_;
-                        //this is a return, it goes back to the function call
-                        return second_element;
-                    }
-                    first_element = liste[1]->eval(lisp);
-                }
-                first_element->release();
-                if (test && lisp->trace != debug_goto)
-                    lisp->stop_at_next_line(debug_next);
-                return second_element;
-            }
-            case l_set_max_stack_size: {
-                long m;
-                if (listsize == 1)
-                    return lisp->provideInteger(lisp->stack_size_max());
-                evalAsInteger(1, lisp, m);
-                lisp->set_stack_max_size(m);
-                return true_;
-            }
-            case l_plus: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->plus(lisp, second_element);
-                }
+        if (listsize == 2) {
+            second_element = liste[1]->eval(lisp);
+            ((Return*)first_element)->value = second_element;
+        }
+        return first_element;
 
-                second_element->release();
-                return first_element;
-            }
-            case l_minus: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->minus(lisp, second_element);
-                }
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+    return null_;
+}
 
-                second_element->release();
-                return first_element;
-            }
-            case l_multiply: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->multiply(lisp, second_element);
-                }
+Element* List::evall_and(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
 
-                second_element->release();
-                return first_element;
-            }
-            case l_power: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->power(lisp, second_element);
-                }
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
 
-                second_element->release();
-                return first_element;
-            }
-            case l_leftshift: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->leftshift(lisp, second_element);
-                }
+    set_current_line(lisp);
+    lisp->display_trace(this);
 
-                second_element->release();
-                return first_element;
-            }
-            case l_rightshift: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->rightshift(lisp, second_element);
-                }
-
-                second_element->release();
-                return first_element;
-            }
-            case l_divide:
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->divide(lisp, second_element);
-                }
-
-                second_element->release();
-                return first_element;
-            case l_mod:
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->mod(lisp, second_element);
-                }
-
-                second_element->release();
-                return first_element;
-            case l_bitand: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_and(lisp, second_element);
-                }
-                
-                second_element->release();
-                return first_element;
-            }
-            case l_bitor: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_or(lisp, second_element);
-                }
-                
-                second_element->release();
-                return first_element;
-            }
-            case l_bitxor: {
-                first_element = liste[1]->eval(lisp)->copyatom(1);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_xor(lisp, second_element);
-                }
-                
-                second_element->release();
-                return first_element;
-            }
-            case l_plusequal:{
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->plus(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_minusequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->minus(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_multiplyequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->multiply(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-                
-            }
-            case l_powerequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->power(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_leftshiftequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->leftshift(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_rightshiftequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->rightshift(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_bitandequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_and(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_bitorequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_or(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_bitxorequal: {
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->bit_xor(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            }
-            case l_divideequal:
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->divide(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            case l_modequal:
-                first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (short i = 2; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    first_element = first_element->mod(lisp, second_element);
-                }
-                
-                second_element->release();
-                label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(first_element, label);
-                return first_element;
-            case l_eq: {
-                for (long i = 1; i < listsize-1 && test; i++) {
-                    first_element = liste[i]->eval(lisp);
-                    second_element = liste[i+1]->eval(lisp);
-                    test = ( (first_element == second_element) || first_element->equal(lisp, second_element)->Boolean());
-                    _releasing(first_element);
-                    _releasing(second_element);
-                }
-                return booleans_[test];
-            }
-            case l_neq: {
-                test = false;
-                for (long i = 1; i < listsize-1 && !test; i++) {
-                    first_element = liste[i]->eval(lisp);
-                    second_element = liste[i+1]->eval(lisp);
-                    test = ( (first_element == second_element) || first_element->equal(lisp, second_element)->Boolean());
-                    _releasing(first_element);
-                    _releasing(second_element);
-                }
-                return booleans_[!test];
-            }
-            case l_throw: {
-                wstring msg;
-                throw new Error(msg);
-            }
-            case l_catch: {
-                try {
-                    first_element = liste[1]->eval(lisp);
-                }
-                catch (Error* err) {
-                    //This error is converted into a non-blocking error message .
-                    second_element = new Maybe(lisp, err);
-                    err->release();
-                    return second_element;
-                }
-                return first_element;
-            }
-            case l_maybe: {
-                if (listsize==2) {
-                    first_element = liste[1]->eval(lisp);
-                    return booleans_[(first_element->label() == t_maybe)];
-                }
-                
-                //Otherwise, we test each value for error and then we send the last one back
-                first_element = null_;
-                try {
-                    for (long i = 1; i < listsize-1; i++) {
-                        first_element->release();
-                        first_element = liste[i]->eval(lisp);
-                    }
-                }
-                catch(Error* err) {
-                    err->release();
-                    return liste.back()->eval(lisp);
-                }
-                return first_element;
-            }
-            case l_equal: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                test = first_element->unify(lisp, second_element, false);
-                first_element->release();
-                second_element->release();
-                return booleans_[test];
-            }
-            case l_different: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                test = first_element->unify(lisp, second_element, false);
-                first_element->release();
-                second_element->release();
-                return booleans_[!test];
-            }
-            case l_lower: {
-                for (long i = 1; i < listsize-1 && test; i++) {
-                    first_element = liste[i]->eval(lisp);
-                    second_element = liste[i+1]->eval(lisp);
-                    test = first_element->less(lisp, second_element)->Boolean();
-                    _releasing(first_element);
-                    _releasing(second_element);
-                }
-                return booleans_[test];
-            }
-            case l_greater: {
-                for (long i = 1; i < listsize-1 && test; i++) {
-                    first_element = liste[i]->eval(lisp);
-                    second_element = liste[i+1]->eval(lisp);
-                    test = first_element->more(lisp, second_element)->Boolean();
-                    _releasing(first_element);
-                    _releasing(second_element);
-                }
-                return booleans_[test];
-            }
-            case l_lowerorequal: {
-                for (long i = 1; i < listsize-1 && test; i++) {
-                    first_element = liste[i]->eval(lisp);
-                    second_element = liste[i+1]->eval(lisp);
-                    test = first_element->lessorequal(lisp, second_element)->Boolean();
-                    _releasing(first_element);
-                    _releasing(second_element);
-                }
-                return booleans_[test];
-            }
-            case l_greaterorequal: {
-                for (long i = 1; i < listsize-1 && test; i++) {
-                    first_element = liste[i]->eval(lisp);
-                    second_element = liste[i+1]->eval(lisp);
-                    test = first_element->moreorequal(lisp, second_element)->Boolean();
-                    _releasing(first_element);
-                    _releasing(second_element);
-                }
-                return booleans_[test];
-            }
-            case l_max: {
-                if (listsize == 2) {
-                    //In this case, the argument must be a list
-                    first_element = liste[1]->eval(lisp);
-                    if (!first_element->isList())
-                        throw new Error("Error: the first argument must be a list");
-                    if (first_element->size() == 0)
-                        return null_;
-                    third_element = first_element->index(0);
-                    if (first_element->size() == 1)
-                        return third_element->copying(false);
-                    for (long i = 2; i < first_element->size(); i++) {
-                        second_element = first_element->index(i);
-                        if (third_element->less(lisp, second_element)->Boolean())
-                            third_element = second_element;
-                    }
-                    return third_element->copying(false);
-                }
-                
-                first_element = liste[1]->eval(lisp);
-                for (long i = 2; i < listsize; i++) {
-                    second_element = liste[i]->eval(lisp);
-                    if (first_element->less(lisp, second_element)->Boolean()) {
-                        first_element->release();
-                        first_element=second_element;
-                    }
-                    else {
-                        _releasing(second_element);
-                    }
-                }
-                return first_element;
-            }
-            case l_min: {
-                if (listsize == 2) {
-                    //In this case, the argument must be a list
-                    first_element = liste[1]->eval(lisp);
-                    if (!first_element->isList())
-                        throw new Error("Error: the first argument must be a list");
-                    if (first_element->size() == 0)
-                        return null_;
-                    third_element = first_element->index(0);
-                    if (first_element->size() == 1)
-                        return third_element->copying(false);
-                    for (long i = 2; i < first_element->size(); i++) {
-                        second_element = first_element->index(i);
-                        if (third_element->more(lisp, second_element)->Boolean())
-                            third_element = second_element;
-                    }
-                    return third_element->copying(false);
-                }
-                
-                first_element = liste[1]->eval(lisp);
-                for (long i = 2; i < listsize; i++) {
-                    second_element = liste[i]->eval(lisp);
-                    if (first_element->more(lisp, second_element)->Boolean()) {
-                        first_element->release();
-                        first_element=second_element;
-                    }
-                    else {
-                        _releasing(second_element);
-                    }
-                }
-                return first_element;
-            }
-            case l_atomp: {
-                second_element = liste[1]->eval(lisp);
-                test = second_element->isAtom();
-                second_element->release();
-                return booleans_[test];
-            }
-            case l_numberp: {
-                second_element = liste[1]->eval(lisp);
-                test = second_element->isNumber();
-                second_element->release();
-                return booleans_[test];
-            }
-            case l_stringp: {
-                second_element = liste[1]->eval(lisp);
-                test = second_element->isString();
-                second_element->release();
-                return booleans_[test];
-            }
-            case l_consp: {
-                second_element = liste[1]->eval(lisp);
-                test = second_element->isList();
-                second_element->release();
-                return booleans_[test];
-            }
-            case l_zerop: {
-                second_element = liste[1]->eval(lisp);
-                double n = second_element->asNumber();
-                second_element->release();
-                return booleans_[!n];
-            }
-            case l_nullp: {
-                second_element = liste[1]->eval(lisp);
-                if (second_element == null_)
-                    return true_;
-                second_element->release();
+    try {
+        second_element = null_;
+        for (long i = 1; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            if (!second_element->Boolean()) {
                 return false_;
-            }
-            case l_data: {
-                //We record a data structure of the form: (data (Atom x y z) (Atom x y))
-                short lab;
-                long i = 1;
-                short ancestor = v_null;
-                if (liste[1]->isAtom()) {
-                    ancestor = liste[1]->label();
-                    i = 2;
-                }
-                for (; i < listsize; i++) {
-                    second_element = liste[i];
-                    if (!second_element->isList() || !second_element->size())
-                        throw new Error(L"Error: A data structure can only contain non empty lists");
-                    lab = second_element->index(0)->label();
-                    if (lab == v_null)
-                        throw new Error(L"Error: Missing definition name in data structure");
-                    lisp->recordingData(second_element, lab, ancestor);
-                }
-                return true_;
-            }
-            case l_flip: {
-                if (liste[1]->isList() && liste[1]->size() >= 3) {
-                    List* l = (List*)liste[1];
-                    //We reverse the two first arguments
-                    List call;
-                    call.liste.push_back(l->liste[0]);
-                    call.liste.push_back(l->liste[2]);
-                    call.liste.push_back(l->liste[1]);
-                    for (long i = 3; i < liste[1]->size(); i++)
-                        call.liste.push_back(l->liste[i]);
-                    return call.eval(lisp);
-                }
-                first_element = liste[1]->eval(lisp);
-                if (first_element->isDictionary()) {
-                    second_element = first_element->reverse(lisp, true);
-                    first_element->release();
-                    return second_element;
-                }
-                first_element->release();
-                throw new Error("Error: Cannot apply flip on this structure");
-            }
-            case l_select: { //we return the first non null value
-                second_element = null_;
-                for (long i = 1; i < listsize && second_element == null_; i++)
-                second_element = liste[i]->eval(lisp);
-                return second_element;
-            }
-            case l_compose: {
-                
-                /*
-                 loop = liste[5]...
-                 */
-                long i = 4;
-                if (liste[4]->isList()) {
-                    label = liste[4]->index(1)->label();
-                }
-                else {
-                    label = liste[4]->label();
-                    i = 5;
-                }
-                for (; i < listsize-1; i++)
-                    liste[i]->eval(lisp);
-                second_element = liste.back()->eval(lisp);
-                return lisp->get(label);
-            }
-            case l_loop: {
-                //We loop in a list
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing label for 'loop'");
-                test = lisp->trace;
-                second_element = liste[2]->eval(lisp);
-                first_element = second_element->loop(lisp, label, this);
-                second_element->release();
-                if (test && lisp->trace != debug_goto)
-                    lisp->stop_at_next_line(debug_next);
-                return first_element;
-            }
-            case l_loopcount: {
-                long counter;
-                evalAsInteger(1, lisp, counter);
-                second_element = null_;
-                while (counter > 0) {
-                    for (long i = 2; i < listsize && second_element->type != l_return; i++) {
-                        _releasing(second_element);
-                        second_element = liste[i]->eval(lisp);
-                    }
-                    //In case a 'return' or a 'break' has been placed in the code
-                    if (second_element->type == l_return) {
-                        if (second_element->isBreak())
-                            return null_;
-                        //this is a return, it goes back to the function call
-                        return second_element;
-                    }
-                    counter--;
-                }
-                return second_element;
-            }
-            case l_or:
-            {
-                second_element = null_;
-                for (long i = 1; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    if (second_element->Boolean()) {
-                        return true_;
-                    }
-                }
-                second_element->release();
-                return false_;
-            }
-            case l_and:
-            {
-                second_element = null_;
-                for (long i = 1; i < listsize; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                    if (!second_element->Boolean()) {
-                        return false_;
-                    }
-                }
-                second_element->release();
-                return true_;
-            }
-            case l_xor: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                
-                if (first_element->Boolean() == second_element->Boolean())
-                    third_element = false_;
-                else
-                    third_element = true_;
-                
-                first_element->release();
-                second_element->release();
-                return third_element;
-            }
-            case l_ncheck: {
-                //A ncheck is like a check, but when the test fails
-                //it executes the second element, otherwise
-                //the actual list of instructions starts at 3...
-                first_element = liste[1]->eval(lisp);
-                test = first_element->Boolean();
-                first_element->release();
-                if (!test)
-                    return liste[2]->eval(lisp);
-                
-                second_element = null_;
-                for (long i = 3; i < listsize && second_element->type != l_return; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                }
-                return second_element;
-            }
-            case l_check: {
-                first_element = liste[1]->eval(lisp);
-                test = first_element->Boolean();
-                first_element->release();
-                if (!test)
-                    return null_;
-                
-                second_element = null_;
-                for (long i = 2; i < listsize && second_element->type != l_return; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                }
-                return second_element;
-            }
-            case l_ife: {
-                first_element = liste[1]->eval(lisp);
-                test = first_element->Boolean();
-                first_element->release();
-                if (test)
-                    return liste[2]->eval(lisp);
-                
-                second_element = null_;
-                for (long i = 3; i < listsize && second_element->type != l_return; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                }
-                return second_element;
-            }
-            case l_block:
-                if (listsize == 2)
-                    return liste[1]->eval(lisp);
-                second_element = null_;
-                for (long i = 1; i < listsize && second_element->type != l_return; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                }
-                return second_element;
-            case l_converttoatom: {
-                wstring a;
-                evalAsString(1,lisp,a);
-                return lisp->provideAtomProtected(a);
-            }
-            case l_converttointeger:
-                second_element = liste[1]->eval(lisp);
-                first_element = lisp->provideInteger(second_element->asInteger());
-                second_element->release();
-                return first_element;
-            case l_converttonumber:
-                second_element = liste[1]->eval(lisp);
-                first_element = lisp->provideNumber(second_element->asNumber());
-                second_element->release();
-                return first_element;
-            case l_converttostring: {
-                second_element = liste[1]->eval(lisp);
-                wstring strvalue = second_element->asString(lisp);
-                first_element = lisp->provideString(strvalue);
-                second_element->release();
-                return first_element;
-            }
-            case l_list:
-                first_element = new List();
-                if (listsize == 1)
-                    return first_element;
-                second_element = emptylist_;
-                for (long i = 1; i < listsize; i++) {
-                    second_element = liste[i]->eval(lisp);
-                    first_element->append(second_element->copying());
-                }
-                return first_element;
-            case l_reverse:
-                second_element = liste[1]->eval(lisp);
-                first_element = second_element->reverse(lisp, true);
-                second_element->release();
-                return first_element;
-            case l_cons: {
-                //merging an element into the next list
-                first_element = liste[1]->eval(lisp);
-                
-                second_element = liste[2]->eval(lisp);
-                if (second_element == null_) {
-                    third_element = new List();
-                    third_element->append(first_element);
-                    return third_element;
-                }
-                
-                if (!second_element->isList()) {
-                    third_element = new Pair();
-                    third_element->append(first_element);
-                    third_element->append(second_element);
-                    return third_element;
-                }
-                                
-                if (second_element->type == t_pair)
-                    third_element = new Pair();
-                else
-                    third_element = new List();
-                third_element->append(first_element);
-                for (long i = 0; i < second_element->size(); i++)
-                    third_element->append(second_element->value_on_index(lisp, i));
-                second_element->release();
-                return third_element;
-                
-            }
-            case l_trace:
-                if (listsize == 1) {
-                    if (lisp->trace)
-                        return true_;
-                    return false_;
-                }
-                first_element = liste[1]->eval(lisp);
-                lisp->trace  = first_element->Boolean();
-                first_element->release();
-                if (lisp->trace)
-                    return true_;
-                return false_;
-            case l_key: {
-                if (listsize == 1) {
-                    //We create an empty dictionary
-                    return new Dictionary;
-                }
-                if (listsize == 3) {
-                    //The second element is an a_key
-                    first_element = liste[1]->eval(lisp);
-                    if (first_element->type == t_dictionary) {
-                        wstring a_key;
-                        evalAsString(2, lisp, a_key);
-                        second_element = first_element->value_on_index(a_key, lisp);
-                        first_element->release();
-                        return second_element;
-                    }
-                    if (first_element->type == t_dictionaryn) {
-                        double a_key;
-                        evalAsNumber(2, lisp, a_key);
-                        second_element = first_element->value_on_index(a_key, lisp);
-                        first_element->release();
-                        return second_element;
-                    }
-                    throw new Error(L"Error: the first argument must be a dictionary");
-                }
-                
-                if (listsize == 4) {
-                    //We store a value
-                    first_element = liste[1]->eval(lisp);
-                    if (first_element->type == t_dictionary) {
-                        wstring a_key;
-                        evalAsString(2, lisp, a_key);
-                        second_element = liste[3]->eval(lisp);
-                        // It is out of question to manipulate a dictionary declared in the code
-                        first_element = first_element->duplicate_constant_container();
-                        first_element->recording(a_key, second_element->copying(false));
-                        return first_element;
-                    }
-                    if (first_element->type == t_dictionaryn) {
-                        double a_key;
-                        evalAsNumber(2, lisp, a_key);
-                        second_element = liste[3]->eval(lisp);
-                        // It is out of question to manipulate a dictionary declared in the code
-                        first_element = first_element->duplicate_constant_container();
-                        first_element->recording(a_key, second_element->copying(false));
-                        return first_element;
-                    }
-                    throw new Error(L"Error: the first argument must be a dictionary");
-                }
-                throw new Error(L"Error: Incorrect number of arguments for 'key'");
-            }
-            case l_keyn: {
-                if (listsize == 1) {
-                    //We create an empty dictionary
-                    return new Dictionary_n;
-                }
-                if (listsize == 3) {
-                    //The second element is an a_key
-                    first_element = liste[1]->eval(lisp);
-                    if (first_element->type != t_dictionaryn) {
-                        first_element->release();
-                        throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
-                    }
-                    double a_key;
-                    evalAsNumber(2, lisp, a_key);
-                    second_element = first_element->value_on_index(a_key, lisp);
-                    first_element->release();
-                    return second_element;
-                }
-                
-                if (listsize == 4) {
-                    //We store a value
-                    first_element = liste[1]->eval(lisp);
-                    if (first_element->type != t_dictionaryn) {
-                        first_element->release();
-                        throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
-                    }
-                    double a_key;
-                    evalAsNumber(2, lisp, a_key);
-                    second_element = liste[3]->eval(lisp);
-                    // It is out of question to manipulate a dictionary declared in the code
-                    first_element = first_element->duplicate_constant_container();
-                    first_element->recording(a_key, second_element->copying(false));
-                    return first_element;
-                }
-                throw new Error(L"Error: Incorrect number of arguments for 'keyn'");
-            }
-            case l_last: {
-                first_element = liste[1]->eval(lisp);
-                return first_element->last_element(lisp);
-            }
-            case l_push: {
-                //We store a value in a list
-                first_element = liste[1]->eval(lisp);
-                if (!first_element->isList()) {
-                    first_element->release();
-                    throw new Error(L"Error: missing list in 'push'");
-                }
-                first_element = first_element->duplicate_constant_container();
-                second_element = liste[2]->eval(lisp);
-                first_element->append(second_element->copying(false));
-                return first_element;
-            }
-            case l_insert: {
-                //We insert a value in a list
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                long idx;
-                evalAsInteger(3, lisp, idx);
-                third_element = first_element->insert(lisp, second_element, idx);
-                
-                second_element->release();
-                if (third_element != first_element) {
-                    first_element->release();
-                    return third_element;
-                }
-                return first_element;
-            }
-            case l_unique:
-                first_element = liste[1]->eval(lisp);
-                second_element = first_element->unique(lisp);
-                first_element->release();
-                return second_element;
-            case l_pop: {
-                first_element = liste[1]->eval(lisp);
-                if (first_element->type == t_dictionary) {
-                    second_element = liste[2]->eval(lisp);
-                    wstring keyvalue = second_element->asString(lisp);
-                    second_element->release();
-                    if (first_element->remove(keyvalue))
-                        return first_element;
-                    first_element->release();
-                    return null_;
-                }
-                if (first_element->type == t_dictionaryn) {
-                    second_element = liste[2]->eval(lisp);
-                    double keyvalue = second_element->asNumber();
-                    second_element->release();
-                    if (first_element->remove(keyvalue))
-                        return first_element;
-                    first_element->release();
-                    return null_;
-                }
-                
-                if (first_element->isList()) {
-                    long keyvalue;
-                    if (listsize == 3) {
-                        second_element = liste[2]->eval(lisp);
-                        keyvalue = second_element->asInteger();
-                        second_element->release();
-                    }
-                    else
-                        keyvalue = first_element->size();
-                    if (first_element->remove(keyvalue))
-                        return first_element;
-                    first_element->release();
-                    return emptylist_;
-                }
-                
-                //In the case of a string, we return a copy, we do not modify the string.
-                //itself
-                if (first_element->type == t_string) {
-                    long keyvalue;
-                    wstring strvalue = first_element->asString(lisp);
-                    if (listsize == 3) {
-                        second_element = liste[2]->eval(lisp);
-                        keyvalue = second_element->asInteger();
-                        second_element->release();
-                    }
-                    else {
-                        if (!strvalue.size())
-                            return emptystring_;
-                        strvalue.pop_back();
-                        return lisp->provideString(strvalue);
-                    }
-                    
-                    if (keyvalue < 0 || keyvalue >= strvalue.size())
-                        return emptystring_;
-                    strvalue.erase(strvalue.begin()+keyvalue);
-                    first_element->release();
-                    return lisp->provideString(strvalue);
-                }
-                first_element->release();
-                throw new Error(L"Error: the first argument must be a dictionary");
-            }
-            case l_keys:
-                first_element = liste[1]->eval(lisp);
-                if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
-                    first_element->release();
-                    throw new Error(L"Error: the first argument must be a dictionary");
-                }
-                second_element = first_element->thekeys(lisp);
-                first_element->release();
-                return second_element;
-            case l_values:
-                first_element = liste[1]->eval(lisp);
-                if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
-                    first_element->release();
-                    throw new Error(L"Error: the first argument must be a dictionary");
-                }
-                second_element = first_element->thevalues(lisp);
-                first_element->release();
-                return second_element;
-            case l_cond: {
-                long szv;
-                for (long i = 1; i < listsize; i++) {
-                    second_element = liste[i];
-                    szv = second_element->size();
-                    
-                    if (!second_element->isList() || szv <= 1)
-                        throw new Error(L"Error: in a 'cond' the first element must be a list");
-                    
-                    List* code = (List*)second_element;
-                    third_element = code->liste[0]->eval(lisp);
-                    if (third_element->Boolean()) {
-                        _releasing(third_element);
-                        first_element = null_;
-                        code->liste.back()->setterminal(terminal);
-                        for (long int j = 1; j < szv; j++) {
-                            _releasing(first_element);
-                            first_element = code->liste[j]->eval(lisp);
-                        }
-                        return first_element;
-                    }
-                    _releasing(third_element);
-                }
-                return null_;
-            }
-            case l_not: {
-                first_element = liste[1]->eval(lisp);
-                test = first_element->Boolean();
-                first_element->release();
-                return booleans_[!test];
-            }
-            case l_if: {
-                first_element = liste[1]->eval(lisp);
-                test = first_element->Boolean();
-                first_element->release();
-                
-                if (test) {
-                    liste[2]->setterminal(terminal);
-                    return liste[2]->eval(lisp);
-                }
-                if (listsize == 4) {
-                    liste[3]->setterminal(terminal);
-                    return liste[3]->eval(lisp);
-                }
-                return null_;
-            }
-            case l_car:
-                second_element = liste[1]->eval(lisp);
-                first_element = second_element->car(lisp);
-                second_element->release();
-                return first_element;
-            case l_cdr:
-                second_element = liste[1]->eval(lisp);
-                first_element = second_element->cdr(lisp);
-                second_element->release();
-                return first_element;
-            case l_cadr:
-                second_element = liste[1]->eval(lisp);
-                first_element = first_element->cadr(lisp, second_element);
-                second_element->release();
-                return first_element;
-            case l_label: {
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing label for 'label'");
-                second_element = liste[2]->eval(lisp);
-                //the difference with 'setq' is that only one version is recorded.
-                //of the variable... Without duplication
-                return lisp->recordingunique(second_element, label);
-            }
-            case l_setq: {
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing label for 'setq'");
-                second_element = liste[2]->eval(lisp);
-                lisp->recording(second_element, label);
-                return true_;
-            }
-            case l_setg: {
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing label for 'setg'");
-                second_element = liste[2]->eval(lisp);
-                lisp->recordingglobal(second_element, label);
-                return true_;
-            }
-            case l_self:
-                //We recall our top function
-                return evalfunction(lisp->called(), lisp);
-            case l_deflib: { // we manage extensions to the language with deflib (see systeme.cxx for an example)
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing name in the declaration of a function");
-                if (!liste[2]->isList())
-                    throw new Error(L"Error: List of missing parameters in a function declaration");
-                return lisp->recordingunique(this, label);
-            }
-            case l_defmacro: {
-                //We declare a function
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing name in the declaration of a function");
-                if (!liste[2]->isList())
-                    throw new Error(L"Error: List of missing parameters in a function declaration");
-                return lisp->recordingMacro(this, label);
-            }
-            case l_sleep: {
-                long tm;
-                evalAsInteger(1, lisp, tm);
-                std::this_thread::sleep_for(std::chrono::milliseconds(tm));
-                return true_;
-            }
-            case l_wait: {
-                //We wait for all threads to be finished
-                while (lisp->nbjoined) {}
-                return true_;
-            }
-            case l_dethread:
-            case l_defun: {
-                //We declare a function
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing name in the declaration of a function");
-                if (!liste[2]->isList())
-                    throw new Error(L"Error: List of missing parameters in a function declaration");
-                return lisp->recordingunique(this, label);
-            }
-            case l_defpat: {
-                //We declare a function
-                label = liste[1]->label();
-                if (label == v_null)
-                    throw new Error(L"Error: Missing name in the declaration of a function");
-                if (!liste[2]->isList())
-                    throw new Error(L"Error: List of missing parameters in a function declaration");
-                return lisp->recordingMethod(this, label);
-            }
-            case l_lambda:
-                if (!liste[1]->isList())
-                    throw new Error(L"Error: Missing parameter list in a lambda declaration");
-                return this;
-            case t_atom: {
-                //In this case, it must be a function
-                first_element = liste[0]->eval(lisp);
-                if (first_element->index(0)->label() == l_defpat)
-                    return evalpattern(lisp, first_element->index(1)->label());
-                return evalfunction(first_element, lisp);
-            case t_list:
-                first_element = first_element->eval(lisp);
-                //Execution of a lambda a priori, otherwise it's an error
-                second_element = evalfunction(first_element,lisp);
-                first_element->release();
-                return second_element;
-            }
-            case l_lock: {
-                second_element = null_;
-                wstring key;
-                evalAsString(1, lisp, key);
-                ThreadLock* _lock = lisp->delegation->getlock(key);
-                test = lisp->checkforLock();
-                _lock->locking(test);
-                for (long i = 2; i < listsize && second_element->type != l_return; i++) {
-                    _releasing(second_element);
-                    second_element = liste[i]->eval(lisp);
-                }
-                _lock->unlocking(test);
-                return second_element;
-            }
-            case l_waiton: {
-                wstring key;
-                evalAsString(1, lisp, key);
-                lisp->delegation->waiton(key);
-                return true_;
-            }
-            case l_trigger: {
-                wstring key;
-                evalAsString(1, lisp, key);
-                return booleans_[lisp->delegation->trigger(key)];
-            }
-            case l_threadstore: {
-                wstring key;
-                evalAsString(1, lisp, key);
-                first_element = liste[2]->eval(lisp);
-                lisp->delegation->thread_store(key, first_element);
-                first_element->release();
-                return true_;
-            }
-            case l_threadclear: {
-                if (listsize == 1) {
-                    lisp->delegation->thread_clear_all();
-                    return true_;
-                }
-
-                wstring key;
-                evalAsString(1, lisp, key);
-                return booleans_[lisp->delegation->thread_clear(key)];
-            }
-            case l_threadretrieve: {
-                if (listsize == 1) {
-                    //We return all as a dictionary
-                    return lisp->delegation->thread_retrieve_all();
-                }
-                wstring key;
-                evalAsString(1, lisp, key);
-                first_element = lisp->delegation->thread_retrieve(key);
-                if (first_element == NULL)
-                    return null_;
-                return first_element;
-            }
-            case l_print: {
-                string val;
-                for (long i = 1; i < listsize; i++) {
-                    second_element = liste[i]->eval(lisp);
-                    val = second_element->toString(lisp);
-                    lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-                    _releasing(second_element);
-                }
-                if (lisp->isThread)
-                    std::cout.flush();
-                return emptyatom_;
-            }
-            case l_println: {
-                string val;
-                for (long i = 1; i < listsize; i++) {
-                    if (i != 1)
-                        val = " ";
-                    second_element = liste[i]->eval(lisp);
-                    val += second_element->toString(lisp);
-                    lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-                    _releasing(second_element);
-                }
-#ifdef WIN32
-                val = "\r";
-#else
-                val = "\n";
-#endif
-                lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-                if (lisp->isThread)
-                    std::cout.flush();
-                return emptyatom_;
-            }
-            case l_printerr: {
-                for (long i = 1; i < listsize; i++) {
-                    second_element = liste[i]->eval(lisp);
-                    std::cerr << second_element->toString(lisp);
-                    _releasing(second_element);
-                }
-                if (lisp->isThread)
-                    std::cerr.flush();
-                return emptyatom_;
-            }
-            case l_printerrln: {
-                for (long i = 1; i < listsize; i++) {
-                    if (i != 1)
-                        std::cerr << " ";
-                    second_element = liste[i]->eval(lisp);
-                    std::cerr << second_element->toString(lisp);
-                    _releasing(second_element);
-                }
-                std::cerr << std::endl;
-                if (lisp->isThread)
-                    std::cerr.flush();
-                return emptyatom_;
-            }
-            case l_prettify: {
-                first_element = liste[1]->eval(lisp);
-                string s = first_element->prettify(lisp);
-                first_element->release();
-                return new String(s);
-            }
-            case l_atoms: {
-                return lisp->atomes();
-            }
-            case l_atomise:
-                second_element = liste[1]->eval(lisp);
-                first_element = lisp->atomise(second_element->asString(lisp));
-                second_element->release();
-                return first_element;
-            case l_join: {
-                first_element = liste[1]->eval(lisp);
-                wstring sep;
-                if (listsize == 3)
-                    evalAsString(2,lisp,sep);
-                second_element = first_element->join_in_list(lisp, sep);
-                first_element->release();
-                return second_element;
-            }
-            case l_eval: {
-                second_element = liste[1]->eval(lisp);
-                
-                //This is a specific case, when the element is a string
-                //we need then to call the a meta-eval, the one that
-                //comes with Lisp itself
-                if (second_element->isString()) {
-                    first_element = lisp->eval(second_element->toString(lisp));
-                    second_element->release();
-                    if (first_element->isError())
-                        throw first_element;
-                    return first_element;
-                }
-                //We just need to evaluate this element...
-                first_element = second_element->eval(lisp);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
-            case l_type: {
-                second_element = liste[1]->eval(lisp);
-                first_element = lisp->provideAtom(second_element->type);
-                second_element->release();
-                return first_element;
-            }
-            case l_load:
-                second_element = liste[1]->eval(lisp);
-                first_element = lisp->load(second_element->toString(lisp));
-                second_element->release();
-                return first_element;
-            case l_input: {
-                string code;
-                if (listsize == 2) {
-                    wstring wcode;
-                    evalAsString(1, lisp, wcode);
-                    s_unicode_to_utf8(code, wcode);
-                }
-                
-                lisp->delegation->reading_string_function(code, lisp->delegation->reading_string_function_object);
-                return lisp->provideString(code);
-            }
-            case l_getchar: {
-                string code = get_char(lisp->delegation->input_handler);
-                return lisp->provideString(code);
-            }
-            case l_pipe: {
-                //pipe returns a line read on std::cin
-                //It returns nil, if the stream is closed...
-                string code;
-                getline(std::cin, code);
-                if (std::cin.eof())
-                    return null_;
-                return lisp->provideString(code);
-            }
-            case l_fread: {
-                first_element = liste[1]->eval(lisp);
-                
-                second_element = new String("");
-                string nom = first_element->toString(lisp);
-                first_element->release();
-                first_element = second_element->charge(lisp, nom);
-                return second_element;
-            }
-            case l_fappend: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                string chemin = first_element->toString(lisp);
-                //We put ourselves in append mode
-                std::ofstream o(chemin.c_str(), std::ios::binary|std::ios::app);
-                if (o.fail()) {
-                    second_element->release();
-                    first_element->release();
-                    string erreur = "Error: Cannot write in file: ";
-                    erreur += chemin;
-                    throw new Error(erreur);
-                }
-                chemin = second_element->toString(lisp);
-                o << chemin;
-                first_element->release();
-                second_element->release();
-                return true_;
-            }
-            case l_fwrite: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                string chemin = first_element->toString(lisp);
-                std::ofstream o(chemin.c_str(), std::ios::binary);
-                if (o.fail()) {
-                    second_element->release();
-                    first_element->release();
-                    string erreur = "Error: Cannot write in file: ";
-                    erreur += chemin;
-                    throw new Error(erreur);
-                }
-                chemin = second_element->toString(lisp);
-                o << chemin;
-                first_element->release();
-                second_element->release();
-                return true_;
-            }
-            case l_size: {
-                second_element = liste[1]->eval(lisp);
-                first_element = lisp->provideNumber(second_element->size());
-                second_element->release();
-                return first_element;
-            }
-            case l_use: {
-                second_element = liste[1]->eval(lisp);
-                string nom_bib = second_element->toString(lisp);
-                second_element->release();
-                return lisp->load_library(nom_bib);
-            }
-            case l_index: {
-                first_element = liste[1]->eval(lisp);
-                if (listsize == 4) {
-                    long idx;
-                    evalAsInteger(2, lisp, idx);
-                    second_element = liste[3]->eval(lisp);
-                    third_element = first_element->replace(lisp, idx, second_element);
-                    second_element->release();
-                    return third_element;
-                }
-                second_element = liste[2]->eval(lisp);
-                third_element = first_element->value_on_index(lisp, second_element);
-                second_element->release();
-                first_element->release();
-                return third_element;
-            }
-            case l_extract: {
-                second_element = liste[1]->eval(lisp);
-                first_element = second_element->extraction(lisp, this);
-                second_element->release();
-                return first_element;
-            }
-            case l_in: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                long idx = 0;
-                if (listsize == 4)
-                    evalAsInteger(3,lisp, idx);
-                third_element = first_element->search_element(lisp, second_element, idx);
-                first_element->release();
-                second_element->release();
-                if (third_element != null_) {
-                    third_element->release();
-                    return true_;
-                }
-                return third_element;
-            }
-            case l_search: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                long idx = 0;
-                if (listsize == 4)
-                    evalAsInteger(3,lisp, idx);
-                third_element = first_element->search_element(lisp, second_element, idx);
-                first_element->release();
-                second_element->release();
-                return third_element;
-            }
-            case l_searchall: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                long idx = 0;
-                if (listsize == 4) {
-                    evalAsInteger(3,lisp, idx);
-                }
-                third_element = first_element->search_all_elements(lisp, second_element, idx);
-                first_element->release();
-                second_element->release();
-                return third_element;
-            }
-            case l_revertsearch: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                long idx = 0;
-                if (listsize == 4) {
-                    evalAsInteger(3,lisp, idx);
-                }
-                third_element = first_element->search_reverse(lisp, second_element, idx);
-                first_element->release();
-                second_element->release();
-                return third_element;
-            }
-            case l_irange: {
-                double init, inc;
-                evalAsNumber(1, lisp, init);
-                evalAsNumber(2, lisp, inc);
-                if (init == (long)init && inc == (long)inc)
-                    return new InfiniterangeInteger(init, inc);
-                return new Infiniterange(init, inc);
-            }
-            case l_range: {
-                double init, limit, inc;
-                evalAsNumber(1, lisp, init);
-                evalAsNumber(2, lisp, limit);
-                evalAsNumber(3, lisp, inc);
-                return range(lisp, init, limit, inc);
-            }
-            case l_mapping: { //abus de langage: I agree
-                //We detect the type of the instruction on the fly
-                first_element = liste[1]->eval(lisp);
-                //This is a variable that was evaluated on the fly
-                List call;
-                call.liste.push_back(first_element);
-                call.liste.push_back(liste[2]);
-                if (lisp->is_math_operator(first_element->type)) {
-                    //Then we must duplicate the second element:
-                    call.liste.push_back(liste[2]);
-                }
-                second_element = call.eval(lisp);
-                first_element->release();
-                return second_element;
-            }
-            case l_checking: {
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                List call;
-                if (first_element->isInstruction()) {
-                    call.liste.push_back(first_element);
-                    call.liste.push_back(liste[3]);
-                    call.liste.push_back(second_element);
-                }
-                else {
-                    if (second_element->isInstruction()) {
-                        call.liste.push_back(second_element);
-                        call.liste.push_back(first_element);
-                        call.liste.push_back(liste[3]);
-                    }
-                    else {
-                        first_element->release();
-                        second_element->release();
-                        throw new Error("Error: condition or operation cannot be evaluated: missing instruction");
-                    }
-                }
-                third_element = call.eval(lisp);
-                first_element->release();
-                second_element->release();
-                return third_element;
-            }
-            case l_folding: { //abus de langage: I agree
-                //We detect the type of the instruction on the fly
-                first_element = liste[1]->eval(lisp);
-                if (liste[1]->isList()) {
-                    //This is a quoted expression, we can safely replace it
-                    liste[0] = first_element;
-                    liste[1] = liste[2];
-                    liste[2] = liste[3];
-                    liste.pop_back();
-                    return eval(lisp);
-                }
-                //This is a variable that was evaluated on the fly
-                List call;
-                call.liste.push_back(first_element);
-                call.liste.push_back(liste[2]);
-                call.liste.push_back(liste[3]);
-                second_element = call.eval(lisp);
-                first_element->release();
-                return second_element;
-            }
-            case l_apply:  { //(apply func l)
-                second_element = liste[2]->eval(lisp);
-                if (!second_element->isList()) {
-                    second_element->release();
-                    throw new Error("Error: arguments to 'apply' should be given as a list");
-                }
-                
-                first_element = liste[1]->eval(lisp);
-                
-                if (second_element->status == s_constant) {
-                    List l;
-                    l.liste = ((List*)second_element)->liste;
-                    l.liste.insert(l.liste.begin(), first_element);
-                    third_element = l.eval(lisp);
-                }
-                else {
-                    //We insert this element in our list
-                    List* l = (List*)second_element;
-                    l->liste.insert(l->liste.begin(), first_element);
-                    
-                    third_element = l->eval(lisp);
-                    
-                    //We remove this first element
-                    if (l->status)
-                        l->liste.erase(l->liste.begin());
-                    else
-                        l->release();
-                }
-                first_element->release();
-                return third_element;
-            }
-            case l_sort: {
-                //First element is the comparison function OR an operator
-                first_element = liste[1]->eval(lisp);
-                second_element = liste[2]->eval(lisp);
-                if (!second_element->isList()) {
-                    first_element->release();
-                    second_element->release();
-                    throw new Error(L"Error: the second argument should be a list for 'sort'");
-                }
-                
-                if (first_element->isList()) {
-                    //It is inevitably a lambda
-                    if (first_element->size() == 1)
-                        first_element = first_element->index(0);
-                }
-                else {
-                    //C Is either an atom or an operator
-                    if (!first_element->isAtom()) {
-                        first_element->release();
-                        second_element->release();
-                        throw new Error(L"Error: incorrect comparison function in 'sort'");
-                    }
-                }
-                
-                Comparison comp(lisp, first_element);
-                List* l = (List*)second_element;
-                if (comp.checkComparison(l->liste[0])) {
-                    first_element->release();
-                    second_element->release();
-                    throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
-                }
-                sort(l->liste.begin(), l->liste.end(), comp);
-                first_element->release();
-                return second_element;
-            }
-            case l_zip: {
-                //We combine different lists together...
-                vector<Element*> lists;
-                long szl = -1;
-                long i;
-                for (i = 1; i < listsize; i++) {
-                    second_element = liste[i]->eval(lisp);
-                    if (!second_element->isList()) {
-                        second_element->release();
-                        third_element = new Error(L"Error: 'zip' only accepts lists as arguments");
-                        break;
-                    }
-                    if (i == 1)
-                        szl = second_element->size();
-                    else {
-                        if (szl != second_element->size()) {
-                            second_element->release();
-                            third_element = new Error(L"Error: Lists should all have the same size in 'zip'");
-                            break;
-                        }
-                    }
-                    lists.push_back(second_element);
-                    second_element = null_;
-                }
-                
-                if (third_element->isError()) {
-                    for (auto& x: lists)
-                        x->release();
-                    throw third_element;
-                }
-                
-                third_element = new List;
-                List* sub;
-                for (long j = 0; j < szl; j++) {
-                    sub = new List;
-                    third_element->append(sub);
-                    for (i = 0; i <lists.size(); i++)
-                        sub->append(lists[i]->index(j));
-                }
-                for (i = 0; i < lists.size(); i++)
-                    lists[i]->release();
-                return third_element;
-            }
-            case l_zipwith: {
-                //We combine different lists together with an operator
-                //First element is the operation
-                first_element = liste[1]->eval(lisp);
-                
-                vector<Element*> lists;
-                long szl = -1;
-                long i;
-                for (i = 2; i < listsize; i++) {
-                    second_element = liste[i]->eval(lisp);
-                    if (!second_element->isList()) {
-                        second_element->release();
-                        third_element = new Error(L"Error: 'zipwith' only accepts lists as arguments");
-                        break;
-                    }
-                    if (i == 2)
-                        szl = second_element->size();
-                    else {
-                        if (szl != second_element->size()) {
-                            second_element->release();
-                            third_element = new Error(L"Error: Lists should all have the same size in 'zipwith'");
-                            break;
-                        }
-                    }
-                    lists.push_back(second_element);
-                    second_element->incrementstatus(2,false);
-                    second_element = null_;
-                }
-                
-                if (third_element->isError()) {
-                    for (auto& e: lists) {
-                        e->decrementstatus(2, false);
-                    }
-                    throw third_element;
-                }
-                
-                //First element is the operation, second element the list
-                first_element = liste[1]->eval(lisp);
-                
-                long j;
-                List lsp;
-                long sz;
-                long lsz = lists.size();
-                if (first_element->isList()) {
-                    sz = first_element->size();
-                    //lambda or function
-                    if (sz == 1)
-                        lsp.append(((List*)first_element)->liste[0]);
-                    else
-                        lsp.append(first_element);
-                    for (j = 0; j < lsz; j++)
-                    lsp.append(null_);
-                }
-                else {
-                    lsp.append(first_element);
-                    for (j = 0; j < lsz; j++)
-                    lsp.append(null_);
-                }
-                
-                second_element = new List;
-                
-                for (j = 0; j < szl; j++) {
-                    for (i = 0; i < lsz; i++)
-                        lsp.liste[i+1] = lists[i]->index(j);
-                    third_element = lsp.eval(lisp);
-                    second_element->append(third_element);
-                    third_element = null_;
-                }
-                
-                for (i = 0; i < lsz; i++)
-                    lists[i]->decrementstatus(2, false);
-                return second_element;
-            }
-            default: {
-                if ((label & 0x1000) == 0x1000) {
-                    wstring msg = L"Error: wrong number of arguments for: '";
-                    msg += lisp->asString(first_element->type);
-                    msg += L"'";
-                    throw new Error(msg);
-                }
             }
         }
+        second_element->release();
+        return true_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_apply(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //(apply func l)
+        second_element = liste[2]->eval(lisp);
+        if (!second_element->isList()) {
+            second_element->release();
+            throw new Error("Error: arguments to 'apply' should be given as a list");
+        }
+
+        first_element = liste[1]->eval(lisp);
+
+        if (second_element->status == s_constant) {
+            List l;
+            l.liste = ((List*)second_element)->liste;
+            l.liste.insert(l.liste.begin(), first_element);
+            third_element = l.eval(lisp);
+        }
+        else {
+            //We insert this element in our list
+            List* l = (List*)second_element;
+            l->liste.insert(l->liste.begin(), first_element);
+
+            third_element = l->eval(lisp);
+
+            //We remove this first element
+            if (l->status)
+                l->liste.erase(l->liste.begin());
+            else
+                l->release();
+        }
+        first_element->release();
+        return third_element;
     }
     catch (Error* err) {
         first_element->release();
@@ -2969,10 +1314,4441 @@ Element* List::eval(LispE* lisp) {
         third_element->release();
         throw err;
     }
+
     return null_;
 }
 
-Element* Listcallfunction::eval(LispE* lisp) {
+
+Element* List::evall_atomise(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = lisp->atomise(second_element->asString(lisp));
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_atomp(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        test = second_element->isAtom();
+        second_element->release();
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_atoms(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 1)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    return lisp->atomes();
+}
+
+
+Element* List::evall_bitand(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->bit_and(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_bitandequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->bit_and(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_bitor(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->bit_or(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_bitorequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->bit_or(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_bitxor(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->bit_xor(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_bitxorequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->bit_xor(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_block(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (listsize == 2)
+            return liste[1]->eval(lisp);
+        second_element = null_;
+        for (long i = 1; i < listsize && second_element->type != l_return; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+        }
+        return second_element;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_cadr(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = first_element->cadr(lisp, second_element);
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_car(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = second_element->car(lisp);
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_catch(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+    
+    try {
+        first_element = liste[1]->eval(lisp);
+    }
+    catch (Error* err) {
+        //This error is converted into a non-blocking error message .
+        second_element = new Maybe(lisp, err);
+        err->release();
+        return second_element;
+    }
+    return first_element;
+}
+
+
+Element* List::evall_cdr(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = second_element->cdr(lisp);
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_check(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        test = first_element->Boolean();
+        first_element->release();
+        if (!test)
+            return null_;
+
+        second_element = null_;
+        for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+        }
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_checking(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        List call;
+        if (first_element->isInstruction()) {
+            call.liste.push_back(first_element);
+            call.liste.push_back(liste[3]);
+            call.liste.push_back(second_element);
+        }
+        else {
+            if (second_element->isInstruction()) {
+                call.liste.push_back(second_element);
+                call.liste.push_back(first_element);
+                call.liste.push_back(liste[3]);
+            }
+            else {
+                first_element->release();
+                second_element->release();
+                throw new Error("Error: condition or operation cannot be evaluated: missing instruction");
+            }
+        }
+        third_element = call.eval(lisp);
+        first_element->release();
+        second_element->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_compose(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    List* loop = (List*)liste.back();
+
+    short i = 4;
+    short listsize = liste.size()-1;
+    short label;
+
+    //When liste[4], the recipient variable is not a list
+    //Then we are dealing with a fold
+    if (liste[4]->isList())
+        label = liste[4]->index(1)->label();
+    else {
+        //this is a fold, and liste[4] != (setq recipient ())
+        //hence no need to execute it...
+        label = liste[4]->label();
+        i = 5;
+    }
+    
+    for (; i < listsize; i++)
+        liste[i]->eval(lisp);
+
+    loop->liste[2]->eval(lisp)->loop(lisp, loop->liste[1]->label(), loop);
+    return lisp->get(label);
+}
+
+
+Element* List::evall_cond(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        long szv;
+        for (long i = 1; i < listsize; i++) {
+            second_element = liste[i];
+            szv = second_element->size();
+
+            if (!second_element->isList() || szv <= 1)
+                throw new Error(L"Error: in a 'cond' the first element must be a list");
+
+            List* code = (List*)second_element;
+            third_element = code->liste[0]->eval(lisp);
+            if (third_element->Boolean()) {
+                _releasing(third_element);
+                first_element = null_;
+                code->liste.back()->setterminal(terminal);
+                for (long int j = 1; j < szv; j++) {
+                    _releasing(first_element);
+                    first_element = code->liste[j]->eval(lisp);
+                }
+                return first_element;
+            }
+            _releasing(third_element);
+        }
+        return null_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_cons(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //merging an element into the next list
+        first_element = liste[1]->eval(lisp);
+
+        second_element = liste[2]->eval(lisp);
+        if (second_element == null_) {
+            third_element = new List();
+            third_element->append(first_element);
+            return third_element;
+        }
+
+        if (!second_element->isList()) {
+            third_element = new Pair();
+            third_element->append(first_element);
+            third_element->append(second_element);
+            return third_element;
+        }
+
+        if (second_element->type == t_pair)
+            third_element = new Pair();
+        else
+            third_element = new List();
+        third_element->append(first_element);
+        for (long i = 0; i < second_element->size(); i++)
+        third_element->append(second_element->value_on_index(lisp, i));
+        second_element->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_consp(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        test = second_element->isList();
+        second_element->release();
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_converttoatom(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    wstring a;
+    evalAsString(1,lisp,a);
+    return lisp->provideAtomProtected(a);
+}
+
+
+Element* List::evall_converttointeger(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = lisp->provideInteger(second_element->asInteger());
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_converttonumber(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = lisp->provideNumber(second_element->asNumber());
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_converttostring(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        wstring strvalue = second_element->asString(lisp);
+        first_element = lisp->provideString(strvalue);
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_data(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //We record a data structure of the form: (data (Atom x y z) (Atom x y))
+        short lab;
+        long i = 1;
+        short ancestor = v_null;
+        if (liste[1]->isAtom()) {
+            ancestor = liste[1]->label();
+            i = 2;
+        }
+        for (; i < listsize; i++) {
+            second_element = liste[i];
+            if (!second_element->isList() || !second_element->size())
+                throw new Error(L"Error: A data structure can only contain non empty lists");
+            lab = second_element->index(0)->label();
+            if (lab == v_null)
+                throw new Error(L"Error: Missing definition name in data structure");
+            lisp->recordingData(second_element, lab, ancestor);
+        }
+        return true_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_deflib(LispE* lisp) {
+    // we manage extensions to the language with deflib (see systeme.cxx for an example)
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    
+    short label = liste[1]->label();
+    if (label == v_null)
+        throw new Error(L"Error: Missing name in the declaration of a function");
+    if (!liste[2]->isList())
+        throw new Error(L"Error: List of missing parameters in a function declaration");
+    return lisp->recordingunique(this, label);
+}
+
+
+Element* List::evall_defmacro(LispE* lisp) {
+    if (liste.size() != 4)
+        throw new Error("Error: wrong number of arguments");
+    //We declare a function
+    short label = liste[1]->label();
+    if (label == v_null)
+        throw new Error(L"Error: Missing name in the declaration of a function");
+    if (!liste[2]->isList())
+        throw new Error(L"Error: List of missing parameters in a function declaration");
+    return lisp->recordingMacro(this, label);
+}
+
+Element* List::evall_defpat(LispE* lisp) {
+    if (liste.size() < 4)
+        throw new Error("Error: wrong number of arguments");
+    
+    short label;
+    set_current_line(lisp);
+    lisp->display_trace(this);
+    
+    //We declare a function
+    label = liste[1]->label();
+    if (label == v_null)
+        throw new Error(L"Error: Missing name in the declaration of a function");
+    if (!liste[2]->isList())
+        throw new Error(L"Error: List of missing parameters in a function declaration");
+    return lisp->recordingMethod(this, label);
+}
+
+Element* List::evall_defun(LispE* lisp) {
+    if (liste.size() < 4)
+        throw new Error("Error: wrong number of arguments");
+
+    //We declare a function
+    short label = liste[1]->label();
+    if (label == v_null)
+        throw new Error(L"Error: Missing name in the declaration of a function");
+    if (!liste[2]->isList())
+        throw new Error(L"Error: List of missing parameters in a function declaration");
+    return lisp->recordingunique(this, label);
+}
+
+
+Element* List::evall_different(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        test = first_element->unify(lisp, second_element, false);
+        first_element->release();
+        second_element->release();
+        return booleans_[!test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_divide(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->divide(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_divideequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->divide(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_eq(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        for (long i = 1; i < listsize-1 && test; i++) {
+            first_element = liste[i]->eval(lisp);
+            second_element = liste[i+1]->eval(lisp);
+            test = ( (first_element == second_element) || first_element->equal(lisp, second_element)->Boolean());
+            _releasing(first_element);
+            _releasing(second_element);
+        }
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_equal(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        test = first_element->unify(lisp, second_element, false);
+        first_element->release();
+        second_element->release();
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_eval(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+
+        //This is a specific case, when the element is a string
+        //we need then to call the a meta-eval, the one that
+        //comes with Lisp itself
+        if (second_element->isString()) {
+            first_element = lisp->eval(second_element->toString(lisp));
+            second_element->release();
+            if (first_element->isError())
+                throw first_element;
+            return first_element;
+        }
+        //We just need to evaluate this element...
+        first_element = second_element->eval(lisp);
+        if (first_element != second_element)
+            second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_extract(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (!checkArity(P_THREE|P_FOUR, liste.size()))
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = second_element->extraction(lisp, this);
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_fappend(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        string chemin = first_element->toString(lisp);
+        //We put ourselves in append mode
+        std::ofstream o(chemin.c_str(), std::ios::binary|std::ios::app);
+        if (o.fail()) {
+            second_element->release();
+            first_element->release();
+            string erreur = "Error: Cannot write in file: ";
+            erreur += chemin;
+            throw new Error(erreur);
+        }
+        chemin = second_element->toString(lisp);
+        o << chemin;
+        first_element->release();
+        second_element->release();
+        return true_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_flip(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (liste[1]->isList() && liste[1]->size() >= 3) {
+            List* l = (List*)liste[1];
+            //We reverse the two first arguments
+            List call;
+            call.liste.push_back(l->liste[0]);
+            call.liste.push_back(l->liste[2]);
+            call.liste.push_back(l->liste[1]);
+            for (long i = 3; i < liste[1]->size(); i++)
+            call.liste.push_back(l->liste[i]);
+            return call.eval(lisp);
+        }
+        first_element = liste[1]->eval(lisp);
+        if (first_element->isDictionary()) {
+            second_element = first_element->reverse(lisp, true);
+            first_element->release();
+            return second_element;
+        }
+        first_element->release();
+        throw new Error("Error: Cannot apply flip on this structure");
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_folding(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //abus de langage: I agree
+        //We detect the type of the instruction on the fly
+        first_element = liste[1]->eval(lisp);
+        if (liste[1]->isList()) {
+            //This is a quoted expression, we can safely replace it
+            liste[0] = first_element;
+            liste[1] = liste[2];
+            liste[2] = liste[3];
+            liste.pop_back();
+            return eval(lisp);
+        }
+        //This is a variable that was evaluated on the fly
+        List call;
+        call.liste.push_back(first_element);
+        call.liste.push_back(liste[2]);
+        call.liste.push_back(liste[3]);
+        second_element = call.eval(lisp);
+        first_element->release();
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_fread(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+
+        second_element = new String("");
+        string nom = first_element->toString(lisp);
+        first_element->release();
+        first_element = second_element->charge(lisp, nom);
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_fwrite(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        string chemin = first_element->toString(lisp);
+        std::ofstream o(chemin.c_str(), std::ios::binary);
+        if (o.fail()) {
+            second_element->release();
+            first_element->release();
+            string erreur = "Error: Cannot write in file: ";
+            erreur += chemin;
+            throw new Error(erreur);
+        }
+        chemin = second_element->toString(lisp);
+        o << chemin;
+        first_element->release();
+        second_element->release();
+        return true_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_getchar(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 1)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    string code = get_char(lisp->delegation->input_handler);
+    return lisp->provideString(code);
+}
+
+
+Element* List::evall_greater(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        for (long i = 1; i < listsize-1 && test; i++) {
+            first_element = liste[i]->eval(lisp);
+            second_element = liste[i+1]->eval(lisp);
+            test = first_element->more(lisp, second_element)->Boolean();
+            _releasing(first_element);
+            _releasing(second_element);
+        }
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_greaterorequal(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        for (long i = 1; i < listsize-1 && test; i++) {
+            first_element = liste[i]->eval(lisp);
+            second_element = liste[i+1]->eval(lisp);
+            test = first_element->moreorequal(lisp, second_element)->Boolean();
+            _releasing(first_element);
+            _releasing(second_element);
+        }
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_if(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        test = first_element->Boolean();
+        first_element->release();
+
+        if (test) {
+            liste[2]->setterminal(terminal);
+            return liste[2]->eval(lisp);
+        }
+        if (listsize == 4) {
+            liste[3]->setterminal(terminal);
+            return liste[3]->eval(lisp);
+        }
+        return null_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_ife(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        test = first_element->Boolean();
+        first_element->release();
+        if (test)
+            return liste[2]->eval(lisp);
+
+        second_element = null_;
+        for (long i = 3; i < listsize && second_element->type != l_return; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+        }
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_in(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        long idx = 0;
+        if (listsize == 4)
+            evalAsInteger(3,lisp, idx);
+        third_element = first_element->search_element(lisp, second_element, idx);
+        first_element->release();
+        second_element->release();
+        if (third_element != null_) {
+            third_element->release();
+            return true_;
+        }
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_index(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        if (listsize == 4) {
+            long idx;
+            evalAsInteger(2, lisp, idx);
+            second_element = liste[3]->eval(lisp);
+            third_element = first_element->replace(lisp, idx, second_element);
+            second_element->release();
+            return third_element;
+        }
+        second_element = liste[2]->eval(lisp);
+        third_element = first_element->value_on_index(lisp, second_element);
+        second_element->release();
+        first_element->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_input(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    string code;
+    if (listsize == 2) {
+        wstring wcode;
+        evalAsString(1, lisp, wcode);
+        s_unicode_to_utf8(code, wcode);
+    }
+    
+    lisp->delegation->reading_string_function(code, lisp->delegation->reading_string_function_object);
+    return lisp->provideString(code);
+}
+
+
+Element* List::evall_insert(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //We insert a value in a list
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        long idx;
+        evalAsInteger(3, lisp, idx);
+        third_element = first_element->insert(lisp, second_element, idx);
+
+        second_element->release();
+        if (third_element != first_element) {
+            first_element->release();
+            return third_element;
+        }
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_irange(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+    
+    double init, inc;
+    evalAsNumber(1, lisp, init);
+    evalAsNumber(2, lisp, inc);
+    if (init == (long)init && inc == (long)inc)
+        return new InfiniterangeInteger(init, inc);
+    return new Infiniterange(init, inc);
+}
+
+
+Element* List::evall_join(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        wstring sep;
+        if (listsize == 3)
+            evalAsString(2,lisp,sep);
+        second_element = first_element->join_in_list(lisp, sep);
+        first_element->release();
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_key(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (listsize == 1) {
+            //We create an empty dictionary
+            return new Dictionary;
+        }
+        if (listsize == 3) {
+            //The second element is an a_key
+            first_element = liste[1]->eval(lisp);
+            if (first_element->type == t_dictionary) {
+                wstring a_key;
+                evalAsString(2, lisp, a_key);
+                second_element = first_element->value_on_index(a_key, lisp);
+                first_element->release();
+                return second_element;
+            }
+            if (first_element->type == t_dictionaryn) {
+                double a_key;
+                evalAsNumber(2, lisp, a_key);
+                second_element = first_element->value_on_index(a_key, lisp);
+                first_element->release();
+                return second_element;
+            }
+            throw new Error(L"Error: the first argument must be a dictionary");
+        }
+
+        if (listsize == 4) {
+            //We store a value
+            first_element = liste[1]->eval(lisp);
+            if (first_element->type == t_dictionary) {
+                wstring a_key;
+                evalAsString(2, lisp, a_key);
+                second_element = liste[3]->eval(lisp);
+                // It is out of question to manipulate a dictionary declared in the code
+                first_element = first_element->duplicate_constant_container();
+                first_element->recording(a_key, second_element->copying(false));
+                return first_element;
+            }
+            if (first_element->type == t_dictionaryn) {
+                double a_key;
+                evalAsNumber(2, lisp, a_key);
+                second_element = liste[3]->eval(lisp);
+                // It is out of question to manipulate a dictionary declared in the code
+                first_element = first_element->duplicate_constant_container();
+                first_element->recording(a_key, second_element->copying(false));
+                return first_element;
+            }
+            throw new Error(L"Error: the first argument must be a dictionary");
+        }
+        throw new Error(L"Error: Incorrect number of arguments for 'key'");
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_keyn(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (listsize == 1) {
+            //We create an empty dictionary
+            return new Dictionary_n;
+        }
+        if (listsize == 3) {
+            //The second element is an a_key
+            first_element = liste[1]->eval(lisp);
+            if (first_element->type != t_dictionaryn) {
+                first_element->release();
+                throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
+            }
+            double a_key;
+            evalAsNumber(2, lisp, a_key);
+            second_element = first_element->value_on_index(a_key, lisp);
+            first_element->release();
+            return second_element;
+        }
+
+        if (listsize == 4) {
+            //We store a value
+            first_element = liste[1]->eval(lisp);
+            if (first_element->type != t_dictionaryn) {
+                first_element->release();
+                throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
+            }
+            double a_key;
+            evalAsNumber(2, lisp, a_key);
+            second_element = liste[3]->eval(lisp);
+            // It is out of question to manipulate a dictionary declared in the code
+            first_element = first_element->duplicate_constant_container();
+            first_element->recording(a_key, second_element->copying(false));
+            return first_element;
+        }
+        throw new Error(L"Error: Incorrect number of arguments for 'keyn'");
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_keys(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
+            first_element->release();
+            throw new Error(L"Error: the first argument must be a dictionary");
+        }
+        second_element = first_element->thekeys(lisp);
+        first_element->release();
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_label(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    short label;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        label = liste[1]->label();
+        if (label == v_null)
+            throw new Error(L"Error: Missing label for 'label'");
+        second_element = liste[2]->eval(lisp);
+        //the difference with 'setq' is that only one version is recorded.
+        //of the variable... Without duplication
+        return lisp->recordingunique(second_element, label);
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_lambda(LispE* lisp) {
+    if (liste.size() < 3)
+        throw new Error("Error: wrong number of arguments");
+
+    if (!liste[1]->isList())
+        throw new Error(L"Error: Missing parameter list in a lambda declaration");
+    return this;
+}
+
+
+Element* List::evall_last(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        return first_element->last_element(lisp);
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_leftshift(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->leftshift(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_leftshiftequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->leftshift(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_list(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = new List();
+        if (listsize == 1)
+            return first_element;
+        second_element = emptylist_;
+        for (long i = 1; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            first_element->append(second_element->copying());
+        }
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_load(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = lisp->load(second_element->toString(lisp));
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_lock(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = null_;
+        wstring key;
+        evalAsString(1, lisp, key);
+        ThreadLock* _lock = lisp->delegation->getlock(key);
+        test = lisp->checkforLock();
+        _lock->locking(test);
+        for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+        }
+        _lock->unlocking(test);
+        return second_element;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_loop(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() < 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //We loop in a list
+        label = liste[1]->label();
+        if (label == v_null)
+            throw new Error(L"Error: Missing label for 'loop'");
+        test = lisp->trace;
+        second_element = liste[2]->eval(lisp);
+        first_element = second_element->loop(lisp, label, this);
+        second_element->release();
+        if (test && lisp->trace != debug_goto)
+            lisp->stop_at_next_line(debug_next);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_loopcount(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        long counter;
+        evalAsInteger(1, lisp, counter);
+        second_element = null_;
+        while (counter > 0) {
+            for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+                _releasing(second_element);
+                second_element = liste[i]->eval(lisp);
+            }
+            //If a 'return' or a 'break' has been placed in the code
+            if (second_element->type == l_return) {
+                if (second_element->isBreak())
+                    return null_;
+                //this is a return, it goes back to the function call
+                return second_element;
+            }
+            counter--;
+        }
+        return second_element;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_lower(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        for (long i = 1; i < listsize-1 && test; i++) {
+            first_element = liste[i]->eval(lisp);
+            second_element = liste[i+1]->eval(lisp);
+            test = first_element->less(lisp, second_element)->Boolean();
+            _releasing(first_element);
+            _releasing(second_element);
+        }
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_lowerorequal(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        for (long i = 1; i < listsize-1 && test; i++) {
+            first_element = liste[i]->eval(lisp);
+            second_element = liste[i+1]->eval(lisp);
+            test = first_element->lessorequal(lisp, second_element)->Boolean();
+            _releasing(first_element);
+            _releasing(second_element);
+        }
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_mapping(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //abus de langage: I agree
+        //We detect the type of the instruction on the fly
+        first_element = liste[1]->eval(lisp);
+        //This is a variable that was evaluated on the fly
+        List call;
+        call.liste.push_back(first_element);
+        call.liste.push_back(liste[2]);
+        if (lisp->is_math_operator(first_element->type)) {
+            //Then we must duplicate the second element:
+            call.liste.push_back(liste[2]);
+        }
+        second_element = call.eval(lisp);
+        first_element->release();
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_max(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (listsize == 2) {
+            //In this case, the argument must be a list
+            first_element = liste[1]->eval(lisp);
+            if (!first_element->isList())
+                throw new Error("Error: the first argument must be a list");
+            if (first_element->size() == 0)
+                return null_;
+            third_element = first_element->index(0);
+            if (first_element->size() == 1)
+                return third_element->copying(false);
+            for (long i = 2; i < first_element->size(); i++) {
+                second_element = first_element->index(i);
+                if (third_element->less(lisp, second_element)->Boolean())
+                    third_element = second_element;
+            }
+            return third_element->copying(false);
+        }
+
+        first_element = liste[1]->eval(lisp);
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            if (first_element->less(lisp, second_element)->Boolean()) {
+                first_element->release();
+                first_element=second_element;
+            }
+            else {
+                _releasing(second_element);
+            }
+        }
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_maybe(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+    
+    if (listsize==2) {
+        first_element = liste[1]->eval(lisp);
+        return booleans_[(first_element->label() == t_maybe)];
+    }
+
+    //Otherwise, we test each value for error and then we send the last one back
+    first_element = null_;
+    try {
+        for (long i = 1; i < listsize-1; i++) {
+            first_element->release();
+            first_element = liste[i]->eval(lisp);
+        }
+    }
+    catch(Error* err) {
+        err->release();
+        return liste.back()->eval(lisp);
+    }
+    return first_element;
+}
+
+
+Element* List::evall_min(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (listsize == 2) {
+            //In this case, the argument must be a list
+            first_element = liste[1]->eval(lisp);
+            if (!first_element->isList())
+                throw new Error("Error: the first argument must be a list");
+            if (first_element->size() == 0)
+                return null_;
+            third_element = first_element->index(0);
+            if (first_element->size() == 1)
+                return third_element->copying(false);
+            for (long i = 2; i < first_element->size(); i++) {
+                second_element = first_element->index(i);
+                if (third_element->more(lisp, second_element)->Boolean())
+                    third_element = second_element;
+            }
+            return third_element->copying(false);
+        }
+
+        first_element = liste[1]->eval(lisp);
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            if (first_element->more(lisp, second_element)->Boolean()) {
+                first_element->release();
+                first_element=second_element;
+            }
+            else {
+                _releasing(second_element);
+            }
+        }
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_minus(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->minus(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_minusequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->minus(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_mod(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->mod(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_modequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->mod(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_multiply(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->multiply(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_multiplyequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->multiply(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_ncheck(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //A ncheck is like a check, but when the test fails
+        //it executes the second element, otherwise
+        //the actual list of instructions starts at 3...
+        first_element = liste[1]->eval(lisp);
+        test = first_element->Boolean();
+        first_element->release();
+        if (!test)
+            return liste[2]->eval(lisp);
+
+        second_element = null_;
+        for (long i = 3; i < listsize && second_element->type != l_return; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+        }
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_neq(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        test = false;
+        for (long i = 1; i < listsize-1 && !test; i++) {
+            first_element = liste[i]->eval(lisp);
+            second_element = liste[i+1]->eval(lisp);
+            test = ( (first_element == second_element) || first_element->equal(lisp, second_element)->Boolean());
+            _releasing(first_element);
+            _releasing(second_element);
+        }
+        return booleans_[!test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_not(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        test = first_element->Boolean();
+        first_element->release();
+        return booleans_[!test];
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_nullp(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        if (second_element == null_)
+            return true_;
+        second_element->release();
+        return false_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_numberp(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        test = second_element->isNumber();
+        second_element->release();
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_or(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = null_;
+        for (long i = 1; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            if (second_element->Boolean()) {
+                return true_;
+            }
+        }
+        second_element->release();
+        return false_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_pipe(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 1)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    //pipe returns a line read on std::cin
+    //It returns nil, if the stream is closed...
+    string code;
+    getline(std::cin, code);
+    if (std::cin.eof())
+        return null_;
+    return lisp->provideString(code);
+}
+
+
+Element* List::evall_plus(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->plus(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_plusequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->plus(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_pop(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        if (first_element->type == t_dictionary) {
+            second_element = liste[2]->eval(lisp);
+            wstring keyvalue = second_element->asString(lisp);
+            second_element->release();
+            if (first_element->remove(keyvalue))
+                return first_element;
+            first_element->release();
+            return null_;
+        }
+        if (first_element->type == t_dictionaryn) {
+            second_element = liste[2]->eval(lisp);
+            double keyvalue = second_element->asNumber();
+            second_element->release();
+            if (first_element->remove(keyvalue))
+                return first_element;
+            first_element->release();
+            return null_;
+        }
+
+        if (first_element->isList()) {
+            long keyvalue;
+            if (listsize == 3) {
+                second_element = liste[2]->eval(lisp);
+                keyvalue = second_element->asInteger();
+                second_element->release();
+            }
+            else
+                keyvalue = first_element->size();
+            if (first_element->remove(keyvalue))
+                return first_element;
+            first_element->release();
+            return emptylist_;
+        }
+
+        //If it is a string, we return a copy, we do not modify the string.
+        //itself
+        if (first_element->type == t_string) {
+            long keyvalue;
+            wstring strvalue = first_element->asString(lisp);
+            if (listsize == 3) {
+                second_element = liste[2]->eval(lisp);
+                keyvalue = second_element->asInteger();
+                second_element->release();
+            }
+            else {
+                if (!strvalue.size())
+                    return emptystring_;
+                strvalue.pop_back();
+                return lisp->provideString(strvalue);
+            }
+
+            if (keyvalue < 0 || keyvalue >= strvalue.size())
+                return emptystring_;
+            strvalue.erase(strvalue.begin()+keyvalue);
+            first_element->release();
+            return lisp->provideString(strvalue);
+        }
+        first_element->release();
+        throw new Error(L"Error: the first argument must be a dictionary");
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_power(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->power(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_powerequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->power(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_prettify(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        string s = first_element->prettify(lisp);
+        first_element->release();
+        return new String(s);
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_print(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        string val;
+        for (long i = 1; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            val = second_element->toString(lisp);
+            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
+            _releasing(second_element);
+        }
+        if (lisp->isThread)
+            std::cout.flush();
+        return emptyatom_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_printerr(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        for (long i = 1; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            std::cerr << second_element->toString(lisp);
+            _releasing(second_element);
+        }
+        if (lisp->isThread)
+            std::cerr.flush();
+        return emptyatom_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_printerrln(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        for (long i = 1; i < listsize; i++) {
+            if (i != 1)
+                std::cerr << " ";
+            second_element = liste[i]->eval(lisp);
+            std::cerr << second_element->toString(lisp);
+            _releasing(second_element);
+        }
+        std::cerr << std::endl;
+        if (lisp->isThread)
+            std::cerr.flush();
+        return emptyatom_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_println(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        string val;
+        for (long i = 1; i < listsize; i++) {
+            if (i != 1)
+                val = " ";
+            second_element = liste[i]->eval(lisp);
+            val += second_element->toString(lisp);
+            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
+            _releasing(second_element);
+        }
+        #ifdef WIN32
+        val = "\r";
+        #else
+            val = "\n";
+        #endif
+        lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
+        if (lisp->isThread)
+            std::cout.flush();
+        return emptyatom_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_push(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //We store a value in a list
+        first_element = liste[1]->eval(lisp);
+        if (!first_element->isList()) {
+            first_element->release();
+            throw new Error(L"Error: missing list in 'push'");
+        }
+        first_element = first_element->duplicate_constant_container();
+        second_element = liste[2]->eval(lisp);
+        first_element->append(second_element->copying(false));
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_range(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 4)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    double init, limit, inc;
+    evalAsNumber(1, lisp, init);
+    evalAsNumber(2, lisp, limit);
+    evalAsNumber(3, lisp, inc);
+    return range(lisp, init, limit, inc);
+}
+
+
+Element* List::evall_reverse(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = second_element->reverse(lisp, true);
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_revertsearch(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        long idx = 0;
+        if (listsize == 4) {
+            evalAsInteger(3,lisp, idx);
+        }
+        third_element = first_element->search_reverse(lisp, second_element, idx);
+        first_element->release();
+        second_element->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_rightshift(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(1);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->rightshift(lisp, second_element);
+        }
+
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_rightshiftequal(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    short label;
+
+    try {
+        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        for (short i = 2; i < listsize; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->rightshift(lisp, second_element);
+        }
+
+        second_element->release();
+        label = liste[1]->label();
+        if (label > l_final)
+            return lisp->recording(first_element, label);
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_search(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        long idx = 0;
+        if (listsize == 4)
+            evalAsInteger(3,lisp, idx);
+        third_element = first_element->search_element(lisp, second_element, idx);
+        first_element->release();
+        second_element->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_searchall(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 3 && listsize != 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        long idx = 0;
+        if (listsize == 4) {
+            evalAsInteger(3,lisp, idx);
+        }
+        third_element = first_element->search_all_elements(lisp, second_element, idx);
+        first_element->release();
+        second_element->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_select(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //we return the first non null value
+        second_element = null_;
+        for (long i = 1; i < listsize && second_element == null_; i++)
+            second_element = liste[i]->eval(lisp);
+        return second_element;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_set_max_stack_size(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    long m;
+    if (listsize == 1)
+        return lisp->provideInteger(lisp->stack_size_max());
+    evalAsInteger(1, lisp, m);
+    lisp->set_stack_max_size(m);
+    return true_;
+}
+
+
+Element* List::evall_setg(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    short label;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        label = liste[1]->label();
+        if (label == v_null)
+            throw new Error(L"Error: Missing label for 'setg'");
+        second_element = liste[2]->eval(lisp);
+        lisp->recordingglobal(second_element, label);
+        return true_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_setq(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    short label;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        label = liste[1]->label();
+        if (label == v_null)
+            throw new Error(L"Error: Missing label for 'setq'");
+        second_element = liste[2]->eval(lisp);
+        lisp->recording(second_element, label);
+        return true_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_size(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = lisp->provideNumber(second_element->size());
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_sleep(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    long tm;
+    evalAsInteger(1, lisp, tm);
+    std::this_thread::sleep_for(std::chrono::milliseconds(tm));
+    return true_;
+}
+
+
+Element* List::evall_sort(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //First element is the comparison function OR an operator
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        if (!second_element->isList()) {
+            first_element->release();
+            second_element->release();
+            throw new Error(L"Error: the second argument should be a list for 'sort'");
+        }
+
+        if (first_element->isList()) {
+            //It is inevitably a lambda
+            if (first_element->size() == 1)
+                first_element = first_element->index(0);
+        }
+        else {
+            //C Is either an atom or an operator
+            if (!first_element->isAtom()) {
+                first_element->release();
+                second_element->release();
+                throw new Error(L"Error: incorrect comparison function in 'sort'");
+            }
+        }
+
+        Comparison comp(lisp, first_element);
+        List* l = (List*)second_element;
+        if (comp.checkComparison(l->liste[0])) {
+            first_element->release();
+            second_element->release();
+            throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+        }
+        sort(l->liste.begin(), l->liste.end(), comp);
+        first_element->release();
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_stringp(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        test = second_element->isString();
+        second_element->release();
+        return booleans_[test];
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_threadclear(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    if (listsize == 1) {
+        lisp->delegation->thread_clear_all();
+        return true_;
+    }
+    
+    wstring key;
+    evalAsString(1, lisp, key);
+    return booleans_[lisp->delegation->thread_clear(key)];
+}
+
+
+Element* List::evall_threadretrieve(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (listsize == 1) {
+            //We return all as a dictionary
+            return lisp->delegation->thread_retrieve_all();
+        }
+        wstring key;
+        evalAsString(1, lisp, key);
+        first_element = lisp->delegation->thread_retrieve(key);
+        if (first_element == NULL)
+            return null_;
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_threadstore(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        wstring key;
+        evalAsString(1, lisp, key);
+        first_element = liste[2]->eval(lisp);
+        lisp->delegation->thread_store(key, first_element);
+        first_element->release();
+        return true_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_throw(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+    
+    wstring msg;
+    evalAsString(1, lisp, msg);
+    throw new Error(msg);
+}
+
+
+Element* List::evall_trace(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize != 1 && listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        if (listsize == 1) {
+            if (lisp->trace)
+                return true_;
+            return false_;
+        }
+        first_element = liste[1]->eval(lisp);
+        lisp->trace  = first_element->Boolean();
+        first_element->release();
+        if (lisp->trace)
+            return true_;
+        return false_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_trigger(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    wstring key;
+    evalAsString(1, lisp, key);
+    return booleans_[lisp->delegation->trigger(key)];
+}
+
+
+Element* List::evall_type(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        first_element = lisp->provideAtom(second_element->type);
+        second_element->release();
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_unique(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = first_element->unique(lisp);
+        first_element->release();
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_use(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        string nom_bib = second_element->toString(lisp);
+        second_element->release();
+        return lisp->load_library(nom_bib);
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_values(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
+            first_element->release();
+            throw new Error(L"Error: the first argument must be a dictionary");
+        }
+        second_element = first_element->thevalues(lisp);
+        first_element->release();
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_wait(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 1)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+    
+    //We wait for all threads to be finished
+    while (lisp->nbjoined) {}
+    return true_;
+}
+
+
+Element* List::evall_waiton(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    wstring key;
+    evalAsString(1, lisp, key);
+    lisp->delegation->waiton(key);
+    return true_;
+}
+
+
+Element* List::evall_while(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    char test = true;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = null_;
+        test = lisp->trace;
+        while (first_element->Boolean()) {
+            first_element->release();
+            for (long i = 2; i < listsize && second_element->type != l_return; i++) {
+                _releasing(second_element);
+                second_element = liste[i]->eval(lisp);
+            }
+
+            //if a 'return' has been placed in the code
+            if (second_element->type == l_return) {
+                lisp->stop_at_next_line(test);
+                if (second_element->isBreak())
+                    return null_;
+                //this is a return, it goes back to the function call
+                return second_element;
+            }
+            first_element = liste[1]->eval(lisp);
+        }
+        first_element->release();
+        if (test && lisp->trace != debug_goto)
+            lisp->stop_at_next_line(debug_next);
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_xor(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+
+        if (first_element->Boolean() == second_element->Boolean())
+            third_element = false_;
+        else
+            third_element = true_;
+
+        first_element->release();
+        second_element->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_zerop(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        double n = second_element->asNumber();
+        second_element->release();
+        return booleans_[!n];
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_zip(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //We combine different lists together...
+        vector<Element*> lists;
+        long szl = -1;
+        long i;
+        for (i = 1; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            if (!second_element->isList()) {
+                second_element->release();
+                third_element = new Error(L"Error: 'zip' only accepts lists as arguments");
+                break;
+            }
+            if (i == 1)
+                szl = second_element->size();
+            else {
+                if (szl != second_element->size()) {
+                    second_element->release();
+                    third_element = new Error(L"Error: Lists should all have the same size in 'zip'");
+                    break;
+                }
+            }
+            lists.push_back(second_element);
+            second_element = null_;
+        }
+
+        if (third_element->isError()) {
+            for (auto& x: lists)
+                x->release();
+            throw third_element;
+        }
+
+        third_element = new List;
+        List* sub;
+        for (long j = 0; j < szl; j++) {
+            sub = new List;
+            third_element->append(sub);
+            for (i = 0; i <lists.size(); i++)
+            sub->append(lists[i]->index(j));
+        }
+        for (i = 0; i < lists.size(); i++)
+        lists[i]->release();
+        return third_element;
+    }
+    catch (Error* err) {
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::evall_zipwith(LispE* lisp) {
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+
+    short listsize = liste.size();
+    if (listsize < 4)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+    set_current_line(lisp);
+    lisp->display_trace(this);
+
+    try {
+        //We combine different lists together with an operator
+        //First element is the operation
+        first_element = liste[1]->eval(lisp);
+
+        vector<Element*> lists;
+        long szl = -1;
+        long i;
+        for (i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            if (!second_element->isList()) {
+                second_element->release();
+                third_element = new Error(L"Error: 'zipwith' only accepts lists as arguments");
+                break;
+            }
+            if (i == 2)
+                szl = second_element->size();
+            else {
+                if (szl != second_element->size()) {
+                    second_element->release();
+                    third_element = new Error(L"Error: Lists should all have the same size in 'zipwith'");
+                    break;
+                }
+            }
+            lists.push_back(second_element);
+            second_element->incrementstatus(2,false);
+            second_element = null_;
+        }
+
+        if (third_element->isError()) {
+            for (auto& e: lists) {
+                e->decrementstatus(2, false);
+            }
+            throw third_element;
+        }
+
+        //First element is the operation, second element the list
+        first_element = liste[1]->eval(lisp);
+
+        long j;
+        List lsp;
+        long sz;
+        long lsz = lists.size();
+        if (first_element->isList()) {
+            sz = first_element->size();
+            //lambda or function
+            if (sz == 1)
+                lsp.append(((List*)first_element)->liste[0]);
+            else
+                lsp.append(first_element);
+            for (j = 0; j < lsz; j++)
+            lsp.append(null_);
+        }
+        else {
+            lsp.append(first_element);
+            for (j = 0; j < lsz; j++)
+            lsp.append(null_);
+        }
+
+        second_element = new List;
+
+        for (j = 0; j < szl; j++) {
+            for (i = 0; i < lsz; i++)
+            lsp.liste[i+1] = lists[i]->index(j);
+            third_element = lsp.eval(lisp);
+            second_element->append(third_element);
+            third_element = null_;
+        }
+
+        for (i = 0; i < lsz; i++)
+        lists[i]->decrementstatus(2, false);
+        return second_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+
+Element* List::eval_call_function(LispE* lisp) {
     if (lisp->checkLispState()) {
         if (lisp->hasStopped())
             throw lisp->delegation->_THEEND;
@@ -2981,7 +5757,6 @@ Element* Listcallfunction::eval(LispE* lisp) {
     set_current_line(lisp);
     
     Element* function;
-    
     
     if (liste[0]->label() == l_self) {
         function = lisp->called();
@@ -3022,338 +5797,34 @@ Element* Listcallfunction::eval(LispE* lisp) {
     return evalfunction(function, lisp);
 }
 
-
-Element* Listbreak::eval(LispE* lisp) {
-    return break_;
-}
-
-Element* Listoperation::eval(LispE* lisp) {
+Element* List::evalt_list(LispE* lisp) {
     if (lisp->checkLispState()) {
         if (lisp->hasStopped())
             throw lisp->delegation->_THEEND;
         throw new Error("Error: stack overflow");
     }
+    
+    Element* first_element = liste[0];
+    Element* second_element = null_;
     
     set_current_line(lisp);
     lisp->display_trace(this);
-
-    Element* result;
-    Element* operand = null_;
-    short listsize = liste.size();
-    short i;
-
+    
     try {
-        switch (liste[0]->type) {
-            case l_plus: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->plus(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_minus: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->minus(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_multiply: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->multiply(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_divide:
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->divide(lisp, operand);
-                }
-                operand->release();
-                return result;
-            case l_mod:
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->mod(lisp, operand);
-                }
-                operand->release();
-                return result;
-            case l_power: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->power(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_leftshift: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->leftshift(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_rightshift: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->rightshift(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_bitand: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->bit_and(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_bitor: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->bit_or(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_bitxor: {
-                result = liste[1]->eval(lisp)->copyatom(1);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->bit_xor(lisp, operand);
-                }
-                
-                operand->release();
-                return result;
-            }
-            case l_plusequal:{
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->plus(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_minusequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->minus(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_multiplyequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->multiply(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-                
-            }
-            case l_powerequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->power(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_leftshiftequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->leftshift(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_rightshiftequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->rightshift(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_bitandequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->bit_and(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_bitorequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->bit_or(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_bitxorequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->bit_xor(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_divideequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->divide(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-            case l_modequal: {
-                result = liste[1]->eval(lisp)->copyatom(s_constant);
-                for (i = 2; i < listsize; i++) {
-                    _releasing(operand);
-                    operand = liste[i]->eval(lisp);
-                    result = result->mod(lisp, operand);
-                }
-                
-                operand->release();
-                short label = liste[1]->label();
-                if (label > l_final)
-                    return lisp->recording(result, label);
-                return result;
-            }
-        }
+        first_element = first_element->eval(lisp);
+        //Execution of a lambda a priori, otherwise it's an error
+        second_element = evalfunction(first_element,lisp);
+        first_element->release();
+        return second_element;
     }
     catch (Error* err) {
-        result->release();
-        operand->release();
+        first_element->release();
+        second_element->release();
         throw err;
     }
-
-    return zero_;
+    return null_;
 }
 
-Element* Listcompose::eval(LispE* lisp) {
-    if (lisp->checkLispState()) {
-        if (lisp->hasStopped())
-            throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
-    }
 
-    List* loop = (List*)liste.back();
 
-    short i = 4;
-    short listsize = liste.size()-1;
-    short label;
 
-    //When liste[4], the recipient variable is not a list
-    //Then we are dealing with a fold
-    if (liste[4]->isList())
-        label = liste[4]->index(1)->label();
-    else {
-        //this is a fold, and liste[4] != (setq recipient ())
-        //hence no need to execute it...
-        label = liste[4]->label();
-        i = 5;
-    }
-    
-    for (; i < listsize; i++)
-        liste[i]->eval(lisp);
-
-    loop->liste[2]->eval(lisp)->loop(lisp, loop->liste[1]->label(), loop);
-    return lisp->get(label);
-}

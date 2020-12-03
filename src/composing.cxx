@@ -862,14 +862,14 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 switch (fold_ordering) {
                     case 0:
                         if (labeltype == l_map) {
-                            action = new Listoperation;
+                            action = new List;
                             action->append(first_element);
                             action->append(iterator_variable);
                             action->append(iterator_variable);
                         }
                         break;
                     case 1: {
-                        action = new Listoperation;
+                        action = new List;
                         //We push our value first then the iterator variable
                         action->append(first_element);
                         action->append(_value);
@@ -877,7 +877,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
                         break;
                     }
                     case 2: {
-                        action = new Listoperation;
+                        action = new List;
                         //We push our iterator variable first
                         action->append(first_element);
                         action->append(iterator_variable);

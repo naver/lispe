@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.2.15.38";
+static std::string version = "1.2020.12.3.10.11";
 string LispVersion() {
     return version;
 }
@@ -122,164 +122,165 @@ void Delegation::initialisation(LispE* lisp) {
         
     //These are not exactly instruction, but we need to set their arity nonetheless
     //since they belong to the List::eval method
-    arities[t_list] = P_ATLEASTONE;
-    arities[t_atom] = P_ATLEASTONE;
+    evals[t_atom] = &List::eval_call_function;
+    evals[t_list] = &List::evalt_list;
 
     // Here is the predefined list of instructions, with their name and arity
     //Important the instruction is counted into the arity. Hence (consp e) is P_TWO.
-    set_instruction(l_and, "and", P_ATLEASTTHREE);
-    set_instruction(l_apply, "apply", P_THREE);
-    set_instruction(l_atomise, "explode", P_TWO);
-    set_instruction(l_atomp, "atomp", P_TWO);
-    set_instruction(l_atoms, "atoms", P_ONE);
-    set_instruction(l_bitand, "&", P_ATLEASTTHREE);
-    set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE);
-    set_instruction(l_bitor, "|", P_ATLEASTTHREE);
-    set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE);
-    set_instruction(l_bitxor, "^", P_ATLEASTTHREE);
-    set_instruction(l_bitxorequal, "^=", P_ATLEASTTHREE);
-    set_instruction(l_block, "block", P_ATLEASTONE);
-    set_instruction(l_break, "break", P_ONE);
-    set_instruction(l_cadr, "cadr", P_TWO);
-    set_instruction(l_car, "car", P_TWO);
-    set_instruction(l_cdr, "cdr", P_TWO);
-    set_instruction(l_catch, "catch", P_TWO);
-    set_instruction(l_check, "check", P_ATLEASTTWO);
-    set_instruction(l_checking, "#checking", P_FOUR);
-    set_instruction(l_compose, "#compose", P_ATLEASTFOUR);
-    set_instruction(l_composenot, "!", P_ATLEASTTHREE);
-    set_instruction(l_cond, "cond", P_ATLEASTTWO);
-    set_instruction(l_cons, "cons", P_THREE);
-    set_instruction(l_consp, "consp", P_TWO);
-    set_instruction(l_converttoatom, "atom", P_TWO);
-    set_instruction(l_converttointeger, "integer", P_TWO);
-    set_instruction(l_converttonumber, "number", P_TWO);
-    set_instruction(l_converttostring, "string", P_TWO);
-    set_instruction(l_cycle, "cycle", P_TWO);
-    set_instruction(l_data, "data", P_ATLEASTTWO);
-    set_instruction(l_defmacro, "defmacro", P_FOUR);
-    set_instruction(l_deflib, "deflib", P_THREE);
-    set_instruction(l_defpat, "defpat", P_ATLEASTFOUR);
-    set_instruction(l_defun, "defun", P_ATLEASTFOUR);
-    set_instruction(l_dethread, "dethread", P_ATLEASTFOUR);
-    set_instruction(l_different, "!=", P_ATLEASTTHREE);
-    set_instruction(l_divide, "/", P_ATLEASTTHREE);
-    set_instruction(l_divideequal, "/=", P_ATLEASTTHREE);
-    set_instruction(l_drop, "drop", P_THREE);
-    set_instruction(l_dropwhile, "dropwhile", P_THREE);
-    set_instruction(l_eq, "eq", P_ATLEASTTHREE);
-    set_instruction(l_equal, "=", P_ATLEASTTHREE);
-    set_instruction(l_eval, "eval", P_TWO);
-    set_instruction(l_extract, "extract", P_THREE|P_FOUR);
-    set_instruction(l_fappend, "fappend", P_THREE);
-    set_instruction(l_filter, "filter", P_THREE);
-    set_instruction(l_flip, "flip", P_TWO);
-    set_instruction(l_folding, "#folding", P_FOUR);
-    set_instruction(l_foldl, "foldl", P_FOUR);
-    set_instruction(l_foldl1, "foldl1", P_THREE);
-    set_instruction(l_foldr, "foldr", P_FOUR);
-    set_instruction(l_foldr1, "foldr1", P_THREE);
-    set_instruction(l_fread, "fread", P_TWO);
-    set_instruction(l_fwrite, "fwrite", P_THREE);
-    set_instruction(l_getchar, "getchar", P_ONE);
-    set_instruction(l_if, "if", P_THREE | P_FOUR);
-    set_instruction(l_ife, "ife", P_ATLEASTFOUR);
-    set_instruction(l_index, "at", P_THREE|P_FOUR);
-    set_instruction(l_input, "input", P_ONE | P_TWO);
-    set_instruction(l_insert, "insert", P_FOUR);
-    set_instruction(l_reverse, "reverse", P_TWO);
-    set_instruction(l_in, "in", P_THREE|P_FOUR);
-    set_instruction(l_irange, "irange", P_THREE);
-    set_instruction(l_join, "join", P_TWO | P_THREE);
-    set_instruction(l_key, "key", P_ONE|P_THREE|P_FOUR);
-    set_instruction(l_keyn, "keyn", P_ONE | P_THREE | P_FOUR);
-    set_instruction(l_keys, "keys", P_TWO);
-    set_instruction(l_label, "label", P_THREE);
-    set_instruction(l_lambda, "lambda", P_ATLEASTTHREE);
-    set_instruction(l_last, "last", P_TWO);
-    set_instruction(l_leftshift, "<<", P_THREE);
-    set_instruction(l_leftshiftequal, "<<=", P_THREE);
-    set_instruction(l_lock, "lock", P_ATLEASTTWO);
-    set_instruction(l_lower, "<", P_ATLEASTTHREE);
-    set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE);
-    set_instruction(l_list, "list", P_ATLEASTONE);
-    set_instruction(l_load, "load", P_TWO);
-    set_instruction(l_loop, "loop", P_ATLEASTFOUR);
-    set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE);
-    set_instruction(l_map, "map", P_THREE);
-    set_instruction(l_mapping, "#mapping", P_THREE);
-    set_instruction(l_max, "max", P_ATLEASTTHREE);
-    set_instruction(l_maybe, "maybe", P_ATLEASTTWO);
-    set_instruction(l_min, "min", P_ATLEASTTHREE);
-    set_instruction(l_minus, "-", P_ATLEASTTHREE);
-    set_instruction(l_minusequal, "-=", P_ATLEASTTHREE);
-    set_instruction(l_mod, "%", P_ATLEASTTHREE);
-    set_instruction(l_modequal, "%=", P_ATLEASTTHREE);
-    set_instruction(l_greater, ">", P_ATLEASTTHREE);
-    set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE);
-    set_instruction(l_multiply, "*", P_ATLEASTTHREE);
-    set_instruction(l_multiplyequal, "*=", P_ATLEASTTHREE);
-    set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE);
-    set_instruction(l_neq, "neq", P_ATLEASTTHREE);
-    set_instruction(l_not, "not", P_TWO);
-    set_instruction(l_nullp, "nullp", P_TWO);
-    set_instruction(l_numberp, "numberp", P_TWO);
-    set_instruction(l_or, "or", P_ATLEASTTHREE);
-    set_instruction(l_pipe, "pipe", P_ONE);
-    set_instruction(l_plus, "+", P_ATLEASTTHREE);
-    set_instruction(l_plusequal, "+=", P_ATLEASTTHREE);
-    set_instruction(l_pop, "pop", P_TWO | P_THREE);
-    set_instruction(l_power, "^^", P_THREE);
-    set_instruction(l_powerequal, "^^=", P_THREE);
-    set_instruction(l_prettify, "prettify", P_TWO);
-    set_instruction(l_print, "print", P_ATLEASTONE);
-    set_instruction(l_printerr, "printerr", P_ATLEASTONE);
-    set_instruction(l_printerrln, "printerrln", P_ATLEASTONE);
-    set_instruction(l_println, "println", P_ATLEASTONE);
-    set_instruction(l_push, "push", P_THREE);
-    set_instruction(l_quote, "quote", P_TWO);
-    set_instruction(l_range, "range", P_FOUR);
-    set_instruction(l_repeat, "repeat", P_TWO);
-    set_instruction(l_replicate, "replicate", P_TWO);
-    set_instruction(l_return, "return", P_TWO | P_THREE);
-    set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR);
-    set_instruction(l_rightshift, ">>", P_THREE);
-    set_instruction(l_rightshiftequal, ">>=", P_THREE);
-    set_instruction(l_scanl, "scanl", P_FOUR);
-    set_instruction(l_scanl1, "scanl1", P_THREE);
-    set_instruction(l_scanr, "scanr", P_FOUR);
-    set_instruction(l_scanr1, "scanr1", P_THREE);
-    set_instruction(l_search, "find", P_THREE|P_FOUR);
-    set_instruction(l_searchall, "findall", P_THREE|P_FOUR);
-    set_instruction(l_select, "select", P_ATLEASTTWO);
-    set_instruction(l_self, "self", P_ATLEASTONE);
-    set_instruction(l_setg, "setg", P_THREE);
-    set_instruction(l_setq, "setq", P_THREE);
-    set_instruction(l_set_max_stack_size, "_max_stack_size", P_ONE | P_TWO);
-    set_instruction(l_size, "size", P_TWO);
-    set_instruction(l_sort, "sort", P_THREE);
-    set_instruction(l_stringp, "stringp", P_TWO);
-    set_instruction(l_take, "take", P_THREE);
-    set_instruction(l_takewhile, "takewhile", P_THREE);
-    set_instruction(l_terminal, "#terminal", P_TWO);
-    set_instruction(l_threadstore, "threadstore", P_THREE);
-    set_instruction(l_threadretrieve, "threadretrieve", P_ONE | P_TWO);
-    set_instruction(l_threadclear, "threadclear", P_ONE | P_TWO);
-    set_instruction(l_throw, "throw", P_TWO);
-    set_instruction(l_trace, "trace", P_ONE | P_TWO);
-    set_instruction(l_trigger, "trigger", P_TWO);
-    set_instruction(l_type, "type", P_TWO);
-    set_instruction(l_unique, "unique", P_TWO);
-    set_instruction(l_use, "use", P_TWO);
-    set_instruction(l_values, "values", P_TWO);
-    set_instruction(l_wait, "wait", P_ONE);
-    set_instruction(l_waiton, "waiton", P_TWO);
-    set_instruction(l_while, "while", P_ATLEASTTHREE);
-    set_instruction(l_xor, "xor", P_THREE);
-    set_instruction(l_zerop, "zerop", P_TWO);
-    set_instruction(l_zip, "zip", P_ATLEASTTHREE);
-    set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR);
+    set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
+    set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
+    set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
+    set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp);
+    set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
+    set_instruction(l_bitand, "&", P_ATLEASTTHREE, &List::evall_bitand);
+    set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
+    set_instruction(l_bitor, "|", P_ATLEASTTHREE, &List::evall_bitor);
+    set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE, &List::evall_bitorequal);
+    set_instruction(l_bitxor, "^", P_ATLEASTTHREE, &List::evall_bitxor);
+    set_instruction(l_bitxorequal, "^=", P_ATLEASTTHREE, &List::evall_bitxorequal);
+    set_instruction(l_block, "block", P_ATLEASTONE, &List::evall_block);
+    set_instruction(l_break, "break", P_ONE, &List::evall_break);
+    set_instruction(l_cadr, "cadr", P_TWO, &List::evall_cadr);
+    set_instruction(l_car, "car", P_TWO, &List::evall_car);
+    set_instruction(l_catch, "catch", P_TWO, &List::evall_catch);
+    set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr);
+    set_instruction(l_check, "check", P_ATLEASTTWO, &List::evall_check);
+    set_instruction(l_checking, "#checking", P_FOUR, &List::evall_checking);
+    set_instruction(l_compose, "#compose", P_ATLEASTFOUR, &List::evall_compose);
+    set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
+    set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
+    set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
+    set_instruction(l_converttoatom, "atom", P_TWO, &List::evall_converttoatom);
+    set_instruction(l_converttointeger, "integer", P_TWO, &List::evall_converttointeger);
+    set_instruction(l_converttonumber, "number", P_TWO, &List::evall_converttonumber);
+    set_instruction(l_converttostring, "string", P_TWO, &List::evall_converttostring);
+    set_instruction(l_data, "data", P_ATLEASTTWO, &List::evall_data);
+    set_instruction(l_deflib, "deflib", P_THREE, &List::evall_deflib);
+    set_instruction(l_defmacro, "defmacro", P_FOUR, &List::evall_defmacro);
+    set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
+    set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
+    set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
+    set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different);
+    set_instruction(l_divide, "/", P_ATLEASTTHREE, &List::evall_divide);
+    set_instruction(l_divideequal, "/=", P_ATLEASTTHREE, &List::evall_divideequal);
+    set_instruction(l_eq, "eq", P_ATLEASTTHREE, &List::evall_eq);
+    set_instruction(l_equal, "=", P_ATLEASTTHREE, &List::evall_equal);
+    set_instruction(l_eval, "eval", P_TWO, &List::evall_eval);
+    set_instruction(l_extract, "extract", P_THREE|P_FOUR, &List::evall_extract);
+    set_instruction(l_fappend, "fappend", P_THREE, &List::evall_fappend);
+    set_instruction(l_flip, "flip", P_TWO, &List::evall_flip);
+    set_instruction(l_folding, "#folding", P_FOUR, &List::evall_folding);
+    set_instruction(l_fread, "fread", P_TWO, &List::evall_fread);
+    set_instruction(l_fwrite, "fwrite", P_THREE, &List::evall_fwrite);
+    set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
+    set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater);
+    set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal);
+    set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if);
+    set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife);
+    set_instruction(l_in, "in", P_THREE|P_FOUR, &List::evall_in);
+    set_instruction(l_index, "at", P_THREE|P_FOUR, &List::evall_index);
+    set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
+    set_instruction(l_insert, "insert", P_FOUR, &List::evall_insert);
+    set_instruction(l_irange, "irange", P_THREE, &List::evall_irange);
+    set_instruction(l_join, "join", P_TWO | P_THREE, &List::evall_join);
+    set_instruction(l_key, "key", P_ONE|P_THREE|P_FOUR, &List::evall_key);
+    set_instruction(l_keyn, "keyn", P_ONE | P_THREE | P_FOUR, &List::evall_keyn);
+    set_instruction(l_keys, "keys", P_TWO, &List::evall_keys);
+    set_instruction(l_label, "label", P_THREE, &List::evall_label);
+    set_instruction(l_lambda, "lambda", P_ATLEASTTHREE, &List::evall_lambda);
+    set_instruction(l_last, "last", P_TWO, &List::evall_last);
+    set_instruction(l_leftshift, "<<", P_THREE, &List::evall_leftshift);
+    set_instruction(l_leftshiftequal, "<<=", P_THREE, &List::evall_leftshiftequal);
+    set_instruction(l_list, "list", P_ATLEASTONE, &List::evall_list);
+    set_instruction(l_load, "load", P_TWO, &List::evall_load);
+    set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock);
+    set_instruction(l_loop, "loop", P_ATLEASTFOUR, &List::evall_loop);
+    set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE, &List::evall_loopcount);
+    set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower);
+    set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal);
+    set_instruction(l_mapping, "#mapping", P_THREE, &List::evall_mapping);
+    set_instruction(l_max, "max", P_ATLEASTTHREE, &List::evall_max);
+    set_instruction(l_maybe, "maybe", P_ATLEASTTWO, &List::evall_maybe);
+    set_instruction(l_min, "min", P_ATLEASTTHREE, &List::evall_min);
+    set_instruction(l_minus, "-", P_ATLEASTTHREE, &List::evall_minus);
+    set_instruction(l_minusequal, "-=", P_ATLEASTTHREE, &List::evall_minusequal);
+    set_instruction(l_mod, "%", P_ATLEASTTHREE, &List::evall_mod);
+    set_instruction(l_modequal, "%=", P_ATLEASTTHREE, &List::evall_modequal);
+    set_instruction(l_multiply, "*", P_ATLEASTTHREE, &List::evall_multiply);
+    set_instruction(l_multiplyequal, "*=", P_ATLEASTTHREE, &List::evall_multiplyequal);
+    set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE, &List::evall_ncheck);
+    set_instruction(l_neq, "neq", P_ATLEASTTHREE, &List::evall_neq);
+    set_instruction(l_not, "not", P_TWO, &List::evall_not);
+    set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp);
+    set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp);
+    set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or);
+    set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe);
+    set_instruction(l_plus, "+", P_ATLEASTTHREE, &List::evall_plus);
+    set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
+    set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop);
+    set_instruction(l_power, "^^", P_THREE, &List::evall_power);
+    set_instruction(l_powerequal, "^^=", P_THREE, &List::evall_powerequal);
+    set_instruction(l_prettify, "prettify", P_TWO, &List::evall_prettify);
+    set_instruction(l_print, "print", P_ATLEASTONE, &List::evall_print);
+    set_instruction(l_printerr, "printerr", P_ATLEASTONE, &List::evall_printerr);
+    set_instruction(l_printerrln, "printerrln", P_ATLEASTONE, &List::evall_printerrln);
+    set_instruction(l_println, "println", P_ATLEASTONE, &List::evall_println);
+    set_instruction(l_push, "push", P_THREE, &List::evall_push);
+    set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
+    set_instruction(l_range, "range", P_FOUR, &List::evall_range);
+    set_instruction(l_return, "return", P_TWO | P_THREE, &List::evall_return);
+    set_instruction(l_reverse, "reverse", P_TWO, &List::evall_reverse);
+    set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch);
+    set_instruction(l_rightshift, ">>", P_THREE, &List::evall_rightshift);
+    set_instruction(l_rightshiftequal, ">>=", P_THREE, &List::evall_rightshiftequal);
+    set_instruction(l_search, "find", P_THREE|P_FOUR, &List::evall_search);
+    set_instruction(l_searchall, "findall", P_THREE|P_FOUR, &List::evall_searchall);
+    set_instruction(l_select, "select", P_ATLEASTTWO, &List::evall_select);
+    set_instruction(l_self, "self", P_ATLEASTONE, &List::eval_call_function);
+    set_instruction(l_set_max_stack_size, "_max_stack_size", P_ONE | P_TWO, &List::evall_set_max_stack_size);
+    set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
+    set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
+    set_instruction(l_size, "size", P_TWO, &List::evall_size);
+    set_instruction(l_sleep, "sleep", P_TWO, &List::evall_sleep);
+    set_instruction(l_sort, "sort", P_THREE, &List::evall_sort);
+    set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp);
+    set_instruction(l_threadclear, "threadclear", P_ONE | P_TWO, &List::evall_threadclear);
+    set_instruction(l_threadretrieve, "threadretrieve", P_ONE | P_TWO, &List::evall_threadretrieve);
+    set_instruction(l_threadstore, "threadstore", P_THREE, &List::evall_threadstore);
+    set_instruction(l_throw, "throw", P_TWO, &List::evall_throw);
+    set_instruction(l_trace, "trace", P_ONE | P_TWO, &List::evall_trace);
+    set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger);
+    set_instruction(l_type, "type", P_TWO, &List::evall_type);
+    set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
+    set_instruction(l_use, "use", P_TWO, &List::evall_use);
+    set_instruction(l_values, "values", P_TWO, &List::evall_values);
+    set_instruction(l_wait, "wait", P_ONE, &List::evall_wait);
+    set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton);
+    set_instruction(l_while, "while", P_ATLEASTTHREE, &List::evall_while);
+    set_instruction(l_xor, "xor", P_THREE, &List::evall_xor);
+    set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop);
+    set_instruction(l_zip, "zip", P_ATLEASTTHREE, &List::evall_zip);
+    set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith);
     
+    // High level functions
+    set_instruction(l_cycle, "cycle", P_TWO, &List::evall_compose);
+    set_instruction(l_drop, "drop", P_THREE, &List::evall_compose);
+    set_instruction(l_dropwhile, "dropwhile", P_THREE, &List::evall_compose);
+    set_instruction(l_filter, "filter", P_THREE, &List::evall_compose);
+    set_instruction(l_foldl, "foldl", P_FOUR, &List::evall_compose);
+    set_instruction(l_foldl1, "foldl1", P_THREE, &List::evall_compose);
+    set_instruction(l_foldr, "foldr", P_FOUR, &List::evall_compose);
+    set_instruction(l_foldr1, "foldr1", P_THREE, &List::evall_compose);
+    set_instruction(l_map, "map", P_THREE, &List::evall_compose);
+    set_instruction(l_repeat, "repeat", P_TWO, &List::evall_compose);
+    set_instruction(l_replicate, "replicate", P_TWO, &List::evall_compose);
+    set_instruction(l_scanl, "scanl", P_FOUR, &List::evall_compose);
+    set_instruction(l_scanl1, "scanl1", P_THREE, &List::evall_compose);
+    set_instruction(l_scanr, "scanr", P_FOUR, &List::evall_compose);
+    set_instruction(l_scanr1, "scanr1", P_THREE, &List::evall_compose);
+    set_instruction(l_take, "take", P_THREE, &List::evall_compose);
+    set_instruction(l_takewhile, "takewhile", P_THREE, &List::evall_compose);
+
     //This 
     operators[l_bitand] = true;
     operators[l_bitor] = true;
@@ -1154,19 +1155,9 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 if (e->size() >= 1) {
                     //these are specialized calls, for which we do not need to go through List::eval
                     short lab = e->index(0)->type;
-                    if (lab == t_atom || lab == l_self) {
-                        e = regarbaging(e, new Listcallfunction((Listincode*)e));
-                    }
-                    else {
-                        if (lab == l_break) {
-                            removefromgarbage(e);
-                            e = &delegation->_BREAKEVAL;
-                        }
-                        else {
-                            if (e->size() >= 3 && lab >= l_plus && lab <= l_modequal) {
-                                e = regarbaging(e, new Listoperation((Listincode*)e));
-                            }
-                        }
+                    if (lab == l_break) {
+                        removefromgarbage(e);
+                        e = &delegation->_BREAKEVAL;
                     }
                 }
                 
@@ -1333,16 +1324,7 @@ List* LispE::create_instruction(short label,
                                 Element* eeeee,
                                 Element* eeeeee,
                                 Element* eeeeeee) {
-    List* l;
-    
-    if (label >= l_plus && label <= l_modequal)
-        l = new Listoperation;
-    else {
-        if (label == l_compose)
-            l = new Listcompose;
-        else
-            l = new List;
-    }
+    List* l = new List;
     
     garbaging(l);
     l->append(provideAtom(label));
@@ -1662,6 +1644,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 

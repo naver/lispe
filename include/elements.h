@@ -1700,6 +1700,140 @@ public:
             a->release();
         liste.clear();
     }    
+    Element* evall_quote(LispE* lisp);
+    Element* evall_return(LispE* lisp);
+    Element* evall_break(LispE* lisp);
+    Element* evall_while(LispE* lisp);
+    Element* evall_set_max_stack_size(LispE* lisp);
+    Element* evall_plus(LispE* lisp);
+    Element* evall_minus(LispE* lisp);
+    Element* evall_multiply(LispE* lisp);
+    Element* evall_power(LispE* lisp);
+    Element* evall_leftshift(LispE* lisp);
+    Element* evall_rightshift(LispE* lisp);
+    Element* evall_divide(LispE* lisp);
+    Element* evall_mod(LispE* lisp);
+    Element* evall_bitand(LispE* lisp);
+    Element* evall_bitor(LispE* lisp);
+    Element* evall_bitxor(LispE* lisp);
+    Element* evall_plusequal(LispE* lisp);
+    Element* evall_minusequal(LispE* lisp);
+    Element* evall_multiplyequal(LispE* lisp);
+    Element* evall_powerequal(LispE* lisp);
+    Element* evall_leftshiftequal(LispE* lisp);
+    Element* evall_rightshiftequal(LispE* lisp);
+    Element* evall_bitandequal(LispE* lisp);
+    Element* evall_bitorequal(LispE* lisp);
+    Element* evall_bitxorequal(LispE* lisp);
+    Element* evall_divideequal(LispE* lisp);
+    Element* evall_modequal(LispE* lisp);
+    Element* evall_eq(LispE* lisp);
+    Element* evall_neq(LispE* lisp);
+    Element* evall_throw(LispE* lisp);
+    Element* evall_catch(LispE* lisp);
+    Element* evall_maybe(LispE* lisp);
+    Element* evall_equal(LispE* lisp);
+    Element* evall_different(LispE* lisp);
+    Element* evall_lower(LispE* lisp);
+    Element* evall_greater(LispE* lisp);
+    Element* evall_lowerorequal(LispE* lisp);
+    Element* evall_greaterorequal(LispE* lisp);
+    Element* evall_max(LispE* lisp);
+    Element* evall_min(LispE* lisp);
+    Element* evall_atomp(LispE* lisp);
+    Element* evall_numberp(LispE* lisp);
+    Element* evall_stringp(LispE* lisp);
+    Element* evall_consp(LispE* lisp);
+    Element* evall_zerop(LispE* lisp);
+    Element* evall_nullp(LispE* lisp);
+    Element* evall_data(LispE* lisp);
+    Element* evall_flip(LispE* lisp);
+    Element* evall_select(LispE* lisp);
+    Element* evall_compose(LispE* lisp);
+    Element* evall_loop(LispE* lisp);
+    Element* evall_loopcount(LispE* lisp);
+    Element* evall_or(LispE* lisp);
+    Element* evall_and(LispE* lisp);
+    Element* evall_xor(LispE* lisp);
+    Element* evall_ncheck(LispE* lisp);
+    Element* evall_check(LispE* lisp);
+    Element* evall_ife(LispE* lisp);
+    Element* evall_block(LispE* lisp);
+    Element* evall_converttoatom(LispE* lisp);
+    Element* evall_converttointeger(LispE* lisp);
+    Element* evall_converttonumber(LispE* lisp);
+    Element* evall_converttostring(LispE* lisp);
+    Element* evall_list(LispE* lisp);
+    Element* evall_reverse(LispE* lisp);
+    Element* evall_cons(LispE* lisp);
+    Element* evall_trace(LispE* lisp);
+    Element* evall_key(LispE* lisp);
+    Element* evall_keyn(LispE* lisp);
+    Element* evall_last(LispE* lisp);
+    Element* evall_push(LispE* lisp);
+    Element* evall_insert(LispE* lisp);
+    Element* evall_unique(LispE* lisp);
+    Element* evall_pop(LispE* lisp);
+    Element* evall_keys(LispE* lisp);
+    Element* evall_values(LispE* lisp);
+    Element* evall_cond(LispE* lisp);
+    Element* evall_not(LispE* lisp);
+    Element* evall_if(LispE* lisp);
+    Element* evall_car(LispE* lisp);
+    Element* evall_cdr(LispE* lisp);
+    Element* evall_cadr(LispE* lisp);
+    Element* evall_label(LispE* lisp);
+    Element* evall_setq(LispE* lisp);
+    Element* evall_setg(LispE* lisp);
+    Element* evall_deflib(LispE* lisp);
+    Element* evall_defmacro(LispE* lisp);
+    Element* evall_sleep(LispE* lisp);
+    Element* evall_wait(LispE* lisp);
+    Element* evall_defpat(LispE* lisp);
+    Element* evall_defun(LispE* lisp);
+    Element* evall_lambda(LispE* lisp);
+    Element* eval_call_function(LispE* lisp);
+    Element* evalt_list(LispE* lisp);
+    Element* evall_lock(LispE* lisp);
+    Element* evall_waiton(LispE* lisp);
+    Element* evall_trigger(LispE* lisp);
+    Element* evall_threadstore(LispE* lisp);
+    Element* evall_threadclear(LispE* lisp);
+    Element* evall_threadretrieve(LispE* lisp);
+    Element* evall_print(LispE* lisp);
+    Element* evall_println(LispE* lisp);
+    Element* evall_printerr(LispE* lisp);
+    Element* evall_printerrln(LispE* lisp);
+    Element* evall_prettify(LispE* lisp);
+    Element* evall_atoms(LispE* lisp);
+    Element* evall_atomise(LispE* lisp);
+    Element* evall_join(LispE* lisp);
+    Element* evall_eval(LispE* lisp);
+    Element* evall_type(LispE* lisp);
+    Element* evall_load(LispE* lisp);
+    Element* evall_input(LispE* lisp);
+    Element* evall_getchar(LispE* lisp);
+    Element* evall_pipe(LispE* lisp);
+    Element* evall_fread(LispE* lisp);
+    Element* evall_fappend(LispE* lisp);
+    Element* evall_fwrite(LispE* lisp);
+    Element* evall_size(LispE* lisp);
+    Element* evall_use(LispE* lisp);
+    Element* evall_index(LispE* lisp);
+    Element* evall_extract(LispE* lisp);
+    Element* evall_in(LispE* lisp);
+    Element* evall_search(LispE* lisp);
+    Element* evall_searchall(LispE* lisp);
+    Element* evall_revertsearch(LispE* lisp);
+    Element* evall_irange(LispE* lisp);
+    Element* evall_range(LispE* lisp);
+    Element* evall_mapping(LispE* lisp);
+    Element* evall_checking(LispE* lisp);
+    Element* evall_folding(LispE* lisp);
+    Element* evall_apply(LispE* lisp);
+    Element* evall_sort(LispE* lisp);
+    Element* evall_zip(LispE* lisp);
+    Element* evall_zipwith(LispE* lisp);
 
 };
 
@@ -1724,14 +1858,6 @@ public:
     Element* eval(LispE*);
 };
 
-class Listcompose : public List {
-public:
-    
-    Listcompose() : List() {}
-
-    Element* eval(LispE* lisp);
-};
-
 class Listlambda : public List {
 public:
 
@@ -1740,39 +1866,6 @@ public:
     Element* eval(LispE* lisp) {
         return evalfunction(liste[0]->eval(lisp), lisp);
     }
-};
-
-class Listoperation : public Listincode {
-public:
-    
-    Listoperation(Listincode* l) : Listincode(l->line, l->fileidx) {
-        liste = l->liste;
-    }
-    
-    Listoperation() : Listincode() {}
-
-    Element* eval(LispE* lisp);
-};
-
-class Listquote : public Listincode {
-public:
-    
-    Listquote(long l, long f) : Listincode(l, f) {}
-
-    Element* eval(LispE* lisp) {
-        if (liste.size() != 2)
-            throw new Error("Error: Wrong number of arguments for 'quote'");
-        return liste[1];
-    }
-};
-
-class Listcallfunction : public Listincode {
-public:
-    Listcallfunction(Listincode* l) : Listincode(l->line, l->fileidx) {
-        liste = l->liste;
-    }
-
-    Element* eval(LispE* lisp);
 };
 
 class Pair : public List {
