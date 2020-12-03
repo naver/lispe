@@ -263,6 +263,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith);
     
     // High level functions
+    set_instruction(l_composenot, "!", P_ATLEASTTHREE, &List::evall_compose);
     set_instruction(l_cycle, "cycle", P_TWO, &List::evall_compose);
     set_instruction(l_drop, "drop", P_THREE, &List::evall_compose);
     set_instruction(l_dropwhile, "dropwhile", P_THREE, &List::evall_compose);
