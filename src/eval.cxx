@@ -1679,6 +1679,7 @@ Element* List::evall_check(LispE* lisp) {
             return null_;
 
         second_element = null_;
+        liste.back()->setterminal(terminal);
         for (long i = 2; i < listsize && second_element->type != l_return; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
@@ -1701,8 +1702,6 @@ Element* List::evall_checking(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
-
-    lisp->display_trace(this);
 
     try {
         first_element = liste[1]->eval(lisp);
@@ -2557,15 +2556,18 @@ Element* List::evall_ife(LispE* lisp) {
     char test = true;
 
     lisp->display_trace(this);
-
+    
     try {
         first_element = liste[1]->eval(lisp);
         test = first_element->Boolean();
         first_element->release();
-        if (test)
+        if (test) {
+            liste[2]->setterminal(terminal);
             return liste[2]->eval(lisp);
+        }
 
         second_element = null_;
+        liste.back()->setterminal(terminal);
         for (long i = 3; i < listsize && second_element->type != l_return; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
@@ -2639,7 +2641,7 @@ Element* List::evall_index(LispE* lisp) {
             return third_element;
         }
         second_element = liste[2]->eval(lisp);
-        third_element = first_element->value_on_index(lisp, second_element);
+        third_element = first_element->protected_index(lisp, second_element);
         second_element->release();
         first_element->release();
         return third_element;
@@ -2772,14 +2774,14 @@ Element* List::evall_key(LispE* lisp) {
             if (first_element->type == t_dictionary) {
                 wstring a_key;
                 evalAsString(2, lisp, a_key);
-                second_element = first_element->value_on_index(a_key, lisp);
+                second_element = first_element->protected_index(lisp, a_key);
                 first_element->release();
                 return second_element;
             }
             if (first_element->type == t_dictionaryn) {
                 double a_key;
                 evalAsNumber(2, lisp, a_key);
-                second_element = first_element->value_on_index(a_key, lisp);
+                second_element = first_element->protected_index(lisp, a_key);
                 first_element->release();
                 return second_element;
             }
@@ -2844,7 +2846,7 @@ Element* List::evall_keyn(LispE* lisp) {
             }
             double a_key;
             evalAsNumber(2, lisp, a_key);
-            second_element = first_element->value_on_index(a_key, lisp);
+            second_element = first_element->protected_index(lisp, a_key);
             first_element->release();
             return second_element;
         }
@@ -3240,8 +3242,6 @@ Element* List::evall_mapping(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
 
-    lisp->display_trace(this);
-
     try {
         //abus de langage: I agree
         //We detect the type of the instruction on the fly
@@ -3275,8 +3275,6 @@ Element* List::evall_max(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
-
-    lisp->display_trace(this);
 
     try {
         if (listsize == 2) {
@@ -3357,8 +3355,6 @@ Element* List::evall_min(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
-
-    lisp->display_trace(this);
 
     try {
         if (listsize == 2) {
@@ -3600,10 +3596,13 @@ Element* List::evall_ncheck(LispE* lisp) {
         first_element = liste[1]->eval(lisp);
         test = first_element->Boolean();
         first_element->release();
-        if (!test)
+        if (!test) {
+            liste[2]->setterminal(terminal);
             return liste[2]->eval(lisp);
+        }
 
         second_element = null_;
+        liste.back()->setterminal(terminal);
         for (long i = 3; i < listsize && second_element->type != l_return; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
@@ -3835,50 +3834,13 @@ Element* List::evall_pop(LispE* lisp) {
 
     try {
         first_element = liste[1]->eval(lisp);
-        if (first_element->type == t_dictionary) {
-            second_element = liste[2]->eval(lisp);
-            wstring keyvalue = second_element->asString(lisp);
-            second_element->release();
-            if (first_element->remove(keyvalue))
-                return first_element;
-            first_element->release();
-            return null_;
-        }
-        if (first_element->type == t_dictionaryn) {
-            second_element = liste[2]->eval(lisp);
-            double keyvalue = second_element->asNumber();
-            second_element->release();
-            if (first_element->remove(keyvalue))
-                return first_element;
-            first_element->release();
-            return null_;
-        }
-
-        if (first_element->isList()) {
-            long keyvalue;
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                keyvalue = second_element->asInteger();
-                second_element->release();
-            }
-            else
-                keyvalue = first_element->size();
-            if (first_element->remove(keyvalue))
-                return first_element;
-            first_element->release();
-            return emptylist_;
-        }
-
         //If it is a string, we return a copy, we do not modify the string.
         //itself
-        if (first_element->type == t_string) {
+        if (first_element->isString()) {
             long keyvalue;
             wstring strvalue = first_element->asString(lisp);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                keyvalue = second_element->asInteger();
-                second_element->release();
-            }
+            if (listsize == 3)
+                evalAsInteger(2, lisp, keyvalue);
             else {
                 if (!strvalue.size())
                     return emptystring_;
@@ -3892,8 +3854,19 @@ Element* List::evall_pop(LispE* lisp) {
             first_element->release();
             return lisp->provideString(strvalue);
         }
+
+        if (listsize == 3) {
+            second_element = liste[2]->eval(lisp);
+            if (first_element->remove(lisp, second_element))
+                return first_element;
+        }
+        else {
+            if (first_element->removelast())
+                return first_element;
+        }
+        
         first_element->release();
-        throw new Error(L"Error: the first argument must be a dictionary");
+        return null_;
     }
     catch (Error* err) {
         first_element->release();

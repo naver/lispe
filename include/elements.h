@@ -35,7 +35,9 @@ typedef enum {
     //Recording in the stack or in memory
     l_sleep, l_wait,
     l_lambda, l_defun, l_dethread, l_deflib, l_defpat, l_defmacro, l_lib,
-    l_label, l_setq, l_setg, l_block, l_if, l_ife,  l_ncheck, l_check, l_catch, l_throw, l_maybe, l_terminal,
+    l_label, l_setq, l_setg, l_block,
+    l_if, l_ife,  l_ncheck, l_check, l_cond, 
+    l_catch, l_throw, l_maybe, l_terminal,
     
     //Check values
     l_atomp, l_numberp, l_consp, l_zerop, l_nullp, l_stringp, l_trace, l_flip, l_select,
@@ -52,7 +54,7 @@ typedef enum {
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
     l_size, l_use, l_index, l_extract, l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last,
     l_fread, l_fwrite, l_fappend,
-    l_and, l_or, l_xor, l_not, l_cond, l_eq, l_neq,
+    l_and, l_or, l_xor, l_not, l_eq, l_neq,
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_push, l_insert, l_unique,
@@ -672,14 +674,21 @@ public:
         return this;
     }
 
-    virtual Element* protected_index(LispE*,long i);
-    
+    virtual Element* protected_index(LispE*, Element* k);
+    virtual Element* protected_index(LispE*, double k);
+    virtual Element* protected_index(LispE*, long i);
+    virtual Element* protected_index(LispE*, wstring&);
+
 
     virtual Element* checkkey(LispE*, Element* e);
     
     virtual void recording(string&, Element*) {}
     virtual void recording(wstring&, Element*) {}
     virtual void recording(double, Element*) {}
+    
+    virtual bool remove(LispE*, Element*) {
+        return false;
+    }
     
     virtual bool remove(double) {
         return false;
@@ -1238,6 +1247,7 @@ public:
     
     Element* value_on_index(LispE*, long i);
     Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
     Element* reverse(LispE*, bool duplique = true);
     Element* last_element(LispE* lisp);
     
@@ -1524,6 +1534,7 @@ public:
     
     Element* value_on_index(LispE*, long i);
     Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
     
     void release() {
         if (status == s_destructible) {
@@ -1657,6 +1668,11 @@ public:
         return true;
     }
     
+    bool remove(LispE*, Element* e) {
+        long d =  e->asInteger();
+        return remove(d);
+    }
+
     bool remove(long d) {
         if (!liste.size())
             return false;
@@ -2250,8 +2266,11 @@ public:
         return (dictionary.size());
     }
     
+    Element* protected_index(LispE*, wstring&);
+
     Element* value_on_index(wstring& k, LispE* l);
     Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
     
     void recording(string& c, Element* e) {
         wstring k;
@@ -2289,6 +2308,12 @@ public:
         return liste;
     }
     
+
+    bool remove(LispE* lisp, Element* e) {
+        wstring d =  e->asString(lisp);
+        return remove(d);
+    }
+
     bool remove(wstring& k) {
         try {
             Element* e = dictionary.at(k);
@@ -2527,8 +2552,11 @@ public:
         return (dictionary.size());
     }
     
+    Element* protected_index(LispE*, double k);
+
     Element* value_on_index(double k, LispE* l);
     Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
     
     void recording(double  k, Element* e) {
         try {
@@ -2552,6 +2580,11 @@ public:
         return liste;
     }
     
+    bool remove(LispE*, Element* e) {
+        double d =  e->asNumber();
+        return remove(d);
+    }
+
     bool remove(double d) {
         try {
             Element* e = dictionary.at(d);

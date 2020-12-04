@@ -753,7 +753,19 @@ Element* Dictionary_n::reverse(LispE* lisp, bool duplique) {
     return dico;
 }
 //------------------------------------------------------------------------------------------
+Element* Element::protected_index(LispE* lisp,Element*) {
+    return null_;
+}
+
 Element* Element::protected_index(LispE* lisp,long i) {
+    return null_;
+}
+
+Element* Element::protected_index(LispE* lisp, wstring&) {
+    return null_;
+}
+
+Element* Element::protected_index(LispE* lisp, double k) {
     return null_;
 }
 
@@ -818,6 +830,15 @@ Element* Dictionary::value_on_index(wstring& k, LispE* lisp) {
     }
 }
 
+Element* Dictionary::protected_index(LispE* lisp, wstring& k) {
+    try {
+        return dictionary.at(k);
+    }
+    catch (const std::out_of_range& oor) {
+        return null_;
+    }
+}
+
 //------------------------------------------------------------------------------------------
 
 Element* Element::value_on_index(double k, LispE* lisp) {
@@ -832,6 +853,16 @@ Element* Dictionary_n::value_on_index(double k, LispE* lisp) {
         return null_;
     }
 }
+
+Element* Dictionary_n::protected_index(LispE* lisp, double k) {
+    try {
+        return dictionary.at(k);
+    }
+    catch (const std::out_of_range& oor) {
+        return null_;
+    }
+}
+
 //------------------------------------------------------------------------------------------
 
 Element* Element::value_on_index(LispE* lisp, Element* i) {
@@ -881,6 +912,56 @@ Element* Dictionary_n::value_on_index(LispE* lisp, Element* idx) {
     
     try {
         return dictionary.at(idx->asNumber())->copying(false);
+    }
+    catch (const std::out_of_range& oor) {
+        return null_;
+    }
+}
+//------------------------------------------------------------------------------------------
+
+Element* List::protected_index(LispE* lisp, Element* idx) {
+    if (!idx->isNumber())
+        throw new Error("Error: Wrong index type");
+    
+    long i = idx->asInteger();
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return liste[i];
+    
+    return null_;
+}
+
+Element* String::protected_index(LispE* lisp, Element* idx) {
+    if (!idx->isNumber())
+        throw new Error("Error: Wrong index type");
+    
+    long i = idx->asInteger();
+    if (i < 0)
+        i = content.size() + i;
+    
+    if (i >= 0 && i < content.size())
+        return lisp->provideString(content[i]);
+    return null_;
+}
+
+Element* Dictionary::protected_index(LispE* lisp, Element* idx) {
+    wstring k = idx->asString(lisp);
+    try {
+        return dictionary.at(k);
+    }
+    catch (const std::out_of_range& oor) {
+        return null_;
+    }
+}
+
+Element* Dictionary_n::protected_index(LispE* lisp, Element* idx) {
+    if (!idx->isNumber())
+        throw new Error("Error: Wrong index type");
+    
+    try {
+        return dictionary.at(idx->asNumber());
     }
     catch (const std::out_of_range& oor) {
         return null_;

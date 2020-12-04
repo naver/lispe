@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.3.11.54";
+static std::string version = "1.2020.12.4.11.4";
 string LispVersion() {
     return version;
 }
@@ -1146,7 +1146,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                 //we detect if and cond at the top level
                                 //we use this information to handle terminal recursion on the fly
                                 //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
-                                if (lab == l_if || lab == l_cond)
+                                if (lab >= l_if && lab <= l_cond)
                                     e->setterminal();
                             }
                         }
@@ -1645,6 +1645,9 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
 
 
 
