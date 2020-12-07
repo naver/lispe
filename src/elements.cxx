@@ -10,7 +10,6 @@
 //
 
 #include "lispe.h"
-#include "elements.h"
 #include "tools.h"
 #include <math.h>
 #include <algorithm>
@@ -456,13 +455,9 @@ Element* List::insert(LispE* lisp, Element* e, long idx) {
     if (idx < 0)
         throw new Error("Error: Wrong index in 'insert'");
  
+    e = e->copying(false);
     List* l = (List*)duplicate_constant_container();
-    if (idx >= liste.size())
-        l->liste.push_back(e);
-    else
-        l->liste.insert(l->liste.begin()+idx, e);
-        
-    e->incrementstatus(status+1, false);
+    l->liste.insert(idx, e);        
     return l;
 }
 
@@ -489,6 +484,7 @@ Element* List::unique(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------------
+
 Element* Element::thekeys(LispE* lisp) {
     return emptylist_;
 }
@@ -517,6 +513,22 @@ Element* Dictionary_n::thekeys(LispE* lisp) {
 
 Element* Element::thevalues(LispE* lisp) {
     return emptylist_;
+}
+
+Element* Dictionary::thevalues(LispE* lisp) {
+    List* liste = new List;
+    for (auto& a: dictionary) {
+        liste->append(a.second->copying(false));
+    }
+    return liste;
+}
+
+Element* Dictionary_n::thevalues(LispE* lisp) {
+    List* liste = new List;
+    for (auto& a: dictionary) {
+        liste->append(a.second->copying(false));
+    }
+    return liste;
 }
 
 //------------------------------------------------------------------------------------------
@@ -698,8 +710,8 @@ Element* String::reverse(LispE* lisp, bool duplique) {
 }
 
 Element* List::reverse(LispE* lisp, bool duplique) {
-    if (liste.size() == 0)
-        return emptylist_;
+    if (liste.size() <= 1)
+        return this;
     
     if (duplique) {
         List* l = new List;
@@ -708,11 +720,7 @@ Element* List::reverse(LispE* lisp, bool duplique) {
         return l;
     }
 
-    vector<Element*> l;
-    for (long i = liste.size()-1; i >= 0; i--)
-        l.push_back(liste[i]);
-
-    liste = l;
+    liste.reverse();
     return this;
 }
 
@@ -795,7 +803,7 @@ Element* String::last_element(LispE* lisp) {
 Element* List::last_element(LispE* lisp) {
     if (!liste.size())
         return null_;
-    return liste.back()->copying(false);
+    return liste.back();
 }
 
 //------------------------------------------------------------------------------------------
@@ -976,10 +984,10 @@ Element* Element::join_in_list(LispE* lisp, wstring& sep) {
 Element* List::join_in_list(LispE* lisp, wstring& sep) {
     wstring str;
     wstring beg;
-    for (auto& a: liste) {
+    for (long i = 0; i < liste.size(); i++) {
         str += beg;
         beg = sep;
-        str += a->asString(lisp);
+        str += liste[i]->asString(lisp);
     }
     return lisp->provideString(str);
 }
@@ -1121,7 +1129,7 @@ Element* Maybe::equal(LispE* lisp, Element* e) {
 }
 
 Element* List::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->isList() && e->size() == 0 && liste.size() == 0)];
+    return booleans_[e->isList() && liste.equal(((List*)e)->liste)];
 }
 
 Element* Dictionary::equal(LispE* lisp, Element* e) {
@@ -1613,7 +1621,21 @@ Element* String::extraction(LispE* lisp, List* liste) {
     return lisp->provideString(remplace);
 }
 //------------------------------------------------------------------------------------------
-
+Element* List::duplicate_constant_container(bool pair) {
+    if (status == s_constant) {
+        List* l;
+        if (pair)
+            l =  new Pair();
+        else
+            l = new List();
+        for (long i = 0; i < liste.size(); i++) {
+            l->append(liste[i]->copying(false));
+        }
+        return l;
+    }
+    return this;
+}
+//------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
     throw new Error("Error: You can only apply 'car/cdr' to a list");
@@ -1643,11 +1665,15 @@ Element* String::cdr(LispE* lisp) {
 Element* Cadr::cadr(LispE* lisp, Element* e) {
     long pos = 0;
     long sz = e->size();
+    bool pair = (e->type == t_pair);
+    
     for (long i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
             e = e->protected_index(lisp, pos);
             if (e == null_)
                 throw new Error("Error: You can only apply 'car/cdr' to a list");
+         
+            pair = (e->type == t_pair);
             sz = e->size();
             pos = 0;
         }
@@ -1661,32 +1687,30 @@ Element* Cadr::cadr(LispE* lisp, Element* e) {
     if (pos) {
         if (pos == sz)
             return null_;
-        
-        Element* res = new List;
-        for (;pos < sz; pos++) {
-            res->append(e->value_on_index(lisp, pos));
+        if (pair) {
+            //The last one...
+            if (pos == sz - 1)
+                return e->index(pos);
+            return new Pair((Pair*)e, pos);
         }
-        
-        return res;
+        else
+            return new List((List*)e, pos);
     }
-    return e->copying(false);
+
+    return e;
 }
 
 
 Element* List::car(LispE* lisp) {
     if (liste.size() == 0)
         return null_;
-    return liste[0]->copying(false);
+    return liste[0];
 }
 
 Element* List::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
-    List* l = new List;
-    long taille = liste.size();
-    for (long i = 1; i < taille; i++)
-        l->append(liste[i]->copying(false));
-    return l;
+    return new List(this, 1);
 }
 
 Element* Pair::cdr(LispE* lisp) {
@@ -1695,12 +1719,9 @@ Element* Pair::cdr(LispE* lisp) {
         return null_;
     
     if (sz == 2)
-        return liste.back()->copying(false);
-    
-    Pair* lp = new Pair();
-    for (long i = 1; i < sz; i++)
-        lp->append(liste[i]->copying(false));
-    return lp;
+        return liste.back();
+
+    return new Pair(this, 1);
 }
 
 Element* Infiniterange::car(LispE* lisp) {

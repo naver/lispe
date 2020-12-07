@@ -14,6 +14,7 @@
 
 #include "segmentation.h"
 #include "elements.h"
+#include "listes.h"
 #include "tools.h"
 #include "stack.h"
 #include "delegation.h"

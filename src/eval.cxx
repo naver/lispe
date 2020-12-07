@@ -642,12 +642,12 @@ long List::argumentsize(LispE* lisp, long sz) {
 }
 
 void List::sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element* data, Element* parameters, bool threading) {
-    List temporaryargs;
+    vector<Element*> temporaryargs;
     long i;
     bool pushed = false;
     try {
         for (i = 1; i <= parameters->size(); i++)
-            temporaryargs.liste.push_back(liste[i]->eval(lisp));
+            temporaryargs.push_back(liste[i]->eval(lisp));
         //We then push a new stack element...
         //We cannot push it before, or the system will not be able to resolve
         //the argument variables...
@@ -661,13 +661,13 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element*
             label = parameters->index(i)->label();
             if (label == v_null) {
                 while (i < parameters->size()) {
-                    temporaryargs.liste[i++]->release();
+                    temporaryargs[i++]->release();
                 }
                 thread_lisp->pop();
                 throw new Error(L"Error: Wrong parameter description");
             }
 
-            data = temporaryargs.liste[i];
+            data = temporaryargs[i];
 
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
@@ -680,8 +680,8 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element*
         }
     }
     catch (Error* err) {
-        while (i < temporaryargs.liste.size()) {
-            temporaryargs.liste[i++]->release();
+        while (i < temporaryargs.size()) {
+            temporaryargs[i++]->release();
         }
         if (pushed)
             thread_lisp->pop();
@@ -712,15 +712,15 @@ void List::sameSizeTerminalArguments(LispE* lisp, Element* parameters) {
 void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element* data, Element* parameters,
                                    long nbarguments, long defaultarguments, bool threading) {
     long i;
-    List temporaryargs;
+    vector<Element*> temporaryargs;
     bool pushed = false;
     try {
         //The stack is increased by one element to keep track of the calls.
         for (i = 0; i < nbarguments; i++) {
-            temporaryargs.liste.push_back(liste[i+1]->eval(lisp));
+            temporaryargs.push_back(liste[i+1]->eval(lisp));
         }
         for (;i < parameters->size(); i++) {
-            temporaryargs.liste.push_back(NULL);
+            temporaryargs.push_back(NULL);
         }
         
         //We then push a new stack element...
@@ -734,7 +734,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
         short label;
         Element* element;
         for (i = 0; i < parameters->size(); i++) {
-            data = temporaryargs.liste[i];
+            data = temporaryargs[i];
             element = parameters->index(i);
             
             if (element->isList()) {
@@ -751,7 +751,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
                             l->append(data);
                             i++;
                             while (i < nbarguments) {
-                                l->append(temporaryargs.liste[i]);
+                                l->append(temporaryargs[i]);
                                 i++;
                             }
                         }
@@ -760,7 +760,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
                     }
                     else {
                         while (i < nbarguments) {
-                            temporaryargs.liste[i++]->release();
+                            temporaryargs[i++]->release();
                         }
                         thread_lisp->pop();
                         throw new Error(L"Error: Wrong parameter description");
@@ -770,7 +770,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
                     label = element->size();
                     if (!label) {
                         while (i < nbarguments) {
-                            temporaryargs.liste[i++]->release();
+                            temporaryargs[i++]->release();
                         }
                         thread_lisp->pop();
                         throw new Error(L"Error: Wrong parameter description");
@@ -791,7 +791,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
             
             if (label == v_null) {
                 while (i < nbarguments) {
-                    temporaryargs.liste[i++]->release();
+                    temporaryargs[i++]->release();
                 }
                 thread_lisp->pop();
                 throw new Error(L"Error: Wrong parameter description");
@@ -811,7 +811,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
     catch (Error* err) {
         long mn = (temporaryargs.size() < nbarguments) ? temporaryargs.size() : nbarguments;
         while (i < mn) {
-            temporaryargs.liste[i++]->release();
+            temporaryargs[i++]->release();
         }
         if (pushed)
             thread_lisp->pop();
@@ -1276,19 +1276,19 @@ Element* List::evall_apply(LispE* lisp) {
         if (second_element->status == s_constant) {
             List l;
             l.liste = ((List*)second_element)->liste;
-            l.liste.insert(l.liste.begin(), first_element);
+            l.liste.insert(0, first_element);
             third_element = l.eval(lisp);
         }
         else {
             //We insert this element in our list
             List* l = (List*)second_element;
-            l->liste.insert(l->liste.begin(), first_element);
+            l->liste.insert(0, first_element);
 
             third_element = l->eval(lisp);
 
             //We remove this first element
             if (l->status)
-                l->liste.erase(l->liste.begin());
+                l->liste.erase(0);
             else
                 l->release();
         }
@@ -1640,24 +1640,10 @@ Element* List::evall_catch(LispE* lisp) {
 Element* List::evall_cdr(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
 
     lisp->display_trace(this);
 
-    try {
-        second_element = liste[1]->eval(lisp);
-        first_element = second_element->cdr(lisp);
-        second_element->release();
-        return first_element;
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-
-    return null_;
+    return liste[1]->eval(lisp)->cdr(lisp);
 }
 
 
@@ -1823,9 +1809,11 @@ Element* List::evall_cons(LispE* lisp) {
     try {
         //merging an element into the next list
         first_element = liste[1]->eval(lisp);
+        if (first_element == emptylist_)
+            first_element = null_;
 
         second_element = liste[2]->eval(lisp);
-        if (second_element == null_) {
+        if (second_element == null_ || second_element == emptylist_) {
             third_element = new List();
             third_element->append(first_element);
             return third_element;
@@ -1843,8 +1831,9 @@ Element* List::evall_cons(LispE* lisp) {
         else
             third_element = new List();
         third_element->append(first_element);
-        for (long i = 0; i < second_element->size(); i++)
-        third_element->append(second_element->value_on_index(lisp, i));
+        for (long i = 0; i < second_element->size(); i++) {
+            third_element->append(second_element->value_on_index(lisp, i));
+        }
         second_element->release();
         return third_element;
     }
@@ -2620,7 +2609,7 @@ Element* List::evall_in(LispE* lisp) {
 }
 
 
-Element* List::evall_index(LispE* lisp) {
+Element* List::evall_at_index(LispE* lisp) {
     short listsize = liste.size();
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
@@ -3024,6 +3013,9 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
 
 Element* List::evall_list(LispE* lisp) {
     short listsize = liste.size();
+    if (listsize == 1)
+        return emptylist_;
+
     Element* first_element = liste[0];
     Element* second_element = null_;
 
@@ -3031,18 +3023,91 @@ Element* List::evall_list(LispE* lisp) {
 
     try {
         first_element = new List();
-        if (listsize == 1)
-            return first_element;
         second_element = emptylist_;
         for (long i = 1; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
-            first_element->append(second_element->copying());
+            first_element->append(second_element->copying(false));
         }
         return first_element;
     }
     catch (Error* err) {
         first_element->release();
         second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_nconc(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize == 1)
+        return emptylist_;
+
+    Element* first_element = null_;
+    Element* second_element = null_;
+    Element* last = null_;
+
+    lisp->display_trace(this);
+    long i, l;
+    bool pair = false;
+
+    try {
+        last =  liste.back()->eval(lisp);
+        pair = !last->isList();
+        second_element = liste[1]->eval(lisp);
+        if (second_element == emptylist_ || second_element == null_) {
+            if (pair) {
+                if (listsize == 3)
+                    return last;
+                first_element = new Pair();
+            }
+            else
+                first_element = new List();
+        }
+        else {
+            if (second_element->isList())
+                first_element = second_element->duplicate_constant_container(pair);
+            else
+                throw new Error("Error: first element is not a list");
+        }
+
+        second_element = emptylist_;
+        listsize--;
+        for (i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            if (second_element->isList()) {
+                for (l = 0; l < second_element->size(); l++) {
+                    first_element->append(second_element->value_on_index(lisp, l));
+                }
+                _releasing(second_element);
+            }
+            else {
+                std::wstringstream st;
+                if (i == 2)
+                    st << "Error: second argument is not a list";
+                else
+                    if (i == 3)
+                        st << "Error: third argument is not a list";
+                    else
+                        st << "Error: " << i << "th argument is not a list";
+                throw new Error(st.str());
+            }
+        }
+        if (pair)
+            first_element->append(last);
+        else {
+            for (l = 0; l < last->size(); l++) {
+                first_element->append(last->value_on_index(lisp, l));
+            }
+            last->release();
+        }
+        return first_element;
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        last->release();
         throw err;
     }
 
@@ -4120,17 +4185,25 @@ Element* List::evall_range(LispE* lisp) {
 
 
 Element* List::evall_reverse(LispE* lisp) {
-    if (liste.size() != 2)
+    short listsize = liste.size();
+    if (listsize != 2 && listsize != 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
 
     lisp->display_trace(this);
+    bool duplicate = true;
 
     try {
         second_element = liste[1]->eval(lisp);
-        first_element = second_element->reverse(lisp, true);
-        second_element->release();
+        if (listsize == 3) {
+            first_element = liste[2]->eval(lisp);
+            duplicate = first_element->Boolean();
+            first_element->release();
+        }
+        first_element = second_element->reverse(lisp, duplicate);
+        if (second_element != first_element)
+            second_element->release();
         return first_element;
     }
     catch (Error* err) {
@@ -4466,7 +4539,10 @@ Element* List::evall_sort(LispE* lisp) {
             second_element->release();
             throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
         }
-        sort(l->liste.begin(), l->liste.end(), comp);
+        vector<Element*> v;
+        l->liste.get(v);
+        sort(v.begin(), v.end(), comp);
+        l->liste.set(v);
         first_element->release();
         return second_element;
     }

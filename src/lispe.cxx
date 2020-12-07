@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.4.11.4";
+static std::string version = "1.2020.12.7.16.6";
 string LispVersion() {
     return version;
 }
@@ -178,7 +178,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if);
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife);
     set_instruction(l_in, "in", P_THREE|P_FOUR, &List::evall_in);
-    set_instruction(l_index, "at", P_THREE|P_FOUR, &List::evall_index);
+    set_instruction(l_at_index, "at", P_THREE|P_FOUR, &List::evall_at_index);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
     set_instruction(l_insert, "insert", P_FOUR, &List::evall_insert);
     set_instruction(l_irange, "irange", P_THREE, &List::evall_irange);
@@ -209,6 +209,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_multiply, "*", P_ATLEASTTHREE, &List::evall_multiply);
     set_instruction(l_multiplyequal, "*=", P_ATLEASTTHREE, &List::evall_multiplyequal);
     set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE, &List::evall_ncheck);
+    set_instruction(l_nconc, "nconc", P_ATLEASTONE, &List::evall_nconc);
     set_instruction(l_neq, "neq", P_ATLEASTTHREE, &List::evall_neq);
     set_instruction(l_not, "not", P_TWO, &List::evall_not);
     set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp);
@@ -229,7 +230,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
     set_instruction(l_range, "range", P_FOUR, &List::evall_range);
     set_instruction(l_return, "return", P_TWO | P_THREE, &List::evall_return);
-    set_instruction(l_reverse, "reverse", P_TWO, &List::evall_reverse);
+    set_instruction(l_reverse, "reverse", P_TWO | P_THREE, &List::evall_reverse);
     set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch);
     set_instruction(l_rightshift, ">>", P_THREE, &List::evall_rightshift);
     set_instruction(l_rightshiftequal, ">>=", P_THREE, &List::evall_rightshiftequal);
@@ -409,7 +410,11 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce _ as a substitute to nil
     w = L"_";
     string_to_code[w] = v_null;
-    
+
+    //But also 'false', which is a substitute to nil as well
+    w = L"false";
+    string_to_code[w] = v_null;
+
     // We introduce \ and λ (Unicode: 955) as a substitute to lambda...
     w = L"\\";
     string_to_code[w] = l_lambda;
@@ -419,7 +424,7 @@ void Delegation::initialisation(LispE* lisp) {
     //For compliance with other Lisps
     w = L"t";
     string_to_code[w] = v_true;
-    
+
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
     e = new Cadr("cadr");
@@ -1128,7 +1133,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                         }
                         bool docompose = true;
                         if (lab == l_composenot) {
-                            ((List*)e)->liste.erase(((List*)e)->liste.begin());
+                            ((List*)e)->liste.erase(0);
                             if (e->size()) {
                                 lab = e->index(0)->label();
                                 docompose = false;
@@ -1645,6 +1650,13 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
+
+
+
+
 
 
 

@@ -318,7 +318,6 @@ public:
         }
         return false;
     }
-
 };
 
 #endif

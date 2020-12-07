@@ -12,6 +12,13 @@
 #define elements_h
 
 #include "tools.h"
+
+//The status to be able to manage the life cycle of an object
+const unsigned char s_destructible =  0;
+const unsigned char s_protect = 253;
+const unsigned char s_cdr = 254;
+const unsigned char s_constant = 255;
+
 class LispE;
 class Listincode;
 
@@ -52,12 +59,12 @@ typedef enum {
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
-    l_size, l_use, l_index, l_extract, l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last,
+    l_size, l_use, l_at_index, l_extract, l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last,
     l_fread, l_fwrite, l_fappend,
     l_and, l_or, l_xor, l_not, l_eq, l_neq,
     
     //mutable operations
-    l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_push, l_insert, l_unique,
+    l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_nconc, l_push, l_insert, l_unique,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify,
@@ -71,10 +78,6 @@ typedef enum {
     l_final
 } lisp_code;
 
-//The status to be able to manage the life cycle of an object
-const unsigned char s_destructible =  0;
-const unsigned char s_protect = 254;
-const unsigned char s_constant = 255;
 
 const unsigned long P_NONE = 1 << 0;
 const unsigned long P_ONE = 1 << 1;
@@ -379,7 +382,7 @@ public:
         type = ty;
 #ifdef DEBUG
         lc = (lisp_code)type;
-#endif
+#endif 
         status = s;
     }
     
@@ -464,7 +467,7 @@ public:
     }
     
     //We only duplicate constant containers...
-    virtual Element* duplicate_constant_container() {
+    virtual Element* duplicate_constant_container(bool pair = false) {
         return this;
     }
     
@@ -1330,609 +1333,6 @@ public:
 };
 
 
-class List : public Element {
-public:
-    
-    /* Method in List
-     bool argumentsize(long sz);
-     bool Boolean();
-     bool isContainer();
-     bool isList();
-     bool remove(long d);
-     bool unify(LispE* lisp, Element* value, bool record);
-     char check_match(LispE* lisp, Element* value);
-     Element* bit_and(LispE* l, bool local);
-     Element* bit_or(LispE* l, bool local);
-     Element* bit_xor(LispE* l, bool local);
-     Element* car(LispE* lisp);
-     Element* composing(LispE*);
-     Element* divide(LispE* l, bool local);
-     Element* duplicate_constant_container();
-     Element* equal(LispE* lisp, Element* e);
-     Element* eval(LispE*);
-     Element* evalAsInteger(long i, LispE* lisp, long& d);
-     Element* evalAsNumber(long i, LispE* lisp, double& d);
-     Element* evalAsString(long i, LispE* lisp, wstring& w);
-     Element* execute(Element* corps, LispE*);
-     Element* executepattern(LispE* lisp, short function_name);
-     Element* extraction(LispE* lisp, List*);
-     Element* index(long i);
-     Element* insert(LispE* lisp, Element* e, long idx);
-     Element* reverse(LispE*, bool duplique = true);
-     Element* join_in_list(LispE* lisp, wstring& sep);
-     Element* leftshift(LispE* l, bool local);
-     Element* loop(LispE* lisp, short label,  List* code);
-     Element* minus(LispE* l, bool local);
-     Element* mod(LispE* l, bool local);
-     Element* multiply(LispE* l, bool local);
-     Element* plus(LispE* l, bool local);
-     Element* power(LispE* l, bool local);
-     Element* rightshift(LispE* l, bool local);
-     Element* search_all_elements(LispE*, Element* element_value, long idx);
-     Element* search_element(LispE*, Element* element_value, long idx);
-     Element* search_reverse(LispE*, Element* element_value, long idx);
-     Element* value_on_index(LispE*, Element* idx);
-     Element* value_on_index(LispE*, long i);
-     virtual Element* cdr(LispE* lisp);
-     virtual Element* copying(bool duplicate = true);
-     virtual Element* last_element(LispE* lisp);
-     Element* last();
-     virtual long size();
-     virtual wstring asString(LispE* lisp);
-     void append(Element* e);
-     void appendraw(Element* e);
-     void clear();
-     void decrementstatus(uchar nb, bool top);
-     void decrementstatusraw(uchar nb);
-     void incrementstatus(uchar nb, bool top);
-     void protecting(bool protection);
-     void release();
-     Element* replace(LispE* lisp, long i, Element* e);
-     wstring jsonString(LispE* lisp);
-     
-     */
-    vector<Element*> liste;
-    bool terminal;
-    
-    List() : terminal(false), Element(t_list) {}
-    List(uchar s) : terminal(false), Element(t_list, s) {}
-    List(vector<Element*> v) : terminal(false), Element(t_list) {
-        liste = v;
-    }
-    
-    bool isContainer() {
-        return true;
-    }
-    
-    void setterminal(bool v = true) {
-        terminal = v;
-    }
-    
-    Element* loop(LispE* lisp, short label,  List* code);
-    
-    Element* search_element(LispE*, Element* element_value, long idx);
-    Element* search_all_elements(LispE*, Element* element_value, long idx);
-    Element* search_reverse(LispE*, Element* element_value, long idx);
-    
-    virtual Element* last_element(LispE* lisp);
-    
-    Element* last() {
-        return liste.back();
-    }
-
-    void insertion(Element* e, long idx) {
-        liste.insert(liste.begin()+idx, e);
-        e->incrementstatus(status+1, false);
-    }
-    
-    void front(Element* e) {
-        liste.insert(liste.begin(), e);
-        e->incrementstatus(status+1, false);
-    }
-    
-    void beforelast(Element* e) {
-        long sz = liste.size();
-        if (!sz)
-            liste.push_back(e);
-        else
-            liste.insert(liste.begin()+sz-1, e);
-        e->incrementstatus(status+1, false);
-    }
-
-    bool isFunction() {
-        return (liste.size() > 1 && liste[0]->label() >= l_lambda && liste[0]->label() <= l_defpat);
-    }
-
-    bool isExecutable(LispE*);
-    
-    char check_match(LispE* lisp, Element* value);
-    
-    bool unify(LispE* lisp, Element* value, bool record);
-    
-    virtual Element* fullcopy() {
-        List* l = new List;
-        for (auto& a: liste)
-            l->append(a->fullcopy());
-        return l;
-    }
-    
-    Element* unique(LispE* lisp);
-
-    virtual Element* copying(bool duplicate = true) {
-        if (status == s_destructible)
-            return this;
-        
-        List* l = new List;
-        for (auto& a: liste)
-            l->append(a->copying(false));
-        return l;
-    }
-    
-    //In the case of a container for push, key and keyn
-    // We must force the copy when it is a constant
-    Element* duplicate_constant_container() {
-        if (status == s_constant) {
-            List* l = new List;
-            for (auto& a: liste)
-                l->append(a->copying(false));
-            return l;
-        }
-        return this;
-    }
-    
-    bool isList() {
-        return true;
-    }
-    
-    bool isNotEmptyList() {
-        return (liste.size());
-    }
-    
-    void incrementstatus(uchar nb, bool top) {
-        if (status < s_protect) {
-            status += nb;
-            if (top) {
-                for (auto& a : liste)
-                    a->incrementstatus(nb, false);
-            }
-        }
-    }
-    
-    void decrementstatus(uchar nb, bool top) {
-        if (status > s_destructible && status < s_protect) {
-            status -= nb;
-            if (top) {
-                for (auto& a : liste)
-                    a->decrementstatus(nb, false);
-            }
-        }
-        
-        if (!status) {
-            for (auto& a : liste)
-                a->decrementstatus(1, false);
-            delete this;
-        }
-    }
-    
-    //The status is decremented without destroying the element.
-    void decrementstatusraw(uchar nb) {
-        if (status > s_destructible && status < s_protect) {
-            status -= nb;
-            for (auto& a : liste)
-                a->decrementstatus(nb, false);
-        }
-    }
-    
-    Element* join_in_list(LispE* lisp, wstring& sep);
-    
-    Element* extraction(LispE* lisp, List*);
-    
-    Element* index(long i) {
-        return liste[i];
-    }
-    Element* protected_index(LispE*,long i);
-    
-    Element* value_on_index(LispE*, long i);
-    Element* value_on_index(LispE*, Element* idx);
-    Element* protected_index(LispE*, Element* k);
-    
-    void release() {
-        if (status == s_destructible) {
-            for (auto& a: liste)
-                a->decrementstatus(1,false);
-            delete this;
-        }
-    }
-    
-    
-    Element* equal(LispE* lisp, Element* e);
-    
-    virtual long size() {
-        return liste.size();
-    }
-    
-    //This function is only used to compare the number of
-    //parameters of a function and its arguments
-    long argumentsize(LispE* lisp, long sz);
-    
-    Element* car(LispE* lisp);
-    virtual Element* cdr(LispE* lisp);
-    
-    void protecting(bool protection) {
-        if (protection) {
-            if (status == s_constant)
-                status = s_protect;
-        }
-        else {
-            if (status == s_protect)
-                status = s_destructible;
-        }
-        
-        for (auto& a: liste)
-            a->protecting(protection);
-    }
-    
-    wstring jsonString(LispE* lisp) {
-        long taille = liste.size();
-        if (!taille)
-            return L"[]";
-        
-        taille -= 1;
-        
-        wstring tampon(L"[");
-        
-        for (long i = 0; i <= taille; i++) {
-            if (i && i <= taille)
-                tampon += L",";
-            tampon += liste[i]->jsonString(lisp);
-        }
-        tampon += L"]";
-        return tampon;
-    }
-    
-    virtual wstring asString(LispE* lisp) {
-        long taille = liste.size();
-        if (!taille)
-            return L"()";
-        
-        taille -= 1;
-        
-        wstring tampon(L"(");
-        
-        for (long i = 0; i <= taille; i++) {
-            if (i && i <= taille)
-                tampon += L" ";
-            tampon += liste[i]->stringInList(lisp);
-        }
-        tampon += L")";
-        return tampon;
-    }
-    
-    void append(Element* e) {
-        e->incrementstatus(status+1, false);
-        liste.push_back(e);
-    }
-    
-    void appendraw(Element* e) {
-        liste.push_back(e);
-    }
-
-    void change(long i, Element* e) {
-        liste[i]->decrementstatus(status+1,false);
-        liste[i] = e;
-        e->incrementstatus(status+1,false);
-    }
-
-    void changelast(Element* e) {
-        liste.back()->decrementstatus(status+1,false);
-        liste[liste.size()-1] = e;
-        e->incrementstatus(status+1,false);
-    }
-    
-    Element* replace(LispE* lisp, long i, Element* e) {
-        if (i < 0)
-            throw new Error("Error: position does not exist");
-        if (i >= liste.size())
-            liste.push_back(e);
-        else {
-            liste[i]->decrementstatus(status+1,false);
-            liste[i] = e;
-        }
-        e->incrementstatus(status+1,false);
-        return this;
-    }
-    
-    Element* composing(LispE*, bool compose);
-    Element* eval(LispE*);
-        
-    bool Boolean() {
-        return (liste.size());
-    }
-    
-    void evalthread(Element* corps, LispE*);
-    Element* evalfunction(Element* corps, LispE*);
-    Element* evalpattern(LispE* lisp, short function_name);
-    
-    void evalAsString(long i, LispE* lisp, wstring& w);
-    void evalAsNumber(long i, LispE* lisp, double& d);
-    void evalAsInteger(long i, LispE* lisp, long& d);
-    
-    Element* reverse(LispE*, bool duplique = true);
-    
-    bool removelast() {
-        if (!liste.size())
-            return false;
-        Element* e = liste.back();
-        liste.pop_back();
-        e->decrementstatus(status+1, false);
-        return true;
-    }
-    
-    bool remove(LispE*, Element* e) {
-        long d =  e->asInteger();
-        return remove(d);
-    }
-
-    bool remove(long d) {
-        if (!liste.size())
-            return false;
-        
-        if (d == liste.size() || d == -1) {
-            Element* e = liste.back();
-            liste.pop_back();
-            e->decrementstatus(status+1, false);
-            return true;
-        }
-        if (d < 0 || d > liste.size())
-            return false;
-        Element* e = liste[d];
-        liste.erase(liste.begin()+d);
-        e->decrementstatus(status+1, false);
-        return true;
-    }
-    
-    Element* insert(LispE* lisp, Element* e, long idx);
-
-    virtual void set_current_line(LispE*) {}
-
-    void sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element* body, Element* parameters, bool threading);
-    void sameSizeTerminalArguments(LispE* lisp, Element* parameters);
-    void differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element* body, Element* parameters, long nbarguments, long defaultarguments, bool threading);
-    void differentSizeTerminalArguments(LispE* lisp, Element* parameters, long nbarguments,  long defaultarguments);
-
-    //There is a big difference between clean and clear
-    //clear assumes that elements have been appended to the
-    //list...
-    void clear() {
-        for (auto& a: liste)
-            a->decrementstatus(status+1, false);
-        liste.clear();
-    }
-
-    //while clean assumes that they have been simply
-    //pushed onto it...
-    void clean() {
-        for (auto& a: liste)
-            a->release();
-        liste.clear();
-    }    
-    Element* evall_quote(LispE* lisp);
-    Element* evall_return(LispE* lisp);
-    Element* evall_break(LispE* lisp);
-    Element* evall_while(LispE* lisp);
-    Element* evall_set_max_stack_size(LispE* lisp);
-    Element* evall_plus(LispE* lisp);
-    Element* evall_minus(LispE* lisp);
-    Element* evall_multiply(LispE* lisp);
-    Element* evall_power(LispE* lisp);
-    Element* evall_leftshift(LispE* lisp);
-    Element* evall_rightshift(LispE* lisp);
-    Element* evall_divide(LispE* lisp);
-    Element* evall_mod(LispE* lisp);
-    Element* evall_bitand(LispE* lisp);
-    Element* evall_bitor(LispE* lisp);
-    Element* evall_bitxor(LispE* lisp);
-    Element* evall_plusequal(LispE* lisp);
-    Element* evall_minusequal(LispE* lisp);
-    Element* evall_multiplyequal(LispE* lisp);
-    Element* evall_powerequal(LispE* lisp);
-    Element* evall_leftshiftequal(LispE* lisp);
-    Element* evall_rightshiftequal(LispE* lisp);
-    Element* evall_bitandequal(LispE* lisp);
-    Element* evall_bitorequal(LispE* lisp);
-    Element* evall_bitxorequal(LispE* lisp);
-    Element* evall_divideequal(LispE* lisp);
-    Element* evall_modequal(LispE* lisp);
-    Element* evall_eq(LispE* lisp);
-    Element* evall_neq(LispE* lisp);
-    Element* evall_throw(LispE* lisp);
-    Element* evall_catch(LispE* lisp);
-    Element* evall_maybe(LispE* lisp);
-    Element* evall_equal(LispE* lisp);
-    Element* evall_different(LispE* lisp);
-    Element* evall_lower(LispE* lisp);
-    Element* evall_greater(LispE* lisp);
-    Element* evall_lowerorequal(LispE* lisp);
-    Element* evall_greaterorequal(LispE* lisp);
-    Element* evall_max(LispE* lisp);
-    Element* evall_min(LispE* lisp);
-    Element* evall_atomp(LispE* lisp);
-    Element* evall_numberp(LispE* lisp);
-    Element* evall_stringp(LispE* lisp);
-    Element* evall_consp(LispE* lisp);
-    Element* evall_zerop(LispE* lisp);
-    Element* evall_nullp(LispE* lisp);
-    Element* evall_data(LispE* lisp);
-    Element* evall_flip(LispE* lisp);
-    Element* evall_select(LispE* lisp);
-    Element* evall_compose(LispE* lisp);
-    Element* evall_loop(LispE* lisp);
-    Element* evall_loopcount(LispE* lisp);
-    Element* evall_or(LispE* lisp);
-    Element* evall_and(LispE* lisp);
-    Element* evall_xor(LispE* lisp);
-    Element* evall_ncheck(LispE* lisp);
-    Element* evall_check(LispE* lisp);
-    Element* evall_ife(LispE* lisp);
-    Element* evall_block(LispE* lisp);
-    Element* evall_converttoatom(LispE* lisp);
-    Element* evall_converttointeger(LispE* lisp);
-    Element* evall_converttonumber(LispE* lisp);
-    Element* evall_converttostring(LispE* lisp);
-    Element* evall_list(LispE* lisp);
-    Element* evall_reverse(LispE* lisp);
-    Element* evall_cons(LispE* lisp);
-    Element* evall_trace(LispE* lisp);
-    Element* evall_key(LispE* lisp);
-    Element* evall_keyn(LispE* lisp);
-    Element* evall_last(LispE* lisp);
-    Element* evall_push(LispE* lisp);
-    Element* evall_insert(LispE* lisp);
-    Element* evall_unique(LispE* lisp);
-    Element* evall_pop(LispE* lisp);
-    Element* evall_keys(LispE* lisp);
-    Element* evall_values(LispE* lisp);
-    Element* evall_cond(LispE* lisp);
-    Element* evall_not(LispE* lisp);
-    Element* evall_if(LispE* lisp);
-    Element* evall_car(LispE* lisp);
-    Element* evall_cdr(LispE* lisp);
-    Element* evall_cadr(LispE* lisp);
-    Element* evall_label(LispE* lisp);
-    Element* evall_setq(LispE* lisp);
-    Element* evall_setg(LispE* lisp);
-    Element* evall_deflib(LispE* lisp);
-    Element* evall_defmacro(LispE* lisp);
-    Element* evall_sleep(LispE* lisp);
-    Element* evall_wait(LispE* lisp);
-    Element* evall_defpat(LispE* lisp);
-    Element* evall_defun(LispE* lisp);
-    Element* evall_lambda(LispE* lisp);
-    Element* eval_call_function(LispE* lisp);
-    Element* evalt_list(LispE* lisp);
-    Element* evall_lock(LispE* lisp);
-    Element* evall_waiton(LispE* lisp);
-    Element* evall_trigger(LispE* lisp);
-    Element* evall_threadstore(LispE* lisp);
-    Element* evall_threadclear(LispE* lisp);
-    Element* evall_threadretrieve(LispE* lisp);
-    Element* evall_print(LispE* lisp);
-    Element* evall_println(LispE* lisp);
-    Element* evall_printerr(LispE* lisp);
-    Element* evall_printerrln(LispE* lisp);
-    Element* evall_prettify(LispE* lisp);
-    Element* evall_atoms(LispE* lisp);
-    Element* evall_atomise(LispE* lisp);
-    Element* evall_join(LispE* lisp);
-    Element* evall_eval(LispE* lisp);
-    Element* evall_type(LispE* lisp);
-    Element* evall_load(LispE* lisp);
-    Element* evall_input(LispE* lisp);
-    Element* evall_getchar(LispE* lisp);
-    Element* evall_pipe(LispE* lisp);
-    Element* evall_fread(LispE* lisp);
-    Element* evall_fappend(LispE* lisp);
-    Element* evall_fwrite(LispE* lisp);
-    Element* evall_size(LispE* lisp);
-    Element* evall_use(LispE* lisp);
-    Element* evall_index(LispE* lisp);
-    Element* evall_extract(LispE* lisp);
-    Element* evall_in(LispE* lisp);
-    Element* evall_search(LispE* lisp);
-    Element* evall_searchall(LispE* lisp);
-    Element* evall_revertsearch(LispE* lisp);
-    Element* evall_irange(LispE* lisp);
-    Element* evall_range(LispE* lisp);
-    Element* evall_mapping(LispE* lisp);
-    Element* evall_checking(LispE* lisp);
-    Element* evall_folding(LispE* lisp);
-    Element* evall_apply(LispE* lisp);
-    Element* evall_sort(LispE* lisp);
-    Element* evall_zip(LispE* lisp);
-    Element* evall_zipwith(LispE* lisp);
-
-};
-
-class Listincode : public List {
-public:
-    long line;
-    long fileidx;
-    
-    Listincode(long l, long f) : line(l), fileidx(f), List() {}
-    Listincode(uchar s) : List(s) {}
-    Listincode() {}
-    
-    void set_current_line(LispE*);
-
-};
-
-class Listbreak : public Element {
-public:
-    
-    Listbreak() : Element(s_constant) {}
-  
-    Element* eval(LispE*);
-};
-
-class Listlambda : public List {
-public:
-
-    Listlambda() : List() {}
-    
-    Element* eval(LispE* lisp) {
-        return evalfunction(liste[0]->eval(lisp), lisp);
-    }
-};
-
-class Pair : public List {
-public:
-    
-    Pair() : List() {
-        type = t_pair;
-    }
-
-    Element* fullcopy() {
-        Pair* l = new Pair;
-        for (auto& a: liste)
-            l->append(a->fullcopy());
-        return l;
-    }
-    
-    Element* copying(bool duplicate = true) {
-        if (status == s_destructible)
-            return this;
-        
-        Pair* l = new Pair;
-        for (auto& a: liste)
-            l->append(a->copying(false));
-        return l;
-    }
-    
-    Element* cdr(LispE* lisp);
-    
-    wstring asString(LispE* lisp) {
-        long taille = liste.size();
-        if (!taille)
-            return L"()";
-        
-        taille -= 1;
-        
-        wstring tampon(L"(");
-        
-        for (long i = 0; i <= taille; i++) {
-            if (i == taille)
-                tampon += L" . ";
-            else
-                if (i && i < taille)
-                    tampon+= L" ";
-            
-            tampon += liste[i]->stringInList(lisp);
-        }
-        tampon += L")";
-        return tampon;
-    }
-};
-
 class Infiniterange : public Element {
 public:
     double initial_value;
@@ -2003,8 +1403,8 @@ public:
     wstring asString(LispE* lisp);
 
     void append(Element* e) {
-        e->incrementstatus(status+1, false);
-        value->decrementstatus(status+1, false);
+        e->incrementstatus(status + 1, false);
+        value->decrementstatus(status + 1, false);
         value = e;
     }
     
@@ -2026,8 +1426,8 @@ public:
     }
     
     void append(Element* e) {
-        e->incrementstatus(status+1, false);
-        value->decrementstatus(status+1, false);
+        e->incrementstatus(status + 1, false);
+        value->decrementstatus(status + 1, false);
         value = e;
     }
     
@@ -2118,7 +1518,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant_container() {
+    Element* duplicate_constant_container(bool pair = false) {
         if (status == s_constant) {
             Dictionary* d = new Dictionary;
             Element* e;
@@ -2134,7 +1534,7 @@ public:
     Element* join_in_list(LispE* lisp, wstring& sep);
     
     void release() {
-        if (status == s_destructible) {
+        if (!status) {
             for (auto& a: dictionary)
                 a.second->decrementstatus(1, false);
             delete this;
@@ -2300,14 +1700,7 @@ public:
     
     Element* thekeys(LispE* lisp);
     
-    Element* thevalues(LispE* lisp) {
-        List* liste = new List;
-        for (auto& a: dictionary) {
-            liste->append(a.second->copying(false));
-        }
-        return liste;
-    }
-    
+    Element* thevalues(LispE* lisp);
 
     bool remove(LispE* lisp, Element* e) {
         wstring d =  e->asString(lisp);
@@ -2406,7 +1799,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant_container() {
+    Element* duplicate_constant_container(bool pair = false) {
         if (status == s_constant) {
             Dictionary_n* d = new Dictionary_n;
             Element* e;
@@ -2422,7 +1815,7 @@ public:
     Element* join_in_list(LispE* lisp, wstring& sep);
     
     void release() {
-        if (status == s_destructible) {
+        if (!status) {
             for (auto& a: dictionary)
                 a.second->decrementstatus(1, false);
             delete this;
@@ -2572,13 +1965,7 @@ public:
     
     Element* thekeys(LispE* lisp);
     
-    Element* thevalues(LispE* lisp) {
-        List* liste = new List;
-        for (auto& a: dictionary) {
-            liste->append(a.second->copying(false));
-        }
-        return liste;
-    }
+    Element* thevalues(LispE* lisp);
     
     bool remove(LispE*, Element* e) {
         double d =  e->asNumber();
@@ -2685,7 +2072,7 @@ public:
     bool traverse(LispE*, Dictionary_n*, vector<double>& keys, vector<long>& consummed, long di, long i, bool record);
 
     void release() {
-        if (status == s_destructible) {
+        if (!status) {
             for (long i = 0; i < keyvalues.size(); i++) {
                 keyvalues[i]->release();
             }
