@@ -2473,9 +2473,11 @@ public:
             lispe->set_pathname(thecurrentfilename);
         }
         
+        bool storecode = true;
         //Seulement un nom de variable
         if (code.find("(") == -1 && code.find(")") == -1) {
             code = "(print "+ code + ")";
+            storecode = false;
         }
         
         if (!editmode)
@@ -2487,6 +2489,10 @@ public:
         cout << m_red;
         Element* e = lispe->execute(code);
         std::cout << e->toString(lispe) << std::endl;
+        if (!e->isError() && storecode && thecurrentfilename == "") {
+            current_code += code;
+            current_code += "\n";
+        }
         e->release();
         cout << m_current;
         
