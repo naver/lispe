@@ -206,6 +206,25 @@ public:
         item->decrement();
     }
     
+    inline void decrement_and_clear() {
+        //If there is some kind of sharing
+        //we re-create a new item, and release the grip
+        //on the current one...
+        //otherwise, we clean the current structure
+        //since, this is the only access...
+        if (item->status) {
+            item->status--;
+            item = new ITEM(item->sz);
+            home = 0;
+        }
+        else {
+            //We clean the whole structure
+            //and reset last to its first element
+            item->decrement();
+            item->last = home;
+        }
+    }
+    
     inline Element* at(long i) {
         i += home;
         if (i < 0 || i >= item->last)
@@ -577,29 +596,10 @@ public:
     //clear assumes that elements have been appended to the
     //list...
     void clear() {
-        if (!liste.nocdr())
-            return;
-        if (status < s_protect) {
-            for (long i = 0; i < liste.size(); i++) {
-                liste[i]->decrementstatus(1, false);
-            }
-            liste.clear();
-        }
+        if (status < s_protect)
+            liste.decrement_and_clear();
     }
 
-    //while clean assumes that they have been simply
-    //pushed onto it...
-    void clean() {
-        if (!liste.nocdr())
-            return;
-        if (status < s_protect) {
-            for (long i = 0; i < liste.size(); i++) {
-                liste[i]->release();
-            }
-            liste.clear();
-        }
-    }
-    
     Element* evall_quote(LispE* lisp);
     Element* evall_return(LispE* lisp);
     Element* evall_break(LispE* lisp);
