@@ -1162,6 +1162,8 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     //these are specialized calls, for which we do not need to go through List::eval
                     short lab = e->index(0)->type;
                     if (lab == l_break) {
+                        if (e->size() != 1)
+                            throw new Error("Error: break does not take any arguments");
                         removefromgarbage(e);
                         e = &delegation->_BREAKEVAL;
                     }

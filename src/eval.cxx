@@ -1184,10 +1184,6 @@ Element* List::eval(LispE* lisp) {
     }
 }
 
-Element* Listbreak::eval(LispE* lisp) {
-    return break_;
-}
-
 Element* List::evall_break(LispE* lisp) {
     return break_;
 }

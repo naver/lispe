@@ -756,7 +756,9 @@ public:
     
     Listbreak() : Element(s_constant) {}
   
-    Element* eval(LispE*);
+    Element* eval(LispE*) {
+        return this;
+    }
 };
 
 class Listlambda : public List {
