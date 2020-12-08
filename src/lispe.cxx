@@ -1325,38 +1325,31 @@ Element* LispE::atomise(wstring a) {
 }
 
 List* LispE::create_instruction(short label,
-                                Element* e,
-                                Element* ee,
-                                Element* eee,
-                                Element* eeee,
-                                Element* eeeee,
-                                Element* eeeeee,
-                                Element* eeeeeee) {
+                                Element* e1,
+                                Element* e2,
+                                Element* e3,
+                                Element* e4,
+                                Element* e5,
+                                Element* e6,
+                                Element* e7) {
     List* l = new List;
     
     garbaging(l);
     l->append(provideAtom(label));
-    if (e != NULL) {
-        l->append(e);
-        if (ee != NULL) {
-            l->append(ee);
-            if (eee != NULL) {
-                l->append(eee);
-                if (eeee != NULL) {
-                    l->append(eeee);
-                    if (eeeee != NULL) {
-                        l->append(eeeee);
-                        if (eeeeee != NULL) {
-                            l->append(eeeeee);
-                            if (eeeeeee != NULL) {
-                                l->append(eeeeeee);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    if (!l->append_not_null(e1))
+        return l;
+    if (!l->append_not_null(e2))
+        return l;
+    if (!l->append_not_null(e3))
+        return l;
+    if (!l->append_not_null(e4))
+        return l;
+    if (!l->append_not_null(e5))
+        return l;
+    if (!l->append_not_null(e6))
+        return l;
+    if (!l->append_not_null(e7))
+        return l;
     return l;
 }
 

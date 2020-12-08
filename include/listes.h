@@ -504,7 +504,15 @@ public:
     void append(Element* e) {
         liste.push_back(e);
     }
-    
+
+    bool append_not_null(Element* e) {
+        if (e != NULL) {
+            liste.push_back(e);
+            return true;
+        }
+        return false;
+    }
+
     void appendraw(Element* e) {
         liste.push_back(e);
     }
