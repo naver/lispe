@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.9.14.28";
+static std::string version = "1.2020.12.9.16.1";
 string LispVersion() {
     return version;
 }
@@ -845,6 +845,33 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 i += idx - 1;
                 break;
             }
+            case 194: {
+                idx = i + 1;
+                if ((uchar)code[idx] == 171) {
+                    idx++;
+                    //This is a «, we look for the next: »
+                    tampon = "";
+                    while (idx < sz && (uchar)code[idx] != 194 && (uchar)code[idx+1] != 187) {
+                        tampon += code[idx];
+                        idx++;
+                    }
+                    if (idx == sz)
+                        return e_error_string;
+                    
+                    idx++;
+                    if (tampon == "")
+                        infos.append(tampon, e_emptystring, line_number, i, idx);
+                    else
+                        infos.append(tampon, e_string, line_number, i, idx);
+                    if (add) {
+                        current_line += "«";
+                        current_line += tampon;
+                        current_line += "»";
+                    }
+                    i = idx;
+                    break;
+                }
+            }
             default: {
                 long pos = i;
                 idx = i;
@@ -1647,6 +1674,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 
