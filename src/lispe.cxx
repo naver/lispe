@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.9.11.26";
+static std::string version = "1.2020.12.9.12.34";
 string LispVersion() {
     return version;
 }
@@ -199,6 +199,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower);
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal);
     set_instruction(l_mapping, "#mapping", P_THREE, &List::evall_mapping);
+    set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark);
     set_instruction(l_max, "max", P_ATLEASTTHREE, &List::evall_max);
     set_instruction(l_maybe, "maybe", P_ATLEASTTWO, &List::evall_maybe);
     set_instruction(l_min, "min", P_ATLEASTTHREE, &List::evall_min);
@@ -1645,6 +1646,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 

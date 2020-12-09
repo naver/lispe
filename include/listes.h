@@ -154,8 +154,12 @@ public:
     //It is always the same
     ITEM* item;
     long home;
+    bool marking;
+    bool usermarking;
 
     LIST(LIST& l, long pos) {
+        marking = false;
+        usermarking = false;
         home  = pos + l.home;
         item = l.item;
         //We modify the common reference counter
@@ -163,6 +167,8 @@ public:
     }
     
     LIST(long t) {
+        marking = false;
+        usermarking = false;
         home = 0;
         item = new ITEM(t);
     }
@@ -181,6 +187,22 @@ public:
     //if this a list, which is not duplicated through CDR calls
     bool nocdr() {
         return !item->status;
+    }
+    
+    inline void setmark(bool v) {
+        marking = v;
+    }
+    
+    inline bool mark() {
+        return marking;
+    }
+    
+    inline void setusermark(bool v) {
+        usermarking = v;
+    }
+    
+    inline bool usermark() {
+        return usermarking;
     }
     
     long size() {
@@ -405,7 +427,7 @@ public:
 
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
-        if (status == s_destructible && liste.nocdr())
+        if (status < s_protect && liste.nocdr() && !duplicate)
             return this;
         
         List* l = new List;
@@ -496,11 +518,24 @@ public:
             liste[i]->protecting(protection);
     }
     
+    void setmark(bool v) {
+        liste.setmark(v);
+    }
+    
+    bool mark() {
+        return liste.mark();
+    }
+
     wstring jsonString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
             return L"[]";
+
+        if (liste.mark())
+            return L"#inf";
         
+        liste.setmark(true);
+
         sz -= 1;
         
         wstring buffer(L"[");
@@ -511,6 +546,7 @@ public:
             buffer += liste[i]->jsonString(lisp);
         }
         buffer += L"]";
+        liste.setmark(true);
         return buffer;
     }
     
@@ -518,7 +554,12 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"()";
+
+        if (liste.mark())
+            return L"...";
         
+        liste.setmark(true);
+
         sz -= 1;
         
         wstring buffer(L"(");
@@ -529,6 +570,7 @@ public:
             buffer += liste[i]->stringInList(lisp);
         }
         buffer += L")";
+        liste.setmark(false);
         return buffer;
     }
     
@@ -745,6 +787,7 @@ public:
     Element* evall_printerr(LispE* lisp);
     Element* evall_printerrln(LispE* lisp);
     Element* evall_prettify(LispE* lisp);
+    Element* evall_mark(LispE* lisp);
     Element* evall_atoms(LispE* lisp);
     Element* evall_atomise(LispE* lisp);
     Element* evall_join(LispE* lisp);
@@ -829,7 +872,7 @@ public:
     }
     
     Element* copying(bool duplicate = true) {
-        if (status == s_destructible)
+        if (status < s_protect && liste.nocdr() && !duplicate)
             return this;
         
         Pair* l = new Pair;

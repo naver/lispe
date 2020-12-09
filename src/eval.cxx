@@ -4901,6 +4901,38 @@ Element* List::evall_xor(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_mark(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 2 && listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = null_;
+
+    lisp->display_trace(this);
+    bool test;
+    
+    try {
+        first_element = liste[1]->eval(lisp);
+        if (!first_element->isList())
+            throw new Error("Error: expecting a list as argument");
+        if (listsize == 2) {
+            test = ((List*)first_element)->liste.usermark();
+            first_element->release();
+            return booleans_[test];
+        }
+        
+        bool test = liste[2]->eval(lisp)->Boolean();
+        ((List*)first_element)->liste.setusermark(test);
+        first_element->release();
+        return true_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
 
 Element* List::evall_zerop(LispE* lisp) {
     if (liste.size() != 2)
