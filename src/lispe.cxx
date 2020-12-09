@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.9.16.1";
+static std::string version = "1.2020.12.9.22.30";
 string LispVersion() {
     return version;
 }
@@ -859,6 +859,33 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                         return e_error_string;
                     
                     idx++;
+                    if (tampon == "")
+                        infos.append(tampon, e_emptystring, line_number, i, idx);
+                    else
+                        infos.append(tampon, e_string, line_number, i, idx);
+                    if (add) {
+                        current_line += "«";
+                        current_line += tampon;
+                        current_line += "»";
+                    }
+                    i = idx;
+                    break;
+                }
+            }
+            case 226: {
+                idx = i + 1;
+                if ((uchar)code[idx] == 128 && (uchar)code[idx+1] == 156) {
+                    idx+=2;
+                    //This is a «, we look for the next: »
+                    tampon = "";
+                    while (idx < sz && (uchar)code[idx] != 226 && (uchar)code[idx+1] != 128 && (uchar)code[idx+1] != 157) {
+                        tampon += code[idx];
+                        idx++;
+                    }
+                    if (idx == sz)
+                        return e_error_string;
+                    
+                    idx+=2;
                     if (tampon == "")
                         infos.append(tampon, e_emptystring, line_number, i, idx);
                     else
