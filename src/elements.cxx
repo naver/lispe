@@ -236,20 +236,12 @@ Element* List::loop(LispE* lisp, short label, List* code) {
     for (long i = 0; i < sze; i++) {
         element = liste[i]->copying(false);
         lisp->recording(element, label);
-        if (element->mark()) {
-            element->setmark(false);
-            continue;
-        }
-        
-        element->setmark(true);
         e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
             e = code->liste[i_loop]->eval(lisp);
-        }
-        element->setmark(false);
-        
+        }        
         if (e->type == l_return) {
             if (e->isBreak())
                 return null_;
@@ -1141,11 +1133,11 @@ Element* List::equal(LispE* lisp, Element* e) {
 }
 
 Element* Dictionary::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_dictionary && e->size() == 0 && dictionary.size() == 0)];
+    return booleans_[((e->type == t_dictionary && e->size() == 0 && dictionary.size() == 0) || e == this)];
 }
 
 Element* Dictionary_n::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_dictionaryn && e->size() == 0 && dictionary.size() == 0)];
+    return booleans_[((e->type == t_dictionaryn && e->size() == 0 && dictionary.size() == 0) || e== this)];
 }
 
 Element* String::equal(LispE* lisp, Element* e) {

@@ -363,16 +363,25 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
     if (!sz)
         return (value->size() == 0);
     
+    if (mark())
+        return (value == liste.object);
+    
+    setmark(true);
+    liste.object = value;
+    
     bool rec = true;
     short ilabel = v_null;
     if (record) {
-        if (liste[0]->label() == l_quote)
+        if (liste[0]->label() == l_quote) {
+            setmark(false);
             return liste[1]->unify(lisp, value, false);
+        }
         
         ilabel = lisp->extractlabel(this);
         
         //First case, this is one of the basic types
         if (value->type == ilabel && ilabel >= t_atom && ilabel <= t_maybe) {
+            setmark(false);
             return (liste.back() != null_ && liste.back()->unify(lisp, value, record));
         }
         
@@ -398,35 +407,47 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
             Element* exec = liste.back();
             while (exec->isExecutable(lisp))
                 exec = exec->last();
-            if (exec == null_ || !exec->unify(lisp, value, record))
+            if (exec == null_ || !exec->unify(lisp, value, record)) {
+                setmark(false);
                 return false;
+            }
             try {
                 value = eval(lisp);
             }
             catch(Error* err) {
+                setmark(false);
                 err->release();
                 return false;
             }
+            setmark(false);
             return value->Boolean();
         }
     }
     else {
-        if (value == this)
+        if (value == this) {
+            setmark(false);
             return true;
+        }
         rec = (lisp->extractlabel(liste[0]) == v_null);
     }
     
-    if (!value->isList())
+    if (!value->isList()) {
+        setmark(false);
         return false;
+    }
     
     long szvalue = value->size();
     if (sz > 1 && liste[sz-2] == separator_) {
-        if (szvalue < sz-2)
+        if (szvalue < sz-2) {
+            setmark(false);
             return false;
+        }
     }
     else {
-        if (szvalue != sz)
+        if (szvalue != sz) {
+            setmark(false);
             return false;
+        }
     }
     
     //this contains a data structure definition
@@ -437,11 +458,15 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
         //This is a case of a match with list division
         if (liste[i] == separator_) {
             //The parameter list should only contain one last element:
-            if (i != sz - 2)
+            if (i != sz - 2) {
+                setmark(false);
                 return false;
+            }
             //We do not care about the rest of the list
-            if (liste[i+1] == null_)
+            if (liste[i+1] == null_) {
+                setmark(false);
                 return true;
+            }
             //we need to build a sublist out of value...
             List* sublist;
             if (i == szvalue)
@@ -453,14 +478,19 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
             }
             if (!liste[i+1]->unify(lisp, sublist, rec)) {
                 sublist->release();
+                setmark(false);
                 return false;
             }
+            setmark(false);
             return true;
         }
-        if (liste[i] != null_ && !liste[i]->unify(lisp, value->index(i), rec))
+        if (liste[i] != null_ && !liste[i]->unify(lisp, value->index(i), rec)) {
+            setmark(false);
             return false;
+        }
         rec = record;
     }
+    setmark(false);
     return true;
 }
 
@@ -4912,16 +4942,14 @@ Element* List::evall_mark(LispE* lisp) {
     
     try {
         first_element = liste[1]->eval(lisp);
-        if (!first_element->isList())
-            throw new Error("Error: expecting a list as argument");
         if (listsize == 2) {
-            test = ((List*)first_element)->liste.usermark();
+            test = first_element->usermark();
             first_element->release();
             return booleans_[test];
         }
         
         bool test = liste[2]->eval(lisp)->Boolean();
-        ((List*)first_element)->liste.setusermark(test);
+        first_element->setusermark(test);
         first_element->release();
         return true_;
     }

@@ -153,11 +153,13 @@ public:
 
     //It is always the same
     ITEM* item;
+    Element* object;
     long home;
     bool marking;
     bool usermarking;
 
     LIST(LIST& l, long pos) {
+        object = NULL;
         marking = false;
         usermarking = false;
         home  = pos + l.home;
@@ -167,6 +169,7 @@ public:
     }
     
     LIST(long t) {
+        object = NULL;
         marking = false;
         usermarking = false;
         home = 0;
@@ -256,7 +259,11 @@ public:
     }
 
     inline void decrement() {
+        if (marking)
+            return;
+        marking = true;
         item->decrement();
+        marking = false;
     }
     
     inline void decrement_and_clear() {
@@ -416,11 +423,15 @@ public:
     bool unify(LispE* lisp, Element* value, bool record);
     
     virtual Element* fullcopy() {
-        List* l = new List;
+        if (liste.marking)
+            return liste.object;
+        liste.marking = true;
+        liste.object = new List;
         for (long i = 0; i < liste.size(); i++) {
-            l->append(liste[i]->fullcopy());
+            liste.object->append(liste[i]->fullcopy());
         }
-        return l;
+        liste.marking = false;
+        return liste.object;
     }
     
     Element* unique(LispE* lisp);
@@ -524,6 +535,14 @@ public:
     
     bool mark() {
         return liste.mark();
+    }
+
+    void setusermark(bool v) {
+        liste.setusermark(v);
+    }
+    
+    bool usermark() {
+        return  liste.usermark();
     }
 
     void resetusermark() {
@@ -877,12 +896,19 @@ public:
     Pair(Pair* l, long p) : List((List*)l, p) {}
 
     Element* fullcopy() {
-        Pair* l = new Pair;
-        for (long i = 0; i < liste.size(); i++)
-            l->append(liste[i]->fullcopy());
-        return l;
+        if (liste.marking)
+            return liste.object;
+        
+        liste.marking = true;
+        liste.object = new Pair;
+        for (long i = 0; i < liste.size(); i++) {
+            liste.object->append(liste[i]->fullcopy());
+        }
+        
+        liste.marking = false;
+        return liste.object;
     }
-    
+
     Element* copying(bool duplicate = true) {
         if (status < s_protect && liste.nocdr() && !duplicate)
             return this;

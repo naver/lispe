@@ -483,6 +483,8 @@ public:
     
     virtual void setmark(bool v) {}
     virtual bool mark() {return false;}
+    virtual void setusermark(bool v) {}
+    virtual bool usermark() {return false;}
     virtual void resetusermark() {}
     
     virtual bool unify(LispE* lisp, Element* value, bool record);
@@ -1479,9 +1481,21 @@ public:
      */
     
     map<wstring, Element*> dictionary;
+    Element* object;
+    bool marking;
+    bool usermarking;
     
-    Dictionary() : Element(t_dictionary) {}
-    Dictionary(uchar s) : Element(t_dictionary, s) {}
+    Dictionary() : Element(t_dictionary) {
+        object = NULL;
+        marking = false;
+        usermarking =  false;
+    }
+    
+    Dictionary(uchar s) : Element(t_dictionary, s) {
+        object = NULL;
+        marking = false;
+        usermarking =  false;
+    }
     
     bool isDictionary() {
         return true;
@@ -1491,6 +1505,34 @@ public:
         return true;
     }
     
+    void setmark(bool v) {
+        marking = v;
+    }
+    
+    bool mark() {
+        return marking;
+    }
+
+    void setusermark(bool v) {
+        usermarking = v;
+    }
+    
+    bool usermark() {
+        return  usermarking;
+    }
+
+    void resetusermark() {
+        if (marking)
+            return;
+        marking = true;
+        usermarking = false;
+        for (auto& a: dictionary) {
+            a.second->resetusermark();
+        }
+        marking = false;
+    }
+
+    
     Element* loop(LispE* lisp, short label,  List* code);
     
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -1499,13 +1541,19 @@ public:
     Element* checkkey(LispE* lisp, Element* e);
 
     Element* fullcopy() {
+        if (marking)
+            return object;
+        
+        marking = true;
         Dictionary* d = new Dictionary;
+        object = d;
         Element* e;
         for (auto& a: dictionary) {
             e = a.second->fullcopy();
             d->dictionary[a.first] = e;
             e->incrementstatus(1, false);
         }
+        marking = false;
         return d;
     }
 
@@ -1542,35 +1590,53 @@ public:
     
     void release() {
         if (!status) {
+            if (marking)
+                return;
+            marking = true;
             for (auto& a: dictionary)
                 a.second->decrementstatus(1, false);
+            marking = false;
             delete this;
         }
     }
     
     void incrementstatus(uchar nb, bool top) {
         if (status < s_protect) {
-            status += nb;
+            if (marking)
+                return;
+            marking = true;
+            status+=nb;
             if (top) {
                 for (auto& a : dictionary) {
                     a.second->incrementstatus(nb, false);
                 }
             }
+            marking = false;
         }
     }
     
     void decrementstatus(uchar nb, bool top) {
         if (status > s_destructible && status < s_protect) {
+            if (marking)
+                return;
+            marking = true;
+
             status-=nb;
             if (top) {
                 for (auto& a : dictionary)
                     a.second->decrementstatus(nb, false);
             }
+            marking = false;
         }
         
         if (!status) {
+            if (marking)
+                return;
+            marking = true;
+
             for (auto& a : dictionary)
                 a.second->decrementstatus(1, false);
+            marking = false;
             delete this;
         }
     }
@@ -1578,32 +1644,48 @@ public:
     //The status is decremented without destroying the element.
     void decrementstatusraw(uchar nb) {
         if (status > s_destructible && status < s_protect) {
+            if (marking)
+                return;
+            marking = true;
+
             status-=nb;
             for (auto& a : dictionary)
                 a.second->decrementstatus(nb, false);
+            marking = false;
         }
     }
     
+    
     bool unify(LispE* lisp, Element* e, bool record) {
+        if (marking)
+            return (e == object);
+        
         if (e == this)
             return true;
         
         if (e->type != t_dictionary || e->size() != dictionary.size())
             return false;
-        
+
+        marking = true;
+        object = e;
+
         Dictionary* d = (Dictionary*)e;
         for (auto& a: dictionary) {
             try {
-                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record))
+                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
+                    marking = false;
                     return false;
+                }
             }
             catch(const std::out_of_range& oor) {
+                marking = false;
                 return false;
             }
         }
+        marking = false;
         return true;
     }
-    
+     
     Element* equal(LispE* lisp, Element* e);
     
     long size() {
@@ -1630,6 +1712,10 @@ public:
         if (!dictionary.size())
             return L"{}";
                 
+        if (marking)
+            return L"#inf";
+        
+        marking = true;
         wstring tampon(L"{");
         
         bool premier = true;
@@ -1644,6 +1730,7 @@ public:
             tampon += a.second->jsonString(lisp);
         }
         tampon += L"}";
+        marking = false;
         return tampon;
     }
     
@@ -1651,7 +1738,12 @@ public:
         long taille = dictionary.size();
         if (!taille)
             return L"{}";
-                
+
+        if (marking)
+            return L"...";
+        
+        marking = true;
+
         wstring tampon(L"{");
         
         bool premier = true;
@@ -1666,6 +1758,7 @@ public:
             tampon += a.second->stringInList(lisp);
         }
         tampon += L"}";
+        marking = false;
         return tampon;
     }
     
@@ -1730,8 +1823,6 @@ public:
 //This version of the dictionary is indexed on a number
 class Dictionary_n : public Element {
 public:
-    unordered_map<double, Element*> dictionary;
-    
     /* Methods in Dictionary_n
      bool Boolean();
      bool isContainer();
@@ -1761,8 +1852,24 @@ public:
      wstring asString(LispE* lisp);
      wstring jsonString(LispE* lisp);
      */
-    Dictionary_n() : Element(t_dictionaryn) {}
-    Dictionary_n(uchar s) : Element(t_dictionaryn, s) {}
+    
+    unordered_map<double, Element*> dictionary;
+    Element* object;
+    bool marking;
+    bool usermarking;
+    
+
+    Dictionary_n() : Element(t_dictionaryn) {
+        object = NULL;
+        marking = false;
+        usermarking = false;
+    }
+    
+    Dictionary_n(uchar s) : Element(t_dictionaryn, s) {
+        object = NULL;
+        marking = false;
+        usermarking = false;
+    }
     
     bool isDictionary() {
         return true;
@@ -1772,6 +1879,33 @@ public:
         return true;
     }
     
+    void setmark(bool v) {
+        marking = v;
+    }
+    
+    bool mark() {
+        return marking;
+    }
+
+    void setusermark(bool v) {
+        usermarking = v;
+    }
+    
+    bool usermark() {
+        return  usermarking;
+    }
+
+    void resetusermark() {
+        if (marking)
+            return;
+        marking = true;
+        usermarking = false;
+        for (auto& a: dictionary) {
+            a.second->resetusermark();
+        }
+        marking = false;
+    }
+
     Element* loop(LispE* lisp, short label,  List* code);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
@@ -1780,13 +1914,19 @@ public:
     Element* reverse(LispE*, bool duplique = true);
 
     Element* fullcopy() {
+        if (marking)
+            return object;
+        
+        marking = true;
         Dictionary_n* d = new Dictionary_n;
+        object = d;
         Element* e;
         for (auto& a: dictionary) {
             e = a.second->fullcopy();
             d->dictionary[a.first] = e;
             e->incrementstatus(1,false);
         }
+        marking = false;
         return d;
     }
     
@@ -1824,35 +1964,53 @@ public:
     
     void release() {
         if (!status) {
+            if (marking)
+                return;
+            marking = true;
             for (auto& a: dictionary)
                 a.second->decrementstatus(1, false);
+            marking = false;
             delete this;
         }
     }
     
     void incrementstatus(uchar nb, bool top) {
         if (status < s_protect) {
+            if (marking)
+                return;
+            marking = true;
             status+=nb;
             if (top) {
                 for (auto& a : dictionary) {
                     a.second->incrementstatus(nb, false);
                 }
             }
+            marking = false;
         }
     }
     
     void decrementstatus(uchar nb, bool top) {
         if (status > s_destructible && status < s_protect) {
+            if (marking)
+                return;
+            marking = true;
+
             status-=nb;
             if (top) {
                 for (auto& a : dictionary)
                     a.second->decrementstatus(nb, false);
             }
+            marking = false;
         }
         
         if (!status) {
+            if (marking)
+                return;
+            marking = true;
+
             for (auto& a : dictionary)
                 a.second->decrementstatus(1, false);
+            marking = false;
             delete this;
         }
     }
@@ -1860,29 +2018,45 @@ public:
     //The status is decremented without destroying the element.
     void decrementstatusraw(uchar nb) {
         if (status > s_destructible && status < s_protect) {
+            if (marking)
+                return;
+            marking = true;
+
             status-=nb;
             for (auto& a : dictionary)
                 a.second->decrementstatus(nb, false);
+            marking = false;
         }
     }
     
     bool unify(LispE* lisp, Element* e, bool record) {
+        if (marking)
+            return (object == e);
+        
         if (e == this)
             return true;
         
         if (e->type != t_dictionaryn || e->size() != dictionary.size())
             return false;
         
+        marking =  true;
+        object = e;
+        
         Dictionary_n* d = (Dictionary_n*)e;
         for (auto& a: dictionary) {
             try {
-                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record))
+                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
+                    marking = false;
                     return false;
+                }
             }
             catch(const std::out_of_range& oor) {
+                marking = false;
                 return false;
             }
         }
+        
+        marking = false;
         return true;
     }
     
@@ -1911,6 +2085,11 @@ public:
         if (!dictionary.size())
             return L"{}";
                 
+        if (marking)
+            return L"#inf";
+        
+        marking = true;
+
         std::wstringstream tampon;
         tampon << L"{";
         
@@ -1924,6 +2103,7 @@ public:
             tampon << a.first << ":" << a.second->jsonString(lisp);
         }
         tampon << L"}";
+        marking = false;
         return tampon.str();
     }
     
@@ -1932,7 +2112,12 @@ public:
         long taille = dictionary.size();
         if (!taille)
             return L"{}";
-                
+
+        if (marking)
+            return L"...";
+        
+        marking = true;
+
         std::wstringstream tampon;
         tampon << L"{";
         
@@ -1946,6 +2131,7 @@ public:
             tampon << a.first << ":" << a.second->stringInList(lisp);
         }
         tampon << L"}";
+        marking = false;
         return tampon.str();
     }
     
