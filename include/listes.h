@@ -35,7 +35,7 @@ public:
 
         Element** tfs;
 
-        //on realloue par bloc de t
+        //we reallocate our structure
         tfs = new Element*[t];
 
         for (long i = 0; i< t; i++) {
@@ -49,6 +49,29 @@ public:
         buffer = tfs;
         sz = t;
     }
+
+    void reserveforward(long t, long pos) {
+        Element** tfs;
+
+        //we reallocate our structure
+        tfs = new Element*[t];
+
+        long inc = 0;
+        //In this case, we skip the pos position
+        for (long i = 0; i< t; i++) {
+            if (i < last) {
+                inc += (i == pos);
+                tfs[i+inc] = buffer[i];
+            }
+            else
+                tfs[i+inc] = NULL;
+        }
+
+        delete[] buffer;
+        buffer = tfs;
+        sz = t;
+    }
+
 
     bool reverse(long left, long right) {
         if (left >= right)
@@ -73,10 +96,15 @@ public:
     }
 
     inline void insert(long pos, Element* val) {
-        if (last >= sz)
-            reserve(sz<<1);
-        
         val->incrementstatus(1, false);
+
+        if (last >= sz) {
+            reserveforward(sz<<1, pos);
+            buffer[pos] = val;
+            last++;
+            return;
+        }
+        
         //Dans ce cas, c'est un simple push
         if (pos >= last) {
             buffer[last++] = val;
