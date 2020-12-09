@@ -4933,6 +4933,29 @@ Element* List::evall_mark(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_resetmark(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* first_element = null_;
+
+    lisp->display_trace(this);
+    
+    try {
+        first_element = liste[1]->eval(lisp);
+        if (!first_element->isList())
+            throw new Error("Error: expecting a list as argument");
+        first_element->resetusermark();
+        first_element->release();
+        return true_;
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
 
 Element* List::evall_zerop(LispE* lisp) {
     if (liste.size() != 2)

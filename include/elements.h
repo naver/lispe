@@ -69,7 +69,7 @@ typedef enum {
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify,
     
-    l_self, l_while, l_eval, l_mark, l_loop, l_loopcount, l_range, l_irange, l_atoms, l_atomise, l_join, l_sort,
+    l_self, l_while, l_eval, l_mark, l_resetmark, l_loop, l_loopcount, l_range, l_irange, l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
     l_apply, l_mapping, l_checking, l_folding,
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
@@ -483,6 +483,7 @@ public:
     
     virtual void setmark(bool v) {}
     virtual bool mark() {return false;}
+    virtual void resetusermark() {}
     
     virtual bool unify(LispE* lisp, Element* value, bool record);
     

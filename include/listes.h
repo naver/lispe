@@ -204,7 +204,7 @@ public:
     inline bool usermark() {
         return usermarking;
     }
-    
+        
     long size() {
         return item->last - home;
     }
@@ -526,6 +526,17 @@ public:
         return liste.mark();
     }
 
+    void resetusermark() {
+        if (liste.marking)
+            return;
+        liste.marking = true;
+        liste.usermarking = false;
+        for (long i = 0; i < size(); i++) {
+            liste[i]->resetusermark();
+        }
+        liste.marking = false;
+    }
+
     wstring jsonString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
@@ -788,6 +799,7 @@ public:
     Element* evall_printerrln(LispE* lisp);
     Element* evall_prettify(LispE* lisp);
     Element* evall_mark(LispE* lisp);
+    Element* evall_resetmark(LispE* lisp);
     Element* evall_atoms(LispE* lisp);
     Element* evall_atomise(LispE* lisp);
     Element* evall_join(LispE* lisp);
