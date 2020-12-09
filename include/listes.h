@@ -98,6 +98,10 @@ public:
     inline void insert(long pos, Element* val) {
         val->incrementstatus(1, false);
 
+        //If pos is beyond last, it becomes a push
+        if (pos > last)
+            pos = last;
+        
         if (last >= sz) {
             reserveforward(sz<<1, pos);
             buffer[pos] = val;
@@ -105,8 +109,7 @@ public:
             return;
         }
         
-        //Dans ce cas, c'est un simple push
-        if (pos >= last) {
+        if (pos == last) {
             buffer[last++] = val;
             return;
         }
