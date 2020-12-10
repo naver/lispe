@@ -891,9 +891,9 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     else
                         infos.append(tampon, e_string, line_number, i, idx);
                     if (add) {
-                        current_line += "«";
+                        current_line += "“";
                         current_line += tampon;
-                        current_line += "»";
+                        current_line += "”";
                     }
                     i = idx;
                     break;
