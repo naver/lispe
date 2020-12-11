@@ -462,17 +462,24 @@ Calling Python from within LispE
 --------------------------------------------------------------------------------
 */
 
+//To avoid issue with some specific libs
+static int LispEHook(void) {
+    return 0;
+}
+
 class Pythoninterpreter : public Element {
 public:
 
     string pythonfilename;
     PyObject* pModule;
     PyObject* pDict;
+    PyObject* pLocalDict;
     bool init_python;
 
     Pythoninterpreter(short ty) : Element(ty) {
         pModule = NULL;
         pDict = NULL;
+        pLocalDict = NULL;
         init_python = false;
     }
 
@@ -481,12 +488,16 @@ public:
             Py_Finalize();
     }
 
-    Element* methodSetpath(LispE* lisp, string& path) {
-        lisp->lock();
+    void initialize() {
         if (!init_python) {
             Py_Initialize();
             init_python = true;
         }
+    }
+    
+    Element* methodSetpath(LispE* lisp, string& path) {
+        lisp->lock();
+        initialize();
 
         stringstream code;
         code << "import sys\n";
@@ -512,6 +523,24 @@ public:
         return true_;
     }
 
+    Element* methodSimpleString(LispE* lisp, string& code) {
+        lisp->lock();
+        initialize();
+
+        PyRun_SimpleString(STR(code));
+
+        if (PyErr_Occurred()) {
+            string err = "Error: PYT(996):";
+            err += python_error_string();
+            lisp->unlock();
+            throw new Error(err);
+        }
+        
+        //you may return any value of course...
+        lisp->unlock();
+        return true_;
+    }
+
     Element* methodClose(LispE* lisp) {
         if (init_python == false)
             return null_;
@@ -527,18 +556,24 @@ public:
 
         lisp->lock();
         if (!init_python) {
-            Py_Initialize();
-            init_python = true;
+            initialize();
             pModule = PyImport_AddModule("__main__");
             pDict = PyModule_GetDict(pModule);
+            pLocalDict = PyDict_New();
         }
 
         //0 is the first parameter and so on...
         if (code != "") {
-            if (pDict == NULL)
+            if (pModule == NULL)
+                pModule = PyImport_AddModule("__main__");
+            
+            if (pDict == NULL && pModule != NULL)
                 pDict = PyModule_GetDict(pModule);
+            
+            if (pLocalDict == NULL)
+                pLocalDict = PyDict_New();
 
-            PyObject* pstr  = PyRun_String(STR(code), Py_single_input, pDict, pDict);
+            PyObject* pstr  = PyRun_String(STR(code), Py_single_input, pDict, pLocalDict);
             if (PyErr_Occurred()) {
                 string err = "Error: PYT(997):";
                 err += python_error_string();
@@ -557,26 +592,62 @@ public:
         return true_;
     }
 
-    Element* methodImport(LispE* lisp, string& pythonfilename) {
-        if (pModule != NULL)
-            throw new Error("Error: PYT(020): Module already imported");
+    Element* methodRunFile(LispE* lisp, string& pathname) {
 
         lisp->lock();
+        initialize();
+        
+        //0 is the first parameter and so on...
+        if (pathname != "") {
+            FILE * fp;
+            fp = fopen(STR(pathname), "rb");
+            if (fp == NULL) {
+                string msg="Error: '";
+                msg += pathname;
+                msg += "' is unknown";
+                throw new Error(msg);
+            }
 
-        if (!init_python) {
-            Py_Initialize();
-            init_python = true;
+            PyRun_SimpleFile(fp, STR(pathname));
+
+            if (PyErr_Occurred()) {
+                string err = "Error: PYT(997):";
+                err += python_error_string();
+                lisp->unlock();
+                throw new Error(err);
+            }
+
+            lisp->unlock();
+            return true_;
         }
+
+        lisp->unlock();
+        //you may return any value of course...
+        return true_;
+    }
+
+    Element* methodImport(LispE* lisp, string& pythonfilename) {
+        lisp->lock();
+
+        initialize();
+        
+        PyObject* module = NULL;
 
         //0 is the first parameter and so on...
         if (pythonfilename != "") {
             PyObject* pName = ConvertToPythonString(pythonfilename.c_str());
-            pModule = PyImport_Import(pName);
+            module = PyImport_Import(pName);
+            if (module != NULL && pModule == NULL) {
+                pModule = module;
+                pDict = PyModule_GetDict(pModule);
+            }
             Py_DECREF(pName);
         }
 
-        if (PyErr_Occurred()) {
-            string err = "Error: PYT(998):";
+        if (PyErr_Occurred() || module == NULL) {
+            string err = "Error Python:  in '";
+            err += pythonfilename;
+            err += "': ";
             err += python_error_string();
             lisp->unlock();
             throw new Error(err);
@@ -632,7 +703,7 @@ public:
 
 };
 
-typedef enum {python_new, python_run, python_setpath, python_import, python_execute, python_close} pythonery;
+typedef enum {python_new, python_run, python_runfile, python_setpath, python_import, python_execute, python_simplestring, python_close} pythonery;
 
 class Pythonmethod : public Element {
 public:
@@ -649,47 +720,45 @@ public:
     }
 
     Element* eval(LispE* lisp) {
+        Pythoninterpreter* py;
+        if (action != python_new) {
+            Element* e = lisp->get(py_var);
+            if (e->type != python_type)
+                throw new Error("Error: first argument should be a 'python' object");
+            py = (Pythoninterpreter*)e;
+        }
         switch (action) {
             case python_new:
                 return new Pythoninterpreter(python_type);
             case python_run: {
-                Element* py = lisp->get(py_var);
-                if (py->type != python_type)
-                    throw new Error("Error: first argument should be a 'python' object");
                 string code = lisp->get(L"code")->toString(lisp);
-                return ((Pythoninterpreter*)py)->methodRun(lisp, code);
+                return py->methodRun(lisp, code);
+            }
+            case python_runfile: {
+                string path = lisp->get(L"path")->toString(lisp);
+                return py->methodRunFile(lisp, path);
             }
             case python_setpath:{
-                Element* py = lisp->get(py_var);
-                if (py->type != python_type)
-                    throw new Error("Error: first argument should be a 'python' object");
                 string path = lisp->get(L"path")->toString(lisp);
-                return ((Pythoninterpreter*)py)->methodSetpath(lisp, path);
+                return py->methodSetpath(lisp, path);
             }
             case python_import:{
-                Element* py = lisp->get(py_var);
-                if (py->type != python_type)
-                    throw new Error("Error: first argument should be a 'python' object");
                 string path = lisp->get(L"path")->toString(lisp);
-                return ((Pythoninterpreter*)py)->methodImport(lisp, path);
+                return py->methodImport(lisp, path);
             }
             case python_execute:{
-                Element* py = lisp->get(py_var);
-                if (py->type != python_type)
-                    throw new Error("Error: first argument should be a 'python' object");
                 Element* args = lisp->get(L"arguments");
                 if (!args->isList())
                     throw new Error("Error: arguments should be a list");
-
                 string funcname = lisp->get(L"name")->toString(lisp);
-                return ((Pythoninterpreter*)py)->methodExecute(lisp, funcname, args);
+                return py->methodExecute(lisp, funcname, args);
             }
-
+            case python_simplestring: {
+                string code = lisp->get(L"code")->toString(lisp);
+                return py->methodSimpleString(lisp, code);
+            }
             case python_close:{
-                Element* py = lisp->get(py_var);
-                if (py->type != python_type)
-                    throw new Error("Error: first argument should be a 'python' object");
-                return ((Pythoninterpreter*)py)->methodClose(lisp);
+                return py->methodClose(lisp);
             }
         }
         return null_;
@@ -702,12 +771,16 @@ public:
                 return L"Create a new Python interpreter";
             case python_run:
                 return L"Execute some code with the Python interpreter";
+            case python_runfile:
+                return L"Execute a Python script";
             case python_setpath:
                 return L"Call Python 'setpath' commands with the given path";
             case python_import:
                 return L"Import some Python library or some python code";
             case python_execute:
                 return L"Execute a function that was imported with the arguments as a list";
+            case python_simplestring:
+                return L"Execute a piece of code";
             case python_close:
                 return L"Close the Python interpreter";
         }
@@ -723,9 +796,11 @@ Exporting bool InitialisationModule(LispE* lisp) {
     short type_python = lisp->encode(w);
     lisp->extension("deflib python()", new Pythonmethod(lisp, python_new, type_python));
     lisp->extension("deflib python_run(py code)", new Pythonmethod(lisp, python_run, type_python));
+    lisp->extension("deflib python_runfile(py path)", new Pythonmethod(lisp, python_runfile, type_python));
     lisp->extension("deflib python_setpath(py path)", new Pythonmethod(lisp, python_setpath, type_python));
     lisp->extension("deflib python_import(py path)", new Pythonmethod(lisp, python_import, type_python));
     lisp->extension("deflib python_execute(py name arguments)", new Pythonmethod(lisp, python_execute, type_python));
+    lisp->extension("deflib python_simple(py code)", new Pythonmethod(lisp, python_simplestring, type_python));
     lisp->extension("deflib python_close(py)", new Pythonmethod(lisp, python_close, type_python));
     return true;
 }

@@ -1616,29 +1616,25 @@ public:
     }
     
     void decrementstatus(uchar nb, bool top) {
-        if (status > s_destructible && status < s_protect) {
-            if (marking)
-                return;
-            marking = true;
+        if (marking)
+            return;
+        marking = true;
 
+        if (status > s_destructible && status < s_protect) {
             status-=nb;
             if (top) {
                 for (auto& a : dictionary)
                     a.second->decrementstatus(nb, false);
             }
-            marking = false;
         }
         
         if (!status) {
-            if (marking)
-                return;
-            marking = true;
-
             for (auto& a : dictionary)
                 a.second->decrementstatus(1, false);
-            marking = false;
             delete this;
         }
+        else
+            marking = false;
     }
     
     //The status is decremented without destroying the element.
@@ -1990,29 +1986,25 @@ public:
     }
     
     void decrementstatus(uchar nb, bool top) {
-        if (status > s_destructible && status < s_protect) {
-            if (marking)
-                return;
-            marking = true;
+        if (marking)
+            return;
+        marking = true;
 
+        if (status > s_destructible && status < s_protect) {
             status-=nb;
             if (top) {
                 for (auto& a : dictionary)
                     a.second->decrementstatus(nb, false);
             }
-            marking = false;
         }
         
         if (!status) {
-            if (marking)
-                return;
-            marking = true;
-
             for (auto& a : dictionary)
                 a.second->decrementstatus(1, false);
-            marking = false;
             delete this;
         }
+        else
+            marking = false;
     }
     
     //The status is decremented without destroying the element.
