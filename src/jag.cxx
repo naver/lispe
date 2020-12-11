@@ -1254,16 +1254,18 @@ long jag_editor::handlingeditorline(bool computespace) {
         lines.insert(pos, space); //we insert it into our line...
         undo(space, pos, u_ins_linked); //The value is inserted
         lines.numbers();
-        if (currentline < row_size) {
-            //We need to insert a line at this position
-            insertaline = true;
-            prefixsize = prf;
+        //We need to insert a line at this position
+        insertaline = true;
+        prefixsize = prf;
+        insertaline = false;
+        sz = poslines.size();
+        //if we are at the end of the screen, we need to scroll up
+        if (sz > row_size && currentline == sz-1)
+            displaylist(poslines[0] + 1);
+        else {
             displaylist(poslines[0]);
-            insertaline = false;
             currentline++;
         }
-        else //in this case, we are at the end of the process...
-            displaylist(poslines[0] + 1);
         
         pos = poslines[currentline];
         line = lines[pos];

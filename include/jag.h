@@ -694,7 +694,7 @@ public:
             prefixsize = 0;
             return;
         }
-        prefixsize = sz > 9999 ? 5 : sz > 999 ? 4: sz > 99 ? 3 : sz > 9 ? 2 : 1 ;
+        prefixsize = sz > 9999 ? 5 : sz > 999 ? 4: sz > 99 ? 3 : 2;
     }
 
 	long prefixe() {
