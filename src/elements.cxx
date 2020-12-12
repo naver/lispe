@@ -232,8 +232,7 @@ Element* List::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
-    long sze = liste.size();
-    for (long i = 0; i < sze; i++) {
+    for (long i = 0; i < liste.size(); i++) {
         element = liste[i]->copying(false);
         lisp->recording(element, label);
         e = null_;
