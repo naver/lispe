@@ -75,7 +75,7 @@ typedef enum {
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
     l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
-    l_setstreamchar,
+    l_link,
     c_opening, c_closing, c_closingall, c_opening_brace, c_closing_brace, c_colon,
     e_error_brace, e_error_parenthesis, e_error_string, e_no_error,
     l_final

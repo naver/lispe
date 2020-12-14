@@ -708,7 +708,7 @@ public:
     Element* evall_break(LispE* lisp);
     Element* evall_while(LispE* lisp);
     Element* evall_set_max_stack_size(LispE* lisp);
-    Element* evall_setstreamchar(LispE* lisp);
+    Element* evall_link(LispE* lisp);
     Element* evall_plus(LispE* lisp);
     Element* evall_minus(LispE* lisp);
     Element* evall_multiply(LispE* lisp);

@@ -1366,6 +1366,8 @@ Element* List::evall_atomp(LispE* lisp) {
 
     try {
         second_element = liste[1]->eval(lisp);
+        if (second_element == emptylist_)
+            return true_;
         test = second_element->isAtom();
         second_element->release();
         return booleans_[test];
@@ -4797,10 +4799,6 @@ Element* List::evall_values(LispE* lisp) {
 
     try {
         first_element = liste[1]->eval(lisp);
-        if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
-            first_element->release();
-            throw new Error(L"Error: the first argument must be a dictionary");
-        }
         second_element = first_element->thevalues(lisp);
         first_element->release();
         return second_element;
@@ -4964,8 +4962,6 @@ Element* List::evall_resetmark(LispE* lisp) {
     
     try {
         first_element = liste[1]->eval(lisp);
-        if (!first_element->isList())
-            throw new Error("Error: expecting a list as argument");
         first_element->resetusermark();
         first_element->release();
         return true_;
@@ -4982,25 +4978,15 @@ Element* List::evall_resetmark(LispE* lisp) {
 Element* List::evall_zerop(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
-    Element* second_element = null_;
-
+    
     lisp->display_trace(this);
-
-    try {
-        second_element = liste[1]->eval(lisp);
-        double n = second_element->asNumber();
-        second_element->release();
-        return booleans_[!n];
-    }
-    catch (Error* err) {
-        second_element->release();
-        throw err;
-    }
-
-    return null_;
+    
+    long n;
+    evalAsInteger(1, lisp, n);
+    return booleans_[!n];
 }
 
-Element* List::evall_setstreamchar(LispE* lisp) {
+Element* List::evall_link(LispE* lisp) {
     if (liste.size() != 3)
         throw new Error("Error: wrong number of arguments");
     
