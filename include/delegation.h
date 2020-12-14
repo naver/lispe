@@ -263,6 +263,39 @@ public:
         }
     }
 
+    void replaceAtom(wstring& name, short code, bool tobelocked) {
+        lock.locking(tobelocked);
+        string_to_code[name] = code;
+        lock.unlocking(tobelocked);
+    }
+
+
+    lisp_code check_atom(string& w) {
+        wstring s;
+        s_utf8_to_unicode(s, USTR(w), w.size());
+        try {
+            short code = string_to_code.at(s);
+            atom_pool.at(code);
+            return (lisp_code)code;
+        }
+        catch(const std::out_of_range& oor) {
+            return l_final;
+        }
+    }
+
+    short is_atom(string& w) {
+        wstring s;
+        s_utf8_to_unicode(s, USTR(w), w.size());
+        try {
+            short code = string_to_code.at(s);
+            atom_pool.at(code);
+            return code;
+        }
+        catch(const std::out_of_range& oor) {
+            return -1;
+        }
+    }
+
     short is_atom(wstring& s) {
         try {
             short code = string_to_code.at(s);

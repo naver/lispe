@@ -13,7 +13,6 @@
 #define lispe_h
 
 #include "segmentation.h"
-#include "elements.h"
 #include "listes.h"
 #include "tools.h"
 #include "stack.h"
@@ -46,7 +45,7 @@ class LispE {
      bool is_operator(short c);
      
      //Tokenize the code and stores the result in a Tokenize object.
-     e_type segmenting(string& code, Tokenizer& s);
+     lisp_code segmenting(string& code, Tokenizer& s);
      
      //Build the execution tree
      Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index);
@@ -411,7 +410,7 @@ public:
     
     Element* compile(string& code);
     Element* load(string chemin);
-    e_type segmenting(string& code, Tokenizer& s);
+    lisp_code segmenting(string& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index);
     void arguments(std::vector<string>& args);
@@ -846,6 +845,10 @@ public:
     
     Element* provideAtomProtected(wstring& identifier)  {
            return delegation->provideAtom(identifier, checkforLock());
+    }
+    
+    void replaceAtom(wstring& identifier, short code) {
+        delegation->replaceAtom(identifier, code, checkforLock());
     }
     
     Element* provideAtomOrInstruction(short identifier) {

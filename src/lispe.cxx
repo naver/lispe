@@ -12,7 +12,6 @@
 
 #include <stdio.h>
 #include "lispe.h"
-#include "elements.h"
 #include "segmentation.h"
 #include "tools.h"
 
@@ -21,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.11.13.57";
+static std::string version = "1.2020.12.14.11.40";
 string LispVersion() {
     return version;
 }
@@ -282,6 +281,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_scanl1, "scanl1", P_THREE, &List::evall_compose);
     set_instruction(l_scanr, "scanr", P_FOUR, &List::evall_compose);
     set_instruction(l_scanr1, "scanr1", P_THREE, &List::evall_compose);
+    set_instruction(l_setstreamchar, "setstreamchar", P_THREE, &List::evall_setstreamchar);
     set_instruction(l_take, "take", P_THREE, &List::evall_compose);
     set_instruction(l_takewhile, "takewhile", P_THREE, &List::evall_compose);
 
@@ -349,6 +349,13 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[v_null] = L"nil";
     code_to_string[v_true] = L"true";
     
+    code_to_string[c_opening] = L"(";
+    code_to_string[c_closing] = L")";
+    code_to_string[c_opening_brace] = L"{";
+    code_to_string[c_closing_brace] = L"}";
+    code_to_string[c_colon] = L":";
+    code_to_string[c_closingall] = L"]";
+    
     for (auto& a: code_to_string)
         string_to_code[a.second] = a.first;
     
@@ -373,7 +380,7 @@ void Delegation::initialisation(LispE* lisp) {
     
     _EMPTYDICTIONARY = new Dictionary(s_constant);
     
-    _BREAK = new Return(_NULL, s_constant);
+    _BREAK = new Listbreak;
     
     _BOOLEANS[0] = _NULL;
     _BOOLEANS[1] = _TRUE;
@@ -439,6 +446,13 @@ void Delegation::initialisation(LispE* lisp) {
         lisp->recordingunique(e, a.first);
     }
     
+    lisp->provideAtom(c_opening);
+    lisp->provideAtom(c_closing);
+    lisp->provideAtom(c_opening_brace);
+    lisp->provideAtom(c_closing_brace);
+    lisp->provideAtom(c_colon);
+    lisp->provideAtom(c_closingall);
+
     //We add an extension to the language... see systeme.cxx
     moduleSysteme(lisp);
     moduleChaines(lisp);
@@ -530,23 +544,43 @@ LispE::LispE(LispE* lisp, List* function, Element* body) {
  code (line)
  */
 
-e_type LispE::segmenting(string& code, Tokenizer& infos) {
-    
-    line_error = -1;
+lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
+    static uchar stops[172];
+    static bool init = false;
     long idx;
+    if (!init) {
+        init = true;
+        memset(stops, 0, 172);
+        for (idx = 0; idx <= 32; idx++) {
+            stops[idx] = true;
+        }
+        stops['('] = true;
+        stops[')'] = true;
+        stops[':'] = true;
+        stops[34] = true;
+        stops[39] = true;
+        stops[']'] = true;
+        stops['{'] = true;
+        stops['}'] = true;
+        stops[171] = true;
+    }
+
+    line_error = -1;
     long sz = code.size();
-    long i;
+    long i, current_i;
     int nb_parentheses = 0;
     int nb_braces = 0;
     //The first line of the code is 1
     long line_number = 1;
     long culprit = -1;
-    uchar c;
+    UWCHAR c, nxt;
     bool add = delegation->add_to_listing;
+    lisp_code lc;
     string current_line;
     string tampon;
     for (i = 0; i < sz; i++) {
-        c = code[i];
+        current_i = i;
+        c = getonechar(USTR(code), i);
         switch (c) {
             case ';':
             case '#': //comments (we accept both with ; and #)
@@ -576,22 +610,22 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
             case '\'':
                 if (add)
                     current_line += c;
-                infos.append(c, e_quote, line_number, i, i+1);
+                infos.append(c, l_quote, line_number, i, i+1);
                 break;
             case '`': { // a string containing what we want...
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '`') {
-                    tampon += code[idx];
                     idx++;
                 }
                 if (idx == sz)
                     return e_error_string;
-                
+
+                tampon = code.substr(i+1, idx-i-1);
                 if (tampon == "")
-                    infos.append(tampon, e_emptystring, line_number, i, idx);
+                    infos.append(tampon, t_emptystring, line_number, i, idx);
                 else
-                    infos.append(tampon, e_string, line_number, i, idx);
+                    infos.append(tampon, t_string, line_number, i, idx);
                 if (add) {
                     current_line += "`";
                     current_line += tampon;
@@ -604,9 +638,9 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '"') {
-                    c = code[idx];
+                    c = (uchar)code[idx];
                     if (c < 32) {
-                        infos.append(tampon, e_emptystring, line_number, i, idx);
+                        infos.append(tampon, t_emptystring, line_number, i, idx);
                         return e_error_string;
                     }
                     
@@ -632,10 +666,9 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                     idx++;
                 }
                 if (tampon == "")
-                    infos.append(tampon, e_emptystring, line_number, i, idx);
+                    infos.append(tampon, t_emptystring, line_number, i, idx);
                 else
-                    infos.append(tampon, e_string, line_number, i, idx);
-                
+                    infos.append(tampon, t_string, line_number, i, idx);
                 if (add) {
                     current_line += "\"";
                     current_line += tampon;
@@ -644,187 +677,25 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 i = idx;
                 break;
             }
-            case '(':
-                if (add)
-                    current_line += c;
-                nb_parentheses++;
-                infos.append(c, e_opening_parenthesis, line_number, i, i + 1);
-                break;
-            case ')':
-                if (add)
-                    current_line += c;
-                nb_parentheses--;
-                if (nb_parentheses <= 0) {
-                    if (culprit == -1)
-                        culprit = line_number;
-                }
-                infos.append(c, e_closing_parenthesis, line_number, i, i + 1);
-                break;
-            case ']': { //(+ 10 (* 20 (/40 2]
-                if (add)
-                    current_line += c;
-                nb_parentheses--;
-                if (nb_parentheses <= 0) {
-                    if (culprit == -1)
-                        culprit = line_number;
-                }
-                //We add any number of parentheses to close the gap
-                for (long i = 0; i < nb_parentheses; i++)
-                    infos.append(c, e_closing_parenthesis, line_number, i, i + 1);
-                nb_parentheses = 1;
-                break;
-            }
-            case ':':
-                if (add)
-                    current_line += c;
-                infos.append(c, e_colon, line_number, i, i + 1);
-                break;
-            case '{':
-                if (add)
-                    current_line += c;
-                nb_braces++;
-                infos.append(c, e_opening_brace, line_number, i, i + 1);
-                break;
-            case '}':
-                if (add)
-                    current_line += c;
-                nb_braces--;
-                if (nb_braces <= 0) {
-                    if (culprit == -1)
-                        culprit = line_number;
-                }
-                infos.append(c, e_closing_brace, line_number, i, i + 1);
-                break;
-            case '&':
-            case '|':
-            case '*':
-            case '%':
-            case '/':
-                if (add)
-                    current_line += c;
-                if (code[i+1] == '=') {
-                    string ope;
-                    ope = c;
-                    ope += "=";
-                    infos.append(ope, e_operator, line_number, i, i + 2);
-                    if (add)
-                        current_line += "=";
-                    i++;
-                }
-                else
-                    infos.append(c, e_operator, line_number, i, i + 1);
-                break;
-            case '^':
-                if (add)
-                    current_line += c;
-                if (code[i+1] == '^') {
-                    if (add)
-                        current_line += c;
-                    if (code[i+2] == '=') {
-                        if (add)
-                            current_line += "=";
-                        infos.append("^^=", e_operator, line_number, i, i + 3);
-                        i+=2;
-                    }
-                    else {
-                        infos.append("^^", e_operator, line_number, i, i + 2);
-                        i++;
-                    }
-                }
-                else {
-                    if (code[i+1] == '=') {
-                        if (add)
-                            current_line += "=";
-                        infos.append("^=", e_operator, line_number, i, i + 2);
-                        i++;
-                    }
-                    else
-                        infos.append("^", e_operator, line_number, i, i + 1);
-                }
-                break;
-            case '<':
-                if (add)
-                    current_line += c;
-                if (code[i+1] == '<') {
-                    if (add)
-                        current_line += c;
-                    infos.append("<<", e_operator, line_number, i, i + 2);
-                    i++;
-                }
-                else {
-                    if (code[i+1] == '=') {
-                        if (add)
-                            current_line += "=";
-                        infos.append("<=", e_operator, line_number, i, i + 2);
-                        i++;
-                    }
-                    else
-                        infos.append(c, e_operator, line_number, i, i + 1);
-                }
-                break;
-            case '>':
-                if (add)
-                    current_line += c;
-                if (code[i+1] == '>') {
-                    if (add)
-                        current_line += c;
-                    infos.append(">>", e_operator, line_number, i, i + 2);
-                    i++;
-                }
-                else {
-                    if (code[i+1] == '=') {
-                        if (add)
-                            current_line += "=";
-                        infos.append(">=", e_operator, line_number, i, i + 2);
-                        i++;
-                    }
-                    else
-                        infos.append(c, e_operator, line_number, i, i + 1);
-                }
-                break;
-            case '!':
-                if (add)
-                    current_line += c;
-                if (code[i+1] == '=') {
-                    if (add)
-                        current_line += "=";
-                    infos.append("!=", e_operator, line_number, i, i + 2);
-                    i++;
-                }
-                else
-                    infos.append(c, e_character, line_number, i, i + 1);
-                break;
-            case '=':
-                if (add)
-                    current_line += c;
-                infos.append(c, e_operator, line_number, i, i + 1);
-                break;
             case '+':
-                if (!isdigit(code[i+1])) {
-                    if (add)
-                        current_line += c;
-                    if (code[i+1] == '=') {
-                        if (add)
-                            current_line += "=";
-                        infos.append("+=", e_operator, line_number, i, i + 2);
-                        i++;
-                    }
-                    else
-                        infos.append(c, e_operator, line_number, i, i + 1);
-                    break;
-                }
             case '-':
                 if (!isdigit(code[i+1])) {
-                    if (add)
-                        current_line += c;
-                    if (code[i+1] == '=') {
-                        if (add)
-                            current_line += "=";
-                        infos.append("-=", e_operator, line_number, i, i + 2);
-                        i++;
+                    idx = i + 1;
+                    while (idx < sz) {
+                        nxt = getonechar(USTR(code), idx);
+                        if (nxt == 8220 || (nxt < 172 && stops[nxt]))
+                            break;
+                        i = idx;
+                        idx++;
                     }
+                    tampon = code.substr(current_i, i - current_i + 1);
+                    if (add)
+                        current_line += tampon;
+                    idx = delegation->is_atom(tampon);
+                    if (idx >= l_plus && idx <= l_modequal)
+                        infos.append(tampon, t_operator, line_number, current_i, i + 1);
                     else
-                        infos.append(c, e_operator, line_number, i, i + 1);
+                        infos.append(tampon, t_atom, line_number, current_i, i + 1);
                     break;
                 }
             case '0':
@@ -841,108 +712,166 @@ e_type LispE::segmenting(string& code, Tokenizer& infos) {
                 tampon = code.substr(i, idx);
                 if (add)
                     current_line += tampon;
-                infos.append(d, tampon, e_digits, line_number, i, idx);
+                infos.append(d, tampon, t_number, line_number, i, idx);
                 i += idx - 1;
                 break;
             }
-            case 194: {
+            case 171: {
+                //This is a «, we look for the next: »
+                //(ord «test»)
                 idx = i + 1;
-                if ((uchar)code[idx] == 171) {
+                nxt = getonechar(USTR(code), idx);
+                idx++;
+                while (idx < sz && nxt != 187) {
+                    nxt = getonechar(USTR(code), idx);
                     idx++;
-                    //This is a «, we look for the next: »
-                    tampon = "";
-                    while (idx < sz && (uchar)code[idx] != 194 && (uchar)code[idx+1] != 187) {
-                        tampon += code[idx];
-                        idx++;
-                    }
-                    if (idx == sz)
-                        return e_error_string;
-                    
-                    idx++;
-                    if (tampon == "")
-                        infos.append(tampon, e_emptystring, line_number, i, idx);
-                    else
-                        infos.append(tampon, e_string, line_number, i, idx);
-                    if (add) {
-                        current_line += "«";
-                        current_line += tampon;
-                        current_line += "»";
-                    }
-                    i = idx;
-                    break;
                 }
+                if (idx == sz)
+                    return e_error_string;
+                
+                tampon = code.substr(i+1, idx-i-3);
+                if (tampon == "")
+                    infos.append(tampon, t_emptystring, line_number, i, idx);
+                else
+                    infos.append(tampon, t_string, line_number, i, idx);
+                if (add) {
+                    current_line += "«";
+                    current_line += tampon;
+                    current_line += "»";
+                }
+                i = idx-1;
+                break;
             }
-            case 226: {
+            case 8220: {
+                //(ord “test”)
                 idx = i + 1;
-                if ((uchar)code[idx] == 128 && (uchar)code[idx+1] == 156) {
-                    idx+=2;
-                    //This is a «, we look for the next: »
-                    tampon = "";
-                    while (idx < sz && (uchar)code[idx] != 226 && (uchar)code[idx+1] != 128 && (uchar)code[idx+1] != 157) {
-                        tampon += code[idx];
-                        idx++;
-                    }
-                    if (idx == sz)
-                        return e_error_string;
-                    
-                    idx+=2;
-                    if (tampon == "")
-                        infos.append(tampon, e_emptystring, line_number, i, idx);
-                    else
-                        infos.append(tampon, e_string, line_number, i, idx);
-                    if (add) {
-                        current_line += "“";
-                        current_line += tampon;
-                        current_line += "”";
-                    }
-                    i = idx;
-                    break;
+                nxt = getonechar(USTR(code), idx);
+                idx++;
+                while (idx < sz && nxt != 8221) {
+                    nxt = getonechar(USTR(code), idx);
+                    idx++;
                 }
+                if (idx == sz)
+                    return e_error_string;
+                
+                tampon = code.substr(i+1, idx-i-4);
+                if (tampon == "")
+                    infos.append(tampon, t_emptystring, line_number, i, idx);
+                else
+                    infos.append(tampon, t_string, line_number, i, idx);
+                
+                if (add) {
+                    current_line += "“";
+                    current_line += tampon;
+                    current_line += "”";
+                }
+                i = idx-1;
+                break;
             }
             default: {
-                long pos = i;
-                idx = i;
-                tampon = "";
-                if (!handlingutf8->is_a_valid_letter(USTR(code), idx))  {
-                    if (idx == i) {
-                        if (add)
-                            current_line += c;
-                        infos.append(c, e_character, line_number, pos, pos + 1);
-                    }
-                    else {
-                        tampon = code.substr(i, idx - i + 1);
-                        if (add)
-                            current_line += tampon;
-                        infos.append(tampon, e_character, line_number, pos, idx-i+1);
-                        i = idx;
-                    }
-                    break;
+                //If the character is a multi-byte character, we need
+                //to position on the beginning of the character again
+                //Cases to stop looking for an atom: ()]{}'9 32 10 13" 171 8220
+                idx = i + 1;
+                nxt = c;
+                while (idx < sz && nxt != 8220 && (nxt >= 172 || !stops[nxt])) {
+                    i = idx;
+                    nxt = getonechar(USTR(code), idx);
+                    idx++;
                 }
-                idx++;
-                while (idx < sz && handlingutf8->is_a_valid_letter(USTR(code), idx)) idx++;
-                tampon = code.substr(i, idx - i);
-                i = idx-1;
-                if (tampon[0] == 'c' && tampon.back() == 'r') {
-                    // we check if we don't have a variation on car/cdr/cadr/caar etc...
-                    idx = 1;
-                    bool ok = true;
-                    while (tampon[idx] !='r') {
-                        if (tampon[idx] != 'a' && tampon[idx] != 'd') {
-                            ok = false;
+                
+                if ((i - current_i) <= 1)
+                    tampon = c;
+                else {
+                    tampon = code.substr(current_i, i - current_i);
+                    if (tampon[0] == 'c' && tampon.back() == 'r' && tampon.size() > 3) {
+                        // we check if we don't have a variation on car/cdr/cadr/caar etc...
+                        idx = 1;
+                        bool ok = true;
+                        while (tampon[idx] !='r') {
+                            if (tampon[idx] != 'a' && tampon[idx] != 'd') {
+                                ok = false;
+                                break;
+                            }
+                            idx++;
+                        }
+                        if (ok) {
+                            if (add)
+                                current_line += tampon;
+                            infos.append(tampon, l_cadr, line_number, current_i, i + 1);
+                            i--;
                             break;
                         }
-                        idx++;
-                    }
-                    if (ok) {
-                        if (add)
-                            current_line += tampon;
-                        infos.append(tampon, e_cadr, line_number, pos, idx);
-                        break;
                     }
                 }
+
+                lc = (lisp_code)delegation->check_atom(tampon);
+                 
+                switch (lc) {
+                    case c_opening:
+                        if (add)
+                            current_line += c;
+                        nb_parentheses++;
+                        infos.append(c, c_opening, line_number, current_i, i + 1);
+                        break;
+                    case c_closing:
+                        if (add)
+                            current_line += c;
+                        nb_parentheses--;
+                        if (nb_parentheses <= 0) {
+                            if (culprit == -1)
+                                culprit = line_number;
+                        }
+                        infos.append(c, c_closing, line_number, current_i, i + 1);
+                        break;
+                    case c_opening_brace:
+                        if (add)
+                            current_line += c;
+                        nb_braces++;
+                        infos.append(c, c_opening_brace, line_number, current_i, i + 1);
+                        break;
+                    case c_closing_brace:
+                        if (add)
+                            current_line += c;
+                        nb_braces--;
+                        if (nb_braces <= 0) {
+                            if (culprit == -1)
+                                culprit = line_number;
+                        }
+                        infos.append(c, c_closing_brace, line_number, current_i, i + 1);
+                        break;
+                    case c_colon:
+                        if (add)
+                            current_line += c;
+                        infos.append(c, c_colon, line_number, current_i, i + 1);
+                        break;
+                    case c_closingall: {
+                        if (add)
+                            current_line += c;
+                        nb_parentheses--;
+                        if (nb_parentheses <= 0) {
+                            if (culprit == -1)
+                                culprit = line_number;
+                        }
+                        //We add any number of parentheses to close the gap
+                        for (long i = 0; i < nb_parentheses; i++)
+                            infos.append(c, c_closing, line_number, current_i, i + 1);
+                        nb_parentheses = 1;
+                        break;
+                    }
+                    default:
+                        if (lc >= l_plus && lc <= l_modequal)
+                            infos.append(tampon, t_operator, line_number, current_i, i + 1);
+                        else
+                            infos.append(tampon, t_atom, line_number, current_i, i + 1);
+                }
+                
+                if (i == current_i)
+                    break;
+                
+                i--;
                 if (add)
                     current_line += tampon;
-                infos.append(tampon, e_token, line_number, pos, idx);
                 break;
             }
         }
@@ -1169,10 +1098,10 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
     char topfunction = false;
     while (index < parse.types.size()) {
         switch (parse.types[index]) {
-            case e_opening_parenthesis:
+            case c_opening:
                 index++;
                 //Empty list
-                if (parse.types[index] == e_closing_parenthesis) {
+                if (parse.types[index] == c_closing) {
                     index++;
                     e = delegation->_EMPTYLIST;
                 }
@@ -1232,12 +1161,12 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     quote = NULL;
                 }
                 break;
-            case e_closing_parenthesis:
+            case c_closing:
                 index++;
                 return delegation->_TRUE;
-            case e_opening_brace: {
+            case c_opening_brace: {
                 index++;
-                if (parse.types[index] == e_closing_brace) {
+                if (parse.types[index] == c_closing_brace) {
                     index++;
                     e = delegation->_EMPTYDICTIONARY;
                 }
@@ -1255,10 +1184,10 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 break;
             }
-            case e_closing_brace:
+            case c_closing_brace:
                 index++;
                 return delegation->_TRUE;
-            case e_emptystring:
+            case t_emptystring:
                 if (quote == NULL)
                     courant->append(delegation->_EMPTYSTRING);
                 else {
@@ -1267,7 +1196,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 index++;
                 break;
-            case e_string:
+            case t_string:
                 e = provideString(parse.tokens[index]);
                 if (quote == NULL)
                     courant->append(e);
@@ -1277,7 +1206,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 index++;
                 break;
-            case e_digits: {
+            case t_number: {
                 value = parse.numbers[index];
                 if (value == 0)
                     e = delegation->_ZERO;
@@ -1295,7 +1224,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 index++;
                 break;
-            case e_operator:
+            case t_operator:
                 e = provideOperator(encode(parse.tokens[index]));
                 if (quote == NULL)
                     courant->append(e);
@@ -1305,7 +1234,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 index++;
                 break;
-            case e_cadr:
+            case l_cadr:
                 e =  provideCADR(parse.tokens[index]);
                 if (quote == NULL)
                     courant->append(e);
@@ -1315,25 +1244,15 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 index++;
                 break;
-            case e_colon:
+            case c_colon:
                 if (courant->label() == t_dictionary) {
                     courant->reversechoice();
                     index++;
-                    if (parse.types[index] == e_colon)
+                    if (parse.types[index] == c_colon)
                         throw new Error("Error: wrong key/value separator in a dictionary");
                     break;
                 }
-            case e_character:
-                e = provideNonLabelAtom(encode(parse.tokens[index]));
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
-                index++;
-                break;
-            case e_token:
+            case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
                 if (quote == NULL) {
                     if (courant->size() == 0) {
@@ -1352,7 +1271,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 index++;
                 break;
-            case e_quote:
+            case l_quote:
                 if (quote == NULL) {
                     quote = new Listincode(parse.lines[index], delegation->i_current_file);
                     garbaging(quote);
@@ -1453,7 +1372,7 @@ Element* LispE::compile(string& code) {
     //A little trick to compile code sequences
     code = "(block " + code + ")";
     Tokenizer parse;
-    e_type retour = segmenting(code, parse);
+    lisp_code retour = segmenting(code, parse);
     List courant;
     long index;
     switch (retour) {
@@ -1500,7 +1419,7 @@ Element* LispE::extension(string code, Element* etendre) {
     List* current_list = NULL;
     
     Tokenizer parse;
-    e_type retour = segmenting(code, parse);
+    lisp_code retour = segmenting(code, parse);
     
     switch (retour) {
         case e_error_brace:

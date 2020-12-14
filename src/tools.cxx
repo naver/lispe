@@ -568,7 +568,7 @@ long Chaine_UTF8::getonchar(wstring& w, long position) {
 }
 
 #ifdef WIN32
-inline UWCHAR getonechar(unsigned char* s, long& i) {
+UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR result, code;
     i += c_utf8_to_unicode(s + i, code);
     if (c_utf16_to_unicode(result, code, false)) {
@@ -623,7 +623,7 @@ UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
 }
 #else
 
-inline UWCHAR getonechar(unsigned char* s, long& i) {
+UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR code;
     i += c_utf8_to_unicode(s + i, code);
     return code;
@@ -1387,6 +1387,12 @@ char Chaine_UTF8::is_a_valid_letter(unsigned char* m, long& i) {
     if (m[i] == '_' || isadigit(m[i]))
         return 1;
     return c_is_alpha(m, i);
+}
+
+char Chaine_UTF8::is_a_valid_letter(UWCHAR c) {
+    if (c == '_' || isadigit(c))
+        return 1;
+    return c_is_alpha(c);
 }
 
 char Chaine_UTF8::is_a_valid_letter(wstring& m, long& i) {

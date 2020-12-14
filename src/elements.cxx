@@ -48,8 +48,8 @@ string Element::prettify(LispE* lisp) {
     bool inbrace = false;
     for (long i = 0; i <sz; i++) {
         switch (parse.types[i]) {
-            case e_opening_parenthesis: {
-                if (parse.types[i+1] == e_closing_parenthesis) {
+            case c_opening: {
+                if (parse.types[i+1] == c_closing) {
                     if (i && !inbrace)
                         jolly += " ";
                     jolly += "()";
@@ -63,14 +63,14 @@ string Element::prettify(LispE* lisp) {
                 inbrace = false;
                 break;
             }
-            case e_closing_parenthesis: {
+            case c_closing: {
                 if (i)
                     jolly += "\n";
                 jolly += ")\n";
                 break;
             }
-            case e_opening_brace: {
-                if (parse.types[i+1] == e_closing_brace) {
+            case c_opening_brace: {
+                if (parse.types[i+1] == c_closing_brace) {
                     if (i && !inbrace)
                         jolly += " ";
                     jolly += "{}";
@@ -84,13 +84,13 @@ string Element::prettify(LispE* lisp) {
                 inbrace = false;
                 break;
             }
-            case e_closing_brace: {
+            case c_closing_brace: {
                 if (i)
                     jolly += "\n";
                 jolly += "}\n";
                 break;
             }
-            case e_string:
+            case t_string:
                 if (i && !inbrace)
                     jolly += " ";
                 jolly += '"';
@@ -98,14 +98,14 @@ string Element::prettify(LispE* lisp) {
                 jolly += '"';
                 inbrace = false;
                 break;
-            case e_emptystring:
+            case t_emptystring:
                 if (i && !inbrace)
                     jolly += " ";
                 jolly += '"';
                 jolly += '"';
                 inbrace = false;
                 break;
-            case e_colon:
+            case c_colon:
                 jolly += " ";
                 jolly += parse.tokens[i];
                 jolly += " ";

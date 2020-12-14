@@ -18,23 +18,18 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include "elements.h"
 
 using std::string;
 using std::vector;
 
 #define uchar unsigned char
 
-typedef enum {e_token, e_opening_parenthesis, e_closing_parenthesis,
-    e_operator, e_quote, e_string, e_emptystring, e_digits, e_cadr,
-    e_opening_brace, e_closing_brace, e_colon,
-    e_character, e_error_brace, e_error_parenthesis, e_error_string, e_no_error,
-} e_type;
-
 class Tokenizer {
 public:
     vector<string> tokens;
     vector<double> numbers;
-    vector<e_type> types;
+    vector<lisp_code> types;
     vector<long> lines;
     vector<long> positions;
 
@@ -46,7 +41,7 @@ public:
         positions.clear();
     }
     
-    void append(uchar segment, e_type t, long l, long posbeg, long posend) {
+    void append(uchar segment, lisp_code t, long l, long posbeg, long posend) {
         string str;
         str = segment;
         tokens.push_back(str);
@@ -57,7 +52,7 @@ public:
         positions.push_back(posend);
     }
 
-    void append(string segment, e_type t, long l, long posbeg, long posend) {
+    void append(string segment, lisp_code t, long l, long posbeg, long posend) {
         tokens.push_back(segment);
         numbers.push_back(0);
         types.push_back(t);
@@ -66,7 +61,7 @@ public:
         positions.push_back(posend);
     }
 
-    void append(double valeur, string segment, e_type t, long l, long posbeg, long posend) {
+    void append(double valeur, string segment, lisp_code t, long l, long posbeg, long posend) {
         tokens.push_back(segment);
         numbers.push_back(valeur);
         types.push_back(t);

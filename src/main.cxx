@@ -266,13 +266,13 @@ public:
             sub = line.substr(0, left);
             add = false;
             switch (segments->types[isegment]) {
-                case e_emptystring:
-                case e_string:
+                case t_emptystring:
+                case t_string:
                     right += 1;
                     sub += colors[0];
                     add = true;
                     break;
-                case e_token: //methods
+                case t_atom: //methods
                     if (lispe->is_instruction(segments->tokens[isegment])) {
                         sub += colors[2];
                         add = true;

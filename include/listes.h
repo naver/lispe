@@ -58,7 +58,7 @@ public:
 
         long inc = 0;
         //In this case, we skip the pos position
-        for (long i = 0; i< t; i++) {
+        for (long i = 0; i< t-inc; i++) {
             if (i < last) {
                 inc += (i == pos);
                 tfs[i+inc] = buffer[i];
@@ -299,8 +299,9 @@ public:
     
     void set(std::vector<Element*>& v) {
         item->last = home;
-        for (long i = 0; i < v.size(); i++)
-            push_back(v[i]);
+        for (long i = 0; i < v.size(); i++) {
+            item->buffer[item->last++] = v[i];
+        }            
     }
 
 };
@@ -716,6 +717,7 @@ public:
     Element* evall_break(LispE* lisp);
     Element* evall_while(LispE* lisp);
     Element* evall_set_max_stack_size(LispE* lisp);
+    Element* evall_setstreamchar(LispE* lisp);
     Element* evall_plus(LispE* lisp);
     Element* evall_minus(LispE* lisp);
     Element* evall_multiply(LispE* lisp);
@@ -867,8 +869,12 @@ public:
 class Listbreak : public Element {
 public:
     
-    Listbreak() : Element(s_constant) {}
+    Listbreak() : Element(l_return, s_constant) {}
   
+    bool isBreak() {
+        return true;
+    }
+    
     Element* eval(LispE*) {
         return this;
     }

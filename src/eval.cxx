@@ -2707,7 +2707,6 @@ Element* List::evall_insert(LispE* lisp) {
         long idx;
         evalAsInteger(3, lisp, idx);
         third_element = first_element->insert(lisp, second_element, idx);
-
         second_element->release();
         if (third_element != first_element) {
             first_element->release();
@@ -2960,20 +2959,8 @@ Element* List::evall_lambda(LispE* lisp) {
 Element* List::evall_last(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-
     lisp->display_trace(this);
-
-    try {
-        first_element = liste[1]->eval(lisp);
-        return first_element->last_element(lisp);
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return null_;
+    return liste[1]->eval(lisp)->last_element(lisp);
 }
 
 
@@ -4352,8 +4339,8 @@ Element* List::evall_search(LispE* lisp) {
         if (listsize == 4)
             evalAsInteger(3,lisp, idx);
         third_element = first_element->search_element(lisp, second_element, idx);
-        first_element->release();
-        second_element->release();
+        _releasing(first_element);
+        _releasing(second_element);
         return third_element;
     }
     catch (Error* err) {
@@ -4887,6 +4874,13 @@ Element* List::evall_while(LispE* lisp) {
         first_element->release();
         if (test && lisp->trace != debug_goto)
             lisp->stop_at_next_line(debug_next);
+
+        if (second_element->type == l_return) {
+            if (second_element->isBreak())
+                return null_;
+            return second_element;
+        }
+
         return second_element;
     }
     catch (Error* err) {
@@ -5006,6 +5000,32 @@ Element* List::evall_zerop(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_setstreamchar(LispE* lisp) {
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    
+    Element* first_element = null_;
+    Element* second_element = null_;
+    
+    try {
+        second_element = liste[2]->eval(lisp);
+        if (!second_element->isAtom())
+            throw new Error("Error: the second argument must be an atom");
+        
+        //The first atom is replaced with the second atom code...
+        wstring identifier;
+        evalAsString(1, lisp, identifier);
+        lisp->replaceAtom(identifier, second_element->label());
+        return true_;
+    }
+    catch (Error* err) {
+        second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return null_;
+}
 
 Element* List::evall_zip(LispE* lisp) {
     short listsize = liste.size();
@@ -5225,7 +5245,4 @@ Element* List::evalt_list(LispE* lisp) {
     }
     return null_;
 }
-
-
-
 

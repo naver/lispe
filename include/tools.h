@@ -66,6 +66,8 @@ string jsonstring(string value);
 wstring wjsonstring(wstring value);
 string cs_unicode_to_utf8(UWCHAR code);
 
+UWCHAR getonechar(unsigned char* s, long& i);
+
 string NormalizePathname(string n);
 bool c_is_space(wchar_t code);
 long size_c(string& s);
@@ -159,6 +161,7 @@ public:
     char c_is_alpha(wchar_t);
     char c_is_alpha(unsigned char* m, long& i);
     char is_a_valid_letter(unsigned char* m, long& i);
+    char is_a_valid_letter(UWCHAR c);
     char is_a_valid_letter(wstring& m, long& i);
     bool s_is_lower(wstring& s);
     bool s_is_digit(wstring& str);
