@@ -25,8 +25,6 @@ public:
         last = 0; //this is the last element
         sz = t; //this is the size
         buffer = new Element*[t];
-        for (long i = 0; i< t; i++)
-            buffer[i] = NULL;
     }
     
     void reserve(long t) {
@@ -38,11 +36,8 @@ public:
         //we reallocate our structure
         tfs = new Element*[t];
 
-        for (long i = 0; i< t; i++) {
-            if (i < last)
-                tfs[i] = buffer[i];
-            else
-                tfs[i] = NULL;
+        for (long i = 0; i< last; i++) {
+            tfs[i] = buffer[i];
         }
 
         delete[] buffer;
@@ -58,13 +53,9 @@ public:
 
         long inc = 0;
         //In this case, we skip the pos position
-        for (long i = 0; i< t-inc; i++) {
-            if (i < last) {
-                inc += (i == pos);
-                tfs[i+inc] = buffer[i];
-            }
-            else
-                tfs[i+inc] = NULL;
+        for (long i = 0; i< last; i++) {
+            inc += (i == pos);
+            tfs[i+inc] = buffer[i];
         }
 
         delete[] buffer;
