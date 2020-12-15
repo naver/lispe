@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.14.15.35";
+static std::string version = "1.2020.12.15.11.30";
 string LispVersion() {
     return version;
 }
@@ -554,14 +554,17 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         for (idx = 0; idx <= 32; idx++) {
             stops[idx] = true;
         }
+
+        stops['!'] = true;
         stops['('] = true;
         stops[')'] = true;
         stops[':'] = true;
-        stops[34] = true;
-        stops[39] = true;
+        stops['"'] = true;
         stops[']'] = true;
         stops['{'] = true;
         stops['}'] = true;
+
+        stops[39] = true;
         stops[171] = true;
     }
 
@@ -780,10 +783,16 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     idx++;
                 }
                 
-                if ((i - current_i) <= 1)
+                if ((i - current_i) <= 1) {
                     tampon = c;
+                    if (add)
+                        current_line += c;
+                }
                 else {
                     tampon = code.substr(current_i, i - current_i);
+                    if (add)
+                        current_line += tampon;
+
                     if (tampon[0] == 'c' && tampon.back() == 'r' && tampon.size() > 3) {
                         // we check if we don't have a variation on car/cdr/cadr/caar etc...
                         idx = 1;
@@ -796,8 +805,6 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                             idx++;
                         }
                         if (ok) {
-                            if (add)
-                                current_line += tampon;
                             infos.append(tampon, l_cadr, line_number, current_i, i + 1);
                             i--;
                             break;
@@ -806,17 +813,16 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 }
 
                 lc = (lisp_code)delegation->check_atom(tampon);
-                 
+                
                 switch (lc) {
+                    case l_composenot:
+                        infos.append(c, t_atom, line_number, current_i, i + 1);
+                        break;
                     case c_opening:
-                        if (add)
-                            current_line += c;
                         nb_parentheses++;
                         infos.append(c, c_opening, line_number, current_i, i + 1);
                         break;
                     case c_closing:
-                        if (add)
-                            current_line += c;
                         nb_parentheses--;
                         if (nb_parentheses <= 0) {
                             if (culprit == -1)
@@ -825,14 +831,10 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                         infos.append(c, c_closing, line_number, current_i, i + 1);
                         break;
                     case c_opening_brace:
-                        if (add)
-                            current_line += c;
                         nb_braces++;
                         infos.append(c, c_opening_brace, line_number, current_i, i + 1);
                         break;
                     case c_closing_brace:
-                        if (add)
-                            current_line += c;
                         nb_braces--;
                         if (nb_braces <= 0) {
                             if (culprit == -1)
@@ -841,13 +843,9 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                         infos.append(c, c_closing_brace, line_number, current_i, i + 1);
                         break;
                     case c_colon:
-                        if (add)
-                            current_line += c;
                         infos.append(c, c_colon, line_number, current_i, i + 1);
                         break;
                     case c_closingall: {
-                        if (add)
-                            current_line += c;
                         nb_parentheses--;
                         if (nb_parentheses <= 0) {
                             if (culprit == -1)
@@ -866,12 +864,8 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                             infos.append(tampon, t_atom, line_number, current_i, i + 1);
                 }
                 
-                if (i == current_i)
-                    break;
-                
-                i--;
-                if (add)
-                    current_line += tampon;
+                if (i != current_i)
+                    i--;
                 break;
             }
         }

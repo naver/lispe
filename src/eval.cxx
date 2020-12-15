@@ -19,23 +19,23 @@ string get_char(jag_get* h);
 //------------------------------------------------------------------------------------------
 #define _releasing(f) f->release();f=null_
 //------------------------------------------------------------------------------------------
-class Comparison {
+struct Comparison {
 public:
-    List compare;
+    List* compare;
     LispE* lisp;
     
-    Comparison(LispE* l, Element* comp) {
+    Comparison(LispE* l, List* lst, Element* comp) {
         lisp = l;
-        compare.append(comp);
-        compare.append(null_);
-        compare.append(null_);
-        
+        compare = lst;
+        compare->append(comp);
+        compare->append(null_);
+        compare->append(null_);
     }
-    
-    bool eval(Element* i, Element* j) {
-        compare.liste[1] = i;
-        compare.liste[2] = j;
-        return compare.eval(lisp)->Boolean();
+        
+    inline bool eval(Element* i, Element* j) {
+        compare->liste[1] = i;
+        compare->liste[2] = j;
+        return compare->eval(lisp)->Boolean();
         
     }
     
@@ -4546,20 +4546,6 @@ Element* List::evall_sort(LispE* lisp) {
                 throw new Error(L"Error: incorrect comparison function in 'sort'");
             }
         }
-
-        Comparison comp(lisp, first_element);
-        List* l = (List*)second_element;
-        if (comp.checkComparison(l->liste[0])) {
-            first_element->release();
-            second_element->release();
-            throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
-        }
-        vector<Element*> v;
-        l->liste.get(v);
-        sort(v.begin(), v.end(), comp);
-        l->liste.set(v);
-        first_element->release();
-        return second_element;
     }
     catch (Error* err) {
         first_element->release();
@@ -4567,7 +4553,20 @@ Element* List::evall_sort(LispE* lisp) {
         throw err;
     }
 
-    return null_;
+    List complist;
+    Comparison comp(lisp, &complist, first_element);
+    List* l = (List*)second_element;
+    if (comp.checkComparison(l->liste[0])) {
+        first_element->release();
+        second_element->release();
+        throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+    }
+    vector<Element*> v;
+    l->liste.get(v);
+    sort(v.begin(), v.end(), comp);
+    l->liste.set(v);
+    first_element->release();
+    return second_element;
 }
 
 
