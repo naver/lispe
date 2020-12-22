@@ -369,9 +369,12 @@ Element* Dictionary::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
-    wstring a_key;
-    for (auto& a: dictionary) {
-        a_key = a.first;
+    //We record the keys first, in  case the dictionary is changed
+    //in the following instructions
+    vector<wstring> _keys;
+    for (auto& a: dictionary)
+        _keys.push_back(a.first);
+    for (auto& a_key : _keys) {
         element = lisp->provideString(a_key);
         lisp->recording(element, label);
         e = null_;
@@ -395,8 +398,13 @@ Element* Dictionary_n::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
-    for (auto& a: dictionary) {
-        element = lisp->provideNumber(a.first);
+    //We record the keys first, in  case the dictionary is changed
+    //in the following instructions
+    vector<double> _keys;
+    for (auto& a: dictionary)
+        _keys.push_back(a.first);
+    for (auto& a_key : _keys) {
+        element = lisp->provideNumber(a_key);
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
