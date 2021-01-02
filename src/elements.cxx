@@ -885,10 +885,7 @@ Element* Element::value_on_index(LispE* lisp, Element* i) {
 }
 
 Element* List::value_on_index(LispE* lisp, Element* idx) {
-    if (!idx->isNumber())
-        throw new Error("Error: Wrong index type");
-    
-    long i = idx->asInteger();
+    long i = idx->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -899,10 +896,7 @@ Element* List::value_on_index(LispE* lisp, Element* idx) {
 }
 
 Element* String::value_on_index(LispE* lisp, Element* idx) {
-    if (!idx->isNumber())
-        throw new Error("Error: Wrong index type");
-    
-    long i = idx->asInteger();
+    long i = idx->checkInteger(lisp);
     if (i < 0)
         i = content.size() + i;
     
@@ -922,11 +916,8 @@ Element* Dictionary::value_on_index(LispE* lisp, Element* idx) {
 }
 
 Element* Dictionary_n::value_on_index(LispE* lisp, Element* idx) {
-    if (!idx->isNumber())
-        throw new Error("Error: Wrong index type");
-    
     try {
-        return dictionary.at(idx->asNumber())->copying(false);
+        return dictionary.at(idx->checkNumber(lisp))->copying(false);
     }
     catch (const std::out_of_range& oor) {
         return null_;
@@ -935,10 +926,7 @@ Element* Dictionary_n::value_on_index(LispE* lisp, Element* idx) {
 //------------------------------------------------------------------------------------------
 
 Element* List::protected_index(LispE* lisp, Element* idx) {
-    if (!idx->isNumber())
-        throw new Error("Error: Wrong index type");
-    
-    long i = idx->asInteger();
+    long i = idx->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -949,10 +937,8 @@ Element* List::protected_index(LispE* lisp, Element* idx) {
 }
 
 Element* String::protected_index(LispE* lisp, Element* idx) {
-    if (!idx->isNumber())
-        throw new Error("Error: Wrong index type");
-    
-    long i = idx->asInteger();
+    long i = idx->checkInteger(lisp);
+
     if (i < 0)
         i = content.size() + i;
     
@@ -972,11 +958,8 @@ Element* Dictionary::protected_index(LispE* lisp, Element* idx) {
 }
 
 Element* Dictionary_n::protected_index(LispE* lisp, Element* idx) {
-    if (!idx->isNumber())
-        throw new Error("Error: Wrong index type");
-    
     try {
-        return dictionary.at(idx->asNumber());
+        return dictionary.at(idx->checkNumber(lisp));
     }
     catch (const std::out_of_range& oor) {
         return null_;
@@ -1301,32 +1284,46 @@ Element* String::plus(LispE* lisp, Element* e) {
     return lisp->provideString(c);
 }
 
+double Element::checkNumber(LispE* lisp) {
+    wstring s = L"Error: cannot use this element in an arithmetic expression: '";
+    s += asString(lisp);
+    s += L"'";
+    throw new Error(s);
+}
+
+long Element::checkInteger(LispE* lisp) {
+    wstring s = L"Error: cannot use this element in an arithmetic expression: '";
+    s += asString(lisp);
+    s += L"'";
+    throw new Error(s);
+}
+
 Element* Number::plus(LispE* lisp, Element* e) {
     if (status != s_constant) {
-        number += e->asNumber();
+        number += e->checkNumber(lisp);
         return this;
     }
-    return lisp->provideNumber(number+e->asNumber());
+    return lisp->provideNumber(number+e->checkNumber(lisp));
 }
 
 Element* Number::minus(LispE* lisp, Element* e) {
     if (status != s_constant) {
-        number -= e->asNumber();
+        number -= e->checkNumber(lisp);
         return this;
     }
-    return lisp->provideNumber(number-e->asNumber());
+    return lisp->provideNumber(number-e->checkNumber(lisp));
 }
 
 Element* Number::multiply(LispE* lisp, Element* e) {
     if (status != s_constant) {
-        number *= e->asNumber();
+        number *= e->checkNumber(lisp);
         return this;
     }
-    return lisp->provideNumber(number*e->asNumber());
+    return lisp->provideNumber(number*e->checkNumber(lisp));
 }
 
 Element* Number::divide(LispE* lisp, Element* e) {
-    double v = e->asNumber();
+    double v = e->checkNumber(lisp);
     if (v == 0)
         throw new Error("Error: division by zero");
     if (status != s_constant) {
@@ -1337,7 +1334,7 @@ Element* Number::divide(LispE* lisp, Element* e) {
 }
 
 Element* Number::mod(LispE* lisp, Element* e) {
-    long v = e->asInteger();
+    long v = e->checkNumber(lisp);
     if (v == 0)
         throw new Error("Error: division by zero");
     if (status != s_constant) {
@@ -1349,15 +1346,15 @@ Element* Number::mod(LispE* lisp, Element* e) {
 
 Element* Number::power(LispE* lisp, Element* e) {
     if (status != s_constant) {
-        number = pow(number, e->asNumber());
+        number = pow(number, e->checkNumber(lisp));
         return this;
     }
-    return lisp->provideNumber(pow(number, e->asNumber()));
+    return lisp->provideNumber(pow(number, e->checkNumber(lisp)));
 }
 
 Element* Number::bit_and(LispE* lisp, Element* e)  {
     double64 d(number);
-    d.bits &= e->asInteger();
+    d.bits &= e->checkInteger(lisp);
     if (status != s_constant) {
         number = d.v;
         return this;
@@ -1368,7 +1365,7 @@ Element* Number::bit_and(LispE* lisp, Element* e)  {
 
 Element* Number::bit_or(LispE* lisp, Element* e)  {
     double64 d(number);
-    d.bits |= e->asInteger();
+    d.bits |= e->checkInteger(lisp);
     if (status != s_constant) {
         number = d.v;
         return this;
@@ -1379,7 +1376,7 @@ Element* Number::bit_or(LispE* lisp, Element* e)  {
 
 Element* Number::bit_xor(LispE* lisp, Element* e)  {
     double64 d(number);
-    d.bits ^= e->asInteger();
+    d.bits ^= e->checkInteger(lisp);
     if (status != s_constant) {
         number = d.v;
         return this;
@@ -1390,7 +1387,7 @@ Element* Number::bit_xor(LispE* lisp, Element* e)  {
 
 Element* Number::leftshift(LispE* lisp, Element* e)  {
     double64 d(number);
-    d.bits <<= e->asInteger();
+    d.bits <<= e->checkInteger(lisp);
     if (status != s_constant) {
         number = d.v;
         return this;
@@ -1401,7 +1398,7 @@ Element* Number::leftshift(LispE* lisp, Element* e)  {
 
 Element* Number::rightshift(LispE* lisp, Element* e)  {
     double64 d(number);
-    d.bits >>= e->asInteger();
+    d.bits >>= e->checkInteger(lisp);
     if (status != s_constant) {
         number = d.v;
         return this;
@@ -1412,34 +1409,34 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
 
 Element* Integer::plus(LispE* lisp, Element* e) {
     if (e->type == t_number) {
-        double v = (double)integer + e->asNumber();
+        double v = (double)integer + e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer += e->asInteger();
+        integer += e->checkInteger(lisp);
         return this;
     }
         
-    return lisp->provideInteger(integer+e->asInteger());
+    return lisp->provideInteger(integer+e->checkInteger(lisp));
 }
 
 Element* Integer::minus(LispE* lisp, Element* e) {
     if (e->type == t_number) {
-        double v = (double)integer + e->asNumber();
+        double v = (double)integer + e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer -= e->asInteger();
+        integer -= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer-e->asInteger());
+    return lisp->provideInteger(integer-e->checkInteger(lisp));
 }
 
 Element* Integer::multiply(LispE* lisp, Element* e) {
     if (e->type == t_number) {
-        double v = (double)integer + e->asNumber();
+        double v = (double)integer + e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
@@ -1451,7 +1448,7 @@ Element* Integer::multiply(LispE* lisp, Element* e) {
 }
 
 Element* Integer::divide(LispE* lisp, Element* e) {
-    double v = e->asNumber();
+    double v = e->checkNumber(lisp);
     if (v == 0)
         throw new Error("Error: division by zero");
     v = (double)integer/v;
@@ -1463,7 +1460,7 @@ Element* Integer::divide(LispE* lisp, Element* e) {
 
 
 Element* Integer::mod(LispE* lisp, Element* e) {
-    long v = e->asInteger();
+    long v = e->checkInteger(lisp);
     if (v == 0)
         throw new Error("Error: division by zero");
     if (status != s_constant) {
@@ -1474,51 +1471,51 @@ Element* Integer::mod(LispE* lisp, Element* e) {
 }
 
 Element* Integer::power(LispE* lisp, Element* e) {
-    double v = pow((double)integer, e->asNumber());
+    double v = pow((double)integer, e->checkNumber(lisp));
     release();
     return lisp->provideNumber(v);
 }
 
 Element* Integer::bit_and(LispE* lisp, Element* e)  {
     if (status != s_constant) {
-        integer &= e->asInteger();
+        integer &= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer&e->asInteger());
+    return lisp->provideInteger(integer&e->checkInteger(lisp));
 }
 
 Element* Integer::bit_or(LispE* lisp, Element* e)  {
     if (status != s_constant) {
-        integer |= e->asInteger();
+        integer |= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer|e->asInteger());
+    return lisp->provideInteger(integer|e->checkInteger(lisp));
 }
 
 Element* Integer::bit_xor(LispE* lisp, Element* e)  {
     if (status != s_constant) {
-        integer ^= e->asInteger();
+        integer ^= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer^e->asInteger());
+    return lisp->provideInteger(integer^e->checkInteger(lisp));
 }
 
 
 Element* Integer::leftshift(LispE* lisp, Element* e)  {
     if (status != s_constant) {
-        integer <<= e->asInteger();
+        integer <<= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer<<e->asInteger());
+    return lisp->provideInteger(integer<<e->checkInteger(lisp));
 }
 
 
 Element* Integer::rightshift(LispE* lisp, Element* e)  {
     if (status != s_constant) {
-        integer >>= e->asInteger();
+        integer >>= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer>>e->asInteger());
+    return lisp->provideInteger(integer>>e->checkInteger(lisp));
 }
 
 //------------------------------------------------------------------------------------------

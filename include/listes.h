@@ -703,11 +703,14 @@ public:
             liste.decrement_and_clear();
     }
 
+#ifdef MAX_STACK_SIZE_ENABLED
+    Element* evall_set_max_stack_size(LispE* lisp);
+#endif
+
     Element* evall_quote(LispE* lisp);
     Element* evall_return(LispE* lisp);
     Element* evall_break(LispE* lisp);
     Element* evall_while(LispE* lisp);
-    Element* evall_set_max_stack_size(LispE* lisp);
     Element* evall_link(LispE* lisp);
     Element* evall_plus(LispE* lisp);
     Element* evall_minus(LispE* lisp);
@@ -800,6 +803,8 @@ public:
     Element* eval_call_function(LispE* lisp);
     Element* evalt_list(LispE* lisp);
     Element* evall_lock(LispE* lisp);
+    Element* evall_sum(LispE* lisp);
+    Element* evall_product(LispE* lisp);
     Element* evall_waiton(LispE* lisp);
     Element* evall_trigger(LispE* lisp);
     Element* evall_threadstore(LispE* lisp);

@@ -56,6 +56,7 @@ typedef enum {
     l_plusequal, l_minusequal, l_multiplyequal,  l_powerequal,
     l_leftshiftequal, l_rightshiftequal, l_bitandequal, l_bitorequal, l_bitxorequal,
     l_divide, l_mod, l_divideequal,l_modequal,
+    l_sum, l_product,
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
@@ -76,8 +77,8 @@ typedef enum {
     l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
     l_link,
-    c_opening, c_closing, c_closingall, c_opening_brace, c_closing_brace, c_colon,
-    e_error_brace, e_error_parenthesis, e_error_string, e_no_error,
+    c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_brace, c_closing_brace, c_colon,
+    e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
     l_final
 } lisp_code;
 
@@ -612,6 +613,9 @@ public:
         return false;
     }
     
+    virtual double checkNumber(LispE* lisp);
+    virtual long checkInteger(LispE* lisp);
+    
     virtual bool isDictionary() {
         return false;
     }
@@ -1011,6 +1015,14 @@ public:
         return true;
     }
     
+    double checkNumber(LispE* lisp) {
+        return number;
+    }
+    
+    long checkInteger(LispE* lisp) {
+        return number;
+    }
+    
     wstring asString(LispE* lisp);
     
     double asNumber() {
@@ -1121,6 +1133,14 @@ public:
         return true;
     }
     
+    double checkNumber(LispE* lisp) {
+        return integer;
+    }
+    
+    long checkInteger(LispE* lisp) {
+        return integer;
+    }
+
     double asNumber() {
         return integer;
     }

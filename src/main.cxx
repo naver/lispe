@@ -300,6 +300,7 @@ public:
     }
     
     void displaythehelp(long i) {
+        mouseoff();
         cout << m_clear << m_home;
         
         cerr << endl << m_redbold << "Commandes :" << m_current << endl << endl ;
@@ -381,6 +382,8 @@ public:
             cerr << "   \t\t- " << m_redital << "c:" << m_current << " copy a bloc of lines" << endl;
             cerr << "   \t\t- " << m_redital << "x:" << m_current << " cut a bloc of lines" << endl;
             cerr << "   \t\t- " << m_redital << "v:" << m_current << " paste a bloc of lines" << endl;
+            cerr << "   \t\t- " << m_redital << "f:" << m_current << " find with LispE regular expressions" << endl;
+            cerr << "   \t\t- " << m_redital << "F:" << m_current << " find with posix regular expressions" << endl;
             cerr << "   \t\t- " << m_redital << "d:" << m_current << " debug the code" << endl;
             cerr << "   \t\t- " << m_redital << "r:" << m_current << " run the code" << endl;
             cerr << "   \t\t- " << m_redital << "w:" << m_current << " write and quit" << endl;
@@ -2109,8 +2112,11 @@ public:
             cout << "&:display on: " << m_red;
     }
     
-    void launchterminal(char noinit) {
+    void launchterminal(bool darkmode, char noinit) {
         clearscreen();
+        
+        if (darkmode)
+            colors[2] = m_blueblack;
 
         localhelp << m_red << "^c/q" << m_current << ":cmd line " << m_red << "^xq" << m_current << ":quit";
         
@@ -2822,7 +2828,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
     }
 }
 
-#ifdef DEBUG
+#ifdef DEBUGG
 //Minimale version without the internal editor
 int main(int argc, char *argv[]) {
     LispE lisp;
@@ -2874,6 +2880,8 @@ int main(int argc, char *argv[]) {
     string rgx;
     string codeinitial;
     string codefinal;
+    bool darkmode = false;
+    
     long i;
     for (i = 1; i < argc; i++) {
         args = argv[i];
@@ -2883,6 +2891,8 @@ int main(int argc, char *argv[]) {
             cout << m_red << "    Interactive mode" << m_current << endl;
             cout << "    lispe"<< endl << endl;
             cout << m_red << "    This help" << m_current << endl;
+            cout << "    lispe -b"<< endl << endl;
+            cout << m_red << "    dark mode" << m_current << endl;
             cout << "    lispe -h|-help|--h|--help"<< endl << endl;
             cout << m_red << "    Execution of 'program' with optional list of arguments" << m_current << endl;
             cout << "    lispe program arg1 arg2"<< endl<< endl;
@@ -2927,6 +2937,11 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        if (args == "-b") {
+            darkmode = true;
+            continue;
+        }
+        
         if (args == "-pb") {
             if (i >= argc - 1) {
                 cerr << "Missing code for option '-pb'" << endl;
@@ -3025,7 +3040,7 @@ int main(int argc, char *argv[]) {
             w = JAGEDITOR->wconvert(line);
             JAGEDITOR->addcommandline(w);
             line = "";
-            JAGEDITOR->launchterminal(4);
+            JAGEDITOR->launchterminal(darkmode, 4);
             return 0;
         }
 
@@ -3048,7 +3063,7 @@ int main(int argc, char *argv[]) {
             w = JAGEDITOR->wconvert(line);
             JAGEDITOR->addcommandline(w);
             line = "";
-            JAGEDITOR->launchterminal(3);
+            JAGEDITOR->launchterminal(darkmode, 3);
             return 0;
         }
         
@@ -3068,6 +3083,6 @@ int main(int argc, char *argv[]) {
     }
     
     JAGEDITOR = new lispe_editor();
-    JAGEDITOR->launchterminal(2);
+    JAGEDITOR->launchterminal(darkmode, 2);
 }
 #endif

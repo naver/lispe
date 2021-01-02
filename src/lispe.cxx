@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2020.12.22.15.26";
+static std::string version = "1.2021.1.2.10.1";
 string LispVersion() {
     return version;
 }
@@ -126,6 +126,14 @@ void Delegation::initialisation(LispE* lisp) {
 
     // Here is the predefined list of instructions, with their name and arity
     //Important the instruction is counted into the arity. Hence (consp e) is P_TWO.
+    
+    //_max_stack_size can be enabled but represents a potential hazard as
+    //too high a value can cause the whole interpreter to crash...
+    //By default it is disabled...
+#ifdef MAX_STACK_SIZE_ENABLED
+    set_instruction(l_set_max_stack_size, "_max_stack_size", P_ONE | P_TWO, &List::evall_set_max_stack_size);
+#endif
+    
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
     set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
@@ -216,6 +224,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp);
     set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or);
     set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe);
+    set_instruction(l_sum, "sum", P_TWO, &List::evall_sum);
+    set_instruction(l_product, "product", P_TWO, &List::evall_product);
     set_instruction(l_plus, "+", P_ATLEASTTHREE, &List::evall_plus);
     set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
     set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop);
@@ -239,7 +249,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_searchall, "findall", P_THREE|P_FOUR, &List::evall_searchall);
     set_instruction(l_select, "select", P_ATLEASTTWO, &List::evall_select);
     set_instruction(l_self, "self", P_ATLEASTONE, &List::eval_call_function);
-    set_instruction(l_set_max_stack_size, "_max_stack_size", P_ONE | P_TWO, &List::evall_set_max_stack_size);
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
     set_instruction(l_size, "size", P_TWO, &List::evall_size);
@@ -354,7 +363,8 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[c_opening_brace] = L"{";
     code_to_string[c_closing_brace] = L"}";
     code_to_string[c_colon] = L":";
-    code_to_string[c_closingall] = L"]";
+    code_to_string[c_opening_bracket] = L"[";
+    code_to_string[c_closing_bracket] = L"]";
     
     for (auto& a: code_to_string)
         string_to_code[a.second] = a.first;
@@ -451,7 +461,8 @@ void Delegation::initialisation(LispE* lisp) {
     lisp->provideAtom(c_opening_brace);
     lisp->provideAtom(c_closing_brace);
     lisp->provideAtom(c_colon);
-    lisp->provideAtom(c_closingall);
+    lisp->provideAtom(c_opening_bracket);
+    lisp->provideAtom(c_closing_bracket);
 
     //We add an extension to the language... see systeme.cxx
     moduleSysteme(lisp);
@@ -560,6 +571,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         stops[')'] = true;
         stops[':'] = true;
         stops['"'] = true;
+        stops['['] = true;
         stops[']'] = true;
         stops['{'] = true;
         stops['}'] = true;
@@ -573,6 +585,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     long i, current_i;
     int nb_parentheses = 0;
     int nb_braces = 0;
+    int nb_brackets = 0;
     //The first line of the code is 1
     long line_number = 1;
     long culprit = -1;
@@ -777,7 +790,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 //Cases to stop looking for an atom: ()]{}'9 32 10 13" 171 8220
                 idx = i + 1;
                 nxt = c;
-                while (idx < sz && nxt != 8220 && (nxt >= 172 || !stops[nxt])) {
+                while (idx <= sz && nxt != 8220 && (nxt > 171 || !stops[nxt])) {
                     i = idx;
                     nxt = getonechar(USTR(code), idx);
                     idx++;
@@ -836,7 +849,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                         break;
                     case c_closing_brace:
                         nb_braces--;
-                        if (nb_braces <= 0) {
+                        if (nb_braces < 0) {
                             if (culprit == -1)
                                 culprit = line_number;
                         }
@@ -845,16 +858,26 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     case c_colon:
                         infos.append(c, c_colon, line_number, current_i, i + 1);
                         break;
-                    case c_closingall: {
-                        nb_parentheses--;
-                        if (nb_parentheses <= 0) {
-                            if (culprit == -1)
-                                culprit = line_number;
+                    case c_opening_bracket:
+                        nb_brackets++;
+                        infos.append('(', c_opening, line_number, current_i, i + 1);
+                        break;
+                    case c_closing_bracket: {
+                        if (nb_brackets) {
+                            nb_brackets--;
+                            infos.append(')', c_closing, line_number, current_i, i + 1);
                         }
-                        //We add any number of parentheses to close the gap
-                        for (long i = 0; i < nb_parentheses; i++)
+                        else {
+                            nb_parentheses--;
+                            if (nb_parentheses <= 0) {
+                                if (culprit == -1)
+                                    culprit = line_number;
+                            }
+                            //We add any number of parentheses to close the gap
+                            for (long i = 0; i < nb_parentheses; i++)
                             infos.append(c, c_closing, line_number, current_i, i + 1);
-                        nb_parentheses = 1;
+                            nb_parentheses = 1;
+                        }
                         break;
                     }
                     default:
@@ -870,6 +893,12 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
             }
         }
     }
+    
+    if (nb_brackets) {
+        line_error = line_number;
+        return e_error_bracket;
+    }
+    
     if (nb_parentheses) {
         line_error = culprit;
         return e_error_parenthesis;
@@ -1373,6 +1402,9 @@ Element* LispE::compile(string& code) {
         case e_error_brace:
             delegation->i_current_line = line_error;
             throw new Error("Error: Braces do not balance");
+        case e_error_bracket:
+            delegation->i_current_line = line_error;
+            throw new Error("Error: brackets do not balance");
         case e_error_parenthesis:
             delegation->i_current_line = line_error;
             throw new Error("Error: parentheses do not balance");
@@ -1420,6 +1452,10 @@ Element* LispE::extension(string code, Element* etendre) {
             etendre->release();
             delegation->i_current_line = line_error;
             throw new Error("Error: Braces do not balance");
+        case e_error_bracket:
+            etendre->release();
+            delegation->i_current_line = line_error;
+            throw new Error("Error: brackets do not balance");
         case e_error_parenthesis:
             etendre->release();
             delegation->i_current_line = line_error;
@@ -1614,6 +1650,19 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

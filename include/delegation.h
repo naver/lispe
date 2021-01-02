@@ -323,6 +323,8 @@ public:
             return true;
         }
         catch(const std::out_of_range& oor) {
+            if (s == L"true" || s == L"nil")
+                return true;
             return false;
         }
     }
@@ -568,16 +570,17 @@ public:
     
     //Storage for within threads
     void thread_store(wstring& key, Element* e) {
+        e = e->fullcopy();
         lock.locking();
         thread_pool[key].status = 1;
-        thread_pool[key].append(e->fullcopy());
+        thread_pool[key].append(e);
         lock.unlocking();
     }
     
     Element* thread_retrieve_all() {
-        lock.locking();
         Dictionary* d = new Dictionary;
         wstring key;
+        lock.locking();
         for (auto& a: thread_pool) {
             key = a.first;
             d->recording(key, a.second.copying(true));

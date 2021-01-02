@@ -31,6 +31,35 @@
 
 #include "jagget.h"
 
+#ifdef BOOSTPOSIXREGEX
+#include <boost/regex.hpp>
+using boost::regex;
+using boost::sregex_token_iterator;
+using boost::smatch;
+using boost::match_results;
+using boost::wregex;
+using boost::wsregex_token_iterator;
+using boost::wsmatch;
+using boost::sregex_iterator;
+using boost::wsregex_iterator;
+#else
+#ifdef POSIXREGEX
+#include <regex>
+#include <iterator>
+using std::regex;
+using std::sregex_token_iterator;
+using std::smatch;
+using std::match_results;
+using std::wregex;
+using std::wsregex_token_iterator;
+using std::wsmatch;
+using std::sregex_iterator;
+using std::wsregex_iterator;
+#endif
+#endif
+
+#include "rgx.h"
+
 using std::list;
 using std::string;
 using std::wstring;
@@ -412,7 +441,7 @@ public:
 //--------------------------------------------------------------------------------
 
 
-typedef enum { x_none, x_goto, x_find, x_replace, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_copyingselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
+typedef enum { x_none, x_goto, x_find, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_copyingselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
 class Jag_automaton;
 
 class jag_editor : public jag_get {
@@ -469,6 +498,11 @@ public:
 	bool insertaline;
     bool taskel;
 
+    Au_automate* rgx;
+
+#ifdef POSIXREGEX
+    wregex* posixrgx;
+#endif
     char regularexpressionfind;
 
     jag_editor();
@@ -543,9 +577,15 @@ public:
     //Undo/Redo
     //------------------------------------------------------------------------------------------------
 
-    long computeparenthesis(string& ln, long limit) {
+    long computeparenthesis(string& ln, char checkcar, long limit) {
         long posmatch = -1;
         vector<long> positions;
+        char check;
+        if (checkcar == ')')
+            check = '(';
+        else
+            check = checkcar - 2;
+        
         for (long i = 0; i < limit; i++) {
             switch (ln[i]) {
                 case '"':
@@ -563,18 +603,18 @@ public:
                     }
                     break;
                 case '(':
-                    positions.push_back(i);
+                case '{':
+                case '[':
+                    if (check == ln[i])
+                        positions.push_back(i);
                     break;
                 case ')':
-                    if (positions.size())
-                        positions.pop_back();
-                    break;
-                case '{':
-                    positions.push_back(i);
-                    break;
                 case '}':
-                    if (positions.size())
-                        positions.pop_back();
+                case ']':
+                    if (checkcar == ln[i]) {
+                        if (positions.size())
+                            positions.pop_back();
+                    }
                     break;
             }
         }
@@ -1000,7 +1040,7 @@ public:
 
     //This a case of copy/paste within the editor, we need to remove the prefixes
     //This is the main method that launches the terminal
-    virtual void launchterminal(char loadedcode);
+    virtual void launchterminal(bool darkmode, char loadedcode);
     bool checkaction(string&, long& first, long& last, bool lsp = false);
 
     virtual void addcommandline(wstring& w) {}

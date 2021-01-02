@@ -1393,23 +1393,40 @@ Element* List::evall_atoms(LispE* lisp) {
 
 Element* List::evall_bitand(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
-
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->bit_and(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -1423,18 +1440,37 @@ Element* List::evall_bitandequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->bit_and(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->bit_and(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -1442,6 +1478,8 @@ Element* List::evall_bitandequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -1453,28 +1491,44 @@ Element* List::evall_bitandequal(LispE* lisp) {
 
 Element* List::evall_bitor(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
-
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->bit_or(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
     }
-
     return null_;
 }
 
@@ -1483,18 +1537,37 @@ Element* List::evall_bitorequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->bit_or(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->bit_or(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -1502,6 +1575,8 @@ Element* List::evall_bitorequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -1513,28 +1588,44 @@ Element* List::evall_bitorequal(LispE* lisp) {
 
 Element* List::evall_bitxor(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
-
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->bit_xor(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
     }
-
     return null_;
 }
 
@@ -1543,18 +1634,37 @@ Element* List::evall_bitxorequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->bit_xor(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->bit_xor(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -1562,6 +1672,8 @@ Element* List::evall_bitxorequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -2106,28 +2218,44 @@ Element* List::evall_different(LispE* lisp) {
 
 Element* List::evall_divide(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
-
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->divide(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
     }
-
     return null_;
 }
 
@@ -2136,18 +2264,37 @@ Element* List::evall_divideequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->divide(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->divide(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -2155,10 +2302,13 @@ Element* List::evall_divideequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
     }
+
 
     return null_;
 }
@@ -2335,11 +2485,26 @@ Element* List::evall_flip(LispE* lisp) {
             call.liste.push_back(l->liste[0]);
             call.liste.push_back(l->liste[2]);
             call.liste.push_back(l->liste[1]);
-            for (long i = 3; i < liste[1]->size(); i++)
-            call.liste.push_back(l->liste[i]);
+            for (long i = 3; i < liste[1]->size(); i++) {
+                call.liste.push_back(l->liste[i]);
+            }
             return call.eval(lisp);
         }
         first_element = liste[1]->eval(lisp);
+        if (first_element->isList()) {
+            long listsize = first_element->size();
+            if (listsize < 2)
+                return first_element;
+            second_element = new List;
+            second_element->append(first_element->index(1));
+            second_element->append(first_element->index(0));
+            for (long i = 2; i < listsize; i++) {
+                second_element->append(first_element->index(i));
+            }
+            first_element->release();
+            return second_element;
+        }
+        
         if (first_element->isDictionary()) {
             second_element = first_element->reverse(lisp, true);
             first_element->release();
@@ -3481,48 +3646,84 @@ Element* List::evall_min(LispE* lisp) {
 
 Element* List::evall_minus(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
-
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->minus(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
     }
 
+
     return null_;
 }
-
 
 Element* List::evall_minusequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->minus(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->minus(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -3530,34 +3731,53 @@ Element* List::evall_minusequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
     }
 
+
     return null_;
 }
 
-
 Element* List::evall_mod(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
-
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->mod(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -3571,18 +3791,37 @@ Element* List::evall_modequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->mod(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->mod(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -3590,6 +3829,8 @@ Element* List::evall_modequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -3601,23 +3842,40 @@ Element* List::evall_modequal(LispE* lisp) {
 
 Element* List::evall_multiply(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
-
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->multiply(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -3631,18 +3889,37 @@ Element* List::evall_multiplyequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->multiply(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->multiply(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -3650,6 +3927,8 @@ Element* List::evall_multiplyequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -3846,22 +4125,40 @@ Element* List::evall_pipe(LispE* lisp) {
 
 Element* List::evall_plus(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    List* lst = this;
+    Element* first_element = liste[1];
     Element* second_element = null_;
+    long i;
+        
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp);
+        if (first_element->isList() && listsize == 2) {
+            lst = (List*)first_element;
+            listsize = lst->size();
+            if (listsize == 0)
+                return zero_;
+            first_element = lst->liste[0]->copyatom(1);
+            i = 1;
+        }
+        else {
+            i = 2;
+            first_element = first_element->copyatom(1);
+        }
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->plus(lisp, second_element);
         }
-
+        if (lst != this)
+            lst->release();
         second_element->release();
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -3875,18 +4172,37 @@ Element* List::evall_plusequal(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    List* lst = this;
+    long i;
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
-        for (short i = 2; i < listsize; i++) {
+        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        second_element = second_element->eval(lisp);
+        if (second_element->isList() && listsize == 3) {
+            lst = (List*)second_element;
+            listsize = lst->size();
+            if (!listsize)
+                return zero_;
+            second_element = null_;
+            i = 0;
+        }
+        else {
+            i = 3;
+            first_element = first_element->plus(lisp, second_element);
+        }
+            
+        for (; i < listsize; i++) {
             _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
+            second_element = lst->liste[i]->eval(lisp);
             first_element = first_element->plus(lisp, second_element);
         }
 
+        if (lst != this)
+            lst->release();
+        
         second_element->release();
         label = liste[1]->label();
         if (label > l_final)
@@ -3894,6 +4210,8 @@ Element* List::evall_plusequal(LispE* lisp) {
         return first_element;
     }
     catch (Error* err) {
+        if (lst != this)
+            lst->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -4412,6 +4730,7 @@ Element* List::evall_select(LispE* lisp) {
     return null_;
 }
 
+#ifdef MAX_STACK_SIZE_ENABLED
 Element* List::evall_set_max_stack_size(LispE* lisp) {
     short listsize = liste.size();
     if (listsize != 1 && listsize != 2)
@@ -4426,7 +4745,7 @@ Element* List::evall_set_max_stack_size(LispE* lisp) {
     lisp->set_stack_max_size(m);
     return true_;
 }
-
+#endif
 
 Element* List::evall_setg(LispE* lisp) {
     if (liste.size() != 3)
@@ -5231,3 +5550,65 @@ Element* List::evalt_list(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_sum(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    List* lst = NULL;
+    Element* first_element = liste[1];
+    double v = 0;
+    
+    try {
+        first_element = first_element->eval(lisp);
+        if (!first_element->isList())
+            throw new Error("Error: expecting a list as argument");
+        
+        lst = (List*)first_element;
+        listsize = lst->size();
+        for (long i = 0; i < listsize; i++)
+            v += lst->liste[i]->checkNumber(lisp);
+        lst->release();
+        first_element->release();
+        return lisp->provideNumber(v);
+    }
+    catch (Error* err) {
+        if (lst != NULL)
+            lst->release();
+        first_element->release();
+        throw err;
+    }
+    return null_;
+}
+
+Element* List::evall_product(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    List* lst = NULL;
+    Element* first_element = liste[1];
+    double v = 1;
+    
+    try {
+        first_element = first_element->eval(lisp);
+        if (!first_element->isList())
+            throw new Error("Error: expecting a list as argument");
+        
+        lst = (List*)first_element;
+        listsize = lst->size();
+        for (long i = 0; i < listsize; i++)
+            v *= lst->liste[i]->checkNumber(lisp);
+        lst->release();
+        first_element->release();
+        return lisp->provideNumber(v);
+    }
+    catch (Error* err) {
+        if (lst != NULL)
+            lst->release();
+        first_element->release();
+        throw err;
+    }
+
+    return null_;
+}

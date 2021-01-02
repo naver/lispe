@@ -219,11 +219,12 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     noprefix = false;
     tooglehelp = false;
     regularexpressionfind = false;
-    
-    #ifdef LispE_REGEX
-        wpattern = NULL;
-    #endif
-    
+    rgx = NULL;
+
+#ifdef POSIXREGEX
+    posixrgx = NULL;
+#endif
+
     prefixsize = 1;
     
     xcursor = 0;
@@ -264,10 +265,13 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
 }
 
 jag_editor::~jag_editor() {
-    #ifdef LispE_REGEX
-        if (wpattern != NULL)
-            delete wpattern;
-    #endif
+    if (rgx != NULL)
+        delete rgx;
+#ifdef POSIXREGEX
+    if (posixrgx != NULL)
+        delete posixrgx;
+#endif
+
 }
 
 //------------------------------------------------------------------------------------
@@ -786,13 +790,29 @@ void jag_editor::displaygo(bool full) {
 			clearline();
             cout << back << "Line:" << convert(line);
             break;
+        case x_rgx:
+            clearline();
+            cout << back << "Rgx:" << convert(line);
+            break;
+        case x_prgx:
+            clearline();
+            cout << back << "Prgx:" << convert(line);
+            break;
         case x_find:
 			clearline();
             cout << back << "Find:" << convert(line);
             break;
         case x_replace:
-			clearline();
+            clearline();
             cout << back << "Find:" << convert(currentfind) << "  Replace:" << convert(line);
+            break;
+        case x_replacergx:
+            clearline();
+            cout << back << "Rgx:" << convert(currentfind) << "  Replace:" << convert(line);
+            break;
+        case x_replaceprgx:
+            clearline();
+            cout << back << "Prgx:" << convert(currentfind) << "  Replace:" << convert(line);
             break;
         case x_write:
 			clearline();
@@ -937,6 +957,33 @@ bool jag_editor::resetsearch() {
 }
 
 bool jag_editor::search(wstring& l, long& first, long& last, long ps) {
+    if (regularexpressionfind == 1) {
+        if (rgx == NULL)
+            rgx = new Au_automate(currentfind);
+        return rgx->search(l, first, last, ps);
+    }
+#ifdef POSIXREGEX
+    if (regularexpressionfind == 2) {
+        if (posixrgx == NULL) {
+            posixrgx = new wregex(currentfind);
+        }
+
+        first = ps;
+        
+        if (first >= l.size())
+            return false;
+
+        wsmatch posixresult;
+
+        wstring val=l.substr(first,l.size()-first);
+        if (regex_search(val, posixresult, *posixrgx)) {
+            first += posixresult.position();
+            last = first + posixresult.length();
+            return true;
+        }
+        return false;
+    }
+#endif
     first = l.find(currentfind, ps);
     if (first == -1)
         return false;
@@ -947,7 +994,7 @@ bool jag_editor::search(wstring& l, long& first, long& last, long ps) {
 bool jag_editor::processfind() {
     long i;
         //Search part...
-    long first, last, end;
+    long first = 0, last, end;
     long ps = currentposinstring;
     currentfindpos = 0;
     if (currentfind !=  L"") {
@@ -992,6 +1039,10 @@ bool jag_editor::processfind() {
 }
 
 void jag_editor::processreplace() {
+#ifdef POSIXREGEX
+    wstring wrep;
+#endif
+    
     string resp;
     option = x_none;
     movetoposition();
@@ -1004,11 +1055,21 @@ void jag_editor::processreplace() {
     }
            
     if (replaceall || resp == "Y" || resp == "y") {
+        tobesaved = true;
         //We know where the word is...
-        long first, last, end;
+        long first = 0, last, end;
         wstring ws = lines.getoneline(pos, end);
         if (search(ws, first, last, posinstring)) {
-            ws.replace(first, last-first, currentreplace);
+            if (regularexpressionfind != 2) {
+                ws.replace(first, last-first, currentreplace);
+            }
+#ifdef POSIXREGEX
+            else {
+                wrep = ws.substr(first, last-first);
+                wrep = regex_replace(wrep, *posixrgx, currentreplace);
+                ws.replace(first, last-first, wrep);
+            }
+#endif
             lines.replaceline(pos, end+1, ws);
             
             if (first > col_size) {
@@ -1043,7 +1104,7 @@ void jag_editor::processreplace() {
 bool jag_editor::findnext() {
     if (currentfind != L"") {
         long i, ps = currentfindpos;
-        long first, last, end;
+        long first = 0, last, end;
         wstring_controlled l;
         for (i = pos; i < lines.size(); i++) {
             l = lines.getoneline(i, end);
@@ -1766,14 +1827,32 @@ bool jag_editor::checkcommand(char cmd) {
             return true;
         case 'f':
             if (emode()) {
-                regularexpressionfind = false;
-                string sub = "Find:";
+                if (rgx != NULL)
+                    delete rgx;
+                rgx = NULL;
+                regularexpressionfind = true;
+                string sub = "Rgx:";
                 sub += convert(currentfind);
                 displayonlast(sub, false);
                 line = currentfind;
                 posinstring = currentfind.size();
                 currentreplace = L"";
-                option = x_find;
+                option = x_rgx;
+            }
+            return true;
+        case 'F':
+            if (emode()) {
+                if (posixrgx != NULL)
+                    delete posixrgx;
+                posixrgx = NULL;
+                regularexpressionfind = 2;
+                string sub = "Prgx:";
+                sub += convert(currentfind);
+                displayonlast(sub, false);
+                line = currentfind;
+                posinstring = currentfind.size();
+                currentreplace = L"";
+                option = x_prgx;
             }
             return true;
         case 'c': //copy
@@ -1818,13 +1897,19 @@ bool jag_editor::checkcommand(char cmd) {
             movetoline(currentline);
             movetoposition();
             return true;
-        case 'h':
+        case 'h': {
+            bool m = mouse_status;
+            if (mouse_status)
+                mouseoff();
             displaythehelp();
             getch();
             displaylist(poslines[0]);
+            if (m)
+                mouseon();
             movetoline(currentline);
             movetoposition();
             return true;
+        }
     }
     return false;
 }
@@ -1928,12 +2013,16 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     option = x_none;
                     return true;
                 case x_find: //find
+                case x_rgx:
+                case x_prgx:
                     currentfind = line;
                     processfind();
                     line = lines[poslines[currentline]];
                     option = x_none;
                     return true;
                 case x_replace: //replace
+                case x_replacergx:
+                case x_replaceprgx:
                     if (processfind()) {
                         currentreplace = line;
                         replaceall = false;
@@ -2090,11 +2179,11 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
         case 17: //ctrl-q terminate
             return !terminate();
         case 18: //ctrl-r: redo...
-            if (option == x_find) { //replace mode called after a ctrl-f
+            if (option == x_find || option == x_rgx || option == x_prgx) { //replace mode called after a ctrl-f
                 currentfind = line;
                 line = L"";
                 cout << "  Replace:";
-                option = x_replace;
+                option = (x_option)((int)option + 1);
                 return true;
             }
             processredos();
@@ -2261,9 +2350,9 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
         clearline();
         line = code;
         displaygo(true);
-        if (b[0] == ')' || b[0] == '}') {
+        if (b[0] == ')' || b[0] == '}' || b[0] == ']') {
             string ln = convert(line);
-            long posmatch = computeparenthesis(ln, posinstring);
+            long posmatch = computeparenthesis(ln, b[0], posinstring);
             if (posmatch != -1) {
                 linematch = pos;
                 lines[pos] = line;
@@ -2288,7 +2377,7 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
         instring = 1 - instring;
     
     bool fndchr =  false;
-    if (b[0] == ')' || b[0] == '}') {
+    if (b[0] == ')' || b[0] == '}' || b[0] == ']') {
         fndchr = true;
         if (!instring && emode() && isitempty(line, b[0])) {
             long sp = lines.indent(pos) - GetBlankSize();
@@ -2306,7 +2395,7 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
         }
         else {
             string ln = convert(line);
-            long posmatch = computeparenthesis(ln, ln.size()-1);
+            long posmatch = computeparenthesis(ln, b[0], ln.size()-1);
             
             if (posmatch != -1) {
                 if (emode()) {
@@ -2739,8 +2828,11 @@ void jag_editor::handlemousectrl(string& mousectrl) {
 #endif
 
 //This is the main method that launches the terminal
-void jag_editor::launchterminal(char loadedcode) {
+void jag_editor::launchterminal(bool darkmode, char loadedcode) {
 
+    if (darkmode)
+        colors[2] = m_blueblack;
+    
     localhelp << m_red << "^c/q" << m_current << ":exit";
     
     if (loadedcode) {
