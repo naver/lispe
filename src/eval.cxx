@@ -1757,23 +1757,26 @@ Element* List::evall_car(LispE* lisp) {
 
 
 Element* List::evall_catch(LispE* lisp) {
-    if (liste.size() != 2)
+    short listsize = liste.size();
+    if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
+    
+    Element* element = null_;
 
     lisp->display_trace(this);
     
     try {
-        first_element = liste[1]->eval(lisp);
+        for (short i = 1; i < listsize; i++) {
+            element->release();
+            element = liste[i]->eval(lisp);
+        }
     }
     catch (Error* err) {
         //This error is converted into a non-blocking error message .
-        second_element = new Maybe(lisp, err);
+        element = new Maybe(lisp, err);
         err->release();
-        return second_element;
     }
-    return first_element;
+    return element;
 }
 
 
@@ -3574,7 +3577,9 @@ Element* List::evall_maybe(LispE* lisp) {
     
     if (listsize==2) {
         first_element = liste[1]->eval(lisp);
-        return booleans_[(first_element->label() == t_maybe)];
+        bool val = (first_element->label() == t_maybe);
+        first_element->release();
+        return booleans_[val];
     }
 
     //Otherwise, we test each value for error and then we send the last one back
