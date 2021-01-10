@@ -3518,7 +3518,7 @@ Element* List::evall_mapping(LispE* lisp) {
 
 Element* List::evall_max(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize == 1)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
@@ -3535,7 +3535,7 @@ Element* List::evall_max(LispE* lisp) {
             third_element = first_element->index(0);
             if (first_element->size() == 1)
                 return third_element->copying(false);
-            for (long i = 2; i < first_element->size(); i++) {
+            for (long i = 1; i < first_element->size(); i++) {
                 second_element = first_element->index(i);
                 if (third_element->less(lisp, second_element)->Boolean())
                     third_element = second_element;
@@ -3600,7 +3600,7 @@ Element* List::evall_maybe(LispE* lisp) {
 
 Element* List::evall_min(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize < 3)
+    if (listsize == 1)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
@@ -3617,7 +3617,7 @@ Element* List::evall_min(LispE* lisp) {
             third_element = first_element->index(0);
             if (first_element->size() == 1)
                 return third_element->copying(false);
-            for (long i = 2; i < first_element->size(); i++) {
+            for (long i = 1; i < first_element->size(); i++) {
                 second_element = first_element->index(i);
                 if (third_element->more(lisp, second_element)->Boolean())
                     third_element = second_element;
