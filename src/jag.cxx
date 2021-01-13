@@ -1278,7 +1278,7 @@ void jag_editor::handleblock(wstring& bl) {
         pos = poslines[currentline];
         posinstring = vs.back().size();
     }
-    
+        
     displaylist(poslines[0]);
     movetoline(currentline);
     movetoposition();

@@ -2448,16 +2448,8 @@ public:
             //Only one character to add, no need for further inspection, no CR in the string as well
             if (code.size() == 1 || buff.find(10) == -1)
                 addabuffer(code, instring);
-            else {
-                for (long j = 0; j < code.size(); j++) {
-                    b = code[j];
-                    if (b[0] == 10) {
-                        pos = handlingeditorline(false);
-                        continue;
-                    }
-                    addabuffer(b, instring);
-                }
-            }
+            else
+                handleblock(code);
         }
     }
     

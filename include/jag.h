@@ -239,12 +239,20 @@ public:
     void insert(long pos, wstring& sub) {
         lines.insert(lines.begin() + pos, sub);
         status.insert(status.begin()+pos, solo_line);
+        if (numeros.size())
+            numeros.push_back(numeros.back()+1);
+        else
+            numeros.push_back(1);
         updatesize();
     }
 
     void inserting(long pos, wstring sub) {
         lines.insert(lines.begin() + pos, sub);
         status.insert(status.begin()+pos, solo_line);
+        if (numeros.size())
+            numeros.push_back(numeros.back()+1);
+        else
+            numeros.push_back(1);
         updatesize();
     }
 

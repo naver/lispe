@@ -19,36 +19,6 @@ string get_char(jag_get* h);
 //------------------------------------------------------------------------------------------
 #define _releasing(f) f->release();f=null_
 //------------------------------------------------------------------------------------------
-struct Comparison {
-public:
-    List* compare;
-    LispE* lisp;
-    
-    Comparison(LispE* l, List* lst, Element* comp) {
-        lisp = l;
-        compare = lst;
-        compare->append(comp);
-        compare->append(null_);
-        compare->append(null_);
-    }
-        
-    inline bool eval(Element* i, Element* j) {
-        compare->liste[1] = i;
-        compare->liste[2] = j;
-        return compare->eval(lisp)->Boolean();
-        
-    }
-    
-    bool checkComparison(Element* i) {
-        return eval(i,i);
-    }
-    
-    bool operator() (Element* i, Element* j) {
-        return eval(i, j);
-    }
-};
-
-//------------------------------------------------------------------------------------------
 Element* range(LispE* lisp, double init, double limit, double inc) {
     
     List* range_list = emptylist_;
@@ -4877,18 +4847,22 @@ Element* List::evall_sort(LispE* lisp) {
         throw err;
     }
 
+    
     List complist;
-    Comparison comp(lisp, &complist, first_element);
+    
+    complist.append(first_element);
     List* l = (List*)second_element;
-    if (comp.checkComparison(l->liste[0])) {
+    if (l->size() <= 1)
+        return second_element;
+    complist.append(l->liste[0]);
+    complist.append(l->liste[0]);
+    if (complist.eval(lisp)->Boolean()) {
         first_element->release();
         second_element->release();
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     }
-    vector<Element*> v;
-    l->liste.get(v);
-    sort(v.begin(), v.end(), comp);
-    l->liste.set(v);
+    
+    l->liste.sorting(lisp, &complist);
     first_element->release();
     return second_element;
 }

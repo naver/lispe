@@ -37,6 +37,75 @@ Cyclelist::Cyclelist(LispE* lisp) : Element(t_list) {
 }
 
 //------------------------------------------------------------------------------------------
+bool LIST::compare(LispE* lisp, List* comparison, long i, long j) {
+    comparison->liste[1] = item->buffer[i];
+    comparison->liste[2] = item->buffer[j];
+    return comparison->eval(lisp)->Boolean();
+}
+
+void LIST::sorting(LispE* lisp, List* comparison, long rmin, long rmax) {
+    //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
+    //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
+    //(loop i (range 1 9999 1) (select (<= (at s i) (at s (+ i 1))) (println 'erreur i)))
+    long sz = rmax-rmin+1;
+    
+    if (sz  <= 1)
+        return;
+    
+    if (sz == 2) {
+        if (compare(lisp, comparison, rmax, rmin))
+            item->swap(rmin, rmax);
+        return;
+    }
+    
+    if (sz < 8) {
+        while (rmax > rmin) {
+            sz = rmin;
+            for (long i = rmin; i < rmax; i++) {
+                if (compare(lisp, comparison, i + 1, i)) {
+                    item->swap(i, i+1);
+                    sz = i;
+                }
+            }
+            rmax = sz;
+        }
+        return;
+    }
+    
+    long pivot = rmin - 1;
+    comparison->liste[2] = item->buffer[rmax];
+    for (long j = rmin; j <= rmax; j++) {
+        comparison->liste[1] = item->buffer[j];
+        if (comparison->eval(lisp)->Boolean()) {
+            pivot++;
+            item->swap(pivot,j);
+        }
+    }
+    pivot++;
+    item->swap(pivot, rmax);
+    
+    /*
+    for (long i = rmin; i <= rmax; i++) {
+        if (i != rmin)
+            cout << ",";
+        if (i == pivot)
+            cout << "(";
+        cout << item->buffer[i]->toString(lisp);
+        if (i == pivot)
+            cout << ")";
+    }
+    cout << endl;
+    */
+    
+    sorting(lisp, comparison, rmin, pivot-1);
+    sorting(lisp, comparison, pivot+1, rmax);
+}
+
+void LIST::sorting(LispE* lisp, List* comparison) {
+    //We sort between home and last...    
+    sorting(lisp, comparison, home, item->last - 1);
+}
+//------------------------------------------------------------------------------------------
 
 string Element::prettify(LispE* lisp) {
     string code = toString(lisp);

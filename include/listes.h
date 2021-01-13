@@ -24,7 +24,11 @@ public:
         status = 0; //this is the reference counter
         last = 0; //this is the last element
         sz = t; //this is the size
-        buffer = new Element*[t];
+        //We always create one more element
+        //to handle some room for exchange
+        buffer = new Element*[t+1];
+        //hence buffer[sz] does exist even though
+        //it cannot be accessed through normal means
     }
     
     void reserve(long t) {
@@ -34,7 +38,7 @@ public:
         Element** tfs;
 
         //we reallocate our structure
-        tfs = new Element*[t];
+        tfs = new Element*[t+1];
 
         for (long i = 0; i< last; i++) {
             tfs[i] = buffer[i];
@@ -49,7 +53,7 @@ public:
         Element** tfs;
 
         //we reallocate our structure
-        tfs = new Element*[t];
+        tfs = new Element*[t+1];
 
         long inc = 0;
         //In this case, we skip the pos position
@@ -63,13 +67,20 @@ public:
         sz = t;
     }
 
+    void swap(long left, long right) {
+        //We use the fact that the last element exists
+        //but cannot be accessed...
+        buffer[sz] = buffer[left];
+        buffer[left] = buffer[right];
+        buffer[right] = buffer[sz];
+    }
 
     bool reverse(long left, long right) {
         if (left >= right)
             return false;
-        Element* e = buffer[left];
+        buffer[sz] = buffer[left];
         buffer[left] = buffer[right];
-        buffer[right] = e;
+        buffer[right] = buffer[sz];
         return true;
     }
     
@@ -242,6 +253,10 @@ public:
             sz--;
         }
     }
+    
+    bool compare(LispE*, List* compare, long i, long j);
+    void sorting(LispE*, List* f, long b, long e);
+    void sorting(LispE*, List* f);
     
     void operator =(LIST& z) {
         item->last = home;
