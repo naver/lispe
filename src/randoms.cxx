@@ -599,14 +599,13 @@ public:
         if (!l->isList())
             throw new Error("Error: the 'shuffle' argument must be a list");
         
-        std::vector<Element*> liste;
-        
-        ((List*)l)->liste.get(liste);
-        
-        std::shuffle ( liste.begin(), liste.end(), gen );
-        
-        ((List*)l)->liste.set(liste);
-        
+        List* ll = (List*)l;
+
+        long sz = ll->liste.size();
+        long h = ll->liste.home;
+        for (long i = h; i < ll->liste.item->last; i++) {
+            ll->liste.item->swap(i, (gen()%sz) + h);
+        }
         return l;
     }
     

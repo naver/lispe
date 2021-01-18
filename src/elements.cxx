@@ -37,46 +37,75 @@ Cyclelist::Cyclelist(LispE* lisp) : Element(t_list) {
 }
 
 //------------------------------------------------------------------------------------------
-bool LIST::compare(LispE* lisp, List* comparison, long i, long j) {
+inline bool LIST::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
     comparison->liste[1] = item->buffer[i];
     comparison->liste[2] = item->buffer[j];
-    return comparison->eval(lisp)->Boolean();
+    return comparison->eval_Boolean(lisp, instruction);
 }
 
-void LIST::sorting(LispE* lisp, List* comparison, long rmin, long rmax) {
+void LIST::sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
     //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
     //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
+    //(sort '< '(20 12 15 13 19 17 14))
+    //(sort '< (shuffle (range 1 16 1)))
+    //(sort '< '(4 3 7 1 5))
+    //(sort '< '(10 4 8 5 12 2 6 11 3 9 7 9))
+
+    //check sorting stability
     //(loop i (range 1 9999 1) (select (<= (at s i) (at s (+ i 1))) (println 'erreur i)))
-    long sz = rmax-rmin+1;
     
-    if (sz  <= 1)
-        return;
+    long j = rmax-rmin+1;
+    long pivot;
     
-    if (sz == 2) {
-        if (compare(lisp, comparison, rmax, rmin))
-            item->swap(rmin, rmax);
-        return;
-    }
-    
-    if (sz < 8) {
-        while (rmax > rmin) {
-            sz = rmin;
-            for (long i = rmin; i < rmax; i++) {
-                if (compare(lisp, comparison, i + 1, i)) {
-                    item->swap(i, i+1);
-                    sz = i;
-                }
-            }
-            rmax = sz;
+    if (j < 7) {
+        if (j < 2)
+            return;
+        
+        if (j == 2) {
+            if (compare(lisp, comparison, instruction, rmax, rmin))
+                item->swap(rmax, rmin);
+            return;
         }
+        
+        if (j == 3) {
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1)) {
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            else {
+                item->swap(rmin, rmin + 1);
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            item->swap(rmax, rmin + 1);
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1))
+                return;
+            item->swap(rmin, rmin + 1);
+            return;
+        }
+        
+        long sz;
+        while (rmax > rmin) {
+              sz = rmin;
+              for (j = rmin; j < rmax; j++) {
+                  if (compare(lisp, comparison, instruction, j + 1, j)) {
+                      item->swap(j, j + 1);
+                      sz = j;
+                      pivot = j;
+                      while (pivot > rmin && compare(lisp, comparison, instruction, pivot, pivot - 1))
+                          item->swap(pivot, pivot - 1);
+                  }
+              }
+              rmax = sz;
+          }
         return;
     }
     
-    long pivot = rmin - 1;
+    pivot = rmin - 1;
     comparison->liste[2] = item->buffer[rmax];
-    for (long j = rmin; j <= rmax; j++) {
+    for (j = rmin; j < rmax; j++) {
         comparison->liste[1] = item->buffer[j];
-        if (comparison->eval(lisp)->Boolean()) {
+        if (comparison->eval_Boolean(lisp, instruction)) {
             pivot++;
             item->swap(pivot,j);
         }
@@ -84,26 +113,17 @@ void LIST::sorting(LispE* lisp, List* comparison, long rmin, long rmax) {
     pivot++;
     item->swap(pivot, rmax);
     
-    /*
-    for (long i = rmin; i <= rmax; i++) {
-        if (i != rmin)
-            cout << ",";
-        if (i == pivot)
-            cout << "(";
-        cout << item->buffer[i]->toString(lisp);
-        if (i == pivot)
-            cout << ")";
-    }
-    cout << endl;
-    */
-    
-    sorting(lisp, comparison, rmin, pivot-1);
-    sorting(lisp, comparison, pivot+1, rmax);
+    sorting(lisp, comparison, instruction, rmin, pivot-1);
+    sorting(lisp, comparison, instruction, pivot+1, rmax);
 }
 
 void LIST::sorting(LispE* lisp, List* comparison) {
-    //We sort between home and last...    
-    sorting(lisp, comparison, home, item->last - 1);
+    //We sort between home and last...
+    long sz = item->last - home;
+    if (sz <= 1)
+        return;
+    
+    sorting(lisp, comparison, comparison->liste[0]->type, home, item->last - 1);
 }
 //------------------------------------------------------------------------------------------
 
@@ -1228,75 +1248,51 @@ Element* Element::moreorequal(LispE* lisp, Element* e) {
 }
 
 Element* String::less(LispE* lisp, Element* e) {
-    if (e->type == t_string && content < e->asString(lisp))
-        return true_;
-    return false_;
+    return booleans_[(e->type == t_string && content < e->asString(lisp))];
 }
 
 Element* String::lessorequal(LispE* lisp, Element* e){
-    if (e->type == t_string && content <= e->asString(lisp))
-        return true_;
-    return false_;
+    return booleans_[(e->type == t_string && content <= e->asString(lisp))];
 }
 
 Element* String::more(LispE* lisp, Element* e) {
-    if (e->type == t_string && content > e->asString(lisp))
-        return true_;
-    return false_;
+    return booleans_[(e->type == t_string && content > e->asString(lisp))];
 }
 
 Element* String::moreorequal(LispE* lisp, Element* e) {
-    if (e->type == t_string && content >= e->asString(lisp))
-        return true_;
-    return false_;
+    return booleans_[(e->type == t_string && content >= e->asString(lisp))];
 }
 
 Element* Number::less(LispE* lisp, Element* e) {
-    if (e->isNumber() && number < e->asNumber())
-        return true_;
-    return false_;
+    return booleans_[number < e->checkNumber(lisp)];
 }
 
 Element* Number::lessorequal(LispE* lisp, Element* e){
-    if (e->isNumber() && number <= e->asNumber())
-        return true_;
-    return false_;
+    return booleans_[number <= e->checkNumber(lisp)];
 }
 
 Element* Number::more(LispE* lisp, Element* e) {
-    if (e->isNumber() && number > e->asNumber())
-        return true_;
-    return false_;
+    return booleans_[number > e->checkNumber(lisp)];
 }
 
 Element* Number::moreorequal(LispE* lisp, Element* e) {
-    if (e->isNumber() && number >= e->asNumber())
-        return true_;
-    return false_;
+    return booleans_[number >= e->checkNumber(lisp)];
 }
 
 Element* Integer::less(LispE* lisp, Element* e) {
-    if (e->isNumber() && integer < e->asInteger())
-        return true_;
-    return false_;
+    return booleans_[integer < e->checkInteger(lisp)];
 }
 
 Element* Integer::lessorequal(LispE* lisp, Element* e){
-    if (e->isNumber() && integer <= e->asInteger())
-        return true_;
-    return false_;
+    return booleans_[integer <= e->checkInteger(lisp)];
 }
 
 Element* Integer::more(LispE* lisp, Element* e) {
-    if (e->isNumber() && integer > e->asInteger())
-        return true_;
-    return false_;
+    return booleans_[integer > e->checkInteger(lisp)];
 }
 
 Element* Integer::moreorequal(LispE* lisp, Element* e) {
-    if (e->isNumber() && integer >= e->asInteger())
-        return true_;
-    return false_;
+    return booleans_[integer >= e->checkInteger(lisp)];
 }
 
 //------------------------------------------------------------------------------------------

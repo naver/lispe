@@ -537,7 +537,7 @@ public:
     }
     
     virtual bool Boolean() {
-        return (type != v_null);
+        return true;
     }
     
     Element* Boolean(LispE* lisp);
@@ -807,7 +807,7 @@ public:
     Element* equal(LispE* lisp, Element* e);
     
     bool Boolean() {
-        return (atome != v_null);
+        return atome;
     }
     
     char check_match(LispE* lisp, Element* value) {

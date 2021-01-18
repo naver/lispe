@@ -254,8 +254,18 @@ public:
         }
     }
     
-    bool compare(LispE*, List* compare, long i, long j);
-    void sorting(LispE*, List* f, long b, long e);
+    void display(LispE* lisp, long rmin, long rmax) {
+        cout << "(";
+        for (long i = rmin; i <= rmax; i++) {
+            if (i != rmin)
+                cout << " ";
+            cout << item->buffer[i]->toString(lisp);
+        }
+        cout << ")" << endl;
+    }
+    
+    bool compare(LispE*, List* compare, short instruction, long i, long j);
+    void sorting(LispE*, List* f, short instruction, long b, long e);
     void sorting(LispE*, List* f);
     
     void operator =(LIST& z) {
@@ -296,6 +306,14 @@ public:
         if (i < 0 || i >= item->last)
             throw std::out_of_range("LIST error");
         return item->buffer[i];
+    }
+    
+    inline bool is_not_empty() {
+        return (home != item->last);
+    }
+    
+    inline bool checkType() {
+        return (home != item->last && item->buffer[0]->type < l_final);
     }
     
     void get(std::vector<Element*>& v) {
@@ -722,6 +740,7 @@ public:
     Element* evall_set_max_stack_size(LispE* lisp);
 #endif
 
+    Element* eval_error(LispE* lisp);
     Element* evall_quote(LispE* lisp);
     Element* evall_return(LispE* lisp);
     Element* evall_break(LispE* lisp);
@@ -861,6 +880,8 @@ public:
     Element* evall_sort(LispE* lisp);
     Element* evall_zip(LispE* lisp);
     Element* evall_zipwith(LispE* lisp);
+    
+    bool eval_Boolean(LispE* lisp, short instruction);
 
 };
 

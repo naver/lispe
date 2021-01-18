@@ -39,23 +39,23 @@ Element* range(LispE* lisp, double init, double limit, double inc) {
         //Integers ?
         if (inc == (long)inc && init == (long)init && limit == (long)limit) {
             if (inc > 0) {
-                for (long i = init; i <= limit; i += inc) {
+                for (long i = init; i < limit; i += inc) {
                     range_list->append(lisp->provideInteger(i));
                 }
             }
             else {
-                for (long i = init; i >= limit; i += inc)
+                for (long i = init; i > limit; i += inc)
                 range_list->append(lisp->provideInteger(i));
             }
         }
         else {
             if (inc > 0) {
-                for (double i = init; i <= limit; i += inc) {
+                for (double i = init; i < limit; i += inc) {
                     range_list->append(lisp->provideNumber(i));
                 }
             }
             else {
-                for (double i = init; i >= limit; i += inc)
+                for (double i = init; i > limit; i += inc)
                 range_list->append(lisp->provideNumber(i));
             }
         }
@@ -1160,32 +1160,37 @@ void Listincode::set_current_line(LispE* lisp) {
 //--------------------------------------------------------------------------------
 // The main evaluation function, the one that evaluates instructions or functions
 //--------------------------------------------------------------------------------
+bool List::eval_Boolean(LispE* lisp, short instruction) {
+    return (this->*lisp->delegation->evals[instruction])(lisp)->Boolean();
+}
 
 Element* List::eval(LispE* lisp) {
-    try {
-        short label = liste.at(0)->type | lisp->checkLispState();
+    if (liste.checkType() && !lisp->checkLispState()) {
         set_current_line(lisp);
-        return (this->*lisp->delegation->evals.at(label))(lisp);
+        return (this->*lisp->delegation->evals[liste.item->buffer[0]->type])(lisp);
     }
-    catch (const std::out_of_range& oor) {
-        if (!liste.size())
-            return this;
-        
-        if (lisp->checkLispState()) {
-            if (lisp->hasStopped())
-                throw lisp->delegation->_THEEND;
-            throw new Error("Error: stack overflow");
-        }
+    
+    if (lisp->checkLispState()) {
+        if (lisp->hasStopped())
+            throw lisp->delegation->_THEEND;
+        throw new Error("Error: stack overflow");
+    }
+    return eval_error(lisp);
+}
 
+Element* List::evall_break(LispE* lisp) {
+    return break_;
+}
+
+
+Element* List::eval_error(LispE* lisp) {
+    if (liste.is_not_empty()) {
         wstring msg = L"Error: unknown instruction: '";
         msg += lisp->asString(liste[0]->type);
         msg += L"'";
         throw new Error(msg);
     }
-}
-
-Element* List::evall_break(LispE* lisp) {
-    return break_;
+    return this;
 }
 
 Element* List::evall_quote(LispE* lisp) {
@@ -1330,7 +1335,7 @@ Element* List::evall_atomp(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
@@ -1766,7 +1771,7 @@ Element* List::evall_check(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
@@ -1965,7 +1970,7 @@ Element* List::evall_consp(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
@@ -2293,12 +2298,13 @@ Element* List::evall_eq(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
     try {
-        for (long i = 1; i < listsize-1 && test; i++) {
+        listsize--;
+        for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
             second_element = liste[i+1]->eval(lisp);
             test = ( (first_element == second_element) || first_element->equal(lisp, second_element)->Boolean());
@@ -2615,12 +2621,13 @@ Element* List::evall_greater(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;;
 
     lisp->display_trace(this);
 
     try {
-        for (long i = 1; i < listsize-1 && test; i++) {
+        listsize--;
+        for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
             second_element = liste[i+1]->eval(lisp);
             test = first_element->more(lisp, second_element)->Boolean();
@@ -2645,12 +2652,13 @@ Element* List::evall_greaterorequal(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;;
 
     lisp->display_trace(this);
 
     try {
-        for (long i = 1; i < listsize-1 && test; i++) {
+        listsize--;
+        for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
             second_element = liste[i+1]->eval(lisp);
             test = first_element->moreorequal(lisp, second_element)->Boolean();
@@ -2674,7 +2682,7 @@ Element* List::evall_if(LispE* lisp) {
     if (listsize != 3 && listsize != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
-    char test = true;
+    bool test = true;;
 
     lisp->display_trace(this);
 
@@ -2708,7 +2716,7 @@ Element* List::evall_ife(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;;
 
     lisp->display_trace(this);
     
@@ -3297,7 +3305,7 @@ Element* List::evall_lock(LispE* lisp) {
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
-    char test = true;
+    bool test = true;;
 
     lisp->display_trace(this);
 
@@ -3398,14 +3406,15 @@ Element* List::evall_lower(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
+    Element* first_element = null_;
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
     try {
-        for (long i = 1; i < listsize-1 && test; i++) {
+        listsize--;
+        for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
             second_element = liste[i+1]->eval(lisp);
             test = first_element->less(lisp, second_element)->Boolean();
@@ -3430,12 +3439,13 @@ Element* List::evall_lowerorequal(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
     try {
-        for (long i = 1; i < listsize-1 && test; i++) {
+        listsize--;
+        for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
             second_element = liste[i+1]->eval(lisp);
             test = first_element->lessorequal(lisp, second_element)->Boolean();
@@ -3919,7 +3929,7 @@ Element* List::evall_ncheck(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
@@ -3959,7 +3969,7 @@ Element* List::evall_neq(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
@@ -3988,7 +3998,7 @@ Element* List::evall_not(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
@@ -4034,7 +4044,7 @@ Element* List::evall_numberp(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 
@@ -4848,12 +4858,12 @@ Element* List::evall_sort(LispE* lisp) {
     }
 
     
-    List complist;
-    
-    complist.append(first_element);
     List* l = (List*)second_element;
     if (l->size() <= 1)
         return second_element;
+
+    List complist;    
+    complist.append(first_element);
     complist.append(l->liste[0]);
     complist.append(l->liste[0]);
     if (complist.eval(lisp)->Boolean()) {
@@ -4872,7 +4882,7 @@ Element* List::evall_stringp(LispE* lisp) {
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
-    char test = true;
+    bool test = true;
 
     lisp->display_trace(this);
 

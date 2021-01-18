@@ -111,7 +111,7 @@ public:
     unordered_map<long, unsigned long> arities;
     unordered_map<short, Element*> macros;
 
-    unordered_map<short, methodEval> evals;
+    methodEval evals[l_final];
     
     unordered_map<List*, long> in_file;
     unordered_map<string, bool> libraries;
