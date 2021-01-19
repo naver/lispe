@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.1.18.17.27";
+static std::string version = "1.2021.1.19.17.23";
 string LispVersion() {
     return version;
 }
@@ -126,7 +126,7 @@ void Delegation::initialisation(LispE* lisp) {
     for (long i = 0; i < l_final; i++) {
         evals[i] = &List::eval_error;
     }
-    //These are not exactly instruction, but we need to set their arity nonetheless
+    //These are not exactly instructions, but we need to set their arity nonetheless
     //since they belong to the List::eval method
     evals[t_atom] = &List::eval_call_function;
     evals[t_list] = &List::evalt_list;
@@ -174,6 +174,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
+    set_instruction(l_bodies, "bodies", P_TWO, &List::evall_bodies);
     set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different);
     set_instruction(l_divide, "/", P_ATLEASTTHREE, &List::evall_divide);
     set_instruction(l_divideequal, "/=", P_ATLEASTTHREE, &List::evall_divideequal);
@@ -1657,6 +1658,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

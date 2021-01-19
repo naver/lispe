@@ -127,90 +127,137 @@ void LIST::sorting(LispE* lisp, List* comparison) {
 }
 //------------------------------------------------------------------------------------------
 
-string Element::prettify(LispE* lisp) {
-    string code = toString(lisp);
-    
-    Tokenizer parse;
-    lisp->segmenting(code, parse);
-    string jolly;
-    long sz = parse.types.size();
-    bool inbrace = false;
-    for (long i = 0; i <sz; i++) {
-        switch (parse.types[i]) {
-            case c_opening: {
-                if (parse.types[i+1] == c_closing) {
-                    if (i && !inbrace)
-                        jolly += " ";
-                    jolly += "()";
-                    i++;
-                }
-                else {
-                    if (i)
-                        jolly += "\n";
-                    jolly += "(\n";
-                }
-                inbrace = false;
-                break;
-            }
-            case c_closing: {
-                if (i)
-                    jolly += "\n";
-                jolly += ")\n";
-                break;
-            }
-            case c_opening_brace: {
-                if (parse.types[i+1] == c_closing_brace) {
-                    if (i && !inbrace)
-                        jolly += " ";
-                    jolly += "{}";
-                    i++;
-                }
-                else {
-                    if (i)
-                        jolly += "\n";
-                    jolly += "{\n";
-                }
-                inbrace = false;
-                break;
-            }
-            case c_closing_brace: {
-                if (i)
-                    jolly += "\n";
-                jolly += "}\n";
-                break;
-            }
-            case t_string:
-                if (i && !inbrace)
-                    jolly += " ";
-                jolly += '"';
-                jolly += parse.tokens[i];
-                jolly += '"';
-                inbrace = false;
-                break;
-            case t_emptystring:
-                if (i && !inbrace)
-                    jolly += " ";
-                jolly += '"';
-                jolly += '"';
-                inbrace = false;
-                break;
-            case c_colon:
-                jolly += " ";
-                jolly += parse.tokens[i];
-                jolly += " ";
-                inbrace = true;
-                break;
-            default:
-                if (i && !inbrace)
-                    jolly += " ";                
-                jolly += parse.tokens[i];
-                inbrace = false;
+
+void Element::prettyfying(LispE* lisp, string& code) {
+    if (isList()) {
+        if (size() == 0) {
+            code += " ()";
+            return;
         }
+                
+        short type = index(0)->type;
+        if (type == l_lambda) {
+            code += " ";
+            code += toString(lisp);
+            return;
+        }
+        
+        Element* params;
+        
+        if (type == l_defun || type == l_defpat || type == l_deflib || type == l_loop) {
+            code += "(";
+            code += lisp->toString(type);
+            code += " ";
+            code += protected_index(lisp, (long)1)->toString(lisp);
+            code += " ";
+            params = protected_index(lisp, (long)2);
+            if (params->protected_index(lisp, (long)0)->type == l_quote) {
+                code += "'";
+                code += params->protected_index(lisp, (long)1)->toString(lisp);
+            }
+            else {
+                if (type == l_defpat) {
+                    code += "(";
+                    string local;
+                    for (long i = 0; i < params->size(); i++) {
+                        if (i)
+                            code += " ";
+                        local = params->protected_index(lisp, i)->toString(lisp);
+                        local[0] = '[';
+                        local.back() = ']';
+                        code += local;
+                    }
+                    code += ")";
+                }
+                else
+                    code += params->toString(lisp);
+            }
+            
+            code += "\n";
+            for (long i = 3; i < size(); i++) {
+                protected_index(lisp, i)->prettyfying(lisp, code);
+            }
+            code += ")\n";
+            return;
+        }
+
+        if (type == l_quote) {
+            code += "'";
+            code += protected_index(lisp, (long)1)->toString(lisp);
+            return;
+        }
+        long i = 0;
+        
+        if (type == l_setq || type == l_setg) {
+            code += toString(lisp);
+            code += "\n";
+            return;
+        }
+        
+        if (type >= l_print && type <= l_printerrln) {
+            string local = toString(lisp);
+            if (local.size() < 40) {
+                code += local;
+                code += "\n";
+                return;
+            }
+        }
+        
+        code += "(";
+
+        if (type == l_if || type == l_check || type == l_ncheck || type == l_ife) {
+            code += protected_index(lisp, i++)->toString(lisp);
+            code += " ";
+            code += protected_index(lisp, i++)->toString(lisp);
+            code += "\n";
+            for (; i < size(); i++) {
+                protected_index(lisp, i)->prettyfying(lisp, code);
+            }
+            code += ")\n";
+            return;
+        }
+        
+        if (type == l_while) {
+            code += "while ";
+            i = 1;
+            code += protected_index(lisp, i++)->toString(lisp);
+            code += "\n";
+        }
+
+        if (type == l_compose || type == l_block) {
+            code += protected_index(lisp, i)->toString(lisp);
+            code += "\n";
+            i = 1;
+        }
+                
+        bool first = true;
+        for (; i < size(); i++) {
+            params = protected_index(lisp, i);
+            if (!first) {
+                code += " ";
+            }
+            else {
+                if (!i && params->isList())
+                    code += "\n";
+                first = false;
+            }
+            params->prettyfying(lisp, code);
+        }
+        code += ")\n";
+        return;
     }
-    
-    code = jolly;
-    IndentCode(code, jolly, GetBlankSize());
-    return jolly;
+    code += toString(lisp);
+}
+
+//(defpat action ( [Take x] [Take y] )(if (check_object position x) (block (push belongings x) (println "Ok we have picked up" x)) (println "Cannot pick up the" x)))
+//(prettify '((12 3) (4 5 6) (8 9 10)))
+
+string Element::prettify(LispE* lisp) {
+    string code;
+    prettyfying(lisp, code);
+    string body;
+    IndentCode(code, body, GetBlankSize());
+    return body;
 }
 
 //------------------------------------------------------------------------------------------

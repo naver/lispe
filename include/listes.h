@@ -833,6 +833,7 @@ public:
     Element* evall_wait(LispE* lisp);
     Element* evall_defpat(LispE* lisp);
     Element* evall_defun(LispE* lisp);
+    Element* evall_bodies(LispE* lisp);
     Element* evall_lambda(LispE* lisp);
     Element* eval_call_function(LispE* lisp);
     Element* evalt_list(LispE* lisp);

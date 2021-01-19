@@ -68,7 +68,7 @@ typedef enum {
     l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_nconc, l_push, l_insert, l_unique,
     
     //Display values
-    l_print, l_println, l_printerr, l_printerrln, l_prettify,
+    l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
     
     l_self, l_while, l_eval, l_mark, l_resetmark, l_loop, l_loopcount, l_range, l_irange, l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
@@ -506,6 +506,7 @@ public:
      */
     
     
+    void prettyfying(LispE* lisp, string& code);
     string prettify(LispE* lisp);
     
     virtual string toString(LispE* lisp) {

@@ -461,7 +461,11 @@ public:
     }
         
     void display_trace(List*);
-    
+
+    inline string toString(short c) {
+        return delegation->toString(c);
+    }
+
     inline wstring asString(short c) {
         return delegation->asString(c);
     }

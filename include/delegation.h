@@ -190,6 +190,18 @@ public:
         return trace_lock.check();
     }
     
+    inline string toString(short c) {
+        string s;
+        try {
+            wstring w = code_to_string.at(c);
+            s_unicode_to_utf8(s, w);
+            return s;
+        }
+        catch(const std::out_of_range& oor) {
+            return "nil";
+        }
+    }
+
     inline wstring asString(short c) {
         try {
             return code_to_string.at(c);

@@ -2166,6 +2166,29 @@ Element* List::evall_defun(LispE* lisp) {
     return lisp->recordingunique(this, label);
 }
 
+Element* List::evall_bodies(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    Element* function = liste[1]->eval(lisp);
+    if (function->protected_index(lisp, (long)0)->type == l_defpat) {
+        List* functions =  new List;
+        short label = function->protected_index(lisp, (long)1)->label();
+        try {
+            for (auto& a: lisp->delegation->method_pool.at(label)) {
+                for (auto& b : a.second) {
+                    functions->append(b);
+                }
+            }
+            return functions;
+        }
+        catch(const std::out_of_range& oor) {
+            return function;
+        }
+    }
+    return function;
+}
+
 
 Element* List::evall_different(LispE* lisp) {
     if (liste.size() < 3)
