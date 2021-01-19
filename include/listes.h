@@ -609,7 +609,13 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"()";
-
+        
+        if (liste[0]->type == l_quote && sz == 2) {
+            wstring buffer(L"'");
+            buffer += liste[1]->stringInList(lisp);
+            return buffer;
+        }
+        
         if (liste.mark())
             return L"...";
         

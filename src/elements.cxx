@@ -151,28 +151,21 @@ void Element::prettyfying(LispE* lisp, string& code) {
             code += protected_index(lisp, (long)1)->toString(lisp);
             code += " ";
             params = protected_index(lisp, (long)2);
-            if (params->protected_index(lisp, (long)0)->type == l_quote) {
-                code += "'";
-                code += params->protected_index(lisp, (long)1)->toString(lisp);
-            }
-            else {
-                if (type == l_defpat) {
-                    code += "(";
-                    string local;
-                    for (long i = 0; i < params->size(); i++) {
-                        if (i)
-                            code += " ";
-                        local = params->protected_index(lisp, i)->toString(lisp);
-                        local[0] = '[';
-                        local.back() = ']';
-                        code += local;
-                    }
-                    code += ")";
+            if (type == l_defpat) {
+                code += "(";
+                string local;
+                for (long i = 0; i < params->size(); i++) {
+                    if (i)
+                        code += " ";
+                    local = params->protected_index(lisp, i)->toString(lisp);
+                    local[0] = '[';
+                    local.back() = ']';
+                    code += local;
                 }
-                else
-                    code += params->toString(lisp);
+                code += ")";
             }
-            
+            else
+                code += params->toString(lisp);
             code += "\n";
             for (long i = 3; i < size(); i++) {
                 protected_index(lisp, i)->prettyfying(lisp, code);
@@ -181,28 +174,16 @@ void Element::prettyfying(LispE* lisp, string& code) {
             return;
         }
 
-        if (type == l_quote) {
-            code += "'";
-            code += protected_index(lisp, (long)1)->toString(lisp);
-            return;
-        }
-        long i = 0;
-        
-        if (type == l_setq || type == l_setg) {
-            code += toString(lisp);
+        string local = toString(lisp);
+        if (local.size() < 50) {
+            code += local;
             code += "\n";
             return;
         }
         
-        if (type >= l_print && type <= l_printerrln) {
-            string local = toString(lisp);
-            if (local.size() < 40) {
-                code += local;
-                code += "\n";
-                return;
-            }
-        }
-        
+
+        long i = 0;
+
         code += "(";
 
         if (type == l_if || type == l_check || type == l_ncheck || type == l_ife) {
@@ -217,17 +198,18 @@ void Element::prettyfying(LispE* lisp, string& code) {
             return;
         }
         
-        if (type == l_while) {
-            code += "while ";
-            i = 1;
+        if (type == l_while || type == l_setq || type == l_setg || type == l_loopcount || type == l_key || type == l_keyn) {
+            code += protected_index(lisp, i++)->toString(lisp);
+            code += " ";
             code += protected_index(lisp, i++)->toString(lisp);
             code += "\n";
         }
-
-        if (type == l_compose || type == l_block) {
-            code += protected_index(lisp, i)->toString(lisp);
-            code += "\n";
-            i = 1;
+        else {
+            if (type != t_list) {
+                code += protected_index(lisp, i++)->toString(lisp);
+                code += "\n";
+                i = 1;
+            }
         }
                 
         bool first = true;
@@ -243,13 +225,19 @@ void Element::prettyfying(LispE* lisp, string& code) {
             }
             params->prettyfying(lisp, code);
         }
+        if (code.back() != '\n')
+            code += "\n";
+        
         code += ")\n";
         return;
     }
-    code += toString(lisp);
+    if (isString())
+        code += jsonstring(toString(lisp));
+    else
+        code += toString(lisp);
 }
 
-//(defpat action ( [Take x] [Take y] )(if (check_object position x) (block (push belongings x) (println "Ok we have picked up" x)) (println "Cannot pick up the" x)))
+//(defpat action ( [Take 'x] [Take y] )(if (check_object position x) (block (push belongings x) (println "Ok we have picked up" x)) (println "Cannot pick up the" x)))
 //(prettify '((12 3) (4 5 6) (8 9 10)))
 
 string Element::prettify(LispE* lisp) {
