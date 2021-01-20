@@ -174,19 +174,11 @@ void Element::prettyfying(LispE* lisp, string& code) {
             return;
         }
 
-        string local = toString(lisp);
-        if (local.size() < 50) {
-            code += local;
-            code += "\n";
-            return;
-        }
-        
-
         long i = 0;
 
-        code += "(";
 
         if (type == l_if || type == l_check || type == l_ncheck || type == l_ife) {
+            code += "(";
             code += protected_index(lisp, i++)->toString(lisp);
             code += " ";
             code += protected_index(lisp, i++)->toString(lisp);
@@ -197,7 +189,16 @@ void Element::prettyfying(LispE* lisp, string& code) {
             code += ")\n";
             return;
         }
+
+        string local = toString(lisp);
+        if (local.size() < 50) {
+            code += local;
+            code += "\n";
+            return;
+        }
         
+        code += "(";
+
         if (type == l_while || type == l_setq || type == l_setg || type == l_loopcount || type == l_key || type == l_keyn) {
             code += protected_index(lisp, i++)->toString(lisp);
             code += " ";
@@ -207,27 +208,17 @@ void Element::prettyfying(LispE* lisp, string& code) {
         else {
             if (type != t_list) {
                 code += protected_index(lisp, i++)->toString(lisp);
-                code += "\n";
                 i = 1;
             }
+            code += "\n";
         }
                 
-        bool first = true;
         for (; i < size(); i++) {
             params = protected_index(lisp, i);
-            if (!first) {
-                code += " ";
-            }
-            else {
-                if (!i && params->isList())
-                    code += "\n";
-                first = false;
-            }
             params->prettyfying(lisp, code);
+            if (code.back() != '\n')
+                code += "\n";
         }
-        if (code.back() != '\n')
-            code += "\n";
-        
         code += ")\n";
         return;
     }
@@ -238,7 +229,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
 }
 
 //(defpat action ( [Take 'x] [Take y] )(if (check_object position x) (block (push belongings x) (println "Ok we have picked up" x)) (println "Cannot pick up the" x)))
-//(prettify '((12 3) (4 5 6) (8 9 10)))
+//(prettify '((12 3) (4 5 6) (8 9 10) (12 3) (4 5 6) (8 9 10) (12 3) (4 5 6) (8 9 10)))
 
 string Element::prettify(LispE* lisp) {
     string code;
