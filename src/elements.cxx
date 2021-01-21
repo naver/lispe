@@ -1245,18 +1245,6 @@ wstring Operator::asString(LispE* lisp) {
     return lisp->asString(type);
 }
 
-wstring Number::asString(LispE* lisp) {
-    std::wstringstream val;
-    val << number;
-    return val.str();
-}
-
-wstring Integer::asString(LispE* lisp) {
-    std::wstringstream val;
-    val << integer;
-    return val.str();
-}
-
 //------------------------------------------------------------------------------------------
 Element* Element::equal(LispE* lisp, Element* e) {
     return booleans_[(e==this)];

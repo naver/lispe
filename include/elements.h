@@ -1024,8 +1024,14 @@ public:
         return number;
     }
     
-    wstring asString(LispE* lisp);
-    
+    wstring asString(LispE* lisp) {
+        return std::to_wstring(number);
+    }
+
+    string toString(LispE* lisp) {
+        return std::to_string(number);
+    }
+
     double asNumber() {
         return number;
     }
@@ -1128,8 +1134,14 @@ public:
     // Numbers cannot be present in the garbage
     void protecting(bool protection) {}
     
-    wstring asString(LispE* lisp);
-    
+    wstring asString(LispE* lisp) {
+        return std::to_wstring(integer);
+    }
+
+    string toString(LispE* lisp) {
+        return std::to_string(integer);
+    }
+
     bool isNumber() {
         return true;
     }
@@ -2095,21 +2107,24 @@ public:
         
         marking = true;
 
-        std::wstringstream tampon;
-        tampon << L"{";
+        wstring tampon;
+        tampon += L"{";
         
         bool premier = true;
         for (auto& a: dictionary) {
             if (!premier) {
-                tampon << L",";
+                tampon += L",";
             }
             else
                 premier = false;
-            tampon << a.first << ":" << a.second->jsonString(lisp);
+            
+            tampon += std::to_wstring(a.first);
+            tampon += L":";
+            tampon += a.second->jsonString(lisp);
         }
-        tampon << L"}";
+        tampon += L"}";
         marking = false;
-        return tampon.str();
+        return tampon;
     }
     
     
@@ -2123,21 +2138,23 @@ public:
         
         marking = true;
 
-        std::wstringstream tampon;
-        tampon << L"{";
+        wstring tampon;
+        tampon += L"{";
         
         bool premier = true;
         for (auto& a: dictionary) {
             if (!premier) {
-                tampon << L" ";
+                tampon += L" ";
             }
             else
                 premier = false;
-            tampon << a.first << ":" << a.second->stringInList(lisp);
+            tampon += std::to_wstring(a.first);
+            tampon += L":";
+            tampon += a.second->stringInList(lisp);
         }
-        tampon << L"}";
+        tampon += L"}";
         marking = false;
-        return tampon.str();
+        return tampon;
     }
     
     bool Boolean() {

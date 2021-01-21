@@ -397,7 +397,7 @@ public:
         }
         
         vl = temps->tm_year + 1900;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* month(LispE* lisp, int vl) {
@@ -409,7 +409,7 @@ public:
         }
         
         vl = temps->tm_mon + 1;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* day(LispE* lisp, int vl) {
@@ -421,7 +421,7 @@ public:
         }
         
         vl = temps->tm_mday;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* hour(LispE* lisp, int vl) {
@@ -433,7 +433,7 @@ public:
         }
         
         vl = temps->tm_hour;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* minute(LispE* lisp, int vl) {
@@ -445,7 +445,7 @@ public:
         }
         
         vl = temps->tm_min;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* second(LispE* lisp, int vl) {
@@ -457,21 +457,21 @@ public:
         }
         
         vl = temps->tm_sec;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* weekday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_wday;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* yearday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_yday;
-        return lisp->provideNumber((double)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* setdate(int y, int m, int d, int H, int M, int S) {
@@ -767,10 +767,13 @@ public:
     }
     
     wstring asString(LispE* lisp) {
-        std::wstringstream ws;
-        ws << chrono_value.time_since_epoch().count();
-        return ws.str();
+        return std::to_wstring(chrono_value.time_since_epoch().count());
     }
+
+    string toString(LispE* lisp) {
+        return std::to_string(chrono_value.time_since_epoch().count());
+    }
+
 };
 
 class Command : public Element {
@@ -816,7 +819,7 @@ public:
         struct stat scible;
         int stcible = stat(STR(filename), &scible);
         if (stcible >= 0) {
-            Element* size = lisp->provideNumber((double)scible.st_size);
+            Element* size = lisp->provideInteger((long)scible.st_size);
             Element* change = new Dateitem(lisp, scible.st_mtime);
             Element* adate = new Dateitem(lisp, scible.st_atime);
             Element* cdate = new Dateitem(lisp, scible.st_ctime);

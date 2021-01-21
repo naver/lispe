@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.1.21.10.39";
+static std::string version = "1.2021.1.21.11.9";
 string LispVersion() {
     return version;
 }
@@ -1637,18 +1637,15 @@ void Element::replaceVariableNames(LispE* lisp, unordered_map<short,Element*>& d
 bool Element::replaceVariableNames(LispE* lisp) {
     //First we gather all names
     Element* macro_parameters = index(2);
-    std::wstringstream s;
     short newlabel, varlabel;
     wstring lb;
     unordered_map<short,Element*> dico_variables;
     for (long i = 0; i < macro_parameters->size(); i++) {
         //Our new name
-        s << L"#macro" << i;
-        lb = s.str();
+        lb = L"#macro";
+        lb += std::to_wstring(i);
         //We encode it
         newlabel = lisp->encode(lb);
-        s.str(L"");
-        s.clear();
         varlabel = macro_parameters->index(i)->label();
         if (varlabel == v_null)
             return false;
@@ -1658,6 +1655,9 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
 
 
 
