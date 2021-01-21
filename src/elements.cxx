@@ -224,8 +224,45 @@ void Element::prettyfying(LispE* lisp, string& code) {
     }
     if (isString())
         code += jsonstring(toString(lisp));
-    else
-        code += toString(lisp);
+    else {
+        if (isDictionary()) {
+            string local = toString(lisp);
+            if (local.size() < 50) {
+                code += local;
+                return;
+            }
+            code += "{\n";
+            if (type == t_dictionary) {
+                map<wstring, Element*>& dico = ((Dictionary*)this)->dictionary;
+                wstring key;
+                for (auto& a: dico) {
+                    local = "";
+                    key = a.first;
+                    s_unicode_to_utf8(local, key);
+                    code += local;
+                    code += ":";
+                    a.second->prettyfying(lisp, code);
+                    if (code.back() != '\n')
+                        code += "\n";
+                }
+                code += "}\n";
+                return;
+            }
+            unordered_map<double, Element*>& dico = ((Dictionary_n*)this)->dictionary;
+            for (auto& a: dico) {
+                local = std::to_string(a.first);
+                code += local;
+                code += ":";
+                a.second->prettyfying(lisp, code);
+                if (code.back() != '\n')
+                    code += "\n";
+            }
+            code += "}\n";
+            return;
+        }
+        else
+            code += toString(lisp);
+    }
 }
 
 //(defpat action ( [Take 'x] [Take y] )(if (check_object position x) (block (push belongings x) (println "Ok we have picked up" x)) (println "Cannot pick up the" x)))
