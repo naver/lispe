@@ -1813,27 +1813,57 @@ wstring s_wreplacestring(wstring& s, wstring reg, wstring rep) {
 }
 
 //------------------------------------------------------------------------
+/*
+A little bit of explanation for hexadecimal conversion:
+ 
+ v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3) ) + ((c & 64) >> 6);
+ 
+ a) First, each 'digit' in an hexadecima expression corresponds to 4 bits, hence (v << 4)
+ b) digits are based on: 0011 0000, the bits 4,5 are set to 1, the last four bits are used to store the actual value
+ c) uppercase letter are based on: 0100 0000, the bit 6 is set 1
+ d) lowercase letter are based on: 0110 0000, the bits 6 and 5 are set to 1
+ 
+ c & 0xF will remove the upper bits from the equation
+ If the bit 6 is set to 1, this is a letter: A,B,C,D,E or a,b,c,d,e
+ 
+ Let's convert 'B': 66 or 0100 0010
+ We expect 11 as a value for 'B'
+ c & 0xF        is  0000 0010   ; this is the 2nd letter in the alphabet
+ (c & 64)>>3    is  0000 1000   ; its value is its position in the alphabet + 9
+ union =        is  0000 1010   ; hence, we first add 8
+ 
+ (c & 64)>>1    is  0000 0001   ; then we add 1
+ we add:            0000 1011   --> 11
+ 
+ Let's convert 'c': 99 or 0110 0011
+ We expect 12 as a value for 'c'
+ c & 0xF        is  0000 0011   ; this is the 3rd letter in the alphabet
+ (c & 64)>>3    is  0000 1000   ; its value is its position in the alphabet + 9
+ union =        is  0000 1011   ; hence, we first add 8
+ 
+ (c & 64)>>1    is  0000 0001   ; then we add 1
+ we add:            0000 1100   --> 12
+ 
+ Let's convert '4': 50 or 0011 0100
+ c & 0xF        is  0000 0100
+ (c & 64)>>3    is  0000 0000   ; as it is not a letter, 6th bit is 0
+ union =        is  0000 0100   ; nothing happens here
+ 
+ (c & 64)>>1    is  0000 0000   ; same we add 0
+ we add:            0000 0100   --> 4
+
+ This calculus might seem a bit to much compared to a check on the characters.
+ However, in most out-of-order processors, it makes sense as it removes any
+ need for a test and is then much faster...
+
+ */
+
 double conversiontofloathexa(const char* s, int sign) {
     long v = 0;
-    bool cont = true;
     uchar c = *s++;
-    while (cont) {
-        switch (digitaction[c]) {
-            case '0':
-                v = (v << 4) | (c & 15);
-                c = *s++;
-                continue;
-            case 'X':
-                v = (v << 4) | (c - 55);
-                c = *s++;
-                continue;
-            case 'x':
-                v = (v << 4) | (c - 87);
-                c = *s++;
-                continue;
-            default:
-                cont = false;
-        }
+    while (digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = *s++;
     }
     
     double res = v;
@@ -1841,28 +1871,11 @@ double conversiontofloathexa(const char* s, int sign) {
     if (c == '.') {
         uchar mantissa = 0;
         v = 0;
-        cont = true;
         c = *s++;
-        while (cont) {
-            switch (digitaction[c]) {
-                case '0':
-                    v = (v << 4) | (c & 15);
-                    c = *s++;
-                    mantissa += 4;
-                    continue;
-                case 'X':
-                    v = (v << 4) | (c - 55);
-                    mantissa += 4;
-                    c = *s++;
-                    continue;
-                case 'x':
-                    v = (v << 4) | (c - 87);
-                    mantissa += 4;
-                    c = *s++;
-                    continue;
-                default:
-                    cont = false;
-            }
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = *s++;
+            mantissa += 4;
         }
         
         res += (double)v/(double)(1 << mantissa);
@@ -1971,29 +1984,13 @@ double convertingfloathexa(const char* s) {
 //------------------------------------------------------------------------
 double conversiontofloathexa(const char* s, int sign, long& l) {
     long v = 0;
-    bool cont = true;
     uchar c = *s++;
     l++;
-    while (cont) {
-        switch (digitaction[c]) {
-            case '0':
-                v = (v << 4) | (c & 15);
-                c = *s++;
-                l++;
-                continue;
-            case 'X':
-                v = (v << 4) | (c - 55);
-                c = *s++;
-                l++;
-                continue;
-            case 'x':
-                v = (v << 4) | (c - 87);
-                c = *s++;
-                l++;
-                continue;
-            default:
-                cont = false;
-        }
+
+    while (digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = *s++;
+        l++;
     }
     
     double res = v;
@@ -2001,34 +1998,14 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
     if (c == '.') {
         uchar mantissa = 0;
         v = 0;
-        cont = true;
         c = *s++;
         l++;
-        while (cont) {
-            switch (digitaction[c]) {
-                case '0':
-                    v = (v << 4) | (c & 15);
-                    c = *s++;
-                    l++;
-                    mantissa += 4;
-                    continue;
-                case 'X':
-                    v = (v << 4) | (c - 55);
-                    mantissa+=4;
-                    c = *s++;
-                    l++;
-                    continue;
-                case 'x':
-                    v = (v << 4) | (c - 87);
-                    mantissa += 4;
-                    c = *s++;
-                    l++;
-                    continue;
-                default:
-                    cont = false;
-            }
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            l++;
+            mantissa += 4;
+            c = *s++;
         }
-        
         res += (double)v/(double)(1 << mantissa);
     }
     
@@ -2155,49 +2132,21 @@ double convertingfloathexa(const char* s, long& l) {
 }
 
 void noconversiontofloathexa(const char* s, int sign, short& l) {
-    bool cont = true;
     uchar c = *s++;
     l++;
-    while (cont) {
-        switch (digitaction[c]) {
-            case '0':
-                c = *s++;
-                l++;
-                continue;
-            case 'X':
-                c = *s++;
-                l++;
-                continue;
-            case 'x':
-                c = *s++;
-                l++;
-                continue;
-            default:
-                cont = false;
-        }
-    }
     
-    if (c == '.') {
-        cont = true;
+    while (digitaction[c]) {
         c = *s++;
         l++;
-        while (cont) {
-            switch (digitaction[c]) {
-                case '0':
-                    c = *s++;
-                    l++;
-                    continue;
-                case 'X':
-                    c = *s++;
-                    l++;
-                    continue;
-                case 'x':
-                    c = *s++;
-                    l++;
-                    continue;
-                default:
-                    cont = false;
-            }
+    }
+
+    
+    if (c == '.') {
+        c = *s++;
+        l++;
+        while (digitaction[c]) {
+            c = *s++;
+            l++;
         }
     }
     
@@ -2304,49 +2253,20 @@ void noconvertingfloathexa(const char* s, short& l) {
 }
 
 void noconversiontofloathexa(wchar_t* s, int sign, long& l) {
-    bool cont = true;
     wchar_t c = *s++;
     l++;
-    while (cont) {
-        switch (digitaction[c]) {
-            case '0':
-                c = *s++;
-                l++;
-                continue;
-            case 'X':
-                c = *s++;
-                l++;
-                continue;
-            case 'x':
-                c = *s++;
-                l++;
-                continue;
-            default:
-                cont = false;
-        }
-    }
-    
-    if (c == '.') {
-        cont = true;
+    while (digitaction[c]) {
         c = *s++;
         l++;
-        while (cont) {
-            switch (digitaction[c]) {
-                case '0':
-                    c = *s++;
-                    l++;
-                    continue;
-                case 'X':
-                    c = *s++;
-                    l++;
-                    continue;
-                case 'x':
-                    c = *s++;
-                    l++;
-                    continue;
-                default:
-                    cont = false;
-            }
+    }
+
+    
+    if (c == '.') {
+        c = *s++;
+        l++;
+        while (digitaction[c]) {
+            c = *s++;
+            l++;
         }
     }
     
@@ -2476,25 +2396,11 @@ long convertinginteger(string& number) {
     if (c == '0' || number[ipos] == 'x') {
         ipos++;
         c = number[ipos++];
-        while (c) {
-            v <<= 4;
-            switch (digitaction[c]) {
-                case '0':
-                    v |= c & 15;
-                    c = number[ipos++];
-                    continue;
-                case 'X':
-                    v |= c - 55;
-                    c = number[ipos++];
-                    continue;
-                case 'x':
-                    v |= c - 87;
-                    c = number[ipos++];
-                    continue;
-                default:
-                    return v*sign;
-            }
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = number[ipos++];
         }
+        return v*sign;
     }
     else {
         if (isadigit(c)) {
@@ -2533,25 +2439,11 @@ long convertinginteger(wstring& number) {
     if (c == '0' || number[ipos] == 'x') {
         ipos++;
         c = number[ipos++];
-        while (c) {
-            v <<= 4;
-            switch (digitaction[c]) {
-                case '0':
-                    v |= c & 15;
-                    c = number[ipos++];
-                    continue;
-                case 'X':
-                    v |= c - 55;
-                    c = number[ipos++];
-                    continue;
-                case 'x':
-                    v |= c - 87;
-                    c = number[ipos++];
-                    continue;
-                default:
-                    return v*sign;
-            }
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = number[ipos++];
         }
+        return v*sign;
     }
     else {
         if (isadigit(c)) {
@@ -2568,29 +2460,13 @@ long convertinginteger(wstring& number) {
 //------------------------------------------------------------------------
 double convertingtofloathexa(wchar_t* s, int sign, long& l) {
     long v = 0;
-    bool cont = true;
     wchar_t c = *s++;
     l++;
-    while (cont) {
-        switch (digitaction[(uchar)c]) {
-            case '0':
-                v = (v << 4) | (c & 15);
-                c = *s++;
-                l++;
-                continue;
-            case 'X':
-                v = (v << 4) | (c - 55);
-                c = *s++;
-                l++;
-                continue;
-            case 'x':
-                v = (v << 4) | (c - 87);
-                c = *s++;
-                l++;
-                continue;
-            default:
-                cont = false;
-        }
+    
+    while (digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = *s++;
+        l++;
     }
     
     double res = v;
@@ -2598,34 +2474,14 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
     if (c == '.') {
         uchar mantissa = 0;
         v = 0;
-        cont = true;
         c = *s++;
         l++;
-        while (cont) {
-            switch (digitaction[(uchar)c]) {
-                case '0':
-                    v = (v << 4) | (c & 15);
-                    c = *s++;
-                    l++;
-                    mantissa += 4;
-                    continue;
-                case 'X':
-                    v = (v << 4) | (c - 55);
-                    mantissa+=4;
-                    c = *s++;
-                    l++;
-                    continue;
-                case 'x':
-                    v = (v << 4) | (c - 87);
-                    mantissa += 4;
-                    c = *s++;
-                    l++;
-                    continue;
-                default:
-                    cont = false;
-            }
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = *s++;
+            l++;
+            mantissa += 4;
         }
-        
         res += (double)v/(double)(1 << mantissa);
     }
     

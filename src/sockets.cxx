@@ -58,39 +58,10 @@ string Msgerror() {
 
 static short XConvert(char* number, int nb) {
     unsigned short v = 0;
+    uchar c;
     for (int i = 0; i<nb; i++) {
-        switch (number[i]) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-                v <<= 4;
-                v |= number[i] - 48;
-                break;
-            case 'A':
-            case 'B':
-            case 'C':
-            case 'D':
-            case 'E':
-            case 'F':
-                v <<= 4;
-                v |= number[i] - 55;
-                break;
-            case 'a':
-            case 'b':
-            case 'c':
-            case 'd':
-            case 'e':
-            case 'f':
-                v <<= 4;
-                v |= number[i] - 87;
-        }
+        c = number[i];
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
     }
     return v;
 }
