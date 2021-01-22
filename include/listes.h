@@ -691,6 +691,12 @@ public:
     void evalAsNumber(long i, LispE* lisp, double& d);
     void evalAsInteger(long i, LispE* lisp, long& d);
     
+    //The label of _EMPTYLIST is v_null
+    //We can then compare with () as if it was nil
+    short label() {
+        return (liste.is_not_empty()?t_list:v_null);
+    }
+
     Element* reverse(LispE*, bool duplique = true);
     
     bool removelast() {

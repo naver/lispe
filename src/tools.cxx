@@ -1818,7 +1818,7 @@ A little bit of explanation for hexadecimal conversion:
  
  v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3) ) + ((c & 64) >> 6);
  
- a) First, each 'digit' in an hexadecima expression corresponds to 4 bits, hence (v << 4)
+ a) First, each 'digit' in an hexadecimal expression corresponds to 4 bits, hence (v << 4)
  b) digits are based on: 0011 0000, the bits 4,5 are set to 1, the last four bits are used to store the actual value
  c) uppercase letter are based on: 0100 0000, the bit 6 is set 1
  d) lowercase letter are based on: 0110 0000, the bits 6 and 5 are set to 1
