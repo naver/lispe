@@ -149,6 +149,8 @@ public:
         return coloringline(line, false);
     }
     
+    void initlisp(bool init, bool setpath);
+    
     long splitline(wstring& l, long linenumber, vector<wstring>& subs);
 
     string coloringline(string line, bool thread);
