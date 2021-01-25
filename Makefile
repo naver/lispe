@@ -4,7 +4,7 @@ include Makefile.in
 COMPPLUSPLUS = g++
 ################ Compiler LispE #################################
 SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx
-SOURCEMAIN = jag.cxx main.cxx
+SOURCEMAIN = jag.cxx main.cxx lispeditor.cxx
 #------------------------------------------------------------
 OBJECTCXX = $(SOURCE:%.cxx=objs/%.o)
 OBJECTMAIN = $(SOURCEMAIN:%.cxx=objs/%.o)

@@ -455,6 +455,8 @@ class Jag_automaton;
 class jag_editor : public jag_get {
 public:
 
+    vector<string> arguments;
+    
     vector<wstring> commandlines;
     vector<long> longstrings;
     vector<string> colors;
@@ -1048,7 +1050,7 @@ public:
 
     //This a case of copy/paste within the editor, we need to remove the prefixes
     //This is the main method that launches the terminal
-    virtual void launchterminal(bool darkmode, char loadedcode);
+    virtual void launchterminal(bool darkmode, char loadedcode, vector<string>& args);
     bool checkaction(string&, long& first, long& last, bool lsp = false);
 
     virtual void addcommandline(wstring& w) {}

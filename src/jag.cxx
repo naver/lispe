@@ -2828,8 +2828,10 @@ void jag_editor::handlemousectrl(string& mousectrl) {
 #endif
 
 //This is the main method that launches the terminal
-void jag_editor::launchterminal(bool darkmode, char loadedcode) {
+void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& args) {
 
+    arguments = args;
+    
     if (darkmode)
         colors[2] = m_blueblack;
     
