@@ -101,7 +101,67 @@ void getcursor(int& xcursor, int& ycursor) {
     ycursor = csbiInfo.dwCursorPosition.Y;
 }
 
-string getwinchar(void(*f)()) {
+//We generate the Unix strings in Windows, to keep the whole code constant across platform
+string MouseEventProc(MOUSE_EVENT_RECORD mer) {
+    stringstream stre;
+
+    stre << "\033[";
+    int x = 0, y = 0;
+    COORD mousep = mer.dwMousePosition;
+
+    mousep.X++;
+    mousep.Y++;
+
+    long wheel = mer.dwButtonState;
+
+    switch (mer.dwEventFlags)
+    {
+    case 0:
+        if (!mer.dwButtonState) {
+            stre << 35 << ";" << mousep.X << ";" << mousep.Y << "M";
+            _mysys->tracking = false;
+        }
+        else if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
+        {
+            stre << 32 << ";" << mousep.X << ";" << mousep.Y<< "M";
+            _mysys->tracking = true;
+        }
+        else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED)
+        {
+            stre << 34 << ";" << mousep.X << ";" << mousep.Y<< "M";
+            _mysys->tracking = true;
+        }
+        else
+        {
+            stre << 34 << ";" << mousep.X << ";" << mousep.Y<< "M";
+            _mysys->tracking = true;
+        }
+        break;
+    case MOUSE_HWHEELED:
+        if (wheel < 0)
+            stre << 97 << ";" << mousep.X << ";" << mousep.Y << "M";
+        else
+            stre << 96 << ";" << mousep.X << ";" << mousep.Y << "M";
+        break;
+    case MOUSE_MOVED:
+        if (_mysys->tracking)
+            stre << 64 << ";" << mousep.X << ";" << mousep.Y << "M";
+        else
+            stre << 67 << ";" << mousep.X << ";" << mousep.Y << "M";
+        break;
+    case MOUSE_WHEELED:
+        if (wheel < 0)
+            stre << 97 << ";" << mousep.X << ";" << mousep.Y<< "M";
+        else
+            stre << 96 << ";" << mousep.X << ";" << mousep.Y<< "M";
+        break;
+    default:
+        stre << 67 << ";" << mousep.X << ";" << mousep.Y << "M";
+    }
+    return stre.str();
+}
+
+string getwinchar(void(*f)(), bool mouseenabled) {
     static hmap<int, bool> keys;
     static bool init = false;
     if (!init) {
@@ -121,7 +181,7 @@ string getwinchar(void(*f)()) {
         keys[115] = true;
         init = true;
     }
-
+    
     wstring w;
     string s;
     DWORD cNumRead;
@@ -130,56 +190,63 @@ string getwinchar(void(*f)()) {
     bool stop = false;
     int i;
 
+    DWORD fdwMode;
+    
     //This is the most important trick here, you need to reset the flags at each call...
-    DWORD fdwMode = ENABLE_WINDOW_INPUT;
-    SetConsoleMode(hStdin, fdwMode);
+    if (mouseenabled)
+        fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS;
+    else
+        fdwMode = ENABLE_WINDOW_INPUT | ENABLE_EXTENDED_FLAGS;
 
+    SetConsoleMode(hStdin, fdwMode);
+    
     kar = 0;
     while (s == "") {
         ReadConsoleInput(
-            hStdin,      // input buffer handle
-            irInBuf,     // buffer to read into
-            512,         // size of read buffer
-            &cNumRead); // number of records read
-
+                         hStdin,      // input buffer handle
+                         irInBuf,     // buffer to read into
+                         512,         // size of read buffer
+                         &cNumRead); // number of records read
+        
         for (i = 0; i < cNumRead; i++)
         {
             switch (irInBuf[i].EventType)
             {
-            case KEY_EVENT: {// keyboard input
-                KEY_EVENT_RECORD& key = irInBuf[i].Event.KeyEvent;
-                if (key.bKeyDown) {
-                    kar = key.uChar.UnicodeChar;
-                    if (!kar) {
-                        if (keys.find(key.wVirtualScanCode) != keys.end()) {
-                            s = (uchar)224;
-                            s += key.wVirtualScanCode;
+                case KEY_EVENT: {// keyboard input
+                    KEY_EVENT_RECORD& key = irInBuf[i].Event.KeyEvent;
+                    if (key.bKeyDown) {
+                        kar = key.uChar.UnicodeChar;
+                        if (!kar) {
+                            if (keys.find(key.wVirtualScanCode) != keys.end()) {
+                                s = (uchar)224;
+                                s += key.wVirtualScanCode;
+                                return s;
+                            }
+                        }
+                        else {
+                            w = kar;
+                            s_unicode_to_utf8(s, w);
                             return s;
                         }
                     }
-                    else {
-                        w = kar;
-                        s_unicode_to_utf8(s, w);
-                        return s;
-                    }
+                    break;
                 }
-                break;
-            }
-            case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
-                if (checkresize())
-                    (*f)();
-                break;
+                case MOUSE_EVENT: // mouse input
+                    return MouseEventProc(irInBuf[i].Event.MouseEvent);
+                case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
+                    if (checkresize())
+                        (*f)();
+                    break;
             }
         }
     }
-
+    
     return s;
 }
 
 bool checkresize();
 
-
-string getcharacter() {
+string getcharacter(bool mouseenabled) {
     static hmap<int, bool> keys;
     static bool init = false;
     if (!init) {
@@ -199,9 +266,9 @@ string getcharacter() {
         keys[115] = true;
         init = true;
     }
-
+    
     string s;
-
+    
     DWORD cNumRead;
     WCHAR kar;
     wstring w;
@@ -209,49 +276,54 @@ string getcharacter() {
     bool stop = false;
     int i;
     DWORD fdwMode;
-
+    
     //This is the most important trick here, you need to reset the flags at each call...
-	fdwMode = ENABLE_WINDOW_INPUT | ENABLE_EXTENDED_FLAGS;
-
+    if (mouseenabled)
+        fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS;
+    else
+        fdwMode = ENABLE_WINDOW_INPUT | ENABLE_EXTENDED_FLAGS;
+    
     SetConsoleMode(hStdin, fdwMode);
-
+    
     kar = 0;
     while (s == "") {
         ReadConsoleInput(
-            hStdin,      // input buffer handle
-            irInBuf,     // buffer to read into
-            512,         // size of read buffer
-            &cNumRead); // number of records read
-
+                         hStdin,      // input buffer handle
+                         irInBuf,     // buffer to read into
+                         512,         // size of read buffer
+                         &cNumRead); // number of records read
+        
         for (i = 0; i < cNumRead; i++)
         {
             switch (irInBuf[i].EventType)
             {
-            case KEY_EVENT: {// keyboard input
-                KEY_EVENT_RECORD& key = irInBuf[i].Event.KeyEvent;
-                if (key.bKeyDown) {
-                    kar = key.uChar.UnicodeChar;
-                    if (!kar) {
-                        if (keys.find(key.wVirtualScanCode) != keys.end()) {
-                            s = (uchar)224;
-                            s += key.wVirtualScanCode;
+                case KEY_EVENT: {// keyboard input
+                    KEY_EVENT_RECORD& key = irInBuf[i].Event.KeyEvent;
+                    if (key.bKeyDown) {
+                        kar = key.uChar.UnicodeChar;
+                        if (!kar) {
+                            if (keys.find(key.wVirtualScanCode) != keys.end()) {
+                                s = (uchar)224;
+                                s += key.wVirtualScanCode;
+                                return s;
+                            }
+                        }
+                        else {
+                            w = kar;
+                            s_unicode_to_utf8(s, w);
                             return s;
                         }
                     }
-                    else {
-                        w = kar;
-                        s_unicode_to_utf8(s, w);
-                        return s;
-                    }
+                    break;
                 }
-                break;
-            }
-            case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
-				checkresize();
+                case MOUSE_EVENT: // mouse input
+                    return MouseEventProc(irInBuf[i].Event.MouseEvent);
+                case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
+                    checkresize();
             }
         }
     }
-
+    
     return s;
 }
 

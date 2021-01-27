@@ -2227,6 +2227,22 @@ public:
     short label() {
         return t_dictionary;
     }
+
+    wstring asString(LispE* lisp) {
+        wstring s = L"{";
+        for (long i = 0; i < keyvalues.size(); i++) {
+            if (i)
+                s += L" ";
+            if (keyvalues[i]->label() == v_null)
+                s += L"_";
+            else
+                s += keyvalues[i]->asString(lisp);
+            s += L":";
+            s += valuevalues[i]->stringInList(lisp);
+        }
+        s += L"}";
+        return s;
+    }
     
     void append(Element* e) {
         if (choice) {

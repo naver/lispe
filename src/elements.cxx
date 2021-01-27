@@ -158,8 +158,10 @@ void Element::prettyfying(LispE* lisp, string& code) {
                     if (i)
                         code += " ";
                     local = params->protected_index(lisp, i)->toString(lisp);
-                    local[0] = '[';
-                    local.back() = ']';
+                    if (local[0] == '(') {
+                        local[0] = '[';
+                        local.back() = ']';
+                    }
                     code += local;
                 }
                 code += ")";

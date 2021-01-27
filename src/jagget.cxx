@@ -109,11 +109,11 @@ void jag_get::resetterminal() {
 }
 
 #ifdef WIN32
-string getwinchar(void(*f)());
+string getwinchar(void(*f)(), bool mouseenabled);
 void resizewindow();
 string jag_get::getch() {
     initialisation();
-    return getwinchar(resizewindow);
+    return getwinchar(resizewindow, mouse_status);
 }
 #else
 string jag_get::getch(){
