@@ -9,14 +9,18 @@ __LispE__ has different goals:
 * To provide a real Lisp language that will allow you to discover a really fascinating language ...
 * To provide a code that can be compiled on any Windows, Linux or Mac OS machine, without any fuss
 
-Check: 
-
 I based a large part of this work on the following article: [The Root of Lisp](http://www.paulgraham.com/rootsoflisp.html).
 
 * The description of the language is available here: [Introduction to LispE](https://github.com/naver/lispe/wiki/1.-Introduction)
 * A help to the available functions is here: [LispE Language Description](https://github.com/naver/lispe/wiki/6.-Help)
 * The wiki index is here: [HOME](https://github.com/naver/lispe/wiki)
 
+
+# CHECK binaries
+
+We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) precompiled version for Window and Mac OS (including M1)...
+
+# Modern Functional Properties
 
 __LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.2-Data-Structures)
 
