@@ -208,7 +208,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
             code += "\n";
         }
         else {
-            if (type != t_list) {
+            if (type > t_error && type < l_final) {
                 code += protected_index(lisp, i++)->toString(lisp);
                 i = 1;
             }
@@ -357,7 +357,7 @@ Element* String::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
-    size_t i = 0;
+    long i = 0;
     wstring localvalue;
     long szc = content.size();
     while (i < szc) {

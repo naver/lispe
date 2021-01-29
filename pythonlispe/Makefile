@@ -3,11 +3,13 @@ include ../Makefile.in
 COMPPLUSPLUS = g++
 #------------------------------------------------------------
 sourcepython = lispe_python.cxx
+testpython = test.cxx
 #------------------------------------------------------------
 LBINPATH = ../bin
 LOBJPATH = ../objs
 #------------------------------------------------------------
 objectpython = $(sourcepython:%.cxx=$(LOBJPATH)/python/%.o)
+objecttest = $(testpython:%.cxx=$(LOBJPATH)/python/%.o)
 #------------------------------------------------------------
 C++11Flag = -std=c++11 -fPIC -w -c -O3 -DUNIX
 LIBPATH = ../bin
@@ -19,6 +21,9 @@ $(LOBJPATH)/python/%.o: src/%.cxx
 #------------------------------------------------------------
 all: install $(objectpython)
 	$(COMPPLUSPLUS) -shared -o $(LBINPATH)/pylispe.so $(objectpython) $(PYTHONLIB) -L$(LBINPATH) -llispe -ldl -lpthread $(LIBBOOST)
+
+test: install $(objecttest)
+	$(COMPPLUSPLUS) -o $(LBINPATH)/testpy $(objecttest) $(PYTHONLIB) -L$(LBINPATH) -ldl -lpthread $(LIBBOOST)
 
 install:
 	mkdir -p $(LOBJPATH)/python

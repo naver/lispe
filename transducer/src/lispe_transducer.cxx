@@ -294,7 +294,7 @@ public:
     }
     
     Element* eval(LispE* lisp) {
-        Automaton* automaton;
+        Automaton* automaton = NULL;
         if (action != trans_trans && action != trans_flags) {
             Element* trans = lisp->get("trans");
             if (trans->type != type)

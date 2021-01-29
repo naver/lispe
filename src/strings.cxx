@@ -158,7 +158,7 @@ public:
                 Element* ch;
                 List* result = new List;
                 wstring localvalue;
-                size_t pos = 0;
+                long pos = 0;
                 if (search_string == L"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters
@@ -198,7 +198,7 @@ public:
                 Element* ch;
                 List* result = new List;
                 wstring localvalue;
-                size_t pos = 0;
+                long pos = 0;
                 if (search_string == L"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters

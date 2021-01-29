@@ -131,7 +131,6 @@ Exporting void inittableutf8(Chaine_UTF8* h);
 Exporting void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp = false, bool taskel = true);
 Exporting void IndentationCode(string& codestr, string& codeindente, bool lisp, bool taskel = true);
 Exporting long IndentationCode(string& codestr, bool lisp);
-Exporting long VirtualIndentation(string& codestr);
 
 //--------------------- Carriage Return normalisation
 void cr_normalise(string& code);
@@ -186,16 +185,12 @@ Exporting bool valid_latin_table(short table);
 Exporting unsigned char c_unicode_to_utf8(TRANSCHAR code, unsigned char* utf);
 Exporting string c_unicode_to_utf8(TRANSCHAR code);
 
-Exporting bool s_is_utf8(unsigned char* contenu, long longueur);
-
 Exporting char c_detect_utf8(unsigned char* utf);
 Exporting char c_test_utf8(unsigned char* utf);
 
 Exporting string c_unicode_to_utf8(TRANSCHAR code);
 
-Exporting void s_unicode_to_utf8(string& s, wstring& str);
 
-Exporting void s_utf8_to_unicode(wstring& s, unsigned char* str, long sz);
 Exporting void s_doubleutf8_to_unicode(wstring& s, wchar_t* str, long sz);
 Exporting uchar c_latin_to_utf8(unsigned char code, unsigned char* utf);
 

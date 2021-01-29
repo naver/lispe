@@ -504,7 +504,7 @@ public:
 #ifdef WIN32
         string local("\\");
         string with("\\\\");
-        path = s_replacestring(path, local, with);
+        path = s_replacingstring(path, local, with);
         code << "sys.path.append('" << path << "')\n";
 #else
         code << "sys.path.append('" << path << "')\n";
@@ -720,7 +720,7 @@ public:
     }
 
     Element* eval(LispE* lisp) {
-        Pythoninterpreter* py;
+        Pythoninterpreter* py = NULL;
         if (action != python_new) {
             Element* e = lisp->get(py_var);
             if (e->type != python_type)

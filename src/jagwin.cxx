@@ -21,11 +21,6 @@
 #define hmap std::unordered_map
 
 
-#if (_MSC_VER >= 1900)
-FILE _iob[] = { *stdin, *stdout, *stderr };
-extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
-#endif
-
 //Handling console tune up
 static HANDLE hStdout = 0;
 static HANDLE hStdin = 0;
@@ -38,7 +33,7 @@ static UINT codepage = 0;
 #define FILENO _fileno
 
 void ResetWindowsConsole();
-void Getscreensizes();
+void Getscreensizes(bool);
 bool checkresize();
 void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 
@@ -103,6 +98,7 @@ void getcursor(int& xcursor, int& ycursor) {
 
 //We generate the Unix strings in Windows, to keep the whole code constant across platform
 string MouseEventProc(MOUSE_EVENT_RECORD mer) {
+	static bool tracking = false;
     stringstream stre;
 
     stre << "\033[";
@@ -119,22 +115,22 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
     case 0:
         if (!mer.dwButtonState) {
             stre << 35 << ";" << mousep.X << ";" << mousep.Y << "M";
-            _mysys->tracking = false;
+            tracking = false;
         }
         else if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
         {
             stre << 32 << ";" << mousep.X << ";" << mousep.Y<< "M";
-            _mysys->tracking = true;
+            tracking = true;
         }
         else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED)
         {
             stre << 34 << ";" << mousep.X << ";" << mousep.Y<< "M";
-            _mysys->tracking = true;
+            tracking = true;
         }
         else
         {
             stre << 34 << ";" << mousep.X << ";" << mousep.Y<< "M";
-            _mysys->tracking = true;
+            tracking = true;
         }
         break;
     case MOUSE_HWHEELED:
@@ -144,7 +140,7 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
             stre << 96 << ";" << mousep.X << ";" << mousep.Y << "M";
         break;
     case MOUSE_MOVED:
-        if (_mysys->tracking)
+        if (tracking)
             stre << 64 << ";" << mousep.X << ";" << mousep.Y << "M";
         else
             stre << 67 << ";" << mousep.X << ";" << mousep.Y << "M";
@@ -201,6 +197,8 @@ string getwinchar(void(*f)(), bool mouseenabled) {
     SetConsoleMode(hStdin, fdwMode);
     
     kar = 0;
+	bool alt = false;
+	bool shift = false;
     while (s == "") {
         ReadConsoleInput(
                          hStdin,      // input buffer handle
@@ -217,14 +215,31 @@ string getwinchar(void(*f)(), bool mouseenabled) {
                     if (key.bKeyDown) {
                         kar = key.uChar.UnicodeChar;
                         if (!kar) {
-                            if (keys.find(key.wVirtualScanCode) != keys.end()) {
-                                s = (uchar)224;
+							//Alt key is pressed, we look for its combination
+							if (key.wVirtualScanCode == 42) {
+								shift = true;
+								break;
+							}
+							if (key.wVirtualScanCode == 56) {
+								alt = true;
+								break;
+							}
+							if (keys.find(key.wVirtualScanCode) != keys.end()) {
+								if (shift || key.dwControlKeyState == 304)
+									s = (uchar)225;
+								else
+									s = (uchar)224;
                                 s += key.wVirtualScanCode;
                                 return s;
                             }
                         }
                         else {
                             w = kar;
+							if (alt && (w == L"c" || w == L"v" || w == L"x")) {
+								s = (uchar)226;
+								s += (uchar)w[0];
+								return s;
+							}
                             s_unicode_to_utf8(s, w);
                             return s;
                         }
@@ -246,98 +261,18 @@ string getwinchar(void(*f)(), bool mouseenabled) {
 
 bool checkresize();
 
-string getcharacter(bool mouseenabled) {
-    static hmap<int, bool> keys;
-    static bool init = false;
-    if (!init) {
-        //this is the list of control keys that we actually care for
-        keys[77] = true;
-        keys[75] = true;
-        keys[80] = true;
-        keys[72] = true;
-        keys[83] = true;
-        keys[71] = true;
-        keys[79] = true;
-        keys[119] = true;
-        keys[117] = true;
-        keys[73] = true;
-        keys[81] = true;
-        keys[116] = true;
-        keys[115] = true;
-        init = true;
-    }
-    
-    string s;
-    
-    DWORD cNumRead;
-    WCHAR kar;
-    wstring w;
-    INPUT_RECORD irInBuf[512];
-    bool stop = false;
-    int i;
-    DWORD fdwMode;
-    
-    //This is the most important trick here, you need to reset the flags at each call...
-    if (mouseenabled)
-        fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS;
-    else
-        fdwMode = ENABLE_WINDOW_INPUT | ENABLE_EXTENDED_FLAGS;
-    
-    SetConsoleMode(hStdin, fdwMode);
-    
-    kar = 0;
-    while (s == "") {
-        ReadConsoleInput(
-                         hStdin,      // input buffer handle
-                         irInBuf,     // buffer to read into
-                         512,         // size of read buffer
-                         &cNumRead); // number of records read
-        
-        for (i = 0; i < cNumRead; i++)
-        {
-            switch (irInBuf[i].EventType)
-            {
-                case KEY_EVENT: {// keyboard input
-                    KEY_EVENT_RECORD& key = irInBuf[i].Event.KeyEvent;
-                    if (key.bKeyDown) {
-                        kar = key.uChar.UnicodeChar;
-                        if (!kar) {
-                            if (keys.find(key.wVirtualScanCode) != keys.end()) {
-                                s = (uchar)224;
-                                s += key.wVirtualScanCode;
-                                return s;
-                            }
-                        }
-                        else {
-                            w = kar;
-                            s_unicode_to_utf8(s, w);
-                            return s;
-                        }
-                    }
-                    break;
-                }
-                case MOUSE_EVENT: // mouse input
-                    return MouseEventProc(irInBuf[i].Event.MouseEvent);
-                case WINDOW_BUFFER_SIZE_EVENT: // scrn buf. resizing
-                    checkresize();
-            }
-        }
-    }
-    
-    return s;
-}
 
 void sendstring(string s) {
     cout << s;
 }
 
 
-void Getscreensizes() {
+void Getscreensizes(bool mouseenabled) {
     static CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
+	DWORD fdwMode;
 
     if (row_size == -1 && col_size == -1) {
 		system("cls");
-        DWORD fdwMode;
 
         hStdin = GetStdHandle(STD_INPUT_HANDLE);
 
@@ -349,6 +284,14 @@ void Getscreensizes() {
         }
 
         // Enable the window and mouse input events.
+		if (mouseenabled)
+			fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS;
+		else
+			fdwMode = ENABLE_WINDOW_INPUT | ENABLE_EXTENDED_FLAGS;
+
+		SetConsoleMode(hStdin, fdwMode);
+
+
         fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS;;
         if (!SetConsoleMode(hStdin, fdwMode)) {
             printf("SetConsoleMode (%d)\n", GetLastError());
@@ -386,4 +329,10 @@ void Getscreensizes() {
         size_row = csbiInfo.dwMaximumWindowSize.X;
         size_col = csbiInfo.dwMaximumWindowSize.Y;
     }
+	else {
+		if (mouseenabled) {
+			fdwMode = ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_EXTENDED_FLAGS;
+			SetConsoleMode(hStdin, fdwMode);
+		}
+	}
 }

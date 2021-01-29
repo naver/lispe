@@ -33,6 +33,9 @@ static char m_oneright[] = {27, '[', '0', '0', '1', 67, 0};
 #ifdef WIN32
 static char m_delback = 8;
 static char m_delbackbis = 8;
+void ResetWindowsConsole();
+void Getscreensizes(bool);
+void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 #else
 static char  m_delback = 127;
 static char m_delbackbis = 15;
@@ -110,10 +113,10 @@ void jag_get::resetterminal() {
 
 #ifdef WIN32
 string getwinchar(void(*f)(), bool mouseenabled);
-void resizewindow();
+void _resizewindow() {}
 string jag_get::getch() {
     initialisation();
-    return getwinchar(resizewindow, mouse_status);
+    return getwinchar(_resizewindow, mouse_status);
 }
 #else
 string jag_get::getch(){
@@ -170,7 +173,7 @@ string jag_get::getch(){
 void jag_get::screensizes() {
 #ifdef WIN32
     if (row_size == -1 && col_size == -1)
-        Getscreensizes();
+        Getscreensizes(mouse_status);
     Returnscreensize(row_size, col_size, size_row, size_col);
     row_size -= 1;
     col_size -= margin;

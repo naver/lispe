@@ -395,8 +395,8 @@ long lispe_editor::deleteachar(wstring& l, bool last, long pins) {
         long nb = 0;
         long i = pins;
         while (mx) {
-            if (special_characters.c_is_emoji(l[i++])) {
-                while (special_characters.c_is_emojicomp(l[i++])) nb++;
+            if (i < l.size() && special_characters.c_is_emoji(l[i++])) {
+                while (i < l.size() && special_characters.c_is_emojicomp(l[i++])) nb++;
             }
             nb++;
             mx--;
@@ -544,57 +544,59 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
         command = commands[v[0]];
     }
     else {
-        if (line[0] == '!' || line[0] == '?') {
-            if (line[0] == '!') {
-                addcommandline(line);
+		if (line.size()) {
+			if (line[0] == '!' || line[0] == '?') {
+				if (line[0] == '!') {
+					addcommandline(line);
 
-                //We launch a Unix command...
-                code = line.substr(1, line.size() -1);
-                long iquote = line.find(L"\"");
-                long iequal = line.find(L"=");
-                if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
-                    code = line.substr(iequal+1, line.size()-iequal);
-                    line = line.substr(1, iequal-1);
-                    line = L"(setq " +line + L" ";
-                    line += L"(command \"";
-                    line += code;
-                    line += L"\"))";
-                }
-                else {
-                    line = L"(command \"";
-                    line += code;
-                    line += L"\")";
-                }
-                
-                Executesomecode(line);
-                
-                code = WListing();
-                lines.setcode(code);
-                lines.pop_back();
-                code = lines.code();
-                LispSetCode(code);
-                return lines.size();
-            }
-            
-            if (line[0] == '?') {
-                line = s_trim(line);
-                line.erase(0, 1);
-                i = line.rfind(L".");
-                if (i != -1) {
-                    code = line.substr(i+1 , line.size() - 2);
-                    line.erase(i, string::npos);
-                    line += L".info('";
-                    line += code;
-                    line += L"')";
-                    Executesomecode(line);
-                }
-                else {
-                    code = L"printjln(_info('" + line + L"'), \"\\n\", ' for type: ');";
-                    Executesomecode(code);
-                }
-                return pos;
-            }
-        }
+					//We launch a Unix command...
+					code = line.substr(1, line.size() - 1);
+					long iquote = line.find(L"\"");
+					long iequal = line.find(L"=");
+					if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
+						code = line.substr(iequal + 1, line.size() - iequal);
+						line = line.substr(1, iequal - 1);
+						line = L"(setq " + line + L" ";
+						line += L"(command \"";
+						line += code;
+						line += L"\"))";
+					}
+					else {
+						line = L"(command \"";
+						line += code;
+						line += L"\")";
+					}
+
+					Executesomecode(line);
+
+					code = WListing();
+					lines.setcode(code);
+					lines.pop_back();
+					code = lines.code();
+					LispSetCode(code);
+					return lines.size();
+				}
+
+				if (line[0] == '?') {
+					line = s_trim(line);
+					line.erase(0, 1);
+					i = line.rfind(L".");
+					if (i != -1) {
+						code = line.substr(i + 1, line.size() - 2);
+						line.erase(i, string::npos);
+						line += L".info('";
+						line += code;
+						line += L"')";
+						Executesomecode(line);
+					}
+					else {
+						code = L"printjln(_info('" + line + L"'), \"\\n\", ' for type: ');";
+						Executesomecode(code);
+					}
+					return pos;
+				}
+			}
+		}
     }
     
     switch(command) {
@@ -649,9 +651,9 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             }
             return pos;
        case cmd_edit:
+		   mouseon();
 #ifndef WIN32
             signal(SIGWINCH, resizewindow);
-            mouseon();
             selected_x = -1;
             selected_y = -1;
             selected_pos = -1;
@@ -1187,14 +1189,12 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
         buff = getch();
 
 
-#ifdef UNIX
         if (emode()) {
             while (isMouseAction(buff)) {
                 handlemousectrl(buff);
                 buff =  getch();
             }
         }
-#endif
 
         //This specific section below is used to
         //read a string a pass it to "input" in the

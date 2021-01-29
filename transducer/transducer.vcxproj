@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D53E81D9-A6B2-44E8-90DE-F0EF56E009D7}</ProjectGuid>
+    <ProjectGuid>{98242674-FD01-47F2-83B9-A332F780309B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>liblispe_transducer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
@@ -156,10 +156,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\automaton.cxx" />
+    <ClCompile Include="src\conversion.cxx" />
     <ClCompile Include="src\lispe_transducer.cxx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-

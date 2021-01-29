@@ -519,6 +519,10 @@ public:
     ~jag_editor();
 
 
+#ifdef WIN32
+	string getch();
+#endif
+
     virtual string coloringline(wstring& l) {
         return  convert(l);
     }

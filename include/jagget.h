@@ -114,6 +114,11 @@ const char c_up[] = { 224, 73, 0 };
 const char c_down[] = { 224,81, 0 };
 const char c_right[] = { 224,116, 0 };
 const char c_left[] = { 224,115, 0 };
+const unsigned char alt_x[] = { 226, 'x', 0 };
+const unsigned char alt_c[] = { 226, 'c', 0 };
+const unsigned char alt_v[] = { 226, 'v', 0 };
+const unsigned char shift_right[] = { 225, 77, 0 };
+const unsigned char shift_left[] = { 225, 75, 0 };
 #else
 const char c_right[] = { 27, 91, 49, 59, 53, 67, 0 };
 const char c_left[] = { 27, 91, 49, 59, 53, 68, 0 };
@@ -173,8 +178,12 @@ public:
     ~jag_get() {
         resetterminal();
     }
-    
+
+#ifdef WIN32
+	virtual string getch();
+#else
     string getch();
+#endif
     void resetterminal();
     void screensizes();
     void reset();
@@ -197,12 +206,10 @@ public:
     void mouseoff() {
         mouse_status = false;
     }
-    
-    bool isMouseAction(std::wstring& mousectrl) {
-        return false;
-    }
-    
-    void togglemouse() {}
+        
+    void togglemouse() {
+		mouse_status = 1 - mouse_status;
+	}
     
 #else
     
@@ -230,7 +237,7 @@ public:
             mouse_status = false;
         }
     }
-    
+#endif
     void mouseLocation(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
         if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
@@ -330,10 +337,7 @@ public:
 
     bool isMouseAction(std::wstring& mousectrl) {
         return (mousectrl.size() >= 8 && mousectrl.back() == L'M' && mousectrl[0] == 27 && mousectrl[1] == L'[');
-    }
-
-#endif
-    
+    }    
 };
 
 #endif

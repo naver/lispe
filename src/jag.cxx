@@ -25,7 +25,7 @@
 
 #ifdef WIN32
 void ResetWindowsConsole();
-void Getscreensizes();
+void Getscreensizes(bool);
 bool checkresize();
 void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 #endif
@@ -195,8 +195,16 @@ jag_editor* JAGEDITOR = NULL;
 //------------------------------------------------------------------------------------
 #ifdef WIN32
 void resizewindow() {
+	bool m = JAGEDITOR->mouse_status;
 	JAGEDITOR->resetscreen();
+	JAGEDITOR->mouse_status = m;
 }
+string getwinchar(void(*f)(), bool mouseenabled);
+string jag_editor::getch() {
+	initialisation();
+	return getwinchar(resizewindow, mouse_status);
+}
+
 #else
 void resizewindow(int theSignal) {
 	JAGEDITOR->resetscreen();
@@ -2463,7 +2471,6 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
     }
 }
 
-#ifdef UNIX
 static bool checkcar(wchar_t c) {
     if (c <= 32)
         return false;
@@ -2825,7 +2832,6 @@ void jag_editor::handlemousectrl(string& mousectrl) {
     
     double_click = 0;
 }
-#endif
 
 //This is the main method that launches the terminal
 void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& args) {

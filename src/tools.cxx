@@ -47,6 +47,8 @@ long bitcounter(uint_fast64_t x) {
     return nb;
 }
 
+#define mini(x,y) x < y?x:y
+
 static char digitaction[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     '+',0,'-','.',0,
@@ -586,7 +588,7 @@ inline UWCHAR getuwchar(wstring& s, long& i) {
     return c;
 }
 
-void Chaine_UTF8::getchar(wstring& s, wstring& res,  size_t& i, long sz) {
+void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
     UWCHAR c = getuwchar(s, i);
     res = c;
     try {
@@ -629,7 +631,7 @@ UWCHAR getonechar(unsigned char* s, long& i) {
     return code;
 }
 
-void Chaine_UTF8::getchar(wstring& s, wstring& res,  size_t& i, long sz) {
+void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
     try {
         emojis.at(s[i]);
         res = s[i++];
@@ -861,7 +863,7 @@ char c_test_utf8(unsigned char* utf) {
     return 0;
 }
 
-void c_chars_get_next(unsigned char* m, char* str, size_t& i) {
+void c_chars_get_next(unsigned char* m, char* str, long& i) {
     long nb = c_test_utf8(m + i);
     str[0] = (char)m[i];
     
@@ -945,7 +947,7 @@ Chaine_UTF8::Chaine_UTF8() {
     while (temojis[i][0] != 0) {
         code = temojis[i];
         c = (uint32_t)convertinginteger(code);
-        min_emoji = std::min(min_emoji, c);
+        min_emoji = mini(min_emoji, c);
         if (c > 127)
             emojis[c] = temojis[i + 1];
         i += 2;
@@ -955,7 +957,7 @@ Chaine_UTF8::Chaine_UTF8() {
     min_emojicomp = 0xFFFFF;;
     while (temojiscomplement[i]) {
         c = temojiscomplement[i];
-        min_emojicomp = std::min(min_emojicomp, c);
+        min_emojicomp = mini(min_emojicomp, c);
         emojiscomplement[c] = true;
         i++;
     }
@@ -1350,7 +1352,7 @@ bool Chaine_UTF8::s_is_punctuation(wstring& str) {
 
 
 char Chaine_UTF8::c_is_alpha(unsigned char* m, long& i) {
-    wchar_t v;
+	UWCHAR v;
     i += c_utf8_to_unicode(m + i, v);
     
     try {
@@ -1483,7 +1485,7 @@ bool Chaine_UTF8::s_is_space(string& str) {
     static unsigned char spaces[] = { 9, 10, 13, 32, 160 };
     long lg = str.size();
     uchar* contenu = USTR(str);
-    wchar_t code;
+	UWCHAR code;
     for (long i = 0; i < lg; i++) {
         i += c_utf8_to_unicode(contenu + i, code);
         if ((code <= 160 && !strchr((char*)spaces, (char)code)) && code != 0x202F && code != 0x3000)
@@ -2608,7 +2610,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
 }
 
 //------------------------------------------------------------------------
-bool c_char_index_insert(string& s, string c, size_t x) {
+bool c_char_index_insert(string& s, string c, long x) {
     if (x > s.size())
         return false;
     long i;

@@ -15,6 +15,7 @@
 #define closesock closesocket
 #define readsock(x,y,z) recv(x,y,z,0)
 #define writesock(x,y,z) send(x,y,z,0)
+#define uchar unsigned char
 #else
 #include <unistd.h>
 #include <sys/utsname.h>        /* for uname() */
@@ -33,8 +34,9 @@
 
 const int MAXHOSTNAME = 1000;
 
-#include "lispe.h"
 #include <list>
+
+#include "lispe.h"
 
 const int MAXSIZEINPUT = 256;
 const int POSSIGNATURE = 5;
@@ -601,12 +603,14 @@ public:
         return true_;
     }
 };
+#ifdef WIN32
+static WSADATA WSAData;
+#endif
 
 
 class Socket : public Element {
 public:
 #ifdef WIN32
-    static WSADATA WSAData;
     static bool rootsocket;
 #endif
     socket_action action;
@@ -808,12 +812,12 @@ public:
             case sock_getpeername:
                 return L"return the current peer name";
         }
+		return L"";
     }
     
 };
 
 #ifdef WIN32
-WSADATA Socket::WSAData;
 bool Socket::rootsocket = false;
 #endif
 

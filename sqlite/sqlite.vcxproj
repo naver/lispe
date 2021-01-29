@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D53E81D9-A6B2-44E8-90DE-F0EF56E009D7}</ProjectGuid>
+    <ProjectGuid>{DF6F8B0A-5543-4BBE-B339-FA4A367613FE}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>liblispe_sqlite</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
@@ -157,9 +157,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\lispe_sqlite.cxx" />
+    <ClCompile Include="src\sqlite3.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-

@@ -4007,38 +4007,38 @@ void x_wreading::apply(wstring& toparse, bool keepos, vector<wstring>* vstack, v
 }
 
 
-wchar_t c_to_upper(wchar_t c) {
+Exporting TRANSCHAR c_to_upper(TRANSCHAR c) {
     return handlingutf8->c_to_upper(c);
 }
 
-wchar_t c_to_lower(wchar_t c) {
+Exporting TRANSCHAR c_to_lower(TRANSCHAR c) {
     return handlingutf8->c_to_lower(c);
 }
 
-bool c_is_upper(wchar_t c) {
+Exporting bool c_is_upper(TRANSCHAR c) {
     return handlingutf8->c_is_upper(c);
 }
 
-char c_is_alpha(wchar_t c) {
+Exporting char c_is_alpha(TRANSCHAR c) {
     return handlingutf8->c_is_alpha(c);
 }
 
-bool c_is_lower(wchar_t c) {
+Exporting bool c_is_lower(TRANSCHAR c) {
     return handlingutf8->c_is_lower(c);
 }
 
-bool c_is_consonant(wchar_t c) {
+Exporting bool c_is_consonant(TRANSCHAR c) {
     return handlingutf8->c_is_consonant(c);
 }
 
-bool c_is_vowel(wchar_t c) {
+Exporting bool c_is_vowel(TRANSCHAR c) {
     return handlingutf8->c_is_vowel(c);
 }
 
-bool compare_vowel(wchar_t c, wchar_t cc) {
+Exporting bool compare_vowel(TRANSCHAR c, TRANSCHAR cc) {
     return handlingutf8->compare_vowel(c, cc);
 }
 
-bool c_is_punctuation(wchar_t c) {
+Exporting bool c_is_punctuation(TRANSCHAR c) {
     return handlingutf8->c_is_punctuation(c);
 }

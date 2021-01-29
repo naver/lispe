@@ -107,7 +107,7 @@ wstring& s_trimleft(wstring& strvalue);
 wstring& s_trimright(wstring& strvalue);
 
 void c_chars_get_next(unsigned char* m, char* str, size_t& i);
-bool c_char_index_insert(string& s, string c, size_t i);
+bool c_char_index_insert(string& s, string c, long i);
 void s_utf8_to_unicode(wstring& s, unsigned char* str, long sz);
 unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code);
 void s_unicode_to_utf8(string& s, wstring& str);
@@ -129,7 +129,7 @@ inline void concat_to_wstring(wstring& res, UWCHAR code) {
     if (!(code & 0xFFFF0000))
         res += (wchar_t)code;
     else {
-        TAMGUCHAR c16;
+		UWCHAR c16;
         c_unicode_to_utf16(c16, code);
         res += (wchar_t)(c16 >> 16);
         res += (wchar_t)(c16 & 0xFFFF);
@@ -172,7 +172,7 @@ public:
     wchar_t c_to_lower(wchar_t c);
     wchar_t c_to_upper(wchar_t c);
     
-    void getchar(wstring& s, wstring& res, size_t& i, long sz);
+    void getchar(wstring& s, wstring& res, long& i, long sz);
     UWCHAR getachar(wstring& s, long& i);
     
     void l_emojis(map<UWCHAR, string>& dico);

@@ -2858,6 +2858,9 @@ Element* List::evall_input(LispE* lisp) {
     }
     
     lisp->delegation->reading_string_function(code, lisp->delegation->reading_string_function_object);
+#ifdef WIN32
+	cout << std::endl;
+#endif
     return lisp->provideString(code);
 }
 
@@ -4462,11 +4465,11 @@ Element* List::evall_println(LispE* lisp) {
             lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
             _releasing(second_element);
         }
-        #ifdef WIN32
-        val = "\r";
-        #else
-            val = "\n";
-        #endif
+ #ifdef WIN32
+		val = "\r\n";
+ #else
+        val = "\n";
+ #endif
         lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
         if (lisp->isThread)
             std::cout.flush();
