@@ -18,7 +18,7 @@ I based a large part of this work on the following article: [The Root of Lisp](h
 
 # CHECK binaries
 
-We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) precompiled version for Window and Mac OS (including M1)...
+We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) precompiled versions for Window and Mac OS (including M1)...
 
 # Modern Functional Properties
 
