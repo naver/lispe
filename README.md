@@ -7,7 +7,9 @@ Welcome to __Lisp Elémentaire__, a version of Lisp that is ultra-minimal but co
 __LispE__ has different goals:
 * To show how to easily implement a powerful and extensible _Lisp_ interpreter in _C++_.
 * To provide a real Lisp language that will allow you to discover a really fascinating language ...
-* To provide a code that can be compiled on any Linux or Mac OS machine, without any fuss
+* To provide a code that can be compiled on any Windows, Linux or Mac OS machine, without any fuss
+
+Check: 
 
 I based a large part of this work on the following article: [The Root of Lisp](http://www.paulgraham.com/rootsoflisp.html).
 
