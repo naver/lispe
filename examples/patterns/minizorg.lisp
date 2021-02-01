@@ -102,7 +102,6 @@
    )
 )
 
-
 ; check if we are within the confines of the game: 3x3 square map.
 (defpat checkposition( [x y] )
    (check_valid_path
@@ -263,14 +262,14 @@
    ; we transform each of our strings into atoms, for match sake
    ;we remove useless words: the, a etc..
    (setq commands (filter (\ (x) (not (key stopwords x))) (map 'atom commands)))
-   
+
    ; our commands is now a list of atoms that should match a data structure
-   ; if we cannot evaluate it, then we display a random error message   
+   ; if we cannot evaluate it, then we display a random error message
    (maybe
       (println (action commands))
       (println (random_choice 1 msgs 10))
    )
-      
+
    (check (check_danger position)
       (println "you are dead!!!")
       (setq commands '(End))
@@ -282,5 +281,6 @@
 )
 
 (print "The end")
+
 
 
