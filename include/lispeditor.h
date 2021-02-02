@@ -140,6 +140,7 @@ public:
     bool emode() {
         if (editmode && option == x_none)
             return true;
+        noprefix = false;
         return false;
     }
     
