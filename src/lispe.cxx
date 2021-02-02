@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.2.2.14.55";
+static std::string version = "1.2021.2.2.16.4";
 string LispVersion() {
     return version;
 }
@@ -424,6 +424,17 @@ void Delegation::initialisation(LispE* lisp) {
     lisp->recordingunique(_ERROR, t_error);
     
     //These types are all basic data structures
+
+    provideAtomType(t_string);
+    provideAtomType(t_number);
+    provideAtomType(t_integer);
+    provideAtomType(t_list);
+    provideAtomType(t_data);
+    provideAtomType(t_maybe);
+    provideAtomType(t_dictionary);
+    provideAtomType(t_dictionaryn);
+    provideAtomType(t_atom);
+                    
     recordingData(lisp->create_instruction(t_string, _NULL), t_string, v_null);
     recordingData(lisp->create_instruction(t_number, _NULL), t_number, v_null);
     recordingData(lisp->create_instruction(t_integer, _NULL), t_integer, v_null);
@@ -1655,6 +1666,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

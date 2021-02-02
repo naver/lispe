@@ -654,6 +654,16 @@ public:
         return e;
     }
 
+    void provideAtomType(short code) {
+        Element* e = atom_pool[code];
+        if (e == NULL) {
+            e = new Atomtype(code);
+            e->status = s_constant;
+            atom_pool[code] = e;
+        }
+    }
+
+
     Element* provideAtom(wstring& name, bool tobelocked) {
         lock.locking(tobelocked);
         short code = encode(name);

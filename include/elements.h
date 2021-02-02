@@ -788,6 +788,7 @@ public:
     
     Atom(short a) : atome(a), Element(t_atom) {}
     Atom(short a, uchar s) : atome(a), Element(t_atom, s) {}
+    
     wstring asString(LispE* lisp);
     wstring jsonString(LispE* lisp);
     
@@ -811,7 +812,7 @@ public:
         return atome;
     }
     
-    char check_match(LispE* lisp, Element* value) {
+    virtual char check_match(LispE* lisp, Element* value) {
         if (atome == value->label())
             return check_ok;
         return false;
@@ -820,6 +821,21 @@ public:
     bool unify(LispE* lisp, Element* value, bool record);
     bool isExecutable(LispE* lisp);
     
+};
+
+//all atoms between t_atom to t_error are Atomtype
+class Atomtype : public Atom {
+public:
+
+    Atomtype(short a) : Atom(a) {}
+    Atomtype(short a, uchar s) : Atom(a, s) {}
+
+    char check_match(LispE* lisp, Element* value) {
+        if (atome == value->type)
+            return check_ok;
+        return false;
+    }
+
 };
 
 class Atomnotlabel : public Atom {
