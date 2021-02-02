@@ -210,7 +210,7 @@
       "1:1":"You are standing in front of a gate."
       "1:2":"You are standing in front of a large window"
       "1:0":"You are standing in front of a Ogre"
-      "2:1":"You wake up an angry venominous snake. It bites you. The pain is terrible..."
+      "2:1":"You wake up an angry venomous snake. It bites you. The pain is terrible..."
       "0:0":"Your are in a large dark room"
       "0:2":"You are on in small room"
       "2:0":"You are in the middle of a forest"
@@ -281,6 +281,7 @@
 )
 
 (print "The end")
+
 
 
 
