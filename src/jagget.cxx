@@ -68,7 +68,9 @@ void jag_get::initialisation() {
     if (initialized)
         return;
     initialized = true;
-#ifndef WIN32
+#ifdef WIN32
+	Getscreensizes(mouse_status);
+#else
     tcgetattr(0, &oldterm);
     
     //We enable ctrl-s and ctrl-q within the editor
@@ -172,8 +174,8 @@ string jag_get::getch(){
 
 void jag_get::screensizes() {
 #ifdef WIN32
-    if (row_size == -1 && col_size == -1)
-        Getscreensizes(mouse_status);
+	system("cls");
+	Getscreensizes(mouse_status);
     Returnscreensize(row_size, col_size, size_row, size_col);
     row_size -= 1;
     col_size -= margin;

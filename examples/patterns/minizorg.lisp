@@ -3,13 +3,13 @@
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
 
-(data 
-   [Move atom_] 
-   [Break atom_ atom_] 
-   [Open atom_ atom_] 
-   [Kill atom_ atom_] 
-   [Pick atom_ atom_] 
-   [Take atom_] 
+(data
+   [Move atom_]
+   [Break atom_ atom_]
+   [Open atom_ atom_]
+   [Kill atom_ atom_]
+   [Pick atom_ atom_]
+   [Take atom_]
    [Drop atom_]
 )
 
@@ -292,6 +292,7 @@
 )
 
 (print "The end")
+
 
 
 

@@ -2717,7 +2717,8 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         return;
     }
     
-    if (isClickFirstMouseDown(location, mousectrl)) {
+	char click = isClickFirstMouseDown(location, mousectrl);
+    if (click) {
         if (selected_pos != -1)
             unselectlines(selected_pos, selected_posnext, selected_x, selected_y);
         
@@ -2776,17 +2777,23 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         selected_y = -1;
         
         //a simple click
-        if (location[0] == mxcursor && location[1] == mycursor) {
-            double_click++;
+#ifdef WIN32
+        if (click == 2 || (location[0] == mxcursor && location[1] == mycursor)) {
+			double_click = click;
+#else
+		if (location[0] == mxcursor && location[1] == mycursor) {
+			double_click++;
+#endif            
             posinstring = l;
             
             if (double_click >= 2) {
-                if (double_click == 3) {
+                if (double_click >= 3) {
                     double_click = 0;
                     l = 0;
                     r = endofstring;
                     selected_pos = pos;
                     selected_posnext = pos;
+
                     selected_x = l;
                     selected_y = r;
                     selectlines(pos, pos, l,r);
@@ -2795,7 +2802,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
                     return;
                 }
                 
-                while (l >= 0 && checkcar(line[l])) l--;
+                while (l >= 0 && l < line.size() && checkcar(line[l])) l--;
                 if (l < 0)
                     l = 0;
                 else {

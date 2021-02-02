@@ -98,6 +98,10 @@ void getcursor(int& xcursor, int& ycursor) {
 
 //We generate the Unix strings in Windows, to keep the whole code constant across platform
 string MouseEventProc(MOUSE_EVENT_RECORD mer) {
+	static COORD lastmousep;
+	static bool init = true;
+	static int triple = 0;
+
 	static bool tracking = false;
     stringstream stre;
 
@@ -105,8 +109,20 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
     int x = 0, y = 0;
     COORD mousep = mer.dwMousePosition;
 
-    mousep.X++;
-    mousep.Y++;
+	bool sameposition = false;
+	if (init) {
+		lastmousep = mousep;
+		init = false;
+	}
+	else {
+		sameposition = (mousep.X == lastmousep.X && mousep.Y == lastmousep.Y);
+		lastmousep = mousep;
+		if (!sameposition)
+			triple = 0;
+	}
+
+	mousep.X++;
+	mousep.Y++;
 
     long wheel = mer.dwButtonState;
 
@@ -118,9 +134,22 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
             tracking = false;
         }
         else if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
-        {
-            stre << 32 << ";" << mousep.X << ";" << mousep.Y<< "M";
-            tracking = true;
+		{
+			if (!triple) {
+				stre << 32 << ";" << mousep.X << ";" << mousep.Y << "M";
+				triple = 1;
+			}
+			else {
+				if (triple == 1) {
+					stre << 33 << ";" << mousep.X << ";" << mousep.Y << "M";
+					triple = 2;
+				}
+				else {
+					stre << 36 << ";" << mousep.X << ";" << mousep.Y << "M";
+					triple = 0;
+				}
+			}
+			tracking = true;
         }
         else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED)
         {
@@ -140,7 +169,7 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
             stre << 96 << ";" << mousep.X << ";" << mousep.Y << "M";
         break;
     case MOUSE_MOVED:
-        if (tracking)
+		if (tracking)
             stre << 64 << ";" << mousep.X << ";" << mousep.Y << "M";
         else
             stre << 67 << ";" << mousep.X << ";" << mousep.Y << "M";
@@ -152,8 +181,20 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
             stre << 96 << ";" << mousep.X << ";" << mousep.Y<< "M";
         break;
     default:
-        stre << 67 << ";" << mousep.X << ";" << mousep.Y << "M";
+		stre << 67 << ";" << mousep.X << ";" << mousep.Y << "M";
     }
+
+	/*
+	string u = stre.str();
+	for (long i = 0; i < u.size(); i++) {
+		if (u[i] > 32)
+			cerr << u[i];
+		else
+			cerr << (int)u[i] << " ";
+	}
+
+	cerr << endl;	
+	*/
     return stre.str();
 }
 
@@ -272,8 +313,6 @@ void Getscreensizes(bool mouseenabled) {
 	DWORD fdwMode;
 
     if (row_size == -1 && col_size == -1) {
-		system("cls");
-
         hStdin = GetStdHandle(STD_INPUT_HANDLE);
 
         // Save the current input mode, to be restored on exit.

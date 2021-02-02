@@ -119,7 +119,9 @@ Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code);
 
 #ifdef WIN32
 inline UWCHAR getonewchar(wstring& s, long& i) {
-    UWCHAR c;
+    UWCHAR c = 0;
+	if (i >= s.size())
+		return c;
     if (c_utf16_to_unicode(c, s[i], false))
         c_utf16_to_unicode(c, s[++i], true);
     return c;

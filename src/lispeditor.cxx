@@ -1196,6 +1196,11 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             }
         }
 
+#ifdef WIN32
+		if (!buff.size())
+			continue;
+#endif
+
         //This specific section below is used to
         //read a string a pass it to "input" in the
         //debugger thread...

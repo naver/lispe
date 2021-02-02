@@ -278,16 +278,24 @@ public:
         return false;
     }
 
-    bool isClickFirstMouseDown(vector<int>& vect, string& mousectrl) {
+    char isClickFirstMouseDown(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
         if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+#ifdef WIN32
+			if (action == 32 || action == 33 || action == 36) {
+				vect.push_back(mxcursor);
+				vect.push_back(mycursor);
+				return (action - 31);
+			}
+#else
             if (action == 32) {
                 vect.push_back(mxcursor);
-                vect.push_back(mycursor);
-                return true;
+                vect.push_back(mycursor);				
+				return true;
             }
+#endif
         }
         return false;
     }
