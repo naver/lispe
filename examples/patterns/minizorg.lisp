@@ -115,19 +115,6 @@
    )
 )
 
-; update valid directions in both ways
-(defun update_direction (current_position direction)
-   (key moving current_position (cons direction (key moving current_position)))
-   (cond
-      ((key moving direction)
-         (key moving direction (cons current_position (key moving direction)))
-      )
-      (true
-         (key moving direction (cons current_position ()))
-      )
-   )
-)
-
 ; check if the object is available on the ground and pick it up
 ; we also remove it from objects
 ; the last 'true' is actually a hack. pop returns the dictionary as output,
@@ -153,9 +140,12 @@
 (defun display_position(p)
    (setq k (keystr p))
    (println k (select (key castlemap k) "Nothing to see"))
-   (println (if (key objects k) (+ "There is a " (key objects k) " on the ground") ""))
+   (check (key objects k)
+      (println (+ "There is a " (key objects k) " on the ground"))
+   )
    (println "You own: " belongings)
 )
+
 
 ; check if the position is a dangerous one
 (defun check_danger (position)
@@ -193,7 +183,20 @@
 (setq stopwords {"to":true "a":true "the":true "with":true "your":true "his":true "her":true})
 
 
-; these are the valid move from one position to another
+; update valid directions in both ways
+(defun update_direction (current_position direction)
+   (key moving current_position (cons direction (key moving current_position)))
+   (cond
+      ((key moving direction)
+         (key moving direction (cons current_position (key moving direction)))
+      )
+      (true
+         (key moving direction (cons current_position ()))
+      )
+   )
+)
+
+; these are the valid moves from one position to another
 (setq moving (key))
 
 (update_direction "1:1" "1:0")
@@ -281,7 +284,6 @@
 )
 
 (print "The end")
-
 
 
 
