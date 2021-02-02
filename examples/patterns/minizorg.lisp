@@ -3,7 +3,15 @@
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
 
-(data [Move _] [Break _ _] [Open _ _] [Kill _ _] [Pick _ _] [Take list_] [Drop _])
+(data 
+   [Move atom_] 
+   [Break atom_ atom_] 
+   [Open atom_ atom_] 
+   [Kill atom_ atom_] 
+   [Pick atom_ atom_] 
+   [Take atom_] 
+   [Drop atom_]
+)
 
 ; pick up is the same as take with one more parameter
 (defpat action ( [Pick 'up x] )
@@ -284,6 +292,7 @@
 )
 
 (print "The end")
+
 
 
 

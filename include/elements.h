@@ -679,6 +679,10 @@ public:
         return type;
     }
     
+    virtual short type_element() {
+        return type;
+    }
+    
     virtual Element* thekeys(LispE* lisp);
     virtual Element* thevalues(LispE* lisp);
     
@@ -831,7 +835,7 @@ public:
     Atomtype(short a, uchar s) : Atom(a, s) {}
 
     char check_match(LispE* lisp, Element* value) {
-        if (atome == value->type)
+        if (atome == value->type_element())
             return check_ok;
         return false;
     }
@@ -858,10 +862,18 @@ public:
     bool isAtom() {
         return true;
     }
+    
     short label() {
         return type;
     }
     
+    //Notice that we return t_atom
+    //This function is used in Atomtype::check_match
+    //so that 'key' for instance is considered as an atom
+    short type_element() {
+        return t_atom;
+    }
+
     bool isInstruction() {
         return true;
     }
@@ -892,6 +904,10 @@ public:
         return true;
     }
     
+    short type_element() {
+        return t_atom;
+    }
+
     short label() {
         return type;
     }
@@ -962,6 +978,10 @@ public:
         return true;
     }
     
+    short type_element() {
+        return t_atom;
+    }
+
     bool isExecutable(LispE* lisp) {
         return true;
     }
