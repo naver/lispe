@@ -96,11 +96,16 @@ void getcursor(int& xcursor, int& ycursor) {
     ycursor = csbiInfo.dwCursorPosition.Y;
 }
 
+static int  nbclicks = 0;
+
+int nbClicks() {
+	return nbclicks;
+}
+
 //We generate the Unix strings in Windows, to keep the whole code constant across platform
 string MouseEventProc(MOUSE_EVENT_RECORD mer) {
 	static COORD lastmousep;
-	static bool init = true;
-	static int triple = 0;
+	static bool init = true;	
 
 	static bool tracking = false;
     stringstream stre;
@@ -117,8 +122,10 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
 	else {
 		sameposition = (mousep.X == lastmousep.X && mousep.Y == lastmousep.Y);
 		lastmousep = mousep;
-		if (!sameposition)
-			triple = 0;
+		if (!sameposition) {
+			if (nbclicks)
+				nbclicks = 0;
+		}
 	}
 
 	mousep.X++;
@@ -126,32 +133,20 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
 
     long wheel = mer.dwButtonState;
 
-    switch (mer.dwEventFlags)
-    {
-    case 0:
-        if (!mer.dwButtonState) {
-            stre << 35 << ";" << mousep.X << ";" << mousep.Y << "M";
-            tracking = false;
-        }
-        else if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
+	switch (mer.dwEventFlags)
+	{
+	case 0:
+		if (!mer.dwButtonState) {
+			stre << 35 << ";" << mousep.X << ";" << mousep.Y << "M";
+			tracking = false;
+		}
+		else if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
 		{
-			if (!triple) {
-				stre << 32 << ";" << mousep.X << ";" << mousep.Y << "M";
-				triple = 1;
-			}
-			else {
-				if (triple == 1) {
-					stre << 33 << ";" << mousep.X << ";" << mousep.Y << "M";
-					triple = 2;
-				}
-				else {
-					stre << 36 << ";" << mousep.X << ";" << mousep.Y << "M";
-					triple = 0;
-				}
-			}
+			nbclicks++;
+			stre << 32 << ";" << mousep.X << ";" << mousep.Y << "M";
 			tracking = true;
-        }
-        else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED)
+		}
+		else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED)
         {
             stre << 34 << ";" << mousep.X << ";" << mousep.Y<< "M";
             tracking = true;

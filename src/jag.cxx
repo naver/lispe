@@ -2679,6 +2679,9 @@ void jag_editor::unselectlines(long from_line, long to_line, long from_pos, long
     displayextract(sub, from_line, 0, to_pos, false);
 }
 
+#ifdef WIN32
+int nbClicks();
+#endif
 
 void jag_editor::handlemousectrl(string& mousectrl) {
     vector<int> location;
@@ -2717,8 +2720,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         return;
     }
     
-	char click = isClickFirstMouseDown(location, mousectrl);
-    if (click) {
+    if (isClickFirstMouseDown(location, mousectrl)) {
         if (selected_pos != -1)
             unselectlines(selected_pos, selected_posnext, selected_x, selected_y);
         
@@ -2753,7 +2755,6 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         r = l;
         
         selected_firstline = currentline;
-        
         while (mouseTracking(mousectrl, mxcursor, cursor_y)) {
             if (cursor_y != mycursor)
                 unselectlines(pos, posnext, l, r);
@@ -2777,9 +2778,9 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         selected_y = -1;
         
         //a simple click
-#ifdef WIN32
-        if (click == 2 || (location[0] == mxcursor && location[1] == mycursor)) {
-			double_click = click;
+#ifdef WIN32		
+        if (location[0] == mxcursor && location[1] == mycursor) {
+			double_click = nbClicks();
 #else
 		if (location[0] == mxcursor && location[1] == mycursor) {
 			double_click++;

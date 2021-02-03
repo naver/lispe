@@ -1123,12 +1123,12 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
     
     bool dsp = true;
     
-    if (ifilenames.size() > 1) {
-        currentfileid = 0;
-        thecurrentfilename = ifilenames[0];
-        lines.setcode(codes[0]);
-        LispSetCode(codes[0]);
-    }
+	if (ifilenames.size() > 1) {
+		currentfileid = 0;
+		thecurrentfilename = ifilenames[0];
+		lines.setcode(codes[0]);
+		LispSetCode(codes[0]);
+	}
 
     switch (noinit) {
         case 1:

@@ -2642,6 +2642,10 @@ static inline char* concatstrings(char* str, char* ctn, long& i, long& size_str,
     return str;
 }
 //------------------------------------------------------------------------
+void s_unicode_to_utf8_clean(string& s, wstring& str) {
+    s = "";
+    s_unicode_to_utf8(s, str);
+}
 
 void s_unicode_to_utf8(string& s, wstring& str) {
     long i = 0;
@@ -2671,6 +2675,11 @@ void s_unicode_to_utf8(string& s, wstring& str) {
     neo[ineo] = 0;
     s += neo;
     delete[] neo;
+}
+
+void s_utf8_to_unicode_clean(wstring& w, unsigned char* str , long sz) {
+    w = L"";
+    s_utf8_to_unicode(w, str , sz);
 }
 
 void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {

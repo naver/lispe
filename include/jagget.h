@@ -240,7 +240,7 @@ public:
 #endif
     void mouseLocation(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
-        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
             if (action == 67) {
@@ -252,7 +252,7 @@ public:
 
     bool isScrollingUp(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
-        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
             if (action == 96) {
@@ -266,7 +266,7 @@ public:
 
     bool isScrollingDown(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
-        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
             if (action == 97) {
@@ -278,31 +278,23 @@ public:
         return false;
     }
 
-    char isClickFirstMouseDown(vector<int>& vect, string& mousectrl) {
+    bool isClickFirstMouseDown(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
-        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
-#ifdef WIN32
-			if (action == 32 || action == 33 || action == 36) {
-				vect.push_back(mxcursor);
-				vect.push_back(mycursor);
-				return (action - 31);
-			}
-#else
             if (action == 32) {
                 vect.push_back(mxcursor);
                 vect.push_back(mycursor);				
 				return true;
             }
-#endif
         }
         return false;
     }
 
     bool isClickSecondMouseDown(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
-        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
             if (action == 34) {
@@ -316,7 +308,7 @@ public:
 
     bool isClickMouseUp(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
-        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
             if (action == 35) {
@@ -330,7 +322,7 @@ public:
 
     bool mouseTracking(string& mousectrl, int& mxcursor, int& mycursor) {
         int action;
-        if (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
             if (action == 64)
@@ -340,11 +332,11 @@ public:
     }
 
     bool isMouseAction(string mousectrl) {
-        return (mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[');
+        return (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[');
     }
 
     bool isMouseAction(std::wstring& mousectrl) {
-        return (mousectrl.size() >= 8 && mousectrl.back() == L'M' && mousectrl[0] == 27 && mousectrl[1] == L'[');
+        return (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == L'M' && mousectrl[0] == 27 && mousectrl[1] == L'[');
     }    
 };
 

@@ -22,6 +22,7 @@
 #include <iomanip>
 
 #include "jagget.h"
+#include "tools.h"
 
 //------------------------------------------------------------------------------------
 static const short _getbuffsize = 128;
@@ -216,11 +217,17 @@ void jag_get::reset() {
 //This our own implementation of a full input on screen
 //that is compatible with the debug mode and different from
 //std::cin
-void jag_get::get_a_string(string& input_string) {
+void jag_get::get_a_string(string& string_input) {
     string buff;
-    string sub;
-    cout << input_string;
+    std::wstring wbuff;
+    std::wstring sub;
+    cout << string_input;
     cout.flush();
+    
+    std::wstring input_string;
+    
+    s_utf8_to_unicode(input_string, USTR(string_input), string_input.size());
+    
     long cursor = input_string.size();
     long i;
     
@@ -328,16 +335,21 @@ void jag_get::get_a_string(string& input_string) {
         }
         
         cout << buff;
+        s_utf8_to_unicode_clean(wbuff, USTR(buff), buff.size());
+        
         if (cursor < input_string.size()) {
             sub = input_string.substr(cursor,input_string.size());
-            input_string = input_string.substr(0, cursor)+buff+sub;
-            cout << sub;
+            input_string = input_string.substr(0, cursor)+wbuff+sub;
+            s_unicode_to_utf8_clean(buff, sub);
+            cout << buff;
             for (i = 0; i < sub.size(); i++)
                 cout << m_oneleft;
         }
         else
-            input_string += buff;
+            input_string += wbuff;
         cursor++;
     }
+    
+    s_unicode_to_utf8_clean(string_input, input_string);
 }
 
