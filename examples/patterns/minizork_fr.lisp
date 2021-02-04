@@ -298,7 +298,7 @@
       "1:1":"Vous vous tenez devant une porte."
       "1:2":"Vous vous tenez devant une grande fenêtre"
       "1:0":"Vous vous tenez devant un Ogre monstrueux"
-      "2:1":"Vous réveillez un serpent vénimeux. Il vous mord. La doubleur est horrible..."
+      "2:1":"Vous réveillez un serpent vénimeux. Il vous mord. La douleur est horrible..."
       "0:0":"Vous êtes dans une grande salle sombre"
       "0:2":"Vous êtes dans une petite pièce"
       "2:0":"Vous êtes au milieu d'une forêt"
