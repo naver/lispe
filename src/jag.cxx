@@ -61,31 +61,38 @@ void jag_editor::displaythehelp(long noclear) {
     }
     
     cerr << "   " << m_redbold << "Commands" << m_current << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-k:" << m_current << " delete from cursor up to the end of the line" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-d:" << m_current << " delete a full line" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-p:" << m_current << " insert k-buffer (from Ctrl-d or Ctrl-k)" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-u:" << m_current << " undo last modifications" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-r:" << m_current << " redo last modifications" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-f:" << m_current << " find a string (on the same line: " <<  m_redital << "Ctrl-r" << m_current <<" for replacement)" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-n:" << m_current << " find next" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-f:" << m_current << " find a string" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-g:" << m_current << " move to a specific line, '$' is the end of the code" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " toggle between top and bottom of the screen" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-t:" << m_current << " reindent the code" << endl;
+#ifdef WIN32
+    cerr << "   \t- " << m_redbold << "Ctrl+Alt-h:" << m_current << " local help" << endl;
+#else
     cerr << "   \t- " << m_redbold << "Ctrl-h:" << m_current << " local help" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-w:" << m_current << " write file to disk" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-c:" << m_current << " exit the editor" << endl;
+#endif
+    cerr << "   \t- " << m_redbold << "Ctrl-k:" << m_current << " delete from cursor up to the end of the line" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " reload file from disk" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-n:" << m_current << " find next" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-q:" << m_current << " exit the editor" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-r:" << m_current << " redo last modification" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-t:" << m_current << " reindent the code" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-u:" << m_current << " undo last modification" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-x:" << m_redital << " Combined Commands" << m_current << endl;
-    cerr << "   \t\t- " << m_redital << "f:" << m_current << " find with previous find string" << endl;
     cerr << "   \t\t- " << m_redital << "D:" << m_current << " delete a bloc of lines" << endl;
     cerr << "   \t\t- " << m_redital << "n:" << m_current << " hide/display line numbers" << endl;
     cerr << "   \t\t- " << m_redital << "c:" << m_current << " copy a bloc of lines" << endl;
     cerr << "   \t\t- " << m_redital << "x:" << m_current << " cut a bloc of lines" << endl;
     cerr << "   \t\t- " << m_redital << "v:" << m_current << " paste a bloc of lines" << endl;
+    cerr << "   \t\t- " << m_redital << "f:" << m_current << " find with LispE regular expressions" << endl;
+    cerr << "   \t\t- " << m_redital << "F:" << m_current << " find with posix regular expressions" << endl;
+    cerr << "   \t\t- " << m_redital << "d:" << m_current << " debug the code" << endl;
+    cerr << "   \t\t- " << m_redital << "r:" << m_current << " run the code" << endl;
     cerr << "   \t\t- " << m_redital << "w:" << m_current << " write and quit" << endl;
     cerr << "   \t\t- " << m_redital << "l:" << m_current << " load a file" << endl;
-    cerr << "   \t\t- " << m_redital << "b:" << m_current << " black mode (better suited for black background)" << endl;
     cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
-    cerr << "   \t\t- " << m_redital << "q:" << m_current << " quit" << endl << endl;}
+    cerr << "   \t\t- " << m_redital << "m:" << m_current << " toggle mouse on/off" << endl;
+    cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;
+    cerr << "   \t\t- " << m_redital << "q:" << m_current << " quit" << endl << endl;
+}
 
 //--------------------------------------------------------
 long editor_lines::indent(long p) {
