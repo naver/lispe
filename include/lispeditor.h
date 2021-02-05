@@ -152,20 +152,20 @@ public:
     
     void initlisp(bool init, bool setpath);
     
-    long splitline(wstring& l, long linenumber, vector<wstring>& subs);
+    //long splitline(wstring& l, long linenumber, vector<wstring>& subs);
 
     string coloringline(string line, bool thread);
     
     void displaythehelp(long i);
 
-    long taille(wstring& s);
-    long sizestring(wstring& s);
-    void cleanlongemoji(wstring& s, wstring& cleaned, long p);
-    long size_upto(wstring& s, long p);
+    //long taille(wstring& s);
+    //long sizestring(wstring& s);
+    //void cleanlongemoji(wstring& s, wstring& cleaned, long p);
+    //long size_upto(wstring& s, long p);
     //The deletion of a character is different if it is an emoji...
-    long deleteachar(wstring& l, bool last, long pins);
-    void forwardemoji();
-    void backwardemoji();
+    //long deleteachar(wstring& l, bool last, long pins);
+    //void forwardemoji();
+    //void backwardemoji();
 
     //------------------------------------------------------------------------------------------------
     //Cursor movements...

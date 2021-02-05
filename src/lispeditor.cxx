@@ -15,6 +15,12 @@
 using std::stringstream;
 
 //--------------------------------------
+//This is a stub definition to give jag a value
+string coloring_line(string& line, vector<string>& colors) {
+    return "";
+}
+
+//--------------------------------------
 string Normalizefilename(string path) {
     char localpath[4096];
     #ifdef WIN32
@@ -46,7 +52,7 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
 void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor, bool full);
 void lispe_displaystring(string& code, void*);
 
-static Chaine_UTF8 special_characters;
+extern Chaine_UTF8 special_characters;
 
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
@@ -182,55 +188,6 @@ void lispe_editor::initlisp(bool reinitialize, bool setpath) {
     }
 }
 
-long lispe_editor::splitline(wstring& l, long linenumber, vector<wstring>& subs) {
-        //we compute the position of each segment of l on string...
-
-    long sz = prefixe();
-    
-    if ((l.size() + sz) < (col_size / 2)) {
-        subs.push_back(l);
-        return 1;
-    }
-
-    wstring code;
-    UWCHAR c;
-    long j;
-
-    for (long i = 0; i < l.size(); i++) {
-        c = getonewchar(l, i);
-        concat_to_wstring(code, c);
-        if (special_characters.c_is_emojicomp(c))
-            continue;
-        
-        if (c == 9) {//tab position
-            sz += (8 - (sz%8))%8;
-            sz--;
-        }
-        else {
-            if (ckjchar(c)) //double space on screen
-                sz++;
-            else { //emoji with combination
-                if (special_characters.c_is_emoji(c)) {
-                    j = i + 1;
-                    c = getonewchar(l, j);
-                    sz++; //double space on screen
-                }
-            }
-        }
-        
-        sz++;
-        if (sz >= col_size) {
-            subs.push_back(code);
-            code = L"";
-            sz = prefixe();
-        }
-    }
-    
-    if (code != L"" || !subs.size())
-        subs.push_back(code);
-    
-    return subs.size();
-}
 
 string lispe_editor::coloringline(string line, bool thread) {
     if (line == "")
@@ -298,139 +255,6 @@ string lispe_editor::coloringline(string line, bool thread) {
         delete segments;
     
     return line;
-}
-
-
-long lispe_editor::taille(wstring& s) {
-    long sz = s.size();
-    long pref = prefixego() + 1;
-    long pos = pref;
-    for (long i = 0; i < sz; i++) {
-        if (special_characters.c_is_emojicomp(s[i]))
-            continue;
-        
-        if (special_characters.c_is_emoji(s[i])) {
-            pos += 2;
-            continue;
-        }
-            
-        if (ckjchar(s[i])) {
-            pos += 2;
-            continue;
-        }
-        if (s[i] == 9) //tab position
-            pos += (8 - (pos%8))%8;
-        pos++;
-    }
-    return (pos-pref);
-}
-
-long lispe_editor::sizestring(wstring& s) {
-    long sz = s.size();
-    long szstr = 0;
-    for (long i = 0; i < sz; i++) {
-        if (special_characters.c_is_emojicomp(s[i]))
-            continue;
-        szstr++;
-    }
-    return szstr;
-}
-
-void lispe_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
-    long i = 0;
-    while (i < p) {
-        cleaned += s[i++];
-        while (special_characters.c_is_emojicomp(s[i])) {i++;}
-    }
-}
-
-long lispe_editor::size_upto(wstring& s, long p) {
-    long pref = prefixego() + 1;
-    long pos = pref;
-    UWCHAR c;
-    for (long i = 0; i < p; i++) {
-        c = getonewchar(s, i);
-        if (special_characters.c_is_emojicomp(c))
-            continue;
-        
-        if (special_characters.c_is_emoji(c)) {
-            pos += 2;
-            continue;
-        }
-            
-        if (ckjchar(c)) {
-            pos += 2;
-            continue;
-        }
-        if (c == 9) //tab position
-            pos += (8 - (pos%8))%8;
-        pos++;
-    }
-    return (pos-pref);
-}
-
-
-//The deletion of a character is different if it is an emoji...
-long lispe_editor::deleteachar(wstring& l, bool last, long pins) {
-    if (l == L"")
-        return pins;
-
-    long mx = 1;
-    if (selected_pos != -1) {
-        pins = selected_x;
-        mx = selected_y - selected_x;
-    }
-
-    if (last) {
-        while (mx) {
-            while (special_characters.c_is_emojicomp(l.back())) {
-                l.pop_back();
-                pins--;
-            }
-            mx--;
-        }
-        l.pop_back();
-    }
-    else {
-        long nb = 0;
-        long i = pins;
-        while (mx) {
-            if (i < l.size() && special_characters.c_is_emoji(l[i++])) {
-                while (i < l.size() && special_characters.c_is_emojicomp(l[i++])) nb++;
-            }
-            nb++;
-            mx--;
-        }
-        l.erase(pins, nb);
-    }
-    return pins;
-}
-
-void lispe_editor::forwardemoji() {
-    if (special_characters.c_is_emoji(line[posinstring])) {
-        posinstring++;
-        long sz = line.size();
-        while (posinstring < sz && special_characters.c_is_emojicomp(line[posinstring]))
-            posinstring++;
-    }
-    else
-        posinstring++;
-}
-
-void lispe_editor::backwardemoji() {
-    posinstring--;
-    long i = 0;
-    if (posinstring < i)
-        return;
-    
-    i = posinstring;
-    if (special_characters.c_is_emojicomp(line[i])) {
-        i--;
-        while (i > 0 && special_characters.c_is_emojicomp(line[i]))
-            i--;
-        if (i >= 0 && special_characters.c_is_emoji(line[i]))
-            posinstring = i;
-    }
 }
 
 bool lispe_editor::checkcommand(char c) {

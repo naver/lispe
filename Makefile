@@ -5,9 +5,11 @@ COMPPLUSPLUS = g++
 ################ Compiler LispE #################################
 SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx
 SOURCEMAIN = jag.cxx main.cxx lispeditor.cxx
+SOURCEJAG = jagmain.cxx jag.cxx jagget.cxx jagrgx.cxx jagtools.cxx
 #------------------------------------------------------------
 OBJECTCXX = $(SOURCE:%.cxx=objs/%.o)
 OBJECTMAIN = $(SOURCEMAIN:%.cxx=objs/%.o)
+OBJECTJAG = $(SOURCEJAG:%.cxx=objs/jag/%.o)
 #------------------------------------------------------------
 INCLUDES = -Iinclude
 # Selon les compilateurs, il faudra peut-être choisir l'un des flags suivants
@@ -18,10 +20,17 @@ C++11Flag = -fPIC -std=c++11 -w -c -O3 $(REGEX) -DUNIX
 #------------------------------------------------------------
 objs/%.o: src/%.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
+
+objs/jag/%.o: src/%.cxx
+	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
 #------------------------------------------------------------
+
 # For those who prefer a small executable linked with a dynamic library
 lispe: $(OBJECTCXX) $(OBJECTMAIN)
 	$(COMPPLUSPLUS) -o bin/lispe $(OBJECTCXX) $(OBJECTMAIN) -ldl -lpthread $(LIBBOOST)
+
+jag: install $(OBJECTJAG)
+	$(COMPPLUSPLUS) -o bin/jag $(OBJECTJAG) $(LIBBOOST)
 
 # Version dynamique. Elle est un peu plus compliquée à manipuler:
 # il faut initialiser LD_LIBRARY_PATH (ou DYLD_LIBRARY_PATH sur Mac OS)
@@ -41,6 +50,7 @@ all: install lispe liblispe
 install:
 	mkdir -p bin
 	mkdir -p objs
+	mkdir -p objs/jag
 
 clean:
 	rm -Rf objs

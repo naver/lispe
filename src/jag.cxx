@@ -30,6 +30,7 @@ bool checkresize();
 void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 #endif
 
+Chaine_UTF8 special_characters;
 
 using std::stringstream;
 
@@ -302,23 +303,6 @@ void jag_editor::resetscrolling() {
     cout << buffer;
 }
 
-long jag_editor::taille(wstring& s) {
-    long sz = s.size();
-    long pref = prefixego() + 1;
-    long pos = pref;
-    for (long i = 0; i < sz; i++) {
-        if (ckjchar(s[i])) {
-            pos += 2;
-            continue;
-        }
-        if (s[i] == 9) //tab position
-            pos += (8 - (pos%8))%8;
-        pos++;
-    }
-    return (pos-pref);
-}
-
-
 void jag_editor::selectfound(long l, long r) {
     wstring ln = lines[pos];
     
@@ -525,22 +509,6 @@ void jag_editor::clearscreen() {
 #else
     cout << m_clear << m_clear_scrolling << m_home;
 #endif
-}
-
-//We build a string with no composed emoji, to match the position of the cursor...
-void jag_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
-    cleaned = s.substr(0, p);
-}
-
-long jag_editor::deleteachar(wstring& l, bool last, long pins) {
-    if (l == L"")
-        return pins;
-    if (last) {
-        l.pop_back();
-    }
-    else
-        l.erase(pins, 1);
-    return pins;
 }
 
 void jag_editor::deletechar(bool left) {
@@ -1200,7 +1168,7 @@ long jag_editor::handlemultiline() {
 
     lines[pos] = line;
     long sp = lines.indent(pos);
-    if (sub == L")" || sub == L"}")
+    if (sub == L")" || sub == L"}" || sub == L"]")
         sp -= GetBlankSize();
     if (sp > 0) {
         wstring space(sp, L' ');
@@ -1284,7 +1252,7 @@ void jag_editor::handleblock(wstring& bl) {
         }
         currentline += vs.size()-1;
         pos = poslines[currentline];
-        posinstring = vs.back().size();
+        posinstring = 0;
     }
         
     displaylist(poslines[0]);
@@ -1510,16 +1478,6 @@ void jag_editor::processundos() {
     
     movetoline(currentline);
     movetoposition();
-}
-
-    //The main problem here is that emojis can be composed...
-    //An emoji can be composed of up to 7 emojis...
-void jag_editor::forwardemoji() {
-    posinstring++;
-}
-
-void jag_editor::backwardemoji() {
-    posinstring--;
 }
 
 bool jag_editor::evaluateescape(string& buff) {
@@ -1939,13 +1897,13 @@ bool jag_editor::terminate() {
     if (tobesaved) {
         tobesaved = false;
         displayonlast("File not saved... ctrl-c again to quit", true);
+        std::cout.flush();
         return false;
     }
 
     movetolastline();
     string space(colsize(), ' ');
     cout << back << space << back << m_redbold << "Salut!!!" << m_current << endl;
-    
     fflush(stdout);
 	resetterminal();
     exit(0);
@@ -2304,11 +2262,10 @@ void jag_editor::cleanheaders(wstring& w) {
 }
 
 void jag_editor::addabuffer(wstring& b, bool instring) {
-#ifdef UNIX
     if (isMouseAction(b))
         return;
-#endif
-    //We only keep displayable characters    
+    
+    //We only keep displayable characters
     wchar_t c;
     for (long i = 0; i < b.size(); i++) {
         c = b[i];
@@ -2841,6 +2798,17 @@ void jag_editor::handlemousectrl(string& mousectrl) {
     double_click = 0;
 }
 
+//This function is defined as a stud in lispeditor or jagtools
+string coloring_line(string& line, vector<string>& colors);
+string jag_editor::coloringline(string line, bool thread) {
+    return coloring_line(line, colors);
+}
+
+string jag_editor::coloringline(wstring& w) {
+    string l = convert(w);
+    return coloring_line(l, colors);
+}
+    
 //This is the main method that launches the terminal
 void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& args) {
 
@@ -2877,14 +2845,12 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
     while (1) {
         buff = getch();
         
-#ifdef UNIX
             if (emode()) {
                 while (isMouseAction(buff)) {
                     handlemousectrl(buff);
                     buff =  getch();
                 }
             }
-#endif
 
         if (checkaction(buff, first, last))
             continue;
@@ -2961,6 +2927,189 @@ void editor_lines::setcode(wstring& code) {
     
     updatesize();
 }
+
+long jag_editor::splitline(wstring& l, long linenumber, vector<wstring>& subs) {
+    //we compute the position of each segment of l on string...
+    
+    long sz = prefixe();
+    
+    if ((l.size() + sz) < (col_size / 2)) {
+        subs.push_back(l);
+        return 1;
+    }
+    
+    wstring code;
+    UWCHAR c;
+    long j;
+    
+    for (long i = 0; i < l.size(); i++) {
+        c = getonewchar(l, i);
+        concat_to_wstring(code, c);
+        if (special_characters.c_is_emojicomp(c))
+            continue;
+        
+        if (c == 9) {//tab position
+            sz += (8 - (sz%8))%8;
+            sz--;
+        }
+        else {
+            if (ckjchar(c)) //double space on screen
+                sz++;
+            else { //emoji with combination
+                if (special_characters.c_is_emoji(c)) {
+                    j = i + 1;
+                    c = getonewchar(l, j);
+                    sz++; //double space on screen
+                }
+            }
+        }
+        
+        sz++;
+        if (sz >= col_size) {
+            subs.push_back(code);
+            code = L"";
+            sz = prefixe();
+        }
+    }
+    
+    if (code != L"" || !subs.size())
+        subs.push_back(code);
+    
+    return subs.size();
+}
+    
+long jag_editor::taille(wstring& s) {
+    long sz = s.size();
+    long pref = prefixego() + 1;
+    long pos = pref;
+    for (long i = 0; i < sz; i++) {
+        if (special_characters.c_is_emojicomp(s[i]))
+            continue;
+        
+        if (special_characters.c_is_emoji(s[i])) {
+            pos += 2;
+            continue;
+        }
+        
+        if (ckjchar(s[i])) {
+            pos += 2;
+            continue;
+        }
+        if (s[i] == 9) //tab position
+            pos += (8 - (pos%8))%8;
+        pos++;
+    }
+    return (pos-pref);
+}
+    
+long jag_editor::sizestring(wstring& s) {
+    long sz = s.size();
+    long szstr = 0;
+    for (long i = 0; i < sz; i++) {
+        if (special_characters.c_is_emojicomp(s[i]))
+            continue;
+        szstr++;
+    }
+    return szstr;
+}
+
+void jag_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
+    long i = 0;
+    while (i < p) {
+        cleaned += s[i++];
+        while (special_characters.c_is_emojicomp(s[i])) {i++;}
+    }
+}
+    
+long jag_editor::size_upto(wstring& s, long p) {
+    long pref = prefixego() + 1;
+    long pos = pref;
+    UWCHAR c;
+    for (long i = 0; i < p; i++) {
+        c = getonewchar(s, i);
+        if (special_characters.c_is_emojicomp(c))
+            continue;
+        
+        if (special_characters.c_is_emoji(c)) {
+            pos += 2;
+            continue;
+        }
+        
+        if (ckjchar(c)) {
+            pos += 2;
+            continue;
+        }
+        if (c == 9) //tab position
+            pos += (8 - (pos%8))%8;
+        pos++;
+    }
+    return (pos-pref);
+}
+
+
+    //The deletion of a character is different if it is an emoji...
+long jag_editor::deleteachar(wstring& l, bool last, long pins) {
+    if (l == L"")
+        return pins;
+    
+    long mx = 1;
+    if (selected_pos != -1) {
+        pins = selected_x;
+        mx = selected_y - selected_x;
+    }
+    
+    if (last) {
+        while (mx) {
+            while (special_characters.c_is_emojicomp(l.back())) {
+                l.pop_back();
+                pins--;
+            }
+            mx--;
+        }
+        l.pop_back();
+    }
+    else {
+        long nb = 0;
+        long i = pins;
+        while (mx) {
+            if (i < l.size() && special_characters.c_is_emoji(l[i++])) {
+                while (i < l.size() && special_characters.c_is_emojicomp(l[i++])) nb++;
+            }
+            nb++;
+            mx--;
+        }
+        l.erase(pins, nb);
+    }
+    return pins;
+}
+
+void jag_editor::forwardemoji() {
+    if (special_characters.c_is_emoji(line[posinstring])) {
+        posinstring++;
+        long sz = line.size();
+        while (posinstring < sz && special_characters.c_is_emojicomp(line[posinstring]))
+            posinstring++;
+    }
+    else
+        posinstring++;
+}
+
+void jag_editor::backwardemoji() {
+    posinstring--;
+    long i = 0;
+    if (posinstring < i)
+        return;
+    
+    i = posinstring;
+    if (special_characters.c_is_emojicomp(line[i])) {
+        i--;
+        while (i > 0 && special_characters.c_is_emojicomp(line[i]))
+            i--;
+        if (i >= 0 && special_characters.c_is_emoji(line[i]))
+            posinstring = i;
+    }
+}
+
 
 long editor_lines::splitline(wstring& l, long linenumber, vector<wstring>& subs) {
     return jag->splitline(l,linenumber, subs);

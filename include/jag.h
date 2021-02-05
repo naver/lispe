@@ -523,9 +523,7 @@ public:
 	string getch();
 #endif
 
-    virtual string coloringline(wstring& l) {
-        return  convert(l);
-    }
+    virtual string coloringline(wstring& l);
 
     virtual void displaythehelp(long noclear = 0);
     
@@ -656,6 +654,7 @@ public:
         resetscreen();
     }
 
+    virtual string coloringline(string line, bool thread);
     void undo(wstring& l, long p, char a) {
         if (!emode() || p >= lines.size())
             return;
@@ -798,72 +797,32 @@ public:
         return s.size();
     }
 
-    virtual long splitline(wstring& l, long linenumber, vector<wstring>& subs) {
-            //we compute the position of each segment of l on string...
-
-        long ps = pos;
-        pos = linenumber;
-        long sz = cjk_size(l);
-        if ((sizestring(l)+sz) < col_size) {
-            subs.push_back(l);
-            pos = ps;
-            return 1;
-        }
-
-        long p = 0;
-        wstring code;
-        if (!sz) {
-            while (p < sizestring(l)) {
-                code = l.substr(p, col_size);
-                subs.push_back(code);
-                p += col_size;
-            }
-            pos = ps;
-            return subs.size();
-        }
-
-
-        while (p < sizestring(l)) {
-            code = l.substr(p, col_size);
-            while (fullsize(code) > col_size)
-                code.pop_back();
-            subs.push_back(code);
-            p += code.size();
-        }
-        pos = ps;
-        return subs.size();
-    }
+    long splitline(wstring& l, long linenumber, vector<wstring>& subs);
 
         //The main problem here is that emojis can be composed...
         //An emoji can be composed of up to 7 emojis...
-    virtual void forwardemoji();
-    virtual void backwardemoji();
+    void forwardemoji();
+    void backwardemoji();
 
         //We find the beginning of each emoji, skipping composed ones...
         //We build a string with no composed emoji, to match the position of the cursor...
-    virtual void cleanlongemoji(wstring& s, wstring& cleaned, long p);
+    void cleanlongemoji(wstring& s, wstring& cleaned, long p);
 
         //This size is computed to take into account Chinese/Japanese/Korean characters...
         //These characters can occupy up to two columns... We also take into account the tab size
-    virtual long taille(wstring& s);
+    long taille(wstring& s);
 
     long cjk_size(wstring& l) {
         return (taille(l) - sizestring(l));
     }
 
-    virtual long sizestring(wstring& l) {
-        return l.size();
-    }
+    long sizestring(wstring& l);
 
     long fullsize(wstring& l) {
         return taille(l);
     }
 
-    virtual long size_upto(wstring& l, long p) {
-        wstring s;
-        cleanlongemoji(l, s, p);
-        return taille(s);
-    }
+    long size_upto(wstring& l, long p);
 
     long linesize() {
         if (emode())
