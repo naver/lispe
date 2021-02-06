@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.2.5.16.48";
+static std::string version = "1.2021.2.6.18.28";
 string LispVersion() {
     return version;
 }
@@ -747,7 +747,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 tampon = code.substr(i, idx);
                 if (add)
                     current_line += tampon;
-                infos.append(d, tampon, t_number, line_number, i, idx);
+                infos.append(d, tampon, t_number, line_number, i, i + idx);
                 i += idx - 1;
                 break;
             }
@@ -1666,6 +1666,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

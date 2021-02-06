@@ -225,6 +225,8 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
 
 	insertaline = false;
 
+    moveup = false;
+    
     selected_x = -1;
     selected_firstline = -1;
     selected_y = -1;
@@ -444,11 +446,10 @@ void jag_editor::gotoline(long p) {
 
 bool jag_editor::updown(char drt, long& pos) {
     long sz = lines.size();
-    bool moveup = false;
-    moveup = true;
-    
+
     char exec = 0;
     if (drt == is_up) { // we are going up
+        moveup = true;
         currentline--;
         if (currentline < 0) {
                 //we need to scroll down...
@@ -474,6 +475,7 @@ bool jag_editor::updown(char drt, long& pos) {
         }
     }
     else {
+        moveup = false;
         if ((currentline+1) >= poslines.size()) {
             if (pos < (sz -1)) {
 				resetlist(poslines[0] + 1);
@@ -494,12 +496,10 @@ bool jag_editor::updown(char drt, long& pos) {
     }
     
     if (exec) {
-        if (moveup) {
-            if (drt == is_up)
-                cout << m_up;
-            else
-                cout << m_down;
-        }
+        if (drt == is_up)
+            cout << m_up;
+        else
+            cout << m_down;
         line = lines[pos];
         if (posinstring > line.size())
             posinstring = line.size();
@@ -575,7 +575,7 @@ void jag_editor::deletechar(bool left) {
     }
 }
 
-void jag_editor::deleteline(char moveup) {
+void jag_editor::deleteline(char movingup) {
     
     if (lines.size() == 1 && lines[0].size() == 0) {
         init();
@@ -583,7 +583,7 @@ void jag_editor::deleteline(char moveup) {
     }
     
     tobesaved = true;
-    if (!moveup) {
+    if (!movingup) {
         //we delete the full line
         undo(lines[pos],pos, u_del); //deletion
         char update = lines.updatestatus(pos);
@@ -616,7 +616,7 @@ void jag_editor::deleteline(char moveup) {
         //We are at position currentline...
         //if the line above already belong to the same line, we kill the last character of that line above
     wstring code;
-    if (moveup == -1) { // the destruction was done with backspace
+    if (movingup == -1) { // the destruction was done with backspace
         if (!pos && !posinstring && !currentline)
             return;
         

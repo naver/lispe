@@ -36,6 +36,10 @@ static void handle_ctrl_c(int theSignal) {
 }
 #endif
 
+bool movedup() {
+   return JAGEDITOR->moveup;
+}
+
 int main(int argc, char *argv[]) {
     
 #ifndef WIN32

@@ -507,7 +507,8 @@ public:
     bool noprefix;
 	bool insertaline;
     bool taskel;
-
+    bool moveup;
+    
     Au_automate* rgx;
 
 #ifdef POSIXREGEX

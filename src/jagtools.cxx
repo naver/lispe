@@ -3508,8 +3508,7 @@ static const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#
     "zipwith","|","|=","∏","∑","√","∛", "" };
 
 typedef enum {
-    t_emptystring, t_word, t_keyword, t_number, t_integer, t_string, t_list,
-    t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair,  t_error,
+    t_emptystring, t_word, t_keyword, t_number, t_string, t_method,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_brace, c_closing_brace, c_colon,
     e_no_error
 } jag_code;
@@ -3531,54 +3530,24 @@ static bool is_keyword(string s) {
     }
 }
 
-class Tokenizer {
+class Segmentingtype {
 public:
-    vector<string> tokens;
-    vector<double> numbers;
     vector<jag_code> types;
-    vector<long> lines;
     vector<long> positions;
     
     void clear() {
-        tokens.clear();
-        numbers.clear();
         types.clear();
-        lines.clear();
         positions.clear();
     }
     
-    void append(uchar segment, jag_code t, long l, long posbeg, long posend) {
-        string str;
-        str = segment;
-        tokens.push_back(str);
-        numbers.push_back(0);
+    void append(jag_code t, long posbeg, long posend) {
         types.push_back(t);
-        lines.push_back(l);
         positions.push_back(posbeg);
         positions.push_back(posend);
     }
-    
-    void append(string segment, jag_code t, long l, long posbeg, long posend) {
-        tokens.push_back(segment);
-        numbers.push_back(0);
-        types.push_back(t);
-        lines.push_back(l);
-        positions.push_back(posbeg);
-        positions.push_back(posend);
-    }
-    
-    void append(double valeur, string segment, jag_code t, long l, long posbeg, long posend) {
-        tokens.push_back(segment);
-        numbers.push_back(valeur);
-        types.push_back(t);
-        lines.push_back(l);
-        positions.push_back(posbeg);
-        positions.push_back(posend);
-    }
-    
 };
 
-void tokenize_line(string& code, Tokenizer& infos) {
+void tokenize_line(string& code, Segmentingtype& infos) {
     static uchar stops[172];
     static bool init = false;
     long idx;
@@ -3598,7 +3567,13 @@ void tokenize_line(string& code, Tokenizer& infos) {
         stops[']'] = true;
         stops['{'] = true;
         stops['}'] = true;
-        
+        stops['+'] = true;
+        stops['-'] = true;
+        stops['<'] = true;
+        stops['>'] = true;
+        stops['='] = true;
+        stops[';'] = true;
+
         stops[39] = true;
         stops[171] = true;
     }
@@ -3615,30 +3590,38 @@ void tokenize_line(string& code, Tokenizer& infos) {
     uchar lc;
     string current_line;
     string tampon;
+    bool point = false;
     for (i = 0; i < sz; i++) {
         current_i = i;
         c = getonechar(USTR(code), i);
         switch (c) {
+            case '.':
+                point = true;
+                break;
             case ';':
             case '#': //comments (we accept both with ; and #)
+                point = false;
                 idx = i;
                 while (i < sz && code[i] != '\n') i++;
                 line_number++;
                 break;
             case '\n':
+                point = false;
                 line_number++;
                 break;
             case '\t':
             case '\r':
             case ' ':
+                point = false;
                 continue;
             case '\'': { // a string containing what we want...
+                point = false;
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '\'') {
                     c = (uchar)code[idx];
                     if (c < 32) {
-                        infos.append(tampon, t_emptystring, line_number, i, idx);
+                        infos.append(t_emptystring, i, idx);
                         i = idx;
                         continue;
                     }
@@ -3670,12 +3653,13 @@ void tokenize_line(string& code, Tokenizer& infos) {
                 }
                 
                 if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
+                    infos.append(t_emptystring, i, idx);
                 else
-                    infos.append(tampon, t_string, line_number, i, idx);
+                    infos.append(t_string, i, idx);
                 i = idx;
                 break;            }
             case '`': { // a string containing what we want...
+                point = false;
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '`') {
@@ -3684,23 +3668,22 @@ void tokenize_line(string& code, Tokenizer& infos) {
                 if (idx == sz) {
                     continue;
                 }
-                
-                
                 tampon = code.substr(i+1, idx-i-1);
                 if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
+                    infos.append(t_emptystring, i, idx);
                 else
-                    infos.append(tampon, t_string, line_number, i, idx);
+                    infos.append(t_string, i, idx);
                 i = idx;
                 break;
             }
             case '"': {
+                point = false;
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '"') {
                     c = (uchar)code[idx];
                     if (c < 32) {
-                        infos.append(tampon, t_emptystring, line_number, i, idx);
+                        infos.append(t_emptystring, i, idx);
                         continue;
                     }
                     
@@ -3726,28 +3709,20 @@ void tokenize_line(string& code, Tokenizer& infos) {
                     idx++;
                 }
                 if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
+                    infos.append(t_emptystring, i, idx);
                 else
-                    infos.append(tampon, t_string, line_number, i, idx);
+                    infos.append(t_string, i, idx);
                 i = idx;
                 break;
             }
             case '+':
             case '-':
                 if (!isdigit(code[i+1])) {
-                    idx = i + 1;
-                    while (idx < sz) {
-                        nxt = getonechar(USTR(code), idx);
-                        if (nxt == 8220 || (nxt < 172 && stops[nxt]))
-                            break;
-                        i = idx;
-                        idx++;
+                    point = false;
+                    if (c == '-' && code[i+1] == '>') {
+                        point = true;
+                        i++;
                     }
-                    tampon = code.substr(current_i, i - current_i + 1);
-                    if (is_keyword(tampon))
-                        infos.append(tampon, t_keyword, line_number, current_i, i + 1);
-                    else
-                        infos.append(tampon, t_word, line_number, current_i, i + 1);
                     break;
                 }
             case '0':
@@ -3760,13 +3735,15 @@ void tokenize_line(string& code, Tokenizer& infos) {
             case '7':
             case '8':
             case '9': {
-                double d = convertingfloathexa(code.c_str() + i, idx);
-                tampon = code.substr(i, idx);
-                infos.append(d, tampon, t_number, line_number, i, idx);
+                point = false;
+                idx = 0;
+                convertingfloathexa(code.c_str() + i, idx);
+                infos.append(t_number, i, i + idx);
                 i += idx - 1;
                 break;
             }
             case 171: {
+                point = false;
                 //This is a «, we look for the next: »
                 //(ord «test»)
                 idx = i + 1;
@@ -3781,13 +3758,14 @@ void tokenize_line(string& code, Tokenizer& infos) {
                 
                 tampon = code.substr(i+1, idx-i-3);
                 if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
+                    infos.append(t_emptystring, i, idx);
                 else
-                    infos.append(tampon, t_string, line_number, i, idx);
+                    infos.append(t_string, i, idx);
                 i = idx-1;
                 break;
             }
             case 8220: {
+                point = false;
                 //(ord “test”)
                 idx = i + 1;
                 nxt = getonechar(USTR(code), idx);
@@ -3801,9 +3779,9 @@ void tokenize_line(string& code, Tokenizer& infos) {
                 
                 tampon = code.substr(i+1, idx-i-4);
                 if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
+                    infos.append(t_emptystring, i, idx);
                 else
-                    infos.append(tampon, t_string, line_number, i, idx);
+                    infos.append(t_string, i, idx);
                 
                 i = idx-1;
                 break;
@@ -3825,13 +3803,13 @@ void tokenize_line(string& code, Tokenizer& infos) {
                 }
                 else
                     tampon = code.substr(current_i, i - current_i);
-                
+
                 lc = tampon[0];
                 
                 switch (lc) {
                     case '(':
                         nb_parentheses++;
-                        infos.append(c, c_opening, line_number, current_i, i + 1);
+                        infos.append(c_opening, current_i, i + 1);
                         break;
                     case ')':
                         nb_parentheses--;
@@ -3839,11 +3817,11 @@ void tokenize_line(string& code, Tokenizer& infos) {
                             if (culprit == -1)
                                 culprit = line_number;
                         }
-                        infos.append(c, c_closing, line_number, current_i, i + 1);
+                        infos.append(c_closing, current_i, i + 1);
                         break;
                     case '{':
                         nb_braces++;
-                        infos.append(c, c_opening_brace, line_number, current_i, i + 1);
+                        infos.append(c_opening_brace, current_i, i + 1);
                         break;
                     case '}':
                         nb_braces--;
@@ -3851,29 +3829,34 @@ void tokenize_line(string& code, Tokenizer& infos) {
                             if (culprit == -1)
                                 culprit = line_number;
                         }
-                        infos.append(c, c_closing_brace, line_number, current_i, i + 1);
+                        infos.append(c_closing_brace, current_i, i + 1);
                         break;
                     case ':':
-                        infos.append(c, c_colon, line_number, current_i, i + 1);
+                        infos.append(c_colon, current_i, i + 1);
                         break;
                     case '[':
                         nb_brackets++;
-                        infos.append('[', c_opening_bracket, line_number, current_i, i + 1);
+                        infos.append(c_opening_bracket, current_i, i + 1);
                         break;
                     case ']': {
                         nb_brackets--;
-                        infos.append(']', c_closing_bracket, line_number, current_i, i + 1);
+                        infos.append(c_closing_bracket, current_i, i + 1);
                         break;
                     }
                     default:
-                        if (is_keyword(tampon))
-                            infos.append(tampon, t_keyword, line_number, current_i, i + 1);
-                        else
-                            infos.append(tampon, t_word, line_number, current_i, i + 1);
+                        if (point)
+                            infos.append(t_method, current_i, i + 1);
+                        else {
+                            if (is_keyword(tampon))
+                                infos.append(t_keyword, current_i, i + 1);
+                            else
+                                infos.append(t_word, current_i, i + 1);
+                        }
                 }
                 
                 if (i != current_i)
                     i--;
+                point = false;
                 break;
             }
         }
@@ -3881,29 +3864,55 @@ void tokenize_line(string& code, Tokenizer& infos) {
 }
 
 static const char m_current[] = {27, '[', '0', 'm', 0};
-static const char m_green[] = {27, '[', '0', ';', '3','2', ';','4','9','m',0};
+bool movedup();
 
 string coloring_line(string& line, vector<string>& colors) {
-    static Tokenizer segments;
-    if (line == "")
+    static Segmentingtype segments;
+    static char longcomment = 0;
+    string sub = line;
+    s_trimleft(sub);
+    
+    if (sub == "")
         return line;
+
+    if (movedup()) {
+        if (longcomment) {
+            if (sub[0] == '/' && sub[1] == '*')
+                longcomment = false;
+            line = colors[4] + line + m_current;
+            return line;
+        }
+
+        if (sub[0] == '*' && sub[1] == '/') {
+            line = colors[4] + line + m_current;
+            longcomment = true;
+            return line;
+        }
+    }
+    else {
+        if (longcomment) {
+            if (sub[0] == '*' && sub[1] == '/')
+                longcomment = false;
+            line = colors[4] + line + m_current;
+            return line;
+        }
+        
+        if (sub[0] == '/' && sub[1] == '*') {
+            line = colors[4] + line + m_current;
+            longcomment = true;
+            return line;
+        }
+    }
     
     segments.clear();
     
-    string sub = line;
-    s_trimleft(sub);
     if (sub[0] == '#' || sub[0] == ';') {
-        line = m_green + line + m_current;
+        line = colors[4] + line + m_current;
         return line;
     }
     
     if (sub[0] == '/' && sub[1] == '/') {
-        line = m_green + line + m_current;
-        return line;
-    }
-
-    if (sub[0] == '/' && sub[1] == '*') {
-        line = m_green + line + m_current;
+        line = colors[4] + line + m_current;
         return line;
     }
 
@@ -3914,7 +3923,7 @@ string coloring_line(string& line, vector<string>& colors) {
     tokenize_line(line, segments);
     
     long left, right = -1;
-    for (long isegment = segments.tokens.size() - 1, ipos = segments.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
+    for (long isegment = segments.types.size() - 1, ipos = segments.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
         left = segments.positions[ipos-1];
         right = segments.positions[ipos];
         sub = line.substr(0, left);
@@ -3926,8 +3935,16 @@ string coloring_line(string& line, vector<string>& colors) {
                 sub += colors[0];
                 add = true;
                 break;
+            case t_number: //methods
+                sub += colors[1];
+                add = true;
+                break;
             case t_keyword: //methods
                 sub += colors[2];
+                add = true;
+                break;
+            case t_method: //methods
+                sub += colors[3];
                 add = true;
                 break;
             default:
