@@ -3808,49 +3808,21 @@ void tokenize_line(string& code, Segmentingtype& infos) {
                 
                 switch (lc) {
                     case '(':
-                        nb_parentheses++;
-                        infos.append(c_opening, current_i, i + 1);
-                        break;
                     case ')':
-                        nb_parentheses--;
-                        if (nb_parentheses <= 0) {
-                            if (culprit == -1)
-                                culprit = line_number;
-                        }
-                        infos.append(c_closing, current_i, i + 1);
-                        break;
                     case '{':
-                        nb_braces++;
-                        infos.append(c_opening_brace, current_i, i + 1);
-                        break;
                     case '}':
-                        nb_braces--;
-                        if (nb_braces < 0) {
-                            if (culprit == -1)
-                                culprit = line_number;
-                        }
-                        infos.append(c_closing_brace, current_i, i + 1);
-                        break;
                     case ':':
-                        infos.append(c_colon, current_i, i + 1);
-                        break;
                     case '[':
-                        nb_brackets++;
-                        infos.append(c_opening_bracket, current_i, i + 1);
+                    case ']':
                         break;
-                    case ']': {
-                        nb_brackets--;
-                        infos.append(c_closing_bracket, current_i, i + 1);
-                        break;
-                    }
                     default:
                         if (point)
-                            infos.append(t_method, current_i, i + 1);
+                            infos.append(t_method, current_i, i);
                         else {
                             if (is_keyword(tampon))
-                                infos.append(t_keyword, current_i, i + 1);
+                                infos.append(t_keyword, current_i, i);
                             else
-                                infos.append(t_word, current_i, i + 1);
+                                infos.append(t_word, current_i, i);
                         }
                 }
                 
