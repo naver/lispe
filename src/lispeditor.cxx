@@ -656,7 +656,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             i = 3;
             string cd = convert(code);
             codeindente = "";
-            IndentCode(cd, codeindente, i);
+            IndentCode(cd, codeindente, i, true, false);
             code = wconvert(codeindente);
             lines.setcode(code);
             
@@ -817,7 +817,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             string codeindente;
             string cd = current_code;
             i = 3;
-            IndentCode(cd, codeindente, i);
+            IndentCode(cd, codeindente, i, true, false);
             ofstream wd(thecurrentfilename, std::ios::binary);
             wd << codeindente;
             wd.close();

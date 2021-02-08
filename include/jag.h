@@ -509,6 +509,9 @@ public:
     bool taskel;
     bool moveup;
     
+    bool pythonfile;
+    bool lispfile;
+    
     Au_automate* rgx;
 
 #ifdef POSIXREGEX
@@ -536,6 +539,12 @@ public:
     
     void setpathname(string path) {
         thecurrentfilename =  path;
+        if (thecurrentfilename.find(".lisp") != -1)
+            lispfile = true;
+        else {
+            if (thecurrentfilename.find(".py") != -1)
+                pythonfile = true;
+        }
     }
 
     string pathname() {
@@ -666,7 +675,7 @@ public:
         undos.store(poslines[0], l, p, a, currentline, posinstring, lines.Status(p));
     }
 
-    void indentcode(long ps, bool lisp) {
+    void indentcode(long ps) {
         if (!lines.size())
             return;
 
@@ -674,7 +683,7 @@ public:
 
         string codeindente;
         string cd = convert(code);
-        IndentCode(cd, codeindente, GetBlankSize());
+        IndentCode(cd, codeindente, GetBlankSize(), lispfile, pythonfile);
         lines.clear();
         code = wconvert(codeindente);
         code += L"\n\n";

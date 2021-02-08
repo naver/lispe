@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.2.6.18.28";
+static std::string version = "1.2021.2.8.10.35";
 string LispVersion() {
     return version;
 }
@@ -728,9 +728,9 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                         current_line += tampon;
                     idx = delegation->is_atom(tampon);
                     if (idx >= l_plus && idx <= l_modequal)
-                        infos.append(tampon, t_operator, line_number, current_i, i + 1);
+                        infos.append(tampon, t_operator, line_number, current_i, i);
                     else
-                        infos.append(tampon, t_atom, line_number, current_i, i + 1);
+                        infos.append(tampon, t_atom, line_number, current_i, i);
                     break;
                 }
             case '0':
@@ -837,7 +837,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                             idx++;
                         }
                         if (ok) {
-                            infos.append(tampon, l_cadr, line_number, current_i, i + 1);
+                            infos.append(tampon, l_cadr, line_number, current_i, i);
                             i--;
                             break;
                         }
@@ -848,11 +848,11 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 
                 switch (lc) {
                     case l_composenot:
-                        infos.append(c, t_atom, line_number, current_i, i + 1);
+                        infos.append(c, t_atom, line_number, current_i, i);
                         break;
                     case c_opening:
                         nb_parentheses++;
-                        infos.append(c, c_opening, line_number, current_i, i + 1);
+                        infos.append(c, c_opening, line_number, current_i, i);
                         break;
                     case c_closing:
                         nb_parentheses--;
@@ -860,11 +860,11 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                             if (culprit == -1)
                                 culprit = line_number;
                         }
-                        infos.append(c, c_closing, line_number, current_i, i + 1);
+                        infos.append(c, c_closing, line_number, current_i, i);
                         break;
                     case c_opening_brace:
                         nb_braces++;
-                        infos.append(c, c_opening_brace, line_number, current_i, i + 1);
+                        infos.append(c, c_opening_brace, line_number, current_i, i);
                         break;
                     case c_closing_brace:
                         nb_braces--;
@@ -872,19 +872,19 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                             if (culprit == -1)
                                 culprit = line_number;
                         }
-                        infos.append(c, c_closing_brace, line_number, current_i, i + 1);
+                        infos.append(c, c_closing_brace, line_number, current_i, i);
                         break;
                     case c_colon:
-                        infos.append(c, c_colon, line_number, current_i, i + 1);
+                        infos.append(c, c_colon, line_number, current_i, i);
                         break;
                     case c_opening_bracket:
                         nb_brackets++;
-                        infos.append('(', c_opening, line_number, current_i, i + 1);
+                        infos.append('(', c_opening, line_number, current_i, i);
                         break;
                     case c_closing_bracket: {
                         if (nb_brackets) {
                             nb_brackets--;
-                            infos.append(')', c_closing, line_number, current_i, i + 1);
+                            infos.append(')', c_closing, line_number, current_i, i);
                         }
                         else {
                             nb_parentheses--;
@@ -894,16 +894,16 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                             }
                             //We add any number of parentheses to close the gap
                             for (long i = 0; i < nb_parentheses; i++)
-                            infos.append(c, c_closing, line_number, current_i, i + 1);
+                            infos.append(c, c_closing, line_number, current_i, i);
                             nb_parentheses = 1;
                         }
                         break;
                     }
                     default:
                         if (lc >= l_plus && lc <= l_modequal)
-                            infos.append(tampon, t_operator, line_number, current_i, i + 1);
+                            infos.append(tampon, t_operator, line_number, current_i, i);
                         else
-                            infos.append(tampon, t_atom, line_number, current_i, i + 1);
+                            infos.append(tampon, t_atom, line_number, current_i, i);
                 }
                 
                 if (i != current_i)
@@ -1666,6 +1666,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

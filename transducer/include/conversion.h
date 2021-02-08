@@ -127,14 +127,6 @@ union w_u_char {
 class LispE;
 Exporting void inittableutf8(Chaine_UTF8* h);
 
-//--------------------- Code Indention
-Exporting void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp = false, bool taskel = true);
-Exporting void IndentationCode(string& codestr, string& codeindente, bool lisp, bool taskel = true);
-Exporting long IndentationCode(string& codestr, bool lisp);
-
-//--------------------- Carriage Return normalisation
-void cr_normalise(string& code);
-
 //--------------------- Trimming strings
 Exporting string& Trim(string& chaine);
 Exporting string& Trimleft(string& chaine);

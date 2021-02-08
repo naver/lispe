@@ -72,8 +72,8 @@ string NormalizePathname(string n);
 bool c_is_space(wchar_t code);
 long size_c(string& s);
 long GetBlankSize();
-long VirtualIndentation(string& codestr);
-void IndentCode(string& codestr, string& codeindente, long blancs);
+long VirtualIndentation(string& codestr, bool lisp, bool python);
+void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bool python);
 
 long convertinginteger(wstring& number);
 long convertinginteger(string& number);

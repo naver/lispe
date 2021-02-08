@@ -20,7 +20,7 @@
 
 #include "jag.h"
 
-static string version = "0.99 build 01";
+static string version = "0.99 build 02";
 
 #ifndef WIN32
 static void handle_ctrl_c(int theSignal) {

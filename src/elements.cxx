@@ -274,7 +274,7 @@ string Element::prettify(LispE* lisp) {
     string code;
     prettyfying(lisp, code);
     string body;
-    IndentCode(code, body, GetBlankSize());
+    IndentCode(code, body, GetBlankSize(), true, false);
     return body;
 }
 

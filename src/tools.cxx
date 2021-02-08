@@ -941,6 +941,7 @@ Chaine_UTF8::Chaine_UTF8() {
     }
 
     //emoji
+    i = 0;
     string code;
     uint32_t c;
     min_emoji = 0xFFFFF;
@@ -3031,7 +3032,7 @@ long IndentationCode(string& codestr) {
     return finalblank;
 }
 
-long VirtualIndentation(string& codestr) {
+long VirtualIndentation(string& codestr, bool lisp, bool python) {
     s_trimright(codestr);
     codestr += "\n";
     cr_normalise(codestr);
@@ -3259,7 +3260,7 @@ void IndentationCode(string& str, string& codeindente) {
         codeindente += codestr[i];
 }
    
-void IndentCode(string& codestr, string& codeindente, long blancs) {
+void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bool python) {
     long bl = blanksize;
     if (blancs)
         blanksize = blancs;

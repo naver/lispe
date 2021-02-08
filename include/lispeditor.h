@@ -122,6 +122,7 @@ public:
         lastline = 0;
         lispe = NULL;
         tid = NULL;
+        lispfile = true;
     }
     
     void LispSetCode(string& c) {

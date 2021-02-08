@@ -107,7 +107,7 @@ long editor_lines::indent(long p) {
     wstring cd = code(i, p + 1);
     string ccd;
     s_unicode_to_utf8(ccd, cd);
-    long ln = VirtualIndentation(ccd);
+    long ln = VirtualIndentation(ccd, jag->lispfile, jag->pythonfile);
     return ln;
 }
 
@@ -239,6 +239,9 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     regularexpressionfind = false;
     rgx = NULL;
 
+    pythonfile = false;
+    lispfile = false;
+    
 #ifdef POSIXREGEX
     posixrgx = NULL;
 #endif
@@ -1815,9 +1818,11 @@ bool jag_editor::checkcommand(char cmd) {
             return true;
         case 'F':
             if (emode()) {
+#ifdef POSIXREGEX
                 if (posixrgx != NULL)
                     delete posixrgx;
                 posixrgx = NULL;
+#endif
                 regularexpressionfind = 2;
                 string sub = "Prgx:";
                 sub += convert(currentfind);
@@ -2163,7 +2168,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
             return true;
         case 20: //ctrl-t
             if (emode())
-                indentcode(pos, lisp);
+                indentcode(pos);
             return true;
         case 21: //undo ctrl-u
         case 26: //ctrl-z
