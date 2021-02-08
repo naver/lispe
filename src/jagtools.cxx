@@ -3686,7 +3686,7 @@ static const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#
     "mapul","mapuu","mark","match","max","maximum","maybe","memory","menu","merge",
     "method","methods","mid","min","minimum","minute","mkdir","modal","month","mp3",
     "mthrough","multisplit","multmatrix","name","namespace","nbchildren","ncheck","nconc","nd","nearbyint",
-    "neq","new","next","ngrams","node","nope","normalizehangul","not","notin","null",
+    "neq","new","next","ngrams","node","nope","normalizehangul","not","notin","null", "NULL",
     "nullp","number","numberp","odd","of","ok","onclose","onclosing","ondragdrop","onhscroll",
     "onkey","onmouse","ontime","ontology","onvscroll","open","openappend","openread","openwrite","options",
     "or","ord","otherwise","padding","parameters","parent","parse","password","paste","pause",
@@ -3937,7 +3937,7 @@ void tokenize_line(string& code, Segmentingtype& infos) {
 
                 idx = i + 1;
                 nxt = c;
-                while (idx <= sz && !special_characters.c_is_punctuation(nxt)) {
+                while (idx <= sz && !special_characters.c_is_punctuation(nxt) && !isspace(nxt)) {
                     i = idx;
                     nxt = getonechar(USTR(code), idx);
                     idx++;
@@ -3975,6 +3975,7 @@ bool movedup();
 string coloring_line(string& line, vector<string>& colors) {
     static Segmentingtype segments;
     static char longcomment = 0;
+    static bool lastmove = false;
     string sub = line;
     s_trimleft(sub);
     
@@ -3982,6 +3983,9 @@ string coloring_line(string& line, vector<string>& colors) {
         return line;
     
     if (movedup()) {
+        if (!lastmove)
+            longcomment = false;
+        lastmove = true;
         if (longcomment) {
             if (sub[0] == '/' && sub[1] == '*')
                 longcomment = false;
@@ -3996,6 +4000,9 @@ string coloring_line(string& line, vector<string>& colors) {
         }
     }
     else {
+        if (lastmove)
+            longcomment = false;
+        lastmove = false;
         if (longcomment) {
             if (sub[0] == '*' && sub[1] == '/')
                 longcomment = false;

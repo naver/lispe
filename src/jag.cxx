@@ -986,7 +986,7 @@ bool jag_editor::processfind() {
     if (currentfind !=  L"") {
         wstring_controlled l;
         if (!resetsearch()) {
-            displayonlast("Mauvaise expression", true);
+            displayonlast("Bad Expression", true);
             return false;
         }
         
