@@ -2673,7 +2673,7 @@ long GetBlankSize() {
 
 
 static const char _tocheck[] = {'"', '\'', '@', ':', ',','-', '+','0','1','2','3','4','5', '6','7','8', '9','[',']','{', '}', 0};
-static const char _checkingmore[] = {'\n', '/', '(', ')', '<', '>','=',';', 0};
+static const char _checkingmore[] = {'\n', '\\', '/', '(', ')', '<', '>','=',';', 0};
 
 void split_container(unsigned char* src, long lensrc, vector<long>& pos, bool forindent) {
     uchar c;
@@ -2905,7 +2905,12 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 p = i;
                 while (r < sz) {
                     p = pos[r++];
-                    if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                    if (codestr[p] == '\\') {
+                        if (codestr[p+1] == codestr[pos[r]])
+                            r++;
+                        continue;
+                    }
+                    if (codestr[p] == '"' || codestr[p] == '\n')
                         break;
                 }
                 p++;
@@ -3323,7 +3328,12 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 p = i;
                 while (r < sz) {
                     p = pos[r++];
-                    if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                    if (codestr[p] == '\\') {
+                        if (codestr[p+1] == codestr[pos[r]])
+                            r++;
+                        continue;
+                    }
+                    if (codestr[p] == '"' || codestr[p] == '\n')
                         break;
                 }
                 p++;
@@ -3892,20 +3902,17 @@ void tokenize_line(string& code, Segmentingtype& infos) {
                         switch (code[idx]) {
                             case 'n':
                                 tampon += '\n';
-                                idx++;
-                                continue;
+                                break;
                             case 'r':
                                 tampon += '\r';
-                                idx++;
-                                continue;
+                                break;
                             case 't':
                                 tampon += '\t';
-                                idx++;
-                                continue;
-                                
+                                break;
+                            default:
+                                tampon += code[idx];
                         }
                     }
-                    tampon += code[idx];
                     idx++;
                 }
                 if (tampon == "")
