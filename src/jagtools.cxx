@@ -3776,10 +3776,25 @@ void tokenize_line(string& code, Segmentingtype& infos) {
     string current_line;
     string tampon;
     bool point = false;
+    infos.clear();
+    
     for (i = 0; i < sz; i++) {
         current_i = i;
         c = getonechar(USTR(code), i);
         switch (c) {
+            case 27: {//if it is an escape character
+                //We might have a color definition
+                idx = i + 1;
+                if (code[idx] == '[') {
+                    //we are looking for the final 'm'
+                    while (idx < sz && code[idx] != 'm')
+                        idx++;
+                    
+                    if (idx != sz)
+                        i = idx;
+                }
+                break;
+            }
             case '.':
                 point = true;
                 break;
@@ -3937,7 +3952,7 @@ void tokenize_line(string& code, Segmentingtype& infos) {
 
                 idx = i + 1;
                 nxt = c;
-                while (idx <= sz && !special_characters.c_is_punctuation(nxt) && !isspace(nxt)) {
+                while (idx <= sz && nxt > 32 && !special_characters.c_is_punctuation(nxt) && !isspace(nxt)) {
                     i = idx;
                     nxt = getonechar(USTR(code), idx);
                     idx++;
@@ -4016,9 +4031,7 @@ string coloring_line(string& line, vector<string>& colors) {
             return line;
         }
     }
-    
-    segments.clear();
-    
+        
     if (sub[0] == '#' || sub[0] == ';') {
         line = colors[4] + line + m_current;
         return line;
