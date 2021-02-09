@@ -2811,14 +2811,14 @@ void jag_editor::handlemousectrl(string& mousectrl) {
 }
 
 //This function is defined as a stud in lispeditor or jagtools
-string coloring_line(string& line, vector<string>& colors);
+string coloring_line(string& line, vector<string>& colors, bool lisp, bool python);
 string jag_editor::coloringline(string line, bool thread) {
-    return coloring_line(line, colors);
+    return coloring_line(line, colors, lispfile, pythonfile);
 }
 
 string jag_editor::coloringline(wstring& w) {
     string l = convert(w);
-    return coloring_line(l, colors);
+    return coloring_line(l, colors, lispfile, pythonfile);
 }
     
 //This is the main method that launches the terminal

@@ -16,7 +16,7 @@ using std::stringstream;
 
 //--------------------------------------
 //This is a stub definition to give jag a value
-string coloring_line(string& line, vector<string>& colors) {
+string coloring_line(string& line, vector<string>& colors, bool, bool) {
     return "";
 }
 

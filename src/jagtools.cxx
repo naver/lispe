@@ -2716,7 +2716,6 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
     
     bool locallisp = false;
     bool beginning = true;
-    bool equalsign = false;
     bool consumeblanks = true;
     
     uchar c = 0;
@@ -2761,13 +2760,6 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                         iblank+=blanksize;
                         checkspace = 1;
                         break;
-                    case 4:
-                        checkspace = 5;
-                        break;
-                    case 5:
-                    case 6:
-                        iblank -= blanksize;
-                        break;
                 }
                 
                 //we need to insert our blanks before...
@@ -2783,8 +2775,6 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
             }
         }
         
-        equalsign = (c == '<') ? equalsign : false;
-        
         if (i != pos[r] + 1) {
             if (c < 'A') {
                 continue;
@@ -2797,16 +2787,10 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
             token = (char*)STR(codestr)+i-1;
             codestr[p] = c;
             if (!lisp && !python) {
-                if (token == "case") {
-                    if (checkspace == 5) {
-                        //we need to remove an extra blank size;
-                        checkspace = 6;
-                    }
-                    else {
-                        if (checkspace < 5) {
-                            checkspace = 4;
-                            addspace++;
-                        }
+                if (token == "case" || token == "default") {
+                    if (checkspace < 4) {
+                        //this is the first case...
+                        checkspace = 4;
                     }
                 }
                 else {
@@ -2814,7 +2798,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                         checkspace = 3;
                     }
                     else {
-                        if (token == "if" || token == "elif" || token == "for" || token == "while" || token == "default") {
+                        if (token == "if" || token == "elif" || token == "for" || token == "while") {
                             if (checkspace == 6) {
                                 //extra space missing
                                 finalblank = blanksize;
@@ -2883,9 +2867,6 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                         i = p;
                         break;
                 }
-                break;
-            case '=':
-                equalsign = true;
                 break;
             case '@':
                 if (codestr[i] == '"') {
@@ -3031,6 +3012,12 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 }
                 break;
         }
+        if (c == ':') {
+            if (checkspace == 4) {
+                addspace++;
+                checkspace = 5;
+            }
+        }
     }
     
     if (consumeblanks) {
@@ -3049,13 +3036,6 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
             case 3:
                 iblank+=blanksize;
                 checkspace = 1;
-                break;
-            case 4:
-                checkspace = 5;
-                break;
-            case 5:
-            case 6:
-                iblank -= blanksize;
                 break;
         }
         
@@ -3101,7 +3081,6 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
     bool locallisp = false;
     bool consumeblanks = true;
     bool beginning = true;
-    bool equalsign = false;
     
     uchar c;
     
@@ -3168,13 +3147,6 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                         iblank+=blanksize;
                         checkspace = 1;
                         break;
-                    case 4:
-                        checkspace = 5;
-                        break;
-                    case 5:
-                    case 6:
-                        iblank -= blanksize;
-                        break;
                 }
                 
                 //we need to insert our blanks before...
@@ -3189,9 +3161,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 consumeblanks = false;
             }
         }
-        
-        equalsign = (c == '<') ? equalsign : false;
-        
+                
         if (i != pos[r] + 1) {
             if (c < 'A') {
                 codeindente += c;
@@ -3205,16 +3175,15 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
             token = (char*)codestr+i-1;
             codestr[p] = c;
             if (!lisp) {
-                if (token == "case") {
-                    if (checkspace == 5) {
-                        //we need to remove an extra blank size;
-                        codeindente = codeindente.substr(0, codeindente.size()-blanksize);
-                        checkspace = 6;
+                if (token == "case" || token == "default") {
+                    if (checkspace < 4) {
+                        //this is the first case...
+                        checkspace = 4;
                     }
                     else {
-                        if (checkspace < 5) {
-                            checkspace = 4;
-                            addspace++;
+                        if (checkspace >= 5) {
+                            //we need to remove an extra blank size;
+                            codeindente = codeindente.substr(0, codeindente.size()-blanksize);
                         }
                     }
                 }
@@ -3223,7 +3192,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                         checkspace = 3;
                     }
                     else {
-                        if (token == "if" || token == "elif" || token == "for" || token == "while" || token == "default") {
+                        if (token == "if" || token == "elif" || token == "for" || token == "while") {
                             if (checkspace == 6) {
                                 //extra space missing
                                 string space(blanksize, ' ');
@@ -3305,10 +3274,6 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                     default:
                         codeindente += c;
                 }
-                break;
-            case '=':
-                equalsign = true;
-                codeindente += c;
                 break;
             case '@':
                 if (codestr[i] == '"') {
@@ -3486,10 +3451,21 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
             default:
                 codeindente += c;
         }
+        if (c == ':') {
+            if (checkspace == 4) {
+                addspace++;
+                checkspace = 5;
+            }
+        }
+        else {
+            if (checkspace == 5)
+                checkspace = 6;
+        }
     }
     
-    for (;i < szstr; i++)
-    codeindente += codestr[i];
+    for (;i < szstr; i++) {
+        codeindente += codestr[i];
+    }
 }
 
 
@@ -3746,7 +3722,7 @@ static const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#
     "zipwith","|","|=","∏","∑","√","∛", "" };
 
 typedef enum {
-    t_emptystring, t_word, t_keyword, t_number, t_string, t_method,
+    t_emptystring, t_word, t_keyword, t_number, t_string, t_method, t_comment,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_brace, c_closing_brace, c_colon,
     e_no_error
 } jag_code;
@@ -3785,7 +3761,7 @@ public:
     }
 };
 
-void tokenize_line(string& code, Segmentingtype& infos) {
+void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) {
     long idx;
     
     long sz = code.size();
@@ -3819,12 +3795,36 @@ void tokenize_line(string& code, Segmentingtype& infos) {
             case '.':
                 point = true;
                 break;
+            case '/':
+                point = false;
+                idx = i + 1;
+                if (code[idx] == '/' || code[idx] == '*') {
+                    idx++;
+                    while (idx < sz && code[idx] != '\n') idx++;
+                    infos.append(t_comment, i, idx);
+                    i = idx;
+                    line_number++;
+                }
+                break;
             case ';':
+                point = false;
+                if (lisp) {
+                    idx = i;
+                    while (idx < sz && code[idx] != '\n') idx++;
+                    infos.append(t_comment, i, idx);
+                    i = idx;
+                    line_number++;
+                }
+                break;
             case '#': //comments (we accept both with ; and #)
                 point = false;
-                idx = i;
-                while (i < sz && code[i] != '\n') i++;
-                line_number++;
+                if (python || lisp) {
+                    idx = i;
+                    while (idx < sz && code[idx] != '\n') idx++;
+                    infos.append(t_comment, i, idx);
+                    i = idx;
+                    line_number++;
+                }
                 break;
             case '\n':
                 point = false;
@@ -3922,7 +3922,7 @@ void tokenize_line(string& code, Segmentingtype& infos) {
                             case 't':
                                 tampon += '\t';
                                 idx++;
-                                continue;                                
+                                continue;
                         }
                     }
                     tampon += code[idx];
@@ -3991,8 +3991,6 @@ void tokenize_line(string& code, Segmentingtype& infos) {
                 else {
                     if (is_keyword(tampon))
                         infos.append(t_keyword, current_i, i);
-                    else
-                        infos.append(t_word, current_i, i);
                 }
                 
                 if (i != current_i)
@@ -4007,7 +4005,7 @@ void tokenize_line(string& code, Segmentingtype& infos) {
 static const char m_current[] = {27, '[', '0', 'm', 0};
 bool movedup();
 
-string coloring_line(string& line, vector<string>& colors) {
+string coloring_line(string& line, vector<string>& colors, bool lisp, bool python) {
     static Segmentingtype segments;
     static char longcomment = 0;
     static bool lastmove = false;
@@ -4066,7 +4064,7 @@ string coloring_line(string& line, vector<string>& colors) {
     
     bool add = false;
     
-    tokenize_line(line, segments);
+    tokenize_line(line, segments, lisp, python);
     
     long left, right = -1;
     for (long isegment = segments.types.size() - 1, ipos = segments.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
@@ -4093,6 +4091,13 @@ string coloring_line(string& line, vector<string>& colors) {
                 sub += colors[3];
                 add = true;
                 break;
+            case t_comment:
+                sub += colors[4];
+                if (right > left)
+                    sub += line.substr(left, right-left);
+                sub += m_current;
+                line = sub;
+                break;
             default:
                 add = false;
         }
@@ -4107,6 +4112,6 @@ string coloring_line(string& line, vector<string>& colors) {
         }
         
     }
-    
+        
     return line;
 }
