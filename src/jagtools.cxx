@@ -2921,10 +2921,16 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                     break;
                 }
                 else {
-                    if (i > 1 && codestr[i-2] == '\\' && codestr[i] == '(') {
-                        locallisp = true;
-                        lisp = true;
-                        break;
+                    p = i;
+                    while (r < sz) {
+                        p = pos[r++];
+                        if (codestr[p] == '\\') {
+                            if (codestr[p+1] == codestr[pos[r]])
+                                r++;
+                            continue;
+                        }
+                        if (codestr[p] == '\'' || codestr[p] == '\n')
+                            break;
                     }
                 }
                 p = i;
@@ -3359,6 +3365,11 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 p = i;
                 while (r < sz) {
                     p = pos[r++];
+                    if (codestr[p] == '\\') {
+                        if (codestr[p+1] == codestr[pos[r]])
+                            r++;
+                        continue;
+                    }
                     if (codestr[p] == '\'' || codestr[p] == '\n')
                         break;
                 }
@@ -3902,17 +3913,19 @@ void tokenize_line(string& code, Segmentingtype& infos) {
                         switch (code[idx]) {
                             case 'n':
                                 tampon += '\n';
-                                break;
+                                idx++;
+                                continue;
                             case 'r':
                                 tampon += '\r';
-                                break;
+                                idx++;
+                                continue;
                             case 't':
                                 tampon += '\t';
-                                break;
-                            default:
-                                tampon += code[idx];
+                                idx++;
+                                continue;                                
                         }
                     }
+                    tampon += code[idx];
                     idx++;
                 }
                 if (tampon == "")
