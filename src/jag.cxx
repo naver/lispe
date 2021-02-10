@@ -2573,8 +2573,10 @@ void jag_editor::deleteselection() {
     if (selected_pos == selected_posnext) {
         if (selected_x == 0 && selected_y == line.size()) {
             deleteline(0);
-            return;
+			resetselection();
+			return;
         }
+
         undo(lines[pos],pos, u_modif);
         deleteachar(line, false, selected_x);
         lines[selected_pos] = line;
@@ -2582,6 +2584,7 @@ void jag_editor::deleteselection() {
         printline(pos+1, line);
         posinstring = selected_x;
         movetoposition();
+		resetselection();
         return;
     }
 
@@ -2644,11 +2647,7 @@ void jag_editor::deleteselection() {
     displaylist(poslines[0]);
     movetoline(selected_firstline);
     movetoposition();
-    selected_firstline = -1;
-    selected_x = -1;
-    selected_y = -1;
-    selected_pos = -1;
-    selected_posnext = -1;
+	resetselection();
     double_click = 0;
 }
 
@@ -2763,11 +2762,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
     if (isScrollingUp(location,mousectrl)) {
         if (selected_pos != -1) {
             unselectlines(selected_pos, selected_posnext, selected_x, selected_y);
-            selected_firstline = -1;
-            selected_x = -1;
-            selected_y = -1;
-            selected_pos = -1;
-            selected_posnext = -1;
+			resetselection();
             double_click = 0;
         }
         
@@ -2780,11 +2775,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
     if (isScrollingDown(location,mousectrl)) {
         if (selected_pos != -1) {
             unselectlines(selected_pos, selected_posnext, selected_x, selected_y);
-            selected_firstline = -1;
-            selected_x = -1;
-            selected_y = -1;
-            selected_pos = -1;
-            selected_posnext = -1;
+			resetselection();
             double_click = 0;
         }
         
@@ -2845,11 +2836,8 @@ void jag_editor::handlemousectrl(string& mousectrl) {
             selectlines(pos, posnext, l, r);
             mousectrl = getch();
         }
-        
-        selected_pos = -1;
-        selected_posnext = -1;
-        selected_x = -1;
-        selected_y = -1;
+
+		resetselection();
         
         //a simple click
 #ifdef WIN32		

@@ -9,10 +9,12 @@
 //
 
 #include <stdio.h>
-
+#ifndef WIN32
 #include <unistd.h>   //_getch
 #include <termios.h>  //_getch
 #include <sys/ioctl.h>
+#endif
+
 #include <signal.h>
 #include <iomanip>
 
@@ -20,7 +22,7 @@
 
 #include "jag.h"
 
-static string version = "0.99 build 04";
+static string version = "0.99 build 05";
 
 #ifndef WIN32
 static void handle_ctrl_c(int theSignal) {

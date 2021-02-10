@@ -549,6 +549,14 @@ public:
         }
     }
 
+	inline void resetselection() {
+		selected_firstline = -1;
+		selected_x = -1;
+		selected_y = -1;
+		selected_pos = -1;
+		selected_posnext = -1;
+	}
+
     string pathname() {
         return thecurrentfilename;
     }

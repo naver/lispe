@@ -271,7 +271,7 @@ string getwinchar(void(*f)(), bool mouseenabled) {
                         }
                         else {
                             w = kar;
-							if (alt && (w == L"c" || w == L"v" || w == L"x")) {
+							if (alt && (w == L"c" || w == L"v" || w == L"x" || w == L"=" || w == L"-")) {
 								s = (uchar)226;
 								s += (uchar)w[0];
 								return s;

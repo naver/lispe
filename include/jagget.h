@@ -117,6 +117,8 @@ const char c_left[] = { 224,115, 0 };
 const unsigned char alt_x[] = { 226, 'x', 0 };
 const unsigned char alt_c[] = { 226, 'c', 0 };
 const unsigned char alt_v[] = { 226, 'v', 0 };
+const unsigned char alt_plus[] = { 226, '+', 0 };
+const unsigned char alt_minus[] = { 226, '-', 0 };
 const unsigned char shift_right[] = { 225, 77, 0 };
 const unsigned char shift_left[] = { 225, 75, 0 };
 #else
