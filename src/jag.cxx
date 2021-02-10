@@ -1691,6 +1691,16 @@ bool jag_editor::evaluateescape(string& buff) {
         return true;
     }
 
+    if (buff == (char*)alt_plus) {
+        indentplus();
+        return true;
+    }
+    
+    if (buff == (char*)alt_minus) {
+        deindentminus();
+        return true;
+    }
+    
     if (buff == (char*)alt_v) {
         handleblock(copybuffer);
         return true;
@@ -1776,6 +1786,73 @@ void jag_editor::init() {
 }
 
 
+void jag_editor::indentplus() {
+    wstring blanks(GetBlankSize(), ' ');
+    tobesaved = true;
+    if (selected_pos != -1 && selected_posnext > selected_pos) {
+        uchar modif = u_modif;
+        for (long i = selected_posnext - 1; i >= selected_pos; i--) {
+            line = lines[i];
+            line = blanks + line;
+            undo(lines[i],i, modif);
+            modif = u_modif_linked;
+            lines[i] = line;
+        }
+        displaylist(poslines[0]);
+        selectlines(selected_pos, selected_posnext, selected_x, selected_y);
+        movetoline(currentline);
+        movetoposition();
+        return;
+    }
+    line = lines[pos];
+    line = blanks + line;
+    undo(lines[pos],pos, u_modif);
+    lines[pos] = line;
+    printline(pos, line);
+    movetoline(currentline);
+    movetoposition();
+}
+
+void jag_editor::deindentminus() {
+    //We remove some blanks from lines...
+    long nb = GetBlankSize();
+    long u = 0;
+    if (selected_pos != -1 && selected_posnext > selected_pos) {
+        uchar modif = u_modif;
+        for (long i = selected_posnext - 1; i >= selected_pos; i--) {
+            line = lines[i];
+            //can we remove nb blanks from the beginning of the line
+            u = 0;
+            for (; u < line.size() && line[u] == ' '; u++) {}
+            if (u >= nb) {
+                tobesaved = true;
+                line = line.substr(nb, line.size());
+                undo(lines[i],i, modif);
+                modif = u_modif_linked;
+                lines[i] = line;
+            }
+        }
+        displaylist(poslines[0]);
+        selectlines(selected_pos, selected_posnext, selected_x, selected_y);
+        movetoline(currentline);
+        movetoposition();
+        return;
+    }
+    
+    line = lines[pos];
+    for (; u < line.size() && line[u] == ' '; u++) {}
+    if (u >= nb) {
+        tobesaved = true;
+        line = line.substr(nb, line.size());
+        undo(lines[pos],pos, u_modif);
+        lines[pos] = line;
+        printline(pos, line);
+        movetoline(currentline);
+        movetoposition();
+    }
+}
+
+
 bool jag_editor::checkcommand(char cmd) {
     switch (cmd) {
         case 'b': //black mode
@@ -1788,69 +1865,11 @@ bool jag_editor::checkcommand(char cmd) {
             movetoposition();
             return true;
         case '-': {
-            //We remove some blanks from lines...
-            long nb = GetBlankSize();
-            long u = 0;
-            if (selected_pos != -1 && selected_posnext > selected_pos) {
-                uchar modif = u_modif;
-                for (long i = selected_posnext - 1; i >= selected_pos; i--) {
-                    line = lines[i];
-                    //can we remove nb blanks from the beginning of the line
-                    u = 0;
-                    for (; u < line.size() && line[u] == ' '; u++) {}
-                    if (u >= nb) {
-                        tobesaved = true;
-                        line = line.substr(nb, line.size());
-                        undo(lines[i],i, modif);
-                        modif = u_modif_linked;
-                        lines[i] = line;
-                    }
-                }
-                displaylist(poslines[0]);
-                selectlines(selected_pos, selected_posnext, selected_x, selected_y);
-                movetoline(currentline);
-                movetoposition();
-                return true;
-            }
-            
-            line = lines[pos];
-            for (; u < line.size() && line[u] == ' '; u++) {}
-            if (u >= nb) {
-                tobesaved = true;
-                line = line.substr(nb, line.size());
-                undo(lines[pos],pos, u_modif);
-                lines[pos] = line;
-                printline(pos, line);
-                movetoline(currentline);
-                movetoposition();
-            }
+            deindentminus();
             return true;
         }
         case '+': {//we indent all the lines up
-            wstring blanks(GetBlankSize(), ' ');
-            tobesaved = true;
-            if (selected_pos != -1 && selected_posnext > selected_pos) {
-                uchar modif = u_modif;
-                for (long i = selected_posnext - 1; i >= selected_pos; i--) {
-                    line = lines[i];
-                    line = blanks + line;
-                    undo(lines[i],i, modif);
-                    modif = u_modif_linked;
-                    lines[i] = line;
-                }
-                displaylist(poslines[0]);
-                selectlines(selected_pos, selected_posnext, selected_x, selected_y);
-                movetoline(currentline);
-                movetoposition();
-                return true;
-            }
-            line = lines[pos];
-            line = blanks + line;
-            undo(lines[pos],pos, u_modif);
-            lines[pos] = line;
-            printline(pos, line);
-            movetoline(currentline);
-            movetoposition();
+            indentplus();
             return true;
         }
         case 'l':

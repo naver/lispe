@@ -536,6 +536,8 @@ public:
     void selectlines(long from_line, long to_line, long from_pos, long to_pos);
     void unselectlines(long from_line, long to_line, long from_pos, long to_pos);
     virtual void handlemousectrl(string& mousectrl);
+    void indentplus();
+    void deindentminus();
     
     void setpathname(string path) {
         thecurrentfilename =  path;

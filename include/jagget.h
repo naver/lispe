@@ -146,6 +146,9 @@ const char del[] = { 27, 91, 51, 126, 0 };
 const char homekey[] = { 27, 91, 72, 0 };
 const char endkey[] = { 27, 91, 70, 0 };
 
+const unsigned char alt_plus[] = {226, 137, 160, 0};
+const unsigned char alt_minus[] = {226, 128, 148, 0};
+
 const unsigned char alt_x[] = {226, 137, 136, 0};
 const unsigned char alt_c[] = {194, 169, 0};
 const unsigned char alt_v[] = {226, 151, 138, 0};
