@@ -91,6 +91,8 @@ void jag_editor::displaythehelp(long noclear) {
     cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
     cerr << "   \t\t- " << m_redital << "m:" << m_current << " toggle mouse on/off" << endl;
     cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;
+    cerr << "   \t\t- " << m_redital << "+:" << m_current << " indent current line or selected lines to the right" << endl;
+    cerr << "   \t\t- " << m_redital << "-:" << m_current << " de-indent current line or selected lines to the left" << endl;
     cerr << "   \t\t- " << m_redital << "q:" << m_current << " quit" << endl << endl;
 }
 
@@ -1785,6 +1787,72 @@ bool jag_editor::checkcommand(char cmd) {
             movetoline(currentline);
             movetoposition();
             return true;
+        case '-': {
+            //We remove some blanks from lines...
+            long nb = GetBlankSize();
+            long u = 0;
+            if (selected_pos != -1 && selected_posnext > selected_pos) {
+                uchar modif = u_modif;
+                for (long i = selected_posnext - 1; i >= selected_pos; i--) {
+                    line = lines[i];
+                    //can we remove nb blanks from the beginning of the line
+                    u = 0;
+                    for (; u < line.size() && line[u] == ' '; u++) {}
+                    if (u >= nb) {
+                        tobesaved = true;
+                        line = line.substr(nb, line.size());
+                        undo(lines[i],i, modif);
+                        modif = u_modif_linked;
+                        lines[i] = line;
+                    }
+                }
+                displaylist(poslines[0]);
+                selectlines(selected_pos, selected_posnext, selected_x, selected_y);
+                movetoline(currentline);
+                movetoposition();
+                return true;
+            }
+            
+            line = lines[pos];
+            for (; u < line.size() && line[u] == ' '; u++) {}
+            if (u >= nb) {
+                tobesaved = true;
+                line = line.substr(nb, line.size());
+                undo(lines[pos],pos, u_modif);
+                lines[pos] = line;
+                printline(pos, line);
+                movetoline(currentline);
+                movetoposition();
+            }
+            return true;
+        }
+        case '+': {//we indent all the lines up
+            wstring blanks(GetBlankSize(), ' ');
+            tobesaved = true;
+            if (selected_pos != -1 && selected_posnext > selected_pos) {
+                uchar modif = u_modif;
+                for (long i = selected_posnext - 1; i >= selected_pos; i--) {
+                    line = lines[i];
+                    line = blanks + line;
+                    undo(lines[i],i, modif);
+                    modif = u_modif_linked;
+                    lines[i] = line;
+                }
+                displaylist(poslines[0]);
+                selectlines(selected_pos, selected_posnext, selected_x, selected_y);
+                movetoline(currentline);
+                movetoposition();
+                return true;
+            }
+            line = lines[pos];
+            line = blanks + line;
+            undo(lines[pos],pos, u_modif);
+            lines[pos] = line;
+            printline(pos, line);
+            movetoline(currentline);
+            movetoposition();
+            return true;
+        }
         case 'l':
             clearst();
             st << "load:";

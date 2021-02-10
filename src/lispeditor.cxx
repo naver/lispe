@@ -151,6 +151,8 @@ void lispe_editor::displaythehelp(long i) {
         cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
         cerr << "   \t\t- " << m_redital << "m:" << m_current << " toggle mouse on/off" << endl;
         cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;
+        cerr << "   \t\t- " << m_redital << "+:" << m_current << " indent current line or selected lines to the right" << endl;
+        cerr << "   \t\t- " << m_redital << "-:" << m_current << " de-indent current line or selected lines to the left" << endl;
         cerr << "   \t\t- " << m_redital << "q:" << m_current << " quit" << endl << endl;
     }
     
