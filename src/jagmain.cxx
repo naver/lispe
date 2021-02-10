@@ -20,7 +20,7 @@
 
 #include "jag.h"
 
-static string version = "0.99 build 03";
+static string version = "0.99 build 04";
 
 #ifndef WIN32
 static void handle_ctrl_c(int theSignal) {
@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
 
     JAGEDITOR = new jag_editor;
     JAGEDITOR->mouseon();
+    JAGEDITOR->setnoprefix();
     std::vector<std::string> args;
     bool darkmode = false;
     int i = 1;
@@ -59,14 +60,27 @@ int main(int argc, char *argv[]) {
             cout << m_clear << m_home;
             cerr << m_red << "jag(작): micro text processor (version: " << version << ")" << m_current << endl;
             cerr << m_red << "Copyright 2019-present NAVER Corp." << m_current << endl;
+            cerr << m_redital << "-b:" << m_current << " to launch the editor in dark mode" << endl;
+            cerr << m_redital << "-n:" << m_current << " to display lines with line number" << endl << endl;
             cerr << m_redital << "Ctrl-xh:" << m_current << " to display this help from within" << endl << endl;
             JAGEDITOR->displaythehelp(true);
             cerr << endl;
+            JAGEDITOR->terminate();
             exit(0);
         }
         if (cmd == "-b") {
             darkmode = true;
             continue;
+        }
+        
+        if (cmd == "-n") {
+            JAGEDITOR->setnoprefix();
+            continue;
+        }
+        
+        if (cmd[0] == '-') {
+            cerr << "Unknown command: " << cmd << endl;
+            exit(0);
         }
         
         if (JAGEDITOR->loadfile(cmd))

@@ -1037,10 +1037,12 @@ public:
         screensizes();
         wstring code = lines.code();
         lines.setcode(code);
-        displaylist(poslines[0]);
-        movetoline(currentline);
         posinstring = 0;
-        movetobeginning();
+        if (lines.size()) {
+            displaylist(poslines[0]);
+            movetoline(currentline);
+            movetobeginning();
+        }
     }
 
     bool checksize(wstring& l) {

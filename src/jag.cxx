@@ -75,7 +75,12 @@ void jag_editor::displaythehelp(long noclear) {
     cerr << "   \t- " << m_redbold << "Ctrl-q:" << m_current << " exit the editor" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-r:" << m_current << " redo last modification" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-t:" << m_current << " reindent the code" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-u:" << m_current << " undo last modification" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-u:" << m_current << " undo last modification" << endl << endl;
+    cerr << "   \t- " << m_redbold << "Alt-x:" << m_current << " cut mouse selection" << endl;
+    cerr << "   \t- " << m_redbold << "Alt-c:" << m_current << " copy mouse selection" << endl;
+    cerr << "   \t- " << m_redbold << "Alt-v:" << m_current << " paste mouse selection" << endl;
+    cerr << "   \t- " << m_redbold << "Alt-+:" << m_current << " indent current line or selected lines to the right" << endl;
+    cerr << "   \t- " << m_redbold << "Alt--:" << m_current << " de-indent current line or selected lines to the left" << endl << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-x:" << m_redital << " Combined Commands" << m_current << endl;
     cerr << "   \t\t- " << m_redital << "D:" << m_current << " delete a bloc of lines" << endl;
     cerr << "   \t\t- " << m_redital << "n:" << m_current << " hide/display line numbers" << endl;
@@ -1244,6 +1249,7 @@ void jag_editor::handleblock(wstring& bl) {
     if (bl == L"")
         return;
 
+    tobesaved = true;
     line = lines[pos];
     if (posinstring > line.size())
         posinstring = line.size();
@@ -1284,6 +1290,8 @@ void jag_editor::handleblock(wstring& bl) {
 
 long jag_editor::handlingeditorline(bool computespace) {
     long sz = lines.size();
+    
+    tobesaved = true;
     
     //if we are in the middle of a line...
     if (pos < sz) {
@@ -3004,12 +3012,19 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
 //---------------------------------------------------------------------------------
 
 void editor_lines::setcode(wstring& code) {
+    if (code == L"")
+        return;
+    
     vector<wstring> buff;
     status.clear();
-    jag->vsplit(code, L"\n", buff);
-    jag->setprefixesize(buff.size());
     lines.clear();
     numeros.clear();
+
+    jag->vsplit(code, L"\n", buff);
+    jag->setprefixesize(buff.size());
+    if (!buff.size())
+        return;
+    
     long u;
     vector<wstring> subs;
     if (buff.back() == L"")

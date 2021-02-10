@@ -135,7 +135,9 @@ void lispe_editor::displaythehelp(long i) {
         cerr << "   \t- " << m_redbold << "Ctrl-c:" << m_current << " exit the editor" << endl << endl;
         cerr << "   \t- " << m_redbold << "Alt-x:" << m_current << " cut mouse selection" << endl;
         cerr << "   \t- " << m_redbold << "Alt-c:" << m_current << " copy mouse selection" << endl;
-        cerr << "   \t- " << m_redbold << "Alt-v:" << m_current << " paste mouse selection" << endl << endl;
+        cerr << "   \t- " << m_redbold << "Alt-v:" << m_current << " paste mouse selection" << endl;
+        cerr << "   \t- " << m_redbold << "Alt-+:" << m_current << " indent current line or selected lines to the right" << endl;
+        cerr << "   \t- " << m_redbold << "Alt--:" << m_current << " de-indent current line or selected lines to the left" << endl << endl;
         cerr << "   \t- " << m_redbold << "Ctrl-x:" << m_redital << " Combined Commands" << m_current << endl;
         cerr << "   \t\t- " << m_redital << "D:" << m_current << " delete a bloc of lines" << endl;
         cerr << "   \t\t- " << m_redital << "n:" << m_current << " hide/display line numbers" << endl;
