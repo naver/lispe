@@ -20,7 +20,7 @@
 
 #include "jag.h"
 
-static string version = "0.99 build 02";
+static string version = "0.99 build 03";
 
 #ifndef WIN32
 static void handle_ctrl_c(int theSignal) {
@@ -31,7 +31,7 @@ static void handle_ctrl_c(int theSignal) {
         return;
     }
 
-    JAGEDITOR->clear();
+    JAGEDITOR->terminate();
     exit(-1);
 }
 #endif

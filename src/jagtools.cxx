@@ -2712,6 +2712,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
     short addspace = 0;
     short checkspace = 0;
     short iparenthesis = 0;
+    short nbblanks = 0;
     short l;
     
     bool locallisp = false;
@@ -2722,23 +2723,31 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
     
     counterlisp = 0;
     i = 0;
-    
+    string line;
     while (r < sz) {
         c = codestr[i++];
-        
+        line += c;
         if (c <= 32) {
             //here we have a CR, the next line should see its white characters being replaced with out indentation pack
             if (c == '\n') {
+                line = "";
                 consumeblanks = true;
+                nbblanks = 0;
                 r++;
                 continue;
             }
+            
             //this is a line beginning, we need to remove the blanks first
-            if (consumeblanks)
+            if (consumeblanks) {
+                nbblanks++;
                 continue;
+            }
             continue;
         }
         
+        if (python && nbblanks < iblank)
+            iblank = nbblanks;
+
         beginning = false;
         if (consumeblanks) {
             beginning = true;
@@ -2810,11 +2819,21 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                     }
                 }
             }
+            line += token.substr(1, token.size());
             i = p;
             continue;
         }
         
         r++;
+        if (python) {
+            if (strchr(";[](){}/:", (char)c) != NULL) {
+                if (c == ':') {
+                    iblank += blanksize;
+                }
+                continue;
+            }
+        }
+        
         switch (c) {
             case ';':
                 if (checkspace == 2) {
@@ -2824,10 +2843,6 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 else
                     if (checkspace == 3)
                         checkspace = 0;
-                break;
-            case ':':
-                if (python)
-                    iblank += blanksize;
                 break;
             case '/':
                 switch (codestr[i]) {
@@ -3012,7 +3027,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 }
                 break;
         }
-        if (c == ':') {
+        if (!python && c == ':') {
             if (checkspace == 4) {
                 addspace++;
                 checkspace = 5;

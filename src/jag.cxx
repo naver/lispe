@@ -606,7 +606,10 @@ void jag_editor::deleteline(char movingup) {
         }
 
         displaylist(poslines[0]);
-        
+        if (pos < lines.size())
+            line = lines[pos];
+        else
+            line = L"";
         movetoline(currentline);
         posinstring = 0;
         movetobeginning();
@@ -1249,9 +1252,16 @@ void jag_editor::handleblock(wstring& bl) {
     vector<wstring> vs;
     vsplit(bl, L"\n", vs);
     if (vs.size() == 1) {
-        line = line.substr(0, posinstring) + bl + line.substr(posinstring, line.size());
-        lines[pos] = line;
-        posinstring += bl.size();
+        if (!posinstring && bl.back() == '\n') {
+            undo(lines[pos],pos, u_ins_linked);
+            lines.insert(pos, vs[0]);
+            posinstring = 0;
+        }
+        else {
+            line = line.substr(0, posinstring) + vs[0] + line.substr(posinstring, line.size());
+            lines[pos] = line;
+            posinstring += bl.size();
+        }
     }
     else {
         lines[pos++] = line.substr(0, posinstring) + vs[0];
