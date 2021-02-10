@@ -3855,13 +3855,7 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '\'') {
-                    c = (uchar)code[idx];
-                    if (c < 32) {
-                        infos.append(t_emptystring, i, idx);
-                        i = idx;
-                        continue;
-                    }
-                    
+                    c = (uchar)code[idx];                   
                     if (c == '\\') {
                         idx++;
                         switch (code[idx]) {
@@ -3918,11 +3912,7 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
                 tampon = "";
                 while (idx < sz && code[idx] != '"') {
                     c = (uchar)code[idx];
-                    if (c < 32) {
-                        infos.append(t_emptystring, i, idx);
-                        continue;
-                    }
-                    
+
                     if (c == '\\') {
                         idx++;
                         switch (code[idx]) {
