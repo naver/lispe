@@ -100,6 +100,8 @@ jag_get::jag_get(bool inside) {
     margin = 10;
     spacemargin = 9;
     mouse_status = false;
+	nbclicks = 0;
+
 }
 
 void jag_get::resetterminal() {

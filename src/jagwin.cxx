@@ -96,37 +96,14 @@ void getcursor(int& xcursor, int& ycursor) {
     ycursor = csbiInfo.dwCursorPosition.Y;
 }
 
-static int  nbclicks = 0;
-
-int nbClicks() {
-	return nbclicks;
-}
-
 //We generate the Unix strings in Windows, to keep the whole code constant across platform
 string MouseEventProc(MOUSE_EVENT_RECORD mer) {
-	static COORD lastmousep;
-	static bool init = true;	
-
 	static bool tracking = false;
     stringstream stre;
 
     stre << "\033[";
     int x = 0, y = 0;
     COORD mousep = mer.dwMousePosition;
-
-	bool sameposition = false;
-	if (init) {
-		lastmousep = mousep;
-		init = false;
-	}
-	else {
-		sameposition = (mousep.X == lastmousep.X && mousep.Y == lastmousep.Y);
-		lastmousep = mousep;
-		if (!sameposition) {
-			if (nbclicks)
-				nbclicks = 0;
-		}
-	}
 
 	mousep.X++;
 	mousep.Y++;
@@ -142,7 +119,6 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
 		}
 		else if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
 		{
-			nbclicks++;
 			stre << 32 << ";" << mousep.X << ";" << mousep.Y << "M";
 			tracking = true;
 		}
@@ -157,7 +133,28 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
             tracking = true;
         }
         break;
-    case MOUSE_HWHEELED:
+	case 2: //double-click
+		if (!mer.dwButtonState) {
+			stre << 35 << ";" << mousep.X << ";" << mousep.Y << "DM";
+			tracking = false;
+		}
+		else if (mer.dwButtonState == FROM_LEFT_1ST_BUTTON_PRESSED)
+		{
+			stre << 32 << ";" << mousep.X << ";" << mousep.Y << "DM";
+			tracking = true;
+		}
+		else if (mer.dwButtonState == RIGHTMOST_BUTTON_PRESSED)
+		{
+			stre << 34 << ";" << mousep.X << ";" << mousep.Y << "DM";
+			tracking = true;
+		}
+		else
+		{
+			stre << 34 << ";" << mousep.X << ";" << mousep.Y << "DM";
+			tracking = true;
+		}
+		break;
+	case MOUSE_HWHEELED:
         if (wheel < 0)
             stre << 97 << ";" << mousep.X << ";" << mousep.Y << "M";
         else
@@ -179,18 +176,7 @@ string MouseEventProc(MOUSE_EVENT_RECORD mer) {
 		stre << 67 << ";" << mousep.X << ";" << mousep.Y << "M";
     }
 
-	/*
-	string u = stre.str();
-	for (long i = 0; i < u.size(); i++) {
-		if (u[i] > 32)
-			cerr << u[i];
-		else
-			cerr << (int)u[i] << " ";
-	}
-
-	cerr << endl;	
-	*/
-    return stre.str();
+	return stre.str();
 }
 
 string getwinchar(void(*f)(), bool mouseenabled) {

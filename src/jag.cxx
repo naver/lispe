@@ -2752,10 +2752,6 @@ void jag_editor::unselectlines(long from_line, long to_line, long from_pos, long
     displayextract(sub, from_line, 0, to_pos, false);
 }
 
-#ifdef WIN32
-int nbClicks();
-#endif
-
 void jag_editor::handlemousectrl(string& mousectrl) {
     vector<int> location;
     
@@ -2803,6 +2799,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
             endofstring--;
         
         mousectrl = getch();
+
         int mxcursor, mycursor;
         long l, r;
         location[1] -= 1 + prefixe();
@@ -2842,7 +2839,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         //a simple click
 #ifdef WIN32		
         if (location[0] == mxcursor && location[1] == mycursor) {
-			double_click = nbClicks();
+			double_click += nbClicks();
 #else
 		if (location[0] == mxcursor && location[1] == mycursor) {
 			double_click++;
@@ -2852,6 +2849,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
             if (double_click >= 2) {
                 if (double_click >= 3) {
                     double_click = 0;
+					nbclicks = 0;
                     l = 0;
                     r = endofstring;
                     selected_pos = pos;
@@ -2895,6 +2893,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         selected_pos = pos;
         selected_posnext = posnext;
         double_click = 0;
+		nbclicks = 0;
         selected_x = l;
         selected_y = r;
         return;
@@ -2950,13 +2949,13 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
     while (1) {
         buff = getch();
         
-            if (emode()) {
-                while (isMouseAction(buff)) {
-                    handlemousectrl(buff);
-                    buff =  getch();
-                }
-            }
-
+        if (emode()) {
+			while (isMouseAction(buff)) {
+				handlemousectrl(buff);
+				buff = getch();
+			}
+		}
+		
         if (checkaction(buff, first, last))
             continue;
         

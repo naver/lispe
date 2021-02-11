@@ -175,6 +175,8 @@ public:
     long margin;
     long spacemargin;
 
+	int nbclicks;
+
     bool inside_editor;
     bool initialized;
     bool mouse_status;
@@ -283,31 +285,33 @@ public:
         return false;
     }
 
+	long nbClicks() {
+		return nbclicks;
+	}
+
     bool isClickFirstMouseDown(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
         if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
+#ifdef WIN32
+            //On Windows, a double-click contains a D
+			if (mousectrl[mousectrl.size() - 2] == 'D') {
+				sscanf(STR(mousectrl), "\033[%d;%d;%dDM", &action, &mycursor, &mxcursor);
+				nbclicks = 2;
+			}
+			else {
+				sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+				nbclicks = 1;
+			}
+#else
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
-            if (action == 32) {
-                vect.push_back(mxcursor);
+#endif
+			if (action == 32) {
+				vect.push_back(mxcursor);
                 vect.push_back(mycursor);				
 				return true;
             }
-        }
-        return false;
-    }
-
-    bool isClickSecondMouseDown(vector<int>& vect, string& mousectrl) {
-        int action, mxcursor, mycursor;
-        if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
-            //This a move
-            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
-            if (action == 34) {
-                vect.push_back(mxcursor);
-                vect.push_back(mycursor);
-                return true;
-            }
-        }
+		}
         return false;
     }
 
@@ -315,8 +319,17 @@ public:
         int action, mxcursor, mycursor;
         if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
             //This a move
+#ifdef WIN32
+            //On Windows, a double-click contains a D
+            if (mousectrl[mousectrl.size() - 2] == 'D')
+                sscanf(STR(mousectrl), "\033[%d;%d;%dDM", &action, &mycursor, &mxcursor);
+            else
+                sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+#else
             sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
-            if (action == 35) {
+#endif
+
+			if (action == 35) {
                 vect.push_back(mxcursor);
                 vect.push_back(mycursor);
                 return true;
@@ -324,6 +337,32 @@ public:
         }
         return false;
     }
+
+	bool isClickSecondMouseDown(vector<int>& vect, string& mousectrl) {
+		int action, mxcursor, mycursor;
+		if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
+			//This a move
+#ifdef WIN32
+            //On Windows, a double-click contains a D
+            if (mousectrl[mousectrl.size() - 2] == 'D') {
+                sscanf(STR(mousectrl), "\033[%d;%d;%dDM", &action, &mycursor, &mxcursor);
+                nbclicks = 2;
+            }
+            else {
+                sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+                nbclicks = 1;
+            }
+#else
+            sscanf(STR(mousectrl), "\033[%d;%d;%dM", &action, &mycursor, &mxcursor);
+#endif
+			if (action == 34) {
+				vect.push_back(mxcursor);
+				vect.push_back(mycursor);
+				return true;
+			}
+		}
+		return false;
+	}
 
     bool mouseTracking(string& mousectrl, int& mxcursor, int& mycursor) {
         int action;
