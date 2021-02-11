@@ -5586,13 +5586,10 @@ Element* List::evall_sum(LispE* lisp) {
         listsize = lst->size();
         for (long i = 0; i < listsize; i++)
             v += lst->liste[i]->checkNumber(lisp);
-        lst->release();
         first_element->release();
         return lisp->provideNumber(v);
     }
     catch (Error* err) {
-        if (lst != NULL)
-            lst->release();
         first_element->release();
         throw err;
     }
@@ -5617,13 +5614,10 @@ Element* List::evall_product(LispE* lisp) {
         listsize = lst->size();
         for (long i = 0; i < listsize; i++)
             v *= lst->liste[i]->checkNumber(lisp);
-        lst->release();
         first_element->release();
         return lisp->provideNumber(v);
     }
     catch (Error* err) {
-        if (lst != NULL)
-            lst->release();
         first_element->release();
         throw err;
     }
