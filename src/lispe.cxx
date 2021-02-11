@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.2.11.10.7";
+static std::string version = "1.2021.2.11.10.42";
 string LispVersion() {
     return version;
 }
@@ -1154,10 +1154,18 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     abstractSyntaxTree(e, parse, index);
                     if (e->size() >= 1) {
                         short lab = e->index(0)->label();
+                        //for defmacro and link, we evaluate these expressions on the fly
                         if (lab == l_defmacro) {
                             e->eval(this);
                             break;
                         }
+                        //for link, we also get rid of "e"
+                        if (lab == l_link) {
+                            e->eval(this);
+                            removefromgarbage(e);
+                            break;
+                        }
+                        
                         bool docompose = true;
                         if (lab == l_composenot) {
                             ((List*)e)->liste.erase(0);
@@ -1666,6 +1674,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 
