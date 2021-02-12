@@ -1806,11 +1806,8 @@ void jag_editor::indentplus() {
             modif = u_modif_linked;
             lines[i] = line;
         }
-        displaylist(poslines[0]);
-        selectlines(selected_pos, selected_posnext, selected_x, selected_y);
-        movetoline(currentline);
-        movetoposition();
-        return;
+		selectlines(selected_pos, selected_posnext, selected_x, selected_y);
+		return;
     }
     line = lines[pos];
     line = blanks + line;
@@ -1840,10 +1837,7 @@ void jag_editor::deindentminus() {
                 lines[i] = line;
             }
         }
-        displaylist(poslines[0]);
         selectlines(selected_pos, selected_posnext, selected_x, selected_y);
-        movetoline(currentline);
-        movetoposition();
         return;
     }
     
@@ -1874,10 +1868,12 @@ bool jag_editor::checkcommand(char cmd) {
             return true;
         case '-': {
             deindentminus();
+			displayonlast("", true);
             return true;
         }
         case '+': {//we indent all the lines up
             indentplus();
+			displayonlast("", true);
             return true;
         }
         case 'l':
@@ -2816,6 +2812,8 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         long posnext = pos;
         r = l;
         
+		resetselection();
+
         selected_firstline = currentline;
         while (mouseTracking(mousectrl, mxcursor, cursor_y)) {
             if (cursor_y != mycursor)
@@ -2832,9 +2830,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
             r = cursor_y;
             selectlines(pos, posnext, l, r);
             mousectrl = getch();
-        }
-
-		resetselection();
+        }		
         
         //a simple click
 #ifdef WIN32		

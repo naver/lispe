@@ -5350,53 +5350,50 @@ Element* List::evall_zip(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
+
+    vector<Element*> lists;
     Element* second_element = null_;
     Element* third_element = null_;
-    wstring msg;
-
+    long szl = -1;
+    long i;
+    long j = 0;
+    
     lisp->display_trace(this);
 
     try {
         //We combine different lists together...
-        vector<Element*> lists;
-        long szl = -1;
-        long i;
         for (i = 1; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
             if (!second_element->isList()) {
                 second_element->release();
-                msg = L"Error: 'zip' only accepts lists as arguments";
-                break;
+                for (auto& x: lists)
+                    x->release();
+                throw new Error(L"Error: 'zip' only accepts lists as arguments");
             }
             if (i == 1)
                 szl = second_element->size();
             else {
                 if (szl != second_element->size()) {
                     second_element->release();
-                    msg = L"Error: Lists should all have the same size in 'zip'";
-                    break;
+                    for (auto& x: lists)
+                        x->release();
+                    throw new Error(L"Error: Lists should all have the same size in 'zip'");
                 }
             }
             lists.push_back(second_element);
             second_element = null_;
         }
 
-        if (msg != L"") {
-            for (auto& x: lists)
-                x->release();
-            throw new Error(msg);
-        }
-
         third_element = new List;
         List* sub;
-        for (long j = 0; j < szl; j++) {
+        for (j = 0; j < szl; j++) {
             sub = new List;
             third_element->append(sub);
             for (i = 0; i <lists.size(); i++)
             sub->append(lists[i]->index(j));
         }
         for (i = 0; i < lists.size(); i++)
-        lists[i]->release();
+            lists[i]->release();
         return third_element;
     }
     catch (Error* err) {
@@ -5410,39 +5407,46 @@ Element* List::evall_zip(LispE* lisp) {
 
 
 Element* List::evall_zipwith(LispE* lisp) {
+    vector<Element*> lists;
+    long szl = -1;
+    long lsz;
+    long i, j = 0;
     short listsize = liste.size();
     if (listsize < 4)
         throw new Error("Error: wrong number of arguments");
+
     Element* first_element = liste[0];
     Element* second_element = null_;
-    wstring msg;
+    Element* third_element = null_;
+
+
+    List lsp;
 
     lisp->display_trace(this);
 
-    Element* third_element = null_;
     
     try {
         //We combine different lists together with an operator
         //First element is the operation
         first_element = liste[1]->eval(lisp);
-
-        vector<Element*> lists;
-        long szl = -1;
-        long i;
         for (i = 2; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
             if (!second_element->isList()) {
                 second_element->release();
-                msg = L"Error: 'zipwith' only accepts lists as arguments";
-                break;
+                for (auto& e: lists) {
+                    e->decrementstatus(2, false);
+                }
+                throw new Error(L"Error: 'zipwith' only accepts lists as arguments");
             }
             if (i == 2)
                 szl = second_element->size();
             else {
                 if (szl != second_element->size()) {
                     second_element->release();
-                    msg = L"Error: Lists should all have the same size in 'zipwith'";
-                    break;
+                    for (auto& e: lists) {
+                        e->decrementstatus(2, false);
+                    }
+                    throw new Error(L"Error: Lists should all have the same size in 'zipwith'");                    
                 }
             }
             lists.push_back(second_element);
@@ -5450,48 +5454,26 @@ Element* List::evall_zipwith(LispE* lisp) {
             second_element = null_;
         }
 
-        if (msg != L"") {
-            for (auto& e: lists) {
-                e->decrementstatus(2, false);
-            }
-            throw new Error(msg);
-        }
-
         //First element is the operation, second element the list
         first_element = liste[1]->eval(lisp);
 
-        long j;
-        List lsp;
-        long sz;
-        long lsz = lists.size();
-        if (first_element->isList()) {
-            sz = first_element->size();
-            //lambda or function
-            if (sz == 1)
-                lsp.append(((List*)first_element)->liste[0]);
-            else
-                lsp.append(first_element);
-            for (j = 0; j < lsz; j++)
+        lsz = lists.size();
+        lsp.append(first_element);
+        for (j = 0; j < lsz; j++)
             lsp.append(null_);
-        }
-        else {
-            lsp.append(first_element);
-            for (j = 0; j < lsz; j++)
-            lsp.append(null_);
-        }
 
         second_element = new List;
 
         for (j = 0; j < szl; j++) {
             for (i = 0; i < lsz; i++)
-            lsp.liste[i+1] = lists[i]->index(j);
+                lsp.liste[i+1] = lists[i]->index(j);
             third_element = lsp.eval(lisp);
             second_element->append(third_element);
             third_element = null_;
         }
 
         for (i = 0; i < lsz; i++)
-        lists[i]->decrementstatus(2, false);
+            lists[i]->decrementstatus(2, false);
         return second_element;
     }
     catch (Error* err) {
