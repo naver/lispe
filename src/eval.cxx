@@ -1663,6 +1663,11 @@ Element* List::evall_block(LispE* lisp) {
     Element* second_element = null_;
 
     lisp->display_trace(this);
+    
+    //We might need to mark the last element as being terminal
+    //the block might belong to an if
+    if (listsize)
+        liste.back()->setterminal(terminal);
 
     try {
         if (listsize == 2)
@@ -1778,7 +1783,8 @@ Element* List::evall_check(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         test = first_element->Boolean();
-        first_element->release();
+        _releasing(first_element);
+        
         if (!test)
             return null_;
 
@@ -2712,7 +2718,7 @@ Element* List::evall_if(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         test = first_element->Boolean();
-        first_element->release();
+        _releasing(first_element);
 
         if (test) {
             liste[2]->setterminal(terminal);
@@ -2746,7 +2752,8 @@ Element* List::evall_ife(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         test = first_element->Boolean();
-        first_element->release();
+        _releasing(first_element);
+        
         if (test) {
             liste[2]->setterminal(terminal);
             return liste[2]->eval(lisp);
@@ -3965,7 +3972,8 @@ Element* List::evall_ncheck(LispE* lisp) {
         //the actual list of instructions starts at 3...
         first_element = liste[1]->eval(lisp);
         test = first_element->Boolean();
-        first_element->release();
+        _releasing(first_element);
+        
         if (!test) {
             liste[2]->setterminal(terminal);
             return liste[2]->eval(lisp);
