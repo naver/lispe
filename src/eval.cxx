@@ -1021,11 +1021,10 @@ Element* List::evalfunction(Element* body, LispE* lisp) {
             
     //This is a very specific case, we do not want to go into recursion
     //but handle the call properly as an iteration
-    element = lisp->delegation->_TERMINAL;
     //We do not try to execute the code again, we simply returns back to the original loop.
 
     try {
-        while (element == lisp->delegation->_TERMINAL) {
+        do  {
             element = null_;
             for (i = bodystart; i < body->size() && element != lisp->delegation->_TERMINAL && element->type != l_return; i++) {
                 element->release();
@@ -1039,6 +1038,7 @@ Element* List::evalfunction(Element* body, LispE* lisp) {
                 return lisp->pop(element);
             }
         }
+        while (element == lisp->delegation->_TERMINAL);
     }
     catch (Error* err) {
         lisp->pop();
@@ -5446,7 +5446,7 @@ Element* List::evall_zipwith(LispE* lisp) {
                     for (auto& e: lists) {
                         e->decrementstatus(2, false);
                     }
-                    throw new Error(L"Error: Lists should all have the same size in 'zipwith'");                    
+                    throw new Error(L"Error: Lists should all have the same size in 'zipwith'");
                 }
             }
             lists.push_back(second_element);
