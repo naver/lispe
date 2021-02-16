@@ -4737,8 +4737,10 @@ Element* List::evall_select(LispE* lisp) {
     try {
         //we return the first non null value
         second_element = null_;
-        for (long i = 1; i < listsize && second_element == null_; i++)
+        for (long i = 1; i < listsize && second_element == null_; i++) {
+            liste[i]->setterminal(terminal);
             second_element = liste[i]->eval(lisp);
+        }
         return second_element;
     }
     catch (Error* err) {

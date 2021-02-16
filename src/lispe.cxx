@@ -1183,11 +1183,8 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                         }
                         else {
                             if (topfunction && topfunction <= courant->size()) {
-                                //we detect if and cond at the top level
-                                //we use this information to handle terminal recursion on the fly
                                 //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
-                                if (lab >= l_if && lab <= l_cond)
-                                    e->setterminal();
+                                e->setterminal();
                             }
                         }
                     }
