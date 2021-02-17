@@ -1231,20 +1231,19 @@ Element* List::evall_and(LispE* lisp) {
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
+    bool test = true;
 
     lisp->display_trace(this);
 
     try {
         second_element = null_;
-        for (long i = 1; i < listsize; i++) {
+        for (long i = 1; i < listsize && test; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
-            if (!second_element->Boolean()) {
-                return false_;
-            }
+            test = second_element->Boolean();
         }
         second_element->release();
-        return true_;
+        return booleans_[test];
     }
     catch (Error* err) {
         second_element->release();
@@ -4102,20 +4101,19 @@ Element* List::evall_or(LispE* lisp) {
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
+    bool test = false;
 
     lisp->display_trace(this);
 
     try {
         second_element = null_;
-        for (long i = 1; i < listsize; i++) {
+        for (long i = 1; i < listsize && !test; i++) {
             _releasing(second_element);
             second_element = liste[i]->eval(lisp);
-            if (second_element->Boolean()) {
-                return true_;
-            }
+            test = second_element->Boolean();
         }
         second_element->release();
-        return false_;
+        return booleans_[test];
     }
     catch (Error* err) {
         second_element->release();
@@ -5235,31 +5233,30 @@ Element* List::evall_while(LispE* lisp) {
 
 
 Element* List::evall_xor(LispE* lisp) {
-    if (liste.size() != 3)
+    short listsize = liste.size();
+    if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
     Element* second_element = null_;
-    Element* third_element = null_;
+    char test = true;
+    char check = true;
 
     lisp->display_trace(this);
 
     try {
-        first_element = liste[1]->eval(lisp);
-        second_element = liste[2]->eval(lisp);
-
-        if (first_element->Boolean() == second_element->Boolean())
-            third_element = false_;
-        else
-            third_element = true_;
-
-        first_element->release();
+        second_element = liste[1]->eval(lisp);
+        check = (char)second_element->Boolean();
+        for (long i = 2; i < listsize && test; i++) {
+            _releasing(second_element);
+            second_element = liste[i]->eval(lisp);
+            test = check;
+            check = (char)second_element->Boolean();
+            test ^= check;
+        }
         second_element->release();
-        return third_element;
+        return booleans_[test];
     }
     catch (Error* err) {
-        first_element->release();
         second_element->release();
-        third_element->release();
         throw err;
     }
 
