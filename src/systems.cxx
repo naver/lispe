@@ -34,7 +34,7 @@
 #include "directorylisting.h"
 
 typedef enum {sys_command, sys_ls, sys_setenv, sys_getenv, sys_isdirectory, sys_fileinfo, sys_realpath} systeme;
-typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write} file_command;
+typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write, file_writeln} file_command;
 typedef enum {date_setdate, date_year, date_month, date_day, date_hour, date_minute, date_second, date_yearday, date_raw, date_weekday } tempus;
 
 /*
@@ -248,6 +248,17 @@ public:
         return true_;
     }
     
+    Element* writeln(LispE* lisp, Element* line) {
+        if (mode != file_write)
+            throw new Error ("Error: expecting 'stream' to be in 'write' mode");
+        
+        string ch = line->toString(lisp);
+        myfile << ch << std::endl;
+        if (myfile.fail())
+            throw new Error("Error: 'writeln' operation did fail");
+        return true_;
+    }
+    
     Element* close(LispE* lisp) {
         if (mode == file_open)
             return false_;
@@ -340,6 +351,10 @@ public:
                 Element* a_stream = getstream(lisp);
                 return ((Stream*)a_stream)->write(lisp, lisp->get("str"));
             }
+            case file_writeln:{
+                Element* a_stream = getstream(lisp);
+                return ((Stream*)a_stream)->writeln(lisp, lisp->get("str"));
+            }
         }
 		return null_;
     }
@@ -362,6 +377,8 @@ public:
                 return L"Read one UTF8 character at a time";
             case file_write:
                 return L"Write a string to a file";
+            case file_writeln:
+                return L"Write a string to a file and add a Carriage Return at the end";
         }
 		return L"";
     }
@@ -1034,5 +1051,6 @@ void moduleSysteme(LispE* lisp) {
     lisp->extension("deflib file_readline (stream)", new Streamoperation(lisp, file_readline, identifier));
     lisp->extension("deflib file_getchar (stream)", new Streamoperation(lisp, file_getchar, identifier));
     lisp->extension("deflib file_write (stream str)", new Streamoperation(lisp, file_write, identifier));
+    lisp->extension("deflib file_writeln (stream str)", new Streamoperation(lisp, file_writeln, identifier));
 }
 
