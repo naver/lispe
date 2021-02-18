@@ -837,7 +837,7 @@ public:
             path = L"";
         
         if (targets.size() == 0)
-            return false;
+            return true;
         
         if (targets.size() == 1) {
             line = root;
@@ -894,20 +894,13 @@ public:
     }
 #endif
     
+    void clean_breakpoints(long);
+    
     bool checkkeyboard(string& buff, long& first, long& last, bool& dsp, char noinit) {
         switch ((uchar)buff[0]) {
             case 2:  //ctrl-b, adding breakpoints
                 if (emode() && lispe != NULL) {
-                    long idline = lines.numeros[pos];
-                    try {
-                        editor_breakpoints.at(thecurrentfilename).at(idline) = 1 - editor_breakpoints.at(thecurrentfilename).at(idline);
-                    }
-                    catch(const std::out_of_range& oor) {
-                        editor_breakpoints[thecurrentfilename][idline] = true;
-                    }
-
-                    cout << back << m_dore << prefixstring(idline) << m_current;
-                    movetoposition();
+                    clean_breakpoints(lines.numeros[pos]);
                 }
                 return true;
 #ifdef WIN32

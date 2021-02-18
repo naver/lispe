@@ -2438,6 +2438,26 @@ Element* List::evall_extract(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_flatten(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    
+    Element* element = null_;
+    
+    try {
+        element = liste[1]->eval(lisp);
+        List* l = new List;
+        element->flatten(lisp,l);
+        element->release();
+        return l;
+    }
+    catch (Error* err) {
+        element->release();
+        throw err;
+    }
+    
+    return null_;
+}
 
 Element* List::evall_fappend(LispE* lisp) {
     if (liste.size() != 3)

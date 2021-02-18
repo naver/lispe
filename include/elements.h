@@ -65,7 +65,7 @@ typedef enum {
     l_and, l_or, l_xor, l_not, l_eq, l_neq,
     
     //mutable operations
-    l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_nconc, l_push, l_insert, l_unique,
+    l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_unique,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
@@ -475,6 +475,7 @@ public:
         return this;
     }
     
+    virtual void flatten(LispE*, List* l);
     virtual Element* search_element(LispE*, Element* element_value, long idx);
     virtual Element* search_all_elements(LispE*, Element* element_value, long idx);
     virtual Element* search_reverse(LispE*, Element* element_value, long idx);
@@ -1596,6 +1597,7 @@ public:
     
     Element* loop(LispE* lisp, short label,  List* code);
     
+    void flatten(LispE*, List* l);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);    
@@ -1963,6 +1965,7 @@ public:
         marking = false;
     }
 
+    void flatten(LispE*, List* l);
     Element* loop(LispE* lisp, short label,  List* code);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);

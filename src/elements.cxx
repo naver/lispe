@@ -126,6 +126,36 @@ void LIST::sorting(LispE* lisp, List* comparison) {
     sorting(lisp, comparison, comparison->liste[0]->type, home, item->last - 1);
 }
 //------------------------------------------------------------------------------------------
+void Element::flatten(LispE* lisp, List* l) {
+    l->append(this);
+}
+
+void List::flatten(LispE* lisp, List* l) {
+    for (long i = 0; i < size(); i++) {
+        liste[i]->flatten(lisp, l);
+    }
+}
+
+void Dictionary::flatten(LispE* lisp, List* l) {
+    wstring k;
+    for (auto& a: dictionary) {
+        k = a.first;
+        l->append(lisp->provideString(k));
+        a.second->flatten(lisp, l);
+    }
+}
+
+void Dictionary_n::flatten(LispE* lisp, List* l) {
+    double k;
+    for (auto& a: dictionary) {
+        k = a.first;
+        l->append(lisp->provideNumber(k));
+        a.second->flatten(lisp, l);
+    }
+}
+
+
+//------------------------------------------------------------------------------------------
 
 
 void Element::prettyfying(LispE* lisp, string& code) {

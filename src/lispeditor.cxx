@@ -579,10 +579,11 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                 
                 //We initialize the breakpoints and the trace mode
                 if (editor_breakpoints.size()) {
+                    lispe->delegation->breakpoints.clear();
                     for (auto& a: editor_breakpoints) {
                         long idfile = lispe->id_file(a.first);
-                        for (auto& e: editor_breakpoints[a.first])
-                            lispe->delegation->breakpoints[idfile][e.first] = true;
+                        for (auto& e: a.second)
+                            lispe->delegation->breakpoints[idfile][e.first] = e.second;
                     }
                     
                     lispe->stop_at_next_line(debug_goto);
@@ -927,6 +928,21 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
     }
     
     return pos;
+}
+
+void lispe_editor::clean_breakpoints(long idline) {
+    long idfile = lispe->id_file(thecurrentfilename);
+    try {
+        editor_breakpoints.at(thecurrentfilename).at(idline) = 1 - editor_breakpoints.at(thecurrentfilename).at(idline);
+    }
+    catch(const std::out_of_range& oor) {
+        editor_breakpoints[thecurrentfilename][idline] = true;
+    }
+
+    lispe->delegation->breakpoints[idfile][idline] = editor_breakpoints[thecurrentfilename][idline];
+
+    cout << back << m_dore << prefixstring(idline) << m_current;
+    movetoposition();
 }
 
 void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& args) {

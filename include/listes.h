@@ -461,6 +461,8 @@ public:
     
     Element* unique(LispE* lisp);
 
+    void flatten(LispE*, List* l);
+    
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (status < s_protect && liste.nocdr() && !duplicate)
@@ -873,6 +875,7 @@ public:
     Element* evall_input(LispE* lisp);
     Element* evall_getchar(LispE* lisp);
     Element* evall_pipe(LispE* lisp);
+    Element* evall_flatten(LispE* lisp);
     Element* evall_fread(LispE* lisp);
     Element* evall_fappend(LispE* lisp);
     Element* evall_fwrite(LispE* lisp);
