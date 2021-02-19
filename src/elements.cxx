@@ -852,7 +852,7 @@ Element* Element::search_reverse(LispE* lisp, Element* valeur, long idx) {
 
 Element* String::search_reverse(LispE* lisp, Element* valeur, long idx) {
     wstring val = valeur->asString(lisp);
-    idx =  content.rfind(val, idx);
+    idx =  content.rfind(val, content.size() - idx);
     return lisp->provideInteger(idx);
 }
 
