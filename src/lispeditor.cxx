@@ -931,12 +931,15 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
 }
 
 void lispe_editor::clean_breakpoints(long idline) {
+    long idfile = lispe->id_file(thecurrentfilename);
     try {
         editor_breakpoints.at(thecurrentfilename).at(idline) = 1 - editor_breakpoints.at(thecurrentfilename).at(idline);
     }
     catch(const std::out_of_range& oor) {
         editor_breakpoints[thecurrentfilename][idline] = true;
     }
+
+    lispe->delegation->breakpoints[idfile][idline] = editor_breakpoints[thecurrentfilename][idline];
 
     cout << back << m_dore << prefixstring(idline) << m_current;
     movetoposition();
