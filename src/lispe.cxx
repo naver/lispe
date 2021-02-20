@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.2.19.14.3";
+static std::string version = "1.2021.2.20.12.56";
 string LispVersion() {
     return version;
 }
@@ -520,6 +520,11 @@ void LispE::cleaning() {
     
     for (auto& a: pools)
         delete a.second;
+    
+    for (auto& a: vpools) {
+        if (a != delegation->_NULL)
+            delete a;
+    }
     
     if (!isThread) {
         delete delegation;
@@ -1672,6 +1677,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 

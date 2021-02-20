@@ -201,6 +201,7 @@ class LispE {
 
 public:
     unordered_map<wstring, Element*> pools;
+    vector<Element*> vpools;
 
     unordered_map<double, Number*> number_pool;
     unordered_map<long, Integer*> integer_pool;
@@ -323,7 +324,7 @@ public:
     inline void pool_in(wstring& key, Element* e) {
         pools[key] = e;
     }
-    
+
     inline Element* pool_out(wstring& key) {
         try {
             return pools.at(key);
@@ -333,7 +334,36 @@ public:
         }
     }
     
+    inline long vpool_slot() {
+        vpools.push_back(delegation->_NULL);
+        return (vpools.size() - 1);
+    }
     
+    inline void vpool_in(Element* e, long idx) {
+        vpools[idx] = e;
+        e->status = s_constant;
+    }
+    
+    inline bool vpool_check(long idx) {
+        return (idx >= 0 && idx < vpools.size() && vpools[idx] != delegation->_NULL);
+    }
+    
+    inline Element* vpool_out(long idx) {
+        if (idx < 0 || idx >= vpools.size())
+            return delegation->_NULL;
+        return vpools[idx];
+    }
+    
+    inline bool vpool_release(long idx) {
+        if (idx < 0 || idx >= vpools.size())
+            return false;
+        Element* e = vpools[idx];
+        if (e == delegation->_NULL)
+            return false;
+        vpools[idx] = delegation->_NULL;
+        e->status = s_destructible;
+        return true;
+    }
   
     inline void set_current_line(long l, long f) {
         delegation->i_current_line = l;

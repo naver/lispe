@@ -77,10 +77,8 @@ public:
     }
 
     Element* root(short type_xmlnode);
-    void clean();
-
     ~Lispe_xmldoc() {
-        clean();
+        lisp->vpool_release(iddoc);
         if (doc != NULL)
             xmlFreeDoc(doc);
     }
@@ -90,14 +88,18 @@ public:
 class Lispe_xmlnode : public Element {
 public:
     xmlNodePtr node;
+    LispE* lisp;
     short iddoc;
 
-    Lispe_xmlnode(short ty, short idd, xmlNodePtr n) : Element(ty) {
+    Lispe_xmlnode(LispE* l, short ty, short idd, xmlNodePtr n) : Element(ty) {
         node = n;
         iddoc = idd;
+        lisp = l;
     }
 
-    bool getDoc();
+    bool getDoc() {
+        return lisp->vpool_check(iddoc);
+    }
 
     Element* eval(LispE* lisp) {
         if (!getDoc() || node == NULL)
@@ -117,31 +119,31 @@ public:
         return (getDoc());
     }
 
-    Element* next(LispE* lisp) {
+    Element* next() {
         if (!getDoc() || node == NULL || node->next == NULL)
             return null_;
-        return new Lispe_xmlnode(type, iddoc,  node->next);
+        return new Lispe_xmlnode(lisp, type, iddoc,  node->next);
     }
 
-    Element* previous(LispE* lisp) {
+    Element* previous() {
         if (!getDoc() || node == NULL || node->prev == NULL)
             return null_;
-        return new Lispe_xmlnode(type, iddoc,  node->prev);
+        return new Lispe_xmlnode(lisp, type, iddoc,  node->prev);
     }
 
-    Element* child(LispE* lisp) {
+    Element* child() {
         if (!getDoc() || node == NULL || node->children == NULL)
             return null_;
-        return new Lispe_xmlnode(type, iddoc,  node->children);
+        return new Lispe_xmlnode(lisp, type, iddoc,  node->children);
     }
 
-    Element* parent(LispE* lisp) {
+    Element* parent() {
         if (!getDoc() || node == NULL || node->parent == NULL || node->parent->type == XML_DOCUMENT_NODE || node->parent->name == NULL)
             return null_;
-        return new Lispe_xmlnode(type, iddoc,  node->parent);
+        return new Lispe_xmlnode(lisp, type, iddoc,  node->parent);
     }
 
-    Element* name(LispE* lisp) {
+    Element* name() {
         if (!getDoc() || node == NULL || node->name == NULL)
             return null_;
         string s = (char*)node->name;
@@ -157,35 +159,35 @@ public:
         return n;
     }
 
-    Element* line(LispE* lisp) {
+    Element* line() {
         if (!getDoc() || node == NULL)
             return null_;
 
         return lisp->provideInteger(node->line);
     }
 
-    Element* node_type(LispE* lisp) {
+    Element* node_type() {
         if (!getDoc() || node == NULL)
             return null_;
 
         return lisp->provideInteger(node->type);
     }
 
-    Element* node_id(LispE* lisp) {
+    Element* node_id() {
         if (!getDoc() || node == NULL)
             return null_;
 
         return lisp->provideInteger((long)node->_private);
     }
 
-    Element* set_node_id(LispE* lisp, long idx) {
+    Element* set_node_id(long idx) {
         if (!getDoc() || node == NULL)
             return null_;
         node->_private = (void*)idx;
         return this;
     }
 
-    Element* content(LispE* lisp) {
+    Element* content() {
         if (!getDoc() || node == NULL)
             return null_;
 
@@ -194,7 +196,7 @@ public:
         return lisp->provideString(content);
     }
 
-    Element* name_space(LispE* lisp) {
+    Element* name_space() {
         if (!getDoc() || node == NULL)
             return emptylist_;
 
@@ -219,7 +221,7 @@ public:
         return kvect;
     }
 
-    Element* properties(LispE* lisp) {
+    Element* properties() {
         if (!getDoc() || node == NULL)
             return emptydictionary_;
 
@@ -248,10 +250,6 @@ public:
 class Lispe_xml : public Element {
 public:
 
-    static Lispe_xmldoc* docs[1024];
-    static short firstposition;
-    static ThreadLock _lock;
-    
     xml_action action;
     short type_xmlnode;
     short type_xmldoc;
@@ -263,52 +261,22 @@ public:
         type_xmldoc = lisp->encode(w);
     }
 
-    short first_empty_slot(bool tobelocked) {
-        _lock.locking(tobelocked);
-        long current = firstposition;
-        while (firstposition < 1024 && docs[firstposition] != NULL)
-            firstposition++;
-        
-        if (firstposition < 1024) {
-            _lock.unlocking(tobelocked);
-            return firstposition;
-        }
-        
-        //We restart from 0
-        if (current) {
-            firstposition = 0;
-            while (firstposition < 1024 && docs[firstposition] != NULL)
-                firstposition++;
-            
-            if (firstposition < 1024) {
-                _lock.unlocking(tobelocked);
-                return firstposition;
-            }
-        }
-        _lock.unlocking(tobelocked);
-        return -1;
-    }
-    
     Element* eval(LispE* lisp) {
         //The name defined in the extension is not insignificant, it is used to retrieve our arguments.
         switch (action) {
             case xml_load: {
-                short iddoc = first_empty_slot(lisp->checkforLock());
-                if (iddoc == -1)
-                    throw new Error("Error: XML table full");
-                
-                docs[iddoc] = new Lispe_xmldoc(lisp, iddoc, type_xmldoc);
+                long iddoc = lisp->vpool_slot();
+                Lispe_xmldoc* doc = new Lispe_xmldoc(lisp, iddoc, type_xmldoc);
+                lisp->vpool_in(doc, iddoc);
                 string pathname = lisp->get(L"pathname")->toString(lisp);
-                return docs[iddoc]->load(pathname);
+                return doc->load(pathname);
             }
             case xml_parse: {
-                short iddoc = first_empty_slot(lisp->checkforLock());
-                if (iddoc == -1)
-                    throw new Error("Error: XML table full");
-                
-                docs[iddoc] = new Lispe_xmldoc(lisp, iddoc, type_xmldoc);
+                long iddoc = lisp->vpool_slot();
+                Lispe_xmldoc* doc = new Lispe_xmldoc(lisp, iddoc, type_xmldoc);
+                lisp->vpool_in(doc, iddoc);
                 string buffer = lisp->get(L"buffer")->toString(lisp);
-                return docs[iddoc]->parse(buffer);
+                return doc->parse(buffer);
             }
             case xml_root: {
                 //The first parameter should be a doc
@@ -321,75 +289,75 @@ public:
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->next(lisp);
+                return ((Lispe_xmlnode*)node)->next();
             }
             case xml_previous: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->previous(lisp);
+                return ((Lispe_xmlnode*)node)->previous();
             }
             case xml_child: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->child(lisp);
+                return ((Lispe_xmlnode*)node)->child();
             }
             case xml_parent: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->parent(lisp);
+                return ((Lispe_xmlnode*)node)->parent();
             }
             case xml_name: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->name(lisp);
+                return ((Lispe_xmlnode*)node)->name();
             }
             case xml_properties: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->properties(lisp);
+                return ((Lispe_xmlnode*)node)->properties();
             }
             case xml_line: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->line(lisp);
+                return ((Lispe_xmlnode*)node)->line();
             }
 
             case xml_namespace: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->name_space(lisp);
+                return ((Lispe_xmlnode*)node)->name_space();
             }
             case xml_type: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->node_type(lisp);
+                return ((Lispe_xmlnode*)node)->node_type();
             }
             case xml_content: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->content(lisp);
+                return ((Lispe_xmlnode*)node)->content();
             }
             case xml_nodeid: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                return ((Lispe_xmlnode*)node)->node_id(lisp);
+                return ((Lispe_xmlnode*)node)->node_id();
             }
             case xml_setnodeid: {
                 Element* node = lisp->get("node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 long idx = lisp->get("id")->asInteger();
-                return ((Lispe_xmlnode*)node)->set_node_id(lisp, idx);
+                return ((Lispe_xmlnode*)node)->set_node_id(idx);
             }
         }
     }
@@ -431,30 +399,10 @@ public:
 
 };
 
-Lispe_xmldoc* Lispe_xml::docs[1024];
-short Lispe_xml::firstposition = 0;
-ThreadLock Lispe_xml::_lock;
-
 Element* Lispe_xmldoc::root(short type_xmlnode) {
     if (doc->children == NULL)
         return null_;
-    return new Lispe_xmlnode(type_xmlnode, iddoc, doc->children);
-}
-
-void Lispe_xmldoc::clean() {
-    if (lisp->checkforLock())
-        Lispe_xml::_lock.locking();
-    
-    Lispe_xml::docs[iddoc] = NULL;
-    if (iddoc < Lispe_xml::firstposition)
-        Lispe_xml::firstposition = iddoc;
-    
-    if (lisp->checkforLock())
-        Lispe_xml::_lock.unlocking();
-}
-
-bool Lispe_xmlnode::getDoc() {
-    return (Lispe_xml::docs[iddoc] != NULL);
+    return new Lispe_xmlnode(lisp, type_xmlnode, iddoc, doc->children);
 }
 
 extern "C" {
@@ -463,12 +411,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
 
     wstring w = L"xml";
     short identifier = lisp->encode(w);
-    
-    Lispe_xml::firstposition = 0;
-    for (short i = 0; i < 1024; i++) {
-        Lispe_xml::docs[i] = NULL;
-    }
-    
+        
     lisp->extension("deflib xml_load (pathname)", new Lispe_xml(lisp, xml_load, identifier));
     lisp->extension("deflib xml_parse (buffer)", new Lispe_xml(lisp, xml_parse, identifier));
     lisp->extension("deflib xml_root (doc)", new Lispe_xml(lisp, xml_root, identifier));
