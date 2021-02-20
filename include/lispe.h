@@ -335,6 +335,10 @@ public:
     }
     
     inline long vpool_slot() {
+        for (long i = 0; i < vpools.size(); i++) {
+            if (vpools[i] == delegation->_NULL)
+                return i;
+        }
         vpools.push_back(delegation->_NULL);
         return (vpools.size() - 1);
     }
