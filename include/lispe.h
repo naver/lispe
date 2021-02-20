@@ -341,7 +341,6 @@ public:
     
     inline void vpool_in(Element* e, long idx) {
         vpools[idx] = e;
-        e->status = s_constant;
     }
     
     inline bool vpool_check(long idx) {
@@ -361,7 +360,6 @@ public:
         if (e == delegation->_NULL)
             return false;
         vpools[idx] = delegation->_NULL;
-        e->status = s_destructible;
         return true;
     }
   
