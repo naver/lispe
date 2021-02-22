@@ -30,7 +30,7 @@ Come and discover __LispE__: the __Lisp Elémentaire__.
 
 ## Play with it
 
-We provide a fun little program to discover some of the most interesting aspects of LispE: [minzorg](https://github.com/naver/lispe/blob/master/examples/patterns/minizorg.lisp)
+We provide a fun little program to discover some of the most interesting aspects of LispE: [minzork](https://github.com/naver/lispe/blob/master/examples/patterns/minizork_en.lisp)
 
 _Have a look and try it_
 
