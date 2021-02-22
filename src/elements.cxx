@@ -1725,7 +1725,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         }
         case t_plus_string: {
-            wstring ch = ((Stringplus*)e_from)->content;
+            wstring ch = e_from->asString(lisp);
             from = content.find(ch);
             if (from == -1)
                 return emptystring_;
@@ -1733,7 +1733,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         }
         case t_minus_string: {
-            wstring ch = ((Stringminus*)e_from)->content;
+            wstring ch = e_from->asString(lisp);
             from = content.rfind(ch, content.size());
             if (from == -1)
                 return emptystring_;
@@ -1743,7 +1743,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         }
         case t_minus_plus_string: {
-            wstring ch = ((Stringminusplus*)e_from)->content;
+            wstring ch = e_from->asString(lisp);
             from = content.rfind(ch, content.size());
             if (from == -1)
                 return emptystring_;
@@ -1783,7 +1783,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         }
         case t_plus_string: {
-            wstring ch = ((Stringplus*)e_from)->content;
+			wstring ch = e_upto->asString(lisp);
             upto = content.find(ch, from + 1);
             if (upto == -1)
                 return emptystring_;
@@ -1792,14 +1792,14 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         }
         case t_minus_string: {
-            wstring ch = ((Stringminus*)e_upto)->content;
+			wstring ch = e_upto->asString(lisp);
             upto = content.rfind(ch, content.size());
             if (upto == -1)
                 return emptystring_;
             break;
         }
         case t_minus_plus_string: {
-            wstring ch = ((Stringminusplus*)e_upto)->content;
+			wstring ch = e_upto->asString(lisp);
             upto = content.rfind(ch, content.size());
             if (upto == -1)
                 return emptystring_;

@@ -1448,12 +1448,6 @@ public:
         return new Stringminus(content);
     }
     
-    wstring asString(LispE* lisp) {
-        wstring c = L"-";
-        c += content;
-        return c;
-    }
-    
 };
 
 class Stringplus : public String {
@@ -1500,12 +1494,6 @@ public:
         return new Stringplus(content);
     }
     
-    wstring asString(LispE* lisp) {
-        wstring c = L"+";
-        c += content;
-        return c;
-    }
-    
 };
 
 class Stringminusplus : public String {
@@ -1550,12 +1538,6 @@ public:
             return this;
         
         return new Stringminusplus(content);
-    }
-    
-    wstring asString(LispE* lisp) {
-        wstring c = L"-+";
-        c += content;
-        return c;
     }
 };
 
