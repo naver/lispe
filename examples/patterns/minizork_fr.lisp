@@ -1,6 +1,6 @@
 #!/usr/local/bin/lispe
 
-; Actions on data structures
+; Actions sur les structures de données
 (defmacro belong (x l) (in l (keystr x)))
 
 (data
@@ -45,7 +45,7 @@
 )
 
 ; ouvrir la porte avec une clef
-; It triggers new potential move to other positions
+; Cela donne accès à de nouvelles pièces
 (defpat action ( [Ouvrir 'porte 'clef] )
    (ncheck (= position '(1 1))
       (println "Une porte ici??? Vraiment!!!")
@@ -90,8 +90,7 @@
 (defpat action(_) (random_choice 1 msgs 10))
 
 ; Primitives
-; Data for the game and basic instructions
-; build the key string
+; Construire la clef textuelle à partir des positions
 (defun keystr(p)
    (+ (string (car p)) ":" (string (cadr p)))
 )
@@ -332,7 +331,7 @@
 (setq theend nil)
 (setq commands '(commencement))
 
-; We display our initial psoition
+; We display our initial position
 (display_position position)
 
 (while (neq (car commands) 'Fin)
