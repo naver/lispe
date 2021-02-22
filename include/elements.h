@@ -26,8 +26,9 @@ typedef enum {
     v_null, v_emptylist, v_emptyatom, v_true,
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_number, t_integer, t_string, t_list,
-    t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair,  t_minus_string, t_error,
+    t_emptystring, t_operator, t_atom, t_number, t_integer,
+    t_string, t_plus_string, t_minus_string, t_minus_plus_string,
+    t_list, t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair, t_error,
     
     l_set_max_stack_size,
     
@@ -1453,6 +1454,109 @@ public:
         return c;
     }
     
+};
+
+class Stringplus : public String {
+public:
+    
+    Stringplus(wchar_t c) : String(c) {
+        type = t_plus_string;
+    }
+    
+    Stringplus(string c) : String(c) {
+        type = t_plus_string;
+    }
+    
+    Stringplus(wstring c) : String(c) {
+        type = t_plus_string;
+    }
+    
+    Stringplus(wstring c, uchar s) : String(c, s) {
+        type = t_plus_string;
+    }
+
+    wstring stringInList(LispE* lisp) {
+        wstring c = L"+";
+        c += wjsonstring(content);
+        return c;
+    }
+    
+    Element* copyatom(uchar s) {
+        if (status < s)
+            return this;
+        return new Stringplus(content);
+    }
+    
+    Element* fullcopy() {
+        return new Stringplus(content);
+    }
+
+    // There is a difference between the two copies
+    //The first one makes a final copy
+    Element* copying(bool duplicate = true) {
+        if (status < s_protect || !duplicate)
+            return this;
+        
+        return new Stringplus(content);
+    }
+    
+    wstring asString(LispE* lisp) {
+        wstring c = L"+";
+        c += content;
+        return c;
+    }
+    
+};
+
+class Stringminusplus : public String {
+public:
+    
+    Stringminusplus(wchar_t c) : String(c) {
+        type = t_minus_plus_string;
+    }
+    
+    Stringminusplus(string c) : String(c) {
+        type = t_minus_plus_string;
+    }
+    
+    Stringminusplus(wstring c) : String(c) {
+        type = t_minus_plus_string;
+    }
+    
+    Stringminusplus(wstring c, uchar s) : String(c, s) {
+        type = t_minus_plus_string;
+    }
+
+    wstring stringInList(LispE* lisp) {
+        wstring c = L"-+";
+        c += wjsonstring(content);
+        return c;
+    }
+    
+    Element* copyatom(uchar s) {
+        if (status < s)
+            return this;
+        return new Stringminusplus(content);
+    }
+    
+    Element* fullcopy() {
+        return new Stringminusplus(content);
+    }
+
+    // There is a difference between the two copies
+    //The first one makes a final copy
+    Element* copying(bool duplicate = true) {
+        if (status < s_protect || !duplicate)
+            return this;
+        
+        return new Stringminusplus(content);
+    }
+    
+    wstring asString(LispE* lisp) {
+        wstring c = L"-+";
+        c += content;
+        return c;
+    }
 };
 
 class Infiniterange : public Element {

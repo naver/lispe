@@ -1720,11 +1720,30 @@ Element* String::extraction(LispE* lisp, List* liste) {
             from = content.find(ch);
             if (from == -1)
                 return emptystring_;
+            from += ch.size();
+            firstisString = true;
+            break;
+        }
+        case t_plus_string: {
+            wstring ch = ((Stringplus*)e_from)->content;
+            from = content.find(ch);
+            if (from == -1)
+                return emptystring_;
             firstisString = true;
             break;
         }
         case t_minus_string: {
             wstring ch = ((Stringminus*)e_from)->content;
+            from = content.rfind(ch, content.size());
+            if (from == -1)
+                return emptystring_;
+            //We skip the first characters
+            from += ch.size();
+            firstisString = true;
+            break;
+        }
+        case t_minus_plus_string: {
+            wstring ch = ((Stringminusplus*)e_from)->content;
             from = content.rfind(ch, content.size());
             if (from == -1)
                 return emptystring_;
@@ -1761,12 +1780,26 @@ Element* String::extraction(LispE* lisp, List* liste) {
             upto = content.find(ch, from + 1);
             if (upto == -1)
                 return emptystring_;
+            break;
+        }
+        case t_plus_string: {
+            wstring ch = ((Stringplus*)e_from)->content;
+            upto = content.find(ch, from + 1);
+            if (upto == -1)
+                return emptystring_;
             //All characters are integrated
             upto += ch.size();
             break;
         }
         case t_minus_string: {
             wstring ch = ((Stringminus*)e_upto)->content;
+            upto = content.rfind(ch, content.size());
+            if (upto == -1)
+                return emptystring_;
+            break;
+        }
+        case t_minus_plus_string: {
+            wstring ch = ((Stringminusplus*)e_upto)->content;
             upto = content.rfind(ch, content.size());
             if (upto == -1)
                 return emptystring_;
