@@ -99,7 +99,7 @@
 ; Data for the game and basic instructions
 ; build the key string
 (defun keystr(p)
-   (+ (string (car p)) ":" (string (cadr p)))
+   (join p ":")
 )
 
 ; check if a path is within the description in 'moving'
@@ -254,7 +254,7 @@
 (setq theend nil)
 (setq commands '(commencement))
 
-; We display our initial position
+; We display our initial psoition
 (display_position position)
 
 (while (neq (car commands) 'End)
@@ -291,5 +291,6 @@
 )
 
 (print "The end")
+
 
 

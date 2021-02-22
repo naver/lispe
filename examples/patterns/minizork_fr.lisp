@@ -1,6 +1,6 @@
 #!/usr/local/bin/lispe
 
-; Actions sur les structures de données
+; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
 
 (data
@@ -45,7 +45,7 @@
 )
 
 ; ouvrir la porte avec une clef
-; Cela donne accès à de nouvelles pièces
+; It triggers new potential move to other positions
 (defpat action ( [Ouvrir 'porte 'clef] )
    (ncheck (= position '(1 1))
       (println "Une porte ici??? Vraiment!!!")
@@ -90,9 +90,10 @@
 (defpat action(_) (random_choice 1 msgs 10))
 
 ; Primitives
-; Construire la clef textuelle à partir des positions
+; Data for the game and basic instructions
+; build the key string
 (defun keystr(p)
-   (+ (string (car p)) ":" (string (cadr p)))
+   (join p ":")
 )
 
 ; Vérifier la validité de ce chemin
@@ -208,6 +209,9 @@
       "Prend":"Prendre"
       "Prends":"Prendre"
       "Prenez":"Prendre"
+      "Fracasse":"Casser"
+      "Fracasser":"Casser"
+      "Fracassez":"Casser"
       "Saisir":"Prendre"
       "Saisis":"Prendre"
       "Saisissez":"Prendre"
@@ -297,7 +301,7 @@
       "1:1":"Vous vous tenez devant une porte."
       "1:2":"Vous vous tenez devant une grande fenêtre"
       "1:0":"Vous vous tenez devant un Ogre monstrueux"
-      "2:1":"Vous réveillez un serpent vénimeux. Il vous mord. La douleur est horrible..."
+      "2:1":"Vous réveillez un serpent vénimeux. Il vous mord. La doubleur est horrible..."
       "0:0":"Vous êtes dans une grande salle sombre"
       "0:2":"Vous êtes dans une petite pièce"
       "2:0":"Vous êtes au milieu d'une forêt"
@@ -331,7 +335,7 @@
 (setq theend nil)
 (setq commands '(commencement))
 
-; We display our initial position
+; We display our initial psoition
 (display_position position)
 
 (while (neq (car commands) 'Fin)
@@ -368,6 +372,8 @@
 )
 
 (print "Fin")
+
+
 
 
 
