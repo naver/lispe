@@ -254,7 +254,7 @@
 (setq theend nil)
 (setq commands '(commencement))
 
-; We display our initial psoition
+; We display our initial position
 (display_position position)
 
 (while (neq (car commands) 'End)
