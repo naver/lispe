@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.2.20.15.36";
+static std::string version = "1.2021.2.22.10.44";
 string LispVersion() {
     return version;
 }
@@ -619,6 +619,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     lisp_code lc;
     string current_line;
     string tampon;
+    bool minus_string = false;
     for (i = 0; i < sz; i++) {
         current_i = i;
         c = getonechar(USTR(code), i);
@@ -706,10 +707,18 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     tampon += code[idx];
                     idx++;
                 }
-                if (tampon == "")
+                
+                if (tampon == "" && !minus_string)
                     infos.append(tampon, t_emptystring, line_number, i, idx);
-                else
-                    infos.append(tampon, t_string, line_number, i, idx);
+                else {
+                    if (minus_string)
+                        infos.append(tampon, t_minus_string, line_number, i, idx);
+                    else
+                        infos.append(tampon, t_string, line_number, i, idx);
+                }
+                
+                minus_string = false;
+                
                 if (add) {
                     current_line += "\"";
                     current_line += tampon;
@@ -722,6 +731,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
             case '-':
                 if (!isdigit(code[i+1])) {
                     idx = i + 1;
+                    nxt = 0;
                     while (idx < sz) {
                         nxt = getonechar(USTR(code), idx);
                         if (nxt == 8220 || (nxt < 172 && stops[nxt]))
@@ -732,6 +742,10 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     tampon = code.substr(current_i, i - current_i + 1);
                     if (add)
                         current_line += tampon;
+                    if (tampon == "-" && nxt == 34) {
+                        minus_string = true;
+                        break;
+                    }
                     idx = delegation->is_atom(tampon);
                     if (idx >= l_plus && idx <= l_modequal)
                         infos.append(tampon, t_operator, line_number, current_i, i);
@@ -775,6 +789,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     infos.append(tampon, t_emptystring, line_number, i, idx);
                 else
                     infos.append(tampon, t_string, line_number, i, idx);
+                
                 if (add) {
                     current_line += "«";
                     current_line += tampon;
@@ -794,13 +809,14 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 }
                 if (idx == sz)
                     return e_error_string;
-                
+
                 tampon = code.substr(i+1, idx-i-4);
-                if (tampon == "")
+                
+                if (tampon == "" && !minus_string)
                     infos.append(tampon, t_emptystring, line_number, i, idx);
                 else
                     infos.append(tampon, t_string, line_number, i, idx);
-                
+
                 if (add) {
                     current_line += "“";
                     current_line += tampon;
@@ -1259,6 +1275,17 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 index++;
                 break;
+            case t_minus_string:
+                e = new Stringminus(parse.tokens[index]);
+                garbaging(e);
+                if (quote == NULL)
+                    courant->append(e);
+                else {
+                    quote->append(e);
+                    quote = NULL;
+                }
+                index++;
+                break;
             case t_number: {
                 value = parse.numbers[index];
                 if (value == 0)
@@ -1677,6 +1704,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 

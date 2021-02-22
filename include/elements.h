@@ -27,7 +27,7 @@ typedef enum {
     
     //Default types
     t_emptystring, t_operator, t_atom, t_number, t_integer, t_string, t_list,
-    t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair,  t_error,
+    t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair,  t_minus_string, t_error,
     
     l_set_max_stack_size,
     
@@ -1337,30 +1337,30 @@ public:
     Element* cdr(LispE*);
     
     
-    wstring stringInList(LispE* lisp) {
+    virtual wstring stringInList(LispE* lisp) {
         return wjsonstring(content);
     }
     
-    Element* copyatom(uchar s) {
+    virtual Element* copyatom(uchar s) {
         if (status < s)
             return this;
         return new String(content);
     }
     
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         return new String(content);
     }
 
     // There is a difference between the two copies
     //The first one makes a final copy
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         if (status < s_protect || !duplicate)
             return this;
         
         return new String(content);
     }
     
-    wstring asString(LispE* lisp) {
+    virtual wstring asString(LispE* lisp) {
         return content;
     }
     
@@ -1403,6 +1403,57 @@ public:
     Element* plus(LispE* l, Element* e);
 };
 
+class Stringminus : public String {
+public:
+    
+    Stringminus(wchar_t c) : String(c) {
+        type = t_minus_string;
+    }
+    
+    Stringminus(string c) : String(c) {
+        type = t_minus_string;
+    }
+    
+    Stringminus(wstring c) : String(c) {
+        type = t_minus_string;
+    }
+    
+    Stringminus(wstring c, uchar s) : String(c, s) {
+        type = t_minus_string;
+    }
+
+    wstring stringInList(LispE* lisp) {
+        wstring c = L"-";
+        c += wjsonstring(content);
+        return c;
+    }
+    
+    Element* copyatom(uchar s) {
+        if (status < s)
+            return this;
+        return new Stringminus(content);
+    }
+    
+    Element* fullcopy() {
+        return new Stringminus(content);
+    }
+
+    // There is a difference between the two copies
+    //The first one makes a final copy
+    Element* copying(bool duplicate = true) {
+        if (status < s_protect || !duplicate)
+            return this;
+        
+        return new Stringminus(content);
+    }
+    
+    wstring asString(LispE* lisp) {
+        wstring c = L"-";
+        c += content;
+        return c;
+    }
+    
+};
 
 class Infiniterange : public Element {
 public:

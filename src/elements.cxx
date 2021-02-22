@@ -1714,18 +1714,34 @@ Element* String::extraction(LispE* lisp, List* liste) {
 
     long from;
     bool firstisString = false;
-    if (e_from->type == t_string) {
-        wstring ch = e_from->asString(lisp);
-        from = content.find(ch);
-        if (from == -1)
-            return emptystring_;
-        firstisString = true;
+    switch (e_from->type) {
+        case t_string: {
+            wstring ch = e_from->asString(lisp);
+            from = content.find(ch);
+            if (from == -1)
+                return emptystring_;
+            firstisString = true;
+            break;
+        }
+        case t_minus_string: {
+            wstring ch = ((Stringminus*)e_from)->content;
+            from = content.rfind(ch, content.size());
+            if (from == -1)
+                return emptystring_;
+            firstisString = true;
+            break;
+        }
+        case t_number:
+        case t_integer:
+            from = e_from->asInteger();
+            if (from < 0)
+                from = content.size() + from;
+            break;
+        default:
+            e_from->release();
+            throw new Error("Error: cannot use the first position in 'extract'");
     }
-    else {
-        from = e_from->asInteger();
-        if (from < 0)
-            from = content.size() + from;
-    }
+    
     e_from->release();
 
     if (from < 0 || from >= content.size())
@@ -1739,28 +1755,44 @@ Element* String::extraction(LispE* lisp, List* liste) {
     Element* e_upto = liste->liste[3]->eval(lisp);
     long upto;
 
-    if (e_upto->type == t_string) {
-        wstring ch = e_upto->asString(lisp);
-        upto = content.find(ch, from + 1);
-        if (upto == -1)
-            return emptystring_;
-        //All characters are integrated
-        upto += ch.size();
-    }
-    else {
-        upto = e_upto->asInteger();
-        if (firstisString) {
-            if (upto < 0)
+    switch (e_upto->type) {
+        case t_string: {
+            wstring ch = e_upto->asString(lisp);
+            upto = content.find(ch, from + 1);
+            if (upto == -1)
                 return emptystring_;
-            //in this case upto is a number of characters, not a position
-            upto += from;
+            //All characters are integrated
+            upto += ch.size();
+            break;
         }
-        else {
-            if (upto < 0) {
-                //We start from the end...
-                upto = content.size() + upto;
+        case t_minus_string: {
+            wstring ch = ((Stringminus*)e_upto)->content;
+            upto = content.rfind(ch, content.size());
+            if (upto == -1)
+                return emptystring_;
+            //All characters are integrated
+            upto += ch.size();
+            break;
+        }
+        case t_number:
+        case t_integer:
+            upto = e_upto->asInteger();
+            if (firstisString) {
+                if (upto < 0)
+                    return emptystring_;
+                //in this case upto is a number of characters, not a position
+                upto += from;
             }
-        }
+            else {
+                if (upto <= 0) {
+                    //We start from the end...
+                    upto = content.size() + upto;
+                }
+            }
+            break;
+        default:
+            e_upto->release();
+            throw new Error("Error: cannot use the second position in 'extract'");
     }
 
     e_upto->release();
