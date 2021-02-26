@@ -393,6 +393,7 @@ public:
     
     virtual ~Element() {}
     
+    virtual void clean() {}
     
     void generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<short,Element*>& dico_variables);
     void replaceVariableNames(LispE* lisp, unordered_map<short, Element*>& names);
@@ -537,6 +538,10 @@ public:
     
     virtual long asInteger() {
         return 0;
+    }
+    
+    virtual int asInt() {
+        return (int)asInteger();
     }
     
     virtual bool Boolean() {
@@ -787,13 +792,13 @@ public:
     Element* equal(LispE* lisp, Element* e);
 };
 
-class Atom : public Element {
+class Atome : public Element {
 public:
     
     short atome;
     
-    Atom(short a) : atome(a), Element(t_atom) {}
-    Atom(short a, uchar s) : atome(a), Element(t_atom, s) {}
+    Atome(short a) : atome(a), Element(t_atom) {}
+    Atome(short a, uchar s) : atome(a), Element(t_atom, s) {}
     
     wstring asString(LispE* lisp);
     wstring jsonString(LispE* lisp);
@@ -830,11 +835,11 @@ public:
 };
 
 //all atoms between t_atom to t_error are Atomtype
-class Atomtype : public Atom {
+class Atomtype : public Atome {
 public:
 
-    Atomtype(short a) : Atom(a) {}
-    Atomtype(short a, uchar s) : Atom(a, s) {}
+    Atomtype(short a) : Atome(a) {}
+    Atomtype(short a, uchar s) : Atome(a, s) {}
 
     char check_match(LispE* lisp, Element* value) {
         if (atome == value->type_element())
@@ -844,11 +849,11 @@ public:
 
 };
 
-class Atomnotlabel : public Atom {
+class Atomnotlabel : public Atome {
 public:
     
-    Atomnotlabel(short a) : Atom(a) {}
-    Atomnotlabel(short a, uchar s) : Atom(a, s) {}
+    Atomnotlabel(short a) : Atome(a) {}
+    Atomnotlabel(short a, uchar s) : Atome(a, s) {}
     
     short label() {
         return v_null;
@@ -939,6 +944,10 @@ public:
     
     long asInteger() {
         return value->asInteger();
+    }
+    
+    int asInt() {
+        return value->asInt();
     }
     
     Element* eval(LispE* lisp) {
@@ -1075,9 +1084,13 @@ public:
     }
     
     long asInteger() {
-        return number;
+        return (long)number;
     }
     
+    int asInt() {
+        return (int)number;
+    }
+
     bool Boolean() {
         return (number);
     }
@@ -1200,6 +1213,10 @@ public:
         return integer;
     }
     
+    int asInt() {
+        return (int)integer;
+    }
+
     bool Boolean() {
         return (integer);
     }

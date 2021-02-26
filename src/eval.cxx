@@ -108,7 +108,7 @@ bool List::isExecutable(LispE* lisp) {
     return false;
 }
 
-bool Atom::isExecutable(LispE* lisp) {
+bool Atome::isExecutable(LispE* lisp) {
     return lisp->checkFunctionLabel(atome);
 }
 //------------------------------------------------------------------------------------------
@@ -469,7 +469,7 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
  When we use unify in the context of a pattern function, then record is true, as Atom is then a variable name
  When we use unify to compare structures, then record is false, and if there is no match, it is an error
  */
-bool Atom::unify(LispE* lisp, Element* value, bool record) {
+bool Atome::unify(LispE* lisp, Element* value, bool record) {
     //This is a case, when we record our value into the stack
     return (value == this || lisp->checkAncestor(this, value) || (record && (this == null_ || lisp->recordargument(value, atome))));
 }
@@ -1050,7 +1050,7 @@ Element* List::evalfunction(Element* body, LispE* lisp) {
 }
 //------------------------------------------------------------------------------------------
 //In this specific case, it is a variable
-Element* Atom::eval(LispE* lisp) {
+Element* Atome::eval(LispE* lisp) {
     return lisp->get(atome);
 }
 //------------------------------------------------------------------------------

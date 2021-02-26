@@ -221,17 +221,13 @@ public:
 #else
     
     void mouseon() {
-        if (!mouse_status) {
-            sendcommand(enablemouse);
-            mouse_status = true;
-        }
+        sendcommand(enablemouse);
+        mouse_status = true;
     }
     
     void mouseoff() {
-        if (mouse_status) {
-            sendcommand(disablemouse);
-            mouse_status = false;
-        }
+        sendcommand(disablemouse);
+        mouse_status = false;
     }
     
     void togglemouse() {

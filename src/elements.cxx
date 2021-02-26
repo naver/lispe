@@ -154,6 +154,18 @@ void Dictionary_n::flatten(LispE* lisp, List* l) {
     }
 }
 
+//------------------------------------------------------------------------------------------
+void List::storevalue(LispE* lisp, double v) {
+    append(lisp->provideNumber(v));
+}
+
+void List::storevalue(LispE* lisp,long v) {
+    append(lisp->provideInteger(v));
+}
+
+void List::storevalue(LispE* lisp,wstring& v) {
+    append(lisp->provideString(v));
+}
 
 //------------------------------------------------------------------------------------------
 
@@ -1260,11 +1272,11 @@ wstring Error::asString(LispE* lisp) {
         return message;
 }
 
-wstring Atom::asString(LispE* lisp) {
+wstring Atome::asString(LispE* lisp) {
     return lisp->asString(atome);
 }
 
-wstring Atom::jsonString(LispE* lisp) {
+wstring Atome::jsonString(LispE* lisp) {
     return wjsonstring(lisp->asString(atome));
 }
 
@@ -1282,7 +1294,7 @@ Element* Element::equal(LispE* lisp, Element* e) {
     return booleans_[(e==this)];
 }
 
-Element* Atom::equal(LispE* lisp, Element* e) {
+Element* Atome::equal(LispE* lisp, Element* e) {
     return booleans_[(e->label() == atome)];
 }
 

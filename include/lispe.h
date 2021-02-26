@@ -347,10 +347,20 @@ public:
         vpools[idx] = e;
     }
     
+    inline long vpool_add(Element* e) {
+        long idx = vpool_slot();
+        vpools[idx] = e;
+        return idx;
+    }
+    
     inline bool vpool_check(long idx) {
         return (idx >= 0 && idx < vpools.size() && vpools[idx] != delegation->_NULL);
     }
-    
+
+    inline bool vpool_check(Element* e, long idx) {
+        return (idx >= 0 && idx < vpools.size() && vpools[idx] == e);
+    }
+
     inline Element* vpool_out(long idx) {
         if (idx < 0 || idx >= vpools.size())
             return delegation->_NULL;
@@ -704,7 +714,11 @@ public:
     inline Element* recordingglobal(Element* e, short label) {
         return stack_pool[0]->recording(e, label);
     }
-    
+
+    inline Element* recordingglobal(wstring label, Element* e) {
+        return stack_pool[0]->recording(e, delegation->encode(label));
+    }
+
     inline void removefromstack(short label) {
         execution_stack.top()->remove(label);
     }

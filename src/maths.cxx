@@ -29,7 +29,7 @@ static const double M_GOLDEN = 1.61803398874989484820458683436563811772030917980
 
 //This math library is done in two steps
 
-typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc} math;
+typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree} math;
 
 /*
  Tout d'abord on crée une nouvelle dérivation de Element
@@ -212,6 +212,16 @@ public:
                 v = trunc(v);
                 return lisp->provideNumber(v);
             }
+            case math_radian: {
+                v = lisp->get(v_val)->asNumber();
+                v = M_PI*(v / 180);
+                return lisp->provideNumber(v);
+            }
+            case math_degree: {
+                v = lisp->get(v_val)->asNumber();
+                v = (v * 180) / M_PI;
+                return lisp->provideNumber(v);
+            }
         }
 		return zero_;
     }
@@ -316,6 +326,12 @@ public:
             case math_trunc: {
                 return L"returns the nearest integer whose absolute value is smaller";
             }
+            case math_radian: {
+                return L"convert a value in 'degree' into 'radian'";
+            }
+            case math_degree: {
+                return L"convert a value in 'radian' into 'degree'";
+            }
         }
 		return L"";
     }
@@ -357,7 +373,9 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib tanh (val)", new Math(lisp, math_tanh));
     lisp->extension("deflib tgamma (val)", new Math(lisp, math_tgamma));
     lisp->extension("deflib trunc (val)", new Math(lisp, math_trunc));
-    
+    lisp->extension("deflib radian (val)", new Math(lisp, math_radian));
+    lisp->extension("deflib degree (val)", new Math(lisp, math_degree));
+
     wstring nom = L"_pi";
     Element* pi = lisp->provideNumber(M_PI);
     lisp->recordingunique(pi, lisp->encode(nom));

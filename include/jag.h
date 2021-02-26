@@ -843,7 +843,8 @@ public:
     }
 
     long size_upto(wstring& l, long p);
-
+    void computeposition(int& p, long line);
+    
     long linesize() {
         if (emode())
             return lines[poslines[currentline]].size();

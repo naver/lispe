@@ -2748,6 +2748,11 @@ void jag_editor::unselectlines(long from_line, long to_line, long from_pos, long
     displayextract(sub, from_line, 0, to_pos, false);
 }
 
+
+void jag_editor::computeposition(int& p, long position) {
+    p -= (size_upto(lines[position], p) - p) + 1 + prefixe();
+}
+
 void jag_editor::handlemousectrl(string& mousectrl) {
     vector<int> location;
     
@@ -2798,7 +2803,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
 
         int mxcursor, mycursor;
         long l, r;
-        location[1] -= 1 + prefixe();
+        computeposition(location[1], pos);
         if (location[1] < endofstring)
             l = location[1];
         else
@@ -2823,7 +2828,8 @@ void jag_editor::handlemousectrl(string& mousectrl) {
                 mxcursor = (int)poslines.size();
             
             posnext = poslines[mxcursor - 1];
-            cursor_y -= 1 + prefixe();
+            computeposition(cursor_y, posnext);
+            
             if (cursor_y < 0)
                 cursor_y = 0;
             mycursor = cursor_y;

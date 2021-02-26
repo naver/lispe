@@ -20,7 +20,7 @@
 
 //This extension is done in two steps
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_read_json, str_parse_json, str_string_json} string_method;
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_read_json, str_parse_json, str_string_json, str_trim0} string_method;
 
 /*
  First of all we create a new Element derivation
@@ -122,6 +122,11 @@ public:
                 long p = lisp->get(v_pos)->asInteger();
                 long n = lisp->get(v_nb)->asInteger();
                 strvalue = s_wmiddle(strvalue,p,n);
+                return lisp->provideString(strvalue);
+            }
+            case str_trim0: {
+                wstring strvalue =  lisp->get(v_str)->asString(lisp);
+                strvalue = s_trim0(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trim:  {
@@ -321,6 +326,9 @@ public:
             case str_middle: {
                 return L"Returns the 'n' characters from position 'p'";
             }
+            case str_trim0:  {
+                return L"Trim '0' at the end of string";
+            }
             case str_trim:  {
                 return L"Trim all characters 'space'";
             }
@@ -370,6 +378,7 @@ public:
 void moduleChaines(LispE* lisp) {
     //We first create the body of the function
 
+    lisp->extension("deflib trim0 (str)", new Stringmethod(lisp, str_trim0));
     lisp->extension("deflib trim (str)", new Stringmethod(lisp, str_trim));
     lisp->extension("deflib trimleft (str)", new Stringmethod(lisp, str_trimleft));
     lisp->extension("deflib trimright (str)", new Stringmethod(lisp, str_trimright));

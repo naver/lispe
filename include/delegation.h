@@ -128,6 +128,7 @@ public:
     unordered_map<long, string> allfiles_names;
     unordered_map<long, unordered_map<long, bool> > breakpoints;
     map<long, map<long, string> > listing;
+    vector<Element*> force_clean;
 
     reading_string reading_string_function;
     reading_string display_string_function;
@@ -135,16 +136,16 @@ public:
     
     Element* _BOOLEANS[2];
     
-    Atom* _ERROR;
-    Atom* _TERMINAL;
-    Atom* _COMPOSE;
-    Atom* _TRUE;
-    Atom* _NULL;
-    Atom* _EMPTYATOM;
-    Atom* _LISTSEPARATOR;
-    Atom* _DEFPAT;
-    Atom* _DICO_KEYN;
-    Atom* _DICO_KEY;
+    Atome* _ERROR;
+    Atome* _TERMINAL;
+    Atome* _COMPOSE;
+    Atome* _TRUE;
+    Atome* _NULL;
+    Atome* _EMPTYATOM;
+    Atome* _LISTSEPARATOR;
+    Atome* _DEFPAT;
+    Atome* _DICO_KEYN;
+    Atome* _DICO_KEY;
     Element* _BREAK;
     Listbreak _BREAKEVAL;
     
@@ -188,6 +189,29 @@ public:
     
     char checking() {
         return trace_lock.check();
+    }
+    
+    void toBeCleanedOnError(Element* e, bool tobelocked) {
+        lock.locking(tobelocked);
+        force_clean.push_back(e);
+        lock.unlocking(tobelocked);
+    }
+    
+    void forceClean() {
+        for (auto& e: force_clean) {
+            if (e != NULL)
+                e->clean();
+        }
+    }
+    
+    void removeFromForceClean(Element* e, bool tobelocked) {
+        lock.locking(tobelocked);
+        for (long i = 0; i < force_clean.size(); i++) {
+            if (force_clean[i] == e) {
+                force_clean[i] = NULL;
+            }
+        }
+        lock.unlocking(tobelocked);
     }
     
     inline string toString(short c) {
@@ -636,7 +660,7 @@ public:
     Element* provideAtom(short code) {
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atom(code);
+            e = new Atome(code);
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -647,7 +671,7 @@ public:
         short code = encode(name);
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atom(code);
+            e = new Atome(code);
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -669,7 +693,7 @@ public:
         short code = encode(name);
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atom(code);
+            e = new Atome(code);
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -685,7 +709,7 @@ public:
                 e = new Instruction(code);
             }
             catch(const std::out_of_range& oor) {
-                e = new Atom(code);
+                e = new Atome(code);
             }
             e->status = s_constant;
             atom_pool[code] = e;
@@ -702,7 +726,7 @@ public:
                 e = new Instruction(code);
             }
             catch(const std::out_of_range& oor) {
-                e = new Atom(code);
+                e = new Atome(code);
             }
             e->status = s_constant;
             atom_pool[code] = e;

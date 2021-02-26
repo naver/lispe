@@ -102,6 +102,7 @@ string& s_trim(string& strvalue);
 string& s_trimleft(string& strvalue);
 string& s_trimright(string& strvalue);
 
+wstring& s_trim0(wstring& strvalue);
 wstring& s_trim(wstring& strvalue);
 wstring& s_trimleft(wstring& strvalue);
 wstring& s_trimright(wstring& strvalue);

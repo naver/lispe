@@ -1564,6 +1564,17 @@ bool s_is_utf8(unsigned char* contenu, long longueur) {
 }
 
 //------------------------------------------------------------------------
+wstring& s_trim0(wstring& strvalue) {
+    if (strvalue.find(L".") != -1) {
+        long i = strvalue.size() - 1;
+        while (strvalue[i] == '0') i--;
+        if (strvalue[i] == '.')
+            i++;
+        strvalue = strvalue.substr(0, i + 1);
+    }
+    return strvalue;
+}
+
 wstring& s_trim(wstring& strvalue) {
     long d, f;
     for (d = 0; d<strvalue.size(); d++) {
@@ -3370,7 +3381,7 @@ Element* LispE::load_library(string nom_bib) {
 			atanlib = getenv("LISPEPATH");
 		else {
 			stringstream message;
-			message << "Error: Please set TAMGULIBS: " << name;
+			message << "Error: Please set LISPEPATH: " << name;
 			throw new Error(message.str());
 		}
 

@@ -1039,7 +1039,12 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
                 buff =  getch();
             }
         }
-
+        else {
+            if (isMouseAction(buff)) {
+                continue;
+            }
+        }
+        
 #ifdef WIN32
 		if (!buff.size())
 			continue;

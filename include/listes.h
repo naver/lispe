@@ -701,6 +701,10 @@ public:
 
     Element* reverse(LispE*, bool duplique = true);
     
+    void storevalue(LispE*, double v);
+    void storevalue(LispE*, long v);
+    void storevalue(LispE*, wstring& v);
+    
     bool removelast() {
         if (!liste.size())
             return false;
