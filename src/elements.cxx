@@ -1822,9 +1822,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
         case t_number:
         case t_integer:
             upto = e_upto->asInteger();
-            if (firstisString != -1) {
-                if (upto < 0)
-                    return emptystring_;
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
