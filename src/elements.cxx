@@ -1725,7 +1725,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
     Element* e_from = liste->liste[2]->eval(lisp);
 
     long from;
-    bool firstisString = false;
+    long firstisString = -1;
     switch (e_from->type) {
         case t_string: {
             wstring ch = e_from->asString(lisp);
@@ -1733,7 +1733,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             if (from == -1)
                 return emptystring_;
             from += ch.size();
-            firstisString = true;
+            firstisString = 0;
             break;
         }
         case t_plus_string: {
@@ -1741,7 +1741,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             from = content.find(ch);
             if (from == -1)
                 return emptystring_;
-            firstisString = true;
+            firstisString = ch.size();
             break;
         }
         case t_minus_string: {
@@ -1751,7 +1751,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
                 return emptystring_;
             //We skip the first characters
             from += ch.size();
-            firstisString = true;
+            firstisString = 0;
             break;
         }
         case t_minus_plus_string: {
@@ -1759,7 +1759,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             from = content.rfind(ch, content.size());
             if (from == -1)
                 return emptystring_;
-            firstisString = true;
+            firstisString = ch.size();
             break;
         }
         case t_number:
@@ -1822,11 +1822,11 @@ Element* String::extraction(LispE* lisp, List* liste) {
         case t_number:
         case t_integer:
             upto = e_upto->asInteger();
-            if (firstisString) {
+            if (firstisString != -1) {
                 if (upto < 0)
                     return emptystring_;
                 //in this case upto is a number of characters, not a position
-                upto += from;
+                upto += from + firstisString;
             }
             else {
                 if (upto <= 0) {
