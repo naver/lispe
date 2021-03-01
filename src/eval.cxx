@@ -3395,6 +3395,12 @@ Element* List::evall_loop(LispE* lisp) {
     lisp->display_trace(this);
 
     try {
+        if (liste[1]->isList()) {
+            if ( (size() - liste[1]->size()) <= 0)
+                throw new Error("Error: mismatch between variable list size and value size list");
+            return multiloop(lisp);
+        }
+        
         //We loop in a list
         label = liste[1]->label();
         if (label == v_null)

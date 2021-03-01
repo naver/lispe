@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.2.28.15.56";
+static std::string version = "1.2021.3.1.9.37";
 string LispVersion() {
     return version;
 }
@@ -377,6 +377,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[c_colon] = L":";
     code_to_string[c_opening_bracket] = L"[";
     code_to_string[c_closing_bracket] = L"]";
+    code_to_string[c_opening_data_brace] = L"@{";
 
     for (auto& a: code_to_string)
         string_to_code[a.second] = a.first;
@@ -482,6 +483,7 @@ void Delegation::initialisation(LispE* lisp) {
     lisp->provideAtom(c_opening);
     lisp->provideAtom(c_closing);
     lisp->provideAtom(c_opening_brace);
+    lisp->provideAtom(c_opening_data_brace);
     lisp->provideAtom(c_closing_brace);
     lisp->provideAtom(c_colon);
     lisp->provideAtom(c_opening_bracket);
@@ -852,6 +854,14 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     tampon = c;
                     if (add)
                         current_line += c;
+                    
+                    //if it is a dictionary data structure, it starts with @{..}
+                    if (c == '@' && nxt == '{') {
+                        tampon += nxt;
+                        i++;
+                        if (add)
+                            current_line += '{';
+                    }
                 }
                 else {
                     tampon = code.substr(current_i, i - current_i);
@@ -898,6 +908,10 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     case c_opening_brace:
                         nb_braces++;
                         infos.append(c, c_opening_brace, line_number, current_i, i);
+                        break;
+                    case c_opening_data_brace:
+                        nb_braces++;
+                        infos.append(c, c_opening_data_brace, line_number, current_i, i);
                         break;
                     case c_closing_brace:
                         nb_braces--;
@@ -1168,7 +1182,7 @@ void LispE::current_path() {
 
 Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& index) {
     Element* e = NULL;
-    Element* quote = NULL;
+    Element* quoted = courant;
     double value;
     char topfunction = false;
     while (index < parse.types.size()) {
@@ -1234,12 +1248,8 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     }
                 }
 
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+                courant->append(e);
+                courant = quoted;
                 break;
             case c_closing:
                 index++;
@@ -1256,105 +1266,87 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     e = dico.dictionary(this);
                     garbaging(e);
                 }
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
+                courant->append(e);
+                courant = quoted;
+
+                break;
+            }
+            case c_opening_data_brace: {
+                index++;
+                if (parse.types[index] == c_closing_brace) {
+                    index++;
+                    e = delegation->_EMPTYDICTIONARY;
                 }
+                else {
+                    Dictionary_as_buffer dico;
+                    abstractSyntaxTree(&dico, parse, index);
+                    e = dico.dictionary(this);
+                    garbaging(e);
+                }
+                courant->append(e);
+                courant = quoted;
                 break;
             }
             case c_closing_brace:
                 index++;
                 return delegation->_TRUE;
             case t_emptystring:
-                if (quote == NULL)
-                    courant->append(delegation->_EMPTYSTRING);
-                else {
-                    quote->append(delegation->_EMPTYSTRING);
-                    quote = NULL;
-                }
+                courant->append(delegation->_EMPTYSTRING);
+                courant = quoted;
                 index++;
                 break;
-            case t_string:
-                e = provideString(parse.tokens[index]);
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+            case t_string: {
+                wstring w;
+                s_utf8_to_unicode(w, USTR(parse.tokens[index]), parse.tokens[index].size());
+                courant->append(this, w);
+                courant = quoted;
                 index++;
                 break;
+            }
             case t_minus_string:
                 e = new Stringminus(parse.tokens[index]);
                 garbaging(e);
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+                courant->append(e);
+                courant = quoted;
                 index++;
                 break;
             case t_plus_string:
                 e = new Stringplus(parse.tokens[index]);
                 garbaging(e);
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+                courant->append(e);
+                courant = quoted;
                 index++;
                 break;
             case t_minus_plus_string:
                 e = new Stringminusplus(parse.tokens[index]);
                 garbaging(e);
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+                courant->append(e);
+                courant = quoted;
                 index++;
                 break;
-            case t_number: {
+            case t_number:
                 value = parse.numbers[index];
                 if (value == 0)
-                    e = delegation->_ZERO;
+                    courant->append(delegation->_ZERO);
                 else {
                     if (parse.tokens[index].find(".") == -1)
-                        e = provideInteger((long)value);
+                        courant->append(this, (long)value);
                     else
-                        e = provideNumber(value);
+                        courant->append(this, value);
                 }
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+                courant = quoted;
                 index++;
                 break;
             case t_operator:
                 e = provideOperator(encode(parse.tokens[index]));
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+                courant->append(e);
+                courant = quoted;
                 index++;
                 break;
             case l_cadr:
                 e =  provideCADR(parse.tokens[index]);
-                if (quote == NULL)
-                    courant->append(e);
-                else {
-                    quote->append(e);
-                    quote = NULL;
-                }
+                courant->append(e);
+                courant = quoted;
                 index++;
                 break;
             case c_colon:
@@ -1367,40 +1359,29 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
             case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
-                if (quote == NULL) {
-                    if (courant->size() == 0) {
-                        if (e->type >= l_lambda && e->type <= l_defpat) {
-                            if (e->type == l_lambda)
-                                topfunction = 2;
-                            else
-                                topfunction = 3;
-                        }
+                if (quoted == courant && courant->size() == 0) {
+                    if (e->type >= l_lambda && e->type <= l_defpat) {
+                        if (e->type == l_lambda)
+                            topfunction = 2;
+                        else
+                            topfunction = 3;
                     }
                     courant->append(e);
                 }
                 else {
-                    quote->append(e);
-                    quote = NULL;
+                    courant->append(e);
+                    courant = quoted;
                 }
                 index++;
                 break;
             case l_quote:
-                if (quote == NULL) {
-                    quote = new Listincode(parse.lines[index], delegation->i_current_file);
-                    garbaging(quote);
-                    courant->append(quote);
-                }
-                else {
-                    e = new Listincode(parse.lines[index], delegation->i_current_file);
-                    garbaging(e);
-                    quote->append(e);
-                    quote = e;
-                }
+                courant = new Listincode(parse.lines[index], delegation->i_current_file);
+                garbaging(courant);
+                quoted->append(courant);
                 //The first element of a quote is the quote operator itself
-                quote->append(provideAtom(l_quote));
+                courant->append(provideAtom(l_quote));
                 index++;
                 break;
-            }
             default:
                 break;
         }
@@ -1742,6 +1723,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

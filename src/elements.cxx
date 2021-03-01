@@ -388,6 +388,59 @@ Element* Dictionary_as_list::rawdictionary(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------------
+void List::append(LispE* lisp, wstring& k) {
+    liste.push_back(lisp->provideString(k));
+}
+
+void List::append(LispE* lisp, double v) {
+    liste.push_back(lisp->provideNumber(v));
+}
+
+void List::append(LispE* lisp, long v) {
+    liste.push_back(lisp->provideInteger(v));
+}
+
+void Dictionary_as_list::append(LispE* lisp, wstring& k) {
+    append(lisp->provideString(k));
+}
+
+void Dictionary_as_list::append(LispE* lisp, double v) {
+    append(lisp->provideNumber(v));
+}
+
+void Dictionary_as_list::append(LispE* lisp, long v) {
+    append(lisp->provideInteger(v));
+}
+
+void Dictionary_as_buffer::append(LispE* lisp, wstring& k) {
+    if (choice)
+        key = k;
+    else {
+        dico->dictionary[key] = lisp->provideString(k);
+        reversechoice();
+    }
+}
+
+void Dictionary_as_buffer::append(LispE* lisp, double v) {
+    if (choice)
+        key = std::to_wstring(v);
+    else {
+        dico->dictionary[key] = lisp->provideNumber(v);
+        reversechoice();
+    }
+}
+
+void Dictionary_as_buffer::append(LispE* lisp, long v) {
+    if (choice)
+        key = std::to_wstring(v);
+    else {
+        dico->dictionary[key] = lisp->provideInteger(v);
+        reversechoice();
+    }
+}
+
+
+//------------------------------------------------------------------------------------------
 
 Element* Element::loop(LispE* lisp, short label,  List* code) {
     return null_;
@@ -617,6 +670,79 @@ Element* Dictionary_n::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
+/*
+ In this case variables are in a list...
+ (loop (x y z) lx ly lz ...)
+ 
+ (loop [x y z] '(1 3 4) '(5 6 7) '(9 10 13) (println (+ x y z)))
+*/
+Element* List::multiloop(LispE* lisp) {
+    List values;
+    List indexes;
+    Element* e = null_;
+    Element* idx;
+    long sz = size();
+    long var;
+    long indexe = 0, i_loop;
+    //this is where the actual code to be executed starts
+    long b_loop = 2 + liste[1]->size();
+    
+    short label;
+    bool looping = true;
+    
+    for (var = 0; var < liste[1]->size(); var++) {
+        label = liste[1]->index(var)->label();
+        if (label == v_null)
+            throw new Error("Missing variable in 'loop'");
+        lisp->recording(null_, label);
+    }
+        
+    //The next elements are the one we want to loop on...
+    //We should have as many lists as variables
+    //The actual code will start at b_loop...
+    for (var = 2; var < b_loop ; var++) {
+        e = index(var)->eval(lisp);
+        values.appendraw(e);
+        indexes.appendraw(e->thekeys(lisp));
+    }
+        
+    while (looping) {
+        for (var = 0; var < liste[1]->size(); var++) {
+            label = liste[1]->index(var)->label();
+            idx = indexes.liste[var]->value_on_index(lisp, indexe);
+            if (idx == null_) {
+                looping = false;
+                break;
+            }
+            e = values.liste[var]->value_on_index(lisp, idx);
+            lisp->recording(e, label);
+        }
+        e = null_;
+        if (!looping)
+            break;
+        //We then execute our instructions
+        for (i_loop = b_loop; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            for (var = 0; var < liste[2]->size(); var++) {
+                values.liste[var]->release();
+                indexes.liste[var]->release();
+            }
+            return e;
+        }
+        indexe++;
+    }
+    for (var = 0; var < liste[2]->size(); var++) {
+        values.liste[var]->release();
+        indexes.liste[var]->release();
+    }
+    return e;
+}
+
 //------------------------------------------------------------------------------------------
 List* s_findall(LispE* lisp, wstring& s, wstring& sub, long from) {
     long sz = sub.size();
@@ -691,6 +817,23 @@ Element* List::unique(LispE* lisp) {
 Element* Element::thekeys(LispE* lisp) {
     return emptylist_;
 }
+
+Element* String::thekeys(LispE* lisp) {
+    List* keys = new List;
+    for (long i = 0; i< content.size(); i++) {
+        keys->append(lisp->provideInteger(i));
+    }
+    return keys;
+}
+
+Element* List::thekeys(LispE* lisp) {
+    List* keys = new List;
+    for (long i = 0; i< size(); i++) {
+        keys->append(lisp->provideInteger(i));
+    }
+    return keys;
+}
+
 
 Element* Dictionary::thekeys(LispE* lisp) {
     List* liste = new List;

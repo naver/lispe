@@ -1569,7 +1569,7 @@ wstring& s_trim0(wstring& strvalue) {
         long i = strvalue.size() - 1;
         while (strvalue[i] == '0') i--;
         if (strvalue[i] == '.')
-            i++;
+            i--;
         strvalue = strvalue.substr(0, i + 1);
     }
     return strvalue;
@@ -3650,7 +3650,7 @@ void replacemetas(wstring& sub) {
 bool LispEJsonCompiler::compile(LispE* lisp, wstring& s) {
     s = s_trim(s);    
     if (s[0] == '{')
-        compiled_result = new Dictionary_as_list;
+        compiled_result = new Dictionary_as_buffer;
     else
         compiled_result = new List;
 
@@ -3667,7 +3667,7 @@ bool LispEJsonCompiler::compile(LispE* lisp, wstring& s) {
         return false;
     }
     if (s[0] == '{') {
-        Element* e = compiled_result->rawdictionary(lisp);
+        Element* e = compiled_result->dictionary(lisp);
         if (e != compiled_result) {
             delete compiled_result;
             compiled_result = e;
@@ -3676,9 +3676,7 @@ bool LispEJsonCompiler::compile(LispE* lisp, wstring& s) {
     return true;
 }
 
-char LispEJsonCompiler::buildexpression(LispE* lisp, Element* kf) {
-    Element* local;
-
+char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
     bool checknext = false;
     to = 0;
     while (r < pos.size()) {
@@ -3699,20 +3697,18 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* kf) {
             src[to] = 0;
             token = (wchar_t*)src+i-1;
             if (token == L"false")
-                local = false_;
+                container->append(false_);
             else {
                 if (token == L"true")
-                    local = true_;
+                    container->append(true_);
                 else {
                     if (token == L"null" || token == L"nil")
-                        local = null_;
-                    else {
-                        local = lisp->provideString(token);
-                    }
+                        container->append(null_);
+                    else
+                        container->append(lisp, token);
                 }
             }
-            kf->append(local);
-            checknext = kf->verify();
+            checknext = container->verify();
             src[to] = c;
             i = to;
             continue;
@@ -3733,9 +3729,8 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* kf) {
                 src[to] = 0;
                 token = (wchar_t*)src+i;
                 replacemetas(token);
-                local = lisp->provideString(token);
-                kf->append(local);
-                checknext = kf->verify();
+                container->append(lisp, token);
+                checknext = container->verify();
                 src[to] = c;
                 i = to + 1;
                 break;
@@ -3751,11 +3746,9 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* kf) {
                 c= src[to];
                 src[to] = 0;
                 wstring locstr = (wchar_t*)src+i;
-                local = lisp->provideString(locstr);
+                container->append(lisp, locstr);
                 
-                kf->append(local);
-                
-                checknext = kf->verify();
+                checknext = container->verify();
                 src[to] = c;
                 i = to + 1;
                 break;
@@ -3782,19 +3775,18 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* kf) {
                 src[to] = 0;
                 
                 if (v == (long)v)
-                    local = lisp->provideInteger((long)v);
+                    container->append(lisp, (long)v);
                 else
-                    local = lisp->provideNumber(v);
-                kf->append(local);
+                    container->append(lisp, v);
                 
-                checknext = kf->verify();
+                checknext = container->verify();
                 src[to] = c;
                 i = to;
                 break;
-            case '{':
+            case '{': {
                 if (checknext)
                     return false;
-                local = new Dictionary_as_list;
+                Dictionary_as_buffer* local = new Dictionary_as_buffer;
                 if (src[i] == '}') {
                     r++;
                     i++;
@@ -3805,14 +3797,15 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* kf) {
                         return false;
                     }
                 }
-                kf->append(local->rawdictionary(lisp));
+                container->append(local->dico);
                 delete local;
-                checknext = kf->verify();
+                checknext = container->verify();
                 break;
-            case '[':
+            }
+            case '[': {
                 if (checknext)
                     return false;
-                local = new List;
+                List* local = new List;
                 if (src[i] == ']') {
                     r++;
                     i++;
@@ -3823,18 +3816,19 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* kf) {
                         return false;
                     }
                 }
-                kf->append(local);
+                container->append(local);
                 checknext=true;
                 break;
+            }
             case '}':
-                return kf->verify();
+                return container->verify();
             case ']':
-                if (kf->isDictionary())
+                if (container->isDictionary())
                     return false;
                 return true;
             case ':':
-                kf->reversechoice();
-                if (!kf->isDictionary() || kf->verify())
+                container->reversechoice();
+                if (!container->isDictionary() || container->verify())
                     return false;
                 checknext = false;
                 break;

@@ -135,7 +135,16 @@ public:
         //sinon on ajoute l'element en queue...
         buffer[last++] = val;
     }
+
+    inline void push_raw(Element* val) {
+        if (last >= sz)
+            reserve(sz<<1);
+
+        //sinon on ajoute l'element en queue...
+        buffer[last++] = val;
+    }
     
+
     void decrement() {
         if (status)
             return;
@@ -234,6 +243,10 @@ public:
         item->push_back(val);
     }
 
+    inline void push_raw(Element* val) {
+        item->push_raw(val);
+    }
+
 
     inline Element*& operator [](long pos) {
         return item->buffer[pos+home];
@@ -253,7 +266,7 @@ public:
             sz--;
         }
     }
-    
+        
     void display(LispE* lisp, long rmin, long rmax) {
         cout << "(";
         for (long i = rmin; i <= rmax; i++) {
@@ -410,6 +423,7 @@ public:
     }
     
     Element* loop(LispE* lisp, short label,  List* code);
+    Element* multiloop(LispE* lisp);
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
@@ -436,6 +450,8 @@ public:
         else
             liste.insert(sz-1, e);
     }
+
+    Element* thekeys(LispE* lisp);
 
     bool isFunction() {
         return (liste.size() > 1 && liste[0]->label() >= l_lambda && liste[0]->label() <= l_defpat);
@@ -637,6 +653,10 @@ public:
         return buffer;
     }
     
+    void append(LispE* lisp, wstring& k);
+    void append(LispE* lisp, double v);
+    void append(LispE* lisp, long v);
+
     void append(Element* e) {
         liste.push_back(e);
     }
@@ -650,7 +670,7 @@ public:
     }
 
     void appendraw(Element* e) {
-        liste.push_back(e);
+        liste.push_raw(e);
     }
 
     void change(long i, Element* e) {

@@ -78,7 +78,7 @@ typedef enum {
     l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
     l_link,
-    c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_brace, c_closing_brace, c_colon,
+    c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
     l_final
 } lisp_code;
@@ -425,6 +425,14 @@ public:
     virtual Element* unique(LispE* lisp) {
         return this;
     }
+    
+    virtual bool tobegarbaged() {
+        return true;
+    }
+    
+    virtual void append(LispE* lisp, wstring& k) {}
+    virtual void append(LispE* lisp, double v) {}
+    virtual void append(LispE* lisp, long v) {}
     
     /*
      Duplication is forced
@@ -1419,6 +1427,7 @@ public:
     }
     
     Element* plus(LispE* l, Element* e);
+    Element* thekeys(LispE* lisp);
 };
 
 class Stringminus : public String {
@@ -2437,6 +2446,10 @@ public:
         return s;
     }
     
+    void append(LispE* lisp, wstring& k);
+    void append(LispE* lisp, double v);
+    void append(LispE* lisp, long v);
+
     void append(Element* e) {
         if (choice) {
             keyvalues.push_back(e);
@@ -2508,4 +2521,66 @@ public:
     }
 };
 
+class Dictionary_as_buffer : public Element {
+public:
+    Dictionary* dico;
+    wstring key;
+    bool choice;
+    
+    Dictionary_as_buffer() : Element(t_dictionary) {
+        dico = new Dictionary;
+        choice = true;
+    }
+    
+    bool tobegarbaged() {
+        return !choice;
+    }
+    
+    void reversechoice() {
+        choice = 1 - choice;
+    }
+
+    bool verify() {
+        return choice;
+    }
+    
+    void append(LispE* lisp, wstring& k);
+    void append(LispE* lisp, double v);
+    void append(LispE* lisp, long v);
+
+    void append(Element* e) {
+        if (choice) {
+            if (!e->isNumber() && !e->isString())
+                throw new Error("Error: a key should be a string or a number");
+            else
+                if (key != L"") {
+                    wstring msg = L"Error: missing value for key:'";
+                    msg += key;
+                    msg += L"'";
+                    throw new Error(msg);
+                }
+            key = e->asString(NULL);
+            e->release();
+        }
+        else {
+            dico->dictionary[key] = e;
+            e->incrementstatus(1, false);
+            key = L"";
+            reversechoice();
+        }
+    }
+
+    bool isDictionary() {
+        return true;
+    }
+    
+    Element* dictionary(LispE*) {
+        return dico;
+    }
+    
+    void release() {
+        dico->release();
+    }
+    
+};
 #endif /* elements_h */
