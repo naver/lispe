@@ -1864,12 +1864,48 @@ Element* List::extraction(LispE* lisp, List* l) {
     return l;
 }
 
-Element* String::extraction(LispE* lisp, List* liste) {
-    Element* e_from = liste->liste[2]->eval(lisp);
 
+Element* String::extraction(LispE* lisp, List* liste) {
+    Element* e_from = liste->liste[2];
+    
     long from;
     long firstisString = -1;
-    switch (e_from->type) {
+    short nxt = 3;
+    short ty;
+    switch (e_from->label()) {
+        case l_minus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-'");
+            break;
+        case l_plus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '+'");
+            break;
+        case l_minus_plus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-+'");
+            break;
+        default:
+            e_from = e_from->eval(lisp);
+            ty = e_from->type;
+    }
+
+    switch (ty) {
         case t_string: {
             wstring ch = e_from->asString(lisp);
             from = content.find(ch);
@@ -1921,15 +1957,45 @@ Element* String::extraction(LispE* lisp, List* liste) {
     if (from < 0 || from >= content.size())
         return emptystring_;
 
-    if (liste->size() == 3) {
+    if (nxt == liste->size()) {
         //Only one element is returned
         return lisp->provideString(content[from]);
     }
 
-    Element* e_upto = liste->liste[3]->eval(lisp);
+    Element* e_upto = liste->liste[nxt];
+    switch (e_upto->label()) {
+        case l_minus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-'");
+            break;
+        case l_plus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '+'");
+            break;
+        case l_minus_plus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-+'");
+            break;
+        default:
+            e_upto = e_upto->eval(lisp);
+            ty = e_upto->type;
+    }
+
     long upto;
 
-    switch (e_upto->type) {
+    switch (ty) {
         case t_string: {
             wstring ch = e_upto->asString(lisp);
             upto = content.find(ch, from + 1);

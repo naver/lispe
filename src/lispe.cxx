@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.1.9.37";
+static std::string version = "1.2021.3.3.14.43";
 string LispVersion() {
     return version;
 }
@@ -184,7 +184,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_eq, "eq", P_ATLEASTTHREE, &List::evall_eq);
     set_instruction(l_equal, "=", P_ATLEASTTHREE, &List::evall_equal);
     set_instruction(l_eval, "eval", P_TWO, &List::evall_eval);
-    set_instruction(l_extract, "extract", P_THREE|P_FOUR, &List::evall_extract);
+    set_instruction(l_extract, "extract", P_THREE|P_FOUR|P_FIVE|P_SIX, &List::evall_extract);
     set_instruction(l_fappend, "fappend", P_THREE, &List::evall_fappend);
     set_instruction(l_flatten, "flatten", P_TWO, &List::evall_flatten);
     set_instruction(l_flip, "flip", P_TWO, &List::evall_flip);
@@ -311,6 +311,7 @@ void Delegation::initialisation(LispE* lisp) {
     operators[l_bitor] = true;
     operators[l_bitxor] = true;
     operators[l_plus] = true;
+    operators[l_minus_plus] = true;
     operators[l_minus] = true;
     operators[l_multiply] = true;
     operators[l_divide] = true;
@@ -370,6 +371,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[v_null] = L"nil";
     code_to_string[v_true] = L"true";
 
+    
     code_to_string[c_opening] = L"(";
     code_to_string[c_closing] = L")";
     code_to_string[c_opening_brace] = L"{";
@@ -378,6 +380,8 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[c_opening_bracket] = L"[";
     code_to_string[c_closing_bracket] = L"]";
     code_to_string[c_opening_data_brace] = L"@{";
+
+    code_to_string[l_minus_plus] = L"-+";
 
     for (auto& a: code_to_string)
         string_to_code[a.second] = a.first;
@@ -429,6 +433,7 @@ void Delegation::initialisation(LispE* lisp) {
     lisp->recordingunique(_ERROR, t_error);
 
     //These types are all basic data structures
+    provideAtom(l_minus_plus);
 
     provideAtomType(t_string);
     provideAtomType(t_number);
@@ -439,7 +444,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_dictionary);
     provideAtomType(t_dictionaryn);
     provideAtomType(t_atom);
-
+    
     recordingData(lisp->create_instruction(t_string, _NULL), t_string, v_null);
     recordingData(lisp->create_instruction(t_number, _NULL), t_number, v_null);
     recordingData(lisp->create_instruction(t_integer, _NULL), t_integer, v_null);
@@ -628,7 +633,6 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     lisp_code lc;
     string current_line;
     string tampon;
-    lisp_code minus_string = t_string;
     for (i = 0; i < sz; i++) {
         current_i = i;
         c = getonechar(USTR(code), i);
@@ -717,12 +721,10 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     idx++;
                 }
 
-                if (tampon == "" && minus_string == t_string)
+                if (tampon == "")
                     infos.append(tampon, t_emptystring, line_number, i, idx);
                 else
-                    infos.append(tampon, minus_string, line_number, i, idx);
-
-                minus_string = t_string;
+                    infos.append(tampon, t_string, line_number, i, idx);
 
                 if (add) {
                     current_line += "\"";
@@ -747,20 +749,9 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     tampon = code.substr(current_i, i - current_i + 1);
                     if (add)
                         current_line += tampon;
-                    if (tampon == "-" && nxt == 34) {
-                        minus_string = t_minus_string;
-                        break;
-                    }
-                    if (tampon == "+" && nxt == 34) {
-                        minus_string = t_plus_string;
-                        break;
-                    }
-                    if (tampon == "-+" && nxt == 34) {
-                        minus_string = t_minus_plus_string;
-                        break;
-                    }
+
                     idx = delegation->is_atom(tampon);
-                    if (idx >= l_plus && idx <= l_modequal)
+                    if (idx >= l_minus_plus && idx <= l_modequal)
                         infos.append(tampon, t_operator, line_number, current_i, i);
                     else
                         infos.append(tampon, t_atom, line_number, current_i, i);
@@ -1303,27 +1294,6 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 index++;
                 break;
             }
-            case t_minus_string:
-                e = new Stringminus(parse.tokens[index]);
-                garbaging(e);
-                courant->append(e);
-                courant = quoted;
-                index++;
-                break;
-            case t_plus_string:
-                e = new Stringplus(parse.tokens[index]);
-                garbaging(e);
-                courant->append(e);
-                courant = quoted;
-                index++;
-                break;
-            case t_minus_plus_string:
-                e = new Stringminusplus(parse.tokens[index]);
-                garbaging(e);
-                courant->append(e);
-                courant = quoted;
-                index++;
-                break;
             case t_number:
                 value = parse.numbers[index];
                 if (value == 0)
@@ -1723,6 +1693,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

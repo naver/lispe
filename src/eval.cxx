@@ -2416,7 +2416,7 @@ Element* List::evall_eval(LispE* lisp) {
 
 
 Element* List::evall_extract(LispE* lisp) {
-    if (!checkArity(P_THREE|P_FOUR, liste.size()))
+    if (!checkArity(P_THREE|P_FOUR|P_FIVE|P_SIX, liste.size()))
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
