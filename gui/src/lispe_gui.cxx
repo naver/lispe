@@ -89,11 +89,14 @@ static void close_callback(Fl_Widget *w, void *data) {
             }
 
             for (auto& e: lispwnd->items) {
-                e->widget = NULL;
+                if (e->widget != NULL) {
+                    delete e->widget;
+                    e->widget = NULL;
+                }
                 e->decrementstatus(1, true);
             }
             lispwnd->window = NULL;
-
+            lispwnd->widget = NULL;
             delete w;
         }
     }
@@ -157,6 +160,34 @@ static void fltk_callback(Fl_Widget *w, void *data) {
         res->release();
     }
 }
+
+static void fltk_close_callback(Fl_Widget *w, void *data) {
+    Lispwindow* widget = (Lispwindow*)data;
+    Element* func = widget->on_close_function;
+    
+    bool closing = true;
+    
+    if (func != widget->lisp->delegation->_NULL) {
+        List call;
+        call.append(func);
+        call.append(widget);
+        call.append(widget->object);
+        Element* res = widget->lisp->delegation->_NULL;
+        try {
+            res = call.eval(widget->lisp);
+            closing = res->Boolean();
+        }
+        catch (Error* err) {
+            cerr << err->toString(widget->lisp) << endl;
+            err->release();
+        }
+        res->release();
+    }
+    
+    if (closing)
+        close_callback(widget->window, widget);
+}
+
 //------------------------------------------------------------------------------------
 bool Lispwidget::check() {
     if (function != null_)
@@ -230,6 +261,26 @@ void Lispwidget::align(LispE* lisp) {
     locking(lisp);
     widget->align(ke->asInt());
     unlocking(lisp);
+}
+
+Element* Lispwidget::widget_label(LispE* lisp) {
+    if (widget == NULL)
+        throw new Error(L"WND(805): Widget not initialized");
+
+    Element* name = lisp->get("name");
+    
+    string label;
+    if (name == null_) {
+        label = widget->label();
+        return lisp->provideString(label);
+    }
+    label = name->toString(lisp);
+    char* ltxt = (char*)malloc(label.size() + 1);
+    memcpy(ltxt, STR(label), label.size());
+    ltxt[label.size()] = 0;
+    strcpy_s(ltxt, label.size() + 1, label.c_str());
+    widget->label(ltxt);
+    return true_;
 }
 
 Element* Lispwidget::labelwindow(LispE* lisp) {
@@ -518,6 +569,21 @@ Lispwindow::Lispwindow(LispE* lsp, short t, int x, int y, int w, int h, string& 
     label = l;
     window = new Doublewindow(lisp, x,y,w,h,label.c_str(), this);
     widget = window;
+    on_close_function = null_;
+    lisp->delegation->toBeCleanedOnError(this, lisp->checkforLock());
+#ifdef FLTK14
+    Fl_Sys_Menu_Bar::window_menu_style(Fl_Sys_Menu_Bar::no_window_menu);
+#endif
+
+}
+
+Lispwindow::Lispwindow(LispE* lsp, short t, int x, int y, string& l, Element* f, Element* o) : Lispwidget(lsp, t, f, o) {
+    update = true;
+    finalized = false;
+    label = l;
+    window = new Doublewindow(lisp, x,y,label.c_str(), this);
+    widget = window;
+    on_close_function = null_;
     lisp->delegation->toBeCleanedOnError(this, lisp->checkforLock());
 #ifdef FLTK14
     Fl_Sys_Menu_Bar::window_menu_style(Fl_Sys_Menu_Bar::no_window_menu);
@@ -1020,6 +1086,17 @@ Element* Lispwindow::textsize(LispE* lisp) {
     return iv;
 }
 
+void Lispwindow::resize() {
+    if (window == NULL)
+        throw new Error(L"WND(678): Widget not initialized");
+    int minw = lisp->get("minw")->asInt();
+    int minh = lisp->get("minh")->asInt();
+    int maxw = lisp->get("maxw")->asInt();
+    int maxh = lisp->get("maxh")->asInt();
+    window->size_range(minw, minh, maxw, maxh);
+}
+
+
 
 Element* Lispwindow::plot(LispE* lisp) {
     if (window == NULL)
@@ -1244,7 +1321,22 @@ void Lispwindow::alert(LispE* lisp) {
     unlocking(lisp);
 }
 
+void Lispwindow::onclose(Element* f) {
+    on_close_function = f;
+    window->callback(fltk_close_callback, this);
+}
+
+//------------------------------------------------------------------------------------------------
+
 Doublewindow::Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l, Lispwindow* wn) : Fl_Double_Window(x, y, w, h, l) {
+    lisp = lsp;
+    window = wn;
+
+    iwindow = lisp->vpool_add(window);
+    callback(close_callback, window);
+}
+
+Doublewindow::Doublewindow(LispE* lsp, int x, int y, const char* l, Lispwindow* wn) : Fl_Double_Window(x, y, l) {
     lisp = lsp;
     window = wn;
 
@@ -1295,7 +1387,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
     Lispwidget* wnd = NULL;
 
     //Before fltk_run, object creation methods
-    if (action != fltk_create) {
+    if (action > fltk_create_resizable) {
         Element* e = lisp->get("widget");
         if (e->type != fltk_widget)
             throw new Error("Error: Expecting a 'widget' object");
@@ -1313,6 +1405,14 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 Element* function  = lisp->get("function");
                 Element* object  = lisp->get("object");
                 return new Lispwindow(lisp,fltk_widget,x,y,w,h, label,function, object);
+            }
+            case fltk_create_resizable: {
+                int x = lisp->get("x")->asInt();
+                int y = lisp->get("y")->asInt();
+                string label = lisp->get("label")->toString(lisp);
+                Element* function  = lisp->get("function");
+                Element* object  = lisp->get("object");
+                return new Lispwindow(lisp,fltk_widget,x,y, label,function, object);
             }
             case fltk_input: {
                 int x = lisp->get("x")->asInt();
@@ -1367,8 +1467,16 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 wnd->push(wdg);
                 return wdg;
             }
+            case fltk_on_close: {
+                Element* function  = lisp->get("function");
+                wnd->onclose(function);
+                return true_;
+            }
             case fltk_run:
                 wnd->run();
+                return true_;
+            case fltk_resize:
+                wnd->resize();
                 return true_;
             case fltk_close:
                 wnd->close();
@@ -1506,6 +1614,8 @@ Element* Lispe_gui::eval(LispE* lisp) {
             case fltk_boundaries:
                 wnd->boundaries();
                 return true_;
+            case fltk_label:
+                return wnd->widget_label(lisp);
         }
     }
     catch(Error* err) {
@@ -1521,101 +1631,107 @@ Element* Lispe_gui::eval(LispE* lisp) {
 wstring Lispe_gui::asString(LispE* lisp) {
     switch (action) {
         case fltk_create:
-            return L"create(x y w h label function (object)): Create a window";
+            return L"Create a window";
         case fltk_run:
-            return L"run(window): Launch the GUI";
+            return L"Launch the GUI";
+        case fltk_create_resizable:
+            return L"Create a window";
+        case fltk_resize:
+            return L"resize a window";
         case fltk_close:
-            return L"close(window): close window";
+            return L"close window";
         case fltk_redraw:
-            return L"redraw(window): Redraw the window";
+            return L"Redraw the window";
         case fltk_circle:
-            return L"circle(window x y r (color)): Draw a circle. 'color' is optional.";
+            return L"Draw a circle. 'color' is optional.";
         case fltk_drawtext:
-            return L"drawtext(window txt x y): Put a text at position xy";
+            return L"Put a text at position xy";
         case fltk_rectangle:
-            return L"rectangle(window x y wx hy (color)): Draw a rectangle with optional color c";
+            return L"Draw a rectangle with optional color c";
         case fltk_rectanglefill:
-            return L"rectanglefill(window x y wx hy (color)): Fill a rectangle with optional color c";
+            return L"Fill a rectangle with optional color c";
         case fltk_arc:
-            return L"arc(window x y w h a1 (a2)): Draw an arc.\rarc(xyrada1a2): Add a series of points to the current path on the arc of a circle;";
+            return L"Draw an arc.\nAdd a series of points to the current path on the arc of a circle;";
         case fltk_pie:
-            return L"pie(window x y w h a1 a2): Draw a pie";
+            return L"Draw a pie";
         case fltk_point:
-            return L"point(window x y): Draw a pixel";
+            return L"Draw a pixel";
+        case fltk_on_close:
+            return L"This method sets a callback function to catch when the window is closing";
         case fltk_line:
-            return L"line(window x y x1 y1 (x2) (y2)): Draw a line between points x2 and y2 are optional";
+            return L"Draw a line between points x2 and y2 are optional";
         case fltk_rgbcolor:
-            return L"rgbcolor(window r g b): return the value of rgb values combined";
+            return L"return the value of rgb values combined";
         case fltk_show:
-            return L"show(window): Show the window";
+            return L"Show the window";
         case fltk_focus:
-            return L"focus(window): Get the focus";
+            return L"Get the focus";
         case fltk_align:
-            return L"align(window align): define the label alignment";
+            return L"define the label alignment";
         case fltk_selectioncolor:
-            return L"selectioncolor(window (color)): Color for the selected elements";
+            return L"Color for the selected elements";
         case fltk_labeltype:
-            return L"labeltype(window (thetype)): set or return the label type";
+            return L"set or return the label type";
         case fltk_labelcolor:
-            return L"labelcolor(window (color) ): set or return the label color";
+            return L"set or return the label color";
         case fltk_labelfont:
-            return L"labelfont(window (font) ): set or return the label font";
+            return L"set or return the label font";
         case fltk_labelsize:
-            return L"labelsize(window (sz)): set or return the label font size";
+            return L"set or return the label font size";
         case fltk_drawcolor:
-            return L"drawcolor(window (color)): set the color for the next drawings";
+            return L"set the color for the next drawings";
         case fltk_polygon:
-            return L"polygon(window x y x1 y1 x2 y2 (x3) (y3)): Draw a polygon x3 and y3 are optional";
+            return L"Draw a polygon x3 and y3 are optional";
         case fltk_loop:
-            return L"loop(window x y x1 y1 x2 y2 (x3) (y3)): Draw a series of lines x3 and y3 are optional";
+            return L"Draw a series of lines x3 and y3 are optional";
         case fltk_scale:
-            return L"scale(window x (y)): Scale the current transformation";
+            return L"Scale the current transformation";
         case fltk_translate:
-            return L"translate(window x y): translate the current transformation";
+            return L"translate the current transformation";
         case fltk_rotate:
-            return L"rotate(window d): rotate of degree d the current transformation";
+            return L"rotate of degree d the current transformation";
         case fltk_multmatrix:
-            return L"multmatrix(window a b c d x y): combine transformations";
+            return L"combine transformations";
         case fltk_pushclip:
-            return L"pushclip(window x y wx wy): Insert a clip region with the following coordinates";
+            return L"Insert a clip region with the following coordinates";
         case fltk_popclip:
-            return L"popclip(window): Release a clip region";
+            return L"Release a clip region";
         case fltk_hide:
-            return L"hide(window): Hide the window";
+            return L"Hide the window";
         case fltk_backgroundcolor:
-            return L"backgroundcolor(window (color)): set the background color";
+            return L"set the background color";
         case fltk_plot:
-            return L"plot(window points thickness (landmark) ): Plot a graph from a table of successive xy points according to window size. If thickness===0 then points are continuously plotted else defines the diameter of the point. Return a which is used with plotcoords. The landmark is optional it is has the following structure: [XmaxWindow,YmaxWindow,XminValue,YminValue,XmaxValue,YmaxValue,incX,incY]. incX,incY are also optional.";
+            return L"Plot a graph from a table of successive xy points according to window size. If thickness===0 then points are continuously plotted else defines the diameter of the point. Return a which is used with plotcoords. The landmark is optional it is has the following structure: [XmaxWindow,YmaxWindow,XminValue,YminValue,XmaxValue,YmaxValue,incX,incY]. incX,incY are also optional.";
         case fltk_plotcoords:
-            return L"plotcoords(window x y landmark): Compute the coordinates of a point(xy) according to the previous scale computed with plot. Returns a of two elements [xsys] corresponding to the screen coordinates in the current window.";
+            return L"Compute the coordinates of a point(xy) according to the previous scale computed with plot. Returns a of two elements [xsys] corresponding to the screen coordinates in the current window.";
         case fltk_ask:
-            return L"ask(window msg msg1 msg2 (msg3) (msg4)): Pop up window to pose a question";
+            return L"Pop up window to pose a question";
         case fltk_alert:
-            return L"alert(window msg): Pop up window to display an alert";
+            return L"Pop up window to display an alert";
         case fltk_lineshape:
-            return L"lineshape(window type_shape w): Select the line shape and its thikness";
+            return L"Select the line shape and its thikness";
         case fltk_end:
-            return L"end(window (timer)): Finalize the creation of a window a set an optional timer";
+            return L"Finalize the creation of a window a set an optional timer";
         case fltk_textfont:
-            return L"textfont(window f sz): Set a font with a size";
+            return L"Set a font with a size";
         case fltk_coordinates:
-            return L"coordinates(window (x) (y) (w) (h) ): return the coordinates of the window or set new coordinates";
+            return L"return the coordinates of the window or set new coordinates";
         case fltk_labelwindow:
-            return L"fltk_label(window (label)): return the window label or set a new label to the window";
+            return L"return the window label or set a new label to the window";
         case fltk_linerotation:
-            return L"fltk_rotation(window x y distance angle (draw)): Compute the coordinate of a rotated point from point xy using a distance and an angle. Return a vector of floats with the new coordinates.";
+            return L"Compute the coordinate of a rotated point from point xy using a distance and an angle. Return a vector of floats with the new coordinates.";
         case fltk_transform_x:
-            return L"transform_x(window x y): Transform a coordinate X using the current transformation matrix";
+            return L"Transform a coordinate X using the current transformation matrix";
         case fltk_transform_y:
-            return L"transform_y(window x y): Transform a coordinate Y using the current transformation matrix";
+            return L"Transform a coordinate Y using the current transformation matrix";
         case fltk_transform_dx:
-            return L"transform_dx(window x y): Transform a distance DX using the current transformation matrix.";
+            return L"Transform a distance DX using the current transformation matrix.";
         case fltk_transform_dy:
-            return L"transform_dy(window x y): Transform a distance DY using the current transformation matrix.";
+            return L"Transform a distance DY using the current transformation matrix.";
         case fltk_transform_vertex:
-            return L"transform_vertex(window x y): Add transformations to vertices list.";
+            return L"Add transformations to vertices list.";
         case fltk_textsize:
-            return L"textsize(window text): Return a map with w and h as key to denote width and height of the string in pixels";
+            return L"Return a map with w and h as key to denote width and height of the string in pixels";
         case fltk_input:
             return L"Creating an input object";
         case fltk_value:
@@ -1636,6 +1752,8 @@ wstring Lispe_gui::asString(LispE* lisp) {
             return L"Define the step in a slider";
         case fltk_boundaries:
             return L"Define the boundaries of a slider";
+        case fltk_label:
+            return L"Return or set the label of a widget";
     }
     return L"fltk";
 }
@@ -1759,14 +1877,10 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->recordingglobal(L"FL_ALIGN_POSITION_MASK", lisp->provideInteger(FL_ALIGN_POSITION_MASK));
     lisp->recordingglobal(L"FL_ALIGN_IMAGE_MASK", lisp->provideInteger(FL_ALIGN_IMAGE_MASK));
 
-    lisp->recordingglobal(L"FL_VERT_SLIDER", lisp->provideInteger(FL_VERT_SLIDER));
-    lisp->recordingglobal(L"FL_HOR_SLIDER", lisp->provideInteger(FL_HOR_SLIDER));
-    lisp->recordingglobal(L"FL_VERT_FILL_SLIDER", lisp->provideInteger(FL_VERT_FILL_SLIDER));
-    lisp->recordingglobal(L"FL_HOR_FILL_SLIDER", lisp->provideInteger(FL_HOR_FILL_SLIDER));
-    lisp->recordingglobal(L"FL_VERT_NICE_SLIDER", lisp->provideInteger(FL_VERT_NICE_SLIDER));
-    lisp->recordingglobal(L"FL_HOR_NICE_SLIDER", lisp->provideInteger(FL_HOR_NICE_SLIDER));
-
     lisp->extension("deflib fltk_create (x y w h label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create));
+    lisp->extension("deflib fltk_create_resizable (x y label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create_resizable));
+    
+    lisp->extension("deflib fltk_resize (widget minw minh maxw maxh)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_resize));
     lisp->extension("deflib fltk_end (widget (timer))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_end));
     lisp->extension("deflib fltk_run (widget)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_run));
 
@@ -1817,6 +1931,9 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib fltk_ask(widget msg msg1 msg2 (msg3) (msg4))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_ask));
     lisp->extension("deflib fltk_alert(widget msg)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_alert));
     lisp->extension("deflib fltk_close(widget)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_close));
+    lisp->extension("deflib fltk_on_close(widget function)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_on_close));
+
+    lisp->extension("deflib fltk_label(widget (name))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_label));
 
     lisp->extension("deflib fltk_input (widget x y w h label multiline (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_input));
     lisp->extension("deflib fltk_value (widget (val))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_value));
@@ -1826,7 +1943,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib fltk_output (widget x y w h label multiline)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_output));
     lisp->extension("deflib fltk_wrap (widget mode)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_wrap));
 
-    lisp->extension("deflib fltk_button (widget x y w h label function (object) (button_type) (button_shape))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_button));
+    lisp->extension("deflib fltk_button (widget x y w h label function (button_type) (button_shape) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_button));
 
     lisp->extension("deflib fltk_slider (widget x y w h label slider_orientation slider_value_type function (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_slider));
     lisp->extension("deflib fltk_step (widget stp)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_step));

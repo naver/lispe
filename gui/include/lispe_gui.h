@@ -42,6 +42,11 @@ public:
         //deletion of FLTK objects
     }
     
+    ~Lispwidget() {
+        if (widget != NULL)
+            delete widget;
+    }
+    
     Element* labeltype(LispE*);
     Element* labelcolor(LispE*);
     Element* labelfont(LispE*);
@@ -94,6 +99,12 @@ public:
     virtual void pushclip(LispE*) {}
     virtual void popclip(LispE*) {}
     virtual void alert(LispE*) {}
+    
+    virtual void onclose(Element* f) {}
+    
+    Element* widget_label(LispE*);
+    
+    virtual void resize() {}
 
     virtual Element* value(LispE*) {
         return emptystring_;
@@ -127,6 +138,7 @@ public:
 class Lispwindow : public Lispwidget {
 public:
     Doublewindow* window;
+    Element* on_close_function;
     string label;
     double time_value;
     bool update;
@@ -134,6 +146,7 @@ public:
     vector<Lispwidget*> items;
 
     Lispwindow(LispE* lsp, short t,  int x, int y, int w, int h, string& label, Element* f, Element* o);
+    Lispwindow(LispE* lsp, short t,  int x, int y, string& label, Element* f, Element* o);
     ~Lispwindow();
     
     void push(Lispwidget* w) {
@@ -166,6 +179,7 @@ public:
     Element* textsize(LispE*);
     Element* rgbcolor(LispE*);
         
+    void onclose(Element* f);
     void drawcolor(LispE*);
     void textfont(LispE*);
     void polygon(LispE*);
@@ -178,6 +192,7 @@ public:
     void pushclip(LispE*);
     void popclip(LispE*);
     void alert(LispE*);
+    void resize();
 
     void clean() {
         close();
@@ -246,6 +261,7 @@ public:
     long iwindow;
 
     Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l, Lispwindow* wn);
+    Doublewindow(LispE* lsp, int x, int y, const char* l, Lispwindow* wn);
 
     ~Doublewindow();
 
@@ -253,9 +269,9 @@ public:
 };
 
 
-typedef enum {fltk_create, fltk_input, fltk_output, fltk_button, fltk_slider,
-    fltk_run, fltk_end, fltk_close, fltk_value, fltk_insert, fltk_selection,
-    fltk_redraw, fltk_circle, fltk_drawtext, fltk_rectangle, fltk_wrap, fltk_step,
+typedef enum {fltk_create, fltk_create_resizable, fltk_input, fltk_output, fltk_button, fltk_slider,
+    fltk_run, fltk_end, fltk_close, fltk_on_close, fltk_value, fltk_insert, fltk_selection, fltk_resize,
+    fltk_redraw, fltk_circle, fltk_drawtext, fltk_rectangle, fltk_wrap, fltk_step, fltk_label,
     fltk_rectanglefill, fltk_arc, fltk_pie, fltk_point, fltk_line, fltk_boundaries,
     fltk_textfont, fltk_rgbcolor, fltk_show, fltk_focus, fltk_align, fltk_coordinates,
     fltk_selectioncolor, fltk_labelwindow, fltk_labeltype, fltk_labelcolor, fltk_labelfont, fltk_labelsize, fltk_drawcolor, fltk_polygon,
