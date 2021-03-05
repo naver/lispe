@@ -74,9 +74,13 @@ static std::atomic<bool> stopall;
 #define c_min(x,y) (x < y)?x:y
 #define c_max(x,y) (x > y)?x:y
 
+static short fltk_type_bitmap = 0;
+static short fltk_type_gif = 0;
+
+
 static void close_callback(Fl_Widget *w, void *data) {
     if (w != NULL) {
-        Lispwindow* lispwnd = (Lispwindow*)data;
+        Fltk_window* lispwnd = (Fltk_window*)data;
         if (lispwnd->window == w) {
 #ifdef WIN32
             FlResetTimer();
@@ -109,7 +113,7 @@ static void timeout_callback(void *data) {
     if (stopall || data == NULL)
         return;
 
-    Lispwindow* wnd = (Lispwindow*)data;
+    Fltk_window* wnd = (Fltk_window*)data;
     Doublewindow* doublewnd = wnd->window;
     if (doublewnd == NULL || !wnd->check())
         return;
@@ -141,7 +145,7 @@ static void timeout_callback(void *data) {
 }
 
 static void fltk_callback(Fl_Widget *w, void *data) {
-    Lispwidget* widget = (Lispwidget*)data;
+    Fltk_widget* widget = (Fltk_widget*)data;
     Element* func = widget->function;
 
     if (func != widget->lisp->delegation->_NULL) {
@@ -162,7 +166,7 @@ static void fltk_callback(Fl_Widget *w, void *data) {
 }
 
 static void fltk_close_callback(Fl_Widget *w, void *data) {
-    Lispwindow* widget = (Lispwindow*)data;
+    Fltk_window* widget = (Fltk_window*)data;
     Element* func = widget->on_close_function;
     
     bool closing = true;
@@ -189,21 +193,21 @@ static void fltk_close_callback(Fl_Widget *w, void *data) {
 }
 
 //------------------------------------------------------------------------------------
-bool Lispwidget::check() {
+bool Fltk_widget::check() {
     if (function != null_)
         return true;
     return false;
 }
 
-void Lispwidget::hide(LispE* lisp) {
+void Fltk_widget::hide(LispE* lisp) {
     if (widget == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     locking(lisp);
     widget->hide();
     unlocking(lisp);
 }
 
-Element* Lispwidget::backgroundcolor(LispE* lisp) {
+Element* Fltk_widget::backgroundcolor(LispE* lisp) {
     if (widget == NULL)
         throw new Error(L"WND(805): Widget not initialized");
     Element* ke = lisp->get("color");
@@ -220,10 +224,10 @@ Element* Lispwidget::backgroundcolor(LispE* lisp) {
 }
 
 
-Element* Lispwidget::selectionColor(LispE* lisp) {
+Element* Fltk_widget::selectionColor(LispE* lisp) {
 
     if (widget == NULL)
-        throw new Error("WND(678): Widget does not exist");
+        throw new Error("Error: Widget does not exist");
 
     Element* ke = lisp->get("color");
     if (ke == null_)
@@ -238,23 +242,23 @@ Element* Lispwidget::selectionColor(LispE* lisp) {
     return true_;
 }
 
-void Lispwidget::show(LispE* lisp) {
+void Fltk_widget::show(LispE* lisp) {
     if (widget == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     locking(lisp);
     widget->show();
     unlocking(lisp);
 }
 
-void Lispwidget::focus(LispE* lisp) {
+void Fltk_widget::focus(LispE* lisp) {
     if (widget == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     locking(lisp);
     widget->take_focus();
     unlocking(lisp);
 }
 
-void Lispwidget::align(LispE* lisp) {
+void Fltk_widget::align(LispE* lisp) {
     if (widget == NULL)
         throw new Error(L"WND(805): Widget not initialized");
     Element* ke = lisp->get("align");
@@ -263,7 +267,7 @@ void Lispwidget::align(LispE* lisp) {
     unlocking(lisp);
 }
 
-Element* Lispwidget::widget_label(LispE* lisp) {
+Element* Fltk_widget::widget_label(LispE* lisp) {
     if (widget == NULL)
         throw new Error(L"WND(805): Widget not initialized");
 
@@ -283,7 +287,7 @@ Element* Lispwidget::widget_label(LispE* lisp) {
     return true_;
 }
 
-Element* Lispwidget::labelwindow(LispE* lisp) {
+Element* Fltk_widget::labelwindow(LispE* lisp) {
     if (widget == NULL)
         throw new Error(L"WND(102): wdg not created");
     Element* lab = lisp->get("label");
@@ -304,7 +308,7 @@ Element* Lispwidget::labelwindow(LispE* lisp) {
     return true_;
 }
 
-Element* Lispwidget::labeltype(LispE* lisp) {
+Element* Fltk_widget::labeltype(LispE* lisp) {
     if (widget)
         throw new Error(L"WND(102): wdg not created");
 
@@ -318,11 +322,11 @@ Element* Lispwidget::labeltype(LispE* lisp) {
     return true_;
 }
 
-Element* Lispwidget::labelcolor(LispE* lisp) {
+Element* Fltk_widget::labelcolor(LispE* lisp) {
 
     //In our example, we have only two parameters
     if (widget == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* ke = lisp->get("color");
     if (ke == null_)
         return lisp->provideInteger(widget->labelcolor());
@@ -333,10 +337,10 @@ Element* Lispwidget::labelcolor(LispE* lisp) {
     return true_;
 }
 
-Element* Lispwidget::labelsize(LispE* lisp) {
+Element* Fltk_widget::labelsize(LispE* lisp) {
 
     if (widget == NULL)
-        throw new Error(L"WND(678): wdg not initialized");
+        throw new Error(L"Error: wdg not initialized");
     Element* ke = lisp->get("sz");
     if (ke == null_)
         return lisp->provideInteger(widget->labelsize());
@@ -348,7 +352,7 @@ Element* Lispwidget::labelsize(LispE* lisp) {
     return true_;
 }
 
-Element* Lispwidget::labelfont(LispE* lisp) {
+Element* Fltk_widget::labelfont(LispE* lisp) {
 
     if (widget == NULL)
         throw new Error(L"WND(102): wdg not created");
@@ -365,7 +369,7 @@ Element* Lispwidget::labelfont(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------
-Lispinput::Lispinput(LispE* lsp, short t,  int x, int y, int w, int h, bool multiline, string& label, Element* f, Element* o) : Lispwidget(lsp, t, f, o) {
+Fltk_input::Fltk_input(LispE* lsp, short t,  int x, int y, int w, int h, bool multiline, string& label, Element* f, Element* o) : Fltk_widget(lsp, t, f, o) {
     text = label;
 
     if (multiline)
@@ -377,7 +381,7 @@ Lispinput::Lispinput(LispE* lsp, short t,  int x, int y, int w, int h, bool mult
         widget->callback(fltk_callback, this);
 }
 
-Element* Lispinput::value(LispE* lisp) {
+Element* Fltk_input::value(LispE* lisp) {
     if (widget == NULL)
         throw new Error("WND(677): Input not initialized");
     Element* val = lisp->get("val");
@@ -394,7 +398,7 @@ Element* Lispinput::value(LispE* lisp) {
     return true_;
 }
 
-void Lispinput::insert(LispE* lisp) {
+void Fltk_input::insert(LispE* lisp) {
     if (widget == NULL)
         throw new Error("WND(677): Input not initialized");
 
@@ -406,7 +410,7 @@ void Lispinput::insert(LispE* lisp) {
 }
 
 
-Element* Lispinput::selection(LispE* lisp) {
+Element* Fltk_input::selection(LispE* lisp) {
     if (widget == NULL)
         throw new Error(L"WND(677): Input not initialized");
 
@@ -420,7 +424,7 @@ Element* Lispinput::selection(LispE* lisp) {
     return lisp->provideString(buf);
 }
 //------------------------------------------------------------------------------------
-Lispoutput::Lispoutput(LispE* lsp, short t,  int x, int y, int w, int h, bool multiline, string& label) : Lispwidget(lsp, t, NULL, NULL) {
+Fltk_output::Fltk_output(LispE* lsp, short t,  int x, int y, int w, int h, bool multiline, string& label) : Fltk_widget(lsp, t, NULL, NULL) {
     text = label;
 
     if (multiline)
@@ -432,7 +436,7 @@ Lispoutput::Lispoutput(LispE* lsp, short t,  int x, int y, int w, int h, bool mu
         widget->callback(fltk_callback, this);
 }
 
-Element* Lispoutput::value(LispE* lisp) {
+Element* Fltk_output::value(LispE* lisp) {
     if (widget == NULL)
         throw new Error("WND(679): Output not initialized");
 
@@ -450,7 +454,7 @@ Element* Lispoutput::value(LispE* lisp) {
     return true_;
 }
 
-void Lispoutput::wrap() {
+void Fltk_output::wrap() {
     if (widget == NULL)
         throw new Error("WND(679): Output not initialized");
 
@@ -464,10 +468,53 @@ void Lispoutput::wrap() {
 }
 
 //------------------------------------------------------------------------------------
+class ButtonImage : public Fl_Button {
+public:
+    // CONSTRUCTOR
+    Fl_Image* myimage;
+    bool isbitmap;
+    unsigned int thecolor;
+    string mytext;
+    int myalign;
 
-Lispbutton::Lispbutton(LispE* lsp, short t,  int x, int y, int w, int h, int thetype, int shape, string& label, Element* f, Element* o) :
-Lispwidget(lsp, t, f, o) {
+    ButtonImage(int X, int Y, int W, int H, const char*L = 0) : Fl_Button(X, Y, W, H, L) {
+        myimage = NULL;
+        myalign = FL_ALIGN_CENTER;
+        isbitmap = false;
+        thecolor = FL_BLACK;
+    }
 
+    void draw() {
+        int X = x() + Fl::box_dx(box());  // area inside the button's frame
+        int Y = y() + Fl::box_dy(box());
+        int W = w() - Fl::box_dw(box());
+        int H = h() - Fl::box_dh(box());
+        draw_box(value() ? (down_box() ? down_box() : fl_down(box())) : box(), color());  // button up/dn
+        fl_push_clip(X, Y, W, H);                  // clip inside button's frame
+        {
+            if (myimage != NULL) {
+                int imgx = X + ((myimage->w() < W) ? (W - myimage->w()) / 2 : 0);
+                // horiz center
+                int imgy = Y + ((myimage->h() < H) ? (H - myimage->h()) / 2 : 0);
+                // vert center
+                if (isbitmap)
+                    fl_color(thecolor);
+                myimage->draw(imgx, imgy);
+            }
+            if (mytext != "") {
+                fl_color(labelcolor());
+                fl_font(labelfont(), labelsize());
+                fl_draw(mytext.c_str(), x(), y(), w(), h(), myalign);
+            }
+        }
+        fl_pop_clip();
+    }
+};
+
+Fltk_button::Fltk_button(LispE* lsp, short t,  int x, int y, int w, int h, int thetype, int shape, string& label, Element* f, Element* o) :
+Fltk_widget(lsp, t, f, o) {
+
+    image = false;
     text = label;
     switch (thetype) {
     case 1: //check
@@ -485,6 +532,10 @@ Lispwidget(lsp, t, f, o) {
     case 5://Round
         widget = new Fl_Round_Button(x, y, w, h, text.c_str());
         break;
+    case 6://Image
+        widget = new ButtonImage(x, y, w, h, text.c_str());
+        image = true;
+        break;
     default://regular
         widget = new Fl_Button(x, y, w, h, text.c_str());
     }
@@ -493,7 +544,7 @@ Lispwidget(lsp, t, f, o) {
         widget->callback(fltk_callback, this);
 }
 
-Element* Lispbutton::value(LispE* lisp) {
+Element* Fltk_button::value(LispE* lisp) {
     //In our example, we have only two parameters
     if (widget == NULL)
         throw new Error("WND(805): Button not initialized");
@@ -510,8 +561,38 @@ Element* Lispbutton::value(LispE* lisp) {
     return true_;
 }
 
+void Fltk_button::bitmap(LispE* lisp) {
+    if (widget == NULL)
+        throw new Error("WND(805): Button not initialized");
+    if (!image)
+        throw new Error("WND(809): Image button required");
+    
+    Element* kbitmap = lisp->get("bitmap");
+    if (kbitmap->type != fltk_type_bitmap)
+        throw new Error("Error: this is not a bitmap");
+    
+    Fl_Color color = lisp->get("color")->asInt();
+
+    ((ButtonImage*)widget)->thecolor = color;
+    ((ButtonImage*)widget)->isbitmap = true;
+    ((ButtonImage*)widget)->myimage = ((Fltk_bitmap*)kbitmap)->bitmap;
+}
+
+void Fltk_button::gif_image(LispE* lisp) {
+    if (widget == NULL)
+        throw new Error("WND(805): Button not initialized");
+    if (!image)
+        throw new Error("WND(809): Image button required");
+    
+    Element* gif = lisp->get("gif");
+    if (gif->type != fltk_type_gif)
+        throw new Error("Error: this is not a GIF object");
+    
+    ((ButtonImage*)widget)->myimage = ((Fltk_gif*)gif)->image;
+}
+
 //------------------------------------------------------------------------------------
-Lispslider::Lispslider(LispE* lsp, short t,  int x, int y, int w, int h, int align, bool value_slider, string& label, Element* f, Element* o) : Lispwidget(lsp, t, f, o) {
+Fltk_slider::Fltk_slider(LispE* lsp, short t,  int x, int y, int w, int h, int align, bool value_slider, string& label, Element* f, Element* o) : Fltk_widget(lsp, t, f, o) {
     text = label;
 
     if (value_slider)
@@ -527,7 +608,7 @@ Lispslider::Lispslider(LispE* lsp, short t,  int x, int y, int w, int h, int ali
         widget->callback(fltk_callback, this);
 }
 
-void Lispslider::boundaries() {
+void Fltk_slider::boundaries() {
     if (widget == NULL)
         throw new Error("WND(101): No slider available");
     double x = lisp->get("low")->asNumber();
@@ -537,7 +618,7 @@ void Lispslider::boundaries() {
     unlocking(lisp);
 }
 
-void Lispslider::step() {
+void Fltk_slider::step() {
     if (widget == NULL)
         throw new Error("WND(101): No slider available");
     double stp = lisp->get("stp")->asNumber();
@@ -546,7 +627,7 @@ void Lispslider::step() {
     unlocking(lisp);
 }
 
-Element* Lispslider::value(LispE* lisp) {
+Element* Fltk_slider::value(LispE* lisp) {
     if (widget == NULL)
         throw new Error("WND(101): No slider available");
     Element* val = lisp->get("val");
@@ -562,8 +643,32 @@ Element* Lispslider::value(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------
+Fltk_bitmap::Fltk_bitmap(LispE* lisp, short ty, List* kbitmaps, int w, int h, int sz) : Element(ty) {
+    //If you do not have any parameters, then your function might return whatever you want... Here itself
+    szw = w;
+    szh = h;
+    
+    int rowBytes = (szw + 7) >> 3;
+    bm = new uchar[rowBytes*szh];
+    for (int i = 0; i < sz; i++) {
+        bm[i] = (uchar)kbitmaps->index(i)->asInt();
+    }
+    bitmap = new Fl_Bitmap(bm, szw, szh);
+}
+//------------------------------------------------------------------------------------
 
-Lispwindow::Lispwindow(LispE* lsp, short t, int x, int y, int w, int h, string& l, Element* f, Element* o) : Lispwidget(lsp, t, f, o) {
+Fltk_gif::Fltk_gif(LispE* lisp, short ty, string& name) : Element(ty) {
+    image = NULL;
+    filename = name;
+    if (filename != "") {
+        image = new Fl_GIF_Image(filename.c_str());
+        if (image == NULL)
+            throw new Error("Error: Image not loaded");
+    }
+}
+//------------------------------------------------------------------------------------
+
+Fltk_window::Fltk_window(LispE* lsp, short t, int x, int y, int w, int h, string& l, Element* f, Element* o) : Fltk_widget(lsp, t, f, o) {
     update = true;
     finalized = false;
     label = l;
@@ -577,7 +682,7 @@ Lispwindow::Lispwindow(LispE* lsp, short t, int x, int y, int w, int h, string& 
 
 }
 
-Lispwindow::Lispwindow(LispE* lsp, short t, int x, int y, string& l, Element* f, Element* o) : Lispwidget(lsp, t, f, o) {
+Fltk_window::Fltk_window(LispE* lsp, short t, int x, int y, string& l, Element* f, Element* o) : Fltk_widget(lsp, t, f, o) {
     update = true;
     finalized = false;
     label = l;
@@ -591,12 +696,12 @@ Lispwindow::Lispwindow(LispE* lsp, short t, int x, int y, string& l, Element* f,
 
 }
 
-Lispwindow::~Lispwindow() {
+Fltk_window::~Fltk_window() {
     lisp->delegation->removeFromForceClean(this, lisp->checkforLock());
     close_callback(window, this);
 }
 
-void Lispwindow::finalize(LispE* lisp) {
+void Fltk_window::finalize(LispE* lisp) {
     stopall = false;
     window->end();
     finalized = true;
@@ -611,8 +716,6 @@ void Lispwindow::finalize(LispE* lisp) {
     }
     window->show();
 }
-
-
 
 void fltk_reinit() {
 #ifdef WIN32
@@ -635,11 +738,11 @@ void fltk_reinit() {
 #endif
 }
 
-void Lispwindow::close() {
+void Fltk_window::close() {
     close_callback(window, this);
 }
 
-void Lispwindow::run() {
+void Fltk_window::run() {
     if (lisp->threadId())
         throw new Error("Error: cannot execute 'run' from a thread");
     if (!finalized)
@@ -663,9 +766,9 @@ void Lispwindow::run() {
     stopall = true;
 }
 
-void Lispwindow::arc(LispE* lisp) {
+void Fltk_window::arc(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     Element* w = lisp->get("w");
@@ -682,9 +785,58 @@ void Lispwindow::arc(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::drawText(LispE* lisp) {
+void Fltk_window::bitmap(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
+    Element* kbitmap = lisp->get("bitmap");
+    if (kbitmap->type != fltk_type_bitmap)
+        throw new Error("Error: this is not a bitmap");
+    
+    Fl_Color color = lisp->get("color")->asInt();
+
+    int x = lisp->get("x")->asInt();
+    int y = lisp->get("y")->asInt();
+    int w = ((Fltk_bitmap*)kbitmap)->szw;
+    int h = ((Fltk_bitmap*)kbitmap)->szh;
+
+    Fl_Bitmap* fl = ((Fltk_bitmap*)kbitmap)->bitmap;
+    if (!finalized) {
+        Fl_Box* box = new Fl_Box(x, y, w, h);
+        box->labelcolor(color);
+        box->image(fl);
+        return;
+    }
+    fl_color(color);
+    fl->draw(x, y, w, h);
+}
+
+void Fltk_window::gif_image(LispE* lisp) {
+    if (window == NULL)
+        throw new Error("Error: Window does not exist");
+    
+    Element* gif = lisp->get("gif");
+    if (gif->type != fltk_type_gif)
+        throw new Error("Error: this is not a GIF image");
+ 
+    int x = lisp->get("x")->asInt();
+    int y = lisp->get("y")->asInt();
+    int wx = lisp->get("wx")->asInt();
+    int wy = lisp->get("wy")->asInt();
+
+    Fl_Image* fl = ((Fltk_gif*)gif)->image;
+    if (fl == NULL)
+        throw new Error("Error: Unloaded image");
+    if (!finalized) {
+        Fl_Box* box = new Fl_Box(x, y, wx, wy);
+        box->image(fl);
+    }
+    else
+        fl->draw(x, y, wx, wy);
+}
+
+void Fltk_window::drawText(LispE* lisp) {
+    if (window == NULL)
+        throw new Error("Error: Window does not exist");
 #ifdef WIN32
     //On WIN32, if no font is given beforehand, the whole stuff crashes...
     if (fl_graphics_driver->font_descriptor() == NULL)
@@ -703,9 +855,9 @@ void Lispwindow::drawText(LispE* lisp) {
     delete[] label;
 }
 
-void Lispwindow::rectangle(LispE* lisp) {
+void Fltk_window::rectangle(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     Element* wx = lisp->get("wx");
@@ -722,9 +874,9 @@ void Lispwindow::rectangle(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::rectangleFill(LispE* lisp) {
+void Fltk_window::rectangleFill(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     Element* wx = lisp->get("wx");
@@ -741,9 +893,9 @@ void Lispwindow::rectangleFill(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::pie(LispE* lisp) {
+void Fltk_window::pie(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     Element* w = lisp->get("w");
@@ -755,9 +907,9 @@ void Lispwindow::pie(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::point(LispE* lisp) {
+void Fltk_window::point(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     locking(lisp);
@@ -765,9 +917,9 @@ void Lispwindow::point(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::circle(LispE* lisp) {
+void Fltk_window::circle(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     int x = lisp->get("x")->asInt();
     int y = lisp->get("y")->asInt();
     int r = lisp->get("r")->asInt();
@@ -787,9 +939,9 @@ void Lispwindow::circle(LispE* lisp) {
     fl_circle(x, y, r);
     unlocking(lisp);}
 
-void Lispwindow::lineShape(LispE* lisp) {
+void Fltk_window::lineShape(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     int ke = lisp->get("type_shape")->asInt();
     int w = lisp->get("w")->asInt();
 
@@ -798,9 +950,9 @@ void Lispwindow::lineShape(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::line(LispE* lisp) {
+void Fltk_window::line(LispE* lisp) {
     if (window == NULL)
-        throw new Error("WND(678): Window does not exist");
+        throw new Error("Error: Window does not exist");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     Element* x1 = lisp->get("x1");
@@ -816,9 +968,9 @@ void Lispwindow::line(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::textfont(LispE* lisp) {
+void Fltk_window::textfont(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* f = lisp->get("f");
     Element* sz = lisp->get("sz");
     int i = f->asInt();
@@ -828,18 +980,18 @@ void Lispwindow::textfont(LispE* lisp) {
     unlocking(lisp);
 }
 
-Element* Lispwindow::rgbcolor(LispE* lisp) {
+Element* Fltk_window::rgbcolor(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* r = lisp->get("r");
     Element* g = lisp->get("g");
     Element* b = lisp->get("b");
     return lisp->provideInteger(fl_rgb_color(r->asInt(), g->asInt(), b->asInt()));
 }
 
-Element* Lispwindow::coordinates(LispE* lisp) {
+Element* Fltk_window::coordinates(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
 
     Element* xx = lisp->get("x");
     Element* yy = lisp->get("y");
@@ -871,9 +1023,9 @@ Element* Lispwindow::coordinates(LispE* lisp) {
 }
 
 
-void Lispwindow::drawcolor(LispE* lisp) {
+void Fltk_window::drawcolor(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* ke = lisp->get("color");
     Fl_Color color = ke->asInt();
     locking(lisp);
@@ -881,9 +1033,9 @@ void Lispwindow::drawcolor(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::polygon(LispE* lisp) {
+void Fltk_window::polygon(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     Element* x1 = lisp->get("x1");
@@ -901,9 +1053,9 @@ void Lispwindow::polygon(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::loop(LispE* lisp) {
+void Fltk_window::loop(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     Element* x1 = lisp->get("x1");
@@ -922,9 +1074,9 @@ void Lispwindow::loop(LispE* lisp) {
     unlocking(lisp);
 }
 
-Element* Lispwindow::linerotation(LispE* lisp) {
+Element* Fltk_window::linerotation(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     double x = lisp->get("x")->asNumber();
     double y = lisp->get("y")->asNumber();
     double distance = lisp->get("distance")->asNumber();
@@ -945,9 +1097,9 @@ Element* Lispwindow::linerotation(LispE* lisp) {
     return kvect;
 }
 
-void Lispwindow::scale(LispE* lisp) {
+void Fltk_window::scale(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     locking(lisp);
@@ -958,9 +1110,9 @@ void Lispwindow::scale(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::translate(LispE* lisp) {
+void Fltk_window::translate(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     locking(lisp);
@@ -968,18 +1120,18 @@ void Lispwindow::translate(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::rotate(LispE* lisp) {
+void Fltk_window::rotate(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* d = lisp->get("d");
     locking(lisp);
     fl_rotate(d->asNumber());
     unlocking(lisp);
 }
 
-void Lispwindow::multmatrix(LispE* lisp) {
+void Fltk_window::multmatrix(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* a = lisp->get("a");
     Element* b = lisp->get("b");
     Element* c = lisp->get("c");
@@ -992,9 +1144,9 @@ void Lispwindow::multmatrix(LispE* lisp) {
     unlocking(lisp);
 }
 
-Element* Lispwindow::transform_x(LispE* lisp) {
+Element* Fltk_window::transform_x(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     locking(lisp);
@@ -1003,9 +1155,9 @@ Element* Lispwindow::transform_x(LispE* lisp) {
     return lisp->provideNumber(v);
 }
 
-Element* Lispwindow::transform_y(LispE* lisp) {
+Element* Fltk_window::transform_y(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     locking(lisp);
@@ -1014,9 +1166,9 @@ Element* Lispwindow::transform_y(LispE* lisp) {
     return lisp->provideNumber(v);
 }
 
-Element* Lispwindow::transform_dx(LispE* lisp) {
+Element* Fltk_window::transform_dx(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     locking(lisp);
@@ -1025,9 +1177,9 @@ Element* Lispwindow::transform_dx(LispE* lisp) {
     return lisp->provideNumber(v);
 }
 
-Element* Lispwindow::transform_dy(LispE* lisp) {
+Element* Fltk_window::transform_dy(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
     locking(lisp);
@@ -1036,9 +1188,9 @@ Element* Lispwindow::transform_dy(LispE* lisp) {
     return lisp->provideNumber(v);
 }
 
-void Lispwindow::transform_vertex(LispE* lisp) {
+void Fltk_window::transform_vertex(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
 
@@ -1047,10 +1199,10 @@ void Lispwindow::transform_vertex(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::pushclip(LispE* lisp) {
+void Fltk_window::pushclip(LispE* lisp) {
     //In our example, we have only two parameters
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     //0 is the first parameter and so on...
     Element* x = lisp->get("x");
     Element* y = lisp->get("y");
@@ -1062,19 +1214,19 @@ void Lispwindow::pushclip(LispE* lisp) {
     unlocking(lisp);
 }
 
-void Lispwindow::popclip(LispE* lisp) {
+void Fltk_window::popclip(LispE* lisp) {
     //In our example, we have only two parameters
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
 
     locking(lisp);
     fl_pop_clip();
     unlocking(lisp);
 }
 
-Element* Lispwindow::textsize(LispE* lisp) {
+Element* Fltk_window::textsize(LispE* lisp) {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     Element* t = lisp->get("text");
     string buf = t->toString(lisp);
     int w;
@@ -1086,9 +1238,9 @@ Element* Lispwindow::textsize(LispE* lisp) {
     return iv;
 }
 
-void Lispwindow::resize() {
+void Fltk_window::resize() {
     if (window == NULL)
-        throw new Error(L"WND(678): Widget not initialized");
+        throw new Error(L"Error: Widget not initialized");
     int minw = lisp->get("minw")->asInt();
     int minh = lisp->get("minh")->asInt();
     int maxw = lisp->get("maxw")->asInt();
@@ -1098,7 +1250,7 @@ void Lispwindow::resize() {
 
 
 
-Element* Lispwindow::plot(LispE* lisp) {
+Element* Fltk_window::plot(LispE* lisp) {
     if (window == NULL)
         throw new Error(L"WND(303): No window available");
     Element* points = lisp->get("points");
@@ -1264,7 +1416,7 @@ Element* Lispwindow::plot(LispE* lisp) {
     return kvect;
 }
 
-Element* Lispwindow::plotcoords(LispE* lisp) {
+Element* Fltk_window::plotcoords(LispE* lisp) {
     Element* kvect = lisp->get("landmark");
     if (kvect->size() != 11)
         throw new Error(L"WND(862): Wrong values to compute coordinates");
@@ -1291,7 +1443,7 @@ Element* Lispwindow::plotcoords(LispE* lisp) {
     return kres;
 }
 
-Element* Lispwindow::ask(LispE* lisp) {
+Element* Fltk_window::ask(LispE* lisp) {
     int a;
     string msg = lisp->get("msg")->toString(lisp);
     string msg1 = lisp->get("msg1")->toString(lisp);
@@ -1314,21 +1466,21 @@ Element* Lispwindow::ask(LispE* lisp) {
     return lisp->provideInteger(a);
 }
 
-void Lispwindow::alert(LispE* lisp) {
+void Fltk_window::alert(LispE* lisp) {
     string msg = lisp->get("msg")->toString(lisp);
     locking(lisp);
     fl_alert(msg.c_str());
     unlocking(lisp);
 }
 
-void Lispwindow::onclose(Element* f) {
+void Fltk_window::onclose(Element* f) {
     on_close_function = f;
     window->callback(fltk_close_callback, this);
 }
 
 //------------------------------------------------------------------------------------------------
 
-Doublewindow::Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l, Lispwindow* wn) : Fl_Double_Window(x, y, w, h, l) {
+Doublewindow::Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l, Fltk_window* wn) : Fl_Double_Window(x, y, w, h, l) {
     lisp = lsp;
     window = wn;
 
@@ -1336,7 +1488,7 @@ Doublewindow::Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l
     callback(close_callback, window);
 }
 
-Doublewindow::Doublewindow(LispE* lsp, int x, int y, const char* l, Lispwindow* wn) : Fl_Double_Window(x, y, l) {
+Doublewindow::Doublewindow(LispE* lsp, int x, int y, const char* l, Fltk_window* wn) : Fl_Double_Window(x, y, l) {
     lisp = lsp;
     window = wn;
 
@@ -1384,14 +1536,14 @@ Lispe_gui::Lispe_gui(LispE* lisp, short fltk, short fltk_w, fltk_action a) : act
 
 Element* Lispe_gui::eval(LispE* lisp) {
     //The name defined in the extension is not insignificant, it is used to retrieve our arguments.
-    Lispwidget* wnd = NULL;
+    Fltk_widget* wnd = NULL;
 
     //Before fltk_run, object creation methods
     if (action > fltk_create_resizable) {
         Element* e = lisp->get("widget");
         if (e->type != fltk_widget)
             throw new Error("Error: Expecting a 'widget' object");
-        wnd = (Lispwindow*)e;
+        wnd = (Fltk_window*)e;
     }
 
     try {
@@ -1404,7 +1556,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 string label = lisp->get("label")->toString(lisp);
                 Element* function  = lisp->get("function");
                 Element* object  = lisp->get("object");
-                return new Lispwindow(lisp,fltk_widget,x,y,w,h, label,function, object);
+                return new Fltk_window(lisp,fltk_widget,x,y,w,h, label,function, object);
             }
             case fltk_create_resizable: {
                 int x = lisp->get("x")->asInt();
@@ -1412,7 +1564,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 string label = lisp->get("label")->toString(lisp);
                 Element* function  = lisp->get("function");
                 Element* object  = lisp->get("object");
-                return new Lispwindow(lisp,fltk_widget,x,y, label,function, object);
+                return new Fltk_window(lisp,fltk_widget,x,y, label,function, object);
             }
             case fltk_input: {
                 int x = lisp->get("x")->asInt();
@@ -1423,7 +1575,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 string label = lisp->get("label")->toString(lisp);
                 Element* function  = lisp->get("function");
                 Element* object  = lisp->get("object");
-                Lispinput* wdg = new Lispinput(lisp,fltk_widget,x,y,w,h, multiline,label,function, object);
+                Fltk_input* wdg = new Fltk_input(lisp,fltk_widget,x,y,w,h, multiline,label,function, object);
                 wnd->push(wdg);
                 return wdg;
             }
@@ -1434,7 +1586,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 int h = lisp->get("h")->asInt();
                 bool multiline = lisp->get("multiline")->Boolean();
                 string label = lisp->get("label")->toString(lisp);
-                Lispoutput* wdg = new Lispoutput(lisp,fltk_widget,x,y,w,h, multiline,label);
+                Fltk_output* wdg = new Fltk_output(lisp,fltk_widget,x,y,w,h, multiline,label);
                 wnd->push(wdg);
                 return wdg;
             }
@@ -1449,7 +1601,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 string label = lisp->get("label")->toString(lisp);
                 Element* function  = lisp->get("function");
                 Element* object  = lisp->get("object");
-                Lispbutton* wdg = new Lispbutton(lisp,fltk_widget,x,y,w,h, thetype, shape, label,function, object);
+                Fltk_button* wdg = new Fltk_button(lisp,fltk_widget,x,y,w,h, thetype, shape, label,function, object);
                 wnd->push(wdg);
                 return wdg;
             }
@@ -1463,7 +1615,7 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 string label = lisp->get("label")->toString(lisp);
                 Element* function  = lisp->get("function");
                 Element* object  = lisp->get("object");
-                Lispslider* wdg = new Lispslider(lisp,fltk_widget,x,y,w,h, align,value_slider,label,function, object);
+                Fltk_slider* wdg = new Fltk_slider(lisp,fltk_widget,x,y,w,h, align,value_slider,label,function, object);
                 wnd->push(wdg);
                 return wdg;
             }
@@ -1616,10 +1768,35 @@ Element* Lispe_gui::eval(LispE* lisp) {
                 return true_;
             case fltk_label:
                 return wnd->widget_label(lisp);
+            case fltk_create_bitmap: {
+                Element* kbitmaps = lisp->get("bitmap");
+                if (!kbitmaps->isList())
+                    throw new Error("Error: The argument should be a list of integers in 'fltk_create_bitmap'");
+
+                int w = lisp->get("length")->asInt();
+                int h = lisp->get("height")->asInt();
+                int sz = (int)kbitmaps->size();
+
+                if (sz != ((w*h) >> 3) )
+                    throw new Error("Wrong size for the bitmap. sz=(width*height)/8 in 'fltk_create_bitmap'");
+
+                return new Fltk_bitmap(lisp, fltk_type_bitmap, (List*)kbitmaps, w, h, sz);
+            }
+            case fltk_bitmap:
+                wnd->bitmap(lisp);
+                return true_;
+            case fltk_create_gif: {
+                string filename = lisp->get("filename")->toString(lisp);
+                return new Fltk_gif(lisp, fltk_type_gif, filename);
+            }
+            case fltk_gif_image:
+                wnd->gif_image(lisp);
+                return true_;
         }
     }
     catch(Error* err) {
-        wnd->close();
+        if (wnd != NULL)
+            wnd->close();
         throw err;
     }
 
@@ -1636,6 +1813,10 @@ wstring Lispe_gui::asString(LispE* lisp) {
             return L"Launch the GUI";
         case fltk_create_resizable:
             return L"Create a window";
+        case fltk_create_gif:
+            return L"Create a GIF container";
+        case fltk_gif_image:
+            return L"Add a GIF image to a widget";
         case fltk_resize:
             return L"resize a window";
         case fltk_close:
@@ -1754,6 +1935,10 @@ wstring Lispe_gui::asString(LispE* lisp) {
             return L"Define the boundaries of a slider";
         case fltk_label:
             return L"Return or set the label of a widget";
+        case fltk_create_bitmap:
+            return L"Create a bitmap object out of a list of integers and its dimension: size = (width*height)/8";
+        case fltk_bitmap:
+            return L"Add a bitmap to a window or to a button";
     }
     return L"fltk";
 }
@@ -1765,6 +1950,12 @@ Exporting bool InitialisationModule(LispE* lisp) {
     short fltk_gui = lisp->encode(nom);
     nom = L"fltk_widget";
     short fltk_widget = lisp->encode(nom);
+    
+    nom = L"fltk_bitmap";
+    fltk_type_bitmap = lisp->encode(nom);
+    
+    nom = L"fltk_gif_image";
+    fltk_type_gif = lisp->encode(nom);
 
     lisp->recordingglobal(L"FL_FOREGROUND_COLOR", lisp->provideInteger(FL_FOREGROUND_COLOR));
     lisp->recordingglobal(L"FL_BACKGROUND2_COLOR", lisp->provideInteger(FL_BACKGROUND2_COLOR));
@@ -1839,6 +2030,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->recordingglobal(L"FL_REPEAT_BUTTON_TYPE", lisp->provideInteger(3));
     lisp->recordingglobal(L"FL_RETURN_BUTTON_TYPE", lisp->provideInteger(4));
     lisp->recordingglobal(L"FL_ROUND_BUTTON_TYPE", lisp->provideInteger(5));
+    lisp->recordingglobal(L"FL_IMAGE_BUTTON_TYPE", lisp->provideInteger(6));
 
     lisp->recordingglobal(L"FL_NORMAL_BUTTON_SHAPE", lisp->provideInteger(FL_NORMAL_BUTTON));
     lisp->recordingglobal(L"FL_TOGGLE_BUTTON_SHAPE", lisp->provideInteger(FL_TOGGLE_BUTTON));
@@ -1948,6 +2140,13 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib fltk_slider (widget x y w h label slider_orientation slider_value_type function (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_slider));
     lisp->extension("deflib fltk_step (widget stp)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_step));
     lisp->extension("deflib fltk_boundaries (widget low high)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_boundaries));
+
+    lisp->extension("deflib fltk_create_bitmap (bitmap length height)", new Lispe_gui(lisp, fltk_gui, fltk_type_bitmap, fltk_create_bitmap));
+    lisp->extension("deflib fltk_bitmap (widget bitmap color (x) (y))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_bitmap));
+
+
+    lisp->extension("deflib fltk_create_gif (filename)", new Lispe_gui(lisp, fltk_gui, fltk_type_gif, fltk_create_gif));
+    lisp->extension("deflib fltk_gif (widget gif (x) (y) (wx) (wy))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_gif_image));
 
     return true;
 }

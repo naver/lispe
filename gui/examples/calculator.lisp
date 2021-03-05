@@ -1,11 +1,13 @@
 (use 'gui)
 
 (setq wnd (fltk_create 100 100 300 300 "Calculator"))
-(setq n1 (fltk_input wnd 50 20 150 20 "N1:" false))
-(setq n2 (fltk_input wnd 50 60 150 20 "N2:" false))
-(setq n3 (fltk_input wnd 50 100 150 20 "N3:" false))
-(setq n4 (fltk_input wnd 50 140 150 20 "N4:" false))
-(setq mem (fltk_input wnd 50 180 150 20 "MEM:" false))
+
+(setq n1 (fltk_input wnd 50 60 150 20 "N1:" false))
+(setq n2 (fltk_input wnd 50 100 150 20 "N2:" false))
+(setq n3 (fltk_input wnd 50 140 150 20 "N3:" false))
+(setq n4 (fltk_input wnd 50 180 150 20 "N4:" false))
+(setq mem (fltk_input wnd 50 20 150 20 "Mem:" false))
+
 (setq result (fltk_input wnd 60 230 200 20 "Result:" false))
 (setq bplus (fltk_button wnd 230 20 30 30 "+" 'plus))
 (setq bminus (fltk_button wnd 230 60 30 30 "-" 'moins))
@@ -90,6 +92,7 @@
 
 (fltk_focus wnd)
 (fltk_run wnd)
+
 
 
 

@@ -14,7 +14,7 @@
 
 class Doublewindow;
 
-class Lispwidget : public Element {
+class Fltk_widget : public Element {
 public:
     LispE* lisp;
     Fl_Widget* widget;
@@ -22,7 +22,7 @@ public:
     Element* object;
     
 
-    Lispwidget(LispE* lsp, short t, Element* f, Element* o) : Element(t) {
+    Fltk_widget(LispE* lsp, short t, Element* f, Element* o) : Element(t) {
         lisp = lsp;
         widget = NULL;
         object = null_;
@@ -42,7 +42,7 @@ public:
         //deletion of FLTK objects
     }
     
-    ~Lispwidget() {
+    ~Fltk_widget() {
         if (widget != NULL)
             delete widget;
     }
@@ -100,6 +100,9 @@ public:
     virtual void popclip(LispE*) {}
     virtual void alert(LispE*) {}
     
+    virtual void bitmap(LispE* lisp) {}
+    virtual void gif_image(LispE* lisp) {}
+    
     virtual void onclose(Element* f) {}
     
     Element* widget_label(LispE*);
@@ -132,10 +135,10 @@ public:
             widget = NULL;
         }
     }
-    virtual void push(Lispwidget* w) {}
+    virtual void push(Fltk_widget* w) {}
 };
 
-class Lispwindow : public Lispwidget {
+class Fltk_window : public Fltk_widget {
 public:
     Doublewindow* window;
     Element* on_close_function;
@@ -143,13 +146,13 @@ public:
     double time_value;
     bool update;
     bool finalized;
-    vector<Lispwidget*> items;
+    vector<Fltk_widget*> items;
 
-    Lispwindow(LispE* lsp, short t,  int x, int y, int w, int h, string& label, Element* f, Element* o);
-    Lispwindow(LispE* lsp, short t,  int x, int y, string& label, Element* f, Element* o);
-    ~Lispwindow();
+    Fltk_window(LispE* lsp, short t,  int x, int y, int w, int h, string& label, Element* f, Element* o);
+    Fltk_window(LispE* lsp, short t,  int x, int y, string& label, Element* f, Element* o);
+    ~Fltk_window();
     
-    void push(Lispwidget* w) {
+    void push(Fltk_widget* w) {
         items.push_back(w);
         w->incrementstatus(1,true);
     }
@@ -193,7 +196,9 @@ public:
     void popclip(LispE*);
     void alert(LispE*);
     void resize();
-
+    void bitmap(LispE*);
+    void gif_image(LispE*);
+    
     void clean() {
         close();
     }
@@ -201,12 +206,12 @@ public:
 
 //------------------------------------------------------------------------------------
 
-class Lispinput : public Lispwidget {
+class Fltk_input : public Fltk_widget {
 public:
     string text;
     string buf;
     
-    Lispinput(LispE* lsp, short t,  int x, int y, int w, int h, bool mltline, string& label, Element* f, Element* o);
+    Fltk_input(LispE* lsp, short t,  int x, int y, int w, int h, bool mltline, string& label, Element* f, Element* o);
     
     Element* value(LispE*);
     void insert(LispE*);
@@ -215,12 +220,12 @@ public:
 
 //------------------------------------------------------------------------------------
 
-class Lispoutput : public Lispwidget {
+class Fltk_output : public Fltk_widget {
 public:
     string text;
     string buf;
     
-    Lispoutput(LispE* lsp, short t,  int x, int y, int w, int h, bool mltline, string& label);
+    Fltk_output(LispE* lsp, short t,  int x, int y, int w, int h, bool mltline, string& label);
     
     Element* value(LispE*);
     void wrap();
@@ -229,24 +234,27 @@ public:
 
 //------------------------------------------------------------------------------------
 
-class Lispbutton : public Lispwidget {
+class Fltk_button : public Fltk_widget {
 public:
 
     string text;
+    bool image;
     
-    Lispbutton(LispE* lsp, short t,  int x, int y, int w, int h, int thetype, int shape, string& label, Element* f, Element* o);
+    Fltk_button(LispE* lsp, short t,  int x, int y, int w, int h, int thetype, int shape, string& label, Element* f, Element* o);
     Element* value(LispE*);
+    void bitmap(LispE*);
+    void gif_image(LispE*);
     
 };
 
 //------------------------------------------------------------------------------------
 
-class Lispslider : public Lispwidget {
+class Fltk_slider : public Fltk_widget {
 public:
 
     string text;
     
-    Lispslider(LispE* lsp, short t,  int x, int y, int w, int h, int align, bool value_slider, string& label, Element* f, Element* o);
+    Fltk_slider(LispE* lsp, short t,  int x, int y, int w, int h, int align, bool value_slider, string& label, Element* f, Element* o);
     Element* value(LispE*);
     void boundaries();
     void step();
@@ -254,14 +262,34 @@ public:
 
 //------------------------------------------------------------------------------------
 
+class Fltk_bitmap : public Element {
+public:
+    Fl_Bitmap* bitmap;
+    uchar* bm;
+    int szw, szh;
+
+    Fltk_bitmap(LispE* lisp, short ty, List* kbitmaps, int w, int h, int sz);
+};
+
+//------------------------------------------------------------------------------------
+class Fltk_gif : public Element {
+public:
+    Fl_Image* image;
+    string filename;
+
+    Fltk_gif(LispE* lisp, short ty, string& name);
+};
+
+//------------------------------------------------------------------------------------
+
 class Doublewindow : public Fl_Double_Window {
 public:
     LispE* lisp;
-    Lispwindow* window;
+    Fltk_window* window;
     long iwindow;
 
-    Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l, Lispwindow* wn);
-    Doublewindow(LispE* lsp, int x, int y, const char* l, Lispwindow* wn);
+    Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l, Fltk_window* wn);
+    Doublewindow(LispE* lsp, int x, int y, const char* l, Fltk_window* wn);
 
     ~Doublewindow();
 
@@ -269,7 +297,9 @@ public:
 };
 
 
-typedef enum {fltk_create, fltk_create_resizable, fltk_input, fltk_output, fltk_button, fltk_slider,
+typedef enum {
+    fltk_create_bitmap, fltk_create_gif, fltk_create, fltk_create_resizable,
+    fltk_input, fltk_output, fltk_button, fltk_slider, fltk_bitmap, fltk_gif_image,
     fltk_run, fltk_end, fltk_close, fltk_on_close, fltk_value, fltk_insert, fltk_selection, fltk_resize,
     fltk_redraw, fltk_circle, fltk_drawtext, fltk_rectangle, fltk_wrap, fltk_step, fltk_label,
     fltk_rectanglefill, fltk_arc, fltk_pie, fltk_point, fltk_line, fltk_boundaries,
