@@ -3007,22 +3007,22 @@ Element* List::evall_key(LispE* lisp) {
         first_element = liste[1]->eval(lisp);
         if (first_element->type == t_dictionary) {
             wstring a_key;
-            for (long i = 2; i < listsize; i+=2) {
+			// It is out of question to manipulate a dictionary declared in the code
+			first_element = first_element->duplicate_constant_container();
+			for (long i = 2; i < listsize; i+=2) {
                 evalAsString(i, lisp, a_key);
                 second_element = liste[i+1]->eval(lisp);
-                // It is out of question to manipulate a dictionary declared in the code
-                first_element = first_element->duplicate_constant_container();
                 first_element->recording(a_key, second_element->copying(false));
             }
             return first_element;
         }
         if (first_element->type == t_dictionaryn) {
             double a_key;
-            for (long i = 2; i < listsize; i+=2) {
+			// It is out of question to manipulate a dictionary declared in the code
+			first_element = first_element->duplicate_constant_container();
+			for (long i = 2; i < listsize; i+=2) {
                 evalAsNumber(i, lisp, a_key);
                 second_element = liste[i+1]->eval(lisp);
-                // It is out of question to manipulate a dictionary declared in the code
-                first_element = first_element->duplicate_constant_container();
                 first_element->recording(a_key, second_element->copying(false));
             }
             return first_element;
@@ -3074,11 +3074,11 @@ Element* List::evall_keyn(LispE* lisp) {
             throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
         }
         double a_key;
-        for (long i = 2; i < listsize; i+=2) {
+		// It is out of question to manipulate a dictionary declared in the code
+		first_element = first_element->duplicate_constant_container();
+		for (long i = 2; i < listsize; i+=2) {
             evalAsNumber(i, lisp, a_key);
             second_element = liste[i+1]->eval(lisp);
-            // It is out of question to manipulate a dictionary declared in the code
-            first_element = first_element->duplicate_constant_container();
             first_element->recording(a_key, second_element->copying(false));
         }
         return first_element;
