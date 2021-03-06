@@ -326,65 +326,24 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
     if (!choice || keyvalues.size() != valuevalues.size())
         throw new Error("Error: dictionary has a different number of key/value");
     
-    List* l;
     List* last_element = new List;
     Element* keycmd;
     
     if (type == t_number || type == t_integer)
-        // (keyn (keyn (keyn (keyn (keyn (keyn (keyn (keyn) c v) c v) c v)
         keycmd = lisp->delegation->_DICO_KEYN;
     else
         keycmd = lisp->delegation->_DICO_KEY;
     
+
+    //We generate: (key (key) k v k' v' k" v"...)
     last_element->append(keycmd);
+    last_element->append(new List);
+    last_element->liste[1]->append(keycmd);
     for (long i = 0; i < keyvalues.size(); i++) {
-        l = new List;
-        l->append(keycmd);
-        l->append(last_element);
-        l->append(keyvalues[i]);
-        l->append(valuevalues[i]);
-        last_element = l;
+        last_element->append(keyvalues[i]);
+        last_element->append(valuevalues[i]);
     }
     return last_element;
-}
-
-//This method returns the actual dictionary. It is used in json_parse, which expects
-//the input to have no reference to the current Lisp program (no variables)
-Element* Dictionary_as_list::rawdictionary(LispE* lisp) {
-    if (keyvalues.size() != valuevalues.size())
-        throw new Error("Error: dictionary has a different number of key/value");
-    if (!keyvalues.size())
-        return emptydictionary_;
-    
-    Element* e;
-    if (type == t_number || type == t_integer) {
-        // (keyn (keyn (keyn (keyn (keyn (keyn (keyn (keyn) c v) c v) c v)
-        Dictionary_n* dico = new Dictionary_n;
-        double k;
-        for (long i = 0; i < keyvalues.size(); i++) {
-            k = keyvalues[i]->asNumber();
-            e = dico->dictionary[k];
-            if (e != NULL)
-                e->decrementstatus(1, false);
-            dico->dictionary[k] = valuevalues[i];
-            valuevalues[i]->incrementstatus(1, false);
-            keyvalues[i]->release();
-        }
-        return dico;
-    }
-
-    Dictionary* dico = new Dictionary;
-    wstring k;
-    for (long i = 0; i < keyvalues.size(); i++) {
-        k = keyvalues[i]->asString(lisp);
-        e = dico->dictionary[k];
-        if (e != NULL)
-            e->decrementstatus(1, false);
-        dico->dictionary[k] = valuevalues[i];
-        valuevalues[i]->incrementstatus(1, false);
-        keyvalues[i]->release();
-    }
-    return dico;
 }
 
 //------------------------------------------------------------------------------------------

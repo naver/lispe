@@ -646,10 +646,6 @@ public:
         return this;
     }
     
-    virtual Element* rawdictionary(LispE* lisp) {
-        return this;
-    }
-    
     virtual void reversechoice() {}
     
     virtual bool verify() {
@@ -2362,7 +2358,6 @@ public:
     }
     
     Element* dictionary(LispE* lisp);
-    Element* rawdictionary(LispE* lisp);
     
     bool isDictionary() {
         return true;
