@@ -56,7 +56,6 @@ public:
     Element* selectionColor(LispE* lisp);
 
     void align(LispE*);
-
     
     void hide(LispE*);
     void focus(LispE*);
@@ -140,7 +139,6 @@ public:
 
 class Fltk_window : public Fltk_widget {
 public:
-    Doublewindow* window;
     Element* on_close_function;
     string label;
     double time_value;
@@ -199,6 +197,10 @@ public:
     void bitmap(LispE*);
     void gif_image(LispE*);
     
+    Doublewindow* window() {
+        return (Doublewindow*)widget;
+    }
+
     void clean() {
         close();
     }
@@ -285,8 +287,8 @@ public:
 class Doublewindow : public Fl_Double_Window {
 public:
     LispE* lisp;
-    Fltk_window* window;
-    long iwindow;
+    Fltk_window* fltk_window;
+    long i_fltk_window;
 
     Doublewindow(LispE* lsp, int x, int y, int w, int h, const char* l, Fltk_window* wn);
     Doublewindow(LispE* lsp, int x, int y, const char* l, Fltk_window* wn);
