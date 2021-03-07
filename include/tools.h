@@ -87,6 +87,11 @@ void noconvertingfloathexa(const char* s, short& l);
 double convertingfloathexa(const char* s, long& l);
 double convertingfloathexa(const char* s);
 
+wstring convertToWString(long d);
+string convertToString(long d);
+wstring convertToWString(double d);
+string convertToString(double d);
+
 string s_replacingstring(string& s, string reg, string rep);
 wstring s_wreplacestring(wstring& s, wstring reg, wstring rep);
 

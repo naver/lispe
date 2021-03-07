@@ -294,7 +294,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
             }
             unordered_map<double, Element*>& dico = ((Dictionary_n*)this)->dictionary;
             for (auto& a: dico) {
-                local = std::to_string(a.first);
+                local = convertToString(a.first);
                 code += local;
                 code += ":";
                 a.second->prettyfying(lisp, code);
@@ -382,7 +382,7 @@ void Dictionary_as_buffer::append(LispE* lisp, wstring& k) {
 
 void Dictionary_as_buffer::append(LispE* lisp, double v) {
     if (choice)
-        key = std::to_wstring(v);
+        key = convertToWString(v);
     else {
         dico->dictionary[key] = lisp->provideNumber(v);
         reversechoice();
@@ -391,7 +391,7 @@ void Dictionary_as_buffer::append(LispE* lisp, double v) {
 
 void Dictionary_as_buffer::append(LispE* lisp, long v) {
     if (choice)
-        key = std::to_wstring(v);
+        key = convertToWString(v);
     else {
         dico->dictionary[key] = lisp->provideInteger(v);
         reversechoice();

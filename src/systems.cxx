@@ -784,11 +784,11 @@ public:
     }
     
     wstring asString(LispE* lisp) {
-        return std::to_wstring(chrono_value.time_since_epoch().count());
+        return convertToWString((long)chrono_value.time_since_epoch().count());
     }
 
     string toString(LispE* lisp) {
-        return std::to_string(chrono_value.time_since_epoch().count());
+        return convertToString((long)chrono_value.time_since_epoch().count());
     }
 
 };

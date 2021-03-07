@@ -20,6 +20,8 @@
 #include <io.h>
 #else
 #include <dlfcn.h>
+#define sprintf_s snprintf
+#define swprintf_s swprintf
 #endif
 
 /*
@@ -110,6 +112,32 @@ static inline double power10(long n)
 //------------------------------------------------------------------------
 #define isadigit(c) (c >= '0' && c <= '9')
 #define uchar unsigned char
+
+wstring convertToWString(long d) {
+    wchar_t buff[20];
+    swprintf_s(buff, 20, L"%ld", d);
+    return buff;
+}
+
+string convertToString(long d) {
+    char buff[20];
+    sprintf_s(buff, 20, "%ld", d);
+    return buff;
+}
+
+wstring convertToWString(double d) {
+    wchar_t buff[20];
+    swprintf_s(buff, 20, L"%g", d);
+    return buff;
+}
+
+string convertToString(double d) {
+    char buff[20];
+    sprintf_s(buff, 20, "%g", d);
+    return buff;
+}
+
+
 //------------------------------------------------------------------------
 static wchar_t ponctuations[] = {
     0x21, 0x22, 0x23, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D,

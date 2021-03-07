@@ -1076,11 +1076,11 @@ public:
     }
     
     wstring asString(LispE* lisp) {
-        return std::to_wstring(number);
+        return convertToWString(number);
     }
 
     string toString(LispE* lisp) {
-        return std::to_string(number);
+        return convertToString(number);
     }
 
     double asNumber() {
@@ -1190,11 +1190,11 @@ public:
     void protecting(bool protection) {}
     
     wstring asString(LispE* lisp) {
-        return std::to_wstring(integer);
+        return convertToWString(integer);
     }
 
     string toString(LispE* lisp) {
-        return std::to_string(integer);
+        return convertToString(integer);
     }
 
     bool isNumber() {
@@ -2179,7 +2179,7 @@ public:
             else
                 premier = false;
             
-            tampon += std::to_wstring(a.first);
+            tampon += convertToWString(a.first);
             tampon += L":";
             tampon += a.second->jsonString(lisp);
         }
@@ -2209,7 +2209,7 @@ public:
             }
             else
                 premier = false;
-            tampon += std::to_wstring(a.first);
+            tampon += convertToWString(a.first);
             tampon += L":";
             tampon += a.second->stringInList(lisp);
         }
@@ -2314,12 +2314,16 @@ public:
             keyvalues.push_back(e);
             if (type == t_dictionary) {
                 //Initial, type prend le type de 'e'
-                type = e->type;
+                if (e->isNumber())
+                    type = t_number;
+                else
+                    type = t_string;
             }
             else {
                 //If the elements are mangled, then it is a dictionary indexed on strings
-                if (e->type != type)
+                if (type == t_number && !e->isNumber()) {
                     type = t_string;
+                }
             }
         }
         else {
