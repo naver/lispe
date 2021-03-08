@@ -61,44 +61,49 @@ public:
     void focus(LispE*);
     void show(LispE*);
 
+    void  circle(LispE* lisp);
+    void  point(LispE* lisp);
+    void  pie(LispE* lisp);
+    void  rectangleFill(LispE* lisp);
+    void  rectangle(LispE* lisp);
+    void  drawText(LispE* lisp);
+    void  arc(LispE* lisp);
+    void  line(LispE* lisp);
+    void  lineShape(LispE* lisp);
+    
+
+    Element* coordinates(LispE* lisp);
+    Element* linerotation(LispE* lisp);
+    Element* transform_x(LispE* lisp);
+    Element* transform_y(LispE* lisp);
+    Element* transform_dx(LispE* lisp);
+    Element* transform_dy(LispE* lisp);
+    Element* plot(LispE* lisp);
+    Element* plotcoords(LispE* lisp);
+    Element* textsize(LispE* lisp);
+    Element* rgbcolor(LispE* lisp);;
+
+        
+    void drawcolor(LispE* lisp);
+    void textfont(LispE* lisp);
+    void polygon(LispE* lisp);
+    void loop(LispE* lisp);
+    void scale(LispE* lisp);
+    void translate(LispE* lisp);
+    void rotate(LispE* lisp);
+    void multmatrix(LispE* lisp);
+    void transform_vertex(LispE* lisp);
+    void pushclip(LispE*);
+    void popclip(LispE*);
+    
+    
     virtual void run() {}
     virtual void finalize(LispE*) {}
-    virtual void  circle(LispE* lisp) {}
-    virtual void  point(LispE* lisp) {}
-    virtual void  pie(LispE* lisp) {}
-    virtual void  rectangleFill(LispE* lisp) {}
-    virtual void  rectangle(LispE* lisp) {}
-    virtual void  drawText(LispE* lisp) {}
-    virtual void  arc(LispE* lisp) {}
-    virtual void  line(LispE* lisp) {}
-    virtual void  lineShape(LispE* lisp) {}
     virtual void  close() {}
-    
-    virtual Element* coordinates(LispE* lisp) {return null_;}
-    virtual Element* linerotation(LispE* lisp) {return null_;}
-    virtual Element* transform_x(LispE* lisp) {return null_;}
-    virtual Element* transform_y(LispE* lisp) {return null_;}
-    virtual Element* transform_dx(LispE* lisp) {return null_;}
-    virtual Element* transform_dy(LispE* lisp) {return null_;}
-    virtual Element* plot(LispE* lisp) {return null_;}
     virtual Element* ask(LispE* lisp) {return null_;}
-    virtual Element* plotcoords(LispE* lisp) {return null_;}
-    virtual Element* textsize(LispE* lisp) {return null_;}
-    virtual Element* rgbcolor(LispE* lisp) {return null_;};
-        
-    virtual void drawcolor(LispE* lisp) {}
-    virtual void textfont(LispE* lisp) {}
-    virtual void polygon(LispE* lisp) {}
-    virtual void loop(LispE* lisp) {}
-    virtual void scale(LispE* lisp) {}
-    virtual void translate(LispE* lisp) {}
-    virtual void rotate(LispE* lisp) {}
-    virtual void multmatrix(LispE* lisp) {}
-    virtual void transform_vertex(LispE* lisp) {}
-    virtual void pushclip(LispE*) {}
-    virtual void popclip(LispE*) {}
     virtual void alert(LispE*) {}
-    
+
+
     virtual void bitmap(LispE* lisp) {}
     virtual void gif_image(LispE* lisp) {}
     
@@ -157,42 +162,12 @@ public:
     
     void run();
     void finalize(LispE*);
-    void circle(LispE* lisp);
-    void point(LispE* lisp);
-    void pie(LispE* lisp);
-    void rectangleFill(LispE* lisp);
-    void rectangle(LispE* lisp);
-    void drawText(LispE* lisp);
-    void arc(LispE* lisp);
-    void line(LispE* lisp);
-    void lineShape(LispE* lisp);
     void close();
     
-    Element* coordinates(LispE*);
-    Element* linerotation(LispE*);
-    Element* transform_x(LispE*);
-    Element* transform_y(LispE*);
-    Element* transform_dx(LispE*);
-    Element* transform_dy(LispE*);
-    Element* plot(LispE*);
     Element* ask(LispE*);
-    Element* plotcoords(LispE*);
-    Element* textsize(LispE*);
-    Element* rgbcolor(LispE*);
-        
-    void onclose(Element* f);
-    void drawcolor(LispE*);
-    void textfont(LispE*);
-    void polygon(LispE*);
-    void loop(LispE*);
-    void scale(LispE*);
-    void translate(LispE*);
-    void rotate(LispE*);
-    void multmatrix(LispE*);
-    void transform_vertex(LispE*);
-    void pushclip(LispE*);
-    void popclip(LispE*);
     void alert(LispE*);
+
+    void onclose(Element* f);
     void resize();
     void bitmap(LispE*);
     void gif_image(LispE*);
