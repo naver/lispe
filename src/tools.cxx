@@ -3409,7 +3409,7 @@ Element* LispE::load_library(string nom_bib) {
 			atanlib = getenv("LISPEPATH");
 		else {
 			stringstream message;
-			message << "Error: Please set LISPEPATH: " << name;
+			message << "Error: You need to execute: set LISPEPATH=your_lispe_library_path";
 			throw new Error(message.str());
 		}
 
