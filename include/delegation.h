@@ -135,6 +135,7 @@ public:
     void* reading_string_function_object;
     
     Element* _BOOLEANS[2];
+    Element* _NUMERICAL_BOOLEANS[2];
     
     Atome* _ERROR;
     Atome* _TERMINAL;
@@ -411,6 +412,15 @@ public:
         return operator_pool[code];
     }
 
+    bool checkArity(short instruction_code, unsigned long arity) {
+        try {
+            return (arities.at(instruction_code) == arity);
+        }
+        catch(const std::out_of_range& oor) {
+            return false;
+        }
+        return false;
+    }
 
     inline void set_instruction(short instruction_code, string name,  unsigned long arity, methodEval m) {
         instructions[instruction_code] = name;

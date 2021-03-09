@@ -58,6 +58,7 @@ typedef enum {
     l_leftshiftequal, l_rightshiftequal, l_bitandequal, l_bitorequal, l_bitxorequal,
     l_divide, l_mod, l_divideequal,l_modequal,
     l_sum, l_product,
+    l_innerproduct, l_outerproduct, l_factorial, l_iota, l_iota0, l_reduce, l_scan, l_equalonezero,
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
@@ -133,6 +134,8 @@ const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 #define two_ lisp->delegation->_TWO
 
 #define booleans_ lisp->delegation->_BOOLEANS
+#define numbools_ lisp->delegation->_NUMERICAL_BOOLEANS
+
 
 #define separator_ lisp->delegation->_LISTSEPARATOR
 
@@ -415,6 +418,10 @@ public:
     virtual void decrementstatusraw(uchar nb) {
         if (status > s_destructible && status < s_protect)
             status-=nb;
+    }
+    
+    virtual char isPureList() {
+        return 0;
     }
     
     virtual Element* last_element(LispE* lisp);

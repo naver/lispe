@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.7.9.28";
+static std::string version = "1.2021.3.9.11.27";
 string LispVersion() {
     return version;
 }
@@ -186,6 +186,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_eval, "eval", P_TWO, &List::evall_eval);
     set_instruction(l_extract, "extract", P_THREE|P_FOUR|P_FIVE|P_SIX, &List::evall_extract);
     set_instruction(l_fappend, "fappend", P_THREE, &List::evall_fappend);
+    set_instruction(l_factorial, "!", P_TWO, &List::evall_factorial);
     set_instruction(l_flatten, "flatten", P_TWO, &List::evall_flatten);
     set_instruction(l_flip, "flip", P_TWO, &List::evall_flip);
     set_instruction(l_folding, "#folding", P_FOUR, &List::evall_folding);
@@ -286,7 +287,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith);
 
     // High level functions
-    set_instruction(l_composenot, "!", P_ATLEASTTHREE, &List::evall_compose);
+    set_instruction(l_composenot, "~", P_ATLEASTTHREE, &List::evall_compose);
     set_instruction(l_cycle, "cycle", P_TWO, &List::evall_compose);
     set_instruction(l_drop, "drop", P_THREE, &List::evall_compose);
     set_instruction(l_dropwhile, "dropwhile", P_THREE, &List::evall_compose);
@@ -305,6 +306,16 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_link, "link", P_THREE, &List::evall_link);
     set_instruction(l_take, "take", P_THREE, &List::evall_compose);
     set_instruction(l_takewhile, "takewhile", P_THREE, &List::evall_compose);
+
+    
+    //APL-like
+    set_instruction(l_innerproduct, ".", P_FOUR, &List::evall_innerproduct);
+    set_instruction(l_outerproduct, "°", P_FOUR, &List::evall_outerproduct);
+    set_instruction(l_iota, "iota", P_ATLEASTTWO, &List::evall_iota);
+    set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
+    set_instruction(l_reduce, "//", P_THREE, &List::evall_reduce);
+    set_instruction(l_scan, "\\\\", P_THREE, &List::evall_scan);
+    set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
 
     //This
     operators[l_bitand] = true;
@@ -334,6 +345,7 @@ void Delegation::initialisation(LispE* lisp) {
     math_operators = operators;
 
     operators[l_equal] = true;
+    operators[l_equalonezero] = true;
     operators[l_different] = true;
     operators[l_lower] = true;
     operators[l_greater] = true;
@@ -409,9 +421,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     _BREAK = new Listbreak;
 
-    _BOOLEANS[0] = _NULL;
-    _BOOLEANS[1] = _TRUE;
-
+    
     //rest separator in a pattern matching operation
     w = L"$";
     _LISTSEPARATOR = (Atome*)lisp->provideAtom(w);
@@ -423,6 +433,12 @@ void Delegation::initialisation(LispE* lisp) {
     _ONE = (Integer*)lisp->provideInteger(1);
     _TWO = (Integer*)lisp->provideInteger(2);
     _MINUSONE = (Integer*)lisp->provideInteger(-1);
+
+    _BOOLEANS[0] = _NULL;
+    _BOOLEANS[1] = _TRUE;
+
+    _NUMERICAL_BOOLEANS[0] = _ZERO;
+    _NUMERICAL_BOOLEANS[1] = _ONE;
 
     //On crée un espace global dans la pile (la fonction associée est _NUL)
     lisp->push(_NULL);
@@ -472,7 +488,10 @@ void Delegation::initialisation(LispE* lisp) {
     //For compliance with other Lisps
     w = L"t";
     string_to_code[w] = v_true;
-
+    
+    w = L",";
+    string_to_code[w] = l_flatten;
+    
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
     e = new Cadr("cadr");
@@ -1693,6 +1712,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

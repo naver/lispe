@@ -1734,6 +1734,501 @@ Element* List::evall_car(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_factorial(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments for '!'");
+ 
+    long value = 0;
+    try {
+        evalAsInteger(1, lisp, value);
+        long res = 1;
+        for (long i = 2; i <= value; i++) {
+            res *= i;
+        }
+        return lisp->provideInteger(res);
+    }
+    catch (Error* err) {
+        throw err;
+    }
+    
+    return null_;
+}
+
+Element* List::evall_iota(LispE* lisp) {
+    long sz = size();
+    if (sz == 1)
+        throw new Error("Error: wrong number of arguments for 'iota'");
+ 
+    long value;
+    vector<long> vals;
+    List* res = new List;
+    List* sub;
+    try {
+        if (sz == 2) {
+            evalAsInteger(1, lisp, value);
+            for (long j = 1; j <= value; j++) {
+                res->storevalue(lisp, j);
+            }
+            return res;
+        }
+        
+        for (long i = 1; i < sz; i++) {
+            evalAsInteger(i, lisp, value);
+            sub = new List;
+            res->append(sub);
+            for (long j = 1; j <= value; j++) {
+                sub->storevalue(lisp, j);
+            }
+        }
+        return res;
+    }
+    catch (Error* err) {
+        res->release();
+        throw err;
+    }
+    
+    return null_;
+}
+
+Element* List::evall_iota0(LispE* lisp) {
+    long sz = size();
+    if (sz == 1)
+        throw new Error("Error: wrong number of arguments for 'iota'");
+ 
+    long value;
+    vector<long> vals;
+    List* res = new List;
+    List* sub;
+    try {
+        if (sz == 2) {
+            evalAsInteger(1, lisp, value);
+            for (long j = 0; j < value; j++) {
+                res->storevalue(lisp, j);
+            }
+            return res;
+        }
+        
+        for (long i = 1; i < sz; i++) {
+            evalAsInteger(i, lisp, value);
+            sub = new List;
+            res->append(sub);
+            for (long j = 0; j < value; j++) {
+                sub->storevalue(lisp, j);
+            }
+        }
+        return res;
+    }
+    catch (Error* err) {
+        res->release();
+        throw err;
+    }
+    
+    return null_;
+}
+
+Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Element* l2) {
+    List call;
+    //We are applying the second operator between l1 and l2
+    call.append(op2);
+    call.append(null_);
+    call.append(null_);
+    Element* e;
+    List* res = new List;
+    long i;
+    for (i = 0; i < l1->size(); i++) {
+        call.liste[1] = l1->index(i);
+        call.liste[2] = l2->index(i);
+        e = call.eval(lisp);
+        res->append(e);
+    }
+    //Then we do a reduce on this list with the first operator
+    call.liste[0] = op1;
+    call.liste[1] = res->index(0);
+    try {
+        for (i = 1; i < res->size(); i++) {
+            call.liste[2] = res->index(i);
+            e = call.eval(lisp);
+            if (e != call.liste[1]) {
+                call.liste[1]->release();
+                call.liste[1] = e;
+            }
+        }
+    }
+    catch (Error* err) {
+        res->release();
+        throw err;
+    }
+    res->release();
+    return call.liste[1];
+}
+
+// (.  '((1 2) (5 4) (3 0)) '+ '* '((6 2 3 4) (7 0 1 8)))
+Element* List::evall_innerproduct(LispE* lisp) {
+    if (liste.size() != 5)
+        throw new Error("Error: wrong number of arguments for '.'");
+
+    Element* l1 = null_;
+    Element* l2 = null_;
+    Element* op1 = null_;
+    Element* op2 = null_;
+    Element* e = null_;
+
+    try {
+        l1 = liste[1]->eval(lisp);
+        l2 = liste[4]->eval(lisp);
+        
+        char t1 = l1->isPureList();
+        char t2 = l2->isPureList();
+        
+        if (!t1 || !t2 || t1 != t2) {
+            l1->release();
+            l2->release();
+            throw new Error("Error: arguments for '.' must be lists or compatible lists");
+        }
+        
+        op1 = liste[2]->eval(lisp);
+        if (op1->type == l_equal)
+            op1 = lisp->provideAtom(l_equalonezero);
+        op2 = liste[3]->eval(lisp);
+        if (op2->type == l_equal)
+            op2 = lisp->provideAtom(l_equalonezero);
+
+        if (t1 == 2) {
+            if (l1->size() != l2->size())
+                throw new Error("Error: lists should have the same size for '.'");
+                                
+
+            e = apply_op1_op2(lisp, op1, op2, l1, l2);
+            l1->release();
+            l2->release();
+            op1->release();
+            op2->release();
+            return e;
+        }
+        
+        long sz1 = l1->index(0)->size();
+        if (sz1 != l2->size()) {
+            l1->release();
+            l2->release();
+            op1->release();
+            op2->release();
+            throw new Error("Error: incompatible matrices");
+        }
+        
+        List* l2_column = new List;
+        long i, j = 0;
+
+        long sz2 = l2->index(0)->size();
+        
+        for (i = 0; i < sz2; i++) {
+            l2_column->append(new List);
+        }
+        
+        for (i = 0; i < l2->size(); i++) {
+            e = l2->index(i);
+            if (!e->isList() || e->size() != sz2) {
+                l1->release();
+                l2->release();
+                op1->release();
+                op2->release();
+                l2_column->release();
+                throw new Error("Error: malformed matrix L2");
+            }
+            for (j = 0; j < sz2; j++) {
+                l2_column->index(j)->append(e->index(j));
+            }
+        }
+                
+        Element* row;
+        Element* column;
+        List* res = new List;
+        Element* sub;
+        //We are dealing with matrices...
+        for (long i = 0; i < l1->size(); i++) {
+            row = l1->index(i);
+            if (!row->isList() || row->size() != sz1) {
+                l1->release();
+                l2->release();
+                op1->release();
+                op2->release();
+                l2_column->release();
+                throw new Error("Error: malformed matrix L1");
+            }
+            
+            sub = new List;
+            res->append(sub);
+            for (j = 0; j < l2_column->size(); j++) {
+                column = l2_column->index(j);
+                e = apply_op1_op2(lisp, op1, op2, row, column);
+                sub->append(e);
+                e->release();
+            }
+        }
+        
+        l1->release();
+        l2->release();
+        op1->release();
+        op2->release();
+        l2_column->release();
+        return res;
+    }
+    catch (Error* err) {
+        l1->release();
+        l2->release();
+        op1->release();
+        op2->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+// (° '(2 3 4) '* '(1 2 3 4))
+Element* List::evall_outerproduct(LispE* lisp) {
+    if (liste.size() != 4)
+        throw new Error("Error: wrong number of arguments for '°'");
+    //Operation is: (° operation l1 l2)
+    
+    Element* l1 = null_;
+    Element* l2 = null_;
+    Element* op = null_;
+    Element* e = null_;
+    List* res = new List;
+    
+    lisp->display_trace(this);
+
+    try {
+        l1 = liste[1]->eval(lisp);
+        l2 = liste[3]->eval(lisp);
+        
+        if (!l1->isList() || !l2->isList()) {
+            l1->release();
+            l2->release();
+            throw new Error("Error: arguments for '°' are lists");
+        }
+        
+        op = liste[2]->eval(lisp);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+        List call;
+        call.append(op);
+        call.append(null_);
+        call.append(null_);
+        Element* sub;
+        for (long i = 0; i < l1->size(); i++) {
+            call.liste[1] = l1->index(i);
+            sub = new List;
+            res->append(sub);
+            for (long j = 0; j < l2->size(); j++) {
+                call.liste[2] = l2->index(j);
+                e = call.eval(lisp);
+                sub->append(e);
+            }
+        }
+        l1->release();
+        l2->release();
+        op->release();
+        return res;
+    }
+    catch (Error* err) {
+        l1->release();
+        l2->release();
+        op->release();
+        res->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_reduce(LispE* lisp) {
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments for '//'");
+    //Operation is: (// operation l1)
+    
+    Element* l1 = null_;
+    Element* op = null_;
+    
+    lisp->display_trace(this);
+
+    try {
+        l1 = liste[2]->eval(lisp);
+        
+        if (!l1->isList()) {
+            l1->release();
+            throw new Error("Error: arguments for '//' is a list");
+        }
+        
+        op = liste[1]->eval(lisp);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+
+        long sz = l1->size();
+        if (!sz)
+            return null_;
+                
+        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+            //this is a filter, the first list
+            List* res = new List;
+            for (long i = 0; i < op->size() && i < l1->size(); i++) {
+                if (op->index(i)->Boolean())
+                    res->append(l1->index(i));
+            }
+            return res;
+        }
+
+        List call;
+        call.append(op);
+        call.append(null_);
+        call.append(null_);
+        call.liste[1] = l1->index(0);
+        Element* e;
+        for (long i = 1; i < l1->size(); i++) {
+            call.liste[2] = l1->index(i);
+            e = call.eval(lisp);
+            if (e != call.liste[1]) {
+                call.liste[1]->release();
+                call.liste[1] = e;
+            }
+        }
+        l1->release();
+        op->release();
+        return call.liste[1];
+    }
+    catch (Error* err) {
+        l1->release();
+        op->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_equalonezero(LispE* lisp) {
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments for '=='");
+    
+    Element* l1 = null_;
+    Element* l2 = null_;
+    Element* res = null_;
+    lisp->display_trace(this);
+    
+    try {
+        l1 = liste[1]->eval(lisp);
+        l2 = liste[2]->eval(lisp);
+        
+        if (!l1->isList() || !l2->isList()) {
+            bool test = l1->unify(lisp, l2, false);
+            l1->release();
+            l2->release();
+            return numbools_[test];
+        }
+        
+        res = new List;
+        for (long i = 0; i < l1->size() && i < l2->size(); i++) {
+            if (l1->index(i)->unify(lisp, l2->index(i), false))
+                res->append(one_);
+            else
+                res->append(zero_);
+        }
+        
+        l1->release();
+        l2->release();
+        return res;
+        
+    }
+    catch (Error* err) {
+        l1->release();
+        l2->release();
+        res->release();
+        throw err;
+    }
+    
+    return null_;
+}
+
+Element* List::evall_scan(LispE* lisp) {
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments for '\\\\'");
+    //Operation is: (° operation l1 l2)
+    
+    Element* l1 = null_;
+    Element* op = null_;
+    
+    lisp->display_trace(this);
+
+    try {
+        l1 = liste[2]->eval(lisp);
+        
+        if (!l1->isList()) {
+            l1->release();
+            throw new Error("Error: arguments for '\\\\' is a list");
+        }
+        
+        op = liste[1]->eval(lisp);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+
+        long sz = l1->size();
+        if (!sz)
+            return null_;
+                
+        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+            //this is a filter, the first list
+            List* res = new List;
+            long j = 0;
+            for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                if (op->index(i)->Boolean()) {
+                    res->append(l1->index(j));
+                    j++;
+                }
+                else
+                    res->append(zero_);
+            }
+            return res;
+        }
+
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+        
+        bool monadic = lisp->delegation->checkArity(op->type, P_TWO);
+
+        List call;
+        call.append(op);
+        call.append(null_);
+        Element* e;
+        List* res = new List;
+        call.liste[1] = l1->index(0);
+        res->append(call.liste[1]);
+        if (!monadic) {
+            call.append(null_);
+            for (long i = 1; i < l1->size(); i++) {
+                call.liste[2] = l1->index(i);
+                e = call.eval(lisp);
+                res->append(e);
+                call.liste[1] = e;
+            }
+        }
+        else {
+            for (long i = 1; i < l1->size(); i++) {
+                call.liste[1] = l1->index(i);
+                e = call.eval(lisp);
+                res->append(e);
+            }
+        }
+        
+        l1->release();
+        op->release();
+        return res;
+    }
+    catch (Error* err) {
+        l1->release();
+        op->release();
+        throw err;
+    }
+
+    return null_;
+}
 
 Element* List::evall_catch(LispE* lisp) {
     short listsize = liste.size();

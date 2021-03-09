@@ -757,6 +757,14 @@ public:
         return true;
     }
     
+    char isPureList() {
+        for (long i = 0; i < liste.size(); i++) {
+            if (liste[i]->isList())
+                return 1;
+        }
+        return 2;
+    }
+    
     Element* insert(LispE* lisp, Element* e, long idx);
 
     virtual void set_current_line(LispE*) {}
@@ -860,6 +868,8 @@ public:
     Element* evall_nconc(LispE* lisp);
     Element* evall_if(LispE* lisp);
     Element* evall_car(LispE* lisp);
+    Element* evall_outerproduct(LispE* lisp);
+    Element* evall_innerproduct(LispE* lisp);
     Element* evall_cdr(LispE* lisp);
     Element* evall_cadr(LispE* lisp);
     Element* evall_label(LispE* lisp);
@@ -875,6 +885,12 @@ public:
     Element* evall_lambda(LispE* lisp);
     Element* eval_call_function(LispE* lisp);
     Element* evalt_list(LispE* lisp);
+    Element* evall_reduce(LispE* lisp);
+    Element* evall_scan(LispE* lisp);
+    Element* evall_equalonezero(LispE* lisp);
+    Element* evall_factorial(LispE* lisp);
+    Element* evall_iota(LispE* lisp);
+    Element* evall_iota0(LispE* lisp);
     Element* evall_lock(LispE* lisp);
     Element* evall_sum(LispE* lisp);
     Element* evall_product(LispE* lisp);
