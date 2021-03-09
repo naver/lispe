@@ -5894,7 +5894,7 @@ Element* List::evall_zip(LispE* lisp) {
         for (i = 1; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
             if (!second_element->isList()) {
-                second_element->release();
+                _releasing(second_element);
                 for (auto& x: lists)
                     x->release();
                 throw new Error(L"Error: 'zip' only accepts lists as arguments");
@@ -5903,7 +5903,7 @@ Element* List::evall_zip(LispE* lisp) {
                 szl = second_element->size();
             else {
                 if (szl != second_element->size()) {
-                    second_element->release();
+                    _releasing(second_element);
                     for (auto& x: lists)
                         x->release();
                     throw new Error(L"Error: Lists should all have the same size in 'zip'");
@@ -5961,7 +5961,7 @@ Element* List::evall_zipwith(LispE* lisp) {
         for (i = 2; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
             if (!second_element->isList()) {
-                second_element->release();
+                _releasing(second_element);
                 for (auto& e: lists) {
                     e->decrementstatus(2, false);
                 }
@@ -5971,7 +5971,7 @@ Element* List::evall_zipwith(LispE* lisp) {
                 szl = second_element->size();
             else {
                 if (szl != second_element->size()) {
-                    second_element->release();
+                    _releasing(second_element);
                     for (auto& e: lists) {
                         e->decrementstatus(2, false);
                     }
