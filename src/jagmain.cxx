@@ -22,7 +22,7 @@
 
 #include "jag.h"
 
-static string version = "0.99 build 05";
+static string version = "0.99 build 06";
 
 #ifndef WIN32
 static void handle_ctrl_c(int theSignal) {
@@ -43,7 +43,7 @@ bool movedup() {
 }
 
 int main(int argc, char *argv[]) {
-    
+
 #ifndef WIN32
     signal(SIGINT,handle_ctrl_c);
 #endif
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     bool darkmode = false;
     int i = 1;
     string cmd;
-    
+
     while(i < argc) {
         cmd = argv[i++];
         if (cmd == "-h" || cmd == "-help" || cmd == "--help" || cmd == "--h") {
@@ -74,24 +74,23 @@ int main(int argc, char *argv[]) {
             darkmode = true;
             continue;
         }
-        
+
         if (cmd == "-n") {
             JAGEDITOR->setnoprefix();
             continue;
         }
-        
+
         if (cmd[0] == '-') {
             cerr << "Unknown command: " << cmd << endl;
             exit(0);
         }
-        
+
         if (JAGEDITOR->loadfile(cmd))
             JAGEDITOR->launchterminal(darkmode, true, args);
         else
             JAGEDITOR->launchterminal(darkmode, false, args);
         exit(0);
     }
-    
+
     JAGEDITOR->launchterminal(darkmode, false, args);
 }
-

@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.9.11.27";
+static std::string version = "1.2021.3.10.11.3";
 string LispVersion() {
     return version;
 }
@@ -316,6 +316,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_reduce, "//", P_THREE, &List::evall_reduce);
     set_instruction(l_scan, "\\\\", P_THREE, &List::evall_scan);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
+    set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
 
     //This
     operators[l_bitand] = true;
@@ -491,6 +492,15 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = L",";
     string_to_code[w] = l_flatten;
+    
+    w = L"⍳";
+    string_to_code[w] = l_iota;
+
+    w = L"⍳0";
+    string_to_code[w] = l_iota0;
+    
+    w = L"⍴";
+    string_to_code[w] = l_rho;
     
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
@@ -1712,6 +1722,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

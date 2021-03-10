@@ -659,13 +659,8 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element*
         short label;
         for (i = 0; i < parameters->size(); i++) {
             label = parameters->index(i)->label();
-            if (label == v_null) {
-                while (i < parameters->size()) {
-                    temporaryargs[i++]->release();
-                }
-                thread_lisp->pop();
+            if (label == v_null)
                 throw new Error(L"Error: Wrong parameter description");
-            }
 
             data = temporaryargs[i];
 
@@ -758,23 +753,13 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
                         data = l;
                         i = parameters->size();
                     }
-                    else {
-                        while (i < nbarguments) {
-                            temporaryargs[i++]->release();
-                        }
-                        thread_lisp->pop();
+                    else
                         throw new Error(L"Error: Wrong parameter description");
-                    }
                 }
                 else {
                     label = element->size();
-                    if (!label) {
-                        while (i < nbarguments) {
-                            temporaryargs[i++]->release();
-                        }
-                        thread_lisp->pop();
+                    if (!label)
                         throw new Error(L"Error: Wrong parameter description");
-                    }
                     //If the argument was not provided, then we rely on the default value
                     //if it is available
                     if (data == NULL) {
@@ -789,13 +774,8 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
             else
                 label = element->label();
             
-            if (label == v_null) {
-                while (i < nbarguments) {
-                    temporaryargs[i++]->release();
-                }
-                thread_lisp->pop();
+            if (label == v_null)
                 throw new Error(L"Error: Wrong parameter description");
-            }
 
 
             //if we are dealing with a new thread, variables will be stored onto
@@ -859,9 +839,8 @@ void List::differentSizeTerminalArguments(LispE* lisp, Element* parameters, long
                         data = l;
                         i = parameters->size();
                     }
-                    else {
+                    else
                         throw new Error(L"Error: Wrong parameter description");
-                    }
                 }
                 else {
                     label = element->size();
@@ -881,9 +860,8 @@ void List::differentSizeTerminalArguments(LispE* lisp, Element* parameters, long
             else
                 label = element->label();
             
-            if (label == v_null) {
+            if (label == v_null)
                 throw new Error(L"Error: Wrong parameter description");
-            }
             lisp->recording(data, label);
         }
     }
@@ -1266,10 +1244,8 @@ Element* List::evall_apply(LispE* lisp) {
     try {
         //(apply func l)
         second_element = liste[2]->eval(lisp);
-        if (!second_element->isList()) {
-            second_element->release();
+        if (!second_element->isList())
             throw new Error("Error: arguments to 'apply' should be given as a list");
-        }
 
         first_element = liste[1]->eval(lisp);
 
@@ -1863,6 +1839,7 @@ Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Ele
 }
 
 // (.  '((1 2) (5 4) (3 0)) '+ '* '((6 2 3 4) (7 0 1 8)))
+// (. (iota 10) '+ '* (iota 3))
 Element* List::evall_innerproduct(LispE* lisp) {
     if (liste.size() != 5)
         throw new Error("Error: wrong number of arguments for '.'");
@@ -1880,11 +1857,8 @@ Element* List::evall_innerproduct(LispE* lisp) {
         char t1 = l1->isPureList();
         char t2 = l2->isPureList();
         
-        if (!t1 || !t2 || t1 != t2) {
-            l1->release();
-            l2->release();
+        if (!t1 || !t2 || t1 != t2)
             throw new Error("Error: arguments for '.' must be lists or compatible lists");
-        }
         
         op1 = liste[2]->eval(lisp);
         if (op1->type == l_equal)
@@ -1907,13 +1881,8 @@ Element* List::evall_innerproduct(LispE* lisp) {
         }
         
         long sz1 = l1->index(0)->size();
-        if (sz1 != l2->size()) {
-            l1->release();
-            l2->release();
-            op1->release();
-            op2->release();
+        if (sz1 != l2->size())
             throw new Error("Error: incompatible matrices");
-        }
         
         List* l2_column = new List;
         long i, j = 0;
@@ -1927,10 +1896,6 @@ Element* List::evall_innerproduct(LispE* lisp) {
         for (i = 0; i < l2->size(); i++) {
             e = l2->index(i);
             if (!e->isList() || e->size() != sz2) {
-                l1->release();
-                l2->release();
-                op1->release();
-                op2->release();
                 l2_column->release();
                 throw new Error("Error: malformed matrix L2");
             }
@@ -1947,10 +1912,6 @@ Element* List::evall_innerproduct(LispE* lisp) {
         for (long i = 0; i < l1->size(); i++) {
             row = l1->index(i);
             if (!row->isList() || row->size() != sz1) {
-                l1->release();
-                l2->release();
-                op1->release();
-                op2->release();
                 l2_column->release();
                 throw new Error("Error: malformed matrix L1");
             }
@@ -2001,11 +1962,8 @@ Element* List::evall_outerproduct(LispE* lisp) {
         l1 = liste[1]->eval(lisp);
         l2 = liste[3]->eval(lisp);
         
-        if (!l1->isList() || !l2->isList()) {
-            l1->release();
-            l2->release();
+        if (!l1->isList() || !l2->isList())
             throw new Error("Error: arguments for '°' are lists");
-        }
         
         op = liste[2]->eval(lisp);
         if (op->type == l_equal)
@@ -2054,10 +2012,8 @@ Element* List::evall_reduce(LispE* lisp) {
     try {
         l1 = liste[2]->eval(lisp);
         
-        if (!l1->isList()) {
-            l1->release();
+        if (!l1->isList())
             throw new Error("Error: arguments for '//' is a list");
-        }
         
         op = liste[1]->eval(lisp);
         if (op->type == l_equal)
@@ -2101,6 +2057,94 @@ Element* List::evall_reduce(LispE* lisp) {
         throw err;
     }
 
+    return null_;
+}
+
+Element* List::evall_rho(LispE* lisp) {
+    long listsize =  size();
+    if (listsize == 1 || listsize > 4)
+        throw new Error("Error: wrong number of arguments for 'rho'");
+    
+    Element* e =  null_;
+    Element* res = null_;
+    
+    try {
+        if (listsize == 2) {
+            e = liste[1]->eval(lisp);
+            listsize =  e->size();
+            
+            if (e->isPureList() == 1 && e->index(0)->isList()) {
+                long nb = e->index(0)->size();
+                for (long i = 1; i < listsize; i++) {
+                    res = e->index(i);
+                    if (!res->isList() || res->size() != nb) {
+                        e->release();
+                        return lisp->provideInteger(listsize);
+                    }
+                }
+                res = new List;
+                ((List*)res)->storevalue(lisp, listsize);
+                ((List*)res)->storevalue(lisp, nb);
+                return res;
+            }
+                
+            
+            e->release();
+            return lisp->provideInteger(listsize);
+        }
+        
+        long ei = 0;
+        long sz1;
+
+        if (listsize == 3) {
+            e = liste[2]->eval(lisp);
+            if (!e->isList())
+                throw new Error("Error: Second argument should be a list");
+            listsize = e->size();
+            evalAsInteger(1, lisp, sz1);
+            res = new List;
+            for (long i = 0; i < sz1; i++) {
+                if (!listsize)
+                    res->append(zero_);
+                else {
+                    if (ei == listsize)
+                        ei = 0;
+                    res->append(e->index(ei++));
+                }
+            }
+            e->release();
+            return res;
+        }
+        
+        long sz2;
+        e = liste[3]->eval(lisp);
+        if (!e->isList())
+            throw new Error("Error: third argument should be a list");
+        
+        evalAsInteger(1, lisp, sz1);
+        evalAsInteger(2, lisp, sz2);
+        listsize = e->size();
+        res = new List;
+        for (long i = 0; i < sz1; i++) {
+            res->append(new List);
+            for (long ii = 0; ii < sz2; ii++) {
+                if (listsize == 0)
+                    res->index(i)->append(zero_);
+                else {
+                    if (ei == listsize)
+                        ei = 0;
+                    res->index(i)->append(e->index(ei++));
+                }
+            }
+        }
+        e->release();
+        return res;
+    }
+    catch (Error* err) {
+        e->release();
+        res->release();
+        throw err;
+    }
     return null_;
 }
 
@@ -2160,10 +2204,8 @@ Element* List::evall_scan(LispE* lisp) {
     try {
         l1 = liste[2]->eval(lisp);
         
-        if (!l1->isList()) {
-            l1->release();
+        if (!l1->isList())
             throw new Error("Error: arguments for '\\\\' is a list");
-        }
         
         op = liste[1]->eval(lisp);
         if (op->type == l_equal)
@@ -2322,11 +2364,8 @@ Element* List::evall_checking(LispE* lisp) {
                 call.liste.push_back(first_element);
                 call.liste.push_back(liste[3]);
             }
-            else {
-                first_element->release();
-                second_element->release();
+            else
                 throw new Error("Error: condition or operation cannot be evaluated: missing instruction");
-            }
         }
         third_element = call.eval(lisp);
         first_element->release();
@@ -2969,8 +3008,6 @@ Element* List::evall_fappend(LispE* lisp) {
         //We put ourselves in append mode
         std::ofstream o(chemin.c_str(), std::ios::binary|std::ios::app);
         if (o.fail()) {
-            second_element->release();
-            first_element->release();
             string erreur = "Error: Cannot write in file: ";
             erreur += chemin;
             throw new Error(erreur);
@@ -3032,7 +3069,6 @@ Element* List::evall_flip(LispE* lisp) {
             first_element->release();
             return second_element;
         }
-        first_element->release();
         throw new Error("Error: Cannot apply flip on this structure");
     }
     catch (Error* err) {
@@ -3125,8 +3161,6 @@ Element* List::evall_fwrite(LispE* lisp) {
         string chemin = first_element->toString(lisp);
         std::ofstream o(chemin.c_str(), std::ios::binary);
         if (o.fail()) {
-            second_element->release();
-            first_element->release();
             string erreur = "Error: Cannot write in file: ";
             erreur += chemin;
             throw new Error(erreur);
@@ -3551,10 +3585,9 @@ Element* List::evall_keyn(LispE* lisp) {
         if (listsize == 3) {
             //The second element is an a_key
             first_element = liste[1]->eval(lisp);
-            if (first_element->type != t_dictionaryn) {
-                first_element->release();
+            if (first_element->type != t_dictionaryn)
                 throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
-            }
+
             double a_key;
             evalAsNumber(2, lisp, a_key);
             second_element = first_element->protected_index(lisp, a_key);
@@ -3564,10 +3597,8 @@ Element* List::evall_keyn(LispE* lisp) {
 
         //We store a value
         first_element = liste[1]->eval(lisp);
-        if (first_element->type != t_dictionaryn) {
-            first_element->release();
+        if (first_element->type != t_dictionaryn)
             throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
-        }
         double a_key;
 		// It is out of question to manipulate a dictionary declared in the code
 		first_element = first_element->duplicate_constant_container();
@@ -3598,10 +3629,8 @@ Element* List::evall_keys(LispE* lisp) {
 
     try {
         first_element = liste[1]->eval(lisp);
-        if (first_element->type != t_dictionary && first_element->type != t_dictionaryn) {
-            first_element->release();
+        if (first_element->type != t_dictionary && first_element->type != t_dictionaryn)
             throw new Error(L"Error: the first argument must be a dictionary");
-        }
         second_element = first_element->thekeys(lisp);
         first_element->release();
         return second_element;
@@ -5023,10 +5052,8 @@ Element* List::evall_push(LispE* lisp) {
     try {
         //We store a value in a list
         first_element = liste[1]->eval(lisp);
-        if (!first_element->isList()) {
-            first_element->release();
+        if (!first_element->isList())
             throw new Error(L"Error: missing list in 'push'");
-        }
         first_element = first_element->duplicate_constant_container();
         second_element = liste[2]->eval(lisp);
         first_element->append(second_element->copying(false));
@@ -5387,11 +5414,8 @@ Element* List::evall_sort(LispE* lisp) {
         //First element is the comparison function OR an operator
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        if (!second_element->isList()) {
-            first_element->release();
-            second_element->release();
+        if (!second_element->isList())
             throw new Error(L"Error: the second argument should be a list for 'sort'");
-        }
 
         if (first_element->isList()) {
             //It is inevitably a lambda
@@ -5400,11 +5424,8 @@ Element* List::evall_sort(LispE* lisp) {
         }
         else {
             //C Is either an atom or an operator
-            if (!first_element->isAtom()) {
-                first_element->release();
-                second_element->release();
+            if (!first_element->isAtom())
                 throw new Error(L"Error: incorrect comparison function in 'sort'");
-            }
         }
     }
     catch (Error* err) {
@@ -5893,21 +5914,13 @@ Element* List::evall_zip(LispE* lisp) {
         //We combine different lists together...
         for (i = 1; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
-            if (!second_element->isList()) {
-                _releasing(second_element);
-                for (auto& x: lists)
-                    x->release();
+            if (!second_element->isList())
                 throw new Error(L"Error: 'zip' only accepts lists as arguments");
-            }
             if (i == 1)
                 szl = second_element->size();
             else {
-                if (szl != second_element->size()) {
-                    _releasing(second_element);
-                    for (auto& x: lists)
-                        x->release();
+                if (szl != second_element->size())
                     throw new Error(L"Error: Lists should all have the same size in 'zip'");
-                }
             }
             lists.push_back(second_element);
             second_element = null_;
@@ -5928,6 +5941,8 @@ Element* List::evall_zip(LispE* lisp) {
     catch (Error* err) {
         second_element->release();
         third_element->release();
+        for (auto& x: lists)
+            x->release();
         throw err;
     }
 
@@ -5960,23 +5975,13 @@ Element* List::evall_zipwith(LispE* lisp) {
         first_element = liste[1]->eval(lisp);
         for (i = 2; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
-            if (!second_element->isList()) {
-                _releasing(second_element);
-                for (auto& e: lists) {
-                    e->decrementstatus(2, false);
-                }
+            if (!second_element->isList())
                 throw new Error(L"Error: 'zipwith' only accepts lists as arguments");
-            }
             if (i == 2)
                 szl = second_element->size();
             else {
-                if (szl != second_element->size()) {
-                    _releasing(second_element);
-                    for (auto& e: lists) {
-                        e->decrementstatus(2, false);
-                    }
+                if (szl != second_element->size())
                     throw new Error(L"Error: Lists should all have the same size in 'zipwith'");
-                }
             }
             lists.push_back(second_element);
             second_element->incrementstatus(2,false);
@@ -6006,6 +6011,8 @@ Element* List::evall_zipwith(LispE* lisp) {
         return second_element;
     }
     catch (Error* err) {
+        for (auto& e: lists)
+            e->decrementstatus(2, false);
         first_element->release();
         second_element->release();
         third_element->release();

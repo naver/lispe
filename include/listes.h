@@ -888,6 +888,7 @@ public:
     Element* evall_reduce(LispE* lisp);
     Element* evall_scan(LispE* lisp);
     Element* evall_equalonezero(LispE* lisp);
+    Element* evall_rho(LispE* lisp);
     Element* evall_factorial(LispE* lisp);
     Element* evall_iota(LispE* lisp);
     Element* evall_iota0(LispE* lisp);

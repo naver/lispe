@@ -4025,13 +4025,16 @@ string coloring_line(string& line, vector<string>& colors, bool lisp, bool pytho
             longcomment = false;
         lastmove = true;
         if (longcomment) {
-            if (sub[0] == '/' && sub[1] == '*')
+            if ( (sub[0] == '"' && sub[1] == '"' && sub[2] == '"') ||
+                (sub[0] == '/' && sub[1] == '*')) {
                 longcomment = false;
+            }
             line = colors[4] + line + m_current;
             return line;
         }
         
-        if (sub[0] == '*' && sub[1] == '/') {
+        if ( (sub[0] == '"' && sub[1] == '"' && sub[2] == '"') ||
+            (sub[0] == '/' && sub[1] == '*')) {
             line = colors[4] + line + m_current;
             longcomment = true;
             return line;
