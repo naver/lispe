@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.10.11.3";
+static std::string version = "1.2021.3.11.19.27";
 string LispVersion() {
     return version;
 }
@@ -317,7 +317,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_scan, "\\\\", P_THREE, &List::evall_scan);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
     set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
-
+    set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
+    
     //This
     operators[l_bitand] = true;
     operators[l_bitor] = true;
@@ -489,9 +490,6 @@ void Delegation::initialisation(LispE* lisp) {
     //For compliance with other Lisps
     w = L"t";
     string_to_code[w] = v_true;
-    
-    w = L",";
-    string_to_code[w] = l_flatten;
     
     w = L"⍳";
     string_to_code[w] = l_iota;
@@ -1722,6 +1720,9 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
 
 
 

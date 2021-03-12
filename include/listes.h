@@ -246,8 +246,7 @@ public:
     inline void push_raw(Element* val) {
         item->push_raw(val);
     }
-
-
+    
     inline Element*& operator [](long pos) {
         return item->buffer[pos+home];
     }
@@ -455,6 +454,19 @@ public:
 
     bool isFunction() {
         return (liste.size() > 1 && liste[0]->label() >= l_lambda && liste[0]->label() <= l_defpat);
+    }
+
+    bool check_arity(LispE* lisp, unsigned long arity) {
+        if (isFunction()) {
+            unsigned long arity_function;
+            if (liste[0]->label() == l_lambda) {
+                arity_function = 1 << (1 + liste[1]->size());
+            }
+            else
+                arity_function = 1 << (1 + liste[2]->size());
+            return (arity == arity_function);
+        }
+        return false;
     }
 
     bool isExecutable(LispE*);
@@ -685,6 +697,15 @@ public:
         e->incrementstatus(1,false);
     }
     
+    void replacing(long i, Element* e) {
+        if (e == liste[i])
+            return;
+        
+        liste[i]->decrementstatus(1,false);
+        liste[i] = e;
+        e->incrementstatus(1,false);
+    }
+    
     Element* replace(LispE* lisp, long i, Element* e) {
         if (i < 0)
             throw new Error("Error: position does not exist");
@@ -852,6 +873,7 @@ public:
     Element* evall_converttostring(LispE* lisp);
     Element* evall_list(LispE* lisp);
     Element* evall_reverse(LispE* lisp);
+    Element* evall_concatenate(LispE* lisp);
     Element* evall_cons(LispE* lisp);
     Element* evall_trace(LispE* lisp);
     Element* evall_key(LispE* lisp);
@@ -939,6 +961,30 @@ public:
     Element* evall_zipwith(LispE* lisp);
     
     bool eval_Boolean(LispE* lisp, short instruction);
+
+    Element* bit_and(LispE* l, Element* e);
+    Element* bit_or(LispE* l, Element* e);
+    Element* bit_xor(LispE* l, Element* e);
+    Element* plus(LispE* l, Element* e);
+    Element* minus(LispE* l, Element* e);
+    Element* multiply(LispE* l, Element* e);
+    Element* divide(LispE* l, Element* e);
+    Element* mod(LispE* l, Element* e);
+    Element* power(LispE* l, Element* e);
+    Element* leftshift(LispE* l, Element* e);
+    Element* rightshift(LispE* l, Element* e);
+    
+    Element* copyatom(uchar s) {
+        if (status < s)
+            return this;
+
+        List* l = new List;
+        for (long i = 0; i < liste.size(); i++) {
+            l->append(liste[i]->copyatom(s));
+        }
+        return l;
+    }
+
 
 };
 

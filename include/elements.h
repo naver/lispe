@@ -58,7 +58,7 @@ typedef enum {
     l_leftshiftequal, l_rightshiftequal, l_bitandequal, l_bitorequal, l_bitxorequal,
     l_divide, l_mod, l_divideequal,l_modequal,
     l_sum, l_product,
-    l_innerproduct, l_outerproduct, l_factorial, l_iota, l_iota0, l_reduce, l_scan, l_equalonezero, l_rho,
+    l_innerproduct, l_outerproduct, l_factorial, l_iota, l_iota0, l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate,
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
@@ -503,6 +503,7 @@ public:
         return false;
     }
     
+    virtual bool check_arity(LispE* lisp, unsigned long);
     virtual void setmark(bool v) {}
     virtual bool mark() {return false;}
     virtual void setusermark(bool v) {}

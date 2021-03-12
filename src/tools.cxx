@@ -551,7 +551,7 @@ static UWCHAR temojiscomplement[] = {
 
 
 bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
-    if (c < min_emoji)
+    if ((uint32_t)c < min_emoji)
         return false;
 
     try {
@@ -564,7 +564,7 @@ bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
 }
 
 bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
-    if (c < min_emojicomp)
+    if ((uint32_t)c < min_emojicomp)
         return false;
     
     try {
@@ -633,6 +633,49 @@ void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
     }
 }
 
+inline UWCHAR getadduwchar(wstring& s, wstring& res, long& i) {
+    UWCHAR c;
+    res += s[i];
+    if (c_utf16_to_unicode(c, s[i], false)) {
+        c_utf16_to_unicode(c, s[++i], true);
+        res += s[i];
+    }
+    i++;
+    return c;
+}
+
+void Chaine_UTF8::getandaddchar(wstring& s, wstring& res, long& i, long sz) {
+    UWCHAR c = getadduwchar(s, res, i);
+    try {
+        emojis.at(c);
+        long j = i;
+        wstring sub;
+        c = getadduwchar(s, sub, j);
+        if (!c_is_emojicomp(c))
+            return;
+        
+        while (j < sz && c_is_emojicomp(c)) {
+            i = j;
+            c = getadduwchar(s, sub, j);
+        }
+        res += sub;
+    }
+    catch(const std::out_of_range& oor) {
+    }
+}
+
+wstring Chaine_UTF8::s_insert_sep(wstring& s, wstring sep) {
+    wstring res;
+    long lg = s.size();
+    long i = 0;
+    while (i < lg) {
+        if (i)
+            res += sep;
+        getandaddchar(s, res, i, lg);
+    }
+    return res;
+}
+
 UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
     UWCHAR res = getuwchar(s, i);
     try {
@@ -671,6 +714,33 @@ void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
         res = s[i++];
     }
 }
+
+void Chaine_UTF8::getandaddchar(wstring& s, wstring& res, long& i, long sz) {
+    try {
+        emojis.at(s[i]);
+        res += s[i++];
+        while (i < sz && c_is_emojicomp(s[i])) {
+            res += s[i++];
+        }
+    }
+    catch(const std::out_of_range& oor) {
+        res += s[i++];
+    }
+}
+
+//👨‍👩‍👧‍👧🏂🙇‍♀️🚴‍♀️
+wstring Chaine_UTF8::s_insert_sep(wstring& s, wstring sep) {
+    wstring res;
+    long lg = s.size();
+    long i = 0;
+    while (i < lg) {
+        if (i)
+            res += sep;
+        getandaddchar(s, res, i, lg);
+    }
+    return res;
+}
+
 
 UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
     UWCHAR res;

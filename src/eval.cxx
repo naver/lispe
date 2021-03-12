@@ -1711,19 +1711,56 @@ Element* List::evall_car(LispE* lisp) {
 }
 
 Element* List::evall_factorial(LispE* lisp) {
+    static unsigned long factorials[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880L, 3628800L, 39916800L, 479001600L, 6227020800L, 87178291200L, 1307674368000L, 20922789888000L, 355687428096000L, 6402373705728000L, 121645100408832000L, 2432902008176640000L};
+    
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments for '!'");
  
+    Element* e = null_;
+    Element* r = null_;
     long value = 0;
     try {
-        evalAsInteger(1, lisp, value);
-        long res = 1;
-        for (long i = 2; i <= value; i++) {
+        unsigned long res = 1;
+        e = liste[1]->eval(lisp);
+        if (e->isList()) {
+            long listsize = e->size();
+            r = new List;
+            for (long j = 0; j < listsize; j++) {
+                res = 1;
+                value = e->index(j)->asInteger();
+                if (value < 0)
+                    throw new Error("Error: factorial of a negative number does not exists");
+                if (value <= 20)
+                    ((List*)r)->storevalue(lisp, (long)factorials[value]);
+                else {
+                    res = (long)factorials[20];
+                    for (long i = 21; i <= value; i++) {
+                        res *= i;
+                    }
+                    ((List*)r)->storevalue(lisp, (long)res);
+                }
+            }
+            e->release();
+            return r;
+        }
+        
+        value = e->asInteger();
+        if (value < 0)
+            throw new Error("Error: factorial of a negative number does not exists");
+        e->release();
+        if (value <= 20)
+            return lisp->provideInteger((long)factorials[value]);
+        
+        res = (long)factorials[20];
+        for (long i = 21; i <= value; i++) {
             res *= i;
         }
+        ((List*)r)->storevalue(lisp, (long)res);
         return lisp->provideInteger(res);
     }
     catch (Error* err) {
+        e->release();
+        r->release();
         throw err;
     }
     
@@ -2060,6 +2097,91 @@ Element* List::evall_reduce(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_concatenate(LispE* lisp) {
+    long listsize = size();
+    if (listsize != 2 && listsize != 3)
+        throw new Error("Error: wrong number of arguments for ','");
+    
+    Element* first_element = null_;
+    Element* second_element = null_;
+    Element* res = null_;
+    
+    try {
+        first_element = liste[1]->eval(lisp);
+        if (listsize == 2) {
+            res = new List;
+            first_element->flatten(lisp,(List*)res);
+            first_element->release();
+            return res;
+        }
+        second_element = liste[2]->eval(lisp);
+        char p1 = first_element->isPureList();
+        char p2 = second_element->isPureList();
+        if (!p1) {
+            res = new List;
+            res->append(first_element);
+            res->append(second_element);
+            first_element->release();
+            second_element->release();
+            return res;
+        }
+        long i;
+        if (p1 == p2 && p1 == 2) {
+            res = new List;
+            for (i = 0; i < first_element->size(); i++) {
+                res->append(first_element->value_on_index(lisp, i));
+            }
+            for (i = 0; i < second_element->size(); i++) {
+                res->append(second_element->value_on_index(lisp, i));
+            }
+            first_element->release();
+            second_element->release();
+            return res;
+        }
+        res = new List;
+        Element* e;
+        Element* ee;
+        long k;
+        for (i = 0; i < first_element->size(); i++) {
+            e = first_element->index(i);
+            ee = new List;
+            if (!e->isList()) {
+                ee->append(e);
+            }
+            else {
+                for (k = 0; k < e->size(); k++) {
+                    ee->append(e->index(k));
+                }
+            }
+            e = ee;
+            res->append(e);
+            if (p2) {
+                if (i == second_element->size())
+                    break;
+                ee = second_element->index(i);
+                if (ee->isList()) {
+                    for (k = 0; k < ee->size(); k++) {
+                        e->append(ee->index(k));
+                    }
+                }
+                else
+                    e->append(ee);
+            }
+            else
+                e->append(second_element);
+        }
+        return res;
+    }
+    catch (Error* err) {
+        res->release();
+        second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return null_;
+}
+
 Element* List::evall_rho(LispE* lisp) {
     long listsize =  size();
     if (listsize == 1 || listsize > 4)
@@ -2233,7 +2355,8 @@ Element* List::evall_scan(LispE* lisp) {
         if (op->type == l_equal)
             op = lisp->provideAtom(l_equalonezero);
         
-        bool monadic = lisp->delegation->checkArity(op->type, P_TWO);
+        bool monadic = op->check_arity(lisp, P_TWO);
+        
 
         List call;
         call.append(op);

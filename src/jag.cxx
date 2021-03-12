@@ -3016,8 +3016,11 @@ void editor_lines::setcode(wstring& code) {
     
     long u;
     vector<wstring> subs;
-    if (buff.back() == L"")
+    while (buff.back() == L"") {
         buff.pop_back();
+    }
+    
+    buff.push_back(L"");
 
     for (long i = 0; i < buff.size(); i++) {
         numeros.push_back(i + 1);

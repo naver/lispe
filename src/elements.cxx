@@ -728,13 +728,15 @@ Element* Element::insert(LispE* lisp, Element* e, long idx) {
 
 Element* String::insert(LispE* lisp, Element* e, long idx) {
     wstring res;
-    if (idx >= content.size())
-        res = content + e->asString(lisp);
+    if (idx < 0)
+        res = lisp->handlingutf8->s_insert_sep(content, e->asString(lisp));
     else {
-        if (idx < 0)
-            throw new Error("Error: Wrong index in 'insert'");
-        res = content;
-        res.insert(idx, e->asString(lisp));
+        if (idx >= content.size())
+            res = content + e->asString(lisp);
+        else {
+            res = content;
+            res.insert(idx, e->asString(lisp));
+        }
     }
     return lisp->provideString(res);
 }
@@ -1390,6 +1392,14 @@ wstring Instruction::asString(LispE* lisp) {
 wstring Operator::asString(LispE* lisp) {
     return lisp->asString(type);
 }
+//------------------------------------------------------------------------------------------
+bool Element::check_arity(LispE* lisp, unsigned long arity) {
+    if (type == t_atom)
+        return eval(lisp)->check_arity(lisp, arity);
+    if (type < l_final)
+        return lisp->delegation->checkArity(type, arity);
+    return false;
+}
 
 //------------------------------------------------------------------------------------------
 Element* Element::equal(LispE* lisp, Element* e) {
@@ -1778,6 +1788,160 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
         return this;
     }
     return lisp->provideInteger(integer>>e->checkInteger(lisp));
+}
+
+Element* List::bit_and(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->bit_and(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->bit_and(l, e));
+    }
+    return this;
+}
+
+Element* List::bit_or(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->bit_or(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->bit_or(l, e));
+    }
+    return this;
+}
+
+Element* List::bit_xor(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->bit_xor(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->bit_xor(l, e));
+    }
+    return this;
+}
+
+Element* List::plus(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->plus(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->plus(l, e));
+    }
+    return this;
+}
+
+Element* List::minus(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->minus(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->minus(l, e));
+    }
+    return this;
+}
+
+Element* List::multiply(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->multiply(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->multiply(l, e));
+    }
+    return this;
+}
+
+Element* List::divide(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->divide(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->divide(l, e));
+    }
+    return this;
+}
+
+Element* List::mod(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->mod(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->mod(l, e));
+    }
+    return this;
+}
+
+Element* List::power(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->power(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->power(l, e));
+    }
+    return this;
+}
+
+Element* List::leftshift(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->leftshift(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->leftshift(l, e));
+    }
+    return this;
+}
+
+Element* List::rightshift(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->rightshift(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->rightshift(l, e));
+    }
+    return this;
 }
 
 //------------------------------------------------------------------------------------------

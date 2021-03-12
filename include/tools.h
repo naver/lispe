@@ -181,8 +181,10 @@ public:
     wstring s_to_upper(wstring& s);
     wchar_t c_to_lower(wchar_t c);
     wchar_t c_to_upper(wchar_t c);
+    wstring s_insert_sep(wstring& s, wstring sep);
     
     void getchar(wstring& s, wstring& res, long& i, long sz);
+    void getandaddchar(wstring& s, wstring& res, long& i, long sz);
     UWCHAR getachar(wstring& s, long& i);
     
     void l_emojis(map<UWCHAR, string>& dico);
