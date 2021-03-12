@@ -200,6 +200,8 @@ class LispE {
     long max_stack_size;
 
 public:
+    Element* _BOOLEANS[2];
+    
     unordered_map<wstring, Element*> pools;
     vector<Element*> vpools;
 
@@ -248,6 +250,16 @@ public:
         cleaning();
     }
     
+    void set_true_as_true() {
+        _BOOLEANS[0] = delegation->_NULL;
+        _BOOLEANS[1] = delegation->_TRUE;
+    }
+
+    void set_true_as_one() {
+        _BOOLEANS[0] = delegation->_ZERO;
+        _BOOLEANS[1] = delegation->_ONE;
+    }
+
     Stackelement* provideStackElement(Element* function) {
         try {
             return stack_pool.at(execution_stack.size())->setFunction(function);

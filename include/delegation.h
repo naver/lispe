@@ -134,7 +134,6 @@ public:
     reading_string display_string_function;
     void* reading_string_function_object;
     
-    Element* _BOOLEANS[2];
     Element* _NUMERICAL_BOOLEANS[2];
     
     Atome* _ERROR;

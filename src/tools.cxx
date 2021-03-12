@@ -664,6 +664,7 @@ void Chaine_UTF8::getandaddchar(wstring& s, wstring& res, long& i, long sz) {
     }
 }
 
+//👨‍👩‍👧‍👧🏂🙇‍🚴‍
 wstring Chaine_UTF8::s_insert_sep(wstring& s, wstring sep) {
     wstring res;
     long lg = s.size();

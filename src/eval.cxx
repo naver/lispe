@@ -1886,6 +1886,7 @@ Element* List::evall_innerproduct(LispE* lisp) {
     Element* op1 = null_;
     Element* op2 = null_;
     Element* e = null_;
+    lisp->set_true_as_one();
 
     try {
         l1 = liste[1]->eval(lisp);
@@ -1914,6 +1915,7 @@ Element* List::evall_innerproduct(LispE* lisp) {
             l2->release();
             op1->release();
             op2->release();
+            lisp->set_true_as_true();
             return e;
         }
         
@@ -1968,9 +1970,11 @@ Element* List::evall_innerproduct(LispE* lisp) {
         op1->release();
         op2->release();
         l2_column->release();
+        lisp->set_true_as_true();
         return res;
     }
     catch (Error* err) {
+        lisp->set_true_as_true();
         l1->release();
         l2->release();
         op1->release();
@@ -1994,6 +1998,7 @@ Element* List::evall_outerproduct(LispE* lisp) {
     List* res = new List;
     
     lisp->display_trace(this);
+    lisp->set_true_as_one();
 
     try {
         l1 = liste[1]->eval(lisp);
@@ -2023,9 +2028,11 @@ Element* List::evall_outerproduct(LispE* lisp) {
         l1->release();
         l2->release();
         op->release();
+        lisp->set_true_as_true();
         return res;
     }
     catch (Error* err) {
+        lisp->set_true_as_true();
         l1->release();
         l2->release();
         op->release();
@@ -2045,7 +2052,8 @@ Element* List::evall_reduce(LispE* lisp) {
     Element* op = null_;
     
     lisp->display_trace(this);
-
+    lisp->set_true_as_one();
+    
     try {
         l1 = liste[2]->eval(lisp);
         
@@ -2057,8 +2065,10 @@ Element* List::evall_reduce(LispE* lisp) {
             op = lisp->provideAtom(l_equalonezero);
 
         long sz = l1->size();
-        if (!sz)
+        if (!sz) {
+            lisp->set_true_as_true();
             return null_;
+        }
                 
         if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
             //this is a filter, the first list
@@ -2067,6 +2077,7 @@ Element* List::evall_reduce(LispE* lisp) {
                 if (op->index(i)->Boolean())
                     res->append(l1->index(i));
             }
+            lisp->set_true_as_true();
             return res;
         }
 
@@ -2086,9 +2097,11 @@ Element* List::evall_reduce(LispE* lisp) {
         }
         l1->release();
         op->release();
+        lisp->set_true_as_true();
         return call.liste[1];
     }
     catch (Error* err) {
+        lisp->set_true_as_true();
         l1->release();
         op->release();
         throw err;
@@ -2105,6 +2118,7 @@ Element* List::evall_concatenate(LispE* lisp) {
     Element* first_element = null_;
     Element* second_element = null_;
     Element* res = null_;
+    lisp->set_true_as_one();
     
     try {
         first_element = liste[1]->eval(lisp);
@@ -2112,6 +2126,7 @@ Element* List::evall_concatenate(LispE* lisp) {
             res = new List;
             first_element->flatten(lisp,(List*)res);
             first_element->release();
+            lisp->set_true_as_true();
             return res;
         }
         second_element = liste[2]->eval(lisp);
@@ -2123,6 +2138,7 @@ Element* List::evall_concatenate(LispE* lisp) {
             res->append(second_element);
             first_element->release();
             second_element->release();
+            lisp->set_true_as_true();
             return res;
         }
         long i;
@@ -2136,6 +2152,7 @@ Element* List::evall_concatenate(LispE* lisp) {
             }
             first_element->release();
             second_element->release();
+            lisp->set_true_as_true();
             return res;
         }
         res = new List;
@@ -2170,9 +2187,11 @@ Element* List::evall_concatenate(LispE* lisp) {
             else
                 e->append(second_element);
         }
+        lisp->set_true_as_true();
         return res;
     }
     catch (Error* err) {
+        lisp->set_true_as_true();
         res->release();
         second_element->release();
         first_element->release();
@@ -2322,6 +2341,7 @@ Element* List::evall_scan(LispE* lisp) {
     Element* op = null_;
     
     lisp->display_trace(this);
+    lisp->set_true_as_one();
 
     try {
         l1 = liste[2]->eval(lisp);
@@ -2334,8 +2354,10 @@ Element* List::evall_scan(LispE* lisp) {
             op = lisp->provideAtom(l_equalonezero);
 
         long sz = l1->size();
-        if (!sz)
+        if (!sz) {
+            lisp->set_true_as_true();
             return null_;
+        }
                 
         if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
             //this is a filter, the first list
@@ -2349,6 +2371,7 @@ Element* List::evall_scan(LispE* lisp) {
                 else
                     res->append(zero_);
             }
+            lisp->set_true_as_true();
             return res;
         }
 
@@ -2384,9 +2407,11 @@ Element* List::evall_scan(LispE* lisp) {
         
         l1->release();
         op->release();
+        lisp->set_true_as_true();
         return res;
     }
     catch (Error* err) {
+        lisp->set_true_as_true();
         l1->release();
         op->release();
         throw err;
@@ -3321,11 +3346,33 @@ Element* List::evall_greater(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
+    Element* res = null_;
     bool test = true;;
 
     lisp->display_trace(this);
 
     try {
+        if (booleans_[0] == zero_ && listsize == 3) {
+            first_element = liste[1]->eval(lisp);
+            second_element = liste[2]->eval(lisp);
+            if (first_element->isList() && second_element->isList()) {
+                res = new List;
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    if (first_element->index(i)->more(lisp, second_element->index(i))->Boolean())
+                        res->append(one_);
+                    else
+                        res->append(zero_);
+                }
+                first_element->release();
+                second_element->release();
+                return res;
+            }
+            test = first_element->more(lisp, second_element)->Boolean();
+            first_element->release();
+            second_element->release();
+            return numbools_[test];
+        }
+        
         listsize--;
         for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
@@ -3337,6 +3384,7 @@ Element* List::evall_greater(LispE* lisp) {
         return booleans_[test];
     }
     catch (Error* err) {
+        res->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -3352,11 +3400,33 @@ Element* List::evall_greaterorequal(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
+    Element* res = null_;
     bool test = true;;
 
     lisp->display_trace(this);
 
     try {
+        if (booleans_[0] == zero_ && listsize == 3) {
+            first_element = liste[1]->eval(lisp);
+            second_element = liste[2]->eval(lisp);
+            if (first_element->isList() && second_element->isList()) {
+                res = new List;
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    if (first_element->index(i)->moreorequal(lisp, second_element->index(i))->Boolean())
+                        res->append(one_);
+                    else
+                        res->append(zero_);
+                }
+                first_element->release();
+                second_element->release();
+                return res;
+            }
+            test = first_element->moreorequal(lisp, second_element)->Boolean();
+            first_element->release();
+            second_element->release();
+            return numbools_[test];
+        }
+
         listsize--;
         for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
@@ -3368,6 +3438,7 @@ Element* List::evall_greaterorequal(LispE* lisp) {
         return booleans_[test];
     }
     catch (Error* err) {
+        res->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -4114,11 +4185,33 @@ Element* List::evall_lower(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = null_;
     Element* second_element = null_;
+    Element* res = null_;
     bool test = true;
 
     lisp->display_trace(this);
 
     try {
+        if (booleans_[0] == zero_ && listsize == 3) {
+            first_element = liste[1]->eval(lisp);
+            second_element = liste[2]->eval(lisp);
+            if (first_element->isList() && second_element->isList()) {
+                res = new List;
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    if (first_element->index(i)->less(lisp, second_element->index(i))->Boolean())
+                        res->append(one_);
+                    else
+                        res->append(zero_);
+                }
+                first_element->release();
+                second_element->release();
+                return res;
+            }
+            test = first_element->less(lisp, second_element)->Boolean();
+            first_element->release();
+            second_element->release();
+            return numbools_[test];
+        }
+
         listsize--;
         for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
@@ -4130,6 +4223,7 @@ Element* List::evall_lower(LispE* lisp) {
         return booleans_[test];
     }
     catch (Error* err) {
+        res->release();
         first_element->release();
         second_element->release();
         throw err;
@@ -4145,11 +4239,33 @@ Element* List::evall_lowerorequal(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
+    Element* res = null_;
     bool test = true;
 
     lisp->display_trace(this);
 
     try {
+        if (booleans_[0] == zero_ && listsize == 3) {
+            first_element = liste[1]->eval(lisp);
+            second_element = liste[2]->eval(lisp);
+            if (first_element->isList() && second_element->isList()) {
+                res = new List;
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    if (first_element->index(i)->lessorequal(lisp, second_element->index(i))->Boolean())
+                        res->append(one_);
+                    else
+                        res->append(zero_);
+                }
+                first_element->release();
+                second_element->release();
+                return res;
+            }
+            test = first_element->lessorequal(lisp, second_element)->Boolean();
+            first_element->release();
+            second_element->release();
+            return numbools_[test];
+        }
+
         listsize--;
         for (long i = 1; i < listsize && test; i++) {
             first_element = liste[i]->eval(lisp);
@@ -4161,6 +4277,7 @@ Element* List::evall_lowerorequal(LispE* lisp) {
         return booleans_[test];
     }
     catch (Error* err) {
+        res->release();
         first_element->release();
         second_element->release();
         throw err;

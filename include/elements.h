@@ -133,7 +133,7 @@ const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 #define one_ lisp->delegation->_ONE
 #define two_ lisp->delegation->_TWO
 
-#define booleans_ lisp->delegation->_BOOLEANS
+#define booleans_ lisp->_BOOLEANS
 #define numbools_ lisp->delegation->_NUMERICAL_BOOLEANS
 
 

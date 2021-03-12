@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.11.19.27";
+static std::string version = "1.2021.3.12.10.29";
 string LispVersion() {
     return version;
 }
@@ -436,11 +436,11 @@ void Delegation::initialisation(LispE* lisp) {
     _TWO = (Integer*)lisp->provideInteger(2);
     _MINUSONE = (Integer*)lisp->provideInteger(-1);
 
-    _BOOLEANS[0] = _NULL;
-    _BOOLEANS[1] = _TRUE;
-
     _NUMERICAL_BOOLEANS[0] = _ZERO;
     _NUMERICAL_BOOLEANS[1] = _ONE;
+
+    lisp->_BOOLEANS[0] = _NULL;
+    lisp->_BOOLEANS[1] = _TRUE;
 
     //On crée un espace global dans la pile (la fonction associée est _NUL)
     lisp->push(_NULL);
@@ -576,6 +576,9 @@ void LispE::cleaning() {
 std::atomic<long> id_pool(1);
 
 LispE::LispE(LispE* lisp, List* function, Element* body) {
+
+    _BOOLEANS[0] = delegation->_NULL;
+    _BOOLEANS[1] = delegation->_TRUE;
 
     //For threads, the stack limit is much smaller
     max_stack_size = 1000;
@@ -1720,6 +1723,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 
