@@ -2587,14 +2587,15 @@ Element* List::evall_rho(LispE* lisp) {
     try {
         if (listsize == 2) {
             e = liste[1]->eval(lisp);
-            listsize =  e->size();
             
             if (e->type == t_matrix) {
+                res = new Integers;
                 ((Integers*)res)->liste.push_back(((Matrice*)e)->size_x);
                 ((Integers*)res)->liste.push_back(((Matrice*)e)->size_y);
                 return res;
             }
             
+            listsize =  e->size();
             if (e->isPureList() == 1 && e->index(0)->isList()) {
                 long nb = e->index(0)->size();
                 for (long i = 1; i < listsize; i++) {
