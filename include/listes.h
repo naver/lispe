@@ -727,7 +727,28 @@ public:
         }
         return 2;
     }
+
+    virtual char isPureList(long& x, long& y) {
+        x = liste.size();
+        if (x) {
+            if (liste[0]->isList()) {
+                y = liste[0]->size();
+                for (long i = 1; i < x; i++) {
+                    if (!liste[i]->isList() || y != liste[i]->size())
+                        return 0;
+                }
+                return 1;
+            }
+            y = 1;
+            for (long i = 1; i < x; i++) {
+                if (liste[i]->isList())
+                    return 0;
+            }
+        }
+        return 2;
+    }
     
+
     Element* insert(LispE* lisp, Element* e, long idx);
 
     virtual void set_current_line(LispE*) {}
@@ -1049,6 +1070,12 @@ public:
         }
     }
 
+    char isPureList(long& x, long& y) {
+        x = size_x;
+        y = size_y;
+        return 1;
+    }
+
     char isPureList() {
         return 4;
     }
@@ -1318,6 +1345,12 @@ public:
         return 3;
     }
     
+    char isPureList(long& x, long& y) {
+        x = size();
+        y = 1;
+        return 3;
+    }
+
     Element* insert(LispE* lisp, Element* e, long idx);
 
 
@@ -1618,6 +1651,12 @@ public:
         return 3;
     }
     
+    char isPureList(long& x, long& y) {
+        x = size();
+        y = 1;
+        return 3;
+    }
+
     Element* insert(LispE* lisp, Element* e, long idx);
 
     //There is a big difference between clean and clear

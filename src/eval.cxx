@@ -2020,21 +2020,15 @@ Element* List::evall_transpose(LispE* lisp) {
             transposed_matrix = ((Matrice*)matrix)->transposed(lisp);
         }
         else {
-            transposed_matrix= new List;
-            
-            long i, j = 0;
-            long sz_y = matrix->index(0)->size();
-            
-            for (i = 0; i < sz_y; i++) {
-                transposed_matrix->append(new List);
-            }
-            Element* e;
-            for (i = 0; i < matrix->size(); i++) {
-                e = matrix->index(i);
-                if (!e->isList() || e->size() != sz_y)
-                    throw new Error("Error: malformed matrix");
-                for (j = 0; j < sz_y; j++) {
-                    transposed_matrix->index(j)->append(e->index(j));
+            long sx, sy;
+            char t = matrix->isPureList(sx, sy);
+            if (t != 1)
+                return matrix;
+                        
+            transposed_matrix= new Matrice(sy, sx, zero_);
+            for (long i = 0; i < sx; i++) {
+                for (long j = 0; j < sy; j++) {
+                    transposed_matrix->index(j)->replacing(i, matrix->index(i)->index(j)->copying(false));
                 }
             }
         }
@@ -2050,7 +2044,7 @@ Element* List::evall_transpose(LispE* lisp) {
 }
 
 // (.  '((1 2) (5 4) (3 0)) '+ '* '((6 2 3 4) (7 0 1 8)))
-// (. (iota 10) '+ '* (iota 3))
+// (. (iota 10) '+ '* (iota 10.0))
 //(setq m1 (rho 3 2 '(1 2 5 4 3 0)))
 //(setq m2 (rho 2 4 '(6 2 3 4 7 0 1 8)))
 Element* List::evall_innerproduct(LispE* lisp) {
@@ -2068,11 +2062,14 @@ Element* List::evall_innerproduct(LispE* lisp) {
         l1 = liste[1]->eval(lisp);
         l2 = liste[4]->eval(lisp);
         
-        char t1 = l1->isPureList();
-        char t2 = l2->isPureList();
-        
+        long sx_1, sy_1;
+        char t1 = l1->isPureList(sx_1, sy_1);
+
+        long sx_2, sy_2;
+        char t2 = l2->isPureList(sx_2, sy_2);
+
         if (!t1 || !t2 || t1 != t2)
-            throw new Error("Error: arguments for '.' must be lists or compatible lists");
+            throw new Error("Error: arguments for '.' must be compatible lists or matrices");
         
         op1 = liste[2]->eval(lisp);
         if (op1->type == l_equal)
@@ -2082,7 +2079,7 @@ Element* List::evall_innerproduct(LispE* lisp) {
             op2 = lisp->provideAtom(l_equalonezero);
 
         if (t1 == 2) {
-            if (l1->size() != l2->size())
+            if (sx_1 != sx_2)
                 throw new Error("Error: lists should have the same size for '.'");
                                 
 
@@ -2096,12 +2093,18 @@ Element* List::evall_innerproduct(LispE* lisp) {
         }
 
         if (t1 == 3) {
-            if (l1->size() != l2->size())
+            if (sx_1 != sx_2)
                 throw new Error("Error: lists should have the same size for '.'");
                                 
             if (l1 == l2) {
-                l2 = new Numbers;
-                ((Numbers*)l2)->liste = ((Numbers*)l1)->liste;
+                if (l2->type == t_numbers) {
+                    l2 = new Numbers;
+                    ((Numbers*)l2)->liste = ((Numbers*)l1)->liste;
+                }
+                else {
+                    l2 = new Integers;
+                    ((Integers*)l2)->liste = ((Integers*)l1)->liste;
+                }
             }
             
             e = apply_op1_op2(lisp, op1, op2, l1, l2);
@@ -2113,82 +2116,32 @@ Element* List::evall_innerproduct(LispE* lisp) {
             return e;
         }
 
-        long sz1;
-        
-        if (t1 == 4)
-            sz1 = ((Matrice*)l1)->size_y;
-        else
-            sz1 = l1->index(0)->size();
-        
+        if (sy_1 != sx_2)
+            throw new Error("Error: incompatible matrices");
+
         Element* l2_transposed;
-        long sz2;
         long i, j = 0;
         
-        if (t2 == 4) {
-            if (sz1 != ((Matrice*)l2)->size_x)
-                throw new Error("Error: incompatible matrices");
+        if (t2 == 4)
             l2_transposed = ((Matrice*)l2)->transposed(lisp);
-            sz2 = ((Matrice*)l2)->size_y;
-        }
         else {
-            if (sz1 != l2->size())
-                throw new Error("Error: incompatible matrices");
-
-            l2_transposed= new List;
-            
-            sz2 = l2->index(0)->size();
-            
-            for (i = 0; i < sz2; i++) {
-                l2_transposed->append(new List);
-            }
-            
-            for (i = 0; i < l2->size(); i++) {
-                e = l2->index(i);
-                if (!e->isList() || e->size() != sz2) {
-                    l2_transposed->release();
-                    throw new Error("Error: malformed matrix L2");
-                }
-                for (j = 0; j < sz2; j++) {
-                    l2_transposed->index(j)->append(e->index(j));
+            l2_transposed= new Matrice(sy_2, sx_2, zero_);
+            for (i = 0; i < sx_2; i++) {
+                for (j = 0; j < sy_2; j++) {
+                    l2_transposed->index(j)->replacing(i,l2->index(i)->index(j));
                 }
             }
         }
         
         Element* row;
-        Element* column;
-        List* res = new List;
-        Element* sub;
+        Matrice* res = new Matrice(sx_1, sy_2, zero_);
         //We are dealing with matrices...
-        if (t1 == 4 && t2 == 4) {
-            for (long i = 0; i < l1->size(); i++) {
-                row = l1->index(i);
-                sub = new List;
-                res->append(sub);
-                for (j = 0; j < l2_transposed->size(); j++) {
-                    column = l2_transposed->index(j);
-                    e = apply_op1_op2(lisp, op1, op2, row, column);
-                    sub->append(e);
-                    e->release();
-                }
-            }
-        }
-        else {
-            //We are dealing with matrices...
-            for (long i = 0; i < l1->size(); i++) {
-                row = l1->index(i);
-                if (!row->isList() || row->size() != sz1) {
-                    l2_transposed->release();
-                    throw new Error("Error: malformed matrix L1");
-                }
-                
-                sub = new List;
-                res->append(sub);
-                for (j = 0; j < l2_transposed->size(); j++) {
-                    column = l2_transposed->index(j);
-                    e = apply_op1_op2(lisp, op1, op2, row, column);
-                    sub->append(e);
-                    e->release();
-                }
+        for (long i = 0; i < sx_1; i++) {
+            row = l1->index(i);
+            for (j = 0; j < sy_2; j++) {
+                e = apply_op1_op2(lisp, op1, op2, row, l2_transposed->index(j));
+                res->index(i)->replacing(j, e);
+                e->release();
             }
         }
         l1->release();
@@ -5389,7 +5342,7 @@ Element* List::evall_numberp(LispE* lisp) {
 
 Element* List::evall_matrix(LispE* lisp) {
     long sz = size();
-    if (sz != 3 && sz != 4)
+    if (sz != 2 && sz != 3 && sz != 4)
         throw new Error("Error: wrong number of arguments");
     
     Element* e = zero_;
@@ -5398,6 +5351,45 @@ Element* List::evall_matrix(LispE* lisp) {
 
     long sx, sy;
     try {
+        if (sz == 2) {
+            //then this is a list of lists
+            e = liste[1]->eval(lisp);
+            if (e->type == t_matrix) {
+                Matrice* me = (Matrice*)e;
+                Matrice* m = new Matrice(me->size_x, me->size_y, zero_);
+                for (long i = 0; i < me->size_x; i++) {
+                    for (long j = 0; j < me->size_y; j++) {
+                        m->index(i)->replacing(j, me->index(i)->index(j)->copying(false));
+                    }
+                }
+                e->release();
+                return m;
+            }
+            
+            long sx, sy;
+            char type_list = e->isPureList(sx, sy);
+            if (!type_list)
+                throw new Error("Error: Cannot initialize a matrix with this value");
+    
+            Matrice* m = new Matrice(sx, sy, zero_);
+            
+            if (type_list == 2) {
+                for (long i = 0; i < sx; i++) {
+                    m->index(i)->replacing(0, e->index(i)->copying(false));
+                }
+                e->release();
+                return m;
+            }
+            
+            for (long i = 0; i < sx; i++) {
+                for (long j = 0; j < sy; j++) {
+                    m->index(i)->replacing(j, e->index(i)->index(j)->copying(false));
+                }
+            }
+            e->release();
+            return m;
+        }
+        
         evalAsInteger(1, lisp, sx);
         evalAsInteger(2, lisp, sy);
         if (sz == 4)

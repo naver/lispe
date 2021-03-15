@@ -425,7 +425,12 @@ public:
     virtual char isPureList() {
         return 0;
     }
+
+    virtual char isPureList(long& x, long& y) {
+        return 0;
+    }
     
+
     virtual Element* last_element(LispE* lisp);
     virtual Element* last() {
         return this;
