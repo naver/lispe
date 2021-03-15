@@ -26,8 +26,8 @@ typedef enum {
     v_null, v_emptylist, v_emptyatom, v_true,
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_number, t_integer,
-    t_string, t_plus_string, t_minus_string, t_minus_plus_string,
+    t_emptystring, t_operator, t_atom, t_number, t_integer, t_matrix,
+    t_string, t_plus_string, t_minus_string, t_minus_plus_string, t_numbers, t_integers,
     t_list, t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair, t_error,
     
     l_set_max_stack_size,
@@ -58,7 +58,8 @@ typedef enum {
     l_leftshiftequal, l_rightshiftequal, l_bitandequal, l_bitorequal, l_bitxorequal,
     l_divide, l_mod, l_divideequal,l_modequal,
     l_sum, l_product,
-    l_innerproduct, l_outerproduct, l_factorial, l_iota, l_iota0, l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate,
+    l_innerproduct, l_matrix, l_outerproduct, l_factorial, l_iota, l_iota0,
+    l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate, l_transpose,
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
@@ -68,6 +69,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_unique,
+    l_numbers, l_integers,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
@@ -574,6 +576,7 @@ public:
     
     virtual void appendraw(Element* e) {}
     virtual Element* replace(LispE* lisp, long i, Element* e);
+    virtual void replacing(long i, Element* e) {}
     virtual void change(long i, Element* e) {}
     virtual void changelast(Element* e) {}
     
@@ -628,7 +631,11 @@ public:
     virtual bool isList() {
         return false;
     }
-    
+
+    virtual bool isValueList() {
+        return false;
+    }
+
     virtual bool isNotEmptyList() {
         return false;
     }

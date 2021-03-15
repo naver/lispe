@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.12.10.29";
+static std::string version = "1.2021.3.15.10.23";
 string LispVersion() {
     return version;
 }
@@ -235,10 +235,14 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_not, "not", P_TWO, &List::evall_not);
     set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp);
     set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp);
+    set_instruction(l_matrix, "matrix", P_THREE|P_FOUR, &List::evall_matrix);
+    set_instruction(l_numbers, "numbers", P_TWO, &List::evall_numbers);
+    set_instruction(l_integers, "numbers", P_TWO, &List::evall_integers);
     set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or);
     set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe);
     set_instruction(l_sum, "sum", P_TWO, &List::evall_sum);
     set_instruction(l_product, "product", P_TWO, &List::evall_product);
+    set_instruction(l_transpose, "transpose", P_TWO, &List::evall_transpose);
     set_instruction(l_plus, "+", P_ATLEASTTHREE, &List::evall_plus);
     set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
     set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop);
@@ -372,8 +376,11 @@ void Delegation::initialisation(LispE* lisp) {
 
     code_to_string[t_string] = L"string_";
     code_to_string[t_number] = L"number_";
+    code_to_string[t_numbers] = L"numbers_";
     code_to_string[t_integer] = L"integer_";
+    code_to_string[t_integers] = L"integers_";
     code_to_string[t_list] = L"list_";
+    code_to_string[t_matrix] = L"matrix_";
     code_to_string[t_pair] = L"pair_";
     code_to_string[t_data] = L"data_";
     code_to_string[t_maybe] = L"maybe_";
@@ -456,7 +463,10 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_string);
     provideAtomType(t_number);
     provideAtomType(t_integer);
+    provideAtomType(t_numbers);
+    provideAtomType(t_integers);
     provideAtomType(t_list);
+    provideAtomType(t_matrix);
     provideAtomType(t_data);
     provideAtomType(t_maybe);
     provideAtomType(t_dictionary);
@@ -466,7 +476,10 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_string, _NULL), t_string, v_null);
     recordingData(lisp->create_instruction(t_number, _NULL), t_number, v_null);
     recordingData(lisp->create_instruction(t_integer, _NULL), t_integer, v_null);
+    recordingData(lisp->create_instruction(t_numbers, _NULL), t_numbers, v_null);
+    recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, v_null);
     recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
+    recordingData(lisp->create_instruction(t_matrix, _NULL), t_matrix, v_null);
     recordingData(lisp->create_instruction(t_data, _NULL), t_data, v_null);
     recordingData(lisp->create_instruction(t_maybe, _NULL), t_maybe, v_null);
     recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
@@ -499,6 +512,9 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = L"⍴";
     string_to_code[w] = l_rho;
+    
+    w = L"⍉";
+    string_to_code[w] = l_transpose;
     
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
@@ -1723,6 +1739,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 

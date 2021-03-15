@@ -125,9 +125,30 @@ public:
             return valuevect->value_on_index(lisp, i);
         }
         
+        long v;
+        if (valuevect->type == t_integers) {
+            Integers* liste = new Integers;
+            long vlispe;
+            for (i = 0; i < nb; i++) {
+                v = d(gen);
+                vlispe = ((Integers*)valuevect)->liste[v];
+                liste->liste.push_back(vlispe);
+            }
+            return liste;
+        }
+        if (valuevect->type == t_numbers) {
+            Numbers* liste = new Numbers;
+            double vlispe;
+            for (i = 0; i < nb; i++) {
+                v = d(gen);
+                vlispe = ((Numbers*)valuevect)->liste[v];
+                liste->liste.push_back(vlispe);
+            }
+            return liste;
+        }
+
         List* liste = new List;
         
-        long v;
         Element* vlispe;
         for (i = 0; i < nb; i++) {
             v = d(gen);
@@ -150,12 +171,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -172,6 +191,13 @@ public:
         if (nb == 1) {
             v = d(gen);
             return booleans_[v];
+        }
+        if (booleans_[0] == zero_) {
+            Integers* iv = new Integers;
+            for (long i = 0; i < nb; i++) {
+                iv->liste.push_back(d(gen));
+            }
+            return iv;
         }
         
         List* iv = new List;
@@ -194,13 +220,12 @@ public:
         std::binomial_distribution<long> dis(alpha, beta);
         if (nb == 1)
             return lisp->provideInteger((long)dis(gen));
+
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(dis(gen));
-            iv->append(v);
+            iv->liste.push_back(dis(gen));
         }
         return iv;
     }
@@ -218,13 +243,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
+
         return iv;
     }
     
@@ -240,12 +264,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -274,12 +296,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
-        for (i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+        for (long i = 0; i < nb; i++) {
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -307,12 +327,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
-        for (i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+        for (long i = 0; i < nb; i++) {
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -340,12 +358,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
-        for (i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+        for (long i = 0; i < nb; i++) {
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -364,12 +380,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -385,12 +399,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -408,12 +420,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -430,12 +440,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -451,12 +459,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -473,12 +479,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -496,12 +500,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -515,12 +517,10 @@ public:
         
         std::exponential_distribution<double> d(alpha);
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -537,12 +537,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -559,12 +557,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -581,12 +577,10 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        List* iv = new List;
+        Numbers* iv = new Numbers;
         
-        Element* v;
         for (long i = 0; i < nb; i++) {
-            v = lisp->provideNumber(d(gen));
-            iv->append(v);
+            iv->liste.push_back(d(gen));
         }
         return iv;
     }
@@ -599,6 +593,22 @@ public:
         if (!l->isList())
             throw new Error("Error: the 'shuffle' argument must be a list");
         
+        if (l->type == t_integers) {
+            Integers* li = (Integers*)l;
+            long sz = li->size();
+            for (long i = 0; i < sz; i++)
+                li->swap(i, (gen()%sz));
+            return l;
+        }
+        if (l->type == t_numbers) {
+            Numbers* li = (Numbers*)l;
+            long sz = li->size();
+            for (long i = 0; i < sz; i++)
+                li->swap(i, (gen()%sz));
+            return l;
+        }
+        
+
         List* ll = (List*)l;
 
         long sz = ll->liste.size();

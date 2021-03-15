@@ -125,6 +125,205 @@ void LIST::sorting(LispE* lisp, List* comparison) {
     
     sorting(lisp, comparison, comparison->liste[0]->type, home, item->last - 1);
 }
+
+
+bool Numbers::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
+    ((Number*)comparison->liste[1])->number = liste[i];
+    ((Number*)comparison->liste[2])->number = liste[j];
+    return comparison->eval_Boolean(lisp, instruction);
+}
+
+void Numbers::sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
+    //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
+    //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
+    //(sort '< '(20 12 15 13 19 17 14))
+    //(sort '< (shuffle (range 1 16 1)))
+    //(sort '< '(4 3 7 1 5))
+    //(sort '< '(10 4 8 5 12 2 6 11 3 9 7 9))
+
+    //check sorting stability
+    //(loop i (range 1 9999 1) (select (<= (at s i) (at s (+ i 1))) (println 'erreur i)))
+    
+    long j = rmax-rmin+1;
+    long pivot;
+    
+    if (j < 7) {
+        if (j < 2)
+            return;
+        
+        if (j == 2) {
+            if (compare(lisp, comparison, instruction, rmax, rmin))
+                swap(rmax, rmin);
+            return;
+        }
+        
+        if (j == 3) {
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1)) {
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            else {
+                swap(rmin, rmin + 1);
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            swap(rmax, rmin + 1);
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1))
+                return;
+            swap(rmin, rmin + 1);
+            return;
+        }
+        
+        long sz;
+        while (rmax > rmin) {
+              sz = rmin;
+              for (j = rmin; j < rmax; j++) {
+                  if (compare(lisp, comparison, instruction, j + 1, j)) {
+                      swap(j, j + 1);
+                      sz = j;
+                      pivot = j;
+                      while (pivot > rmin && compare(lisp, comparison, instruction, pivot, pivot - 1))
+                          swap(pivot, pivot - 1);
+                  }
+              }
+              rmax = sz;
+          }
+        return;
+    }
+    
+    pivot = rmin - 1;
+    ((Number*)comparison->liste[2])->number = liste[rmax];
+    for (j = rmin; j < rmax; j++) {
+        ((Number*)comparison->liste[1])->number = liste[j];
+        if (comparison->eval_Boolean(lisp, instruction)) {
+            pivot++;
+            swap(pivot,j);
+        }
+    }
+    pivot++;
+    swap(pivot, rmax);
+    
+    sorting(lisp, comparison, instruction, rmin, pivot-1);
+    sorting(lisp, comparison, instruction, pivot+1, rmax);
+}
+
+void Numbers::sorting(LispE* lisp, List* comparison) {
+    //We sort between home and last...
+    long sz = size();
+    if (sz <= 1)
+        return;
+    
+    Number n1(0, s_constant);
+    Number n2(0, s_constant);
+    comparison->liste[1] = &n1;
+    comparison->liste[2] = &n2;
+    
+    n1.number = liste[0];
+    n2.number = liste[0];
+    if (comparison->eval(lisp)->Boolean())
+        throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+
+    sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+}
+
+bool Integers::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
+    ((Integer*)comparison->liste[1])->integer = liste[i];
+    ((Integer*)comparison->liste[2])->integer = liste[j];
+    return comparison->eval_Boolean(lisp, instruction);
+}
+
+void Integers::sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
+    //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
+    //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
+    //(sort '< '(20 12 15 13 19 17 14))
+    //(sort '< (shuffle (range 1 16 1)))
+    //(sort '< '(4 3 7 1 5))
+    //(sort '< '(10 4 8 5 12 2 6 11 3 9 7 9))
+
+    //check sorting stability
+    //(loop i (range 1 9999 1) (select (<= (at s i) (at s (+ i 1))) (println 'erreur i)))
+    
+    long j = rmax-rmin+1;
+    long pivot;
+    
+    if (j < 7) {
+        if (j < 2)
+            return;
+        
+        if (j == 2) {
+            if (compare(lisp, comparison, instruction, rmax, rmin))
+                swap(rmax, rmin);
+            return;
+        }
+        
+        if (j == 3) {
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1)) {
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            else {
+                swap(rmin, rmin + 1);
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            swap(rmax, rmin + 1);
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1))
+                return;
+            swap(rmin, rmin + 1);
+            return;
+        }
+        
+        long sz;
+        while (rmax > rmin) {
+              sz = rmin;
+              for (j = rmin; j < rmax; j++) {
+                  if (compare(lisp, comparison, instruction, j + 1, j)) {
+                      swap(j, j + 1);
+                      sz = j;
+                      pivot = j;
+                      while (pivot > rmin && compare(lisp, comparison, instruction, pivot, pivot - 1))
+                          swap(pivot, pivot - 1);
+                  }
+              }
+              rmax = sz;
+          }
+        return;
+    }
+    
+    pivot = rmin - 1;
+    ((Integer*)comparison->liste[2])->integer = liste[rmax];
+    for (j = rmin; j < rmax; j++) {
+        ((Integer*)comparison->liste[1])->integer = liste[j];
+        if (comparison->eval_Boolean(lisp, instruction)) {
+            pivot++;
+            swap(pivot,j);
+        }
+    }
+    pivot++;
+    swap(pivot, rmax);
+    
+    sorting(lisp, comparison, instruction, rmin, pivot-1);
+    sorting(lisp, comparison, instruction, pivot+1, rmax);
+}
+
+void Integers::sorting(LispE* lisp, List* comparison) {
+    //We sort between home and last...
+    long sz = size();
+    if (sz <= 1)
+        return;
+    
+    Integer n1(0, s_constant);
+    Integer n2(0, s_constant);
+    comparison->liste[1] = &n1;
+    comparison->liste[2] = &n2;
+    n1.integer = liste[0];
+    n2.integer = liste[0];
+    if (comparison->eval(lisp)->Boolean())
+        throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+
+    sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+}
+
 //------------------------------------------------------------------------------------------
 void Element::flatten(LispE* lisp, List* l) {
     l->append(this);
@@ -155,6 +354,21 @@ void Dictionary_n::flatten(LispE* lisp, List* l) {
 }
 
 //------------------------------------------------------------------------------------------
+Element* Matrice::transposed(LispE* lisp) {
+    Matrice* transposed_matrix = new Matrice(size_y, size_x, zero_);
+    long i, j = 0;
+   
+    Element* e;
+    for (i = 0; i < size_x; i++) {
+        e = liste[i];
+        for (j = 0; j < size_y; j++) {
+            transposed_matrix->index(j)->replacing(i, e->index(j));
+        }
+    }
+    return transposed_matrix;
+}
+//------------------------------------------------------------------------------------------
+
 void List::storevalue(LispE* lisp, double v) {
     append(lisp->provideNumber(v));
 }
@@ -166,6 +380,34 @@ void List::storevalue(LispE* lisp,long v) {
 void List::storevalue(LispE* lisp,wstring& v) {
     append(lisp->provideString(v));
 }
+
+void Numbers::storevalue(LispE* lisp, double v) {
+    liste.push_back(v);
+}
+
+void Numbers::storevalue(LispE* lisp,long v) {
+    liste.push_back(v);
+}
+
+void Numbers::storevalue(LispE* lisp, wstring& s) {
+    long l;
+    double v = convertingfloathexa((wchar_t*)s.c_str(), l);
+    liste.push_back(v);
+}
+
+void Integers::storevalue(LispE* lisp, double v) {
+    liste.push_back(v);
+}
+
+void Integers::storevalue(LispE* lisp,long v) {
+    liste.push_back(v);
+}
+
+void Integers::storevalue(LispE* lisp, wstring& s) {
+    long v = convertinginteger(s);
+    liste.push_back(v);
+}
+
 
 //------------------------------------------------------------------------------------------
 
@@ -351,12 +593,39 @@ void List::append(LispE* lisp, wstring& k) {
     liste.push_back(lisp->provideString(k));
 }
 
+void Numbers::append(LispE* lisp, wstring& k) {
+    long l;
+    double d = convertingfloathexa((wchar_t*)k.c_str(), l);
+    liste.push_back(d);
+}
+
+void Integers::append(LispE* lisp, wstring& k) {
+    long d = convertinginteger(k);
+    liste.push_back(d);
+}
+
 void List::append(LispE* lisp, double v) {
     liste.push_back(lisp->provideNumber(v));
 }
 
+void Numbers::append(LispE* lisp, double v) {
+    liste.push_back(v);
+}
+
+void Integers::append(LispE* lisp, double v) {
+    liste.push_back(v);
+}
+
 void List::append(LispE* lisp, long v) {
     liste.push_back(lisp->provideInteger(v));
+}
+
+void Numbers::append(LispE* lisp, long v) {
+    liste.push_back(v);
+}
+
+void Integers::append(LispE* lisp, long v) {
+    liste.push_back(v);
 }
 
 void Dictionary_as_list::append(LispE* lisp, wstring& k) {
@@ -458,6 +727,53 @@ Element* List::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
+Element* Numbers::loop(LispE* lisp, short label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    Number element(0, s_constant);
+    long sz = code->liste.size();
+    for (long i = 0; i < liste.size(); i++) {
+        element.number = liste[i];
+        lisp->recording(&element, label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Integers::loop(LispE* lisp, short label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    Integer element(0, s_constant);
+    long sz = code->liste.size();
+    for (long i = 0; i < liste.size(); i++) {
+        element.integer = liste[i];
+        lisp->recording(&element, label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
 Element* Infiniterange::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
@@ -760,17 +1076,79 @@ Element* List::unique(LispE* lisp) {
     bool found;
     list->append(liste[0]->copying(false));
     for (i = 1; i < liste.size(); i++) {
-        found = true;
+        found = false;
         for (j = 0; j < list->liste.size(); j++) {
             if (liste[i]->unify(lisp, list->liste[j], false)) {
-                found = false;
+                found = true;
                 break;
             }
         }
-        if (found)
+        if (!found)
             list->append(liste[i]->copying(false));
     }
     return list;
+}
+
+Element* Numbers::insert(LispE* lisp, Element* e, long idx) {
+    if (idx < 0)
+        throw new Error("Error: Wrong index in 'insert'");
+ 
+    Numbers* l = (Numbers*)duplicate_constant_container();
+    l->liste.insert(l->liste.begin()+idx, e->asNumber());
+    return l;
+}
+
+Element* Numbers::unique(LispE* lisp) {
+    if (liste.size() == 0)
+        return this;
+    
+    Numbers* nb = new Numbers;
+    long i, j;
+    bool found;
+    nb->liste.push_back(liste[0]);
+    for (i = 1; i < liste.size(); i++) {
+        found = false;
+        for (j = 0; j < nb->liste.size(); j++) {
+            if (liste[i] == nb->liste[j]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            nb->liste.push_back(liste[i]);
+    }
+    return nb;
+}
+
+Element* Integers::insert(LispE* lisp, Element* e, long idx) {
+    if (idx < 0)
+        throw new Error("Error: Wrong index in 'insert'");
+ 
+    Integers* l = (Integers*)duplicate_constant_container();
+    l->liste.insert(l->liste.begin()+idx, e->asInteger());
+    return l;
+}
+
+Element* Integers::unique(LispE* lisp) {
+    if (liste.size() == 0)
+        return this;
+    
+    Integers* nb = new Integers;
+    long i, j;
+    bool found;
+    nb->liste.push_back(liste[0]);
+    for (i = 1; i < liste.size(); i++) {
+        found = false;
+        for (j = 0; j < nb->liste.size(); j++) {
+            if (liste[i] == nb->liste[j]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            nb->liste.push_back(liste[i]);
+    }
+    return nb;
 }
 
 //------------------------------------------------------------------------------------------
@@ -780,42 +1158,55 @@ Element* Element::thekeys(LispE* lisp) {
 }
 
 Element* String::thekeys(LispE* lisp) {
-    List* keys = new List;
-    for (long i = 0; i< content.size(); i++) {
-        keys->append(lisp->provideInteger(i));
+    Integers* keys = new Integers;
+    for (long i = 0; i< size(); i++) {
+        keys->liste.push_back(i);
     }
     return keys;
 }
 
 Element* List::thekeys(LispE* lisp) {
-    List* keys = new List;
+    Integers* keys = new Integers;
     for (long i = 0; i< size(); i++) {
-        keys->append(lisp->provideInteger(i));
+        keys->liste.push_back(i);
     }
     return keys;
 }
 
+Element* Numbers::thekeys(LispE* lisp) {
+    Integers* keys = new Integers;
+    for (long i = 0; i< size(); i++) {
+        keys->liste.push_back(i);
+    }
+    return keys;
+}
+
+Element* Integers::thekeys(LispE* lisp) {
+    Integers* keys = new Integers;
+    for (long i = 0; i< size(); i++) {
+        keys->liste.push_back(i);
+    }
+    return keys;
+}
 
 Element* Dictionary::thekeys(LispE* lisp) {
-    List* liste = new List;
+    List* dkeys = new List;
     Element* e;
     wstring keyvalue;
     for (auto& a: dictionary) {
         keyvalue = a.first;
         e = lisp->provideString(keyvalue);
-        liste->append(e);
+        dkeys->append(e);
     }
-    return liste;
+    return dkeys;
 }
 
 Element* Dictionary_n::thekeys(LispE* lisp) {
-    List* liste = new List;
-    Element* e;
+    Numbers* dkeys = new Numbers;
     for (auto& a: dictionary) {
-        e = lisp->provideNumber(a.first);
-        liste->append(e);
+        dkeys->liste.push_back(a.first);
     }
-    return liste;
+    return dkeys;
 }
 
 Element* Element::thevalues(LispE* lisp) {
@@ -859,6 +1250,23 @@ Element* String::search_element(LispE* lisp, Element* valeur, long idx) {
 Element* List::search_element(LispE* lisp, Element* valeur, long idx) {
     for (long i = idx; i < liste.size(); i++) {
         if (liste[i]->equal(lisp, valeur) == true_)
+            return lisp->provideInteger(i);
+    }
+    return null_;
+}
+
+Element* Numbers::search_element(LispE* lisp, Element* valeur, long idx) {
+    double v = valeur->asNumber();
+    for (long i = idx; i < liste.size(); i++) {
+        if (liste[i] == v)
+            return lisp->provideInteger(i);
+    }
+    return null_;
+}
+Element* Integers::search_element(LispE* lisp, Element* valeur, long idx) {
+    long v = valeur->asInteger();
+    for (long i = idx; i < liste.size(); i++) {
+        if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return null_;
@@ -932,6 +1340,35 @@ Element* List::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
+Element* Numbers::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+    Integers* l = new Integers;
+    double v = valeur->asNumber();
+    for (long i = idx; i < liste.size(); i++) {
+        if (liste[i] == v)
+            l->liste.push_back(i);
+    }
+    if (l->liste.size() == 0) {
+        delete l;
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Integers::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+    Integers* l = new Integers;
+    long v = valeur->asInteger();
+    for (long i = idx; i < liste.size(); i++) {
+        if (liste[i] == v)
+            l->liste.push_back(i);
+    }
+    if (l->liste.size() == 0) {
+        delete l;
+        return emptylist_;
+    }
+    return l;
+}
+
+
 Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     List* l = new List;
     wstring keyvalue;
@@ -975,6 +1412,24 @@ Element* String::search_reverse(LispE* lisp, Element* valeur, long idx) {
 Element* List::search_reverse(LispE* lisp, Element* valeur, long idx) {
     for (long i = liste.size() - 1; i >= idx; i--) {
         if (liste[i]->equal(lisp, valeur) == true_)
+            return lisp->provideInteger(i);
+    }
+    return minusone_;
+}
+
+Element* Numbers::search_reverse(LispE* lisp, Element* valeur, long idx) {
+    double v = valeur->asNumber();
+    for (long i = liste.size() - 1; i >= idx; i--) {
+        if (liste[i] == v)
+            return lisp->provideInteger(i);
+    }
+    return minusone_;
+}
+
+Element* Integers::search_reverse(LispE* lisp, Element* valeur, long idx) {
+    long v = valeur->asInteger();
+    for (long i = liste.size() - 1; i >= idx; i--) {
+        if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return minusone_;
@@ -1030,6 +1485,39 @@ Element* List::reverse(LispE* lisp, bool duplique) {
     liste.reverse();
     return this;
 }
+
+Element* Numbers::reverse(LispE* lisp, bool duplique) {
+    if (liste.size() <= 1)
+        return this;
+    
+    if (duplique) {
+        Numbers* l = new Numbers;
+        for (long i = liste.size()-1; i >= 0; i--) {
+            l->liste.push_back(liste[i]);
+        }
+        return l;
+    }
+
+    std::reverse(liste.begin(), liste.end());
+    return this;
+}
+
+Element* Integers::reverse(LispE* lisp, bool duplique) {
+    if (liste.size() <= 1)
+        return this;
+    
+    if (duplique) {
+        Integers* l = new Integers;
+        for (long i = liste.size()-1; i >= 0; i--) {
+            l->liste.push_back(liste[i]);
+        }
+        return l;
+    }
+
+    std::reverse(liste.begin(), liste.end());
+    return this;
+}
+
 
 Element* Dictionary::reverse(LispE* lisp, bool duplique) {
     Dictionary* dico = new Dictionary;
@@ -1095,6 +1583,19 @@ Element* List::protected_index(LispE* lisp,long i) {
         return liste[i];
     return null_;
 }
+
+Element* Numbers::protected_index(LispE* lisp,long i) {
+    if (i >= 0 && i < liste.size())
+        return lisp->provideNumber(liste[i]);
+    return null_;
+}
+
+Element* Integers::protected_index(LispE* lisp,long i) {
+    if (i >= 0 && i < liste.size())
+        return lisp->provideInteger(liste[i]);
+    return null_;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::last_element(LispE* lisp) {
     return null_;
@@ -1113,6 +1614,19 @@ Element* List::last_element(LispE* lisp) {
     return liste.back();
 }
 
+Element* Numbers::last_element(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    return lisp->provideNumber(liste.back());
+}
+
+Element* Integers::last_element(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    return lisp->provideInteger(liste.back());
+}
+
+
 //------------------------------------------------------------------------------------------
 Element* Element::value_on_index(LispE* lisp, long i) {
     return null_;
@@ -1121,6 +1635,18 @@ Element* Element::value_on_index(LispE* lisp, long i) {
 Element* List::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < liste.size())
         return liste[i]->copying(false);
+    return null_;
+}
+
+Element* Numbers::value_on_index(LispE* lisp, long i) {
+    if (i >= 0 && i < liste.size())
+        return lisp->provideNumber(liste[i]);
+    return null_;
+}
+
+Element* Integers::value_on_index(LispE* lisp, long i) {
+    if (i >= 0 && i < liste.size())
+        return lisp->provideInteger(liste[i]);
     return null_;
 }
 
@@ -1195,6 +1721,28 @@ Element* List::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
+Element* Numbers::value_on_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideNumber(liste[i]);
+    
+    return null_;
+}
+
+Element* Integers::value_on_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideInteger(liste[i]);
+    
+    return null_;
+}
+
 Element* String::value_on_index(LispE* lisp, Element* idx) {
     long i = idx->checkInteger(lisp);
     if (i < 0)
@@ -1232,6 +1780,28 @@ Element* List::protected_index(LispE* lisp, Element* idx) {
     
     if (i >= 0 && i < liste.size())
         return liste[i];
+    
+    return null_;
+}
+
+Element* Numbers::protected_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideNumber(liste[i]);
+    
+    return null_;
+}
+
+Element* Integers::protected_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideInteger(liste[i]);
     
     return null_;
 }
@@ -1278,6 +1848,28 @@ Element* List::join_in_list(LispE* lisp, wstring& sep) {
         str += beg;
         beg = sep;
         str += liste[i]->asString(lisp);
+    }
+    return lisp->provideString(str);
+}
+
+Element* Numbers::join_in_list(LispE* lisp, wstring& sep) {
+    wstring str;
+    wstring beg;
+    for (long i = 0; i < liste.size(); i++) {
+        str += beg;
+        beg = sep;
+        str += convertToWString(liste[i]);
+    }
+    return lisp->provideString(str);
+}
+
+Element* Integers::join_in_list(LispE* lisp, wstring& sep) {
+    wstring str;
+    wstring beg;
+    for (long i = 0; i < liste.size(); i++) {
+        str += beg;
+        beg = sep;
+        str += convertToWString(liste[i]);
     }
     return lisp->provideString(str);
 }
@@ -1944,6 +2536,313 @@ Element* List::rightshift(LispE* l, Element* e) {
     return this;
 }
 
+Element* Numbers::bit_and(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->bit_and(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->bit_and(l, e));
+    }
+    return this;
+}
+
+Element* Numbers::bit_or(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->bit_or(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->bit_or(l, e));
+    }
+    return this;
+}
+
+Element* Numbers::bit_xor(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->bit_xor(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->bit_xor(l, e));
+    }
+    return this;
+}
+
+Element* Numbers::plus(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] += e->index(i)->asNumber();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] += e->asNumber();
+    }
+    return this;
+}
+
+Element* Numbers::minus(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] -= e->index(i)->asNumber();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] -= e->asNumber();
+    }
+    return this;
+}
+
+Element* Numbers::multiply(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] *= e->index(i)->asNumber();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] *= e->asNumber();
+    }
+    return this;
+}
+
+Element* Numbers::divide(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->divide(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->divide(l, e));
+    }
+    return this;
+}
+
+Element* Numbers::mod(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->mod(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->mod(l, e));
+    }
+    return this;
+}
+
+Element* Numbers::power(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->power(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->power(l, e));
+    }
+    return this;
+}
+
+Element* Numbers::leftshift(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->leftshift(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->leftshift(l, e));
+    }
+    return this;
+}
+
+Element* Numbers::rightshift(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->rightshift(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->rightshift(l, e));
+    }
+    return this;
+}
+
+Element* Integers::bit_and(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] &= e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] &= e->asInteger();
+    }
+    return this;
+}
+
+Element* Integers::bit_or(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] |= e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] |= e->asInteger();
+    }
+    return this;
+}
+
+Element* Integers::bit_xor(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] ^= e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] ^= e->asInteger();
+    }
+    return this;
+}
+
+Element* Integers::plus(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] += e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] += e->asInteger();
+    }
+    return this;
+}
+
+Element* Integers::minus(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] -= e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] -= e->asInteger();
+    }
+    return this;
+}
+
+Element* Integers::multiply(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] *= e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] *= e->asInteger();
+    }
+    return this;
+}
+
+Element* Integers::divide(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->divide(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->divide(l, e));
+    }
+    return this;
+}
+
+Element* Integers::mod(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->mod(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->mod(l, e));
+    }
+    return this;
+}
+
+Element* Integers::power(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->power(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->power(l, e));
+    }
+    return this;
+}
+
+Element* Integers::leftshift(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] <<= e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] <<= e->asInteger();
+    }
+    return this;
+}
+
+Element* Integers::rightshift(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] >>= e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] >>= e->asInteger();
+    }
+    return this;
+}
 //------------------------------------------------------------------------------------------
 Element* Element::extraction(LispE* lisp, List* l) {
     return null_;
@@ -1987,7 +2886,85 @@ Element* List::extraction(LispE* lisp, List* l) {
     return l;
 }
 
+Element* Numbers::extraction(LispE* lisp, List* l) {
+    long depuis;
+    l->evalAsInteger(2, lisp, depuis);
+    if (depuis >= 0) {
+        if (depuis >= liste.size())
+            return null_;
+    }
+    else {
+        //We start from the end...
+        depuis = liste.size() + depuis;
+        if (depuis < 0)
+            return null_;
+    }
+    if (l->size() == 3) {
+        //On returns only one element
+        return lisp->provideNumber(liste[depuis]);
+    }
+    long upto;
+    l->evalAsInteger(3, lisp, upto);
+    if (upto >= 0) {
+        if (upto >= liste.size())
+            upto = liste.size();
+    }
+    else {
+        //We start from the end...
+        upto = liste.size() + upto;
+        if (upto < 0)
+            return null_;
+    }
+    if (upto < depuis) {
+        return null_;
+    }
 
+    Numbers* n = new Numbers;
+    for (;depuis < upto; depuis++) {
+        n->liste.push_back(liste[depuis]);
+    }
+    return n;
+}
+
+Element* Integers::extraction(LispE* lisp, List* l) {
+    long depuis;
+    l->evalAsInteger(2, lisp, depuis);
+    if (depuis >= 0) {
+        if (depuis >= liste.size())
+            return null_;
+    }
+    else {
+        //We start from the end...
+        depuis = liste.size() + depuis;
+        if (depuis < 0)
+            return null_;
+    }
+    if (l->size() == 3) {
+        //On returns only one element
+        return lisp->provideInteger(liste[depuis]);
+    }
+    long upto;
+    l->evalAsInteger(3, lisp, upto);
+    if (upto >= 0) {
+        if (upto >= liste.size())
+            upto = liste.size();
+    }
+    else {
+        //We start from the end...
+        upto = liste.size() + upto;
+        if (upto < 0)
+            return null_;
+    }
+    if (upto < depuis) {
+        return null_;
+    }
+
+    Integers* n = new Integers;
+    for (;depuis < upto; depuis++) {
+        n->liste.push_back(liste[depuis]);
+    }
+    return n;
+}
 Element* String::extraction(LispE* lisp, List* liste) {
     Element* e_from = liste->liste[2];
     
@@ -2194,6 +3171,25 @@ Element* List::duplicate_constant_container(bool pair) {
     }
     return this;
 }
+
+Element* Numbers::duplicate_constant_container(bool pair) {
+    if (status == s_constant) {
+        Numbers* l = new Numbers;
+        l->liste = liste;
+        return l;
+    }
+    return this;
+}
+
+Element* Integers::duplicate_constant_container(bool pair) {
+    if (status == s_constant) {
+        Integers* l = new Integers;
+        l->liste = liste;
+        return l;
+    }
+    return this;
+}
+
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
@@ -2271,6 +3267,39 @@ Element* List::cdr(LispE* lisp) {
         return null_;
     return new List(this, 1);
 }
+
+Element* Numbers::car(LispE* lisp) {
+    if (liste.size() == 0)
+        return null_;
+    return lisp->provideNumber(liste[0]);
+}
+
+Element* Numbers::cdr(LispE* lisp) {
+    if (liste.size() <= 1)
+        return null_;
+    Numbers* n = new Numbers;
+    for (long i = 1; i < liste.size(); i++) {
+        n->liste.push_back(liste[i]);
+    }
+    return n;
+}
+
+Element* Integers::car(LispE* lisp) {
+    if (liste.size() == 0)
+        return null_;
+    return lisp->provideInteger(liste[0]);
+}
+
+Element* Integers::cdr(LispE* lisp) {
+    if (liste.size() <= 1)
+        return null_;
+    Integers* n = new Integers;
+    for (long i = 1; i < liste.size(); i++) {
+        n->liste.push_back(liste[i]);
+    }
+    return n;
+}
+
 
 Element* Pair::cdr(LispE* lisp) {
     long sz = liste.size();

@@ -86,6 +86,7 @@ long getindex(unsigned char* contenu, long lg, long i);
 void noconvertingfloathexa(const char* s, short& l);
 double convertingfloathexa(const char* s, long& l);
 double convertingfloathexa(const char* s);
+double convertingfloathexa(wchar_t* s, long& l);
 
 wstring convertToWString(long d);
 string convertToString(long d);
