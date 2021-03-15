@@ -2885,8 +2885,20 @@ Element* List::evall_cdr(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
 
     lisp->display_trace(this);
-
-    return liste[1]->eval(lisp)->cdr(lisp);
+    Element* lst = null_;
+    Element* c = null_;
+    
+    try {
+        lst = liste[1]->eval(lisp);
+        c = lst->cdr(lisp);
+        lst->release();
+    }
+    catch (Error* err) {
+        lst->release();
+        c->release();
+        throw err;
+    }
+    return c;
 }
 
 
