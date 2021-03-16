@@ -335,6 +335,18 @@ void List::flatten(LispE* lisp, List* l) {
     }
 }
 
+void Numbers::flatten(LispE* lisp, List* l) {
+    for (long i = 0; i < size(); i++) {
+        l->append(lisp->provideNumber(liste[i]));
+    }
+}
+
+void Integers::flatten(LispE* lisp, List* l) {
+    for (long i = 0; i < size(); i++) {
+        l->append(lisp->provideInteger(liste[i]));
+    }
+}
+
 void Dictionary::flatten(LispE* lisp, List* l) {
     wstring k;
     for (auto& a: dictionary) {

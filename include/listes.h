@@ -1206,6 +1206,9 @@ public:
         return &exchange_value;
     }
     
+    void flatten(LispE*, List* l);
+
+    
     Element* protected_index(LispE*,long i);
     
     Element* value_on_index(LispE*, long i);
@@ -1531,6 +1534,7 @@ public:
         return &exchange_value;
     }
     
+    void flatten(LispE*, List* l);
     Element* protected_index(LispE*,long i);
     
     Element* value_on_index(LispE*, long i);
