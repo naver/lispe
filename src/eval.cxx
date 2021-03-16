@@ -2299,7 +2299,11 @@ Element* List::evall_reduce(LispE* lisp) {
     return null_;
 }
 
-// (, (rho 2 3 '(4 5 6 9)) (rho 3 3 (iota 10)))
+// (, (rho 2 3 '(4 5 6 9)) (rho 2 3 (iota 10)))
+// (, (rho 3 3 3 (iota 90)) -1)
+// (, (rho 3 3 3 (iota 90)) (* (iota 3) -1))
+// (, (rho 3 3 3 (iota 90)) (* (rho 3 3 (iota 10)) -1))
+
 Element* List::evall_concatenate(LispE* lisp) {
     long listsize = size();
     if (listsize != 2 && listsize != 3)
@@ -2315,141 +2319,60 @@ Element* List::evall_concatenate(LispE* lisp) {
         if (listsize == 2) {
             lisp->set_true_as_true();
 
-            if (first_element->isValueList())
+            if (first_element->isValueList()) {
+                lisp->set_true_as_true();
                 return first_element;
+            }
             
             res = new List;
             first_element->flatten(lisp,(List*)res);
             first_element->release();
-            return res;
-        }
-        second_element = liste[2]->eval(lisp);
-        char p1 = first_element->isPureList();
-        char p2 = second_element->isPureList();
-        if (!p1) {
-            res = new List;
-            res->append(first_element);
-            res->append(second_element);
-            first_element->release();
-            second_element->release();
             lisp->set_true_as_true();
-            return res;
-        }
-        long i;
-        if (p1 == 3) {
-            if (first_element->type == t_numbers) {
-                res = new Numbers;
-                for (i = 0; i < first_element->size(); i++) {
-                    ((Numbers*)res)->liste.push_back(first_element->index(i)->asNumber());
-                }
-            }
-            else {
-                res = new Integers;
-                for (i = 0; i < first_element->size(); i++) {
-                    ((Integers*)res)->liste.push_back(first_element->index(i)->asInteger());
-                }
-            }
-            
-            if (second_element->isList()) {
-                for (i = 0; i < second_element->size(); i++) {
-                    res->append(second_element->value_on_index(lisp, i));
-                }
-            }
-            else
-                res->append(second_element);
             return res;
         }
 
-        if (p1 == p2 && p1 == 2) {
-            res = new List;
-            for (i = 0; i < first_element->size(); i++) {
-                res->append(first_element->value_on_index(lisp, i));
-            }
-            for (i = 0; i < second_element->size(); i++) {
-                res->append(second_element->value_on_index(lisp, i));
-            }
-            first_element->release();
-            second_element->release();
-            lisp->set_true_as_true();
-            return res;
+        if (!first_element->isList())
+            throw new Error("Error: First argument should be a list");
+        
+        vector<long> sz1;
+        vector<long> sz2;
+        second_element = liste[2]->eval(lisp);
+        first_element->getShape(sz1);
+        second_element->getShape(sz2);
+        if (sz1.size() < sz2.size())
+            throw new Error("Error: Dimension error");
+        
+        if (first_element->type == t_matrix) {
+            res = new Matrice(sz1[0], sz1[1], zero_);
+            ((Matrice*)res)->setvalue((Matrice*)first_element);
+            res->concatenate(lisp,second_element);
+            if (sz2.size() == 2)
+                sz1[1] += sz2[1];
+            else
+                sz1[1] += 1;
+            ((Matrice*)res)->size_y = sz1[1];
         }
-        
-        Element* e;
-        Element* ee;
-        long k;
-        
-        if (p1 == 4) {
-            Matrice* m1 = (Matrice*)first_element;
-            long g;
-            if (p2 == 4) {
-                Matrice* m2 = (Matrice*)second_element;
-                Matrice* m3 = new Matrice(m1->size_x,m1->size_y+m2->size_y, zero_);
-                for (i = 0; i < m1->size_x; i++) {
-                    e = m1->index(i);
-                    for (k = 0; k < m1->size_y; k++) {
-                        m3->index(i)->replacing(k, e->value_on_index(lisp, k));
-                    }
-                    e = m2->index(i);
-                    for (g = 0; g < m2->size_y; g++) {
-                        m3->index(i)->replacing(k+g, e->value_on_index(lisp, g));
-                    }
-                }
-                return m3;
-            }
-            Matrice* m3 = new Matrice(m1->size_x,m1->size_y+second_element->size(), zero_);
-            for (i = 0; i < m1->size_x; i++) {
-                e = m1->index(i);
-                for (k = 0; k < m1->size_y; k++) {
-                    m3->index(i)->replacing(k, e->value_on_index(lisp, k));
-                }
-                if (p2) {
-                    if (i == second_element->size())
-                        break;
-                    ee = second_element->index(i);
-                    if (ee->isList()) {
-                        for (g = 0; g < ee->size(); g++)
-                            m3->index(i)->replacing(k+g, ee->value_on_index(lisp, g));
-                    }
-                    else
-                        m3->index(i)->replacing(k, ee);
-                }
+        else {
+            if (first_element->type == t_tensor) {
+                res = new Tenseur(sz1, zero_);
+                ((Tenseur*)res)->setvalue((Tenseur*)first_element);
+                res->concatenate(lisp, second_element);
+                long i = 0;
+                while (i < sz2.size() && sz1[i] == sz2[i]) i++;
+                if (i == sz2.size())
+                    ((Tenseur*)res)->sizes[i] += 1;
                 else
-                    m3->index(i)->replacing(k, second_element);
-            }
-            return m3;
-        }
-        
-        res = new List;
-        
-        for (i = 0; i < first_element->size(); i++) {
-            e = first_element->index(i);
-            ee = new List;
-            if (!e->isList()) {
-                ee->append(e);
+                    ((Tenseur*)res)->sizes[i] += sz2[i];
             }
             else {
-                for (k = 0; k < e->size(); k++) {
-                    ee->append(e->value_on_index(lisp, k));
-                }
+                res = first_element->copying(true);
+                res->concatenate(lisp, second_element);
             }
-            e = ee;
-            res->append(e);
-            if (p2) {
-                if (i == second_element->size())
-                    break;
-                ee = second_element->index(i);
-                if (ee->isList()) {
-                    for (k = 0; k < ee->size(); k++) {
-                        e->append(ee->value_on_index(lisp, k));
-                    }
-                }
-                else
-                    e->append(ee);
-            }
-            else
-                e->append(second_element);
         }
+
         lisp->set_true_as_true();
+        second_element->release();
+        first_element->release();
         return res;
     }
     catch (Error* err) {

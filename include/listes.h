@@ -748,6 +748,16 @@ public:
         return 2;
     }
     
+    void concatenate(LispE* lisp, Element* e) {
+        if (e->isList()) {
+            for (long i = 0; i < e->size(); i++) {
+                append(e->value_on_index(lisp, i));
+            }
+        }
+        else
+            append(e->copying(false));
+    }
+    
     virtual Element* transposed(LispE* lisp);
     void getShape(vector<long>& sz) {
         long s;
@@ -1080,6 +1090,16 @@ public:
         }
     }
     
+    void concatenate(LispE* lisp, Element* e) {
+        if (!e->isList())
+            liste.push_back(e->asNumber());
+        else {
+            for (long i = 0; i < e->size(); i++) {
+                liste.push_back(e->index(i)->asNumber());
+            }
+        }
+    }
+
 
     bool isContainer() {
         return true;
@@ -1396,6 +1416,15 @@ public:
         }
     }
 
+    void concatenate(LispE* lisp, Element* e) {
+        if (!e->isList())
+            liste.push_back(e->asInteger());
+        else {
+            for (long i = 0; i < e->size(); i++) {
+                liste.push_back(e->index(i)->asInteger());
+            }
+        }
+    }
 
     bool isContainer() {
         return true;
@@ -1768,7 +1797,30 @@ public:
         inject(0, lst, idx);
     }
     
+    void setvalue(Matrice* lst) {
+        for (long i = 0; i < lst->size_x; i++) {
+            for (long j = 0; j < lst->size_y; j++) {
+                liste[i]->replacing(j, lst->index(i)->index(j));
+            }
+        }
+    }
+    
     Element* transposed(LispE* lisp);
+    
+    void concatenate(LispE* lisp, Element* e) {
+        if (e->isList()) {
+            if (e->size() != size_x)
+                throw new Error("Error: Length error");
+            for (long i = 0; i < size_x; i++) {
+                liste[i]->concatenate(lisp, e->index(i));
+            }
+        }
+        else {
+            for (long i = 0; i < size_x; i++) {
+                liste[i]->concatenate(lisp, e);
+            }
+        }
+    }
 };
 
 class Tenseur : public List {
@@ -1880,6 +1932,52 @@ public:
     }
     
     Element* transposed(LispE* lisp);
+    
+    void concatenate(LispE* lisp, long isz, Element* res, Element* e) {
+        if (res->isValueList()) {
+            res->concatenate(lisp, e);
+        }
+        else {
+            for (long i = 0; i < sizes[isz]; i++) {
+                if (e->isList())
+                    concatenate(lisp, isz+1, res->index(i), e->index(i));
+                else
+                    concatenate(lisp, isz+1, res->index(i), e);
+            }
+        }
+    }
+    
+    void concatenate(LispE* lisp, Element* e) {
+        if (e->isList()) {
+            vector<long> sz;
+            e->getShape(sz);
+            for (long i = 0; i < sz.size()-1; i++) {
+                if (sz[i] != sizes[i])
+                    throw new Error("Error: Incompatible dimensions");
+            }
+        }
+        
+        concatenate(lisp, 0, this, e);
+    }
+
+    
+    void setvalue(Element* res, Element* lst) {
+        if (lst->type == t_numbers) {
+            for (long i = 0; i < lst->size(); i++) {
+                res->replacing(i, lst->index(i));
+            }
+        }
+        else {
+            for (long i = 0; i < lst->size(); i++) {
+                setvalue(res->index(i), lst->index(i));
+            }
+        }            
+    }
+    
+    void setvalue(Tenseur* lst) {
+        setvalue(this, lst);
+    }
+
 };
 
 

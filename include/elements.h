@@ -436,6 +436,7 @@ public:
         return this;
     }
     
+    virtual void concatenate(LispE* lisp, Element* e) {}
 
     virtual Element* last_element(LispE* lisp);
     virtual Element* last() {
