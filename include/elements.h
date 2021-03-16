@@ -26,7 +26,7 @@ typedef enum {
     v_null, v_emptylist, v_emptyatom, v_true,
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_number, t_integer, t_matrix,
+    t_emptystring, t_operator, t_atom, t_number, t_integer, t_matrix, t_tensor,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string, t_numbers, t_integers,
     t_list, t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair, t_error,
     
@@ -58,7 +58,7 @@ typedef enum {
     l_leftshiftequal, l_rightshiftequal, l_bitandequal, l_bitorequal, l_bitxorequal,
     l_divide, l_mod, l_divideequal,l_modequal,
     l_sum, l_product,
-    l_innerproduct, l_matrix, l_outerproduct, l_factorial, l_iota, l_iota0,
+    l_innerproduct, l_matrix, l_tensor, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate, l_transpose,
     
     //Comparisons
@@ -428,6 +428,12 @@ public:
 
     virtual char isPureList(long& x, long& y) {
         return 0;
+    }
+    
+    virtual void getShape(vector<long>& sz) {}
+    
+    virtual Element* transposed(LispE* lisp) {
+        return this;
     }
     
 

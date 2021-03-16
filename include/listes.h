@@ -748,6 +748,18 @@ public:
         return 2;
     }
     
+    virtual Element* transposed(LispE* lisp);
+    void getShape(vector<long>& sz) {
+        long s;
+        Element* l = this;
+        while (l->type != v_null) {
+            s = l->size();
+            if (!s)
+                return;
+            sz.push_back(s);
+            l = l->index(0);
+        }
+    }
 
     Element* insert(LispE* lisp, Element* e, long idx);
 
@@ -892,6 +904,7 @@ public:
     Element* evall_prettify(LispE* lisp);
     Element* evall_mark(LispE* lisp);
     Element* evall_matrix(LispE* lisp);
+    Element* evall_tensor(LispE* lisp);
     Element* evall_numbers(LispE* lisp);
     Element* evall_integers(LispE* lisp);
     Element* evall_resetmark(LispE* lisp);
@@ -1052,37 +1065,6 @@ public:
     }
 };
 
-class Matrice : public List {
-public:
-    long size_x, size_y;
-
-    Matrice(long x, long y, Element* n) {
-        type = t_matrix;
-        size_x = x;
-        size_y = y;
-        List* l;
-        for (long i = 0; i < size_x; i++) {
-            l = new List;
-            liste.push_back(l);
-            for (long j = 0; j < size_y; j++) {
-                l->append(n);
-            }
-        }
-    }
-
-    char isPureList(long& x, long& y) {
-        x = size_x;
-        y = size_y;
-        return 1;
-    }
-
-    char isPureList() {
-        return 4;
-    }
-    
-    Element* transposed(LispE* lisp);
-};
-
 class Numbers : public Element {
 public:
     
@@ -1091,6 +1073,12 @@ public:
     
     Numbers() : Element(t_numbers), exchange_value(0, s_constant) {}
     Numbers(uchar s) : Element(t_numbers, s), exchange_value(0, s_constant) {}
+    Numbers(long nb, double v) : Element(t_numbers), exchange_value(0, s_constant) {
+        while (nb) {
+            liste.push_back(v);
+            nb--;
+        }
+    }
     
 
     bool isContainer() {
@@ -1341,6 +1329,10 @@ public:
         return true;
     }
     
+    void getShape(vector<long>& sz) {
+        sz.push_back(liste.size());
+    }
+    
     char isPureList() {
         return 3;
     }
@@ -1396,8 +1388,14 @@ public:
     vector<long> liste;
     
     Integers() : Element(t_integers), exchange_value(0, s_constant) {}
-    Integers(uchar s) : Element(t_numbers, s), exchange_value(0, s_constant) {}
-    
+    Integers(uchar s) : Element(t_integers, s), exchange_value(0, s_constant) {}
+    Integers(long nb, long v) : Element(t_integers), exchange_value(0, s_constant) {
+        while (nb) {
+            liste.push_back(v);
+            nb--;
+        }
+    }
+
 
     bool isContainer() {
         return true;
@@ -1647,6 +1645,10 @@ public:
         return true;
     }
     
+    void getShape(vector<long>& sz) {
+        sz.push_back(liste.size());
+    }
+    
     char isPureList() {
         return 3;
     }
@@ -1693,5 +1695,192 @@ public:
     void sorting(LispE* lisp, List* comparison);
 
 };
+
+
+class Matrice : public List {
+public:
+    long size_x, size_y;
+
+    Matrice(long x, long y, Element* n) {
+        type = t_matrix;
+        size_x = x;
+        size_y = y;
+        Numbers* l;
+        for (long i = 0; i < size_x; i++) {
+            l = new Numbers;
+            liste.push_back(l);
+            for (long j = 0; j < size_y; j++) {
+                l->append(n);
+            }
+        }
+    }
+
+    char isPureList(long& x, long& y) {
+        x = size_x;
+        y = size_y;
+        return 1;
+    }
+
+    char isPureList() {
+        return 4;
+    }
+    
+    void inject(long isz, Element* lst, long& idx) {
+        for (long x = 0; x < size_x; x++) {
+            for (long y = 0; y < size_y; y++) {
+                if (idx == lst->size())
+                    idx = 0;
+                index(x)->replacing(y,lst->index(idx++));
+            }
+        }
+    }
+    
+    void combine(LispE* lisp, long isz1, long isz2, Element* l1, Element* l2, List* action) {
+        if (!l1->isList() && !l2->isList()) {
+            action->liste[1] = l1;
+            action->liste[2] = l2;
+            Element* e = action->eval(lisp);
+            liste[isz1]->replacing(isz2, e);
+            e->release();
+            return;
+        }
+        
+        if (l1->isList()) {
+            for (long i1 = 0; i1 < l1->size(); i1++) {
+                combine(lisp, i1, isz2, l1->index(i1), l2, action);
+            }
+        }
+        if (l2->isList()) {
+            for (long i2 = 0; i2 < l2->size(); i2++) {
+                combine(lisp, isz1, i2, l1, l2->index(i2), action);
+            }
+        }
+    }
+    
+    void combine(LispE* lisp, Element* l1, Element* l2, List* action) {
+        combine(lisp, 0, 0, l1, l2, action);
+    }
+    
+    void putlist(Element* lst) {
+        long idx = 0;
+        if (!lst->size())
+            return;
+        inject(0, lst, idx);
+    }
+    
+    Element* transposed(LispE* lisp);
+};
+
+class Tenseur : public List {
+public:
+    vector<long> sizes;
+
+    Tenseur(std::vector<long>& sz, Element* n) {
+        type = t_tensor;
+        sizes = sz;
+        if (sizes.size())
+            build(0,this, n);
+    }
+    
+    
+    void build(long isz, Element* res, Element* n) {
+        if (isz == sizes.size()-1) {
+            for (long i = 0; i < sizes[isz]; i++) {
+                res->append(n);
+            }
+            return;
+        }
+        
+        Element* lst;
+        bool last = (isz == sizes.size()-2);
+        for (long i = 0; i < sizes[isz]; i++) {
+            if (last)
+                lst = new Numbers;
+            else
+                lst = new List;
+            res->append(lst);
+            build(isz+1, lst, n);
+        }
+    }
+
+    void inject(long isz, Element* res, Element* lst, long& idx) {
+        if (isz == sizes.size()-1) {
+            for (long i = 0; i < sizes[isz]; i++) {
+                if (idx == lst->size())
+                    idx = 0;
+                res->replacing(i,lst->index(idx++));
+            }
+            return;
+        }
+        for (long i = 0; i < sizes[isz]; i++) {
+            inject(isz+1, res->index(i), lst, idx);
+        }
+    }
+    
+    void combine(LispE* lisp, vector<long>& isz1,vector<long>& isz2, Element* l1, Element* l2, List* action) {
+        if (!l1->isList() && !l2->isList()) {
+            if (!isz1.size() || !isz2.size())
+                return;
+            
+            action->liste[1] = l1;
+            action->liste[2] = l2;
+            Element* e = action->eval(lisp);
+            Element* r = this;
+            long i;
+            for (i = 0; i < isz1.size(); i++) {
+                r = r->index(isz1[i]);
+            }
+            for (i = 0; i < isz2.size()-1; i++) {
+                r = r->index(isz2[i]);
+            }
+            r->replacing(isz2.back(), e);
+            e->release();
+            return;
+        }
+        
+        if (l1->isList()) {
+            for (long i1 = 0; i1 < l1->size(); i1++) {
+                isz1.push_back(i1);
+                combine(lisp, isz1, isz2, l1->index(i1), l2, action);
+                isz1.pop_back();
+            }
+        }
+        if (l2->isList()) {
+            for (long i2 = 0; i2 < l2->size(); i2++) {
+                isz2.push_back(i2);
+                combine(lisp, isz1, isz2, l1, l2->index(i2), action);
+                isz2.pop_back();
+            }
+        }
+    }
+    
+    void combine(LispE* lisp, Element* l1, Element* l2, List* action) {
+        vector<long> isz1;
+        vector<long> isz2;
+        combine(lisp, isz1, isz2, l1, l2, action);
+    }
+    
+    void putlist(Element* lst) {
+        long idx = 0;
+        inject(0, this, lst, idx);
+    }
+    
+    char isPureList(long& x, long& y) {
+        x = sizes[0];
+        y = sizes[1];
+        return 1;
+    }
+
+    void getShape(vector<long>& sz) {
+        sz = sizes;
+    }
+    
+    char isPureList() {
+        return 4;
+    }
+    
+    Element* transposed(LispE* lisp);
+};
+
 
 #endif

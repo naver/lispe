@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.15.17.46";
+static std::string version = "1.2021.3.16.13.47";
 string LispVersion() {
     return version;
 }
@@ -236,6 +236,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp);
     set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp);
     set_instruction(l_matrix, "matrix", P_THREE|P_FOUR, &List::evall_matrix);
+    set_instruction(l_tensor, "tensor", P_ATLEASTTHREE, &List::evall_tensor);
     set_instruction(l_numbers, "numbers", P_TWO, &List::evall_numbers);
     set_instruction(l_integers, "numbers", P_TWO, &List::evall_integers);
     set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or);
@@ -381,6 +382,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_integers] = L"integers_";
     code_to_string[t_list] = L"list_";
     code_to_string[t_matrix] = L"matrix_";
+    code_to_string[t_tensor] = L"tensor_";
     code_to_string[t_pair] = L"pair_";
     code_to_string[t_data] = L"data_";
     code_to_string[t_maybe] = L"maybe_";
@@ -467,6 +469,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_integers);
     provideAtomType(t_list);
     provideAtomType(t_matrix);
+    provideAtomType(t_tensor);
     provideAtomType(t_data);
     provideAtomType(t_maybe);
     provideAtomType(t_dictionary);
@@ -480,6 +483,7 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, v_null);
     recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
     recordingData(lisp->create_instruction(t_matrix, _NULL), t_matrix, v_null);
+    recordingData(lisp->create_instruction(t_tensor, _NULL), t_tensor, v_null);
     recordingData(lisp->create_instruction(t_data, _NULL), t_data, v_null);
     recordingData(lisp->create_instruction(t_maybe, _NULL), t_maybe, v_null);
     recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
@@ -1739,6 +1743,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

@@ -2016,22 +2016,7 @@ Element* List::evall_transpose(LispE* lisp) {
     
     try {
         matrix = liste[1]->eval(lisp);
-        if (matrix->type == t_matrix) {
-            transposed_matrix = ((Matrice*)matrix)->transposed(lisp);
-        }
-        else {
-            long sx, sy;
-            char t = matrix->isPureList(sx, sy);
-            if (t != 1)
-                return matrix;
-                        
-            transposed_matrix= new Matrice(sy, sx, zero_);
-            for (long i = 0; i < sx; i++) {
-                for (long j = 0; j < sy; j++) {
-                    transposed_matrix->index(j)->replacing(i, matrix->index(i)->index(j)->copying(false));
-                }
-            }
-        }
+        transposed_matrix = matrix->transposed(lisp);
     }
     catch (Error* err) {
         matrix->release();
@@ -2122,21 +2107,12 @@ Element* List::evall_innerproduct(LispE* lisp) {
         Element* l2_transposed;
         long i, j = 0;
         
-        if (t2 == 4)
-            l2_transposed = ((Matrice*)l2)->transposed(lisp);
-        else {
-            l2_transposed= new Matrice(sy_2, sx_2, zero_);
-            for (i = 0; i < sx_2; i++) {
-                for (j = 0; j < sy_2; j++) {
-                    l2_transposed->index(j)->replacing(i,l2->index(i)->index(j));
-                }
-            }
-        }
+        l2_transposed = l2->transposed(lisp);
         
         Element* row;
         Matrice* res = new Matrice(sx_1, sy_2, zero_);
         //We are dealing with matrices...
-        for (long i = 0; i < sx_1; i++) {
+        for (i = 0; i < sx_1; i++) {
             row = l1->index(i);
             for (j = 0; j < sy_2; j++) {
                 e = apply_op1_op2(lisp, op1, op2, row, l2_transposed->index(j));
@@ -2174,7 +2150,6 @@ Element* List::evall_outerproduct(LispE* lisp) {
     Element* l1 = null_;
     Element* l2 = null_;
     Element* op = null_;
-    Element* e = null_;
     Element* res = null_;
     
     lisp->display_trace(this);
@@ -2207,60 +2182,19 @@ Element* List::evall_outerproduct(LispE* lisp) {
         call.append(op);
         call.append(null_);
         call.append(null_);
-        Element* sub;
-
-        if (l1->type ==  t_matrix) {
-            Matrice* m1 = (Matrice*)l1;
-            res = new List;
-            if (l2->type == t_matrix) {
-                Matrice* m2 = (Matrice*)l2;
-                for (long i1 = 0; i1 < m1->size_x; i1++) {
-                    for (long j1 = 0; j1 < m1->size_y; j1++) {
-                        call.liste[1] = l1->index(i1)->index(j1);
-                        for (long i2 = 0; i2 < m2->size_x; i2++) {
-                            sub = new List;
-                            res->append(sub);
-                            for (long j2 = 0; j2 < m2->size_y; j2++) {
-                                call.liste[2] = m2->index(i2)->index(j2);
-                                e = call.eval(lisp);
-                                sub->append(e);
-                            }
-                        }
-                    }
-                }
-            }
-            else {
-                for (long i1 = 0; i1 < m1->size_x; i1++) {
-                    for (long j1 = 0; j1 < m1->size_y; j1++) {
-                        call.liste[1] = l1->index(i1)->index(j1);
-                        sub = new List;
-                        res->append(sub);
-                        for (long i2 = 0; i2 < l2->size(); i2++) {
-                            call.liste[2] = l2->index(i2);
-                            e = call.eval(lisp);
-                            sub->append(e);
-                        }
-                    }
-                }
-            }
-            l1->release();
-            l2->release();
-            op->release();
-            lisp->set_true_as_true();
-            return res;
+        
+        vector<long> size;
+        l1->getShape(size);
+        l2->getShape(size);
+        if (size.size() == 2) {
+            res = new Matrice(size[0], size[1], zero_);
+            ((Matrice*)res)->combine(lisp, l1, l2, &call);
+        }
+        else {
+            res = new Tenseur(size, zero_);
+            ((Tenseur*)res)->combine(lisp, l1, l2, &call);
         }
         
-        res = new List;
-        for (long i = 0; i < l1->size(); i++) {
-            call.liste[1] = l1->index(i);
-            sub = new List;
-            res->append(sub);
-            for (long j = 0; j < l2->size(); j++) {
-                call.liste[2] = l2->index(j);
-                e = call.eval(lisp);
-                sub->append(e);
-            }
-        }
         l1->release();
         l2->release();
         op->release();
@@ -2531,8 +2465,6 @@ Element* List::evall_concatenate(LispE* lisp) {
 
 Element* List::evall_rho(LispE* lisp) {
     long listsize =  size();
-    if (listsize == 1 || listsize > 4)
-        throw new Error("Error: wrong number of arguments for 'rho'");
     
     Element* e =  null_;
     Element* res = null_;
@@ -2547,7 +2479,16 @@ Element* List::evall_rho(LispE* lisp) {
                 ((Integers*)res)->liste.push_back(((Matrice*)e)->size_y);
                 return res;
             }
-            
+
+            if (e->type == t_tensor) {
+                res = new Integers;
+                Tenseur* tens = (Tenseur*)e;
+                for (long i = 0; i < tens->sizes.size(); i++) {
+                    ((Integers*)res)->liste.push_back(tens->sizes[i]);
+                }
+                return res;
+            }
+
             listsize =  e->size();
             if (e->isPureList() == 1 && e->index(0)->isList()) {
                 long nb = e->index(0)->size();
@@ -2620,25 +2561,33 @@ Element* List::evall_rho(LispE* lisp) {
             return res;
         }
         
-        long sz2;
-        e = liste[3]->eval(lisp);
+        if (listsize == 4) {
+            long sz2;
+            e = liste[3]->eval(lisp);
+            if (!e->isList())
+                throw new Error("Error: third argument should be a list");
+            
+            evalAsInteger(1, lisp, sz1);
+            evalAsInteger(2, lisp, sz2);
+            listsize = e->size();
+            res = new Matrice(sz1, sz2, zero_);
+            ((Matrice*)res)->putlist(e);
+            e->release();
+            return res;
+        }
+
+        vector<long> sizes;
+        long s;
+        listsize--;
+        for (long i = 1; i < listsize; i++) {
+            evalAsInteger(i, lisp, s);
+            sizes.push_back(s);
+        }
+        res = new Tenseur(sizes, zero_);
+        e = liste[listsize]->eval(lisp);
         if (!e->isList())
             throw new Error("Error: third argument should be a list");
-        
-        evalAsInteger(1, lisp, sz1);
-        evalAsInteger(2, lisp, sz2);
-        listsize = e->size();
-        res = new Matrice(sz1, sz2, zero_);
-        if (!listsize)
-            return res;
-        
-        for (long i = 0; i < sz1; i++) {
-            for (long ii = 0; ii < sz2; ii++) {
-                if (ei == listsize)
-                    ei = 0;
-                res->index(i)->replacing(ii, e->value_on_index(lisp, ei++));
-            }
-        }
+        ((Tenseur*)res)->putlist(e);
         e->release();
         return res;
     }
@@ -3993,7 +3942,7 @@ Element* List::evall_in(LispE* lisp) {
 
 Element* List::evall_at_index(LispE* lisp) {
     short listsize = liste.size();
-    if (listsize != 3 && listsize != 4 && listsize != 5)
+    if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
@@ -4021,6 +3970,34 @@ Element* List::evall_at_index(LispE* lisp) {
             first_element->release();
             return third_element;
         }
+        if (first_element->type == t_tensor && listsize >= 4) {
+            Tenseur* m = (Tenseur*)first_element;
+            long x;
+            third_element = m;
+            long i;
+            if (m->sizes.size() == listsize - 2) {
+                for (i = 2; i < listsize; i++) {
+                    evalAsInteger(i, lisp, x);
+                    if (x < 0 || x >= m->sizes[i])
+                        throw new Error("Error: out of bounds indexes");
+                    third_element = third_element->index(x);
+                }
+                first_element->release();
+                return third_element;
+            }
+            listsize--;
+            for (i = 2; i < listsize - 1; i++) {
+                evalAsInteger(i, lisp, x);
+                if (x < 0 || x >= m->sizes[i])
+                    throw new Error("Error: out of bounds indexes");
+                third_element = third_element->index(x);
+            }
+            evalAsInteger(i, lisp, x);
+            second_element = liste[listsize]->eval(lisp);
+            third_element->replacing(x, second_element);
+            return third_element;
+        }
+        
         if (listsize == 4) {
             long idx;
             evalAsInteger(2, lisp, idx);
@@ -5334,6 +5311,32 @@ Element* List::evall_numberp(LispE* lisp) {
     }
     catch (Error* err) {
         second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_tensor(LispE* lisp) {
+    long sz = size();
+    if (sz < 3)
+        throw new Error("Error: wrong number of arguments");
+    
+    Element* e = zero_;
+
+    lisp->display_trace(this);
+
+    vector<long> sizes;
+    long s;
+    try {
+        for (long i = 1; i < sz; i++) {
+            evalAsInteger(i, lisp, s);
+            sizes.push_back(s);
+        }
+        return new Tenseur(sizes, zero_);
+    }
+    catch (Error* err) {
+        e->release();
         throw err;
     }
 
