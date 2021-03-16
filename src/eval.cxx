@@ -3978,7 +3978,7 @@ Element* List::evall_at_index(LispE* lisp) {
             if (m->sizes.size() == listsize - 2) {
                 for (i = 2; i < listsize; i++) {
                     evalAsInteger(i, lisp, x);
-                    if (x < 0 || x >= m->sizes[i])
+                    if (x < 0 || x >= m->sizes[i-2])
                         throw new Error("Error: out of bounds indexes");
                     third_element = third_element->index(x);
                 }
@@ -3988,7 +3988,7 @@ Element* List::evall_at_index(LispE* lisp) {
             listsize--;
             for (i = 2; i < listsize - 1; i++) {
                 evalAsInteger(i, lisp, x);
-                if (x < 0 || x >= m->sizes[i])
+                if (x < 0 || x >= m->sizes[i-2])
                     throw new Error("Error: out of bounds indexes");
                 third_element = third_element->index(x);
             }
