@@ -394,8 +394,13 @@ Element* Matrice::transposed(LispE* lisp) {
 }
 
 Element* Tenseur::transposed(LispE* lisp) {
-    Tenseur* transposed_matrix = new Tenseur(sizes, zero_);
-    long i, j = 0;
+    vector<long> sz = sizes;
+    long i = sz[0];
+    sz[0] = sz[1];
+    sz[1] = i;
+
+    Tenseur* transposed_matrix = new Tenseur(sz, zero_);
+    long j = 0;
    
     Element* e;
     for (i = 0; i < sizes[0]; i++) {
