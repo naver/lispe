@@ -2051,6 +2051,32 @@ bool Element::check_arity(LispE* lisp, unsigned long arity) {
 }
 
 //------------------------------------------------------------------------------------------
+Element* List::newInstance(Element* e) {
+    long i;
+    long sz = size();
+    for (i = 0; i < sz; i++) {
+        if (liste[i]->isList())
+            break;
+    }
+    
+    if (i == sz) {
+        if (e->type == t_number)
+            return new Numbers(sz, e->asNumber());
+        if (e->type == t_integer)
+            return new Integers(sz, e->asInteger());
+    }
+    
+    List* lst = new List;
+    for (i = 0; i < sz; i++) {
+        if (liste[i]->isList())
+            lst->append(liste[i]->newInstance(e));
+        else
+            lst->append(e);
+    }
+    return lst;
+}
+
+//------------------------------------------------------------------------------------------
 Element* Element::equal(LispE* lisp, Element* e) {
     return booleans_[(e==this)];
 }
@@ -2198,10 +2224,7 @@ Element* Element::rightshift(LispE* lisp, Element* e) {
 
 Element* String::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        List* n = new List;
-        for (long i = 0; i < e->size(); i++) {
-            n->append(this);
-        }
+        Element* n = e->newInstance(this);
         return n->plus(lisp, e);
     }
 
@@ -2229,7 +2252,7 @@ long Element::checkInteger(LispE* lisp) {
 
 Element* Number::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->plus(lisp, e);
     }
     if (status != s_constant) {
@@ -2241,7 +2264,7 @@ Element* Number::plus(LispE* lisp, Element* e) {
 
 Element* Number::minus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->minus(lisp, e);
     }
     if (status != s_constant) {
@@ -2253,7 +2276,7 @@ Element* Number::minus(LispE* lisp, Element* e) {
 
 Element* Number::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->multiply(lisp, e);
     }
     if (status != s_constant) {
@@ -2268,7 +2291,7 @@ Element* Number::divide(LispE* lisp, Element* e) {
     if (v == 0)
         throw new Error("Error: division by zero");
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->divide(lisp, e);
     }
     if (status != s_constant) {
@@ -2283,7 +2306,7 @@ Element* Number::mod(LispE* lisp, Element* e) {
     if (v == 0)
         throw new Error("Error: division by zero");
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->mod(lisp, e);
     }
     if (status != s_constant) {
@@ -2295,7 +2318,7 @@ Element* Number::mod(LispE* lisp, Element* e) {
 
 Element* Number::power(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->power(lisp, e);
     }
     if (status != s_constant) {
@@ -2307,7 +2330,7 @@ Element* Number::power(LispE* lisp, Element* e) {
 
 Element* Number::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->bit_and(lisp, e);
     }
     double64 d(number);
@@ -2322,7 +2345,7 @@ Element* Number::bit_and(LispE* lisp, Element* e)  {
 
 Element* Number::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->bit_or(lisp, e);
     }
     double64 d(number);
@@ -2337,7 +2360,7 @@ Element* Number::bit_or(LispE* lisp, Element* e)  {
 
 Element* Number::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->bit_xor(lisp, e);
     }
     double64 d(number);
@@ -2352,7 +2375,7 @@ Element* Number::bit_xor(LispE* lisp, Element* e)  {
 
 Element* Number::leftshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->leftshift(lisp, e);
     }
     double64 d(number);
@@ -2367,7 +2390,7 @@ Element* Number::leftshift(LispE* lisp, Element* e)  {
 
 Element* Number::rightshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), number);
+        Element* n = e->newInstance(this);
         return n->rightshift(lisp, e);
     }
     double64 d(number);
@@ -2382,7 +2405,7 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
 
 Element* Integer::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->plus(lisp, e);
     }
     if (e->type == t_number) {
@@ -2400,7 +2423,7 @@ Element* Integer::plus(LispE* lisp, Element* e) {
 
 Element* Integer::minus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->minus(lisp, e);
     }
     if (e->type == t_number) {
@@ -2417,7 +2440,7 @@ Element* Integer::minus(LispE* lisp, Element* e) {
 
 Element* Integer::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->multiply(lisp, e);
     }
     if (e->type == t_number) {
@@ -2475,7 +2498,7 @@ Element* Integer::power(LispE* lisp, Element* e) {
 
 Element* Integer::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->bit_and(lisp, e);
     }
     if (status != s_constant) {
@@ -2487,7 +2510,7 @@ Element* Integer::bit_and(LispE* lisp, Element* e)  {
 
 Element* Integer::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->bit_or(lisp, e);
     }
     if (status != s_constant) {
@@ -2499,7 +2522,7 @@ Element* Integer::bit_or(LispE* lisp, Element* e)  {
 
 Element* Integer::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->bit_xor(lisp, e);
     }
     if (status != s_constant) {
@@ -2512,7 +2535,7 @@ Element* Integer::bit_xor(LispE* lisp, Element* e)  {
 
 Element* Integer::leftshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->leftshift(lisp, e);
     }
     if (status != s_constant) {
@@ -2525,7 +2548,7 @@ Element* Integer::leftshift(LispE* lisp, Element* e)  {
 
 Element* Integer::rightshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), integer);
+        Element* n = e->newInstance(this);
         return n->rightshift(lisp, e);
     }
     if (status != s_constant) {

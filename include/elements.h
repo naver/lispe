@@ -496,6 +496,13 @@ public:
         return this;
     }
     
+    virtual Element* newInstance(Element* v) {
+        return this;
+    }
+    
+    virtual bool checkShape(long depth, vector<long>& sz) {
+        return false;
+    }
 
     virtual Element* copying(bool duplicate = true) {
         return this;

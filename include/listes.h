@@ -759,6 +759,27 @@ public:
     }
     
     virtual Element* transposed(LispE* lisp);
+    
+    bool checkShape(long depth, vector<long>& sz) {
+        if (size() != sz[depth])
+            return false;
+        if (depth == sz.size()-1) {
+            for (long i = 0; i < size(); i++) {
+                if (liste[i]->isList())
+                    return false;
+            }
+            return true;
+        }
+        
+        for (long i = 0; i < size(); i++) {
+            if (!liste[i]->isList())
+                return false;
+            if (!liste[i]->checkShape(depth+1,sz))
+                return false;
+        }
+        return true;
+    }
+    
     void getShape(vector<long>& sz) {
         long s;
         Element* l = this;
@@ -975,6 +996,7 @@ public:
         return l;
     }
 
+    virtual Element* newInstance(Element* v);
 
 };
 
@@ -1088,6 +1110,10 @@ public:
             liste.push_back(v);
             nb--;
         }
+    }
+    
+    Element* newInstance(Element* v) {
+        return new Numbers(liste.size(), v->asNumber());
     }
     
     void concatenate(LispE* lisp, Element* e) {
@@ -1417,6 +1443,10 @@ public:
             liste.push_back(v);
             nb--;
         }
+    }
+
+    Element* newInstance(Element* v) {
+        return new Integers(liste.size(), v->asInteger());
     }
 
     void concatenate(LispE* lisp, Element* e) {
@@ -1825,6 +1855,10 @@ public:
             }
         }
     }
+    
+    Element* newInstance(Element* e) {
+        return new Matrice(size_x, size_y, e);
+    }
 };
 
 class Tenseur : public List {
@@ -1982,6 +2016,9 @@ public:
         setvalue(this, lst);
     }
 
+    Element* newInstance(Element* e) {
+        return new Tenseur(sizes, e);
+    }
 };
 
 

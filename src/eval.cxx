@@ -2395,44 +2395,47 @@ Element* List::evall_rho(LispE* lisp) {
     try {
         if (listsize == 2) {
             e = liste[1]->eval(lisp);
-            
-            if (e->type == t_matrix) {
-                res = new Integers;
-                ((Integers*)res)->liste.push_back(((Matrice*)e)->size_x);
-                ((Integers*)res)->liste.push_back(((Matrice*)e)->size_y);
-                return res;
-            }
-
-            if (e->type == t_tensor) {
-                res = new Integers;
-                Tenseur* tens = (Tenseur*)e;
-                for (long i = 0; i < tens->sizes.size(); i++) {
-                    ((Integers*)res)->liste.push_back(tens->sizes[i]);
+            switch (e->type) {
+                case t_matrix: {
+                    res = new Integers;
+                    ((Integers*)res)->liste.push_back(((Matrice*)e)->size_x);
+                    ((Integers*)res)->liste.push_back(((Matrice*)e)->size_y);
+                    e->release();
+                    return res;
                 }
-                return res;
-            }
-
-            listsize =  e->size();
-            if (e->isPureList() == 1 && e->index(0)->isList()) {
-                long nb = e->index(0)->size();
-                for (long i = 1; i < listsize; i++) {
-                    res = e->index(i);
-                    if (!res->isList() || res->size() != nb) {
-                        e->release();
-                        return lisp->provideInteger(listsize);
+                case t_tensor: {
+                    res = new Integers;
+                    Tenseur* tens = (Tenseur*)e;
+                    for (long i = 0; i < tens->sizes.size(); i++) {
+                        ((Integers*)res)->liste.push_back(tens->sizes[i]);
                     }
+                    e->release();
+                    return res;
                 }
-                res = new Integers;
-                ((Integers*)res)->liste.push_back(listsize);
-                ((Integers*)res)->liste.push_back(nb);
-                return res;
+                case t_numbers:
+                case t_integers:
+                    listsize = e->size();
+                    e->release();
+                    return lisp->provideInteger(listsize);
+                default:
+                    if (e->isList()) {
+                        vector<long> sizes;
+                        e->getShape(sizes);
+                        if (sizes.size() == 1)
+                            return lisp->provideInteger(sizes[0]);
+                        if (e->checkShape(0, sizes)) {
+                            res = new Integers;
+                            for (long i = 0; i < sizes.size(); i++) {
+                                ((Integers*)res)->liste.push_back(sizes[i]);
+                            }
+                            return res;
+                        }
+                    }
+                    listsize = e->size();
+                    e->release();
+                    return lisp->provideInteger(listsize);
             }
-                
-            
-            e->release();
-            return lisp->provideInteger(listsize);
         }
-        
         long ei = 0;
         long sz1;
 
@@ -2509,7 +2512,7 @@ Element* List::evall_rho(LispE* lisp) {
         res = new Tenseur(sizes, zero_);
         e = liste[listsize]->eval(lisp);
         if (!e->isList())
-            throw new Error("Error: third argument should be a list");
+            throw new Error("Error: last argument should be a list");
         ((Tenseur*)res)->putlist(e);
         e->release();
         return res;
