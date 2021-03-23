@@ -974,6 +974,17 @@ public:
         return emptystring_;
     }
 
+    Element* find_i(LispE* lisp, wstring& w, long pos) {
+        long debut, fin;
+        Integers* positions = new Integers;
+        if (au.search(w, debut, fin, pos)) {
+            positions->liste.push_back(debut);
+            positions->liste.push_back(fin);
+        }
+        return positions;
+    }
+
+
     Element* findall(LispE* lisp, wstring& w, long pos) {
         vector<long> resultats;
         au.searchall(w, resultats, pos);
@@ -987,6 +998,12 @@ public:
             sub = w.substr(resultats[pos], resultats[pos+1]-resultats[pos]);
             liste->append(lisp->provideString(sub));
         }
+        return liste;
+    }
+
+    Element* findall_i(LispE* lisp, wstring& w, long pos) {
+        Integers* liste = new Integers;
+        au.searchall(w, liste->liste, pos);
         return liste;
     }
 
@@ -1067,7 +1084,7 @@ public:
     
     Element* find(LispE* lisp, wstring& w, long init) {
         wsmatch result;
-        long b = au_error;
+        long b = 0;
         long e;
 
         if (init) {
@@ -1116,6 +1133,49 @@ public:
         return liste;
     }
 
+    Element* find_i(LispE* lisp, wstring& w, long init) {
+        wsmatch result;
+        long b = 0;
+        long e;
+        
+        Integers* results = new Integers;
+
+        if (init) {
+            if (init >= w.size())
+                return results;
+        
+            wstring val=w.substr(init,w.size()-init);
+
+            if (regex_search(val, result, *au)) {
+                b = result.position() + init;
+                e = b + result.length();
+                results->liste.push_back(b);
+                results->liste.push_back(e);
+            }
+            return results;
+        }
+
+        if (regex_search(w, result, *au)) {
+            b = result.position();
+            e = b + result.length();
+            results->liste.push_back(b);
+            results->liste.push_back(e);
+        }
+        
+        return results;
+    }
+
+    Element* findall_i(LispE* lisp, wstring& val, long pos) {
+        Integers* results = new Integers;
+
+        const wsregex_iterator end;
+        for (wsregex_iterator i(val.begin(), val.end(), *au); i != end; ++i) {
+            results->liste.push_back(i->position());
+            results->liste.push_back(i->position() + i->length());
+        }
+        return results;
+    }
+    
     Element* match(LispE* lisp, wstring& w) {
         if (regex_match(w,*au) == true)
             return true_;
@@ -1161,9 +1221,9 @@ public:
 };
 #endif
 
-typedef enum {rgx_rgx, rgx_find, rgx_findall, rgx_split, rgx_match, rgx_replace
+typedef enum {rgx_rgx, rgx_find, rgx_findall, rgx_find_i, rgx_findall_i, rgx_split, rgx_match, rgx_replace
 #ifdef POSIXREGEX
-    , prgx_rgx, prgx_find, prgx_findall, prgx_split, prgx_match, prgx_replace
+    , prgx_rgx, prgx_find, prgx_findall, prgx_find_i, prgx_findall_i, prgx_split, prgx_match, prgx_replace
 #endif
 } rgx;
     
@@ -1209,6 +1269,22 @@ public:
                 wstring value = lisp->get(L"str")->asString(lisp);
                 long pos = lisp->get(L"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->findall(lisp, value, pos);
+            }
+            case rgx_find_i: {
+                Element* e = lisp->get(L"exp");
+                if (e->type != l_rgx)
+                    throw new Error("Error: the first element must be a regular expression");
+                wstring value = lisp->get(L"str")->asString(lisp);
+                long pos = lisp->get(L"pos")->asNumber();
+                return ((LispERegularExpressions*)e)->find_i(lisp,value, pos);
+            }
+            case rgx_findall_i: {
+                Element* e = lisp->get(L"exp");
+                if (e->type != l_rgx)
+                    throw new Error("Error: the first element must be a regular expression");
+                wstring value = lisp->get(L"str")->asString(lisp);
+                long pos = lisp->get(L"pos")->asNumber();
+                return ((LispERegularExpressions*)e)->findall_i(lisp, value, pos);
             }
             case rgx_match: {
                 Element* e = lisp->get(L"exp");
@@ -1258,6 +1334,22 @@ public:
                 long pos = lisp->get(L"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->findall(lisp, value, pos);
             }
+            case prgx_find_i: {
+                Element* e = lisp->get(L"exp");
+                if (e->type != l_rgx)
+                    throw new Error("Error: the first element must be a regular expression");
+                wstring value = lisp->get(L"str")->asString(lisp);
+                long pos = lisp->get(L"pos")->asNumber();
+                return ((LispEPosixRegularExpression*)e)->find_i(lisp,value, pos);
+            }
+            case prgx_findall_i: {
+                Element* e = lisp->get(L"exp");
+                if (e->type != l_rgx)
+                    throw new Error("Error: the first element must be a regular expression");
+                wstring value = lisp->get(L"str")->asString(lisp);
+                long pos = lisp->get(L"pos")->asNumber();
+                return ((LispEPosixRegularExpression*)e)->findall_i(lisp, value, pos);
+            }
             case prgx_split: {
                 Element* e = lisp->get(L"exp");
                 if (e->type != l_rgx)
@@ -1291,10 +1383,16 @@ public:
                 return L"Creates a regular expression from a string";
             }
             case rgx_find: {
-                return L"Searches in 'str' the sub-string that corresponds to the regular expression from 'pos'";
+                return L"Searches in 'str' the sub-string that matches the regular expression from 'pos'";
             }
             case rgx_findall: {
-                return L"Searches in 'str' all the sub-strings which correspond to the regular expression from 'pos'";
+                return L"Searches in 'str' all the sub-strings that matches the regular expression from 'pos'";
+            }
+            case rgx_find_i: {
+                return L"Returns the position in 'str' of the sub-string that matches the regular expression starting at 'pos'";
+            }
+            case rgx_findall_i: {
+                return L"Returns all the positions in 'str' of the sub-string that matches the regular expression starting at 'pos'";
             }
             case rgx_match: {
                 return L"Checks that 'str' matches the regular expression";
@@ -1311,10 +1409,16 @@ public:
             case prgx_rgx: {
                 return L"Creates a posix regular expression from a string";            }
             case prgx_find: {
-                return L"Searches in 'str' the sub-string that corresponds to the regular expression posix from 'pos'";
+                return L"Searches in 'str' the sub-string that matches the regular expression from 'pos'";
             }
             case prgx_findall: {
-                return L"Searches in 'str' all the sub-strings which correspond to the regular expression posix from 'pos'";
+                return L"Searches in 'str' all the sub-strings that matches the regular expression from 'pos'";
+            }
+            case prgx_find_i: {
+                return L"Returns the position in 'str' of the sub-string that matches the regular expression starting at 'pos'";
+            }
+            case prgx_findall_i: {
+                return L"Returns all the positions in 'str' of the sub-string that matches the regular expression starting at 'pos'";
             }
             case prgx_split: {
                 return L"Split 'str' via a posix regular expression";
@@ -1399,6 +1503,8 @@ void moduleRGX(LispE* lisp) {
     lisp->extension("deflib rgx (exp (str))", new RegularExpressionPool(lisp, rgx_rgx));
     lisp->extension("deflib rgx_find (exp str (pos 0))", new RegularExpressionConstructor(lisp, rgx_find));
     lisp->extension("deflib rgx_findall (exp str (pos 0))", new RegularExpressionConstructor(lisp, rgx_findall));
+    lisp->extension("deflib rgx_find_i (exp str (pos 0))", new RegularExpressionConstructor(lisp, rgx_find_i));
+    lisp->extension("deflib rgx_findall_i (exp str (pos 0))", new RegularExpressionConstructor(lisp, rgx_findall_i));
     lisp->extension("deflib rgx_match (exp str)", new RegularExpressionConstructor(lisp, rgx_match));
     lisp->extension("deflib rgx_replace (exp str rep)", new RegularExpressionConstructor(lisp, rgx_replace));
     lisp->extension("deflib rgx_split (exp str)", new RegularExpressionConstructor(lisp, rgx_split));
@@ -1407,6 +1513,8 @@ void moduleRGX(LispE* lisp) {
     lisp->extension("deflib prgx (exp (str))", new RegularExpressionPool(lisp, prgx_rgx));
     lisp->extension("deflib prgx_find (exp str (pos 0))", new RegularExpressionConstructor(lisp, prgx_find));
     lisp->extension("deflib prgx_findall (exp str (pos 0))", new RegularExpressionConstructor(lisp, prgx_findall));
+    lisp->extension("deflib prgx_find_i (exp str (pos 0))", new RegularExpressionConstructor(lisp, prgx_find_i));
+    lisp->extension("deflib prgx_findall_i (exp str (pos 0))", new RegularExpressionConstructor(lisp, prgx_findall_i));
     lisp->extension("deflib prgx_match (exp str)", new RegularExpressionConstructor(lisp, prgx_match));
     lisp->extension("deflib prgx_replace (exp str rep)", new RegularExpressionConstructor(lisp, prgx_replace));
     lisp->extension("deflib prgx_split (exp str)", new RegularExpressionConstructor(lisp, prgx_split));
