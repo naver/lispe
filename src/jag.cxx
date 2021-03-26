@@ -3000,7 +3000,7 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
 
 //---------------------------------------------------------------------------------
 
-void editor_lines::setcode(wstring& code) {
+void editor_lines::setcode(wstring& code, bool clean) {
     if (code == L"")
         return;
     
@@ -3016,12 +3016,15 @@ void editor_lines::setcode(wstring& code) {
     
     long u;
     vector<wstring> subs;
-    while (buff.back() == L"") {
-        buff.pop_back();
+    
+    if (clean) {
+        while (buff.back() == L"") {
+            buff.pop_back();
+        }
+        
+        buff.push_back(L"");
     }
     
-    buff.push_back(L"");
-
     for (long i = 0; i < buff.size(); i++) {
         numeros.push_back(i + 1);
         if (splitline(buff[i], i, subs) == 1) {
@@ -3258,13 +3261,14 @@ void editor_lines::refactoring(long pos) {
     while (Status(p) == concat_line)
         baseline += lines[p++];
     
-    if (baseline == L"")
+    if (baseline == L"") {
         return;
+    }
     
     //We then clean all these lines...
     
     editor_lines sublines(jag);
-    sublines.setcode(baseline);
+    sublines.setcode(baseline, false);
     //same number of lines
     long i;
     for (i = 0; i < sublines.size(); i++) {

@@ -113,7 +113,7 @@ public:
         return false;
     }
 
-    void setcode(wstring& code);
+    void setcode(wstring& code, bool clean);
 
     bool updatesize();
 
@@ -698,7 +698,7 @@ public:
         code = wconvert(codeindente);
         code += L"\n\n";
 
-        lines.setcode(code);
+        lines.setcode(code, true);
 
         displaylist(poslines[0]);
         movetoline(currentline);
@@ -924,9 +924,9 @@ public:
         //formating method...
         //------------------------------------------------------------------------------------------------
 
-    virtual void setcode(string& c) {
+    virtual void setcode(string& c, bool clean) {
         wstring code = wconvert(c);
-        lines.setcode(code);
+        lines.setcode(code, clean);
         displaylist(0);
         line = L"";
         currentline = 0;
@@ -993,7 +993,7 @@ public:
         }
         s_trimright(code);
         code += "\n\n";
-        setcode(code);
+        setcode(code, true);
         return true;
     }
 
@@ -1045,7 +1045,7 @@ public:
         modified = true;
         screensizes();
         wstring code = lines.code();
-        lines.setcode(code);
+        lines.setcode(code, false);
         posinstring = 0;
         if (lines.size()) {
             displaylist(poslines[0]);

@@ -1788,7 +1788,7 @@ long getindex(unsigned char* contenu, long lg, long i) {
     return x;
 }
 
-long size_c(unsigned char* contenu, long sz) {
+Exporting long size_raw_c(unsigned char* contenu, long sz) {
     long i = 0;
     long size = i;
     long nb;
@@ -1803,7 +1803,7 @@ long size_c(unsigned char* contenu, long sz) {
 }
 
 long size_c(string& s) {
-    return size_c(USTR(s), s.size());
+    return size_raw_c(USTR(s), s.size());
 }
 
 string s_left(string& s, long nb) {
@@ -1823,7 +1823,7 @@ string s_right(string& s, long nb) {
 
     long lg = s.size();
 
-    long l = size_c(USTR(s), lg) - nb;
+    long l = size_raw_c(USTR(s), lg) - nb;
 
     if (l <= 0)
         return s;
@@ -3942,6 +3942,13 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
 
 
 //Convert a unicode character into a utf16 character
+bool c_utf16(uint32_t code) {
+    //A unicode character is encoded over 4 bytes: 3 -> 0
+    //if we have bits on byte 2, then we need to provide 4 bytes...
+    return ((code & 0x1F0000));
+}
+
+//Convert a unicode character into a utf16 character
 Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code) {
         //A unicode character is encoded over 4 bytes: 3 -> 0
         //if we have bits on byte 2, then we need to provide 4 bytes...
@@ -3982,3 +3989,4 @@ Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second) {
     r = code;
     return false;
 }
+

@@ -172,7 +172,7 @@ public:
     short stop_execution;
 
     bool next_stop;
-    bool add_to_listing;
+    char add_to_listing;
     std::atomic<bool> endtrace;
     
     Delegation();

@@ -83,7 +83,7 @@ typedef enum {
     l_link,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
-    l_final
+    t_comment, l_final
 } lisp_code;
 
 

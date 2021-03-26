@@ -471,7 +471,7 @@ public:
             cerr << m_redbold << "File space creation: " << thecurrentfilename << m_current <<" (" << currentfileid << ")" << endl;
             wstring c = L"\n";
             LispSetCode(c);
-            lines.setcode(c);
+            lines.setcode(c, false);
         }
     }
     
@@ -497,7 +497,7 @@ public:
         }
         LispSetCode(cde);
         wstring code = WListing();
-        lines.setcode(code);
+        lines.setcode(code, true);
         editors_undos[currentfileid].clear();
         editors_redos[currentfileid].clear();
         line = L"edit";
@@ -566,7 +566,7 @@ public:
         }
         line = L"";
         posinstring = 0;
-        lines.setcode(code);
+        lines.setcode(code, true);
         return true;
 
     }
@@ -1020,10 +1020,10 @@ public:
     
     void launchterminal(bool darkmode, char noinit, vector<string>& theargs);
     
-    void setcode(string& code) {
+    void setcode(string& code, bool clean) {
         LispSetCode(code);
         wstring cd = wconvert(code);
-        lines.setcode(cd);
+        lines.setcode(cd, clean);
         pos = lines.size();
     }
     
@@ -1049,7 +1049,7 @@ public:
         if (editmode && option == x_none) {
             modified = true;
             wstring code = lines.code();
-            lines.setcode(code);
+            lines.setcode(code, false);
             displaylist(poslines[0], poslines.back());
             if ((currentline+1) >= poslines.size())
                 currentline = poslines.size() - 1;

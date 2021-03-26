@@ -398,30 +398,11 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
 					Executesomecode(line);
 
 					code = WListing();
-					lines.setcode(code);
+					lines.setcode(code, false);
 					lines.pop_back();
 					code = lines.code();
 					LispSetCode(code);
 					return lines.size();
-				}
-
-				if (line[0] == '?') {
-					line = s_trim(line);
-					line.erase(0, 1);
-					i = line.rfind(L".");
-					if (i != -1) {
-						code = line.substr(i + 1, line.size() - 2);
-						line.erase(i, string::npos);
-						line += L".info('";
-						line += code;
-						line += L"')";
-						Executesomecode(line);
-					}
-					else {
-						code = L"printjln(_info('" + line + L"'), \"\\n\", ' for type: ');";
-						Executesomecode(code);
-					}
-					return pos;
 				}
 			}
 		}
@@ -469,7 +450,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                 editors_undos[i].storein(undos);
                 editors_redos[i].storein(redos);
                 
-                lines.setcode(code);
+                lines.setcode(code, false);
                 LispSetCode(code);
                 posinstring = 0;
                 line = L"";
@@ -508,7 +489,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                     editors_undos[i].storein(undos);
                     editors_redos[i].storein(redos);
                     
-                    lines.setcode(code);
+                    lines.setcode(code, false);
                     modified = true;
                 }
             }
@@ -663,7 +644,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             codeindente = "";
             IndentCode(cd, codeindente, i, true, false);
             code = wconvert(codeindente);
-            lines.setcode(code);
+            lines.setcode(code, false);
             
             if (lines.size() == 0)
                 return pos;
@@ -875,7 +856,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                         thecurrentfilename = ifilenames[currentfileid];
                         undos.storein(editors_undos[currentfileid]);
                         redos.storein(editors_redos[currentfileid]);
-                        lines.setcode(code);
+                        lines.setcode(code, false);
                         LispSetCode(code);
                         posinstring = 0;
                         line = L"";
@@ -922,7 +903,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
         Executesomecode(line);
         code = WListing();
         
-        lines.setcode(code);
+        lines.setcode(code,false);
         pos = lines.size();
         return pos;
     }
@@ -970,7 +951,7 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
 	if (ifilenames.size() > 1) {
 		currentfileid = 0;
 		thecurrentfilename = ifilenames[0];
-		lines.setcode(codes[0]);
+		lines.setcode(codes[0], false);
 		LispSetCode(codes[0]);
 	}
 

@@ -410,7 +410,17 @@ public:
             return "";
         }
     }
+
+    inline string current_name_file() {
+        try {
+            return delegation->allfiles_names.at(delegation->i_current_file);
+        }
+        catch(const std::out_of_range& oor) {
+            return "";
+        }
+    }
     
+
     inline bool activate_on_breakpoints(List* e) {
         return delegation->activate_on_breakpoints(this, e);
     }

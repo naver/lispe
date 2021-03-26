@@ -275,7 +275,7 @@ Exporting wstring s_replacestring(wstring& str, wstring reg, wstring rep);
 
 
 Exporting long size_utf16(unsigned char* str, long sz, long& charsize);
-Exporting long size_c(unsigned char* contenu, long sz);
+Exporting long size_raw_c(unsigned char* contenu, long sz);
 
 #ifdef WSTRING_IS_UTF16
 Exporting size_t size_w(wchar_t* w);
@@ -502,7 +502,7 @@ public:
 	}
 
 	size_t sizec() {
-		return size_c((unsigned char*)c_str(), size());
+ 		return size_raw_c((unsigned char*)c_str(), size());
 	}
 
 	wchar_t code(size_t i) {

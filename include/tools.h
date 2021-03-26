@@ -71,9 +71,11 @@ UWCHAR getonechar(unsigned char* s, long& i);
 string NormalizePathname(string n);
 bool c_is_space(wchar_t code);
 long size_c(string& s);
+Exporting long size_raw_c(unsigned char* contenu, long sz);
 long GetBlankSize();
 long VirtualIndentation(string& codestr, bool lisp, bool python);
 void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bool python);
+void cr_normalise(string& code);
 
 long convertinginteger(wstring& number);
 long convertinginteger(string& number);
@@ -123,6 +125,7 @@ void s_unicode_to_utf8_clean(string& s, wstring& str);
 bool s_is_utf8(unsigned char* contenu, long longueur);
 Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second);
 Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code);
+bool c_utf16(uint32_t code);
 
 #define c_is_digit(c) (c >= '0' && c <= '9')
 

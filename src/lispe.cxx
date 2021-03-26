@@ -20,9 +20,15 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.3.23.9.45";
+static std::string version = "1.2021.3.26.15.49";
 string LispVersion() {
     return version;
+}
+
+extern "C" {
+    const char* lispversion() {
+        return version.c_str();
+    }
 }
 
 //------------------------------------------------------------
@@ -679,7 +685,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     long line_number = 1;
     long culprit = -1;
     UWCHAR c, nxt;
-    bool add = delegation->add_to_listing;
+    char add = delegation->add_to_listing;
     lisp_code lc;
     string current_line;
     string tampon;
@@ -691,15 +697,21 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
             case '#': //comments (we accept both with ; and #)
                 idx = i;
                 while (i < sz && code[i] != '\n') i++;
-                if (add) {
+                if (add == true) {
                     current_line = code.substr(idx, i-idx+1);
                     add_to_listing(line_number, current_line);
                     current_line = "";
                 }
+                else {
+                    if (add == 2) {
+                        tampon = code.substr(idx, i-idx+1);
+                        infos.append(tampon, t_comment, line_number, idx, i);
+                    }
+                }
                 line_number++;
                 break;
             case '\n':
-                if (add) {
+                if (add == true) {
                     current_line += c;
                     add_to_listing(line_number, current_line);
                     current_line = "";
@@ -709,11 +721,11 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
             case '\t':
             case '\r':
             case ' ':
-                if (add)
+                if (add == true)
                     current_line += c;
                 continue;
             case '\'':
-                if (add)
+                if (add == true)
                     current_line += c;
                 infos.append(c, l_quote, line_number, i, i+1);
                 break;
@@ -731,7 +743,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     infos.append(tampon, t_emptystring, line_number, i, idx);
                 else
                     infos.append(tampon, t_string, line_number, i, idx);
-                if (add) {
+                if (add == true) {
                     current_line += "`";
                     current_line += tampon;
                     current_line += "`";
@@ -776,7 +788,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 else
                     infos.append(tampon, t_string, line_number, i, idx);
 
-                if (add) {
+                if (add == true) {
                     current_line += "\"";
                     current_line += tampon;
                     current_line += "\"";
@@ -797,7 +809,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                         idx++;
                     }
                     tampon = code.substr(current_i, i - current_i + 1);
-                    if (add)
+                    if (add == true)
                         current_line += tampon;
 
                     idx = delegation->is_atom(tampon);
@@ -819,7 +831,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
             case '9': {
                 double d = convertingfloathexa(code.c_str() + i, idx);
                 tampon = code.substr(i, idx);
-                if (add)
+                if (add == true)
                     current_line += tampon;
                 infos.append(d, tampon, t_number, line_number, i, i + idx);
                 i += idx - 1;
@@ -844,7 +856,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 else
                     infos.append(tampon, t_string, line_number, i, idx);
 
-                if (add) {
+                if (add == true) {
                     current_line += "«";
                     current_line += tampon;
                     current_line += "»";
@@ -871,7 +883,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 else
                     infos.append(tampon, t_string, line_number, i, idx);
 
-                if (add) {
+                if (add == true) {
                     current_line += "“";
                     current_line += tampon;
                     current_line += "”";
@@ -893,20 +905,20 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
 
                 if ((i - current_i) <= 1) {
                     tampon = c;
-                    if (add)
+                    if (add == true)
                         current_line += c;
                     
                     //if it is a dictionary data structure, it starts with @{..}
                     if (c == '@' && nxt == '{') {
                         tampon += nxt;
                         i++;
-                        if (add)
+                        if (add == true)
                             current_line += '{';
                     }
                 }
                 else {
                     tampon = code.substr(current_i, i - current_i);
-                    if (add)
+                    if (add == true)
                         current_line += tampon;
 
                     if (tampon[0] == 'c' && tampon.back() == 'r' && tampon.size() > 3) {
@@ -1743,6 +1755,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 
