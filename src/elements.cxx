@@ -836,16 +836,30 @@ Element* Integers::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
-Element* Infiniterange::loop(LispE* lisp, short label, List* code) {
+Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
+    if (!increment)
+        throw new Error("Error: increment cannot be 0");
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
     double value = initial_value;
-    Element* element;
-    
-    while (!lisp->hasStopped()) {
-        element = lisp->provideNumber(value);
+    Number* element = new Number(0,1);
+    char check = 0;
+    if (!infinite_loop) {
+        if (increment < 0)
+            check = 1;
+        else
+            check = 2;
+    }
+
+    while (!lisp->hasStopped()) {        
+        if (check == 1 && value <= bound)
+            break;
+        if (check == 2 && value >= bound)
+            break;
+
+        element->number = value;
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
@@ -854,25 +868,42 @@ Element* Infiniterange::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
         value += increment;
     }
+    element->decrementstatus(1, true);
     return e;
 }
 
 Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
+    if (!increment)
+        throw new Error("Error: increment cannot be 0");
+
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
     long value = initial_value;
-    Element* element;
-    
+    Integer* element = new Integer(0,1);
+    char check = 0;
+    if (!infinite_loop) {
+        if (increment < 0)
+            check = 1;
+        else
+            check = 2;
+    }
+
     while (!lisp->hasStopped()) {
-        element = lisp->provideInteger(value);
+        if (check == 1 && value <= bound)
+            break;
+        if (check == 2 && value >= bound)
+            break;
+
+        element->integer = value;
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
@@ -881,12 +912,14 @@ Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
         value += increment;
     }
+    element->decrementstatus(1, true);
     return e;
 }
 
@@ -2005,7 +2038,7 @@ wstring Cyclelist::asString(LispE* lisp) {
     return tampon;
 }
 
-wstring Infiniterange::asString(LispE* lisp) {
+wstring InfiniterangeNumber::asString(LispE* lisp) {
     std::wstringstream str;
     str << L"(" << lisp->asString(l_irange) << " " << initial_value << " " << increment << L")";
     return str.str();
@@ -3493,12 +3526,12 @@ Element* Pair::cdr(LispE* lisp) {
     return new Pair(this, 1);
 }
 
-Element* Infiniterange::car(LispE* lisp) {
+Element* InfiniterangeNumber::car(LispE* lisp) {
     return lisp->provideNumber(initial_value);
 }
 
-Element* Infiniterange::cdr(LispE* lisp) {
-    return new Infiniterange(initial_value+increment, increment);
+Element* InfiniterangeNumber::cdr(LispE* lisp) {
+    return new InfiniterangeNumber(initial_value+increment, increment);
 }
 
 Element* InfiniterangeInteger::car(LispE* lisp) {

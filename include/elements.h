@@ -1488,14 +1488,25 @@ public:
     Element* thekeys(LispE* lisp);
 };
 
-class Infiniterange : public Element {
+class InfiniterangeNumber : public Element {
 public:
     double initial_value;
     double increment;
-    
-    Infiniterange(double v, double i) : Element(l_list) {
+    double bound;
+    bool infinite_loop;
+
+    InfiniterangeNumber(double v, double i) : Element(l_list) {
         initial_value = v;
         increment = i;
+        infinite_loop = true;
+        bound = 0;
+    }
+    
+    InfiniterangeNumber(double v, double i, double b) : Element(l_list) {
+        initial_value = v;
+        increment = i;
+        infinite_loop = false;
+        bound = b;
     }
     
     bool isContainer() {
@@ -1517,10 +1528,21 @@ class InfiniterangeInteger : public Element {
 public:
     long initial_value;
     long increment;
+    long bound;
+    bool infinite_loop;
     
     InfiniterangeInteger(long v, long i) : Element(l_list) {
         initial_value = v;
         increment = i;
+        infinite_loop = true;
+        bound = 0;
+    }
+    
+    InfiniterangeInteger(long v, long i, long b) : Element(l_list) {
+        initial_value = v;
+        increment = i;
+        infinite_loop = false;
+        bound = b;
     }
     
     bool isContainer() {

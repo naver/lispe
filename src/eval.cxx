@@ -4006,7 +4006,8 @@ Element* List::evall_insert(LispE* lisp) {
 
 
 Element* List::evall_irange(LispE* lisp) {
-    if (liste.size() != 3)
+    long sz  = liste.size();
+    if (sz != 3 && sz != 4)
         throw new Error("Error: wrong number of arguments");
 
     lisp->display_trace(this);
@@ -4014,9 +4015,16 @@ Element* List::evall_irange(LispE* lisp) {
     double init, inc;
     evalAsNumber(1, lisp, init);
     evalAsNumber(2, lisp, inc);
+    if (sz == 4) {
+        double bound;
+        evalAsNumber(3, lisp, bound);
+        if (init == (long)init && inc == (long)inc)
+            return new InfiniterangeInteger(init, inc, bound);
+        return new InfiniterangeNumber(init, inc, bound);
+    }
     if (init == (long)init && inc == (long)inc)
         return new InfiniterangeInteger(init, inc);
-    return new Infiniterange(init, inc);
+    return new InfiniterangeNumber(init, inc);
 }
 
 
