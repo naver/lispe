@@ -19,7 +19,6 @@
 		0B4E1AAE260B85D800BBAE21 /* rgx.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9C260B85D700BBAE21 /* rgx.cxx */; };
 		0B4E1AAF260B85D800BBAE21 /* jagget.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9D260B85D800BBAE21 /* jagget.cxx */; };
 		0B4E1AB1260B85D800BBAE21 /* maths.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9F260B85D800BBAE21 /* maths.cxx */; };
-		0B4E1AB8260B864800BBAE21 /* lispe_gui.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1AB7260B864800BBAE21 /* lispe_gui.cxx */; };
 		0B4E1ABE260B871900BBAE21 /* libfltk.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B4E1ABD260B870200BBAE21 /* libfltk.a */; };
 		0B4E1AC0260B873D00BBAE21 /* libfltk_images.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B4E1ABF260B872900BBAE21 /* libfltk_images.a */; };
 		0B4EC62D1FC5C27200082CA6 /* Linenumber.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B4EC62C1FC5C27200082CA6 /* Linenumber.m */; };
@@ -83,8 +82,6 @@
 		0B4E1A9C260B85D700BBAE21 /* rgx.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = rgx.cxx; path = ../../../src/rgx.cxx; sourceTree = "<group>"; };
 		0B4E1A9D260B85D800BBAE21 /* jagget.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = jagget.cxx; path = ../../../src/jagget.cxx; sourceTree = "<group>"; };
 		0B4E1A9F260B85D800BBAE21 /* maths.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = maths.cxx; path = ../../../src/maths.cxx; sourceTree = "<group>"; };
-		0B4E1AB7260B864800BBAE21 /* lispe_gui.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lispe_gui.cxx; path = ../../../gui/src/lispe_gui.cxx; sourceTree = "<group>"; };
-		0B4E1ABC260B865100BBAE21 /* lispe_gui.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = lispe_gui.h; path = ../../../gui/include/lispe_gui.h; sourceTree = "<group>"; };
 		0B4E1ABD260B870200BBAE21 /* libfltk.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfltk.a; path = ../../gui/libs/macos/libfltk.a; sourceTree = "<group>"; };
 		0B4E1ABF260B872900BBAE21 /* libfltk_images.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfltk_images.a; path = ../../gui/libs/macos/libfltk_images.a; sourceTree = "<group>"; };
 		0B4EC62B1FC5C27200082CA6 /* Linenumber.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Linenumber.h; sourceTree = "<group>"; };
@@ -185,7 +182,6 @@
 				0B4E1A92260B85D700BBAE21 /* elements.cxx */,
 				0B4E1A9B260B85D700BBAE21 /* eval.cxx */,
 				0B4E1A9D260B85D800BBAE21 /* jagget.cxx */,
-				0B4E1AB7260B864800BBAE21 /* lispe_gui.cxx */,
 				0B4E1A91260B85D700BBAE21 /* lispe.cxx */,
 				0B4E1A9F260B85D800BBAE21 /* maths.cxx */,
 				0B4E1A98260B85D700BBAE21 /* randoms.cxx */,
@@ -214,7 +210,6 @@
 				0B4E1A83260B85B900BBAE21 /* segmentation.h */,
 				0B4E1A8A260B85B900BBAE21 /* stack.h */,
 				0B4E1A8C260B85B900BBAE21 /* tools.h */,
-				0B4E1ABC260B865100BBAE21 /* lispe_gui.h */,
 				0B4E1A82260B85B900BBAE21 /* vecte.h */,
 			);
 			name = include;
@@ -414,7 +409,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				0BF4E58B1FC2D4B4004C0821 /* Console.m in Sources */,
-				0B4E1AB8260B864800BBAE21 /* lispe_gui.cxx in Sources */,
 				0BF4E3ED1FC2D12D004C0821 /* ViewController.m in Sources */,
 				0B4E1AA4260B85D800BBAE21 /* elements.cxx in Sources */,
 				0B4E1AAD260B85D800BBAE21 /* eval.cxx in Sources */,
@@ -594,18 +588,14 @@
 				CLANG_X86_VECTOR_INSTRUCTIONS = avx2;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				HEADER_SEARCH_PATHS = (
-					../../include,
-					../../gui/include,
-					../../gui/include/macos/fltk,
-				);
+				HEADER_SEARCH_PATHS = ../../include;
 				INFOPLIST_FILE = LispE/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = ../../gui/libs/macos;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
-					"$(OTHER_CFLAGS)-DFLTKGUI",
+					"$(OTHER_CFLAGS)",
 					"-DPOSIXREGEX",
 					"-DEBUG",
 				);
@@ -627,11 +617,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_OPTIMIZATION_LEVEL = fast;
-				HEADER_SEARCH_PATHS = (
-					../../include,
-					../../gui/include,
-					../../gui/include/macos/fltk,
-				);
+				HEADER_SEARCH_PATHS = ../../include;
 				INFOPLIST_FILE = LispE/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				LIBRARY_SEARCH_PATHS = ../../gui/libs/macos;
@@ -639,7 +625,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
-					"$(OTHER_CFLAGS)-DFLTKGUI",
+					"$(OTHER_CFLAGS)",
 					"-DPOSIXREGEX",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "NAVER-labs.lispe";

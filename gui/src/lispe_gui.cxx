@@ -2091,7 +2091,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib fltk_rgbcolor(widget r g b)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_rgbcolor));
     lisp->extension("deflib fltk_align(widget align)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_align));
     lisp->extension("deflib fltk_coordinates(widget (x) (y) (w) (h) )", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_coordinates));
-    lisp->extension("deflib fltk_label(widget (label))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelwindow));
+    lisp->extension("deflib fltk_labelwindow(widget (label))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelwindow));
     lisp->extension("deflib fltk_labeltype(widget (thetype))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labeltype));
     lisp->extension("deflib fltk_labelcolor(widget (color) )", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelcolor));
     lisp->extension("deflib fltk_labelfont(widget (font) )", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_labelfont));

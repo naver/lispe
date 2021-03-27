@@ -28,8 +28,8 @@ const char* lispversion(void);
 const char* Listing(void);
 void Setdebugmode(char);
 const char* Readfile(const char* path);
-void settamgupath(const char*,const char* v);
-void inittamgupath(const char* homepath);
+void setlispepath(const char*,const char* v);
+void initlispepath(const char* homepath);
 char IsRunning(void);
 char* initastring(const char* r, long sz);
 char* returninput(void);
@@ -60,11 +60,11 @@ BOOL isItMainThread() {
     return NO;
 }
 
-void Inittamgulibspath() {
+void Initlispelibspath() {
     static bool init=false;
     if (!init) {
         NSString* homepath=NSHomeDirectory();
-        inittamgupath([homepath UTF8String]);
+        initlispepath([homepath UTF8String]);
         init = true;
     }
 }
@@ -626,12 +626,12 @@ const char* Inputtext(const char* msg) {
 }
 
 - (IBAction)setpath:(id)sender {
-    NSString* rep=[self GetText:"Set TAMGULIBS"];
+    NSString* rep=[self GetText:"Set LISPEPATH"];
     if ([rep isEqualToString: @""])
         return;
     
     NSString* path=NSHomeDirectory();
-    settamgupath([path UTF8String],[rep UTF8String]);
+    setlispepath([path UTF8String],[rep UTF8String]);
 }
 
 - (IBAction)stopexecution:(id)sender {
@@ -643,7 +643,7 @@ const char* Inputtext(const char* msg) {
     NSString* message = [NSString stringWithUTF8String:lispversion()];
     NSAlert *alert = [[NSAlert alloc] init];
     [alert addButtonWithTitle:@"OK"];
-    [alert setMessageText:@"Version (Tamgu 탐구)"];
+    [alert setMessageText:@"Version (LispE)"];
     [alert setInformativeText:message];
     [alert setAlertStyle:NSAlertStyleWarning];
     [alert runModal];

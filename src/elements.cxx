@@ -788,11 +788,11 @@ Element* Numbers::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Number element(0, s_constant);
+    Number* element = new Number(0, 1);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element.number = liste[i];
-        lisp->recording(&element, label);
+        element->number = liste[i];
+        lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -800,11 +800,13 @@ Element* Numbers::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    element->decrementstatus(1, true);
     return e;
 }
 
@@ -812,11 +814,11 @@ Element* Integers::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Integer element(0, s_constant);
+    Integer* element = new Integer(0, 1);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element.integer = liste[i];
-        lisp->recording(&element, label);
+        element->integer = liste[i];
+        lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -824,13 +826,16 @@ Element* Integers::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
+            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
+    element->decrementstatus(1, true);
     return e;
 }
+
 Element* Infiniterange::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;

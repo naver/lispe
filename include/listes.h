@@ -1100,12 +1100,12 @@ public:
 class Numbers : public Element {
 public:
     
-    Number exchange_value;
+    Constnumber exchange_value;
     vector<double> liste;
     
-    Numbers() : Element(t_numbers), exchange_value(0, s_constant) {}
-    Numbers(uchar s) : Element(t_numbers, s), exchange_value(0, s_constant) {}
-    Numbers(long nb, double v) : Element(t_numbers), exchange_value(0, s_constant) {
+    Numbers() : Element(t_numbers), exchange_value(0) {}
+    Numbers(uchar s) : Element(t_numbers, s), exchange_value(0) {}
+    Numbers(long nb, double v) : Element(t_numbers), exchange_value(0) {
         while (nb) {
             liste.push_back(v);
             nb--;
@@ -1433,12 +1433,12 @@ public:
 class Integers : public Element {
 public:
     
-    Integer exchange_value;
+    Constinteger exchange_value;
     vector<long> liste;
     
-    Integers() : Element(t_integers), exchange_value(0, s_constant) {}
-    Integers(uchar s) : Element(t_integers, s), exchange_value(0, s_constant) {}
-    Integers(long nb, long v) : Element(t_integers), exchange_value(0, s_constant) {
+    Integers() : Element(t_integers), exchange_value(0) {}
+    Integers(uchar s) : Element(t_integers, s), exchange_value(0) {}
+    Integers(long nb, long v) : Element(t_integers), exchange_value(0) {
         while (nb) {
             liste.push_back(v);
             nb--;

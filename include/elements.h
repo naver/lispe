@@ -1167,6 +1167,20 @@ public:
     
 };
 
+class Constnumber : public Number {
+public:
+    
+    Constnumber(double d) : Number(d, s_constant) {}
+    
+    void decrementstatus(uchar nb, bool top) {
+        cerr << "";
+    }
+    void release() {
+        cerr << "";
+    }
+
+};
+
 class Integer : public Element {
 public:
     /* Methods in Integer
@@ -1291,6 +1305,20 @@ public:
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
     
+};
+
+class Constinteger : public Integer {
+public:
+    
+    Constinteger(long d) : Integer(d, s_constant) {}
+    
+    void decrementstatus(uchar nb, bool top) {
+        cerr << "";
+    }
+    void release() {
+        cerr << "";
+    }
+
 };
 
 class String : public Element {

@@ -25,12 +25,14 @@
 //------------------------------------------------------------------------------------------------DEBUG
 static string displaybuffer;
 static string current_code;
+static bool windowmode = false;
 
 //The following functions are called from within the GUI to handle debugging
 static LispE* lispe = NULL;
 extern "C" {
     const char* Inputtext(const char* msg);
     void Rappel(char threading, const char* txt);
+    void Initlispelibspath();
 }
 //------------------------------------------------------------------------------------------------RUN AND COMPILE
 class Segmentingtype {
@@ -262,16 +264,21 @@ extern "C" {
         if (lispe != NULL)
             delete lispe;
         lispe = NULL;
+        windowmode = false;
     }
 
     int Compilecode(const char* cde, const char* filename, char console) {
+        Initlispelibspath();
         if (lispe == NULL) {
             lispe = new LispE;
             lispe->delegation->display_string_function = sendresult;
             lispe->delegation->reading_string_function = &ProcMacEditor;
+            windowmode = false;
         }
         lispe->set_pathname(filename);
         current_code = cde;
+        if (current_code.find("fltk_") != -1)
+            windowmode = true;
         return 0;
     }
 
@@ -305,7 +312,7 @@ extern "C" {
     }
 
     char WindowModeActivated(void) {
-        return false;
+        return windowmode;
     }
 
     void Blocked(void) {}
@@ -330,7 +337,7 @@ extern "C" {
         return filename.c_str();
     }
         
-    void settamgupath(const char* homepath, const char* v) {
+    void setlispepath(const char* homepath, const char* v) {
         char* start=(char*)v;
         
         while (start[0]<=32) start++;
@@ -340,16 +347,16 @@ extern "C" {
 
         setenv("LISPEPATH",start,1);
         char path[4096];
-        sprintf(path,"%s/.LispE",homepath);
+        sprintf(path,"%s/.lispe",homepath);
         std::ofstream savepath(path);
         savepath.write(start,strlen(start));
         savepath.write("\n",1);
         savepath.close();
     }
     
-    void inittamgupath(const char* homepath) {
+    void initlispepath(const char* homepath) {
         char path[4096];
-        sprintf(path,"%s/.LispE",homepath);
+        sprintf(path,"%s/.lispe",homepath);
         std::ifstream getpath(path);
         if (getpath.fail()) {
             getpath.close();
@@ -422,6 +429,7 @@ extern "C" {
             lispe = new LispE;
             lispe->delegation->display_string_function = sendresult;
             lispe->delegation->reading_string_function = &ProcMacEditor;
+            windowmode = false;
         }
         if (current_code.find("(") == -1 && current_code.find(")") == -1)
             current_code = "(print "+ current_code + ")";
@@ -438,6 +446,7 @@ extern "C" {
         if (lispe != NULL)
             delete lispe;
         lispe = NULL;
+        windowmode = false;
     }
 
     long indentationVirtuel(char* cr, char* acc) {
@@ -478,6 +487,7 @@ extern "C" {
             lispe = new LispE;
             lispe->delegation->display_string_function = sendresult;
             lispe->delegation->reading_string_function = &ProcMacEditor;
+            windowmode = false;
         }
         wstring line;
         s_utf8_to_unicode(line, (unsigned char*)txt+from, upto - from);
