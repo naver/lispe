@@ -2391,7 +2391,8 @@ Element* List::evall_rho(LispE* lisp) {
     
     Element* e =  null_;
     Element* res = null_;
-    
+    lisp->set_true_as_one();
+
     try {
         if (listsize == 2) {
             e = liste[1]->eval(lisp);
@@ -2401,6 +2402,7 @@ Element* List::evall_rho(LispE* lisp) {
                     ((Integers*)res)->liste.push_back(((Matrice*)e)->size_x);
                     ((Integers*)res)->liste.push_back(((Matrice*)e)->size_y);
                     e->release();
+                    lisp->set_true_as_true();
                     return res;
                 }
                 case t_tensor: {
@@ -2410,29 +2412,35 @@ Element* List::evall_rho(LispE* lisp) {
                         ((Integers*)res)->liste.push_back(tens->sizes[i]);
                     }
                     e->release();
+                    lisp->set_true_as_true();
                     return res;
                 }
                 case t_numbers:
                 case t_integers:
                     listsize = e->size();
                     e->release();
+                    lisp->set_true_as_true();
                     return lisp->provideInteger(listsize);
                 default:
                     if (e->isList()) {
                         vector<long> sizes;
                         e->getShape(sizes);
-                        if (sizes.size() == 1)
+                        if (sizes.size() == 1) {
+                            lisp->set_true_as_true();
                             return lisp->provideInteger(sizes[0]);
+                        }
                         if (e->checkShape(0, sizes)) {
                             res = new Integers;
                             for (long i = 0; i < sizes.size(); i++) {
                                 ((Integers*)res)->liste.push_back(sizes[i]);
                             }
+                            lisp->set_true_as_true();
                             return res;
                         }
                     }
                     listsize = e->size();
                     e->release();
+                    lisp->set_true_as_true();
                     return lisp->provideInteger(listsize);
             }
         }
@@ -2484,6 +2492,7 @@ Element* List::evall_rho(LispE* lisp) {
                 }
             }
             e->release();
+            lisp->set_true_as_true();
             return res;
         }
         
@@ -2499,6 +2508,7 @@ Element* List::evall_rho(LispE* lisp) {
             res = new Matrice(sz1, sz2, zero_);
             ((Matrice*)res)->putlist(e);
             e->release();
+            lisp->set_true_as_true();
             return res;
         }
 
@@ -2515,11 +2525,13 @@ Element* List::evall_rho(LispE* lisp) {
             throw new Error("Error: last argument should be a list");
         ((Tenseur*)res)->putlist(e);
         e->release();
+        lisp->set_true_as_true();
         return res;
     }
     catch (Error* err) {
         e->release();
         res->release();
+        lisp->set_true_as_true();
         throw err;
     }
     return null_;
