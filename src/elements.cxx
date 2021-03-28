@@ -788,10 +788,10 @@ Element* Numbers::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Number* element = new Number(0, 1);
+    Element* element;
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element->number = liste[i];
+        element = lisp->provideNumber(liste[i]);
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
@@ -800,13 +800,11 @@ Element* Numbers::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
-            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
-    element->decrementstatus(1, true);
     return e;
 }
 
@@ -814,10 +812,10 @@ Element* Integers::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Integer* element = new Integer(0, 1);
+    Element* element;
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element->integer = liste[i];
+        element = lisp->provideInteger(liste[i]);
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
@@ -826,13 +824,11 @@ Element* Integers::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
-            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
     }
-    element->decrementstatus(1, true);
     return e;
 }
 
@@ -844,7 +840,7 @@ Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     long sz = code->liste.size();
     double value = initial_value;
-    Number* element = new Number(0,1);
+    Element* element;
     char check = 0;
     if (!infinite_loop) {
         if (increment < 0)
@@ -859,7 +855,7 @@ Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
         if (check == 2 && value >= bound)
             break;
 
-        element->number = value;
+        element = lisp->provideNumber(value);
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
@@ -868,14 +864,12 @@ Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
-            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
         value += increment;
     }
-    element->decrementstatus(1, true);
     return e;
 }
 
@@ -888,7 +882,7 @@ Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     long sz = code->liste.size();
     long value = initial_value;
-    Integer* element = new Integer(0,1);
+    Element* element;
     char check = 0;
     if (!infinite_loop) {
         if (increment < 0)
@@ -903,7 +897,7 @@ Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
         if (check == 2 && value >= bound)
             break;
 
-        element->integer = value;
+        element = lisp->provideInteger(value);
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
@@ -912,14 +906,12 @@ Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
             e = code->liste[i_loop]->eval(lisp);
         }
         if (e->type == l_return) {
-            element->decrementstatus(1, true);
             if (e->isBreak())
                 return null_;
             return e;
         }
         value += increment;
     }
-    element->decrementstatus(1, true);
     return e;
 }
 

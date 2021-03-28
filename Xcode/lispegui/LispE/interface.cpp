@@ -435,7 +435,7 @@ extern "C" {
             current_code = "(print "+ current_code + ")";
 
         Element* res = lispe->execute(current_code);
-        displaybuffer += "\n";
+        displaybuffer = "\n";
         displaybuffer += res->toString(lispe);
         res->release();
         Rappel(0, displaybuffer.c_str());
