@@ -1172,12 +1172,8 @@ public:
     
     Constnumber(double d) : Number(d, s_constant) {}
     
-    void decrementstatus(uchar nb, bool top) {
-        cerr << "";
-    }
-    void release() {
-        cerr << "";
-    }
+    void decrementstatus(uchar nb, bool top) {}
+    void release() {}
 
 };
 
@@ -1312,12 +1308,8 @@ public:
     
     Constinteger(long d) : Integer(d, s_constant) {}
     
-    void decrementstatus(uchar nb, bool top) {
-        cerr << "";
-    }
-    void release() {
-        cerr << "";
-    }
+    void decrementstatus(uchar nb, bool top) {}
+    void release() {}
 
 };
 

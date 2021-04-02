@@ -2662,7 +2662,7 @@ Element* List::evall_scan(LispE* lisp) {
         call.append(null_);
         Element* e;
         List* res = new List;
-        call.liste[1] = l1->index(0);
+        call.liste[1] = l1->value_on_index(lisp, (long)0);
         res->append(call.liste[1]);
         if (!monadic) {
             call.append(null_);
