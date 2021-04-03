@@ -2269,12 +2269,15 @@ Element* List::evall_reduce(LispE* lisp) {
             lisp->set_true_as_true();
             return res;
         }
-
+        
+        if (sz == 1)
+            return l1->value_on_index(lisp, (long)0);
+        
         List call;
         call.append(op);
         call.append(null_);
         call.append(null_);
-        call.liste[1] = l1->index(0);
+        call.liste[1] = l1->value_on_index(lisp, (long)0);
         Element* e;
         for (long i = 1; i < l1->size(); i++) {
             call.liste[2] = l1->index(i);
