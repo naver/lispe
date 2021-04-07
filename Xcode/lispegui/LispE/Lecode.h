@@ -21,7 +21,6 @@
     NSScrollView* lecode;
     NSURL* fileName;
     BOOL tobecreated;
-    BOOL dark;
     Linenumber* ruleur;
     NSRange currentrange;
     long currentlength;

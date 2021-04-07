@@ -32,6 +32,7 @@ long computeparenthesis(const char* ln, char checkcar, long limit);
 const char* crgx=NULL;
 
 extern BOOL nouveau;
+BOOL dark = false;
 
 @implementation Lecode
 
@@ -347,7 +348,10 @@ extern BOOL nouveau;
 }
 
 -(void)resetCursor:(id)rg {
-    [self setTextColor: [NSColor blackColor] range:currentrange];
+    if (dark)
+        [self setTextColor: [NSColor whiteColor] range:currentrange];
+    else
+        [self setTextColor: [NSColor blackColor] range:currentrange];
 }
 
 -(BOOL)localcolor:(char)key {

@@ -49,6 +49,7 @@ extern tamgudebugger* debugger;
 
 BOOL nouveau = NO;
 extern BOOL runingmode;
+extern BOOL dark;
 
 Console* tview;
 tamgudebugger* debugcontroller = nil;
@@ -103,7 +104,21 @@ const char* Inputtext(const char* msg) {
 
 @implementation Console
 
+-(BOOL)appearanceIsDark:(NSAppearance*) appearance
+{
+    if (@available(*, macOS 10.14)) {
+        NSAppearanceName basicAppearance = [appearance bestMatchFromAppearancesWithNames:@[
+            NSAppearanceNameAqua,
+            NSAppearanceNameDarkAqua
+        ]];
+        return [basicAppearance isEqualToString:NSAppearanceNameDarkAqua];
+    }
+    return NO;
+}
+
 -(void)awakeFromNib {
+    
+    dark = [self appearanceIsDark: NSAppearance.currentAppearance];
     
     [self toggleAutomaticQuoteSubstitution: false];
     [self toggleGrammarChecking:false];
@@ -140,7 +155,10 @@ const char* Inputtext(const char* msg) {
             return;
         }
         
-        [self setTextColor: [NSColor blackColor] range:r];
+        if (dark)
+            [self setTextColor: [NSColor whiteColor] range:r];
+        else
+            [self setTextColor: [NSColor blackColor] range:r];
         if (Compilecode(code, "", true) != -1) {
             InitialisationDisplay(0, false);
             if (!Run(0)) {
@@ -356,7 +374,10 @@ const char* Inputtext(const char* msg) {
     const char* code=[string UTF8String];
     long pos = computeparenthesis(code, closingcharacter, rcursor.location - rline.location - 1);
     if (pos != -1) {
-        [self setTextColor: [NSColor blackColor] range:rline];
+        if (dark)
+            [self setTextColor: [NSColor whiteColor] range:rline];
+        else
+            [self setTextColor: [NSColor blackColor] range:rline];
         rline.location += pos;
         rline.length = 1;
         [self setTextColor: [NSColor redColor] range:rline];
