@@ -105,9 +105,9 @@ extern NSMutableDictionary* allfiles;
     NSString * key = [evenement characters];
     const char c = [key characterAtIndex:0];
     if (wnd == [tview window]) {
-        if (c == ')') {
+        if (c == ')' || c == '}' || c == ']') {
             //looking for the corresponding (
-            [tview matchingparenthesis];
+            [tview matchingparenthesis: c];
         }
         return;
     }

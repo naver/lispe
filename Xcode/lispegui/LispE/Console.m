@@ -347,14 +347,14 @@ const char* Inputtext(const char* msg) {
         [[cn Code] selectmatchingbracket];
 }
 
-- (void)matchingparenthesis {
+- (void)matchingparenthesis:(char)closingcharacter {
     NSRange rcursor = [self selectedRange];
     NSRange rline = [[self string] paragraphRangeForRange:rcursor];
     
     NSString *string = [[self string] substringWithRange:rline];
     
     const char* code=[string UTF8String];
-    long pos = computeparenthesis(code, ')', rcursor.location - rline.location - 1);
+    long pos = computeparenthesis(code, closingcharacter, rcursor.location - rline.location - 1);
     if (pos != -1) {
         [self setTextColor: [NSColor blackColor] range:rline];
         rline.location += pos;
