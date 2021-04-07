@@ -3519,6 +3519,16 @@ Element* List::evall_flatten(LispE* lisp) {
     
     try {
         element = liste[1]->eval(lisp);
+        if (element->isValueList())
+            return element;
+        
+        if (element->type == t_matrix || element->type == t_tensor) {
+            Numbers* l = new Numbers;
+            element->flatten(lisp, l);
+            element->release();
+            return l;
+        }
+
         List* l = new List;
         element->flatten(lisp,l);
         element->release();
