@@ -442,7 +442,7 @@ extern "C" {
         return true;
     }
     
-    void LispEFinalClean() {
+    void LispEFinalClean(void) {
         if (lispe != NULL)
             delete lispe;
         lispe = NULL;
@@ -556,4 +556,51 @@ extern "C" {
     void deletion(long* l) {
         delete[] l;
     }
+
+    long computeparenthesis(const char* ln, char checkcar, long limit) {
+        long posmatch = -1;
+        vector<long> positions;
+        char check;
+        if (checkcar == ')')
+            check = '(';
+        else
+            check = checkcar - 2;
+        
+        for (long i = 0; i < limit; i++) {
+            switch (ln[i]) {
+                case '"':
+                    i++;
+                    while (i < limit && ln[i] != '"') {
+                        if (ln[i] == '\\')
+                            i++;
+                        i++;
+                    }
+                    break;
+                case '`':
+                    i++;
+                    while (i < limit && ln[i] != '`') {
+                        i++;
+                    }
+                    break;
+                case '(':
+                case '{':
+                case '[':
+                    if (check == ln[i])
+                        positions.push_back(i);
+                    break;
+                case ')':
+                case '}':
+                case ']':
+                    if (checkcar == ln[i]) {
+                        if (positions.size())
+                            positions.pop_back();
+                    }
+                    break;
+            }
+        }
+        if (positions.size())
+            posmatch = positions.back();
+        return posmatch;
+    }
 }
+

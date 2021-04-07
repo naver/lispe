@@ -33,6 +33,7 @@ void initlispepath(const char* homepath);
 char IsRunning(void);
 char* initastring(const char* r, long sz);
 char* returninput(void);
+long computeparenthesis(const char* ln, char checkcar, long limit);
 
 #import "AppDelegate.h"
 #import "Console.h"
@@ -113,6 +114,7 @@ const char* Inputtext(const char* msg) {
     [self setFont: font];
     runlock=[NSRecursiveLock alloc];
     inputtxt=NULL;
+    [self setDelegate: currentdelegate];
 }
 
 -(void)insertNewline:(id)sender {
@@ -138,6 +140,7 @@ const char* Inputtext(const char* msg) {
             return;
         }
         
+        [self setTextColor: [NSColor blackColor] range:r];
         if (Compilecode(code, "", true) != -1) {
             InitialisationDisplay(0, false);
             if (!Run(0)) {
@@ -342,6 +345,22 @@ const char* Inputtext(const char* msg) {
     CodeViewController* cn = [self topview];
     if (cn != nil)
         [[cn Code] selectmatchingbracket];
+}
+
+- (void)matchingparenthesis {
+    NSRange rcursor = [self selectedRange];
+    NSRange rline = [[self string] paragraphRangeForRange:rcursor];
+    
+    NSString *string = [[self string] substringWithRange:rline];
+    
+    const char* code=[string UTF8String];
+    long pos = computeparenthesis(code, ')', rcursor.location - rline.location - 1);
+    if (pos != -1) {
+        [self setTextColor: [NSColor blackColor] range:rline];
+        rline.location += pos;
+        rline.length = 1;
+        [self setTextColor: [NSColor redColor] range:rline];
+    }
 }
 
 

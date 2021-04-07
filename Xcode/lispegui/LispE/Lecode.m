@@ -27,6 +27,7 @@ const char* lindentation(char* basecode, int blancs);
 long indentationVirtuel(char* cr, char* acc);
 long* colorparser(const char* txt, long, long);
 void deletion(long* c);
+long computeparenthesis(const char* ln, char checkcar, long limit);
 
 const char* crgx=NULL;
 
@@ -99,7 +100,6 @@ extern BOOL nouveau;
         tobecreated = NO;
         fileName = [NSURL fileURLWithPath:currentfilename];
         [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:fileName];
-        NSError *error;
         const char* contenu = Readfile([currentfilename UTF8String]);
         if (contenu == NULL) {
             NSString* err = @"Cannot open file: ";
@@ -107,7 +107,7 @@ extern BOOL nouveau;
             NSAlert *alert = [[NSAlert alloc] init];
             [alert addButtonWithTitle:@"OK"];
             [alert setMessageText:@"Error!!!"];
-            [alert setInformativeText:error.localizedDescription];
+            [alert setInformativeText:err];
             [alert setAlertStyle:NSAlertStyleWarning];
             [alert runModal];
             return;
@@ -346,6 +346,10 @@ extern BOOL nouveau;
     return -1;
 }
 
+-(void)resetCursor:(id)rg {
+    [self setTextColor: [NSColor blackColor] range:currentrange];
+}
+
 -(BOOL)localcolor:(char)key {
     static const char cc[]={'"','\'',';',']','=','/', 0};
     
@@ -399,8 +403,27 @@ extern BOOL nouveau;
             code = [[[self string] substringWithRange: backrange] UTF8String];
             ln=indentationVirtuel((char*)code,&acc);
         }
-        else
+         else {
+             if (key == ')') {
+                 //We make the matching parenthesis blink
+                 backrange.location = currentrange.location;
+                 backrange.length = locpos-backrange.location-1;
+                 code = [[[self string] substringWithRange: backrange] UTF8String];
+                 pos = computeparenthesis(code, ')', backrange.length);
+                 if (pos != -1) {
+                     currentrange.location += pos;
+                     currentrange.length = 1;
+                     [self setTextColor: [NSColor redColor] range:currentrange];
+                     [NSTimer scheduledTimerWithTimeInterval:0.35
+                         target:self
+                         selector:@selector(resetCursor:)
+                         userInfo:nil
+                         repeats:NO];
+                     
+                 }
+             }
             return YES;
+         }
         
         //we found it...
         //we need to count the number of spaces...

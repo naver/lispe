@@ -72,5 +72,6 @@
 -(void)Selectline:(NSNumber*)l;
 -(BOOL)DisplayAlert:(NSString*)msg;
 -(const char*)InputText:(NSString*)nmsg;
+-(void)matchingparenthesis;
 
 @end

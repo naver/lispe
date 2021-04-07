@@ -19,7 +19,7 @@
 #import "CodeViewController.h"
 #import "ViewController.h"
 
-void LispEFinalClean();
+void LispEFinalClean(void);
 char StopExecution(void);
 BOOL runingmode;
 
@@ -103,9 +103,18 @@ extern NSMutableDictionary* allfiles;
     NSWindow* wnd=[[NSApp orderedWindows] objectAtIndex:0];
     NSEvent* evenement=[wnd currentEvent];
     NSString * key = [evenement characters];
+    const char c = [key characterAtIndex:0];
+    if (wnd == [tview window]) {
+        if (c == ')') {
+            //looking for the corresponding (
+            [tview matchingparenthesis];
+        }
+        return;
+    }
+
     NSViewController* n=[wnd contentViewController];
     CodeViewController* cn=(CodeViewController*)n;
-    const char c = [key characterAtIndex:0];
+    
     if (strchr(cc,c)!= NULL)
         [[cn Code] localcolor: c];
     else
