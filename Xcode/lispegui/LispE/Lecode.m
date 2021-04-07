@@ -402,18 +402,18 @@ extern BOOL nouveau;
          if ([self testpadding:line] ==  YES) {
             code = [[[self string] substringWithRange: backrange] UTF8String];
             ln=indentationVirtuel((char*)code,&acc);
-        }
+         }
          else {
              if (key == ')') {
                  //We make the matching parenthesis blink
-                 backrange.location = currentrange.location;
                  backrange.length = locpos-backrange.location-1;
                  code = [[[self string] substringWithRange: backrange] UTF8String];
                  pos = computeparenthesis(code, ')', backrange.length);
                  if (pos != -1) {
-                     currentrange.location += pos;
-                     currentrange.length = 1;
-                     [self setTextColor: [NSColor redColor] range:currentrange];
+                     backrange.location += pos;
+                     backrange.length = 1;
+                     [self setTextColor: [NSColor redColor] range:backrange];
+                     currentrange = backrange;
                      [NSTimer scheduledTimerWithTimeInterval:0.35
                          target:self
                          selector:@selector(resetCursor:)
@@ -442,6 +442,40 @@ extern BOOL nouveau;
             [self replaceCharactersInRange:currentrange withString:truc];
         
         localrange=currentrange;
+
+        if (key == ')') {
+            //We make the matching parenthesis blink
+            backrange.length = locpos-backrange.location-1;
+            if (backrange.length == 0) {
+                //This is a final ), let's find the top line
+                backrange.location--;
+                pos=[self findTopline: backrange];
+                if (pos == -1) {
+                    localrange.location+=ln+1;
+                    localrange.length=0;
+                    [self setSelectedRange:localrange];
+                    return YES;
+                }
+                
+                backrange.length = locpos-pos-1;
+                backrange.location = pos;
+            }
+            code = [[[self string] substringWithRange: backrange] UTF8String];
+            pos = computeparenthesis(code, ')', backrange.length);
+            if (pos != -1) {
+                backrange.location += pos;
+                backrange.length = 1;
+                [self setTextColor: [NSColor redColor] range:backrange];
+                currentrange = backrange;
+                [NSTimer scheduledTimerWithTimeInterval:0.35
+                    target:self
+                    selector:@selector(resetCursor:)
+                    userInfo:nil
+                    repeats:NO];
+                
+            }
+        }
+
         localrange.location+=ln+1;
         localrange.length=0;
         [self setSelectedRange:localrange];
