@@ -213,8 +213,8 @@ void Numbers::sorting(LispE* lisp, List* comparison) {
     if (sz <= 1)
         return;
     
-    Number n1(0, s_constant);
-    Number n2(0, s_constant);
+    Constnumber n1(0);
+    Constnumber n2(0);
     comparison->liste[1] = &n1;
     comparison->liste[2] = &n2;
     
@@ -312,8 +312,8 @@ void Integers::sorting(LispE* lisp, List* comparison) {
     if (sz <= 1)
         return;
     
-    Integer n1(0, s_constant);
-    Integer n2(0, s_constant);
+    Constinteger n1(0);
+    Constinteger n2(0);
     comparison->liste[1] = &n1;
     comparison->liste[2] = &n2;
     n1.integer = liste[0];
@@ -324,12 +324,119 @@ void Integers::sorting(LispE* lisp, List* comparison) {
     sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
 }
 
+bool Strings::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
+    ((String*)comparison->liste[1])->content = liste[i];
+    ((String*)comparison->liste[2])->content = liste[j];
+    return comparison->eval_Boolean(lisp, instruction);
+}
+
+void Strings::sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
+    //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
+    //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
+    //(sort '< '(20 12 15 13 19 17 14))
+    //(sort '< (shuffle (range 1 16 1)))
+    //(sort '< '(4 3 7 1 5))
+    //(sort '< '(10 4 8 5 12 2 6 11 3 9 7 9))
+
+    //check sorting stability
+    //(loop i (range 1 9999 1) (select (<= (at s i) (at s (+ i 1))) (println 'erreur i)))
+    
+    long j = rmax-rmin+1;
+    long pivot;
+    
+    if (j < 7) {
+        if (j < 2)
+            return;
+        
+        if (j == 2) {
+            if (compare(lisp, comparison, instruction, rmax, rmin))
+                swap(rmax, rmin);
+            return;
+        }
+        
+        if (j == 3) {
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1)) {
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            else {
+                swap(rmin, rmin + 1);
+                if (compare(lisp, comparison, instruction, rmin + 1, rmax))
+                    return;
+            }
+            swap(rmax, rmin + 1);
+            if (compare(lisp, comparison, instruction, rmin, rmin + 1))
+                return;
+            swap(rmin, rmin + 1);
+            return;
+        }
+        
+        long sz;
+        while (rmax > rmin) {
+              sz = rmin;
+              for (j = rmin; j < rmax; j++) {
+                  if (compare(lisp, comparison, instruction, j + 1, j)) {
+                      swap(j, j + 1);
+                      sz = j;
+                      pivot = j;
+                      while (pivot > rmin && compare(lisp, comparison, instruction, pivot, pivot - 1))
+                          swap(pivot, pivot - 1);
+                  }
+              }
+              rmax = sz;
+          }
+        return;
+    }
+    
+    pivot = rmin - 1;
+    ((String*)comparison->liste[2])->content = liste[rmax];
+    for (j = rmin; j < rmax; j++) {
+        ((String*)comparison->liste[1])->content = liste[j];
+        if (comparison->eval_Boolean(lisp, instruction)) {
+            pivot++;
+            swap(pivot,j);
+        }
+    }
+    pivot++;
+    swap(pivot, rmax);
+    
+    sorting(lisp, comparison, instruction, rmin, pivot-1);
+    sorting(lisp, comparison, instruction, pivot+1, rmax);
+}
+
+void Strings::sorting(LispE* lisp, List* comparison) {
+    //We sort between home and last...
+    long sz = size();
+    if (sz <= 1)
+        return;
+    
+    Conststring n1(L"");
+    Conststring n2(L"");
+    comparison->liste[1] = &n1;
+    comparison->liste[2] = &n2;
+    n1.content = liste[0];
+    n2.content = liste[0];
+    if (comparison->eval(lisp)->Boolean())
+        throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+
+    sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+}
 //------------------------------------------------------------------------------------------
 void Element::flatten(LispE* lisp, List* l) {
     l->append(this);
 }
 
+void Element::flatten(LispE* lisp, Numbers* l) {
+    l->append(this);
+}
+
 void List::flatten(LispE* lisp, List* l) {
+    for (long i = 0; i < size(); i++) {
+        liste[i]->flatten(lisp, l);
+    }
+}
+
+void List::flatten(LispE* lisp, Numbers* l) {
     for (long i = 0; i < size(); i++) {
         liste[i]->flatten(lisp, l);
     }
@@ -341,9 +448,33 @@ void Numbers::flatten(LispE* lisp, List* l) {
     }
 }
 
+void Numbers::flatten(LispE* lisp, Numbers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(liste[i]);
+    }
+}
+
 void Integers::flatten(LispE* lisp, List* l) {
     for (long i = 0; i < size(); i++) {
         l->append(lisp->provideInteger(liste[i]));
+    }
+}
+
+void Integers::flatten(LispE* lisp, Numbers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(liste[i]);
+    }
+}
+
+void Strings::flatten(LispE* lisp, List* l) {
+    for (long i = 0; i < size(); i++) {
+        l->append(lisp->provideString(liste[i]));
+    }
+}
+
+void Strings::flatten(LispE* lisp, Numbers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(convertingfloathexa(liste[i].c_str()));
     }
 }
 
@@ -465,7 +596,17 @@ void Integers::storevalue(LispE* lisp, wstring& s) {
     liste.push_back(v);
 }
 
+void Strings::storevalue(LispE* lisp, double v) {
+    liste.push_back(convertToWString(v));
+}
 
+void Strings::storevalue(LispE* lisp,long v) {
+    liste.push_back(convertToWString(v));
+}
+
+void Strings::storevalue(LispE* lisp, wstring& s) {
+    liste.push_back(s);
+}
 //------------------------------------------------------------------------------------------
 
 
@@ -661,6 +802,10 @@ void Integers::append(LispE* lisp, wstring& k) {
     liste.push_back(d);
 }
 
+void Strings::append(LispE* lisp, wstring& k) {
+    liste.push_back(k);
+}
+
 void List::append(LispE* lisp, double v) {
     liste.push_back(lisp->provideNumber(v));
 }
@@ -673,6 +818,10 @@ void Integers::append(LispE* lisp, double v) {
     liste.push_back(v);
 }
 
+void Strings::append(LispE* lisp, double v) {
+    liste.push_back(convertToWString(v));
+}
+
 void List::append(LispE* lisp, long v) {
     liste.push_back(lisp->provideInteger(v));
 }
@@ -683,6 +832,10 @@ void Numbers::append(LispE* lisp, long v) {
 
 void Integers::append(LispE* lisp, long v) {
     liste.push_back(v);
+}
+
+void Strings::append(LispE* lisp, long v) {
+    liste.push_back(convertToWString(v));
 }
 
 void Dictionary_as_list::append(LispE* lisp, wstring& k) {
@@ -816,6 +969,30 @@ Element* Integers::loop(LispE* lisp, short label, List* code) {
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
         element = lisp->provideInteger(liste[i]);
+        lisp->recording(element, label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Strings::loop(LispE* lisp, short label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    Element* element;
+    long sz = code->liste.size();
+    for (long i = 0; i < liste.size(); i++) {
+        element = lisp->provideString(liste[i]);
         lisp->recording(element, label);
         e = null_;
         //We then execute our instructions
@@ -1106,7 +1283,7 @@ Element* List::multiloop(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------------
-List* s_findall(LispE* lisp, wstring& s, wstring& sub, long from) {
+Element* s_findall(LispE* lisp, wstring& s, wstring& sub, long from) {
     long sz = sub.size();
     if (!sz)
         return emptylist_;
@@ -1114,11 +1291,9 @@ List* s_findall(LispE* lisp, wstring& s, wstring& sub, long from) {
     long pos = s.find(sub, from);
     if (pos == -1)
         return emptylist_;
-    List* liste = new List;
-    Element* e;
+    Integers* liste = new Integers;
     while (pos != -1) {
-        e = lisp->provideNumber(pos);
-        liste->append(e);
+        liste->liste.push_back(pos);
         pos=s.find(sub,pos+sz);
     }
     return liste;
@@ -1238,6 +1413,37 @@ Element* Integers::unique(LispE* lisp) {
     return nb;
 }
 
+Element* Strings::insert(LispE* lisp, Element* e, long idx) {
+    if (idx < 0)
+        throw new Error("Error: Wrong index in 'insert'");
+ 
+    Strings* l = (Strings*)duplicate_constant_container();
+    l->liste.insert(l->liste.begin()+idx, e->asString(lisp));
+    return l;
+}
+
+Element* Strings::unique(LispE* lisp) {
+    if (liste.size() == 0)
+        return this;
+    
+    Strings* nb = new Strings();
+    long i, j;
+    bool found;
+    nb->liste.push_back(liste[0]);
+    for (i = 1; i < liste.size(); i++) {
+        found = false;
+        for (j = 0; j < nb->liste.size(); j++) {
+            if (liste[i] == nb->liste[j]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            nb->liste.push_back(liste[i]);
+    }
+    return nb;
+}
+
 //------------------------------------------------------------------------------------------
 
 Element* Element::thekeys(LispE* lisp) {
@@ -1276,14 +1482,20 @@ Element* Integers::thekeys(LispE* lisp) {
     return keys;
 }
 
+Element* Strings::thekeys(LispE* lisp) {
+    Integers* keys = new Integers;
+    for (long i = 0; i< size(); i++) {
+        keys->liste.push_back(i);
+    }
+    return keys;
+}
+
 Element* Dictionary::thekeys(LispE* lisp) {
-    List* dkeys = new List;
-    Element* e;
+    Strings* dkeys = new Strings;
     wstring keyvalue;
     for (auto& a: dictionary) {
         keyvalue = a.first;
-        e = lisp->provideString(keyvalue);
-        dkeys->append(e);
+        dkeys->append(keyvalue);
     }
     return dkeys;
 }
@@ -1359,6 +1571,15 @@ Element* Integers::search_element(LispE* lisp, Element* valeur, long idx) {
     return null_;
 }
 
+Element* Strings::search_element(LispE* lisp, Element* valeur, long idx) {
+    wstring v = valeur->asString(lisp);
+    for (long i = idx; i < liste.size(); i++) {
+        if (liste[i] == v)
+            return lisp->provideInteger(i);
+    }
+    return null_;
+}
+
 Element* Dictionary::search_element(LispE* lisp, Element* valeur, long idx) {
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
@@ -1414,10 +1635,10 @@ Element* String::search_all_elements(LispE* lisp, Element* valeur, long idx) {
 }
 
 Element* List::search_all_elements(LispE* lisp, Element* valeur, long idx) {
-    List* l = new List;
+    Integers* l = new Integers;
     for (long i = idx; i < liste.size(); i++) {
         if (liste[i]->equal(lisp, valeur) == true_) {
-            l->append(lisp->provideInteger(i));
+            l->liste.push_back(i);
         }
     }
     if (l->liste.size() == 0) {
@@ -1455,14 +1676,28 @@ Element* Integers::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
+Element* Strings::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+    Integers* l = new Integers;
+    wstring v = valeur->asString(lisp);
+    for (long i = idx; i < liste.size(); i++) {
+        if (liste[i] == v)
+            l->liste.push_back(i);
+    }
+    if (l->liste.size() == 0) {
+        delete l;
+        return emptylist_;
+    }
+    return l;
+}
+
 
 Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long idx) {
-    List* l = new List;
+    Strings* l = new Strings();
     wstring keyvalue;
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             keyvalue = a.first;
-           l->append(lisp->provideString(keyvalue));
+           l->append(keyvalue);
         }
     }
     if (l->liste.size() == 0) {
@@ -1473,10 +1708,10 @@ Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long idx)
 }
 
 Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long idx) {
-    List* l = new List;
+    Numbers* l = new Numbers;
     for (auto& a : dictionary) {
        if (a.second->equal(lisp, valeur) == true_)
-           l->append(lisp->provideNumber(a.first));
+           l->liste.push_back(a.first);
     }
     if (l->liste.size() == 0) {
         delete l;
@@ -1515,6 +1750,15 @@ Element* Numbers::search_reverse(LispE* lisp, Element* valeur, long idx) {
 
 Element* Integers::search_reverse(LispE* lisp, Element* valeur, long idx) {
     long v = valeur->asInteger();
+    for (long i = liste.size() - 1; i >= idx; i--) {
+        if (liste[i] == v)
+            return lisp->provideInteger(i);
+    }
+    return minusone_;
+}
+
+Element* Strings::search_reverse(LispE* lisp, Element* valeur, long idx) {
+    wstring v = valeur->asString(lisp);
     for (long i = liste.size() - 1; i >= idx; i--) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
@@ -1605,6 +1849,22 @@ Element* Integers::reverse(LispE* lisp, bool duplique) {
     return this;
 }
 
+Element* Strings::reverse(LispE* lisp, bool duplique) {
+    if (liste.size() <= 1)
+        return this;
+    
+    if (duplique) {
+        Strings* l = new Strings();
+        for (long i = liste.size()-1; i >= 0; i--) {
+            l->liste.push_back(liste[i]);
+        }
+        return l;
+    }
+
+    std::reverse(liste.begin(), liste.end());
+    return this;
+}
+
 
 Element* Dictionary::reverse(LispE* lisp, bool duplique) {
     Dictionary* dico = new Dictionary;
@@ -1615,12 +1875,12 @@ Element* Dictionary::reverse(LispE* lisp, bool duplique) {
         k = a.second->asString(lisp);
         e = dico->dictionary[k];
         if (e == NULL) {
-            e = new List;
+            e = new Strings();
             dico->dictionary[k] = e;
             e->incrementstatus(1, false);
         }
         k = a.first;
-        e->append(lisp->provideString(k));
+        ((Strings*)e)->append(k);
     }
     return dico;
 }
@@ -1634,11 +1894,11 @@ Element* Dictionary_n::reverse(LispE* lisp, bool duplique) {
         k = a.second->asNumber();
         e = dico->dictionary[k];
         if (e == NULL) {
-            e = new List;
+            e = new Numbers;
             dico->dictionary[k] = e;
             e->incrementstatus(1, false);
         }
-        e->append(lisp->provideNumber(a.first));
+        ((Numbers*)e)->liste.push_back(a.first);
     }
     return dico;
 }
@@ -1683,6 +1943,12 @@ Element* Integers::protected_index(LispE* lisp,long i) {
     return null_;
 }
 
+Element* Strings::protected_index(LispE* lisp,long i) {
+    if (i >= 0 && i < liste.size())
+        return lisp->provideString(liste[i]);
+    return null_;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::last_element(LispE* lisp) {
     return null_;
@@ -1713,6 +1979,12 @@ Element* Integers::last_element(LispE* lisp) {
     return lisp->provideInteger(liste.back());
 }
 
+Element* Strings::last_element(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    return lisp->provideString(liste.back());
+}
+
 
 //------------------------------------------------------------------------------------------
 Element* Element::value_on_index(LispE* lisp, long i) {
@@ -1734,6 +2006,12 @@ Element* Numbers::value_on_index(LispE* lisp, long i) {
 Element* Integers::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < liste.size())
         return lisp->provideInteger(liste[i]);
+    return null_;
+}
+
+Element* Strings::value_on_index(LispE* lisp, long i) {
+    if (i >= 0 && i < liste.size())
+        return lisp->provideString(liste[i]);
     return null_;
 }
 
@@ -1830,6 +2108,17 @@ Element* Integers::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
+Element* Strings::value_on_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideString(liste[i]);
+    
+    return null_;
+}
+
 Element* String::value_on_index(LispE* lisp, Element* idx) {
     long i = idx->checkInteger(lisp);
     if (i < 0)
@@ -1889,6 +2178,17 @@ Element* Integers::protected_index(LispE* lisp, Element* idx) {
     
     if (i >= 0 && i < liste.size())
         return lisp->provideInteger(liste[i]);
+    
+    return null_;
+}
+
+Element* Strings::protected_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideString(liste[i]);
     
     return null_;
 }
@@ -1961,6 +2261,17 @@ Element* Integers::join_in_list(LispE* lisp, wstring& sep) {
     return lisp->provideString(str);
 }
 
+Element* Strings::join_in_list(LispE* lisp, wstring& sep) {
+    wstring str;
+    wstring beg;
+    for (long i = 0; i < liste.size(); i++) {
+        str += beg;
+        beg = sep;
+        str += liste[i];
+    }
+    return lisp->provideString(str);
+}
+
 Element* Dictionary::join_in_list(LispE* lisp, wstring& sep) {
     if (sep==L"")
         sep = L",";
@@ -2013,18 +2324,14 @@ Element* String::replace(LispE* lisp, long i, Element* e) {
 //------------------------------------------------------------------------------------------
 
 wstring Infinitelist::asString(LispE* lisp) {
-    wstring tampon(L"(");
-    tampon += lisp->asString(l_repeat);
-    tampon += L" ";
+    wstring tampon(L"(repeat ");
     tampon += value->asString(lisp);
     tampon += L")";
     return tampon;
 }
 
 wstring Cyclelist::asString(LispE* lisp) {
-    wstring tampon(L"(");
-    tampon += lisp->asString(l_cycle);
-    tampon += L" ";
+    wstring tampon(L"(cycle ");
     tampon += value->asString(lisp);
     tampon += L")";
     return tampon;
@@ -2032,18 +2339,18 @@ wstring Cyclelist::asString(LispE* lisp) {
 
 wstring InfiniterangeNumber::asString(LispE* lisp) {
     std::wstringstream str;
-    str << L"(" << lisp->asString(l_irange) << " " << initial_value << " " << increment << L")";
+    str << L"(irange " << initial_value << " " << increment << L")";
     return str.str();
 }
 
 wstring InfiniterangeInteger::asString(LispE* lisp) {
     std::wstringstream str;
-    str << L"(" << lisp->asString(l_irange) << " " << initial_value << " " << increment << L")";
+    str << L"(irange " << initial_value << " " << increment << L")";
     return str.str();
 }
 
 wstring Error::asString(LispE* lisp) {
-    if (lisp->delegation->i_current_file != -1) {
+    if (lisp != NULL && lisp->delegation->i_current_file != -1) {
         string s = lisp->delegation->allfiles_names[lisp->delegation->i_current_file];
         wstring w;
         s_utf8_to_unicode(w, USTR(s), s.size());
@@ -2053,23 +2360,6 @@ wstring Error::asString(LispE* lisp) {
     }
     else
         return message;
-}
-
-wstring Atome::asString(LispE* lisp) {
-    return lisp->asString(atome);
-}
-
-wstring Atome::jsonString(LispE* lisp) {
-    return wjsonstring(lisp->asString(atome));
-}
-
-
-wstring Instruction::asString(LispE* lisp) {
-    return lisp->asString(type);
-}
-
-wstring Operator::asString(LispE* lisp) {
-    return lisp->asString(type);
 }
 //------------------------------------------------------------------------------------------
 bool Element::check_arity(LispE* lisp, unsigned long arity) {
@@ -2094,6 +2384,8 @@ Element* List::newInstance(Element* e) {
             return new Numbers(sz, e->asNumber());
         if (e->type == t_integer)
             return new Integers(sz, e->asInteger());
+        if (e->type == t_string)
+            return new Strings(sz, e->asString(NULL));
     }
     
     List* lst = new List;
@@ -2742,6 +3034,21 @@ Element* List::rightshift(LispE* l, Element* e) {
     return this;
 }
 
+Element* Strings::plus(LispE* l, Element* e) {
+    //Two cases either e is a string or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] += e->index(i)->asString(l);
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] += e->asString(l);
+    }
+    return this;
+}
+
+
 Element* Numbers::bit_and(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
@@ -3171,6 +3478,47 @@ Element* Integers::extraction(LispE* lisp, List* l) {
     }
     return n;
 }
+
+Element* Strings::extraction(LispE* lisp, List* l) {
+    long depuis;
+    l->evalAsInteger(2, lisp, depuis);
+    if (depuis >= 0) {
+        if (depuis >= liste.size())
+            return null_;
+    }
+    else {
+        //We start from the end...
+        depuis = liste.size() + depuis;
+        if (depuis < 0)
+            return null_;
+    }
+    if (l->size() == 3) {
+        //On returns only one element
+        return lisp->provideString(liste[depuis]);
+    }
+    long upto;
+    l->evalAsInteger(3, lisp, upto);
+    if (upto >= 0) {
+        if (upto >= liste.size())
+            upto = liste.size();
+    }
+    else {
+        //We start from the end...
+        upto = liste.size() + upto;
+        if (upto < 0)
+            return null_;
+    }
+    if (upto < depuis) {
+        return null_;
+    }
+
+    Strings* n = new Strings();
+    for (;depuis < upto; depuis++) {
+        n->liste.push_back(liste[depuis]);
+    }
+    return n;
+}
+
 Element* String::extraction(LispE* lisp, List* liste) {
     Element* e_from = liste->liste[2];
     
@@ -3396,6 +3744,15 @@ Element* Integers::duplicate_constant_container(bool pair) {
     return this;
 }
 
+Element* Strings::duplicate_constant_container(bool pair) {
+    if (status == s_constant) {
+        Strings* l = new Strings();
+        l->liste = liste;
+        return l;
+    }
+    return this;
+}
+
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
@@ -3500,6 +3857,22 @@ Element* Integers::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
     Integers* n = new Integers;
+    for (long i = 1; i < liste.size(); i++) {
+        n->liste.push_back(liste[i]);
+    }
+    return n;
+}
+
+Element* Strings::car(LispE* lisp) {
+    if (liste.size() == 0)
+        return null_;
+    return lisp->provideString(liste[0]);
+}
+
+Element* Strings::cdr(LispE* lisp) {
+    if (liste.size() <= 1)
+        return null_;
+    Strings* n = new Strings();
     for (long i = 1; i < liste.size(); i++) {
         n->liste.push_back(liste[i]);
     }

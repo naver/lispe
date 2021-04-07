@@ -129,6 +129,20 @@ char Integers::check_match(LispE* lisp, Element* value) {
     return check_ok;
 }
 
+char Strings::check_match(LispE* lisp, Element* value) {
+    if (!value->isList() || liste.size() != value->size())
+        return check_mismatch;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    for (long i = 0; i < liste.size(); i++) {
+        //In this case, we skip it, no constraints...
+        if (liste[i] != value->index(i)->asString(lisp))
+            return i;
+    }
+    return check_ok;
+}
+
 
 //------------------------------------------------------------------------------------------
 
@@ -546,6 +560,30 @@ bool Integers::unify(LispE* lisp, Element* value, bool record) {
     //rec==false, if the first element is a data structure name...
     for (long i = 0; i < sz; i++) {
         if (liste[i] == value->index(i)->asInteger()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Strings::unify(LispE* lisp, Element* value, bool record) {
+    if (value == this)
+        return true;
+
+    long sz = liste.size();
+    long szvalue = value->size();
+    
+    if (szvalue != sz || !value->isList())
+        return false;
+
+    if (!sz)
+        return true;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] == value->index(i)->asString(lisp)) {
             return false;
         }
     }
@@ -2163,15 +2201,17 @@ Element* List::evall_outerproduct(LispE* lisp) {
             throw new Error("Error: arguments for '°' are lists");
         
         if (l1 == l2) {
-            if (l2->type == t_numbers) {
-                l2 = new Numbers;
-                ((Numbers*)l2)->liste = ((Numbers*)l1)->liste;
-            }
-            else {
-                if (l2->type == t_integers) {
+            switch (l2->type) {
+                case t_numbers:
+                    l2 = new Numbers;
+                    ((Numbers*)l2)->liste = ((Numbers*)l1)->liste;
+                    break;
+                case t_integers:
                     l2 = new Integers;
                     ((Integers*)l2)->liste = ((Integers*)l1)->liste;
-                }
+                case t_strings:
+                    l2 = new Strings();
+                    ((Strings*)l2)->liste = ((Strings*)l1)->liste;
             }
         }
 
@@ -2243,22 +2283,32 @@ Element* List::evall_reduce(LispE* lisp) {
         if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
             //this is a filter, the first list
             Element* res;
-            if (l1->type == t_numbers) {
-                res = new Numbers;
-                for (long i = 0; i < op->size() && i < l1->size(); i++) {
-                    if (op->index(i)->Boolean())
-                        ((Numbers*)res)->liste.push_back(((Numbers*)l1)->liste[i]);
+            switch (l1->type) {
+                case t_numbers : {
+                    res = new Numbers;
+                    for (long i = 0; i < op->size() && i < l1->size(); i++) {
+                        if (op->index(i)->Boolean())
+                            ((Numbers*)res)->liste.push_back(((Numbers*)l1)->liste[i]);
+                    }
+                    break;
                 }
-            }
-            else {
-                if (l1->type == t_integers) {
+                case t_integers: {
                     res = new Integers;
                     for (long i = 0; i < op->size() && i < l1->size(); i++) {
                         if (op->index(i)->Boolean())
                             ((Integers*)res)->liste.push_back(((Integers*)l1)->liste[i]);
                     }
+                    break;
                 }
-                else {
+                case t_strings: {
+                    res = new Strings();
+                    for (long i = 0; i < op->size() && i < l1->size(); i++) {
+                        if (op->index(i)->Boolean())
+                            ((Strings*)res)->liste.push_back(((Strings*)l1)->liste[i]);
+                    }
+                    break;
+                }
+                default: {
                     res = new List;
                     for (long i = 0; i < op->size() && i < l1->size(); i++) {
                         if (op->index(i)->Boolean())
@@ -2325,6 +2375,14 @@ Element* List::evall_concatenate(LispE* lisp) {
             if (first_element->isValueList()) {
                 lisp->set_true_as_true();
                 return first_element;
+            }
+            
+            if (first_element->type == t_matrix || first_element->type == t_tensor) {
+                Numbers* l = new Numbers;
+                first_element->flatten(lisp, l);
+                first_element->release();
+                lisp->set_true_as_true();
+                return l;
             }
             
             res = new List;
@@ -2418,6 +2476,7 @@ Element* List::evall_rho(LispE* lisp) {
                     lisp->set_true_as_true();
                     return res;
                 }
+                case t_strings:
                 case t_numbers:
                 case t_integers:
                     listsize = e->size();
@@ -2456,20 +2515,21 @@ Element* List::evall_rho(LispE* lisp) {
                 throw new Error("Error: Second argument should be a list");
             listsize = e->size();
             evalAsInteger(1, lisp, sz1);
-            if (e->type == t_numbers) {
-                res = new Numbers;
-                for (long i = 0; i < sz1; i++) {
-                    if (!listsize)
-                        ((Numbers*)res)->liste.push_back(0);
-                    else {
-                        if (ei == listsize)
-                            ei = 0;
-                        ((Numbers*)res)->liste.push_back(e->index(ei++)->asNumber());
+            switch (e->type) {
+                case t_numbers: {
+                    res = new Numbers;
+                    for (long i = 0; i < sz1; i++) {
+                        if (!listsize)
+                            ((Numbers*)res)->liste.push_back(0);
+                        else {
+                            if (ei == listsize)
+                                ei = 0;
+                            ((Numbers*)res)->liste.push_back(e->index(ei++)->asNumber());
+                        }
                     }
+                    break;
                 }
-            }
-            else {
-                if (e->type == t_integers) {
+                case t_integers: {
                     res = new Integers;
                     for (long i = 0; i < sz1; i++) {
                         if (!listsize)
@@ -2480,8 +2540,22 @@ Element* List::evall_rho(LispE* lisp) {
                             ((Integers*)res)->liste.push_back(e->index(ei++)->asInteger());
                         }
                     }
+                    break;
                 }
-                else {
+                case t_strings: {
+                    res = new Strings();
+                    for (long i = 0; i < sz1; i++) {
+                        if (!listsize)
+                            ((Strings*)res)->liste.push_back(L"");
+                        else {
+                            if (ei == listsize)
+                                ei = 0;
+                            ((Strings*)res)->liste.push_back(e->index(ei++)->asString(lisp));
+                        }
+                    }
+                    break;
+                }
+                default: {
                     res = new List;
                     for (long i = 0; i < sz1; i++) {
                         if (!listsize)
@@ -2560,7 +2634,7 @@ Element* List::evall_equalonezero(LispE* lisp) {
             return numbools_[test];
         }
         
-        res = new List;
+        res = new Integers;
         for (long i = 0; i < l1->size() && i < l2->size(); i++) {
             if (l1->index(i)->unify(lisp, l2->index(i), false))
                 res->append(one_);
@@ -2613,47 +2687,62 @@ Element* List::evall_scan(LispE* lisp) {
         if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
             //this is a filter, the first list
             long j = 0;
-            if (l1->type == t_numbers) {
-                Numbers* res = new Numbers;
-                for (long i = 0; i < op->size() && j < l1->size(); i++) {
-                    if (op->index(i)->Boolean()) {
-                        res->liste.push_back(((Numbers*)l1)->liste[j]);
-                        j++;
+            switch (l1->type) {
+                case t_numbers: {
+                    Numbers* res = new Numbers;
+                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                        if (op->index(i)->Boolean()) {
+                            res->liste.push_back(((Numbers*)l1)->liste[j]);
+                            j++;
+                        }
+                        else
+                            res->liste.push_back(0);
                     }
-                    else
-                        res->liste.push_back(0);
+                    lisp->set_true_as_true();
+                    return res;
                 }
-                lisp->set_true_as_true();
-                return res;
-            }
-
-            if (l1->type == t_integers) {
-                Integers* res = new Integers;
-                for (long i = 0; i < op->size() && j < l1->size(); i++) {
-                    if (op->index(i)->Boolean()) {
-                        res->liste.push_back(((Integers*)l1)->liste[j]);
-                        j++;
+                case t_integers: {
+                    Integers* res = new Integers;
+                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                        if (op->index(i)->Boolean()) {
+                            res->liste.push_back(((Integers*)l1)->liste[j]);
+                            j++;
+                        }
+                        else
+                            res->liste.push_back(0);
                     }
-                    else
-                        res->liste.push_back(0);
+                    lisp->set_true_as_true();
+                    return res;
                 }
-                lisp->set_true_as_true();
-                return res;
-            }
-
-            List* res = new List;
-            for (long i = 0; i < op->size() && j < l1->size(); i++) {
-                if (op->index(i)->Boolean()) {
-                    res->append(l1->index(j));
-                    j++;
+                case t_strings: {
+                    Strings* res = new Strings();
+                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                        if (op->index(i)->Boolean()) {
+                            res->liste.push_back(((Strings*)l1)->liste[j]);
+                            j++;
+                        }
+                        else
+                            res->liste.push_back(L"");
+                    }
+                    lisp->set_true_as_true();
+                    return res;
                 }
-                else
-                    res->append(zero_);
+                default: {
+                    List* res = new List;
+                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                        if (op->index(i)->Boolean()) {
+                            res->append(l1->index(j));
+                            j++;
+                        }
+                        else
+                            res->append(zero_);
+                    }
+                    lisp->set_true_as_true();
+                    return res;
+                }
             }
-            lisp->set_true_as_true();
-            return res;
         }
-
+        
         if (op->type == l_equal)
             op = lisp->provideAtom(l_equalonezero);
         
@@ -3500,50 +3589,81 @@ Element* List::evall_flip(LispE* lisp) {
             return call.eval(lisp);
         }
         first_element = liste[1]->eval(lisp);
-        if (first_element->type == t_numbers) {
-            long listsize = first_element->size();
-            if (listsize < 2)
-                return first_element;
-            second_element = new Numbers;
-            ((Numbers*)second_element)->liste = ((Numbers*)first_element)->liste;
-            ((Numbers*)second_element)->liste[0] = ((Numbers*)first_element)->liste[1];
-            ((Numbers*)second_element)->liste[1] = ((Numbers*)first_element)->liste[0];
-            first_element->release();
-            return second_element;
-        }
-        
-        if (first_element->type == t_integers) {
-            long listsize = first_element->size();
-            if (listsize < 2)
-                return first_element;
-            second_element = new Integers;
-            ((Integers*)second_element)->liste = ((Integers*)first_element)->liste;
-            ((Integers*)second_element)->liste[0] = ((Integers*)first_element)->liste[1];
-            ((Integers*)second_element)->liste[1] = ((Integers*)first_element)->liste[0];
-            first_element->release();
-            return second_element;
-        }
-
-        if (first_element->isList()) {
-            long listsize = first_element->size();
-            if (listsize < 2)
-                return first_element;
-            second_element = new List;
-            second_element->append(first_element->index(1));
-            second_element->append(first_element->index(0));
-            for (long i = 2; i < listsize; i++) {
-                second_element->append(first_element->index(i));
+        switch (first_element->type) {
+            case t_numbers: {
+                long listsize = first_element->size();
+                if (listsize < 2)
+                    return first_element;
+                second_element = new Numbers;
+                ((Numbers*)second_element)->liste = ((Numbers*)first_element)->liste;
+                ((Numbers*)second_element)->liste[0] = ((Numbers*)first_element)->liste[1];
+                ((Numbers*)second_element)->liste[1] = ((Numbers*)first_element)->liste[0];
+                first_element->release();
+                return second_element;
             }
-            first_element->release();
-            return second_element;
+            case t_integers: {
+                long listsize = first_element->size();
+                if (listsize < 2)
+                    return first_element;
+                second_element = new Integers;
+                ((Integers*)second_element)->liste = ((Integers*)first_element)->liste;
+                ((Integers*)second_element)->liste[0] = ((Integers*)first_element)->liste[1];
+                ((Integers*)second_element)->liste[1] = ((Integers*)first_element)->liste[0];
+                first_element->release();
+                return second_element;
+            }
+            case t_strings: {
+                long listsize = first_element->size();
+                if (listsize < 2)
+                    return first_element;
+                second_element = new Strings();
+                ((Strings*)second_element)->liste = ((Strings*)first_element)->liste;
+                ((Strings*)second_element)->liste[0] = ((Strings*)first_element)->liste[1];
+                ((Strings*)second_element)->liste[1] = ((Strings*)first_element)->liste[0];
+                first_element->release();
+                return second_element;
+            }
+            case t_list: {
+                long listsize = first_element->size();
+                if (listsize < 2)
+                    return first_element;
+                second_element = new List;
+                second_element->append(first_element->index(1));
+                second_element->append(first_element->index(0));
+                for (long i = 2; i < listsize; i++) {
+                    second_element->append(first_element->index(i));
+                }
+                first_element->release();
+                return second_element;
+            }
+            case t_dictionary:
+            case t_dictionaryn: {
+                second_element = first_element->reverse(lisp, true);
+                first_element->release();
+                return second_element;
+            }
+            default:
+                if (first_element->isList()) {
+                    long listsize = first_element->size();
+                    if (listsize < 2)
+                        return first_element;
+                    second_element = new List;
+                    second_element->append(first_element->index(1));
+                    second_element->append(first_element->index(0));
+                    for (long i = 2; i < listsize; i++) {
+                        second_element->append(first_element->index(i));
+                    }
+                    first_element->release();
+                    return second_element;
+                }
+                
+                if (first_element->isDictionary()) {
+                    second_element = first_element->reverse(lisp, true);
+                    first_element->release();
+                    return second_element;
+                }
+                throw new Error("Error: Cannot apply flip on this structure");
         }
-        
-        if (first_element->isDictionary()) {
-            second_element = first_element->reverse(lisp, true);
-            first_element->release();
-            return second_element;
-        }
-        throw new Error("Error: Cannot apply flip on this structure");
     }
     catch (Error* err) {
         first_element->release();
@@ -3682,7 +3802,7 @@ Element* List::evall_greater(LispE* lisp) {
             first_element = liste[1]->eval(lisp);
             second_element = liste[2]->eval(lisp);
             if (first_element->isList() && second_element->isList()) {
-                res = new List;
+                res = new Integers;
                 for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
                     if (first_element->index(i)->more(lisp, second_element->index(i))->Boolean())
                         res->append(one_);
@@ -3736,7 +3856,7 @@ Element* List::evall_greaterorequal(LispE* lisp) {
             first_element = liste[1]->eval(lisp);
             second_element = liste[2]->eval(lisp);
             if (first_element->isList() && second_element->isList()) {
-                res = new List;
+                res = new Integers;
                 for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
                     if (first_element->index(i)->moreorequal(lisp, second_element->index(i))->Boolean())
                         res->append(one_);
@@ -4575,7 +4695,7 @@ Element* List::evall_lower(LispE* lisp) {
             first_element = liste[1]->eval(lisp);
             second_element = liste[2]->eval(lisp);
             if (first_element->isList() && second_element->isList()) {
-                res = new List;
+                res = new Integers;
                 for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
                     if (first_element->index(i)->less(lisp, second_element->index(i))->Boolean())
                         res->append(one_);
@@ -4629,7 +4749,7 @@ Element* List::evall_lowerorequal(LispE* lisp) {
             first_element = liste[1]->eval(lisp);
             second_element = liste[2]->eval(lisp);
             if (first_element->isList() && second_element->isList()) {
-                res = new List;
+                res = new Integers;
                 for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
                     if (first_element->index(i)->lessorequal(lisp, second_element->index(i))->Boolean())
                         res->append(one_);
@@ -5398,6 +5518,32 @@ Element* List::evall_integers(LispE* lisp) {
         Integers* n = new Integers;
         for (long i = 0; i < second_element->size(); i++) {
             n->liste.push_back(second_element->index(i)->asInteger());
+        }
+        return n;
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_strings(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    
+    Element* second_element = null_;
+
+    lisp->display_trace(this);
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        if (!second_element->isList())
+            throw new Error("Error: Expecting a list as argument");
+        Strings* n = new Strings();
+        for (long i = 0; i < second_element->size(); i++) {
+            n->liste.push_back(second_element->index(i)->asString(lisp));
         }
         return n;
     }
@@ -6197,59 +6343,76 @@ Element* List::evall_sort(LispE* lisp) {
         throw err;
     }
 
-    if (second_element->type == t_numbers) {
-        List complist;
-        complist.append(first_element);
-        complist.append(null_);
-        complist.append(null_);
-        try {
-            ((Numbers*)second_element)->sorting(lisp, &complist);
+    switch (second_element->type) {
+        case t_numbers: {
+            List complist;
+            complist.append(first_element);
+            complist.append(null_);
+            complist.append(null_);
+            try {
+                ((Numbers*)second_element)->sorting(lisp, &complist);
+                first_element->release();
+                return second_element;
+            }
+            catch (Error* err) {
+                first_element->release();
+                second_element->release();
+                throw err;
+            }
+        }
+        case t_integers: {
+            List complist;
+            complist.append(first_element);
+            complist.append(null_);
+            complist.append(null_);
+            try {
+                ((Integers*)second_element)->sorting(lisp, &complist);
+                first_element->release();
+                return second_element;
+            }
+            catch (Error* err) {
+                first_element->release();
+                second_element->release();
+                throw err;
+            }
+        }
+        case t_strings: {
+            List complist;
+            complist.append(first_element);
+            complist.append(null_);
+            complist.append(null_);
+            try {
+                ((Strings*)second_element)->sorting(lisp, &complist);
+                first_element->release();
+                return second_element;
+            }
+            catch (Error* err) {
+                first_element->release();
+                second_element->release();
+                throw err;
+            }
+        }
+        default: {
+            List* l = (List*)second_element;
+            if (l->size() <= 1)
+                return second_element;
+            
+            List complist;
+            complist.append(first_element);
+            complist.append(l->liste[0]);
+            complist.append(l->liste[0]);
+            if (complist.eval(lisp)->Boolean()) {
+                first_element->release();
+                second_element->release();
+                throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+            }
+            
+            l->liste.sorting(lisp, &complist);
             first_element->release();
             return second_element;
         }
-        catch (Error* err) {
-            first_element->release();
-            second_element->release();
-            throw err;
-        }
     }
-
-    if (second_element->type == t_integers) {
-        List complist;
-        complist.append(first_element);
-        complist.append(null_);
-        complist.append(null_);
-        try {
-            ((Integers*)second_element)->sorting(lisp, &complist);
-            first_element->release();
-            return second_element;
-        }
-        catch (Error* err) {
-            first_element->release();
-            second_element->release();
-            throw err;
-        }
-    }
-
-    List* l = (List*)second_element;
-    if (l->size() <= 1)
-        return second_element;
-
-    List complist;    
-    complist.append(first_element);
-    complist.append(l->liste[0]);
-    complist.append(l->liste[0]);
-    if (complist.eval(lisp)->Boolean()) {
-        first_element->release();
-        second_element->release();
-        throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
-    }
-    
-    l->liste.sorting(lisp, &complist);
-    first_element->release();
-    return second_element;
 }
-
 
 Element* List::evall_stringp(LispE* lisp) {
     if (liste.size() != 2)
@@ -6889,39 +7052,54 @@ Element* List::evall_sum(LispE* lisp) {
 
     List* lst = NULL;
     Element* first_element = liste[1];
-    double v = 0;
     
     try {
         first_element = first_element->eval(lisp);
         if (!first_element->isList())
             throw new Error("Error: expecting a list as argument");
         
-        if (first_element->type == t_numbers) {
-            listsize = lst->size();
-            Numbers* nb = (Numbers*)first_element;
-            for (long i = 0; i < listsize; i++) {
-                v += nb->liste[i];
+        switch (first_element->type) {
+            case t_numbers: {
+                double v = 0;
+                listsize = lst->size();
+                Numbers* nb = (Numbers*)first_element;
+                for (long i = 0; i < listsize; i++) {
+                    v += nb->liste[i];
+                }
+                first_element->release();
+                return lisp->provideNumber(v);
             }
-            first_element->release();
-            return lisp->provideNumber(v);
-        }
-        
-        if (first_element->type == t_integers) {
-            listsize = lst->size();
-            Integers* nb = (Integers*)first_element;
-            for (long i = 0; i < listsize; i++) {
-                v += nb->liste[i];
+            case t_integers: {
+                long v = 0;
+                listsize = lst->size();
+                Integers* nb = (Integers*)first_element;
+                for (long i = 0; i < listsize; i++) {
+                    v += nb->liste[i];
+                }
+                first_element->release();
+                return lisp->provideInteger(v);
             }
-            first_element->release();
-            return lisp->provideInteger(v);
+            case t_strings: {
+                wstring w;
+                listsize = lst->size();
+                Strings* nb = (Strings*)first_element;
+                for (long i = 0; i < listsize; i++) {
+                    w += nb->liste[i];
+                }
+                first_element->release();
+                return lisp->provideString(w);
+            }
+            default: {
+                double v = 0;
+                lst = (List*)first_element;
+                listsize = lst->size();
+                for (long i = 0; i < listsize; i++) {
+                    v += lst->liste[i]->checkNumber(lisp);
+                }
+                first_element->release();
+                return lisp->provideNumber(v);
+            }
         }
-        
-        lst = (List*)first_element;
-        listsize = lst->size();
-        for (long i = 0; i < listsize; i++)
-            v += lst->liste[i]->checkNumber(lisp);
-        first_element->release();
-        return lisp->provideNumber(v);
     }
     catch (Error* err) {
         first_element->release();

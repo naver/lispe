@@ -151,12 +151,12 @@ public:
         if (mode != file_read)
             throw new Error ("Error: expecting 'stream' to be in 'open' mode");
         
-        List* l = new List;
+        Strings* l = new Strings();
         string ch = "";
         string ln;
         while (!myfile.eof()) {
             getline(myfile, ln);
-            l->append(lisp->provideString(ln));
+            l->append(ln);
         }
         myfile.close();
         mode = file_open;
@@ -884,7 +884,7 @@ public:
         if (!go)
             return emptylist_;
         
-        List* kvect = new List;
+        Strings* kvect = new Strings();
         string name;
         if (path.back() != '/')
             path += "/";
@@ -894,7 +894,7 @@ public:
                 continue;
             if (path != "./")
                 name = path + name;
-            kvect->append(lisp->provideString(name));
+            kvect->append(name);
         }
         return kvect;
     }
@@ -924,10 +924,10 @@ public:
                 if (fp == NULL)
                     throw new Error("Error: the pipe did not open properly");
                 
-                List* resultat = new List();
+                Strings* resultat = new Strings();
                 while (fgets(res, PATH_MAX, fp) != NULL) {
                     cmd  = res;
-                    resultat->append(lisp->provideString(cmd));
+                    resultat->append(cmd);
                 }
                 
 #ifdef WIN32

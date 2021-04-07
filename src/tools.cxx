@@ -2094,6 +2094,129 @@ double convertingfloathexa(const char* s) {
     }
     return res*sign;
 }
+
+double conversiontofloathexa(const wchar_t* s, int sign) {
+    long v = 0;
+    uchar c = *s++;
+    while (digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = *s++;
+    }
+    
+    double res = v;
+    
+    if (c == '.') {
+        uchar mantissa = 0;
+        v = 0;
+        c = *s++;
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = *s++;
+            mantissa += 4;
+        }
+        
+        res += (double)v/(double)(1 << mantissa);
+    }
+    
+    
+    if ((c &0xDF) == 'P') {
+        bool sgn = false;
+        if (*s == '-') {
+            sgn = true;
+            ++s;
+        }
+        else {
+            if (*s == '+')
+                ++s;
+        }
+        
+        v = *s++ & 15;
+        while (isadigit(*s)) {
+            v = (v << 3) + (v << 1) + (*s++ & 15);
+        }
+        v = 1 << v;
+        if (sgn)
+            res *= 1 / (double)v;
+        else
+            res *= v;
+        
+    }
+    
+    return res*sign;
+}
+double convertingfloathexa(const wchar_t* s) {
+    while (*s!=0 && *s<=32) ++s;
+    //End of string...
+    if (*s ==0 )
+        return 0;
+    
+    int sign = 1;
+    
+    //Sign
+    if (*s=='-') {
+        sign = -1;
+        ++s;
+    }
+    else
+        if (*s=='+')
+            ++s;
+    
+    if (*s=='0' && s[1]=='x') {
+        s+=2;
+        return conversiontofloathexa(s, sign);
+    }
+    
+    long v;
+    if (isadigit(*s)) {
+        v = *s++ & 15;
+        while (isadigit(*s)) {
+            v = (v << 3) + (v << 1) + (*s++ & 15);
+        }
+        if (!*s)
+            return v*sign;
+    }
+    else
+        return 0;
+    
+    double res = v;
+    
+    if (*s=='.') {
+        ++s;
+        if (isadigit(*s)) {
+            uchar mantissa = 1;
+            v = *s++ & 15;
+            while (isadigit(*s)) {
+                v = (v << 3) + (v << 1) + (*s++ & 15);
+                ++mantissa;
+            }
+            res += (double)v / power10(mantissa);
+        }
+        else
+            return res*sign;
+    }
+    
+    if ((*s &0xDF) == 'E') {
+        ++s;
+        long sgn = 1;
+        if (*s == '-') {
+            sgn = -1;
+            ++s;
+        }
+        else {
+            if (*s == '+')
+                ++s;
+        }
+        
+        if (isadigit(*s)) {
+            v = *s++ & 15;
+            while (isadigit(*s))
+                v = (v << 3) + (v << 1) + (*s++ & 15);
+            
+            res *= power10(v*sgn);
+        }
+    }
+    return res*sign;
+}
 //------------------------------------------------------------------------
 double conversiontofloathexa(const char* s, int sign, long& l) {
     long v = 0;

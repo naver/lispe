@@ -160,8 +160,7 @@ public:
             case str_split_empty: {
                 wstring strvalue =  lisp->get(v_str)->asString(lisp);
                 wstring search_string =  lisp->get(v_fnd)->asString(lisp);
-                Element* ch;
-                List* result = new List;
+                Strings* result = new Strings;
                 wstring localvalue;
                 long pos = 0;
                 if (search_string == L"") {
@@ -169,8 +168,7 @@ public:
                     //we split the string into an array of characters
                     while (pos < strvalue.size()) {
                         lisp->handlingutf8->getchar(strvalue, localvalue, pos, sz);
-                        ch = lisp->provideString(localvalue);
-                        result->append(ch);
+                        result->append(localvalue);
                     }
                     return result;
                 }
@@ -180,8 +178,7 @@ public:
                     found = strvalue.find(search_string, pos);
                     if (found != string::npos) {
                         localvalue = strvalue.substr(pos, found - pos);
-                        ch = lisp->provideString(localvalue);
-                        result->append(ch);
+                        result->append(localvalue);
                         pos = found + search_string.size();
                     }
                     else
@@ -190,8 +187,7 @@ public:
 
                 if (strvalue.size() < pos) {
                     localvalue = strvalue.substr(pos, strvalue.size() - pos);
-                    ch = lisp->provideString(localvalue);
-                    result->append(ch);
+                    result->append(localvalue);
                 }
             
                 return result;
@@ -200,8 +196,7 @@ public:
                 wstring strvalue =  lisp->get(v_str)->asString(lisp);
                 wstring search_string =  lisp->get(v_fnd)->asString(lisp);
                 
-                Element* ch;
-                List* result = new List;
+                Strings* result = new Strings;
                 wstring localvalue;
                 long pos = 0;
                 if (search_string == L"") {
@@ -209,8 +204,7 @@ public:
                     //we split the string into an array of characters
                     while (pos < strvalue.size()) {
                         lisp->handlingutf8->getchar(strvalue, localvalue, pos, sz);
-                        ch = lisp->provideString(localvalue);
-                        result->append(ch);
+                        result->append(localvalue);
                     }
                     return result;
                 }
@@ -221,8 +215,7 @@ public:
                     if (found != string::npos) {
                         localvalue = strvalue.substr(pos, found - pos);
                         if (localvalue != L"") {
-                            ch = lisp->provideString(localvalue);
-                            result->append(ch);
+                            result->append(localvalue);
                         }
                         pos = found + search_string.size();
                     }
@@ -232,8 +225,7 @@ public:
                 
                 localvalue = strvalue.substr(pos, strvalue.size() - pos);
                 if (localvalue != L"") {
-                    ch = lisp->provideString(localvalue);
-                    result->append(ch);
+                    result->append(localvalue);
                 }
                 
                 return result;
@@ -243,13 +235,9 @@ public:
                 if (strvalue.size() == 0)
                     return emptylist_;
                 
-                wchar_t d;
-                Element* e;
-                List* liste =  new List;
+                Integers* liste =  new Integers;
                 for (long i = 0; i < strvalue.size(); i++) {
-                    d = strvalue[i];
-                    e = lisp->provideInteger((long)d);
-                    liste->append(e);
+                    liste->liste.push_back(strvalue[i]);
                 }
                 return liste;
             }

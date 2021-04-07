@@ -20,6 +20,7 @@ const unsigned char s_constant = 255;
 
 class LispE;
 class Listincode;
+class Numbers;
 
 typedef enum {
     //Default values
@@ -27,8 +28,9 @@ typedef enum {
     
     //Default types
     t_emptystring, t_operator, t_atom, t_number, t_integer, t_matrix, t_tensor,
-    t_string, t_plus_string, t_minus_string, t_minus_plus_string, t_numbers, t_integers,
-    t_list, t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair, t_error,
+    t_string, t_plus_string, t_minus_string, t_minus_plus_string,
+    t_numbers, t_integers, t_strings, t_list,
+    t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair, t_error,
     
     l_set_max_stack_size,
     
@@ -69,7 +71,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_unique,
-    l_numbers, l_integers,
+    l_numbers, l_integers, l_strings,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
@@ -514,6 +516,8 @@ public:
     }
     
     virtual void flatten(LispE*, List* l);
+    virtual void flatten(LispE*, Numbers* l);
+    
     virtual Element* search_element(LispE*, Element* element_value, long idx);
     virtual Element* search_all_elements(LispE*, Element* element_value, long idx);
     virtual Element* search_reverse(LispE*, Element* element_value, long idx);
@@ -832,14 +836,19 @@ public:
 
 class Atome : public Element {
 public:
-    
+    wstring name;
     short atome;
     
-    Atome(short a) : atome(a), Element(t_atom) {}
-    Atome(short a, uchar s) : atome(a), Element(t_atom, s) {}
+    Atome(short a, wstring w) : name(w), atome(a), Element(t_atom) {}
+    Atome(short a, uchar s, wstring w) : name(w), atome(a), Element(t_atom, s) {}
     
-    wstring asString(LispE* lisp);
-    wstring jsonString(LispE* lisp);
+    wstring asString(LispE* lisp) {
+        return name;
+    }
+    
+    wstring jsonString(LispE* lisp) {
+        return wjsonstring(name);
+    }
     
     Element* eval(LispE* lisp);
     
@@ -876,8 +885,8 @@ public:
 class Atomtype : public Atome {
 public:
 
-    Atomtype(short a) : Atome(a) {}
-    Atomtype(short a, uchar s) : Atome(a, s) {}
+    Atomtype(short a, wstring w) : Atome(a, w) {}
+    Atomtype(short a, uchar s, wstring w) : Atome(a, s, w) {}
 
     char check_match(LispE* lisp, Element* value) {
         if (atome == value->type_element())
@@ -890,8 +899,8 @@ public:
 class Atomnotlabel : public Atome {
 public:
     
-    Atomnotlabel(short a) : Atome(a) {}
-    Atomnotlabel(short a, uchar s) : Atome(a, s) {}
+    Atomnotlabel(short a, wstring w) : Atome(a, w) {}
+    Atomnotlabel(short a, uchar s, wstring w) : Atome(a, s, w) {}
     
     short label() {
         return v_null;
@@ -901,9 +910,17 @@ public:
 
 class Operator : public Element {
 public:
+    wstring name;
     
-    Operator(short c) : Element(c) {}
-    wstring asString(LispE* lisp);
+    Operator(short c, wstring w) : name(w), Element(c) {}
+    wstring asString(LispE* lisp) {
+        return name;
+    }
+
+    wstring jsonString(LispE* lisp) {
+        return wjsonstring(name);
+    }
+
     bool isAtom() {
         return true;
     }
@@ -936,11 +953,18 @@ public:
 
 class Instruction : public Element {
 public:
+    wstring name;
     
-    Instruction(short c) : Element(c) {}
+    Instruction(short c, wstring w) : name(w), Element(c) {}
     
-    wstring asString(LispE* lisp);
-    
+    wstring asString(LispE* lisp) {
+        return name;
+    }
+
+    wstring jsonString(LispE* lisp) {
+        return wjsonstring(name);
+    }
+
     bool isInstruction() {
         return true;
     }
@@ -1480,6 +1504,17 @@ public:
     Element* thekeys(LispE* lisp);
 };
 
+class Conststring : public String {
+public:
+    
+    Conststring(wstring w) : String(w, s_constant) {}
+    
+    void decrementstatus(uchar nb, bool top) {}
+    void release() {}
+
+};
+
+
 class InfiniterangeNumber : public Element {
 public:
     double initial_value;
@@ -1696,6 +1731,7 @@ public:
     Element* loop(LispE* lisp, short label,  List* code);
     
     void flatten(LispE*, List* l);
+    
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);    
@@ -2064,6 +2100,7 @@ public:
     }
 
     void flatten(LispE*, List* l);
+    
     Element* loop(LispE* lisp, short label,  List* code);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);

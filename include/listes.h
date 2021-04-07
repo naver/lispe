@@ -432,6 +432,7 @@ public:
     Element* unique(LispE* lisp);
 
     void flatten(LispE*, List* l);
+    void flatten(LispE*, Numbers* l);
     
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
@@ -936,6 +937,7 @@ public:
     Element* evall_mark(LispE* lisp);
     Element* evall_matrix(LispE* lisp);
     Element* evall_tensor(LispE* lisp);
+    Element* evall_strings(LispE* lisp);
     Element* evall_numbers(LispE* lisp);
     Element* evall_integers(LispE* lisp);
     Element* evall_resetmark(LispE* lisp);
@@ -1233,7 +1235,7 @@ public:
     }
     
     void flatten(LispE*, List* l);
-
+    void flatten(LispE*, Numbers* l);
     
     Element* protected_index(LispE*,long i);
     
@@ -1565,6 +1567,8 @@ public:
     }
     
     void flatten(LispE*, List* l);
+    void flatten(LispE*, Numbers* l);
+    
     Element* protected_index(LispE*,long i);
     
     Element* value_on_index(LispE*, long i);
@@ -1758,7 +1762,6 @@ public:
     void sorting(LispE* lisp, List* comparison);
 
 };
-
 
 class Matrice : public List {
 public:
@@ -2022,4 +2025,334 @@ public:
 };
 
 
+
+class Strings : public Element {
+public:
+    
+    vector<std::wstring> liste;
+    Conststring exchange_value;
+    
+    Strings() : exchange_value(L""), Element(t_strings) {}
+    Strings(long nb, wstring v) : exchange_value(L""), Element(t_strings) {
+        while (nb) {
+            liste.push_back(v);
+            nb--;
+        }
+    }
+
+    Element* newInstance(Element* v) {
+        return new Strings(liste.size(), v->asString(NULL));
+    }
+
+    void concatenate(LispE* lisp, Element* e) {
+        if (!e->isList())
+            liste.push_back(e->asString(lisp));
+        else {
+            for (long i = 0; i < e->size(); i++) {
+                liste.push_back(e->index(i)->asString(lisp));
+            }
+        }
+    }
+
+    bool isContainer() {
+        return true;
+    }
+    
+    bool isValueList() {
+        return true;
+    }
+
+    Element* loop(LispE* lisp, short label,  List* code);
+    
+    Element* search_element(LispE*, Element* element_value, long idx);
+    Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* search_reverse(LispE*, Element* element_value, long idx);
+    
+    Element* last_element(LispE* lisp);
+    
+    void insertion(Element* e, long idx) {
+        liste.insert(liste.begin()+idx, e->asString(NULL));
+    }
+    
+    void swap(long i, long j) {
+        wstring v = liste[i];
+        liste[i] = liste[j];
+        liste[j] = v;
+    }
+    
+    void front(Element* e) {
+        liste.insert(liste.begin(), e->asString(NULL));
+    }
+    
+    void beforelast(Element* e) {
+        long sz = liste.size();
+        if (!sz)
+            liste.push_back(e->asString(NULL));
+        else
+            liste.insert(liste.begin()+sz-1, e->asString(NULL));
+    }
+
+    Element* thekeys(LispE* lisp);
+
+    char check_match(LispE* lisp, Element* value);
+    
+    bool unify(LispE* lisp, Element* value, bool record);
+    
+    Element* fullcopy() {
+        Strings* e = new Strings();
+        e->liste = liste;
+        return e;
+    }
+    
+    Element* unique(LispE* lisp);
+
+    
+    Element* copying(bool duplicate = true) {
+        //If it is a CDR, we need to copy it...
+        if (status < s_protect && !duplicate)
+            return this;
+
+        Strings* e = new Strings();
+        e->liste = liste;
+        return e;
+    }
+    
+    //In the case of a container for push, key and keyn
+    // We must force the copy when it is a constant
+    Element* duplicate_constant_container(bool pair = false);
+    
+    bool isList() {
+        return true;
+    }
+    
+    bool isNotEmptyList() {
+        return (liste.size());
+    }
+    
+    void incrementstatus(uchar nb, bool top) {
+        if (status < s_protect)
+            status += nb;
+    }
+    
+    void decrementstatus(uchar nb, bool top) {
+        if (status > s_destructible && status < s_protect) {
+            status -= nb;
+        }
+        
+        if (!status) {
+            delete this;
+        }
+    }
+    
+    //The status is decremented without destroying the element.
+    void decrementstatusraw(uchar nb) {
+        if (status > s_destructible && status < s_protect)
+            status -= nb;
+    }
+    
+    Element* join_in_list(LispE* lisp, wstring& sep);
+    
+    Element* extraction(LispE* lisp, List*);
+    
+    Element* index(long i) {
+        exchange_value.content = liste[i];
+        return &exchange_value;
+    }
+    
+    void flatten(LispE*, List* l);
+    void flatten(LispE*, Numbers* l);
+    
+    Element* protected_index(LispE*,long i);
+    
+    Element* value_on_index(LispE*, long i);
+    Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
+    
+    void release() {
+        if (!status) {
+            delete this;
+        }
+    }
+
+    
+    long size() {
+        return liste.size();
+    }
+    
+    Element* car(LispE* lisp);
+    Element* cdr(LispE* lisp);
+    
+    void protecting(bool protection) {
+        if (protection) {
+            if (status == s_constant)
+                status = s_protect;
+        }
+        else {
+            if (status == s_protect)
+                status = s_destructible;
+        }
+    }
+    
+    wstring jsonString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return L"[]";
+
+        sz -= 1;
+        
+        wstring buffer(L"[");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += L",";
+            buffer += liste[i];
+        }
+        buffer += L"]";
+        return buffer;
+    }
+    
+    wstring asString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return L"()";
+
+        sz -= 1;
+        
+        wstring buffer(L"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += L" ";
+            buffer += liste[i];
+        }
+        buffer += L")";
+        return buffer;
+    }
+    
+    void append(wstring& k) {
+        liste.push_back(k);
+    }
+    
+    void append(string& k) {
+        wstring w;
+        s_utf8_to_unicode(w, USTR(k), k.size());
+        liste.push_back(w);
+    }
+    
+    void append(LispE* lisp, wstring& k);
+    void append(LispE* lisp, double v);
+    void append(LispE* lisp, long v);
+
+    void append(Element* e) {
+        liste.push_back(e->asString(NULL));
+    }
+    void appendraw(Element* e) {
+        liste.push_back(e->asString(NULL));
+    }
+
+    void change(long i, Element* e) {
+        liste[i] = e->asString(NULL);
+    }
+
+    void changelast(Element* e) {
+        liste[liste.size()-1] = e->asString(NULL);
+    }
+    
+    void replacing(long i, Element* e) {
+        liste[i] = e->asString(NULL);
+    }
+    
+    Element* replace(LispE* lisp, long i, Element* e) {
+        if (i < 0)
+            throw new Error("Error: position does not exist");
+        if (i >= liste.size())
+            liste.push_back(e->asString(NULL));
+        else {
+            liste[i] = e->asString(NULL);
+        }
+        return this;
+    }
+    
+    bool Boolean() {
+        return (liste.size());
+    }
+        
+    //The label of _EMPTYLIST is v_null
+    //We can then compare with () as if it was nil
+    short label() {
+        return (liste.empty()?t_strings:v_null);
+    }
+
+    Element* reverse(LispE*, bool duplique = true);
+    
+    void storevalue(LispE*, double v);
+    void storevalue(LispE*, long v);
+    void storevalue(LispE*, wstring& v);
+    
+    bool removelast() {
+        if (!liste.size())
+            return false;
+        liste.pop_back();
+        return true;
+    }
+    
+    bool remove(LispE*, Element* e) {
+        long d =  e->asInteger();
+        return remove(d);
+    }
+
+    bool remove(long d) {
+        if (!liste.size())
+            return false;
+        
+        if (d == liste.size() || d == -1) {
+            liste.pop_back();
+            return true;
+        }
+        if (d < 0 || d > liste.size())
+            return false;
+        liste.erase(liste.begin()+d);
+        return true;
+    }
+    
+    void getShape(vector<long>& sz) {
+        sz.push_back(liste.size());
+    }
+    
+    char isPureList() {
+        return 3;
+    }
+    
+    char isPureList(long& x, long& y) {
+        x = size();
+        y = 1;
+        return 3;
+    }
+
+    Element* insert(LispE* lisp, Element* e, long idx);
+
+    //There is a big difference between clean and clear
+    //clear assumes that elements have been appended to the
+    //list...
+    void clear() {
+        if (status < s_protect)
+            liste.clear();
+    }
+    
+    Element* copyatom(uchar s) {
+        if (status < s)
+            return this;
+
+        Strings* n = new Strings();
+        n->liste = liste;
+        return n;
+    }
+
+    Element* plus(LispE* l, Element* e);
+
+    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
+    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
+    void sorting(LispE* lisp, List* comparison);
+
+};
 #endif

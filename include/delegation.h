@@ -669,7 +669,7 @@ public:
     Element* provideAtom(short code) {
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atome(code);
+            e = new Atome(code, code_to_string[code]);
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -680,7 +680,7 @@ public:
         short code = encode(name);
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atome(code);
+            e = new Atome(code, name);
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -690,7 +690,7 @@ public:
     void provideAtomType(short code) {
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atomtype(code);
+            e = new Atomtype(code, code_to_string[code]);
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -702,7 +702,7 @@ public:
         short code = encode(name);
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atome(code);
+            e = new Atome(code, name);
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -715,10 +715,10 @@ public:
         if (e == NULL) {
             try {
                 instructions.at(code);
-                e = new Instruction(code);
+                e = new Instruction(code, code_to_string[code]);
             }
             catch(const std::out_of_range& oor) {
-                e = new Atome(code);
+                e = new Atome(code, code_to_string[code]);
             }
             e->status = s_constant;
             atom_pool[code] = e;
@@ -732,10 +732,10 @@ public:
         if (e == NULL) {
             try {
                 instructions.at(code);
-                e = new Instruction(code);
+                e = new Instruction(code, code_to_string[code]);
             }
             catch(const std::out_of_range& oor) {
-                e = new Atome(code);
+                e = new Atome(code, code_to_string[code]);
             }
             e->status = s_constant;
             atom_pool[code] = e;
@@ -747,7 +747,7 @@ public:
     Element* provideNonLabelAtom(short code) {
         Element* e = atom_pool[code];
         if (e == NULL) {
-            e = new Atomnotlabel(code);
+            e = new Atomnotlabel(code, code_to_string[code]);
             e->status = s_constant;
             atom_pool[code] = e;
         }

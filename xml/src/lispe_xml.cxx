@@ -200,21 +200,22 @@ public:
         if (!getDoc() || node == NULL)
             return emptylist_;
 
-        List* kvect = emptylist_;
+        Strings* kvect = new Strings;
         if (node->nsDef != NULL) {
-            kvect = new List;
             xmlNsPtr cur = node->nsDef;
             string val;
             while (cur != NULL) {
                 if (cur->href != NULL) {
                     val = (char*)cur->href;
-                    kvect->append(lisp->provideString(val));
+                    kvect->append(val);
                 }
-                else
-                    kvect->append(emptystring_);
+                else {
+                    val = "";
+                    kvect->append(val);
+                }
 
                 val = (char*)cur->prefix;
-                kvect->append(lisp->provideString(val));
+                kvect->append(val);
                 cur = cur->next;
             }
         }

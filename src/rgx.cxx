@@ -992,11 +992,11 @@ public:
         if (resultats.size() == 0)
             return emptylist_;
 
-        List* liste = new List;
+        Strings* liste = new Strings;
         wstring sub;
         for (pos = 0; pos < resultats.size(); pos+=2) {
             sub = w.substr(resultats[pos], resultats[pos+1]-resultats[pos]);
-            liste->append(lisp->provideString(sub));
+            liste->append(sub);
         }
         return liste;
     }
@@ -1030,21 +1030,18 @@ public:
         if (values.size() == 0)
             return emptylist_;
         
-        List* result = new List;
-        Element* e;
+        Strings* result = new Strings;
         long pos = 0;
         wstring sub;
         for (long i = 0; i < values.size(); i += 2) {
             sub = w.substr(pos, values[i]-pos);
-            e = lisp->provideString(sub);
-            result->append(e);
+            result->append(sub);
             pos=values[i+1];
         }
         
         if (pos < w.size()) {
             sub = w.substr(pos,w.size()-pos);
-            e = lisp->provideString(sub);
-            result->append(e);
+            result->append(sub);
         }
         
         return result;
@@ -1124,11 +1121,11 @@ public:
         if (resultats.size() == 0)
             return emptylist_;
 
-        List* liste = new List;
+        Strings* liste = new Strings;
         wstring sub;
         for (pos = 0; pos < resultats.size(); pos+=2) {
             sub = val.substr(resultats[pos], resultats[pos+1]-resultats[pos]);
-            liste->append(lisp->provideString(sub));
+            liste->append(sub);
         }
         return liste;
     }
@@ -1188,16 +1185,14 @@ public:
     }
 
     Element* split(LispE* lisp, wstring& w) {
-        List* result = new List;
-        Element* e;
+        Strings* result = new Strings;
         long pos = 0;
         wstring sub;
 
         const wsregex_iterator end;
         for (wsregex_iterator i(w.begin(), w.end(), *au); i != end; ++i) {
             sub = w.substr(pos, i->position()-pos);
-            e = lisp->provideString(sub);
-            result->append(e);
+            result->append(sub);
             pos = i->position() + i->length();
         }
 
@@ -1208,8 +1203,7 @@ public:
 
         if (pos < w.size()) {
             sub = w.substr(pos,w.size()-pos);
-            e = lisp->provideString(sub);
-            result->append(e);
+            result->append(sub);
         }
         
         return result;

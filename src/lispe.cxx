@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.3.9.30";
+static std::string version = "1.2021.4.7.9.49";
 string LispVersion() {
     return version;
 }
@@ -245,6 +245,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_tensor, "tensor", P_ATLEASTTHREE, &List::evall_tensor);
     set_instruction(l_numbers, "numbers", P_TWO, &List::evall_numbers);
     set_instruction(l_integers, "integers", P_TWO, &List::evall_integers);
+    set_instruction(l_strings, "strings", P_TWO, &List::evall_strings);
     set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or);
     set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe);
     set_instruction(l_sum, "sum", P_TWO, &List::evall_sum);
@@ -369,7 +370,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     //We record all our operators in advance
     for (auto& a: operators) {
-        e = new Operator(a.first);
+        e = new Operator(a.first, code_to_string[a.first]);
         e->status = s_constant;
         operator_pool[a.first] = e;
     }
@@ -385,6 +386,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_number] = L"number_";
     code_to_string[t_numbers] = L"numbers_";
     code_to_string[t_integer] = L"integer_";
+    code_to_string[t_strings] = L"strings_";
     code_to_string[t_integers] = L"integers_";
     code_to_string[t_list] = L"list_";
     code_to_string[t_matrix] = L"matrix_";
@@ -471,6 +473,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_string);
     provideAtomType(t_number);
     provideAtomType(t_integer);
+    provideAtomType(t_strings);
     provideAtomType(t_numbers);
     provideAtomType(t_integers);
     provideAtomType(t_list);
@@ -486,6 +489,7 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_number, _NULL), t_number, v_null);
     recordingData(lisp->create_instruction(t_integer, _NULL), t_integer, v_null);
     recordingData(lisp->create_instruction(t_numbers, _NULL), t_numbers, v_null);
+    recordingData(lisp->create_instruction(t_strings, _NULL), t_strings, v_null);
     recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, v_null);
     recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
     recordingData(lisp->create_instruction(t_matrix, _NULL), t_matrix, v_null);
@@ -1755,6 +1759,9 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
 
 
 
