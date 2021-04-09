@@ -102,23 +102,28 @@ extern NSMutableDictionary* allfiles;
     
     NSWindow* wnd=[[NSApp orderedWindows] objectAtIndex:0];
     NSEvent* evenement=[wnd currentEvent];
-    NSString * key = [evenement characters];
-    const char c = [key characterAtIndex:0];
-    if (wnd == [tview window]) {
-        if (c == ')' || c == '}' || c == ']') {
-            //looking for the corresponding (
-            [tview matchingparenthesis: c];
+    @try {
+        NSString * key = [evenement characters];
+        const char c = [key characterAtIndex:0];
+        if (wnd == [tview window]) {
+            if (c == ')' || c == '}' || c == ']') {
+                //looking for the corresponding (
+                [tview matchingparenthesis: c];
+            }
+            return;
         }
+        
+        NSViewController* n=[wnd contentViewController];
+        CodeViewController* cn=(CodeViewController*)n;
+        
+        if (strchr(cc,c)!= NULL)
+            [[cn Code] localcolor: c];
+        else
+            [[cn Code] setmodified:YES];
+    }
+    @catch(NSException * e) {
         return;
     }
-
-    NSViewController* n=[wnd contentViewController];
-    CodeViewController* cn=(CodeViewController*)n;
-    
-    if (strchr(cc,c)!= NULL)
-        [[cn Code] localcolor: c];
-    else
-        [[cn Code] setmodified:YES];
 }
 
 -(BOOL)application:(NSApplication *)sender openFile:(NSString *)filename {

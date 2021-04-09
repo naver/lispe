@@ -349,6 +349,7 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib atan (val)", new Math(lisp, math_atan));
     lisp->extension("deflib atanh (val)", new Math(lisp, math_atanh));
     lisp->extension("deflib cbrt (val)", new Math(lisp, math_cbrt));
+    lisp->extension("deflib ∛ (val)", new Math(lisp, math_cbrt));
     lisp->extension("deflib cos (val)", new Math(lisp, math_cos));
     lisp->extension("deflib cosh (val)", new Math(lisp, math_cosh));
     lisp->extension("deflib erf (val)", new Math(lisp, math_erf));
@@ -369,6 +370,7 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib sin (val)", new Math(lisp, math_sin));
     lisp->extension("deflib sinh (val)", new Math(lisp, math_sinh));
     lisp->extension("deflib sqrt (val)", new Math(lisp, math_sqrt));
+    lisp->extension("deflib √ (val)", new Math(lisp, math_sqrt));
     lisp->extension("deflib tan (val)", new Math(lisp, math_tan));
     lisp->extension("deflib tanh (val)", new Math(lisp, math_tanh));
     lisp->extension("deflib tgamma (val)", new Math(lisp, math_tgamma));
@@ -379,19 +381,25 @@ void moduleMaths(LispE* lisp) {
     wstring nom = L"_pi";
     Element* pi = lisp->provideNumber(M_PI);
     lisp->recordingunique(pi, lisp->encode(nom));
+    nom = L"π";
+    lisp->recordingunique(pi, lisp->encode(nom));
     
     nom = L"_tau";
     pi = lisp->provideNumber(2 * M_PI);
     lisp->recordingunique(pi, lisp->encode(nom));
-
+    nom = L"τ";
+    lisp->recordingunique(pi, lisp->encode(nom));
+    
     nom = L"_e";
     pi = lisp->provideNumber(M_E);
     lisp->recordingunique(pi, lisp->encode(nom));
-
+    nom = L"ℯ";
+    lisp->recordingunique(pi, lisp->encode(nom));
+    
     nom = L"_phi";
     pi = lisp->provideNumber(M_GOLDEN);
     lisp->recordingunique(pi, lisp->encode(nom));
+    nom = L"φ";
+    lisp->recordingunique(pi, lisp->encode(nom));
 
 }
-
-

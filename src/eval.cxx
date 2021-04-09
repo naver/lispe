@@ -7071,8 +7071,8 @@ Element* List::evall_sum(LispE* lisp) {
         switch (first_element->type) {
             case t_numbers: {
                 double v = 0;
-                listsize = lst->size();
                 Numbers* nb = (Numbers*)first_element;
+                listsize = nb->size();
                 for (long i = 0; i < listsize; i++) {
                     v += nb->liste[i];
                 }
@@ -7081,8 +7081,8 @@ Element* List::evall_sum(LispE* lisp) {
             }
             case t_integers: {
                 long v = 0;
-                listsize = lst->size();
                 Integers* nb = (Integers*)first_element;
+                listsize = nb->size();
                 for (long i = 0; i < listsize; i++) {
                     v += nb->liste[i];
                 }
@@ -7091,8 +7091,8 @@ Element* List::evall_sum(LispE* lisp) {
             }
             case t_strings: {
                 wstring w;
-                listsize = lst->size();
                 Strings* nb = (Strings*)first_element;
+                listsize = nb->size();
                 for (long i = 0; i < listsize; i++) {
                     w += nb->liste[i];
                 }
@@ -7133,8 +7133,8 @@ Element* List::evall_product(LispE* lisp) {
             throw new Error("Error: expecting a list as argument");
         
         if (first_element->type == t_numbers) {
-            listsize = lst->size();
             Numbers* nb = (Numbers*)first_element;
+            listsize = nb->size();
             for (long i = 0; i < listsize; i++) {
                 v *= nb->liste[i];
             }
@@ -7143,8 +7143,8 @@ Element* List::evall_product(LispE* lisp) {
         }
 
         if (first_element->type == t_integers) {
-            listsize = lst->size();
             Integers* nb = (Integers*)first_element;
+            listsize = nb->size();
             for (long i = 0; i < listsize; i++) {
                 v *= nb->liste[i];
             }

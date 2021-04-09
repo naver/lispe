@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.7.9.49";
+static std::string version = "1.2021.4.9.13.7";
 string LispVersion() {
     return version;
 }
@@ -530,6 +530,15 @@ void Delegation::initialisation(LispE* lisp) {
     w = L"⍉";
     string_to_code[w] = l_transpose;
     
+    w = L"¬";
+    string_to_code[w] = l_not;
+
+    w = L"∑";
+    string_to_code[w] = l_sum;
+
+    w = L"∏";
+    string_to_code[w] = l_product;
+
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
     e = new Cadr("cadr");
@@ -1759,6 +1768,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

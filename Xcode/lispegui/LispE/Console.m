@@ -619,6 +619,12 @@ const char* Inputtext(const char* msg) {
     [tview displaychar:@"φ"];
 }
 
+- (IBAction)breakpoint:(id)sender {
+    CodeViewController* cn = [tview topview];
+    if (cn != nil)
+        [[cn Code] insertBreakpoint];
+}
+
 - (IBAction)multiply:(id)sender {
     [tview displaychar:@"×"];
 }
@@ -628,17 +634,19 @@ const char* Inputtext(const char* msg) {
 }
 
 - (IBAction)product:(id)sender {
-    [tview displaychar:@"∏("];
-}
-
-- (IBAction)breakpoint:(id)sender {
-    CodeViewController* cn = [tview topview];
-    if (cn != nil)
-        [[cn Code] insertBreakpoint];
+    [tview displaychar:@"∏"];
 }
 
 - (IBAction)sum:(id)sender {
-    [tview displaychar:@"∑("];
+    [tview displaychar:@"∑"];
+}
+
+- (IBAction)squareroot:(id)sender {
+    [tview displaychar:@"√"];
+}
+
+- (IBAction)cubicroot:(id)sender {
+    [tview displaychar:@"∛"];
 }
 
 - (IBAction)square:(id)sender {
@@ -647,14 +655,6 @@ const char* Inputtext(const char* msg) {
 
 - (IBAction)cube:(id)sender {
     [tview displaychar:@"³"];
-}
-
-- (IBAction)squareroot:(id)sender {
-    [tview displaychar:@"√("];
-}
-
-- (IBAction)cubicroot:(id)sender {
-    [tview displaychar:@"∛("];
 }
 
 - (IBAction)arrow:(id)sender {
@@ -736,8 +736,11 @@ const char* Inputtext(const char* msg) {
 
 -(void) displayinconsole: (NSString*)output {
     if (output != nil) {
+        [self setDelegate: nil];
         NSRange r = [self selectedRange];
+        r.length = [output length];
         [self insertText: output replacementRange: r];
+        [self setDelegate: currentdelegate];
     }
 }
 

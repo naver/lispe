@@ -557,7 +557,10 @@ extern "C" {
         delete[] l;
     }
 
-    long computeparenthesis(const char* ln, char checkcar, long limit) {
+    long computeparenthesis(const char* w, char checkcar, long limit) {
+        wstring ln;
+        s_utf8_to_unicode(ln, (unsigned char*)w, strlen((char*)w));
+        ln = ln.substr(0, limit+1);
         long posmatch = -1;
         vector<long> positions;
         char check;
