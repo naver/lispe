@@ -34,7 +34,6 @@
 
 }
 
--(BOOL)appearanceIsDark:(NSAppearance*) appearance;
 -(BOOL)ismodified;
 -(void)setmodified:(BOOL)v;
 -(BOOL)isTobecreated;

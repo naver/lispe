@@ -36,25 +36,9 @@ BOOL dark = false;
 
 @implementation Lecode
 
-
--(BOOL)appearanceIsDark:(NSAppearance*) appearance
-{
-    if (@available(*, macOS 10.14)) {
-        NSAppearanceName basicAppearance = [appearance bestMatchFromAppearancesWithNames:@[
-            NSAppearanceNameAqua,
-            NSAppearanceNameDarkAqua
-        ]];
-        return [basicAppearance isEqualToString:NSAppearanceNameDarkAqua];
-    }
-    return NO;
-}
-
 -(void)awakeFromNib {
     
     modified = NO;
-
-
-    dark = [self appearanceIsDark: NSAppearance.currentAppearance];
     
     if (dark) {
         localcouleur= [NSColor cyanColor];
@@ -347,11 +331,14 @@ BOOL dark = false;
     return -1;
 }
 
--(void)resetCursor:(id)rg {
+-(void)resetCursor:(NSTimer*)nst {
+    NSRange r;
+    r.location = [[nst userInfo] longValue];
+    r.length = 1;
     if (dark)
-        [self setTextColor: [NSColor whiteColor] range:currentrange];
+        [self setTextColor: [NSColor whiteColor] range:r];
     else
-        [self setTextColor: [NSColor blackColor] range:currentrange];
+        [self setTextColor: [NSColor blackColor] range:r];
 }
 
 -(BOOL)localcolor:(char)key {
@@ -415,12 +402,13 @@ BOOL dark = false;
                  backrange.location += pos;
                  backrange.length = 1;
                  [self setTextColor: [NSColor redColor] range:backrange];
+                 NSNumber* ni = [NSNumber numberWithLong:backrange.location];
                  currentrange = backrange;
                  [NSTimer
                   scheduledTimerWithTimeInterval:0.35
                   target:self
                   selector:@selector(resetCursor:)
-                  userInfo:nil
+                  userInfo:ni
                   repeats:NO];
                  
              }
@@ -440,8 +428,13 @@ BOOL dark = false;
             truc=line;
         }
         
-        if ([self shouldChangeTextInRange:currentrange replacementString:truc])
+        if ([self shouldChangeTextInRange:currentrange replacementString:truc]) {
             [self replaceCharactersInRange:currentrange withString:truc];
+            long difference = currentrange.length;
+            currentrange.length = [truc length];
+            difference -= currentrange.length;
+            locpos -= difference;
+        }
         
         localrange=currentrange;
 
@@ -468,11 +461,12 @@ BOOL dark = false;
             backrange.length = 1;
             [self setTextColor: [NSColor redColor] range:backrange];
             currentrange = backrange;
+            NSNumber* ni = [NSNumber numberWithLong:backrange.location];
             [NSTimer
              scheduledTimerWithTimeInterval:0.35
              target:self
              selector:@selector(resetCursor:)
-             userInfo:nil
+             userInfo:ni
              repeats:NO];
         }
 
