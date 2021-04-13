@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.9.13.7";
+static std::string version = "1.2021.4.13.11.4";
 string LispVersion() {
     return version;
 }
@@ -276,6 +276,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_self, "self", P_ATLEASTONE, &List::eval_call_function);
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
+    set_instruction(l_sign, "sign", P_TWO, &List::evall_sign);
     set_instruction(l_size, "size", P_TWO, &List::evall_size);
     set_instruction(l_sleep, "sleep", P_TWO, &List::evall_sleep);
     set_instruction(l_sort, "sort", P_THREE, &List::evall_sort);
@@ -1768,6 +1769,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 

@@ -6283,6 +6283,20 @@ Element* List::evall_setq(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_sign(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    lisp->display_trace(this);
+    double v = 0;
+
+    evalAsNumber(1, lisp, v);
+    if (v == 0)
+        return zero_;
+    if (v < 0)
+        return minusone_;
+    return one_;
+}
+
 
 Element* List::evall_size(LispE* lisp) {
     if (liste.size() != 2)

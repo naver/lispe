@@ -53,7 +53,7 @@ typedef enum {
     l_atomp, l_numberp, l_consp, l_zerop, l_nullp, l_stringp, l_trace, l_flip, l_select,
     
     //Numerical operations
-    l_minus_plus, l_plus, l_minus, l_multiply, l_power,
+    l_sign, l_minus_plus, l_plus, l_minus, l_multiply, l_power,
     l_leftshift, l_rightshift, l_bitand, l_bitor, l_bitxor,
     //+11 = l_opequal
     l_plusequal, l_minusequal, l_multiplyequal,  l_powerequal,

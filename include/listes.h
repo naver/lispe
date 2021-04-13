@@ -955,6 +955,7 @@ public:
     Element* evall_fappend(LispE* lisp);
     Element* evall_fwrite(LispE* lisp);
     Element* evall_size(LispE* lisp);
+    Element* evall_sign(LispE* lisp);
     Element* evall_use(LispE* lisp);
     Element* evall_at_index(LispE* lisp);
     Element* evall_extract(LispE* lisp);
