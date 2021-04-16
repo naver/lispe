@@ -2206,7 +2206,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += L",";
-            buffer += liste[i];
+            buffer += wjsonstring(liste[i]);
         }
         buffer += L"]";
         return buffer;
@@ -2224,7 +2224,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += L" ";
-            buffer += liste[i];
+            buffer += wjsonstring(liste[i]);
         }
         buffer += L")";
         return buffer;

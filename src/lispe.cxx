@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.13.11.4";
+static std::string version = "1.2021.4.16.14.38";
 string LispVersion() {
     return version;
 }
@@ -1769,6 +1769,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 
