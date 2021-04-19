@@ -2148,7 +2148,7 @@ Element* List::evall_innerproduct(LispE* lisp) {
         l2_transposed = l2->transposed(lisp);
         
         Element* row;
-        Matrice* res = new Matrice(sx_1, sy_2, zero_);
+        Matrice* res = new Matrice(sx_1, sy_2, 0.0);
         //We are dealing with matrices...
         for (i = 0; i < sx_1; i++) {
             row = l1->index(i);
@@ -2227,7 +2227,7 @@ Element* List::evall_outerproduct(LispE* lisp) {
         l1->getShape(size);
         l2->getShape(size);
         if (size.size() == 2) {
-            res = new Matrice(size[0], size[1], zero_);
+            res = new Matrice(size[0], size[1], 0.0);
             ((Matrice*)res)->combine(lisp, l1, l2, &call);
         }
         else {
@@ -2404,7 +2404,7 @@ Element* List::evall_concatenate(LispE* lisp) {
             throw new Error("Error: Dimension error");
         
         if (first_element->type == t_matrix) {
-            res = new Matrice(sz1[0], sz1[1], zero_);
+            res = new Matrice(sz1[0], sz1[1], 0.0);
             ((Matrice*)res)->setvalue((Matrice*)first_element);
             res->concatenate(lisp,second_element);
             if (sz2.size() == 2)
@@ -2582,8 +2582,7 @@ Element* List::evall_rho(LispE* lisp) {
             evalAsInteger(1, lisp, sz1);
             evalAsInteger(2, lisp, sz2);
             listsize = e->size();
-            res = new Matrice(sz1, sz2, zero_);
-            ((Matrice*)res)->putlist(e);
+            res = new Matrice(e, sz1, sz2);
             e->release();
             lisp->set_true_as_true();
             return res;
@@ -2596,11 +2595,10 @@ Element* List::evall_rho(LispE* lisp) {
             evalAsInteger(i, lisp, s);
             sizes.push_back(s);
         }
-        res = new Tenseur(sizes, zero_);
         e = liste[listsize]->eval(lisp);
         if (!e->isList())
             throw new Error("Error: last argument should be a list");
-        ((Tenseur*)res)->putlist(e);
+        res = new Tenseur(e, sizes);
         e->release();
         lisp->set_true_as_true();
         return res;
@@ -5438,7 +5436,7 @@ Element* List::evall_matrix(LispE* lisp) {
             e = liste[1]->eval(lisp);
             if (e->type == t_matrix) {
                 Matrice* me = (Matrice*)e;
-                Matrice* m = new Matrice(me->size_x, me->size_y, zero_);
+                Matrice* m = new Matrice(me->size_x, me->size_y, 0.0);
                 for (long i = 0; i < me->size_x; i++) {
                     for (long j = 0; j < me->size_y; j++) {
                         m->index(i)->replacing(j, me->index(i)->index(j)->copying(false));
@@ -5453,7 +5451,7 @@ Element* List::evall_matrix(LispE* lisp) {
             if (!type_list)
                 throw new Error("Error: Cannot initialize a matrix with this value");
     
-            Matrice* m = new Matrice(sx, sy, zero_);
+            Matrice* m = new Matrice(sx, sy, 0.0);
             
             if (type_list == 2) {
                 for (long i = 0; i < sx; i++) {
@@ -7178,5 +7176,88 @@ Element* List::evall_product(LispE* lisp) {
         throw err;
     }
 
+    return null_;
+}
+
+
+Element* List::evall_invert(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize != 2 && listsize != 3)
+        throw new Error("Error: wrong number of arguments");
+
+    Element* element = null_;
+    Element* Y = null_;
+    Element* res;
+
+    try {
+        element = liste[1]->eval(lisp);
+        if (listsize == 3) {
+            Y = liste[2]->eval(lisp);
+            if (element->type != t_matrix || Y->type != t_matrix)
+                throw new Error("Error: 'solve' can only be applied to matrices");
+            res = ((Matrice*)element)->solve(lisp, (Matrice*)Y);
+            Y->release();
+        }
+        else {
+            if (element->type != t_matrix)
+                throw new Error("Error: only a matrix can be inverted");
+            res = ((Matrice*)element)->inversion(lisp);
+        }
+        element->release();
+        return res;
+    }
+    catch (Error* err) {
+        element->release();
+        Y->release();
+        throw err;
+    }
+    return null_;
+}
+
+Element* List::evall_solve(LispE* lisp) {
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+
+    Element* element = null_;
+    Element* Y = null_;
+    Element* res;
+
+    try {
+        element = liste[1]->eval(lisp);
+        Y = liste[2]->eval(lisp);
+        if (element->type != t_matrix || Y->type != t_matrix)
+            throw new Error("Error: solve can only be applied to matrices");
+        res = ((Matrice*)element)->solve(lisp, (Matrice*)Y);
+        Y->release();
+        element->release();
+        return res;
+    }
+    catch (Error* err) {
+        element->release();
+        Y->release();
+        throw err;
+    }
+    return null_;
+}
+
+
+Element* List::evall_determinant(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    Element* element = null_;
+
+    try {
+        element = liste[1]->eval(lisp);
+        if (element->type != t_matrix)
+            throw new Error("Error: We can only compute the determinant of a matrix");
+        double det = ((Matrice*)element)->determinant();
+        element->release();
+        return lisp->provideNumber(det);
+    }
+    catch (Error* err) {
+        element->release();
+        throw err;
+    }
     return null_;
 }

@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.16.14.38";
+static std::string version = "1.2021.4.19.15.16";
 string LispVersion() {
     return version;
 }
@@ -325,6 +325,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_innerproduct, ".", P_FOUR, &List::evall_innerproduct);
     set_instruction(l_outerproduct, "°", P_FOUR, &List::evall_outerproduct);
     set_instruction(l_iota, "iota", P_ATLEASTTWO, &List::evall_iota);
+    set_instruction(l_invert, "invert", P_TWO | P_THREE, &List::evall_invert);
+    set_instruction(l_solve, "solve", P_THREE, &List::evall_solve);
+    set_instruction(l_determinant, "determinant", P_TWO, &List::evall_determinant);
     set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
     set_instruction(l_reduce, "//", P_THREE, &List::evall_reduce);
     set_instruction(l_scan, "\\\\", P_THREE, &List::evall_scan);
@@ -540,6 +543,9 @@ void Delegation::initialisation(LispE* lisp) {
     w = L"∏";
     string_to_code[w] = l_product;
 
+    w = L"⌹";
+    string_to_code[w] = l_invert;
+    
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
     e = new Cadr("cadr");
@@ -1769,6 +1775,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 

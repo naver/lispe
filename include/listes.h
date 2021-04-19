@@ -848,6 +848,8 @@ public:
     Element* evall_catch(LispE* lisp);
     Element* evall_maybe(LispE* lisp);
     Element* evall_equal(LispE* lisp);
+    Element* evall_determinant(LispE* lisp);
+    Element* evall_solve(LispE* lisp);
     Element* evall_different(LispE* lisp);
     Element* evall_lower(LispE* lisp);
     Element* evall_greater(LispE* lisp);
@@ -873,6 +875,7 @@ public:
     Element* evall_ncheck(LispE* lisp);
     Element* evall_check(LispE* lisp);
     Element* evall_ife(LispE* lisp);
+    Element* evall_invert(LispE* lisp);
     Element* evall_block(LispE* lisp);
     Element* evall_converttoatom(LispE* lisp);
     Element* evall_converttointeger(LispE* lisp);
@@ -1108,12 +1111,7 @@ public:
     
     Numbers() : Element(t_numbers), exchange_value(0) {}
     Numbers(uchar s) : Element(t_numbers, s), exchange_value(0) {}
-    Numbers(long nb, double v) : Element(t_numbers), exchange_value(0) {
-        while (nb) {
-            liste.push_back(v);
-            nb--;
-        }
-    }
+    Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
     
     Element* newInstance(Element* v) {
         return new Numbers(liste.size(), v->asNumber());
@@ -1441,13 +1439,8 @@ public:
     
     Integers() : Element(t_integers), exchange_value(0) {}
     Integers(uchar s) : Element(t_integers, s), exchange_value(0) {}
-    Integers(long nb, long v) : Element(t_integers), exchange_value(0) {
-        while (nb) {
-            liste.push_back(v);
-            nb--;
-        }
-    }
-
+    Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
+    
     Element* newInstance(Element* v) {
         return new Integers(liste.size(), v->asInteger());
     }
@@ -1761,7 +1754,6 @@ public:
     bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
     void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
-
 };
 
 class Matrice : public List {
@@ -1773,13 +1765,54 @@ public:
         size_x = x;
         size_y = y;
         Numbers* l;
+        double v = n->asNumber();
+        for (long i = 0; i < size_x; i++) {
+            l = new Numbers(size_y, v);
+            liste.push_back(l);
+        }
+    }
+
+    Matrice(Element* lst, long x, long y) {
+        type = t_matrix;
+        size_x = x;
+        size_y = y;
+        build(lst);
+    }
+
+    Matrice(long x, long y, double n) {
+        type = t_matrix;
+        size_x = x;
+        size_y = y;
+        Numbers* l;
+
+        for (long i = 0; i < size_x; i++) {
+            l = new Numbers(size_y, n);
+            liste.push_back(l);
+        }
+    }
+
+    Matrice(Matrice* m) {
+        type = t_matrix;
+        size_x = m->size_x;
+        size_y = m->size_y;
+        Numbers* l;
         for (long i = 0; i < size_x; i++) {
             l = new Numbers;
+            l->liste = ((Numbers*)m->liste[i])->liste;
             liste.push_back(l);
-            for (long j = 0; j < size_y; j++) {
-                l->append(n);
-            }
         }
+    }
+
+    inline double val(long i, long j) {
+        return ((Numbers*)liste[i])->liste[j];
+    }
+    
+    inline void set(long i, long j, double v) {
+        ((Numbers*)liste[i])->liste[j] = v;
+    }
+    
+    inline void mult(long i, long j, double v) {
+        ((Numbers*)liste[i])->liste[j] *= v;
     }
 
     char isPureList(long& x, long& y) {
@@ -1792,16 +1825,24 @@ public:
         return 4;
     }
     
-    void inject(long isz, Element* lst, long& idx) {
+    Element* inversion(LispE* lisp);
+    Element* solve(LispE* lisp, Matrice* Y);
+    double determinant();
+
+    void build(Element* lst) {
+        Numbers* l;
+        long idx = 0;
         for (long x = 0; x < size_x; x++) {
+            l = new Numbers;
+            liste.push_back(l);
             for (long y = 0; y < size_y; y++) {
                 if (idx == lst->size())
                     idx = 0;
-                index(x)->replacing(y,lst->index(idx++));
+                l->liste.push_back(lst->index(idx++)->asNumber());
             }
         }
     }
-    
+
     void combine(LispE* lisp, long isz1, long isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             action->liste[1] = l1;
@@ -1826,13 +1867,6 @@ public:
     
     void combine(LispE* lisp, Element* l1, Element* l2, List* action) {
         combine(lisp, 0, 0, l1, l2, action);
-    }
-    
-    void putlist(Element* lst) {
-        long idx = 0;
-        if (!lst->size())
-            return;
-        inject(0, lst, idx);
     }
     
     void setvalue(Matrice* lst) {
@@ -1873,44 +1907,60 @@ public:
         type = t_tensor;
         sizes = sz;
         if (sizes.size())
-            build(0,this, n);
+            build(0,this, n->asNumber());
     }
     
-    
-    void build(long isz, Element* res, Element* n) {
-        if (isz == sizes.size()-1) {
-            for (long i = 0; i < sizes[isz]; i++) {
-                res->append(n);
-            }
-            return;
-        }
-        
-        Element* lst;
-        bool last = (isz == sizes.size()-2);
-        for (long i = 0; i < sizes[isz]; i++) {
-            if (last)
-                lst = new Numbers;
-            else
-                lst = new List;
-            res->append(lst);
-            build(isz+1, lst, n);
+    Tenseur(Element* lst, std::vector<long>& sz) {
+        type = t_tensor;
+        sizes = sz;
+        if (sizes.size()) {
+            long idx = 0;
+            build(0,this, lst, idx);
         }
     }
 
-    void inject(long isz, Element* res, Element* lst, long& idx) {
-        if (isz == sizes.size()-1) {
+    void build(long isz, Element* res, double n) {
+        if (isz == sizes.size()-2) {
+            Numbers* lst;
             for (long i = 0; i < sizes[isz]; i++) {
-                if (idx == lst->size())
-                    idx = 0;
-                res->replacing(i,lst->index(idx++));
+                lst = new Numbers(sizes[isz+1], n);
+                res->append(lst);
             }
-            return;
         }
-        for (long i = 0; i < sizes[isz]; i++) {
-            inject(isz+1, res->index(i), lst, idx);
+        else {
+            List* lst;
+            for (long i = 0; i < sizes[isz]; i++) {
+                lst = new List;
+                res->append(lst);
+                build(isz+1, lst, n);
+            }
         }
     }
-    
+
+    void build(long isz, Element* res, Element* lst, long& idx) {
+        if (isz == sizes.size()-2) {
+            Numbers* l;
+            long i,j;
+            for (i = 0; i < sizes[isz]; i++) {
+                l = new Numbers;
+                res->append(l);
+                for (j = 0; j < sizes[isz+1]; j++) {
+                    if (idx == lst->size())
+                        idx = 0;
+                    l->liste.push_back(lst->index(idx++)->asNumber());
+                }
+            }
+        }
+        else {
+            List* l;
+            for (long i = 0; i < sizes[isz]; i++) {
+                l = new List;
+                res->append(l);
+                build(isz+1, l, lst, idx);
+            }
+        }
+    }
+
     void combine(LispE* lisp, vector<long>& isz1,vector<long>& isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             if (!isz1.size() || !isz2.size())
@@ -1952,11 +2002,6 @@ public:
         vector<long> isz1;
         vector<long> isz2;
         combine(lisp, isz1, isz2, l1, l2, action);
-    }
-    
-    void putlist(Element* lst) {
-        long idx = 0;
-        inject(0, this, lst, idx);
     }
     
     char isPureList(long& x, long& y) {

@@ -61,7 +61,8 @@ typedef enum {
     l_divide, l_mod, l_divideequal,l_modequal,
     l_sum, l_product,
     l_innerproduct, l_matrix, l_tensor, l_outerproduct, l_factorial, l_iota, l_iota0,
-    l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate, l_transpose,
+    l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate,
+    l_transpose, l_invert, l_determinant, l_solve,
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,

@@ -17,12 +17,28 @@
 #include "lispe.h"
 #include "elements.h"
 #include "tools.h"
+#include "vecte.h"
 
 #ifdef WIN32
 #define _USE_MATH_DEFINES
 #endif
 
 #include <math.h>
+
+#ifdef UNIX
+#define ABS(x) fabs((double)x)
+#define TRUE true
+#define FALSE false
+#else
+#define ABS(x) abs((double)x)
+#endif
+
+#define NMAX 100
+#define TINY 1.5e-16
+#define REAL double
+#define ZERO (double)0.0
+#define ONE (double)1.0
+#define TWO (double)2.0
 
 
 static const double M_GOLDEN = 1.61803398874989484820458683436563811772030917980576286213544862270526046281890244970720720418939113748475;
@@ -402,4 +418,207 @@ void moduleMaths(LispE* lisp) {
     nom = L"φ";
     lisp->recordingunique(pi, lisp->encode(nom));
 
+}
+//------ Matrix operations ------------------------
+
+//LU decomposition
+long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice& m) {    
+    d = 1;
+    double AMAX, DUM, thesum;
+    long i, i_max = 0, j, k;
+    vector<double> values;
+    
+    for (i = 0; i < n; i++)  {
+        AMAX = 0.0;
+        for (j = 0; j<n; j++)  {
+            thesum = m.val(i, j);
+            if (ABS(thesum) > AMAX)
+                AMAX = ABS(thesum);
+        }
+        
+        if (AMAX < TINY)
+            return 1;
+        values.push_back(1.0 / AMAX);
+    } // i loop
+    
+    for (j = 0; j < n; j++)  {
+        
+        for (i = 0; i < j; i++)  {
+            thesum = m.val(i, j);
+            for (k = 0; k < i; k++)
+            thesum = thesum - m.val(i, k)*m.val(k, j);
+            m.set(i,j, thesum);
+        } // i loop
+        AMAX = 0.0;
+        
+        for (i = j; i < n; i++)  {
+            thesum = m.val(i, j);
+            for (k = 0; k < j; k++)
+            thesum = thesum - m.val(i, k)*m.val(k, j);
+            m.set(i,j, thesum);
+            DUM = values[i] * ABS(thesum);
+            if (DUM >= AMAX) {
+                i_max = i;
+                AMAX = DUM;
+            }
+        } // i loop
+        
+        if (j != i_max)  {
+            for (k = 0; k < n; k++)  {
+                DUM = m.val(i_max, k);
+                m.set(i_max,k,m.val(j, k));
+                m.set(j,k,DUM);
+            } // k loop
+            d = -d;
+            values[i_max] = values[j];
+        }
+        
+        indexes.at(j, i_max);
+        
+        if (ABS(m.val(j, j)) < TINY)
+            m.set(j,j,TINY);
+        
+        if (j != n - 1)  {
+            DUM = 1.0 / m.val(j, j);
+            for (i = j + 1; i < n; i++) {
+                m.mult(i,j, DUM);
+            }
+        }
+    } // j loop
+    
+    return 0;
+    
+} // subroutine LUDCMP
+
+void LUBKSB(long n, VECTE<long>& indexes, VECTE<double>& b_values, Matrice& m)  {
+    double thesum;
+    long  i, ii, j, ll;
+    
+    ii = -1;
+    
+    for (i = 0; i < n; i++)  {
+        ll = indexes[i];
+        thesum = b_values[ll];
+        b_values.at(ll, b_values[i]);
+        if (ii != -1) {
+            for (j = ii; j < i; j++) {
+                thesum = thesum - m.val(i, j)*b_values[j];
+            }
+        }
+        else {
+            if (thesum != 0.0)
+                ii = i;
+        }
+        b_values.at(i, thesum);
+    } // i loop
+    
+    for (i = n - 1; i >= 0; i--)  {
+        thesum = b_values[i];
+        if (i < n - 1)  {
+            for (j = i + 1; j < n; j++) {
+                thesum = thesum - m.val(i, j)*b_values[j];
+            }
+        }
+        b_values.at(i, thesum / m.val(i, i));
+    } // i loop
+    
+} // LUBKSB
+
+double Matrice::determinant() {
+    if (size_x == 2 && size_y == 2) {
+        //then in that case
+        return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
+    }
+
+
+    long i;
+    i = 0;
+    double det = 0;
+    for (long j = 0; j < size_x; j++) {
+        if (val(i,j) == 0)
+            continue;
+
+        Matrice sub(size_x - 1, size_y - 1, 0.0);
+
+        long pc = 0;
+        long pr = 0;
+        for (long r = 0; r < size_x; r++) {
+            if (r == i)
+                continue;
+            pc = 0;
+            for (long c = 0; c < size_y; c++) {
+                if (c == j)
+                    continue;
+                sub.set(pr,pc, val(r,c));
+                pc++;
+            }
+            pr++;
+        }
+        double sg = pow(-1, (i + j + 2));
+        det += val(i,j) * sg*sub.determinant();
+    }
+    return det;
+}
+
+Element* Matrice::inversion(LispE* lisp) {
+    //else Local decomposition
+    Matrice m(this);
+    
+    
+    VECTE<long> indexes(size_x);
+    long id;
+    //call LU decomposition
+    long rc = LUDCMP(size_x, indexes, id, m);
+    if (rc == 1) {
+        return emptylist_;
+    }
+    
+    
+    Matrice* Y = new Matrice(size_x, size_y, 0.0);
+    
+    VECTE<double> temp(size_x);
+    long i;
+    //We create an identity matrix, which will contain the final result...
+    for (i = 0; i < size_x; i++) {
+        Y->set(i,i, 1);
+    }
+    
+    for (long j = 0; j < size_x; j++) {
+        for (i = 0; i < size_x; i++) {
+            temp.at(i, Y->val(i, j));
+        }
+        LUBKSB(size_x, indexes, temp, m);
+        for (i = 0; i < size_x; i++) {
+            Y->set(i,j,temp[i]);
+        }
+    }
+    return Y;
+}
+
+Element* Matrice::solve(LispE* lisp, Matrice* y) {
+    //else Local decomposition
+    Matrice m(this);
+        
+    VECTE<long> indexes(size_x);
+    long id;
+    //call LU decomposition
+    long rc = LUDCMP(size_x, indexes, id, m);
+    if (rc == 1) {
+        return emptylist_;
+    }
+        
+    Matrice* Y = new Matrice(y);
+    VECTE<double> temp(size_x);
+    long i;
+
+    for (long j = 0; j < size_x; j++) {
+        for (i = 0; i < size_x; i++) {
+            temp.at(i, Y->val(i, j));
+        }
+        LUBKSB(size_x, indexes, temp, m);
+        for (i = 0; i < size_x; i++) {
+            Y->set(i,j,temp[i]);
+        }
+    }
+    return Y;
 }

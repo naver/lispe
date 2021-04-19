@@ -507,7 +507,7 @@ Element* List::transposed(LispE* lisp) {
     sz[1] = i;
     Element* tenseur;
     if (sz.size() == 2)
-        tenseur = new Matrice(sz[0], sz[1], zero_);
+        tenseur = new Matrice(sz[0], sz[1], 0.0);
     else
         tenseur = new Tenseur(sz, zero_);
     
@@ -523,7 +523,7 @@ Element* List::transposed(LispE* lisp) {
 }
 
 Element* Matrice::transposed(LispE* lisp) {
-    Matrice* transposed_matrix = new Matrice(size_y, size_x, zero_);
+    Matrice* transposed_matrix = new Matrice(size_y, size_x, 0.0);
     long i, j = 0;
    
     Element* e;
