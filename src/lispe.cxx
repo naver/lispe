@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.19.15.16";
+static std::string version = "1.2021.4.20.14.35";
 string LispVersion() {
     return version;
 }
@@ -332,8 +332,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_ludcmp, "ludcmp", P_TWO, &List::evall_ludcmp);
     set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb);
     set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
-    set_instruction(l_reduce, "//", P_TWO | P_THREE, &List::evall_reduce);
-    set_instruction(l_scan, "\\\\", P_THREE, &List::evall_scan);
+    set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce);
+    set_instruction(l_scan, "scan", P_THREE, &List::evall_scan);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
     set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
     set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
@@ -525,6 +525,12 @@ void Delegation::initialisation(LispE* lisp) {
     w = L"t";
     string_to_code[w] = v_true;
     
+    w = L"//";
+    string_to_code[w] = l_reduce;
+    
+    w = L"\\\\";
+    string_to_code[w] = l_scan;
+
     w = L"⍳";
     string_to_code[w] = l_iota;
 
@@ -1778,6 +1784,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
 
 
 
