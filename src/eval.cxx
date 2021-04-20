@@ -2254,7 +2254,8 @@ Element* List::evall_outerproduct(LispE* lisp) {
 }
 
 Element* List::evall_reduce(LispE* lisp) {
-    if (liste.size() != 3)
+    short listsz = liste.size();
+    if (listsz != 2 && listsz != 3)
         throw new Error("Error: wrong number of arguments for '//'");
     //Operation is: (// operation l1)
     
@@ -2265,6 +2266,14 @@ Element* List::evall_reduce(LispE* lisp) {
     lisp->set_true_as_one();
     
     try {
+        if (listsz == 2) {
+            //This is a copy
+            l1 = liste[1]->eval(lisp);
+            op = l1->fullcopy();
+            l1->release();
+            return op;
+        }
+        
         l1 = liste[2]->eval(lisp);
         
         if (!l1->isList())
@@ -3064,6 +3073,26 @@ Element* List::evall_consp(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_duplicate(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+    Element* element = null_;
+    Element* res;
+
+    lisp->display_trace(this);
+
+    try {
+        element = liste[1]->eval(lisp);
+        res = element->fullcopy();
+        element->release();
+        return res;
+    }
+    catch (Error* err) {
+        element->release();
+        throw err;
+    }
+    return null_;
+}
 
 Element* List::evall_converttoatom(LispE* lisp) {
     if (liste.size() != 2)
@@ -7257,6 +7286,62 @@ Element* List::evall_determinant(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
+        throw err;
+    }
+    return null_;
+}
+
+Element* List::evall_ludcmp(LispE* lisp) {
+    if (liste.size() != 2)
+        throw new Error("Error: wrong number of arguments");
+
+    Element* element = null_;
+
+    try {
+        element = liste[1]->eval(lisp);
+        if (element->type != t_matrix)
+            throw new Error("Error: the first element should be a matrix");
+        return ((Matrice*)element)->ludcmp(lisp);
+    }
+    catch (Error* err) {
+        element->release();
+        throw err;
+    }
+    return null_;
+}
+
+Element* List::evall_lubksb(LispE* lisp) {
+    short lstsz = liste.size();
+    if (lstsz != 3 && lstsz != 4)
+        throw new Error("Error: wrong number of arguments");
+
+    Element* element = null_;
+    Element* idxs = null_;
+    Element* Y = NULL;
+    
+    try {
+        element = liste[1]->eval(lisp);
+        if (element->type != t_matrix)
+            throw new Error("Error: the first element should be a matrix");
+        idxs = liste[2]->eval(lisp);
+        if (idxs->type != t_integers)
+            throw new Error("Error: the second element should be an integers_ (a list of integers)");
+        if (lstsz == 4) {
+            Y = liste[3]->eval(lisp);
+            if (Y->type != t_matrix)
+                throw new Error("Error: the last element should be a matrix");
+        }
+        Y = ((Matrice*)element)->lubksb(lisp, (Integers*)idxs, (Matrice*)Y);
+        element->release();
+        idxs->release();
+        return Y;
+    }
+    catch (Error* err) {
+        element->release();
+        idxs->release();
+        if (Y != NULL) {
+            Y->release();
+        }
         throw err;
     }
     return null_;

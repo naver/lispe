@@ -173,6 +173,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
+    set_instruction(l_duplicate, "duplicate", P_TWO, &List::evall_duplicate);
     set_instruction(l_converttoatom, "atom", P_TWO, &List::evall_converttoatom);
     set_instruction(l_converttointeger, "integer", P_TWO, &List::evall_converttointeger);
     set_instruction(l_converttonumber, "number", P_TWO, &List::evall_converttonumber);
@@ -328,8 +329,10 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_invert, "invert", P_TWO | P_THREE, &List::evall_invert);
     set_instruction(l_solve, "solve", P_THREE, &List::evall_solve);
     set_instruction(l_determinant, "determinant", P_TWO, &List::evall_determinant);
+    set_instruction(l_ludcmp, "ludcmp", P_TWO, &List::evall_ludcmp);
+    set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb);
     set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
-    set_instruction(l_reduce, "//", P_THREE, &List::evall_reduce);
+    set_instruction(l_reduce, "//", P_TWO | P_THREE, &List::evall_reduce);
     set_instruction(l_scan, "\\\\", P_THREE, &List::evall_scan);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
     set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);

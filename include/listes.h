@@ -448,7 +448,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant_container(bool pair = false);
+    virtual Element* duplicate_constant_container(bool pair = false);
     
     bool isList() {
         return true;
@@ -885,6 +885,7 @@ public:
     Element* evall_reverse(LispE* lisp);
     Element* evall_concatenate(LispE* lisp);
     Element* evall_cons(LispE* lisp);
+    Element* evall_duplicate(LispE* lisp);
     Element* evall_trace(LispE* lisp);
     Element* evall_key(LispE* lisp);
     Element* evall_keyn(LispE* lisp);
@@ -948,6 +949,8 @@ public:
     Element* evall_atomise(LispE* lisp);
     Element* evall_join(LispE* lisp);
     Element* evall_eval(LispE* lisp);
+    Element* evall_ludcmp(LispE* lisp);
+    Element* evall_lubksb(LispE* lisp);
     Element* evall_type(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_input(LispE* lisp);
@@ -1825,9 +1828,31 @@ public:
         return 4;
     }
     
+    Element* copying(bool duplicate = true) {
+        //If it is a CDR, we need to copy it...
+        if (status < s_protect && liste.nocdr() && !duplicate)
+            return this;
+        
+        return new Matrice(this);
+    }
+    
+    //In the case of a container for push, key and keyn
+    // We must force the copy when it is a constant
+    Element* duplicate_constant_container(bool pair = false) {
+        if (status == s_constant)
+            return new Matrice(this);
+        return this;
+    }
+
+    Element* fullcopy() {
+        return new Matrice(this);
+    }
+
     Element* inversion(LispE* lisp);
     Element* solve(LispE* lisp, Matrice* Y);
     double determinant();
+    Element* ludcmp(LispE* lisp);
+    Element* lubksb(LispE* lisp, Integers* indexes, Matrice* Y = NULL);
 
     void build(Element* lst) {
         Numbers* l;
@@ -1919,6 +1944,22 @@ public:
         }
     }
 
+    Tenseur(Tenseur* tensor) {
+        type = t_tensor;
+        sizes = tensor->sizes;
+        tensor->build(0, this);
+    }
+
+    Element* duplicate_constant_container(bool pair = false) {
+        if (status == s_constant)
+            return new Tenseur(this);
+        return this;
+    }
+    
+    Element* fullcopy() {
+        return new Tenseur(this);
+    }
+
     void build(long isz, Element* res, double n) {
         if (isz == sizes.size()-2) {
             Numbers* lst;
@@ -1957,6 +1998,25 @@ public:
                 l = new List;
                 res->append(l);
                 build(isz+1, l, lst, idx);
+            }
+        }
+    }
+
+    void build(long isz, Element* res) {
+        if (isz == sizes.size()-2) {
+            Numbers* l;
+            for (long i = 0; i < sizes[isz]; i++) {
+                l = new Numbers;
+                res->append(l);
+                l->liste = ((Numbers*)liste[i])->liste;
+            }
+        }
+        else {
+            List* l;
+            for (long i = 0; i < sizes[isz]; i++) {
+                l = new List;
+                res->append(l);
+                build(isz+1,l);
             }
         }
     }
@@ -2018,6 +2078,14 @@ public:
         return 4;
     }
     
+    Element* copying(bool duplicate = true) {
+        //If it is a CDR, we need to copy it...
+        if (status < s_protect && liste.nocdr() && !duplicate)
+            return this;
+        
+        return new Tenseur(this);
+    }
+
     Element* transposed(LispE* lisp);
     
     void concatenate(LispE* lisp, long isz, Element* res, Element* e) {

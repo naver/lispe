@@ -422,7 +422,7 @@ void moduleMaths(LispE* lisp) {
 //------ Matrix operations ------------------------
 
 //LU decomposition
-long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice& m) {    
+long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice* m) {
     d = 1;
     double AMAX, DUM, thesum;
     long i, i_max = 0, j, k;
@@ -431,7 +431,7 @@ long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice& m) {
     for (i = 0; i < n; i++)  {
         AMAX = 0.0;
         for (j = 0; j<n; j++)  {
-            thesum = m.val(i, j);
+            thesum = m->val(i, j);
             if (ABS(thesum) > AMAX)
                 AMAX = ABS(thesum);
         }
@@ -444,18 +444,18 @@ long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice& m) {
     for (j = 0; j < n; j++)  {
         
         for (i = 0; i < j; i++)  {
-            thesum = m.val(i, j);
+            thesum = m->val(i, j);
             for (k = 0; k < i; k++)
-            thesum = thesum - m.val(i, k)*m.val(k, j);
-            m.set(i,j, thesum);
+            thesum = thesum - m->val(i, k)*m->val(k, j);
+            m->set(i,j, thesum);
         } // i loop
         AMAX = 0.0;
         
         for (i = j; i < n; i++)  {
-            thesum = m.val(i, j);
+            thesum = m->val(i, j);
             for (k = 0; k < j; k++)
-            thesum = thesum - m.val(i, k)*m.val(k, j);
-            m.set(i,j, thesum);
+            thesum = thesum - m->val(i, k)*m->val(k, j);
+            m->set(i,j, thesum);
             DUM = values[i] * ABS(thesum);
             if (DUM >= AMAX) {
                 i_max = i;
@@ -465,9 +465,9 @@ long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice& m) {
         
         if (j != i_max)  {
             for (k = 0; k < n; k++)  {
-                DUM = m.val(i_max, k);
-                m.set(i_max,k,m.val(j, k));
-                m.set(j,k,DUM);
+                DUM = m->val(i_max, k);
+                m->set(i_max,k,m->val(j, k));
+                m->set(j,k,DUM);
             } // k loop
             d = -d;
             values[i_max] = values[j];
@@ -475,13 +475,13 @@ long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice& m) {
         
         indexes.at(j, i_max);
         
-        if (ABS(m.val(j, j)) < TINY)
-            m.set(j,j,TINY);
+        if (ABS(m->val(j, j)) < TINY)
+            m->set(j,j,TINY);
         
         if (j != n - 1)  {
-            DUM = 1.0 / m.val(j, j);
+            DUM = 1.0 / m->val(j, j);
             for (i = j + 1; i < n; i++) {
-                m.mult(i,j, DUM);
+                m->mult(i,j, DUM);
             }
         }
     } // j loop
@@ -490,7 +490,7 @@ long LUDCMP(long n, VECTE<long>& indexes, long& d, Matrice& m) {
     
 } // subroutine LUDCMP
 
-void LUBKSB(long n, VECTE<long>& indexes, VECTE<double>& b_values, Matrice& m)  {
+void LUBKSB(long n, VECTE<long>& indexes, VECTE<double>& b_values, Matrice* m)  {
     double thesum;
     long  i, ii, j, ll;
     
@@ -502,7 +502,7 @@ void LUBKSB(long n, VECTE<long>& indexes, VECTE<double>& b_values, Matrice& m)  
         b_values.at(ll, b_values[i]);
         if (ii != -1) {
             for (j = ii; j < i; j++) {
-                thesum = thesum - m.val(i, j)*b_values[j];
+                thesum = thesum - m->val(i, j)*b_values[j];
             }
         }
         else {
@@ -516,10 +516,10 @@ void LUBKSB(long n, VECTE<long>& indexes, VECTE<double>& b_values, Matrice& m)  
         thesum = b_values[i];
         if (i < n - 1)  {
             for (j = i + 1; j < n; j++) {
-                thesum = thesum - m.val(i, j)*b_values[j];
+                thesum = thesum - m->val(i, j)*b_values[j];
             }
         }
-        b_values.at(i, thesum / m.val(i, i));
+        b_values.at(i, thesum / m->val(i, i));
     } // i loop
     
 } // LUBKSB
@@ -530,7 +530,9 @@ double Matrice::determinant() {
         return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
     }
 
-
+    if (size_x != size_y)
+        throw new Error("Error: we can only apply 'determinant' to square matrices");
+    
     long i;
     i = 0;
     double det = 0;
@@ -561,6 +563,9 @@ double Matrice::determinant() {
 }
 
 Element* Matrice::inversion(LispE* lisp) {
+    if (size_x != size_y)
+        throw new Error("Error: we can only apply 'invert' to square matrices");
+
     //else Local decomposition
     Matrice m(this);
     
@@ -568,26 +573,26 @@ Element* Matrice::inversion(LispE* lisp) {
     VECTE<long> indexes(size_x);
     long id;
     //call LU decomposition
-    long rc = LUDCMP(size_x, indexes, id, m);
+    long rc = LUDCMP(size_x, indexes, id, &m);
     if (rc == 1) {
         return emptylist_;
     }
     
+    Matrice* Y = new Matrice(size_x, size_x, 0.0);
     
-    Matrice* Y = new Matrice(size_x, size_y, 0.0);
-    
-    VECTE<double> temp(size_x);
     long i;
     //We create an identity matrix, which will contain the final result...
     for (i = 0; i < size_x; i++) {
         Y->set(i,i, 1);
     }
     
+    VECTE<double> temp(size_x);
+
     for (long j = 0; j < size_x; j++) {
         for (i = 0; i < size_x; i++) {
             temp.at(i, Y->val(i, j));
         }
-        LUBKSB(size_x, indexes, temp, m);
+        LUBKSB(size_x, indexes, temp, &m);
         for (i = 0; i < size_x; i++) {
             Y->set(i,j,temp[i]);
         }
@@ -596,13 +601,16 @@ Element* Matrice::inversion(LispE* lisp) {
 }
 
 Element* Matrice::solve(LispE* lisp, Matrice* y) {
+    if (size_x != size_y || y->size_x != y->size_y || size_x != y->size_x)
+        throw new Error("Error: we can only apply 'solve' to square matrices of equal sizes");
+
     //else Local decomposition
     Matrice m(this);
         
     VECTE<long> indexes(size_x);
     long id;
     //call LU decomposition
-    long rc = LUDCMP(size_x, indexes, id, m);
+    long rc = LUDCMP(size_x, indexes, id, &m);
     if (rc == 1) {
         return emptylist_;
     }
@@ -615,10 +623,67 @@ Element* Matrice::solve(LispE* lisp, Matrice* y) {
         for (i = 0; i < size_x; i++) {
             temp.at(i, Y->val(i, j));
         }
-        LUBKSB(size_x, indexes, temp, m);
+        LUBKSB(size_x, indexes, temp, &m);
         for (i = 0; i < size_x; i++) {
             Y->set(i,j,temp[i]);
         }
     }
     return Y;
 }
+
+Element* Matrice::ludcmp(LispE* lisp) {
+    if (size_x != size_y)
+        throw new Error("Error: we can only apply 'ludcmp' to square matrices");
+
+    VECTE<long> indexes(size_x);
+    long id;
+    //call LU decomposition
+    long rc = LUDCMP(size_x, indexes, id, this);
+    if (rc == 1) {
+        return emptylist_;
+    }
+    Integers* lst = new Integers;
+    for (long i = 0; i < size_x; i++) {
+        lst->liste.push_back(indexes.vecteur[i]);
+    }
+    return lst;
+}
+
+Element* Matrice::lubksb(LispE* lisp, Integers* idxs, Matrice* Y) {
+    if (size_x != size_y || idxs->size() != size_x) {
+        throw new Error("Error: we can only apply 'lubksb' to square matrices with the same number of indexes");
+    }
+    
+    long i;
+    if (Y == NULL) {
+        Y = new Matrice(size_x, size_x, 0.0);
+        //We create an identity matrix, which will contain the final result...
+        for (i = 0; i < size_x; i++) {
+            Y->set(i,i, 1);
+        }
+    }
+    else {
+        if (Y->size_x != size_x)
+            throw new Error("Error: we can only apply 'lubksb' to square matrices of the same shape");
+    }
+    
+    VECTE<long> indexes(size_x);
+    for (i = 0; i < size_x; i++) {
+        indexes.push_back(idxs->liste[i]);
+    }
+
+    VECTE<double> temp(size_x);
+
+    for (long j = 0; j < size_x; j++) {
+        for (i = 0; i < size_x; i++) {
+            temp.at(i, Y->val(i, j));
+        }
+        LUBKSB(size_x, indexes, temp, this);
+        for (i = 0; i < size_x; i++) {
+            Y->set(i,j,temp[i]);
+        }
+    }
+    return Y;
+}
+
+

@@ -62,7 +62,7 @@ typedef enum {
     l_sum, l_product,
     l_innerproduct, l_matrix, l_tensor, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate,
-    l_transpose, l_invert, l_determinant, l_solve,
+    l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
@@ -71,7 +71,8 @@ typedef enum {
     l_and, l_or, l_xor, l_not, l_eq, l_neq,
     
     //mutable operations
-    l_key, l_keyn, l_keys, l_values, l_pop, l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_unique,
+    l_key, l_keyn, l_keys, l_values, l_pop,
+    l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_unique, l_duplicate,
     l_numbers, l_integers, l_strings,
     
     //Display values
