@@ -15,9 +15,9 @@
 ; prendre un objet
 (defpat action ( [Prendre x] )
    (ncheck (check_object position x)
-      (println "Je ne peux pas prendre" (determinant x))
+      (println "Je ne peux pas prendre" (article x))
       (push belongings x)
-      (println "J'ai ramassé" (determinant x))
+      (println "J'ai ramassé" (article x))
    )
 )
 
@@ -26,7 +26,7 @@
    (check (check_belongings x)
       (key objects (keystr position) x)
       (pop belongings (find belongings x))
-      (println "J'ai déposé" (determinant x) " sur le sol")
+      (println "J'ai déposé" (article x) " sur le sol")
       (display_position position)
    )
 )
@@ -143,7 +143,7 @@
    (setq k (keystr p))
    (println k (select (key castlemap k) "Rien à voir"))
    (check (key objects k)
-      (println (+ "Il y a " (determinant (key objects k)) " sur le sol"))
+      (println (+ "Il y a " (article (key objects k)) " sur le sol"))
    )
    (println "Vous possédez: " belongings)
 )
@@ -157,10 +157,10 @@
 ; each direction is associated with some values to add position with
 (setq directions { "nord": '(-1 0) "sud":'(1 0) "ouest":'(0 -1) "est":'(0 1)})
 
-(defun determinant(x)
+(defun article(x)
    (+
       (select
-         (key article x)
+         (key articles x)
          "de"
       )
       " "
@@ -168,7 +168,7 @@
    )
 )
 
-(setq article {"pierre":"une" "glaive":"un" "clef":"une"})
+(setq articles {"pierre":"une" "glaive":"un" "clef":"une"})
 
 ; some synonyms
 (setq synonyms
@@ -371,7 +371,9 @@
    )
 )
 
-(print "Fin")
+(println "Fin")
+
+
 
 
 

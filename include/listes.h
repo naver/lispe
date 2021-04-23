@@ -475,7 +475,7 @@ public:
     }
     
     //The status is decremented without destroying the element.
-    void decrementstatusraw(uchar nb) {
+    void decrementSansDelete(uchar nb) {
         if (status > s_destructible && status < s_protect)
             status -= nb;
     }
@@ -920,6 +920,7 @@ public:
     Element* evalt_list(LispE* lisp);
     Element* evall_reduce(LispE* lisp);
     Element* evall_scan(LispE* lisp);
+    Element* evall_rank(LispE* lisp);
     Element* evall_equalonezero(LispE* lisp);
     Element* evall_rho(LispE* lisp);
     Element* evall_factorial(LispE* lisp);
@@ -1113,6 +1114,9 @@ public:
     vector<double> liste;
     
     Numbers() : Element(t_numbers), exchange_value(0) {}
+    Numbers(Numbers* n) : Element(t_numbers), exchange_value(0) {
+        liste = n->liste;
+    }
     Numbers(uchar s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
     
@@ -1189,9 +1193,7 @@ public:
         if (status < s_protect && !duplicate)
             return this;
 
-        Numbers* e = new Numbers;
-        e->liste = liste;
-        return e;
+        return new Numbers(this);
     }
     
     //In the case of a container for push, key and keyn
@@ -1222,7 +1224,7 @@ public:
     }
     
     //The status is decremented without destroying the element.
-    void decrementstatusraw(uchar nb) {
+    void decrementSansDelete(uchar nb) {
         if (status > s_destructible && status < s_protect)
             status -= nb;
     }
@@ -1549,7 +1551,7 @@ public:
     }
     
     //The status is decremented without destroying the element.
-    void decrementstatusraw(uchar nb) {
+    void decrementSansDelete(uchar nb) {
         if (status > s_destructible && status < s_protect)
             status -= nb;
     }
@@ -1805,9 +1807,20 @@ public:
             liste.push_back(l);
         }
     }
+    
+    //We steal the ITEM structure of this list
+    Matrice(List* l) : List(l,0) {
+        type = t_matrix;
+        size_x = l->size();
+        size_y = l->index(0)->size();
+    }
 
     inline double val(long i, long j) {
         return ((Numbers*)liste[i])->liste[j];
+    }
+
+    inline Element* indexe(long i, long j) {
+        return liste[i]->index(j);
     }
     
     inline void set(long i, long j, double v) {
@@ -1919,6 +1932,8 @@ public:
         }
     }
     
+    Element* rank(LispE* lisp, vector<long>& positions);
+    
     Element* newInstance(Element* e) {
         return new Matrice(size_x, size_y, e);
     }
@@ -1926,19 +1941,26 @@ public:
 
 class Tenseur : public List {
 public:
-    vector<long> sizes;
+    vector<long> shape;
 
     Tenseur(std::vector<long>& sz, Element* n) {
         type = t_tensor;
-        sizes = sz;
-        if (sizes.size())
+        shape = sz;
+        if (shape.size())
             build(0,this, n->asNumber());
+    }
+    
+    Tenseur(std::vector<long>& sz, double n) {
+        type = t_tensor;
+        shape = sz;
+        if (shape.size())
+            build(0,this, n);
     }
     
     Tenseur(Element* lst, std::vector<long>& sz) {
         type = t_tensor;
-        sizes = sz;
-        if (sizes.size()) {
+        shape = sz;
+        if (shape.size()) {
             long idx = 0;
             build(0,this, lst, idx);
         }
@@ -1946,10 +1968,20 @@ public:
 
     Tenseur(Tenseur* tensor) {
         type = t_tensor;
-        sizes = tensor->sizes;
+        shape = tensor->shape;
         tensor->build(0, this);
     }
 
+    //We steal the ITEM structure of this list
+    Tenseur(List* l) : List(l, 0) {
+        type = t_tensor;
+        Element* e = l;
+        while (e->isList()) {
+            shape.push_back(e->size());
+            e = e->index(0);
+        }
+    }
+    
     Element* duplicate_constant_container(bool pair = false) {
         if (status == s_constant)
             return new Tenseur(this);
@@ -1960,17 +1992,51 @@ public:
         return new Tenseur(this);
     }
 
+    Element* storeRank(Element* current, vector<long>& positions, long idx) {
+        bool last = false;
+        if (idx == shape.size() - 1) {
+            last = true;
+        }
+        
+        long p_idx = -1;
+        if (idx < positions.size())
+            p_idx = positions[idx];
+        
+        if (p_idx == -1) {
+            if (last)
+                return new Numbers((Numbers*)current);
+            
+            Element* result;
+            Element* e = storeRank(current->index(0), positions, idx+1);
+            if (e->type == t_number)
+                result = new Numbers;
+            else
+                result = new List;
+            result->append(e);
+            for (p_idx = 1; p_idx < shape[idx]; p_idx++) {
+                result->append(storeRank(current->index(p_idx), positions, idx+1));
+            }
+            return result;
+        }
+
+        if (last)
+            return current->index(p_idx);
+        return storeRank(current->index(p_idx), positions, idx+1);
+    }
+    
+    Element* rank(LispE* lisp, vector<long>& positions);
+    
     void build(long isz, Element* res, double n) {
-        if (isz == sizes.size()-2) {
+        if (isz == shape.size()-2) {
             Numbers* lst;
-            for (long i = 0; i < sizes[isz]; i++) {
-                lst = new Numbers(sizes[isz+1], n);
+            for (long i = 0; i < shape[isz]; i++) {
+                lst = new Numbers(shape[isz+1], n);
                 res->append(lst);
             }
         }
         else {
             List* lst;
-            for (long i = 0; i < sizes[isz]; i++) {
+            for (long i = 0; i < shape[isz]; i++) {
                 lst = new List;
                 res->append(lst);
                 build(isz+1, lst, n);
@@ -1979,13 +2045,13 @@ public:
     }
 
     void build(long isz, Element* res, Element* lst, long& idx) {
-        if (isz == sizes.size()-2) {
+        if (isz == shape.size()-2) {
             Numbers* l;
             long i,j;
-            for (i = 0; i < sizes[isz]; i++) {
+            for (i = 0; i < shape[isz]; i++) {
                 l = new Numbers;
                 res->append(l);
-                for (j = 0; j < sizes[isz+1]; j++) {
+                for (j = 0; j < shape[isz+1]; j++) {
                     if (idx == lst->size())
                         idx = 0;
                     l->liste.push_back(lst->index(idx++)->asNumber());
@@ -1994,7 +2060,7 @@ public:
         }
         else {
             List* l;
-            for (long i = 0; i < sizes[isz]; i++) {
+            for (long i = 0; i < shape[isz]; i++) {
                 l = new List;
                 res->append(l);
                 build(isz+1, l, lst, idx);
@@ -2003,9 +2069,9 @@ public:
     }
 
     void build(long isz, Element* res) {
-        if (isz == sizes.size()-2) {
+        if (isz == shape.size()-2) {
             Numbers* l;
-            for (long i = 0; i < sizes[isz]; i++) {
+            for (long i = 0; i < shape[isz]; i++) {
                 l = new Numbers;
                 res->append(l);
                 l->liste = ((Numbers*)liste[i])->liste;
@@ -2013,7 +2079,7 @@ public:
         }
         else {
             List* l;
-            for (long i = 0; i < sizes[isz]; i++) {
+            for (long i = 0; i < shape[isz]; i++) {
                 l = new List;
                 res->append(l);
                 build(isz+1,l);
@@ -2065,13 +2131,13 @@ public:
     }
     
     char isPureList(long& x, long& y) {
-        x = sizes[0];
-        y = sizes[1];
+        x = shape[0];
+        y = shape[1];
         return 1;
     }
 
     void getShape(vector<long>& sz) {
-        sz = sizes;
+        sz = shape;
     }
     
     char isPureList() {
@@ -2093,7 +2159,7 @@ public:
             res->concatenate(lisp, e);
         }
         else {
-            for (long i = 0; i < sizes[isz]; i++) {
+            for (long i = 0; i < shape[isz]; i++) {
                 if (e->isList())
                     concatenate(lisp, isz+1, res->index(i), e->index(i));
                 else
@@ -2107,7 +2173,7 @@ public:
             vector<long> sz;
             e->getShape(sz);
             for (long i = 0; i < sz.size()-1; i++) {
-                if (sz[i] != sizes[i])
+                if (sz[i] != shape[i])
                     throw new Error("Error: Incompatible dimensions");
             }
         }
@@ -2134,7 +2200,7 @@ public:
     }
 
     Element* newInstance(Element* e) {
-        return new Tenseur(sizes, e);
+        return new Tenseur(shape, e);
     }
 };
 
@@ -2259,7 +2325,7 @@ public:
     }
     
     //The status is decremented without destroying the element.
-    void decrementstatusraw(uchar nb) {
+    void decrementSansDelete(uchar nb) {
         if (status > s_destructible && status < s_protect)
             status -= nb;
     }

@@ -32,167 +32,6 @@ string LispVersion();
 //------------------------------------------------------------
 
 class LispE {
-    /* Methods in LispE
-     //check if this string has already been identified with a code
-     bool checkencoding(wstring str);
-     
-     //returns true is str or label is a valid instruction name
-     bool is_instruction(short label);
-     bool is_instruction(string str);
-     bool is_instruction(wstring s);
-     
-     //returns true is the c is an operator code
-     bool is_operator(short c);
-     
-     //Tokenize the code and stores the result in a Tokenize object.
-     lisp_code segmenting(string& code, Tokenizer& s);
-     
-     //Build the execution tree
-     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index);
-     
-     //Transforms a string in a list of atoms
-     Element* atomise(wstring a);
-     
-     //Compile the code: calls first segmenting then abstractSyntaxTree
-     Element* compile(string& code);
-     
-     //eval a string. This is a dynamic evaluation of a string while executing a program
-     //This method is called when the function eval is called in your code: (eval str)
-     Element* eval(string);
-     
-     //compiles and executes some code
-     Element* execute(string code);
-     
-     //compiles and executes some code from a file
-     Element* execute(string code, string path_name);
-     
-     //records an extension defintion of the form: (deflib (p1...pn) Object)
-     Element* extension(string, Element*);
-     
-     //load a file in memory, compiles it and returns the evaluation
-     Element* load(string chemin);
-     
-     //load an external library
-     Element* load_library(string name);
-     
-     //These methods are used to handle data pools
-     Element* provideAtom(short identifier);
-     Element* provideAtom(wstring identifier);
-     Element* provideAtomOrInstruction(short identifier);
-     Element* provideCADR(string& c);
-     Element* provideInteger(Integer* n, long d);
-     Element* provideInteger(long d);
-     Element* provideNonLabelAtom(short identifier);
-     Element* provideNumber(double d);
-     Element* provideNumber(Number* n, double d);
-     Element* provideOperator(short identifier);
-     Element* provideString(string& c);
-     Element* provideString(String* c, wstring& w);
-     Element* provideString(wchar_t c);
-     Element* provideString(wstring& c);
-     
-     //records an argument in the stack, with unification
-     inline bool recordargument(Element* e, short label);
-     
-     //returns the top function on the stack
-     inline Element* called();
-     
-     //gets the value of a variable
-     inline Element* get(short label);
-     inline Element* get(string name);
-     inline Element* get(wstring name);
-     
-     //returns a data structure element known through its label
-     inline Element* getDataStructure(short label);
-     
-     //Returns list of functions sharing the same name
-     //These methods have been recorded using defpat...
-     inline Element* getMethod(short label, short sublabel, long i);
-     
-     //Removes the top of the stack
-     inline Element* pop(Element* e);
-     
-     //Records an element in the stack
-     inline Element* recording(Element* e, short label);
-     
-     //Records a data structure definition 
-     inline Element* recordingData(Element* e, short label);
-     
-     //records a variable as a global variable in Stackelement at position 0
-     inline Element* recordingglobal(Element* e, short label);
-     
-     //Records a new method defined with defpat
-     inline Element* recordingMethod(Element* e, short label);
-     
-     //Records an element in the stack. Fails if an element has already
-     //been stored for the same label
-     inline Element* recordingunique(Element* e, short label);
-     
-     //returns the list of all atoms in memory
-     inline List* atomes();
-     
-     //Returns the number of variables recorded on the top of the stack
-     inline long nbvariables();
-     
-     //Returns the size of stack
-     inline long stackSize();
-     
-     //Deletes the top of the stack
-     inline void cleanTopStack();
-     
-     //Delete the current stack
-     inline void clearStack();
-     
-     //Stores 'e' in the garbage list
-     inline void garbaging(Element* e);
-     
-     //Removes the top of the stack
-     inline void pop();
-     
-     //Pushes a new stack element on the top of the stack
-     //Called when a new function is executed.
-     inline void push(Element* fonction);
-     
-     //Returns the string associated to a label
-     inline wstring asString(short c);
-     
-     //Creates an new list containing a full instruction of at most four elements
-     //This method is used in composing
-     List* create_instruction(short label, Element* e = NULL, Element* ee = NULL, Element* eee = NULL, Element* eeee = NULL);
-     
-     //encode a string and returns its code
-     short encode(string& str);
-     short encode(wchar_t c);
-     short encode(wstring& s);
-     
-     //stores the arguments on the command line into an _args list
-     void arguments(std::vector<string>& args);
-     
-     //Cleans all the elements recorded in the pools and the garbage
-     void cleaning();
-     
-     //Initialize the _current variable with the path of the top file being executed
-     void current_path();
-     
-     //Displays the current instruction being executed on screen, as a trace to the full execution
-     void display_trace(List*);
-     
-     //Initialisation of all structures and variables to launch a lisp interpreter
-     void initialisation();
-     
-     //Keeps track of the current line in the initial file corresponding to the current instruction
-     void set_current_line(List* l);
-     
-     //initialise an instruction with its label and its arity (the number of arguments it accepts)
-     void set_instruction(short instruction_code, string name,  unsigned long arity);
-     
-     //Called when Ctrl-c has been pressed
-     void stop();
-     
-     //Returns the content of the top of the stack as a string
-     wstring stackAsString();
-     */
-    
     vector<Element*> garbages;
     vector<Stackelement*> stack_pool;
 
@@ -221,7 +60,6 @@ public:
 
     std::atomic<short> nbjoined;
 
-    long line_error;
     long id_thread;
     
     bool isThread;
@@ -231,7 +69,6 @@ public:
     LispE() {
         id_thread = 0;
         max_stack_size = 10000;
-        line_error = -1;
         trace = debug_none;
         delegation = new Delegation;
         isThread = false;
@@ -547,6 +384,20 @@ public:
         }
     }
     
+    string stackImage() {
+        string the_stack;
+        for (long i = execution_stack.size()-1; i >= 0; i--) {
+            if (stack_pool[i]->function == NULL || stack_pool[i]->function == delegation->_NULL)
+                continue;
+            the_stack += stack_pool[i]->function->index(1)->toString(this);
+            the_stack += "(";
+            the_stack += stack_pool[i]->function->index(2)->toString(this);
+            the_stack += ")";
+            the_stack += "\n";
+        }
+        return the_stack;
+    }
+    
     inline long stackSize() {
         return execution_stack.size();
     }
@@ -574,7 +425,7 @@ public:
     inline Element* pop(Element* e) {
         e->incrementstatus(1, true);
         removeStackElement();
-        e->decrementstatusraw(1);
+        e->decrementSansDelete(1);
         return e;
     }
 
@@ -584,7 +435,7 @@ public:
         while (execution_stack.size() != upto) {
             removeStackElement();
         }
-        e->decrementstatusraw(1);
+        e->decrementSansDelete(1);
         return e;
     }
     

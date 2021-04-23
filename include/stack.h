@@ -15,39 +15,6 @@ class LispE;
 
 class Stackelement {
 public:
-    /* Methods in Stackelements
-     
-     //record an argument in the stack and stop_execution  is now in delegationcheck if it has been stored already
-     //this method is used to check for unification. For isntance, if a variable 'x' has been
-     //recorded and an attempt is done to record 'x' again, then if it is the same value, it is not
-     //a failure.
-     bool recordargument(LispE* lisp, Element* e, short label);
-     
-     //record a unique version of an atom in the stack
-     //fails if the value has already been recorded
-     bool recordingunique(Element* e, short label);
-     
-     //returns the function that triggered the creation of that
-     //stack element. Used to execute 'self'
-     Element* called()
-     
-     //returns the element in the stack corresponding to a variable
-     //given as label
-     Element* get(short label);
-     
-     //records a variable in memory. If the variable is alreday present, then
-     //it is discarded and replaced
-     Element* recording(Element* e, short label);
-     
-     //returns the list of variables stored in this stack element
-     List* atomes(LispE*);
-     
-     //Number of variables stored in this stack element
-     long size();
-     
-     //Returns the variable values as a string
-     wstring asString(LispE*);
-     */
     
     Element* function;
     unordered_map<short, Element*> variables;

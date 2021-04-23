@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.20.14.35";
+static std::string version = "1.2021.4.22.10.10";
 string LispVersion() {
     return version;
 }
@@ -45,7 +45,6 @@ List* Stackelement::atomes(LispE* lisp) {
         liste->append(lisp->provideAtom(a.first));
     return liste;
 }
-
 //------------------------------------------------------------
 jag_get* get_jag_handler();
 void clean_get_handler(jag_get*);
@@ -334,6 +333,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
     set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce);
     set_instruction(l_scan, "scan", P_THREE, &List::evall_scan);
+    set_instruction(l_rank, "rank", P_ATLEASTTHREE, &List::evall_rank);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
     set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
     set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
@@ -554,6 +554,9 @@ void Delegation::initialisation(LispE* lisp) {
 
     w = L"⌹";
     string_to_code[w] = l_invert;
+
+    w = L"⍤";
+    string_to_code[w] = l_rank;
     
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
@@ -642,8 +645,6 @@ LispE::LispE(LispE* lisp, List* function, Element* body) {
 
     thread_ancestor = lisp;
 
-    line_error = -1;
-
     delegation = lisp->delegation;
     handlingutf8 = lisp->handlingutf8;
 
@@ -704,7 +705,6 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         stops[171] = true;
     }
 
-    line_error = -1;
     long sz = code.size();
     long i, current_i;
     int nb_parentheses = 0;
@@ -1043,17 +1043,17 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     }
 
     if (nb_brackets) {
-        line_error = line_number;
+        delegation->i_current_line = line_number;
         return e_error_bracket;
     }
 
     if (nb_parentheses) {
-        line_error = culprit;
+        delegation->i_current_line = culprit;
         return e_error_parenthesis;
     }
 
     if (nb_braces) {
-        line_error = culprit;
+        delegation->i_current_line = culprit;
         return e_error_brace;
     }
 
@@ -1533,13 +1533,10 @@ Element* LispE::compile(string& code) {
     long index;
     switch (retour) {
         case e_error_brace:
-            delegation->i_current_line = line_error;
             throw new Error("Error: Braces do not balance");
         case e_error_bracket:
-            delegation->i_current_line = line_error;
             throw new Error("Error: brackets do not balance");
         case e_error_parenthesis:
-            delegation->i_current_line = line_error;
             throw new Error("Error: parentheses do not balance");
         case e_error_string:
             delegation->i_current_line = 1;
@@ -1584,15 +1581,12 @@ Element* LispE::extension(string code, Element* etendre) {
     switch (retour) {
         case e_error_brace:
             etendre->release();
-            delegation->i_current_line = line_error;
             throw new Error("Error: Braces do not balance");
         case e_error_bracket:
             etendre->release();
-            delegation->i_current_line = line_error;
             throw new Error("Error: brackets do not balance");
         case e_error_parenthesis:
             etendre->release();
-            delegation->i_current_line = line_error;
             throw new Error("Error: parentheses do not balance");
         case e_error_string:
             etendre->release();
@@ -1784,6 +1778,11 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
+
+
+
 
 
 

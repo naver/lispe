@@ -61,7 +61,7 @@ typedef enum {
     l_divide, l_mod, l_divideequal,l_modequal,
     l_sum, l_product,
     l_innerproduct, l_matrix, l_tensor, l_outerproduct, l_factorial, l_iota, l_iota0,
-    l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate,
+    l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate, l_rank,
     l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     
     //Comparisons
@@ -155,228 +155,6 @@ class List;
 
 class Element {
 public:
-    /* Methods in Elements
-     //This method transforms a Boolean value (true or false) into a LispE value (_TRUE or _NULL)
-     Element* Boolean(LispE* lisp);
-     
-     //This is a method, which is used to display a function as indented
-     string prettify(LispE* lisp);
-     
-     //Used to detect if the size of the parameters in a function matches the arguments
-     virtual bool argumentsize(long sz);
-     
-     //return true or false
-     virtual bool Boolean();
-     
-     //Check the nature of an element
-     virtual bool isAtom();
-     virtual bool isContainer();
-     virtual bool isDictionary();
-     virtual bool isError();
-     virtual bool isOperator();
-     virtual bool isInstruction();
-     virtual bool isList();
-     virtual bool isNumber();
-     virtual bool isString();
-     
-     //Method to remove values from a dictionary or a list
-     virtual bool remove(double);
-     virtual bool remove(long);
-     virtual bool remove(wstring&);
-     
-     //Check if two structures can unify or be equal. In the case of pattern functions, record is true as a value
-     //might be recorded with a label in the stack
-     virtual bool unify(LispE* lisp, Element* value, bool record);
-     
-     //used only when parsing dictionary in code, check if values and keys are in the same number
-     //see Dictionary_as_list below
-     virtual bool verify();
-     
-     //check if a data structure element matches its description
-     virtual char check_match(LispE* lisp, Element* value);
-     
-     //Return the element as a Number
-     virtual double asNumber();
-     
-     //bitwise operations
-     virtual Element* bit_and(LispE* l, Element* e);
-     virtual Element* bit_or(LispE* l, Element* e);
-     virtual Element* bit_xor(LispE* l, Element* e);
-     
-     //cadr applies multiple extraction combining car and cdr
-     virtual Element* cadr(LispE*,Element*);
-     //returns the first element of a list or a string
-     virtual Element* car(LispE*);
-     //returns the remainder of a list
-     virtual Element* cdr(LispE*);
-     
-     //loads a file in a String variable
-     virtual Element* charge(LispE*,string chemin);
-     
-     //composing is called at compile time: it composes functions such as map, filter, take etc..
-     //into one single loop to enable lazy evaluation
-     virtual Element* composing(LispE*);
-     
-     //duplicating an element. If duplicate is false, returns the element as such
-     //unless it is a container. In this case, the container is systematicaly duplicated
-     virtual Element* copying(bool duplicate = true);
-     
-     
-     //Returns the dictionary corresponding to the keys/values gathered in a Dictionary_as_list
-     virtual Element* dictionary(LispE* lisp);
-     
-     // Arithmetic division
-     virtual Element* divide(LispE* l, Element* e);
-     
-     //Constant containers must be duplicated before being stored in the stack, in another container or in
-     //a function call... This is important in order to make these containers immutable.
-     virtual Element* duplicate_constant_container();
-     
-     //Is called by eq. Does not check recursivly container equality...
-     virtual Element* equal(LispE* lisp, Element* e);
-     
-     //The eval method. By default this method is the identity.
-     //For other object, it might be different. For instance, for a List, it considers this list to
-     //be an instruction and it will evaluate it
-     virtual Element* eval(LispE*);
-     
-     //Method to extract sub-strings or sub_list with indexes.
-     //In the case of strings, these indexes can also be strings.
-     virtual Element* extraction(LispE* lisp, List*);
-     
-     //Returns the element at position 'i' in a list, as such, without duplicating it
-     virtual Element* index(long i);
-     
-     //Inserts the element 'e' in a list at position 'idx'
-     virtual Element* insert(LispE*, Element* e, long idx);
-     
-     //Reverse a list or a string
-     virtual Element* reverse(LispE*, bool duplique = true);
-     
-     //Joins the elements in a list as one string
-     virtual Element* join_in_list(LispE* lisp, wstring& sep);
-     
-     //Returns a copy of the last element of a string or a list
-     virtual Element* last_element(LispE* lisp);
-     
-     //Returns the last element in a List
-     virtual Element* last();
-     
-     //Bitwise left shift
-     virtual Element* leftshift(LispE* l, Element* e);
-     
-     //Return true if the current value is lower than 'e'
-     virtual Element* less(LispE* lisp, Element* e);
-     
-     //Return true if the current value is lower or equal than 'e'
-     virtual Element* lessorequal(LispE* lisp, Element* e);
-     
-     //This is a loop in a container or in string
-     virtual Element* loop(LispE* lisp, short label,  List* code);
-     
-     //Arithmetic minus between the current element and 'e'
-     virtual Element* minus(LispE* l, Element* e);
-     
-     //Arithmetic remainder between the current element and 'e'
-     virtual Element* mod(LispE* l, Element* e);
-     
-     //Return true if the current value is greater than e
-     virtual Element* more(LispE* lisp, Element* e);
-     //Return true if the current value is greater or equal than e
-     virtual Element* moreorequal(LispE* lisp, Element* e);
-     
-     //Arithmetic operation between the current element and 'e'
-     virtual Element* multiply(LispE* l, Element* e);
-     virtual Element* plus(LispE* l, Element* e);
-     virtual Element* power(LispE* l, Element* e);
-     virtual Element* rightshift(LispE* l, Element* e);
-     
-     //search all the hits of 'element_value' in a string or a list, starting at position 'idx'
-     virtual Element* search_all_elements(LispE*, Element* element_value, long idx);
-     
-     //search the first hit of 'element_value' in a string or a list, starting at position 'idx'
-     virtual Element* search_element(LispE*, Element* element_value, long idx);
-     
-     //search the first hit of 'element_value' in a string or a list, from position 'idx' and back
-     virtual Element* search_reverse(LispE*, Element* element_value, long idx);
-     
-     //Returns the keys of a dictionary as a list
-     virtual Element* thekeys(LispE* lisp);
-     
-     //Returns the values of a dictionary as a list
-     virtual Element* thevalues(LispE* lisp);
-     
-     //These methods return a copy of the element at key k in a dictionary
-     virtual Element* value_on_index(double k, LispE* l);
-     virtual Element* value_on_index(wstring& k, LispE* l);
-
-     //These methods returns a copy of an element at position idx in a list or a string
-     virtual Element* value_on_index(LispE*, Element* idx);
-     virtual Element* value_on_index(LispE*, long idx);
-     
-     //Returns the current value as an integer
-     virtual long asInteger();
-     
-     //Returns the size of the element
-     //For a container, it is its number of elements
-     //For a string, it is its length
-     virtual long size();
-     
-     //Returns the label of an instruction or an atom
-     virtual short label();
-     
-     //Convert the content of element into a std::string
-     virtual string toString(LispE* lisp);
-     
-     //Add an element to a list
-     virtual void append(Element* e);
-     
-     //Add an element to a list without modifying its status
-     virtual void appendraw(Element* e);
-     
-     //decrements the status of an element, unless it is a constant
-     //and destroy it, if its status is back to 0
-     virtual void decrementstatus(uchar nb, bool top);
-     
-     //decrements the status of an element, unless it is a constant
-     //but does not destroy it when its status is 0
-     virtual void decrementstatusraw(uchar nb);
-     
-     //increments the status of an element
-     virtual void incrementstatus(uchar nb, bool top);
-     
-     //protect an element from being deleted, when cleaning the garbage
-     //after an eval of a string.
-     virtual void protecting(bool protection);
-     
-     //recording an element in a dictionary
-     virtual void recording(double, Element*) {}
-     virtual void recording(string&, Element*) {}
-     virtual void recording(wstring&, Element*) {}
-     
-     //Delete the current element if its status is 0
-     //Basically if an element is returned by an evaluation and
-     //its value is no longer necessary, if its status is 0, then
-     //we can discard it.
-     virtual void release();
-     
-     //replace the element in list at position i with 'e'
-     virtual Element* replace(LispE* lisp, long i, Element* e) {}
-     
-     //Indicates if a sub-list is a terminal element in a List
-     virtual void setterminal(bool v);
-     
-     //returns the object as a string
-     virtual wstring asString(LispE* lisp);
-     
-     //returns the object as a jsonString. In particular,
-     //this method adds \ in front of " characters
-     virtual wstring jsonString(LispE* lisp);
-     
-     //When a string is displayed in a container,
-     //we add double quotes around.
-     virtual wstring stringInList(LispE* lisp);
-     */
     
     short type;
 #ifdef DEBUG
@@ -421,7 +199,7 @@ public:
     }
     
     //The status is decremented without destroying the element.
-    virtual void decrementstatusraw(uchar nb) {
+    virtual void decrementSansDelete(uchar nb) {
         if (status > s_destructible && status < s_protect)
             status-=nb;
     }
@@ -510,6 +288,10 @@ public:
 
     virtual Element* copying(bool duplicate = true) {
         return this;
+    }
+    
+    virtual Element* rank(LispE* lisp, vector<long>&) {
+        return NULL;
     }
     
     //We only duplicate constant containers...
@@ -1068,34 +850,7 @@ public:
 
 class Number : public Element {
 public:
-    /* Methods in Number
-     bool Boolean();
-     bool isNumber();
-     bool unify(LispE* lisp, Element* value, bool record);
-     char check_match(LispE* lisp, Element* value);
-     double asNumber();
-     Element* bit_and(LispE* l, Element* e);
-     Element* bit_or(LispE* l, Element* e);
-     Element* bit_xor(LispE* l, Element* e);
-     Element* copying(bool duplicate = true);
-     Element* divide(LispE* l, Element* e);
-     Element* equal(LispE* lisp, Element* e);
-     Element* leftshift(LispE* l, Element* e);
-     Element* less(LispE* lisp, Element* e);
-     Element* lessorequal(LispE* lisp, Element* e);
-     Element* minus(LispE* l, Element* e);
-     Element* mod(LispE* l, Element* e);
-     Element* more(LispE* lisp, Element* e);
-     Element* moreorequal(LispE* lisp, Element* e);
-     Element* multiply(LispE* l, Element* e);
-     Element* plus(LispE* l, Element* e);
-     Element* power(LispE* l, Element* e);
-     Element* rightshift(LispE* l, Element* e);
-     long asInteger();
-     void protecting(bool protection);
-     wstring asString(LispE* lisp);
-     */
-    
+  
     double number;
     Number(double d) : Element(t_number) {
         number = d;
@@ -1205,34 +960,7 @@ public:
 
 class Integer : public Element {
 public:
-    /* Methods in Integer
-     bool Boolean();
-     bool isNumber();
-     bool unify(LispE* lisp, Element* value, bool record);
-     char check_match(LispE* lisp, Element* value);
-     double asNumber();
-     Element* bit_and(LispE* l, Element* e);
-     Element* bit_or(LispE* l, Element* e);
-     Element* bit_xor(LispE* l, Element* e);
-     Element* copying(bool duplicate = true);
-     Element* divide(LispE* l, Element* e);
-     Element* equal(LispE* lisp, Element* e);
-     Element* leftshift(LispE* l, Element* e);
-     Element* less(LispE* lisp, Element* e);
-     Element* lessorequal(LispE* lisp, Element* e);
-     Element* minus(LispE* l, Element* e);
-     Element* mod(LispE* l, Element* e);
-     Element* more(LispE* lisp, Element* e);
-     Element* moreorequal(LispE* lisp, Element* e);
-     Element* multiply(LispE* l, Element* e);
-     Element* plus(LispE* l, Element* e);
-     Element* power(LispE* l, Element* e);
-     Element* rightshift(LispE* l, Element* e);
-     long asInteger();
-     void protecting(bool protection);
-     wstring asString(LispE* lisp);
-     */
-    
+ 
     long integer;
     Integer(long d) : Element(t_integer) {
         integer = d;
@@ -1341,39 +1069,7 @@ public:
 
 class String : public Element {
 public:
-    /* Methods in String
-     bool Boolean();
-     bool isString();
-     bool unify(LispE* lisp, Element* value, bool record);
-     char check_match(LispE* lisp, Element* value);
-     double asNumber();
-     Element* car(LispE*);
-     Element* cdr(LispE*);
-     Element* charge(LispE* lisp, string chemin);
-     Element* copying(bool duplicate = true);
-     Element* equal(LispE* lisp, Element* e);
-     Element* extraction(LispE* lisp, List*);
-     Element* insert(LispE* lisp, Element* e, long idx);
-     Element* reverse(LispE*, bool duplique = true);
-     Element* last_element(LispE* lisp);
-     Element* less(LispE* lisp, Element* e);
-     Element* lessorequal(LispE* lisp, Element* e);
-     Element* loop(LispE* lisp, short label,  List* code);
-     Element* more(LispE* lisp, Element* e);
-     Element* moreorequal(LispE* lisp, Element* e);
-     Element* plus(LispE* l, Element* e);
-     Element* search_all_elements(LispE*, Element* element_value, long idx);
-     Element* search_element(LispE*, Element* element_value, long idx);
-     Element* search_reverse(LispE*, Element* element_value, long idx);
-     Element* value_on_index(LispE*, Element* idx);
-     Element* value_on_index(LispE*, long i);
-     long asInteger();
-     long size();
-     void protecting(bool protection) {}
-     wstring asString(LispE* lisp);
-     wstring stringInList(LispE* lisp);
-     
-     */
+  
     wstring content;
     
     String(wchar_t c) : Element(t_string) {
@@ -1646,37 +1342,6 @@ public:
 class Dictionary : public Element {
 public:
     
-    /* Method in Dictionary
-     bool Boolean();
-     bool isContainer();
-     bool isDictionary();
-     bool remove(wstring& k);
-     bool unify(LispE* lisp, Element* e, bool record);
-     Element* copying(bool duplicate = true);
-     Element* duplicate_constant_container();
-     Element* equal(LispE* lisp, Element* e);
-     Element* join_in_list(LispE* lisp, wstring& sep);
-     Element* loop(LispE* lisp, short label,  List* code);
-     Element* search_all_elements(LispE*, Element* element_value, long idx);
-     Element* search_element(LispE*, Element* element_value, long idx);
-     Element* search_reverse(LispE*, Element* element_value, long idx);
-     Element* thekeys(LispE* lisp);
-     Element* thevalues(LispE* lisp);
-     Element* value_on_index(LispE*, Element* idx);
-     Element* value_on_index(wstring& k, LispE* l);
-     long size();
-     void decrementstatus(uchar nb, bool top);
-     void decrementstatusraw(uchar nb);
-     void incrementstatus(uchar nb, bool top);
-     void protecting(bool protection);
-     void recording(string& c, Element* e);
-     void recording(wstring& k, Element* e);
-     void release();
-     wstring asString(LispE* lisp);
-     wstring jsonString(LispE* lisp);
-     
-     */
-    
     map<wstring, Element*> dictionary;
     Element* object;
     bool marking;
@@ -1837,7 +1502,7 @@ public:
     }
     
     //The status is decremented without destroying the element.
-    void decrementstatusraw(uchar nb) {
+    void decrementSansDelete(uchar nb) {
         if (status > s_destructible && status < s_protect) {
             if (marking)
                 return;
@@ -2018,36 +1683,7 @@ public:
 //This version of the dictionary is indexed on a number
 class Dictionary_n : public Element {
 public:
-    /* Methods in Dictionary_n
-     bool Boolean();
-     bool isContainer();
-     bool isDictionary();
-     bool remove(wstring& k);
-     bool unify(LispE* lisp, Element* e, bool record);
-     Element* copying(bool duplicate = true);
-     Element* duplicate_constant_container();
-     Element* equal(LispE* lisp, Element* e);
-     Element* join_in_list(LispE* lisp, wstring& sep);
-     Element* loop(LispE* lisp, short label,  List* code);
-     Element* search_all_elements(LispE*, Element* element_value, long idx);
-     Element* search_element(LispE*, Element* element_value, long idx);
-     Element* search_reverse(LispE*, Element* element_value, long idx);
-     Element* thekeys(LispE* lisp);
-     Element* thevalues(LispE* lisp);
-     Element* value_on_index(LispE*, Element* idx);
-     Element* value_on_index(wstring& k, LispE* l);
-     long size();
-     void decrementstatus(uchar nb, bool top);
-     void decrementstatusraw(uchar nb);
-     void incrementstatus(uchar nb, bool top);
-     void protecting(bool protection);
-     void recording(string& c, Element* e);
-     void recording(wstring& k, Element* e);
-     void release();
-     wstring asString(LispE* lisp);
-     wstring jsonString(LispE* lisp);
-     */
-    
+
     unordered_map<double, Element*> dictionary;
     Element* object;
     bool marking;
@@ -2209,7 +1845,7 @@ public:
     }
     
     //The status is decremented without destroying the element.
-    void decrementstatusraw(uchar nb) {
+    void decrementSansDelete(uchar nb) {
         if (status > s_destructible && status < s_protect) {
             if (marking)
                 return;

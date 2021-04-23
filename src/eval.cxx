@@ -2253,6 +2253,48 @@ Element* List::evall_outerproduct(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_rank(LispE* lisp) {
+    short listsz = liste.size();
+    if (listsz < 3)
+        throw new Error("Error: wrong number of arguments for 'rank'");
+    
+    Element* element = null_;
+    Element* e = null_;
+    Element* lst = null_;
+    vector<long> positions;
+    long i, v;
+    
+    try {
+        element = liste[1]->eval(lisp);
+        if (element->type != t_matrix && element->type != t_tensor)
+            throw new Error("Error: expecting a matrix or a tensor for 'rank'");
+        
+        for (i = 2; i < listsz; i++) {
+            e = liste[i]->eval(lisp);
+            if (e->isNumber()) {
+                v = e->asInteger();
+                positions.push_back(v);
+            }
+            else
+                positions.push_back(-1);
+            _releasing(e);
+        }
+        
+        lst = element->rank(lisp,positions);
+        element->release();
+        if (lst == NULL)
+            return emptylist_;
+        return lst;
+    }
+    catch (Error* err) {
+        lst->release();
+        element->release();
+        e->release();
+        throw err;
+    }
+    return null_;
+}
+
 Element* List::evall_reduce(LispE* lisp) {
     short listsz = liste.size();
     if (listsz != 2 && listsz != 3)
@@ -2430,9 +2472,9 @@ Element* List::evall_concatenate(LispE* lisp) {
                 long i = 0;
                 while (i < sz2.size() && sz1[i] == sz2[i]) i++;
                 if (i == sz2.size())
-                    ((Tenseur*)res)->sizes[i] += 1;
+                    ((Tenseur*)res)->shape[i] += 1;
                 else
-                    ((Tenseur*)res)->sizes[i] += sz2[i];
+                    ((Tenseur*)res)->shape[i] += sz2[i];
             }
             else {
                 res = first_element->copying(true);
@@ -2478,8 +2520,8 @@ Element* List::evall_rho(LispE* lisp) {
                 case t_tensor: {
                     res = new Integers;
                     Tenseur* tens = (Tenseur*)e;
-                    for (long i = 0; i < tens->sizes.size(); i++) {
-                        ((Integers*)res)->liste.push_back(tens->sizes[i]);
+                    for (long i = 0; i < tens->shape.size(); i++) {
+                        ((Integers*)res)->liste.push_back(tens->shape[i]);
                     }
                     e->release();
                     lisp->set_true_as_true();
@@ -4042,78 +4084,103 @@ Element* List::evall_at_index(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 3)
         throw new Error("Error: wrong number of arguments");
-    Element* first_element = liste[0];
-    Element* second_element = null_;
-    Element* third_element = null_;
+    Element* container = liste[0];
+    Element* value = null_;
+    Element* result = null_;
 
     lisp->display_trace(this);
 
     try {
-        first_element = liste[1]->eval(lisp);
-        if (first_element->type == t_matrix && listsize >= 4) {
+        container = liste[1]->eval(lisp);
+        if (container->type == t_matrix) {
+            Matrice* m = (Matrice*)container;
+
             long x, y;
             evalAsInteger(2, lisp, x);
-            evalAsInteger(3, lisp, y);
-            Matrice* m = (Matrice*)first_element;
-            if (x >= m->size_x || y >= m->size_y || x < 0 || y < 0) {
-                throw new Error("Error: out of bounds indexes");
-            }
-            if (listsize == 5) {
-                second_element = liste[4]->eval(lisp);
-                third_element = m->index(x)->replace(lisp, y, second_element);
-                second_element->release();
-                return third_element;
-            }
-            third_element = m->index(x)->value_on_index(lisp, y);
-            first_element->release();
-            return third_element;
-        }
-        if (first_element->type == t_tensor && listsize >= 4) {
-            Tenseur* m = (Tenseur*)first_element;
-            long x;
-            third_element = m;
-            long i;
-            if (m->sizes.size() == listsize - 2) {
-                for (i = 2; i < listsize; i++) {
-                    evalAsInteger(i, lisp, x);
-                    if (x < 0 || x >= m->sizes[i-2])
-                        throw new Error("Error: out of bounds indexes");
-                    third_element = third_element->index(x);
+            if (listsize >= 4) {
+                evalAsInteger(3, lisp, y);
+                if (x >= m->size_x || y >= m->size_y || x < 0 || y < 0) {
+                    throw new Error("Error: indexes out of bounds");
                 }
-                first_element->release();
-                return third_element;
+                if (listsize == 5) {
+                    value = liste[4]->eval(lisp);
+                    result = m->index(x)->replace(lisp, y, value);
+                    value->release();
+                    return result;
+                }
+                result = m->index(x)->value_on_index(lisp, y);
             }
-            listsize--;
+            else {
+                if (x >= m->size_x || x < 0)
+                    throw new Error("Error: indexes out of bounds");
+                result = m->index(x);
+            }
+            
+            result->incrementstatus(1, false);
+            container->release();
+            result->decrementSansDelete(1);
+            return result;
+        }
+        
+        if (container->type == t_tensor) {
+            Tenseur* m = (Tenseur*)container;
+            long idx;
+            result = m;
+            long i;
+            if (m->shape.size() == listsize - 3) {
+                for (i = 2; i < listsize - 2; i++) {
+                    evalAsInteger(i, lisp, idx);
+                    if (idx < 0 || idx >= m->shape[i-2])
+                        throw new Error("Error: out of bounds indexes");
+                    result = result->index(idx);
+                }
+                evalAsInteger(i++, lisp, idx);
+                value = liste[i]->eval(lisp);
+                result->replacing(idx, value);
+                return result;
+            }
+            
+            if (m->shape.size() < listsize - 2)
+                throw new Error("Error: out of bounds indexes");
+            
             for (i = 2; i < listsize - 1; i++) {
-                evalAsInteger(i, lisp, x);
-                if (x < 0 || x >= m->sizes[i-2])
+                evalAsInteger(i, lisp, idx);
+                if (idx < 0 || idx >= m->shape[i-2])
                     throw new Error("Error: out of bounds indexes");
-                third_element = third_element->index(x);
+                result = result->index(idx);
             }
-            evalAsInteger(i, lisp, x);
-            second_element = liste[listsize]->eval(lisp);
-            third_element->replacing(x, second_element);
-            return third_element;
+            
+            evalAsInteger(i, lisp, idx);
+            if (idx < 0 || idx >= m->shape[i-2])
+                throw new Error("Error: out of bounds indexes");
+            result = result->value_on_index(lisp, idx);
+            
+            result->incrementstatus(1, false);
+            container->release();
+            result->decrementSansDelete(1);
+            return result;
         }
         
         if (listsize == 4) {
             long idx;
             evalAsInteger(2, lisp, idx);
-            second_element = liste[3]->eval(lisp);
-            third_element = first_element->replace(lisp, idx, second_element);
-            second_element->release();
-            return third_element;
+            value = liste[3]->eval(lisp);
+            result = container->replace(lisp, idx, value);
+            value->release();
+            return result;
         }
-        second_element = liste[2]->eval(lisp);
-        third_element = first_element->protected_index(lisp, second_element);
-        second_element->release();
-        first_element->release();
-        return third_element;
+        value = liste[2]->eval(lisp);
+        result = container->protected_index(lisp, value);
+        value->release();
+        result->incrementstatus(1, false);
+        container->release();
+        result->decrementSansDelete(1);
+        return result;
     }
     catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        third_element->release();
+        container->release();
+        value->release();
+        result->release();
         throw err;
     }
 

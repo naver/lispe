@@ -19,6 +19,7 @@
 
 #include "lispe.h"
 #include "tools.h"
+#include <set>
 
 #define openMode std::ios::in|std::ios::binary
 
@@ -33,6 +34,7 @@ extern "C" {
     const char* Inputtext(const char* msg);
     void Rappel(char threading, const char* txt);
     void Initlispelibspath();
+    void displaydebug(const char* locals, const char* globals, const char* sstack, const char* filename, long currentline);
 }
 //------------------------------------------------------------------------------------------------RUN AND COMPILE
 class Segmentingtype {
@@ -253,6 +255,69 @@ void sendresult(string& code, void*) {
     Rappel(0, displaybuffer.c_str());
 }
 
+static std::map<string,std::set<long> > breakpoints;
+static bool debugmode = false;
+static bool fullstring = true;
+static string current_path_name;
+static long last_line = -1;
+static long last_file = -1;
+
+
+string display_variables(LispE* lisp, Element* instructions, bool full) {
+    vector<Element*> atomes;
+    if (instructions == NULL)
+        lisp->atomsOnStack(atomes);
+    else
+        lisp->extractAllAtoms(instructions, atomes);
+    
+    Element* value;
+    
+    std::map<string, Element*> uniques;
+    for (auto& a: atomes) {
+        if (a->label() == v_true)
+            continue;
+        uniques[a->toString(lisp)] = a;
+    }
+    string localvariables;
+    string thevalue;
+    Element* e;
+    for (auto& a: uniques) {
+        e = a.second;
+        value = lisp->getvalue(e->label());
+        if (!value->isFunction()) {
+            thevalue = e->toString(lisp);
+            thevalue += ":";
+            thevalue +=  value->toString(lisp);
+            if (!full && thevalue.size() > 80) {
+                thevalue = thevalue.substr(0,80);
+                thevalue += "...";
+            }
+            localvariables += thevalue + "\n";
+        }
+    }
+    return localvariables;
+}
+
+void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
+    static string locals;
+    static string globals;
+    static string name;
+    static string stack;
+    
+    if (last_line == lisp->delegation->i_current_line && last_file == lisp->delegation->i_current_file)
+        return;
+    
+    last_line = lisp->delegation->i_current_line;
+    last_file = lisp->delegation->i_current_file;
+    
+    locals = display_variables(lisp, instructions, fullstring);
+    globals = display_variables(lisp, NULL, fullstring);
+    name = lisp->name_file(lisp->delegation->i_current_file);
+    stack = lisp->stackImage();
+    
+    displaydebug(locals.c_str(), globals.c_str(), stack.c_str(), name.c_str(), last_line);
+    lisp->blocking_trace_lock();
+}
 
 extern "C" {
 
@@ -263,6 +328,8 @@ extern "C" {
     void CleanGlobal() {
         if (lispe != NULL)
             delete lispe;
+        current_path_name = "";
+        debugmode = false;
         lispe = NULL;
         windowmode = false;
     }
@@ -275,7 +342,8 @@ extern "C" {
             lispe->delegation->reading_string_function = &ProcMacEditor;
             windowmode = false;
         }
-        lispe->set_pathname(filename);
+        current_path_name = filename;
+        lispe->set_pathname(current_path_name);
         current_code = cde;
         if (current_code.find("fltk_") != -1)
             windowmode = true;
@@ -283,41 +351,76 @@ extern "C" {
     }
 
     char NextLine(void) {
-        return 0;
+        lispe->stop_at_next_line(debug_next);
+        lispe->releasing_trace_lock();
+        return 1;
     }
 
     char Gotonextbreak(void) {
-        return 0;
+        //We reset the current line to allow for a loop
+        //on the same breakpoint
+        last_line = -1;
+        lispe->stop_at_next_line(debug_goto);
+        lispe->releasing_trace_lock();
+        return 1;
     }
 
     char Getin(void) {
-        return 0;
+        lispe->stop_at_next_line(debug_inside_function);
+        lispe->releasing_trace_lock();
+        return 1;
     }
 
     char Getout(void) {
-        return 0;
+        lispe->stop_at_next_line(debug_none);
+        lispe->releasing_trace_lock();
+        return 1;
     }
 
     char Gotoend(void) {
+        lispe->stop();
+        lispe->stop_trace();
+        lispe->trace = debug_none;
+        lispe->releasing_trace_lock();
         return 1;
     }
 
     void Setdebugmode(char d) {
+        debugmode = d;
     }
 
-    void addabreakpoint(const char* filename, long numline, char add) {}
-    void Shortname(char v) {}
+    void addabreakpoint(const char* filename, long numline, char add) {
+        string fn = filename;
+        if (add)
+            breakpoints[fn].insert(numline);
+        else {
+            if (breakpoints.find(fn) != breakpoints.end() && breakpoints[fn].find(numline) != breakpoints[fn].end())
+                breakpoints[fn].erase(numline);
+        }
+    }
+
+    void Shortname(char v) {
+        fullstring = v;
+    }
+
     char StopDebug(void) {
-        return 0;
+        debugmode = false;
+        lispe->stop();
+        lispe->stop_trace();
+        return 1;
     }
 
     char WindowModeActivated(void) {
         return windowmode;
     }
 
-    void Blocked(void) {}
+    void Blocked(void) {
+        lispe->blocking_trace_lock();
+    }
 
-    void Released(void) {}
+    void Released(void) {
+        lispe->releasing_trace_lock();
+    }
 
     long CurrentLine(void) {
         if (lispe == NULL)
@@ -434,7 +537,27 @@ extern "C" {
         if (current_code.find("(") == -1 && current_code.find(")") == -1)
             current_code = "(print "+ current_code + ")";
 
-        Element* res = lispe->execute(current_code);
+        if (debugmode) {
+            last_line = -1;
+            last_file = -1;
+            if (breakpoints.size()) {
+                lispe->delegation->breakpoints.clear();
+                long idfile;
+                string pathname;
+                for (auto& a: breakpoints) {
+                    pathname = NormalizePathname(a.first);
+                    idfile = lispe->id_file(pathname);
+                    for (auto& e: a.second)
+                        lispe->delegation->breakpoints[idfile][e] = true;
+                }
+                lispe->stop_at_next_line(debug_goto);
+            }
+            else
+                lispe->stop_at_next_line(debug_next);
+            lispe->set_debug_function(debug_function_lispe, NULL);
+        }
+        
+        Element* res = lispe->execute(current_code, current_path_name);
         displaybuffer = "\n";
         displaybuffer += res->toString(lispe);
         res->release();
@@ -445,6 +568,9 @@ extern "C" {
     void LispEFinalClean(void) {
         if (lispe != NULL)
             delete lispe;
+        current_path_name = "";
+        breakpoints.clear();
+        debugmode = false;
         lispe = NULL;
         windowmode = false;
     }

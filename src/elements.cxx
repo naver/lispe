@@ -537,7 +537,7 @@ Element* Matrice::transposed(LispE* lisp) {
 }
 
 Element* Tenseur::transposed(LispE* lisp) {
-    vector<long> sz = sizes;
+    vector<long> sz = shape;
     long i = sz[0];
     sz[0] = sz[1];
     sz[1] = i;
@@ -546,9 +546,9 @@ Element* Tenseur::transposed(LispE* lisp) {
     long j = 0;
    
     Element* e;
-    for (i = 0; i < sizes[0]; i++) {
+    for (i = 0; i < shape[0]; i++) {
         e = liste[i];
-        for (j = 0; j < sizes[1]; j++) {
+        for (j = 0; j < shape[1]; j++) {
             transposed_matrix->index(j)->replacing(i, e->index(j));
         }
     }
@@ -878,6 +878,72 @@ void Dictionary_as_buffer::append(LispE* lisp, long v) {
 }
 
 
+//------------------------------------------------------------------------------------------
+Element* Matrice::rank(LispE* lisp, vector<long>& positions) {
+    while (positions.back() < 0)
+        positions.pop_back();
+    
+    short sz = positions.size();
+    if (!sz || sz > 2)
+        throw new Error("Error: index mismatch");
+    
+    if (positions[0] != -1) {
+        if (sz == 2) {
+            if (positions[1] >= size_y)
+                throw new Error("Error: indexes out of bounds");
+            return lisp->provideNumber(val(positions[0], positions[1]));
+        }
+        
+        if (positions[0] < 0 || positions[0] >= size_x)
+            throw new Error("Error: indexes out of bounds");
+        
+        return new Numbers(((Numbers*)liste[positions[0]]));
+    }
+    
+    if (sz == 1 || positions[1] >= size_y)
+        throw new Error("Error: indexes out of bounds");
+    
+    Numbers* result = new Numbers;
+    for (long i = 0; i < size_x; i++) {
+        result->liste.push_back(val(i,positions[1]));
+    }
+    return result;
+}
+
+Element* Tenseur::rank(LispE* lisp, vector<long>& positions) {
+    //We get rid of the final negative values (useless)
+    while (positions.back() < 0)
+        positions.pop_back();
+
+    short sz = positions.size();
+    if (!sz || sz > shape.size())
+        throw new Error("Error: index mismatch");
+    
+    //Check positions
+    for (long i = 0; i < sz; i++) {
+        if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
+            throw new Error("Error: indexes out of bounds");
+    }
+    
+    Element* res = storeRank(this, positions, 0);
+    if (res->type == t_numbers)
+        return res;
+    
+    if (res->type == t_number)
+        return lisp->provideNumber(res->asNumber());
+    
+    //We steal the ITEM structure of res
+    //which is a very fast operation
+    //Since its internal values are not copied but borrowed
+    if (res->index(0)->type == t_numbers) {
+        Matrice* m = new Matrice((List*)res);
+        res->release();
+        return m;
+    }
+    Tenseur* ts = new Tenseur((List*)res);
+    res->release();
+    return ts;
+}
 //------------------------------------------------------------------------------------------
 
 Element* Element::loop(LispE* lisp, short label,  List* code) {
