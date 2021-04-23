@@ -5492,7 +5492,7 @@ Element* List::evall_numberp(LispE* lisp) {
 
 Element* List::evall_tensor(LispE* lisp) {
     long sz = size();
-    if (sz < 3)
+    if (sz < 2)
         throw new Error("Error: wrong number of arguments");
     
     Element* e = zero_;
@@ -5502,6 +5502,32 @@ Element* List::evall_tensor(LispE* lisp) {
     vector<long> sizes;
     long s;
     try {
+        if (sz == 2) {
+            e = liste[1]->eval(lisp);
+            if (e->type == t_tensor) {
+                Tenseur* ts = new Tenseur((Tenseur*)e);
+                e->release();
+                return ts;
+            }
+                
+            if (!e->isList())
+                throw new Error("Error: The first element should be a list");
+            vector<long> shape;
+            Element* c = e;
+            while (c->isList()) {
+                shape.push_back(c->size());
+                c = c->index(0);
+            }
+            if (!c->isNumber())
+                throw new Error("Error: this list should contain numbers");
+            
+            Numbers l;
+            e->flatten(lisp,&l);
+            Tenseur* ts = new Tenseur(&l, shape);
+            e->release();
+            return ts;
+        }
+        
         for (long i = 1; i < sz; i++) {
             evalAsInteger(i, lisp, s);
             sizes.push_back(s);
@@ -5531,37 +5557,19 @@ Element* List::evall_matrix(LispE* lisp) {
             //then this is a list of lists
             e = liste[1]->eval(lisp);
             if (e->type == t_matrix) {
-                Matrice* me = (Matrice*)e;
-                Matrice* m = new Matrice(me->size_x, me->size_y, 0.0);
-                for (long i = 0; i < me->size_x; i++) {
-                    for (long j = 0; j < me->size_y; j++) {
-                        m->index(i)->replacing(j, me->index(i)->index(j)->copying(false));
-                    }
-                }
+                Matrice* m = new Matrice((Matrice*)e);
                 e->release();
                 return m;
             }
-            
-            long sx, sy;
-            char type_list = e->isPureList(sx, sy);
-            if (!type_list)
+
+            if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
                 throw new Error("Error: Cannot initialize a matrix with this value");
-    
-            Matrice* m = new Matrice(sx, sy, 0.0);
             
-            if (type_list == 2) {
-                for (long i = 0; i < sx; i++) {
-                    m->index(i)->replacing(0, e->index(i)->copying(false));
-                }
-                e->release();
-                return m;
-            }
-            
-            for (long i = 0; i < sx; i++) {
-                for (long j = 0; j < sy; j++) {
-                    m->index(i)->replacing(j, e->index(i)->index(j)->copying(false));
-                }
-            }
+            long size_x = e->size();
+            long size_y = e->index(0)->size();
+            Numbers l;
+            e->flatten(lisp, &l);
+            Matrice* m = new Matrice(&l, size_x, size_y);
             e->release();
             return m;
         }

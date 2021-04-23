@@ -242,7 +242,8 @@ void x_tokens::apply(wstring& toparse, vector<wstring>* vstack) {
     delete[] token;
 }
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_read_json, str_parse_json, str_string_json, str_trim0, str_rules, str_tokenize_rules, str_getrules, str_setrules} string_method;
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_read_json, str_parse_json, str_string_json, str_trim0, str_ngrams,
+    str_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
 
 /*
  First of all we create a new Element derivation
@@ -361,6 +362,25 @@ public:
                 long n = lisp->get(v_nb)->asInteger();
                 strvalue = s_wmiddle(strvalue,p,n);
                 return lisp->provideString(strvalue);
+            }
+            case str_ngrams: {
+                long nb = lisp->get(v_nb)->asNumber();
+                if (nb <= 0)
+                    throw new Error("Error: nb should be a positive value");
+                
+                wstring s =  lisp->get(v_str)->asString(lisp);
+                long j;
+                long mx = s.size() - nb + 1;
+                wstring u;
+                Strings* ke = new Strings;
+                for (long i = 0; i < mx; i++) {
+                    u = L"";
+                    for (j = i; j < i + nb; j++) {
+                        u += lisp->handlingutf8->getachar(s,j);
+                    }
+                    ke->liste.push_back(u);
+                }
+                return ke;
             }
             case str_trim0: {
                 wstring strvalue =  lisp->get(v_str)->asString(lisp);
@@ -613,6 +633,8 @@ public:
             case str_is_punctuation: {
                 return L"Checks if the string contains only punctuation marks";
             }
+            case str_ngrams:
+                return L"Builds a list of ngrams of size nb";
             case str_read_json:
                 return L"Reads a JSON file";
             case str_parse_json:
@@ -660,6 +682,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib emoji (str)", new Stringmethod(lisp, str_emoji_description));
     lisp->extension("deflib replace (str fnd rep)", new Stringmethod(lisp, str_remplace));
     lisp->extension("deflib left (str nb)", new Stringmethod(lisp, str_left));
+    lisp->extension("deflib ngrams (str nb)", new Stringmethod(lisp, str_ngrams));
     lisp->extension("deflib right (str nb)", new Stringmethod(lisp, str_right));
     lisp->extension("deflib middle (str pos nb)", new Stringmethod(lisp, str_middle));
     lisp->extension("deflib tokenize (str)", new Stringmethod(lisp, str_tokenize_lispe));
