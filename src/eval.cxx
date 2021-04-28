@@ -5590,6 +5590,9 @@ Element* List::evall_matrix(LispE* lisp) {
 }
 
 Element* List::evall_numbers(LispE* lisp) {
+    if (liste.size() == 1)
+        return new Numbers();
+
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     
@@ -5616,6 +5619,9 @@ Element* List::evall_numbers(LispE* lisp) {
 }
 
 Element* List::evall_integers(LispE* lisp) {
+    if (liste.size() == 1)
+        return new Integers();
+
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     
@@ -5642,6 +5648,9 @@ Element* List::evall_integers(LispE* lisp) {
 }
 
 Element* List::evall_strings(LispE* lisp) {
+    if (liste.size() == 1)
+        return new Strings();
+    
     if (liste.size() != 2)
         throw new Error("Error: wrong number of arguments");
     
