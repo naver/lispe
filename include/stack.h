@@ -91,7 +91,7 @@ public:
     void copy(Stackelement* stack) {
         //We only copy constant values...
         for (auto& a: stack->variables) {
-            if (a.second->status == s_constant)
+            if (a.second->status == s_constant && a.second->type <= t_error)
                 variables[a.first] = a.second;
         }
     }

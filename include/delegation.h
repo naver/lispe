@@ -132,7 +132,7 @@ public:
     map<long, map<long, string> > listing;
     vector<Element*> force_clean;
 
-    wstring error_message;
+    Error* error_message;
     
     reading_string reading_string_function;
     reading_string display_string_function;
@@ -587,26 +587,24 @@ public:
     
     void setError(Error* err) {
         lock.locking(true);
-        if ((stop_execution & 1) == 1)
-            error_message += L"\n";
-        error_message += err->message;
-        stop_execution |= 1;
-        err->release();
+        if ((stop_execution & 1) == 1) {
+            error_message->message += L"\n";
+            error_message->message += err->message;
+            err->release();
+        }
+        else {
+            stop_execution |= 1;
+            error_message = err;
+        }
         lock.unlocking(true);
     }
     
     void throwError() {
-        Error* err = NULL;
-        lock.locking(true);
         //We need to  check if the error has not be thrown yet
-        if ((stop_execution & 1) == 1) {
-            stop_execution &= 0xFFFE;
-            err = new Error(error_message);
-            error_message = L"";
-        }
-        lock.unlocking(true);
-        if (err != NULL)
-            throw err;
+        stop_execution &= 0xFFFE;
+        Error* err = error_message;
+        error_message = NULL;
+        throw err;
     }
     
     Element* atomise(wstring& a, bool tobelocked) {

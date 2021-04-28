@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.28.16.30";
+static std::string version = "1.2021.4.28.18.00";
 string LispVersion() {
     return version;
 }
@@ -61,6 +61,7 @@ Delegation::Delegation() {
     display_string_function = &lispe_displaystring;
     reading_string_function_object = input_handler;
 
+    error_message = NULL;
     endtrace = false;
     add_to_listing = false;
     stop_execution = 0;
@@ -660,8 +661,8 @@ LispE::LispE(LispE* lisp, List* function, Element* body) {
 
     //We prepare our stack, with the creation of a local main
     push(delegation->_NULL);
-    stack_pool[0]->variables[v_null] = lisp->stack_pool[0]->variables[v_null];
-    stack_pool[0]->variables[v_true] = lisp->stack_pool[0]->variables[v_true];
+    //we only copy constant elements...
+    stack_pool[0]->copy(lisp->stack_pool[0]);
 }
 
 /*
