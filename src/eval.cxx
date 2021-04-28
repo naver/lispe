@@ -782,9 +782,9 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element*
 
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
-            if (threading) {
+            if (threading && data->status) {
                 //containers should be duplicated...
-                data = data->copying(false);
+                data = data->copying(true);
             }
             
             thread_lisp->recording(data, label);
@@ -896,9 +896,9 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
 
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
-            if (threading) {
+            if (threading && data->status) {
                 //containers should be duplicated...
-                data = data->copying(false);
+                data = data->copying(true);
             }
             
             thread_lisp->recording(data, label);

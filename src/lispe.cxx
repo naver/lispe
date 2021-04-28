@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.28.10.14";
+static std::string version = "1.2021.4.28.11.8";
 string LispVersion() {
     return version;
 }
@@ -635,6 +635,8 @@ std::atomic<long> id_pool(1);
 
 LispE::LispE(LispE* lisp, List* function, Element* body) {
 
+    delegation = lisp->delegation;
+
     _BOOLEANS[0] = delegation->_NULL;
     _BOOLEANS[1] = delegation->_TRUE;
 
@@ -645,7 +647,6 @@ LispE::LispE(LispE* lisp, List* function, Element* body) {
 
     thread_ancestor = lisp;
 
-    delegation = lisp->delegation;
     handlingutf8 = lisp->handlingutf8;
 
     isThread = true;
@@ -1778,6 +1779,8 @@ bool Element::replaceVariableNames(LispE* lisp) {
     index(3)->replaceVariableNames(lisp, dico_variables);
     return true;
 }
+
+
 
 
 
