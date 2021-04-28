@@ -123,6 +123,8 @@ public:
     
     unordered_map<wstring, List> thread_pool;
 
+    unordered_map<short, Element*> function_pool;
+
     //this is an all-purpose pool for internal usage
 
     unordered_map<long, string> allfiles_names;
@@ -130,6 +132,8 @@ public:
     map<long, map<long, string> > listing;
     vector<Element*> force_clean;
 
+    wstring error_message;
+    
     reading_string reading_string_function;
     reading_string display_string_function;
     void* reading_string_function_object;
@@ -174,6 +178,7 @@ public:
     bool next_stop;
     char add_to_listing;
     std::atomic<bool> endtrace;
+    
     
     Delegation();
     
@@ -463,6 +468,18 @@ public:
         }
     }
     
+    bool recordingFunction(Element* e, short label) {
+        try {
+            function_pool.at(label);
+            return false;
+        }
+        catch(const std::out_of_range& oor) {
+            function_pool[label] = e;
+            e->status = s_constant;
+        }
+        return true;
+    }
+    
     inline Element* recordingMethod(Stackelement* stack, Element* e, short label, short sublabel) {
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...
@@ -472,7 +489,10 @@ public:
         }
         catch(const std::out_of_range& oor) {
             //We record the first instance of a defpat declaration
-            stack->recording(e, label);
+            if (stack == NULL)
+                recordingFunction(e, label);
+            else
+                stack->recording(e, label);
         }
         
         e->status = s_constant;
@@ -563,6 +583,30 @@ public:
                 throw new Error("Error: The definition of a parameter should not be 'nil'");
             return e;
         }
+    }
+    
+    void setError(Error* err) {
+        lock.locking(true);
+        if ((stop_execution & 1) == 1)
+            error_message += L"\n";
+        error_message += err->message;
+        stop_execution |= 1;
+        err->release();
+        lock.unlocking(true);
+    }
+    
+    void throwError() {
+        Error* err = NULL;
+        lock.locking(true);
+        //We need to  check if the error has not be thrown yet
+        if ((stop_execution & 1) == 1) {
+            stop_execution &= 0xFFFE;
+            err = new Error(error_message);
+            error_message = L"";
+        }
+        lock.unlocking(true);
+        if (err != NULL)
+            throw err;
     }
     
     Element* atomise(wstring& a, bool tobelocked) {

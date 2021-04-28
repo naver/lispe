@@ -349,8 +349,16 @@ public:
         delegation->stop_execution = 0x100;
     }
 
-    inline short hasStopped() {
-        return delegation->stop_execution;
+    inline bool isthreadError() {
+        return (delegation->stop_execution & 1);
+    }
+    
+    inline bool hasStopped() {
+        return (delegation->stop_execution & 0x100);
+    }
+    
+    inline bool hasOverFlown() {
+        return (execution_stack.size() >= max_stack_size);
     }
     
     inline void clearStop() {
@@ -400,6 +408,12 @@ public:
     
     inline long stackSize() {
         return execution_stack.size();
+    }
+    
+    bool globalDeclaration() {
+        if (execution_stack.size() == 1 && !id_thread)
+            return true;
+        return false;
     }
     
     wstring stackAsString() {
@@ -500,6 +514,8 @@ public:
             }
         }
         short sublabel = extractlabel(e->index(2));
+        if (globalDeclaration())
+            return delegation->recordingMethod(NULL, e, label, sublabel);
         return delegation->recordingMethod(execution_stack.top(), e, label, sublabel);
     }
     
@@ -604,20 +620,30 @@ public:
         catch(const std::out_of_range& oor) {
             //Is it a global variable?
             if (execution_stack.size() == 1) {
-                wstring err = L"Error: unknown label: '";
-                err += name;
-                err += L"'";
-                throw new Error(err);
+                try {
+                    return delegation->function_pool.at(label);
+                }
+                catch(const std::out_of_range& oor) {
+                    wstring err = L"Error: unknown label: '";
+                    err += name;
+                    err += L"'";
+                    throw new Error(err);
+                }
             }
             
             try {
                 return stack_pool[0]->variables.at(label);
             }
             catch(const std::out_of_range& oor) {
-                wstring err = L"Error: unknown label: '";
-                err += name;
-                err += L"'";
-                throw new Error(err);
+                try {
+                    return delegation->function_pool.at(label);
+                }
+                catch(const std::out_of_range& oor) {
+                    wstring err = L"Error: unknown label: '";
+                    err += name;
+                    err += L"'";
+                    throw new Error(err);
+                }
             }
         }
     }
@@ -630,24 +656,34 @@ public:
         catch(const std::out_of_range& oor) {
             //Is it a global variable?
             if (execution_stack.size() == 1) {
-                string err = "Error: unknown label: '";
-                err += name;
-                err += "'";
-                throw new Error(err);
+                try {
+                    return delegation->function_pool.at(label);
+                }
+                catch(const std::out_of_range& oor) {
+                    string err = "Error: unknown label: '";
+                    err += name;
+                    err += "'";
+                    throw new Error(err);
+                }
             }
             
             try {
                 return stack_pool[0]->variables.at(label);
             }
             catch(const std::out_of_range& oor) {
-                string err = "Error: unknown label: '";
-                err += name;
-                err += "'";
-                throw new Error(err);
+                try {
+                    return delegation->function_pool.at(label);
+                }
+                catch(const std::out_of_range& oor) {
+                    string err = "Error: unknown label: '";
+                    err += name;
+                    err += "'";
+                    throw new Error(err);
+                }
             }
         }
     }
-    
+
     inline Element* get(short label) {
         try {
             return execution_stack.top()->variables.at(label);
@@ -656,14 +692,19 @@ public:
             //Is it a global variable?
             if (execution_stack.size() == 1) {
                 try {
-                    return delegation->data_pool.at(label);
+                    return delegation->function_pool.at(label);
                 }
                 catch(const std::out_of_range& oor) {
-                    wstring name = delegation->code_to_string[label];
-                    wstring err = L"Error: unknown label: '";
-                    err += name;
-                    err += L"'";
-                    throw new Error(err);
+                    try {
+                        return delegation->data_pool.at(label);
+                    }
+                    catch(const std::out_of_range& oor) {
+                        wstring name = delegation->code_to_string[label];
+                        wstring err = L"Error: unknown label: '";
+                        err += name;
+                        err += L"'";
+                        throw new Error(err);
+                    }
                 }
             }
             try {
@@ -671,14 +712,19 @@ public:
             }
             catch(const std::out_of_range& oor) {
                 try {
-                    return delegation->data_pool.at(label);
+                    return delegation->function_pool.at(label);
                 }
                 catch(const std::out_of_range& oor) {
-                    wstring name = delegation->code_to_string[label];
-                    wstring err = L"Error: unknown label: '";
-                    err += name;
-                    err += L"'";
-                    throw new Error(err);
+                    try {
+                        return delegation->data_pool.at(label);
+                    }
+                    catch(const std::out_of_range& oor) {
+                        wstring name = delegation->code_to_string[label];
+                        wstring err = L"Error: unknown label: '";
+                        err += name;
+                        err += L"'";
+                        throw new Error(err);
+                    }
                 }
             }
         }

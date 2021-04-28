@@ -193,6 +193,12 @@ int main(int argc, char *argv[]) {
     string codefinal;
     bool darkmode = false;
     
+#ifdef __apple_build_version__
+        char path[2048];
+        strcpy(path, "/usr/local/lib/lispe");
+        setenv("LISPEPATH", path, 1);
+#endif
+    
     long i;
     for (i = 1; i < argc; i++) {
         args = argv[i];

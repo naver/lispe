@@ -722,8 +722,7 @@ void List::evalthread(Element* body, LispE* lisp) {
         }
     }
     catch(Error* err) {
-        err->release();
-        return;
+        lisp->delegation->setError(err);
     }
     element->release();
 }
@@ -1266,9 +1265,16 @@ Element* List::eval(LispE* lisp) {
     }
     
     if (lisp->checkLispState()) {
+        if (lisp->isthreadError()) {
+            if (!lisp->isThread)
+                lisp->delegation->throwError();
+            return null_;
+        }
         if (lisp->hasStopped())
             throw lisp->delegation->_THEEND;
-        throw new Error("Error: stack overflow");
+        if (lisp->hasOverFlown())
+            throw new Error("Error: stack overflow");
+        return null_;
     }
     return eval_error(lisp);
 }
@@ -3268,6 +3274,11 @@ Element* List::evall_deflib(LispE* lisp) {
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
         throw new Error(L"Error: List of missing parameters in a function declaration");
+    if (lisp->globalDeclaration()) {
+        if (!lisp->delegation->recordingFunction(this, label))
+            throw new Error(L"Error: Function already declared");
+        return this;
+    }
     return lisp->recordingunique(this, label);
 }
 
@@ -3310,6 +3321,12 @@ Element* List::evall_defun(LispE* lisp) {
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
         throw new Error(L"Error: List of missing parameters in a function declaration");
+
+    if (lisp->globalDeclaration()) {
+        if (!lisp->delegation->recordingFunction(this, label))
+            throw new Error(L"Error: Function already declared");
+        return this;
+    }
     return lisp->recordingunique(this, label);
 }
 

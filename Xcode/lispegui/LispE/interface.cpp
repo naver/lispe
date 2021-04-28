@@ -595,7 +595,7 @@ extern "C" {
 
         cr_normalise(codestr);
         codeindente = "";
-        IndentCode(codestr, codeindente, 4, true, false);
+        IndentCode(codestr, codeindente, GetBlankSize(), true, false);
         codeindente += "\n";
         return codeindente.c_str();
     }
