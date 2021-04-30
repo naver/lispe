@@ -295,7 +295,7 @@ public:
     }
     
     Element* load_library(string name);
-    Element* extension(string, Element*);
+    Element* extension(string, Element* e = NULL);
     Element* eval(string);
     Element* eval(wstring& w) {
         string s;

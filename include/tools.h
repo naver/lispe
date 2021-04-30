@@ -61,10 +61,11 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+#define hmap std::unordered_map
 //------------------------------------------------------------------------------------
-string jsonstring(string value);
-wstring wjsonstring(wstring value);
-string cs_unicode_to_utf8(UWCHAR code);
+Exporting string jsonstring(string value);
+Exporting wstring wjsonstring(wstring value);
+Exporting string cs_unicode_to_utf8(UWCHAR code);
 
 UWCHAR getonechar(unsigned char* s, long& i);
 
@@ -72,7 +73,8 @@ string NormalizePathname(string n);
 bool c_is_space(wchar_t code);
 long size_c(string& s);
 Exporting long size_raw_c(unsigned char* contenu, long sz);
-long GetBlankSize();
+Exporting void SetBlankSize(long sz);
+Exporting long GetBlankSize();
 long VirtualIndentation(string& codestr, bool lisp, bool python);
 void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bool python);
 void cr_normalise(string& code);
@@ -116,17 +118,18 @@ wstring& s_trim(wstring& strvalue);
 wstring& s_trimleft(wstring& strvalue);
 wstring& s_trimright(wstring& strvalue);
 
-void c_chars_get_next(unsigned char* m, char* str, size_t& i);
-bool c_char_index_insert(string& s, string c, long i);
-void s_utf8_to_unicode(wstring& s, unsigned char* str, long sz);
-void s_utf8_to_unicode_clean(wstring& s, unsigned char* str, long sz);
-unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code);
-void s_unicode_to_utf8(string& s, wstring& str);
-void s_unicode_to_utf8_clean(string& s, wstring& str);
-bool s_is_utf8(unsigned char* contenu, long longueur);
+Exporting void c_chars_get_next(unsigned char* m, char* str, size_t& i);
+Exporting bool c_char_index_insert(string& s, string c, long i);
+Exporting void s_utf8_to_unicode(wstring& s, unsigned char* str, long sz);
+Exporting void s_utf8_to_unicode_clean(wstring& s, unsigned char* str, long sz);
+Exporting unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code);
+Exporting void s_unicode_to_utf8(string& s, wstring& str);
+Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz);
+Exporting void s_unicode_to_utf8_clean(string& s, wstring& str);
+Exporting bool s_is_utf8(unsigned char* contenu, long longueur);
 Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second);
 Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code);
-bool c_utf16(uint32_t code);
+Exporting bool c_utf16(uint32_t code);
 
 #define c_is_digit(c) (c >= '0' && c <= '9')
 
@@ -156,7 +159,7 @@ inline void concat_to_wstring(wstring& res, UWCHAR code) {
 #endif
 
 //--------------------------------------------------------------------
-bool c_is_hexa(wchar_t code);
+Exporting bool c_is_hexa(wchar_t code);
 //------------------------------------------------------------------------------------
 class Chaine_UTF8 {
 public:
@@ -182,6 +185,7 @@ public:
     bool s_is_digit(wstring& str);
     bool s_is_space(wstring& str);
     bool s_is_space(string& str);
+	string u_to_lower(string& s);
     wstring s_to_lower(wstring& s);
     wstring s_to_upper(wstring& s);
     wchar_t c_to_lower(wchar_t c);

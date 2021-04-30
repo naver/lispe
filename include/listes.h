@@ -429,6 +429,7 @@ public:
         return liste.object;
     }
     
+    Element* quoted(LispE*);
     Element* unique(LispE* lisp);
 
     void flatten(LispE*, List* l);
@@ -909,6 +910,7 @@ public:
     Element* evall_setq(LispE* lisp);
     Element* evall_setg(LispE* lisp);
     Element* evall_deflib(LispE* lisp);
+    Element* evall_deflibpat(LispE* lisp);
     Element* evall_defmacro(LispE* lisp);
     Element* evall_sleep(LispE* lisp);
     Element* evall_wait(LispE* lisp);
@@ -920,6 +922,8 @@ public:
     Element* evalt_list(LispE* lisp);
     Element* evall_reduce(LispE* lisp);
     Element* evall_scan(LispE* lisp);
+    Element* evall_backreduce(LispE* lisp);
+    Element* evall_backscan(LispE* lisp);
     Element* evall_rank(LispE* lisp);
     Element* evall_equalonezero(LispE* lisp);
     Element* evall_rho(LispE* lisp);

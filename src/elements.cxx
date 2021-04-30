@@ -15,7 +15,13 @@
 #include <algorithm>
 
 //------------------------------------------------------------------------------------------
-
+Element* List::quoted(LispE* lisp) {
+    List* l = new List;
+    l->liste.push_raw(lisp->delegation->_QUOTE);
+    l->append(this);
+    return l;
+}
+//------------------------------------------------------------------------------------------
 union double64 {
 public:
     

@@ -852,7 +852,7 @@ void Chaine_UTF8::l_emojis(map<UWCHAR, string>& dico) {
         dico[it.first] = it.second;
 }
 //------------------------------------------------------------------------
-string cs_unicode_to_utf8(UWCHAR code) {
+Exporting string cs_unicode_to_utf8(UWCHAR code) {
     char utf[5];
     if (code < 0x0080) {
         utf[0] = (unsigned char)code;
@@ -962,7 +962,7 @@ char c_test_utf8(unsigned char* utf) {
     return 0;
 }
 
-void c_chars_get_next(unsigned char* m, char* str, long& i) {
+Exporting void c_chars_get_next(unsigned char* m, char* str, long& i) {
     long nb = c_test_utf8(m + i);
     str[0] = (char)m[i];
     
@@ -1344,7 +1344,7 @@ Chaine_UTF8::Chaine_UTF8() {
     wvowels[89] = 89;
 }
 
-unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
+Exporting unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
     code = utf[0];
 
     if (!(utf[0] & 0x0080))
@@ -1382,7 +1382,7 @@ unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
 }
 
 //--------------------------------------------------------------------
-bool c_is_hexa(wchar_t code) {
+Exporting bool c_is_hexa(wchar_t code) {
     static const char hexas[]= {'a','b','c','d','e','f','A','B','C','D','E','F'};
     
     if (c_is_digit(code))
@@ -1394,7 +1394,7 @@ bool c_is_hexa(wchar_t code) {
     return false;
 }
 //--------------------------------------------------------------------
-string jsonstring(string value) {
+Exporting string jsonstring(string value) {
     if (value == "")
         return "\"\"";
     
@@ -1412,7 +1412,7 @@ string jsonstring(string value) {
     return res;
 }
 
-wstring wjsonstring(wstring value) {
+Exporting wstring wjsonstring(wstring value) {
     if (value == L"")
         return L"\"\"";
     
@@ -1558,6 +1558,18 @@ wchar_t Chaine_UTF8::c_to_upper(wchar_t c) {
     }
 }
 
+string Chaine_UTF8::u_to_lower(string& u) {
+	wstring res;
+	wstring s;
+	s_utf8_to_unicode(s, USTR(u), u.size());
+	long lg = s.size();
+	for (long i = 0; i < lg; i++)
+		res += (wchar_t)c_to_lower(s[i]);
+	string r;
+	s_unicode_to_utf8(r, res);
+	return r;
+}
+
 wstring Chaine_UTF8::s_to_lower(wstring& s) {
     wstring res;
     long lg = s.size();
@@ -1653,7 +1665,7 @@ bool s_is_digit(string& str) {
     return true;
 }
 
-bool s_is_utf8(unsigned char* contenu, long longueur) {
+Exporting bool s_is_utf8(unsigned char* contenu, long longueur) {
     while (longueur--) {
         if ((*contenu & 0x80) && c_test_utf8(contenu))
             return true;
@@ -2844,7 +2856,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
 }
 
 //------------------------------------------------------------------------
-bool c_char_index_insert(string& s, string c, long x) {
+Exporting bool c_char_index_insert(string& s, string c, long x) {
     if (x > s.size())
         return false;
     long i;
@@ -2876,12 +2888,12 @@ static inline char* concatstrings(char* str, char* ctn, long& i, long& size_str,
     return str;
 }
 //------------------------------------------------------------------------
-void s_unicode_to_utf8_clean(string& s, wstring& str) {
+Exporting void s_unicode_to_utf8_clean(string& s, wstring& str) {
     s = "";
     s_unicode_to_utf8(s, str);
 }
 
-void s_unicode_to_utf8(string& s, wstring& str) {
+Exporting void s_unicode_to_utf8(string& s, wstring& str) {
     long i = 0;
     char inter[5];
     long ineo = 0;
@@ -2911,12 +2923,41 @@ void s_unicode_to_utf8(string& s, wstring& str) {
     delete[] neo;
 }
 
-void s_utf8_to_unicode_clean(wstring& w, unsigned char* str , long sz) {
+Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz) {
+	long i = 0;
+	char inter[5];
+	long ineo = 0;
+	if (!sz)
+		return;
+
+	long szo = 1 + (sz << 1);
+	char* neo = new char[szo];
+	neo[0] = 0;
+	long nb;
+
+	while (i < sz) {
+		if (str[i] < 0x0080 && ineo < szo - 1) {
+			neo[ineo++] = (char)str[i];
+			i++;
+			continue;
+		}
+
+		nb = c_unicode_to_utf8(str[i], (uchar*)inter);
+		neo = concatstrings(neo, inter, ineo, szo, nb);
+		i++;
+	}
+
+	neo[ineo] = 0;
+	s += neo;
+	delete[] neo;
+}
+
+Exporting void s_utf8_to_unicode_clean(wstring& w, unsigned char* str , long sz) {
     w = L"";
     s_utf8_to_unicode(w, str , sz);
 }
 
-void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
+Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
     if (!sz)
         return;
 
@@ -3024,12 +3065,12 @@ void s_split(wstring& s, wstring& splitter, vector<wstring>& vs, bool keepblanks
 //------------------------------------------------------------------------
 
 static long blanksize = 3;
-void SetBlankSize(long sz) {
+Exporting void SetBlankSize(long sz) {
     if (sz >= 1)
         blanksize = sz;
 }
 
-long GetBlankSize() {
+Exporting long GetBlankSize() {
     return blanksize;
 }
 
@@ -4065,7 +4106,7 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
 
 
 //Convert a unicode character into a utf16 character
-bool c_utf16(uint32_t code) {
+Exporting bool c_utf16(uint32_t code) {
     //A unicode character is encoded over 4 bytes: 3 -> 0
     //if we have bits on byte 2, then we need to provide 4 bytes...
     return ((code & 0x1F0000));

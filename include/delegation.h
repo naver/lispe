@@ -150,6 +150,7 @@ public:
     Atome* _DEFPAT;
     Atome* _DICO_KEYN;
     Atome* _DICO_KEY;
+    Atome* _QUOTE;
     Element* _BREAK;
     Listbreak _BREAKEVAL;
     

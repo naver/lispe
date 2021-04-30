@@ -73,7 +73,7 @@ static inline wchar_t* concatstrings(wchar_t* str, wchar_t* ctn, long& i, long& 
 
     for (j = 0; j < size_ctn; j++)
         str[i++] = ctn[j];
-    
+
     str[i] = 0;
     return str;
 }
@@ -305,7 +305,7 @@ static void InitNumbers() {
         while (buff[pos]) invertnumbers[i][sz--]=buff[pos++];
         invertnumbers[i][4]=pos;
     }
-    
+
     wstring w;
     for (int i=0;i<=9999;i++) {
         sz = sprintf_s(buff,10,"%d",i);
@@ -315,7 +315,7 @@ static void InitNumbers() {
 
 static void  InitLatinTables() {
     long i = 0;
-    
+
     char ch[5];
     while (latin2codetable[i] != 0) {
         latin2codes[latin2codetable[i]] = latin2codetable[i + 1];
@@ -324,8 +324,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin2codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin3codetable[i] != 0) {
         latin3codes[latin3codetable[i]] = latin3codetable[i + 1];
@@ -334,8 +334,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin3codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin4codetable[i] != 0) {
         latin4codes[latin4codetable[i]] = latin4codetable[i + 1];
@@ -344,8 +344,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin4codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin5codetable[i] != 0) {
         latin5codes[latin5codetable[i]] = latin5codetable[i + 1];
@@ -354,8 +354,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin5codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin6codetable[i] != 0) {
         latin6codes[latin6codetable[i]] = latin6codetable[i + 1];
@@ -364,8 +364,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin6codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin7codetable[i] != 0) {
         latin7codes[latin7codetable[i]] = latin7codetable[i + 1];
@@ -374,8 +374,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin7codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin8codetable[i] != 0) {
         latin8codes[latin8codetable[i]] = latin8codetable[i + 1];
@@ -384,8 +384,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin8codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin9codetable[i] != 0) {
         latin9codes[latin9codetable[i]] = latin9codetable[i + 1];
@@ -394,8 +394,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin9codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin10codetable[i] != 0) {
         latin10codes[latin10codetable[i]] = latin10codetable[i + 1];
@@ -404,8 +404,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin10codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin11codetable[i] != 0) {
         latin11codes[latin11codetable[i]] = latin11codetable[i + 1];
@@ -414,7 +414,7 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin11codetable[i];
         i += 2;
     }
-    
+
     i = 0;
     while (latin12codetable[i] != 0) {
         latin12codes[latin12codetable[i]] = latin12codetable[i + 1];
@@ -423,7 +423,7 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin12codetable[i];
         i += 2;
     }
-    
+
     i = 0;
     while (latin13codetable[i] != 0) {
         latin13codes[latin13codetable[i]] = latin13codetable[i + 1];
@@ -432,8 +432,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin13codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin14codetable[i] != 0) {
         latin14codes[latin14codetable[i]] = latin14codetable[i + 1];
@@ -442,8 +442,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin14codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin15codetable[i] != 0) {
         latin15codes[latin15codetable[i]] = latin15codetable[i + 1];
@@ -452,8 +452,8 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin15codetable[i];
         i += 2;
     }
-    
-    
+
+
     i = 0;
     while (latin16codetable[i] != 0) {
         latin16codes[latin16codetable[i]] = latin16codetable[i + 1];
@@ -462,7 +462,7 @@ static void  InitLatinTables() {
         utf8codes[ch] = latin16codetable[i];
         i += 2;
     }
-    
+
     i = 0;
     while (latinwindows1[i] != 0) {
         latinwindowscodes[latinwindows1[i]] = latinwindows1[i + 1];
@@ -471,7 +471,7 @@ static void  InitLatinTables() {
         utf8codes[ch] = latinwindows1[i];
         i += 2;
     }
-    
+
     i = 0;
     while (latincodetable[i] != 0) {
         latincodes[latincodetable[i]] = latincodetable[i + 1];
@@ -551,11 +551,11 @@ Exporting void inittableutf8(Chaine_UTF8* h) {
     if (init)
         return;
     init=true;
-    
+
     InitNumbers();
     InitLatinTables();
-    
-    
+
+
     alllatincodes[0] = &latincodes;
     alllatincodes[1] = &latincodes;
     alllatincodes[2] = &latin2codes;
@@ -573,7 +573,7 @@ Exporting void inittableutf8(Chaine_UTF8* h) {
     alllatincodes[15] = &latin15codes;
     alllatincodes[16] = &latin16codes;
     alllatincodes[17] = &latinwindowscodes;
- 
+
 }
 
 //===================================================================
@@ -680,7 +680,7 @@ extern "C" {
                     cont = false;
             }
         }
-        
+
         double res = v;
 
         if (c == '.') {
@@ -709,10 +709,10 @@ extern "C" {
                         cont = false;
                 }
             }
-            
+
             res += (double)v/(double)(1 << mantissa);
         }
-        
+
 
         if ((c &0xDF) == 'P') {
             bool sgn = false;
@@ -724,7 +724,7 @@ extern "C" {
                 if (*s == '+')
                     ++s;
             }
-            
+
             v = *s++ & 15;
             while (isadigit(*s)) {
                 v = (v << 3) + (v << 1) + (*s++ & 15);
@@ -736,7 +736,7 @@ extern "C" {
                 res *= v;
 
         }
-        
+
         return res*sign;
     }
 }
@@ -746,7 +746,7 @@ double conversionfloathexa(const char* s) {
     //End of string...
     if (*s ==0 )
         return 0;
-    
+
     int sign = 1;
 
     //Sign
@@ -757,12 +757,12 @@ double conversionfloathexa(const char* s) {
     else
         if (*s=='+')
             ++s;
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         return conversiontofloathexa(s, sign);
     }
-    
+
     BLONG v;
     if (isadigit(*s)) {
         v = *s++ & 15;
@@ -774,7 +774,7 @@ double conversionfloathexa(const char* s) {
     }
     else
         return 0;
-    
+
     double res = v;
 
     if (*s=='.') {
@@ -791,7 +791,7 @@ double conversionfloathexa(const char* s) {
         else
             return res*sign;
     }
-        
+
     if ((*s &0xDF) == 'E') {
         ++s;
         long sgn = 1;
@@ -803,12 +803,12 @@ double conversionfloathexa(const char* s) {
             if (*s == '+')
                 ++s;
         }
-        
+
         if (isadigit(*s)) {
             v = *s++ & 15;
             while (isadigit(*s))
                 v = (v << 3) + (v << 1) + (*s++ & 15);
-            
+
             res *= power10(v*sgn);
         }
     }
@@ -844,7 +844,7 @@ double conversiontofloathexa(const char* s, int sign, short& l) {
                 cont = false;
         }
     }
-    
+
     double res = v;
 
     if (c == '.') {
@@ -877,10 +877,10 @@ double conversiontofloathexa(const char* s, int sign, short& l) {
                     cont = false;
             }
         }
-        
+
         res += (double)v/(double)(1 << mantissa);
     }
-    
+
 
     if ((c &0xDF) == 'P') {
         bool sgn = false;
@@ -895,7 +895,7 @@ double conversiontofloathexa(const char* s, int sign, short& l) {
                 ++l;
             }
         }
-        
+
         v = *s++ & 15;
         l++;
         while (isadigit(*s)) {
@@ -909,7 +909,7 @@ double conversiontofloathexa(const char* s, int sign, short& l) {
             res *= v;
 
     }
-    
+
     return res*sign;
 }
 
@@ -918,7 +918,7 @@ double conversionfloathexa(const char* s, short& l) {
     //End of string...
     if (*s ==0 )
         return 0;
-    
+
     int sign = 1;
 
     //Sign
@@ -932,13 +932,13 @@ double conversionfloathexa(const char* s, short& l) {
             ++s;
             l++;
         }
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         l++;
         return conversiontofloathexa(s, sign, l);
     }
-    
+
     BLONG v;
     if (isadigit(*s)) {
         v = *s++ & 15;
@@ -952,7 +952,7 @@ double conversionfloathexa(const char* s, short& l) {
     }
     else
         return 0;
-    
+
     double res = v;
 
     if (*s=='.') {
@@ -972,7 +972,7 @@ double conversionfloathexa(const char* s, short& l) {
         else
             return res*sign;
     }
-        
+
     if ((*s &0xDF) == 'E') {
         ++s;
         l++;
@@ -988,7 +988,7 @@ double conversionfloathexa(const char* s, short& l) {
                 ++l;
             }
         }
-        
+
         if (isadigit(*s)) {
             v = *s++ & 15;
             l++;
@@ -996,7 +996,7 @@ double conversionfloathexa(const char* s, short& l) {
                 v = (v << 3) + (v << 1) + (*s++ & 15);
                 l++;
             }
-            
+
             res *= power10(v*sgn);
         }
     }
@@ -1031,7 +1031,7 @@ double conversiontofloathexa(const wchar_t* s, int sign, short& l) {
                 cont = false;
         }
     }
-    
+
     double res = v;
 
     if (c == '.') {
@@ -1064,10 +1064,10 @@ double conversiontofloathexa(const wchar_t* s, int sign, short& l) {
                     cont = false;
             }
         }
-        
+
         res += (double)v/(double)(1 << mantissa);
     }
-    
+
 
     if ((c &0xDF) == 'P') {
         bool sgn = false;
@@ -1082,7 +1082,7 @@ double conversiontofloathexa(const wchar_t* s, int sign, short& l) {
                 ++l;
             }
         }
-        
+
         v = *s++ & 15;
         l++;
         while (isadigit(*s)) {
@@ -1096,7 +1096,7 @@ double conversiontofloathexa(const wchar_t* s, int sign, short& l) {
             res *= v;
 
     }
-    
+
     return res*sign;
 }
 
@@ -1105,7 +1105,7 @@ double conversionfloathexa(const wchar_t* s, short& l) {
     //End of string...
     if (*s ==0 )
         return 0;
-    
+
     int sign = 1;
 
     //Sign
@@ -1119,13 +1119,13 @@ double conversionfloathexa(const wchar_t* s, short& l) {
             ++s;
             l++;
         }
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         l++;
         return conversiontofloathexa(s, sign, l);
     }
-    
+
     BLONG v;
     if (isadigit(*s)) {
         v = *s++ & 15;
@@ -1139,7 +1139,7 @@ double conversionfloathexa(const wchar_t* s, short& l) {
     }
     else
         return 0;
-    
+
     double res = v;
 
     if (*s=='.') {
@@ -1159,7 +1159,7 @@ double conversionfloathexa(const wchar_t* s, short& l) {
         else
             return res;
     }
-        
+
     if ((*s &0xDF) == 'E') {
         ++s;
         l++;
@@ -1175,7 +1175,7 @@ double conversionfloathexa(const wchar_t* s, short& l) {
                 ++l;
             }
         }
-        
+
         if (isadigit(*s)) {
             v = *s++ & 15;
             l++;
@@ -1183,7 +1183,7 @@ double conversionfloathexa(const wchar_t* s, short& l) {
                 v = (v << 3) + (v << 1) + (*s++ & 15);
                 l++;
             }
-            
+
             res *= power10(v*sgn);
         }
     }
@@ -1195,7 +1195,7 @@ Exporting BLONG conversionintegerhexa(char* number) {
     uchar c = *number;
     if (!c)
         return 0;
-    
+
     int sign = 1;
     if (c == '-') {
         c = *++number;
@@ -1205,13 +1205,13 @@ Exporting BLONG conversionintegerhexa(char* number) {
         if (c == '+') {
             c = *++number;
         }
-    
-    
+
+
     ++number;
     BLONG v;
     if (c == '0' && *number == 'x') {
         ++number;
-        
+
         v = 0;
         while (*number) {
             v <<= 4;
@@ -1243,15 +1243,15 @@ Exporting BLONG conversionintegerhexa(char* number) {
         else
             return 0;
     }
-    
+
     return v*sign;
 }
 
 BLONG conversionintegerhexa(wstring& number) {
     long ipos=0;
-    
+
     while (number[ipos]<=32) ++ipos;
-    
+
 
     int sign = 1;
     if (number[ipos] == '-') {
@@ -1261,9 +1261,9 @@ BLONG conversionintegerhexa(wstring& number) {
     else
         if (number[ipos] == '+')
             ++ipos;
-    
+
     BLONG v = 0;
-    
+
     uchar c = number[ipos++];
     if (number.size() == ipos)
         return (c - 48);
@@ -1375,12 +1375,12 @@ class doubledecimal {
     public :
     long n;
     double v;
-    
+
     doubledecimal(double d) {
         v = d;
         n=0;
     }
-    
+
     bool check() {
         v=(v-n)*10;
         n=v;
@@ -1399,7 +1399,7 @@ Exporting void convertnumber(long v, string& s) {
         s = numbers.get(v);
         return;
     }
-    
+
     bool sgn=false;
     if (v<0) {
         v=-v;
@@ -1410,11 +1410,11 @@ Exporting void convertnumber(long v, string& s) {
         }
         sgn=true;
     }
-    
+
     char buff[20];
     char* num = buff+19;
     *num-- = 0;
-    
+
     const char* nb;
     long inter=v;
     long rest=0;
@@ -1425,7 +1425,7 @@ Exporting void convertnumber(long v, string& s) {
         nb=invertnumbers[rest];
         while (*nb) *num--=*nb++;
     }
-    
+
     if (rest<10)
         num+=2;
     else
@@ -1445,7 +1445,7 @@ Exporting void convertnumber(long v, wstring& s) {
         convertingdigits(numbers.get(v),s);
         return;
     }
-    
+
     bool sgn=false;
     if (v<0) {
         v=-v;
@@ -1456,9 +1456,9 @@ Exporting void convertnumber(long v, wstring& s) {
         }
         sgn=true;
     }
-    
+
     wchar_t buff[50];
-    
+
     wchar_t* num = buff+49;
     *num-- = 0;
 
@@ -1483,7 +1483,7 @@ Exporting void convertnumber(long v, wstring& s) {
         *num='-';
     else
         ++num;
-    
+
     s = num;
 }
 
@@ -1492,17 +1492,17 @@ Exporting void convertnumber(double val, string& s) {
         s =  "0";
         return;
     }
-    
+
     char buff[100];
-    
+
     bool sgn=false;
-    
+
     double v=val;
     if (v<0) {
         v=-v;
         sgn=true;
     }
-    
+
     if (v <= 1e-7) {
         sprintf_s(buff,100,"%g",val);
         s = buff;
@@ -1510,16 +1510,16 @@ Exporting void convertnumber(double val, string& s) {
     }
 
     char* num = buff+50;
-    
+
     *num-- = 0;
-    
+
     //First the main digit
     BLONG vv=v;
     val=v-vv;
     const char* nbb;
-    
+
     char nb=0;
-    
+
     if (vv <= 9999 && numbers.check(vv)) {
         if (!val) {
             if (!sgn) {
@@ -1592,7 +1592,7 @@ Exporting void convertnumber(double val, string& s) {
         else
             num++;
     }
-    
+
     if (val) {
         nbb=num;
         //now, we now that we can start writing at buff+50;
@@ -1600,14 +1600,14 @@ Exporting void convertnumber(double val, string& s) {
         *num++='.';
         nb = nbits;
         doubledecimal d(val);
-        
+
         while (nb) {
             if (!d.check())
                 break;
             *num++=0x30|d.n;
             nb--;
         }
-        
+
         *num=0;
         if (!nb) { //arrondi
             if (num[-1] == '9' && num[-2] == '9' && buff[51] != '9') {
@@ -1615,7 +1615,7 @@ Exporting void convertnumber(double val, string& s) {
                 while (*num=='9') --num;
                 num+=2;
             }
-            
+
             if (num[-1]>='6' && num[-2] != '9')
                 num[-2]++;
             num[-1] = 0;
@@ -1631,7 +1631,7 @@ Exporting void convertnumber(double val, string& s) {
         s = nbb;
         return;
     }
-    
+
     s = num;
 }
 
@@ -1640,7 +1640,7 @@ Exporting void convertnumber(double val, wstring& s) {
         s = L"0";
         return;
     }
-    
+
     wchar_t buff[100];
     bool sgn=false;
 
@@ -1655,16 +1655,16 @@ Exporting void convertnumber(double val, wstring& s) {
         s = buff;
         return;
     }
-    
+
     wchar_t* num = buff+50;
     *num-- = 0;
-    
+
     //First the main digit
     BLONG vv=v;
     val=v-vv;
-    
+
     char nb=0;
-    
+
     if (vv <= 9999 && numbers.check(vv)) {
         if (!val) {
             if (!sgn) {
@@ -1741,7 +1741,7 @@ Exporting void convertnumber(double val, wstring& s) {
         else
             num++;
     }
-    
+
     if (val) {
         wchar_t* beg=num;
         //now, we now that we can start writing at buff+50;
@@ -1749,14 +1749,14 @@ Exporting void convertnumber(double val, wstring& s) {
         *num++='.';
         nb = nbits;
         doubledecimal d(val);
-        
+
         while (nb) {
             if (!d.check())
                 break;
             *num++= (wchar_t)(0x30|d.n);
             nb--;
         }
-        
+
         *num=0;
         if (!nb) { //arrondi
             if (num[-1] == '9' && num[-2] == '9' && buff[51] != '9') {
@@ -1764,7 +1764,7 @@ Exporting void convertnumber(double val, wstring& s) {
                 while (*num=='9') --num;
                 num+=2;
             }
-            
+
             if (num[-1]>='6' && num[-2] != '9')
                 num[-2]++;
             num[-1] = 0;
@@ -1790,7 +1790,7 @@ Exporting void convertnumber(double val, wstring& s) {
 Exporting string convertfromnumber(long v) {
     if (v>=0 && v <= 9999 && numbers.check(v))
         return numbers.get(v);
-    
+
     bool sgn=false;
     if (v<0) {
         v=-v;
@@ -1801,11 +1801,11 @@ Exporting string convertfromnumber(long v) {
         }
         sgn=true;
     }
-    
+
     char buff[20];
     char* num = buff+19;
     *num-- = 0;
-    
+
     const char* nb;
     long inter=v;
     long rest=0;
@@ -1816,7 +1816,7 @@ Exporting string convertfromnumber(long v) {
         nb=invertnumbers[rest];
         while (*nb) *num--=*nb++;
     }
-    
+
     if (rest<10)
         num+=2;
     else
@@ -1833,7 +1833,7 @@ Exporting string convertfromnumber(long v) {
 Exporting wstring wconvertfromnumber(long v) {
     if (v>=0 && v <= 9999 && numbers.check(v))
         return convertdigits(numbers.get(v));
-    
+
     bool sgn=false;
     if (v<0) {
         v=-v;
@@ -1841,12 +1841,12 @@ Exporting wstring wconvertfromnumber(long v) {
             return convertdigits(numbers.get(v),L"-");
         sgn=true;
     }
-    
+
     wchar_t buff[20];
-    
+
     wchar_t* num = buff + 19;
     *num-- = 0;
-    
+
     char* nb;
     long inter=v;
     long rest=0;
@@ -1868,7 +1868,7 @@ Exporting wstring wconvertfromnumber(long v) {
         *num='-';
     else
         ++num;
-    
+
     return wstring(num,buff-num+19);
 }
 
@@ -1879,10 +1879,10 @@ Exporting wstring wconvertfromnumber(long v) {
 Exporting TRANSCHAR c_latin_table_to_unicode(int tableindex, TRANSCHAR c) {
     if (c < 128 || c > 255 || !alllatincodes.check(tableindex))
         return c;
-    
+
     if (alllatincodes[tableindex]->check(c))
         return (*alllatincodes[tableindex])[c];
-    
+
     return c;
 }
 
@@ -1911,7 +1911,7 @@ uchar c_latin_to_utf8(unsigned char* utf, unsigned char* res, bool checktable = 
         res[1] = 0;
         return 1;
     }
-    
+
     uchar nb = c_test_utf8(utf);
     //we take two, this is a UTF8 code...
     if (nb) {
@@ -1920,13 +1920,13 @@ uchar c_latin_to_utf8(unsigned char* utf, unsigned char* res, bool checktable = 
         res[nb+1] = 0;
         return nb+1;
     }
-    
+
     if (checktable) {
         res[0] = '.';
         res[1] = 0;
         return 1;
     }
-    
+
     if (latincodes.check(c))
         c_unicode_to_utf8(latincodes[c], res);
     else {
@@ -1964,7 +1964,7 @@ uchar c_latin_to_unicode(unsigned char* utf, TRANSCHAR& code, bool checktable) {
         code = c;
         return 1;
     }
-    
+
     //we take two, this is a UTF8 code...
     c= c_utf8_to_unicode(utf, code);
     if (!c) {
@@ -1979,10 +1979,10 @@ uchar c_latin_to_unicode(unsigned char* utf, TRANSCHAR& code, bool checktable) {
 Exporting TRANSCHAR c_unicode_to_latin(TRANSCHAR u) {
     if (u < 0x0080)
         return u;
-    
+
     if (codeslatin.check(u))
         return codeslatin[u];
-    
+
     return 0;
 }
 
@@ -1991,7 +1991,7 @@ uchar c_utf8_to_latin(unsigned char* utf, uchar& nb) {
     uchar c = utf[0];
     if (!(c & 0x0080))
         return c;
-    
+
     uchar code;
     if ((utf[0] & 0xF0)== 0xF0) {
         if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80) {
@@ -2004,7 +2004,7 @@ uchar c_utf8_to_latin(unsigned char* utf, uchar& nb) {
         }
         return c;
     }
-    
+
     if ((utf[0] & 0xE0)== 0xE0) {
         if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80) {
             code = (utf[0] & 0xF) << 12;
@@ -2015,14 +2015,14 @@ uchar c_utf8_to_latin(unsigned char* utf, uchar& nb) {
         }
         return c;
     }
-    
+
     if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80) {
         code = (utf[0] & 0x1F) << 6;
         code |= (utf[1] & 0x3F);
         nb = 2;
         return code;
     }
-    
+
     return c;
 }
 
@@ -2036,16 +2036,16 @@ Exporting char c_detect_utf8(unsigned char* utf) {
             return 3;
         return 0;
     }
-    
+
     if ((utf[0] & 0xE0)== 0xE0) {
         if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80)
             return 2;
         return 0;
     }
-    
+
     if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80)
         return 1;
-    
+
     return 0;
 }
 
@@ -2054,12 +2054,12 @@ Exporting char c_detect_utf8(unsigned char* utf) {
 void c_chartobyteposition(unsigned char* contenu, long sz, long& bcpos, long& ecpos) {
     if (ecpos > sz)
         return;
-    
+
     long begcpos = bcpos;
     long endcpos = ecpos;
     long i = 0;
     long nb;
-    
+
     while (endcpos > 0 && i<sz) {
         if (!begcpos)
             bcpos = i;
@@ -2083,7 +2083,7 @@ void c_bytetocharposition(unsigned char* contenu, long& bbpos, long& ebpos) {
     long sz = 0;
     long nb;
     long bpos = bbpos;
-    
+
     while (i < ebpos) {
         if (i == bpos)
             bbpos = sz;
@@ -2098,7 +2098,7 @@ void c_bytetocharposition(unsigned char* contenu, long& bbpos, long& ebpos) {
             i += nb + 1;
         sz++;
     }
-    
+
     ebpos = sz;
 }
 
@@ -2106,14 +2106,14 @@ void c_bytetocharposition(unsigned char* contenu, long& bbpos, long& ebpos) {
 Exporting long c_chartobyteposition(unsigned char* contenu, long sz, long charpos) {
     if (charpos > sz)
         return sz;
-    
+
     long i = 0;
 #ifdef INTELINTRINSICS
     if (check_ascii(contenu, charpos, i))
         return charpos;
     charpos-=i;
 #endif
-    
+
     long nb;
     while (charpos > 0 && i<sz) {
         nb = c_test_utf8(contenu + i);
@@ -2204,7 +2204,7 @@ Exporting long c_chartobytepositionidx(unsigned char* contenu, long charpos, lon
 
 //---------------------------------------------------------------------------
 Exporting long size_utf16(unsigned char* str, long sz, long& charsize) {
-    
+
 #ifdef INTELINTRINSICS
     long i;
     if (check_ascii(str, sz, i)) {
@@ -2212,7 +2212,7 @@ Exporting long size_utf16(unsigned char* str, long sz, long& charsize) {
         return sz;
     }
 #endif
-    
+
     charsize = 0;
     long sizeutf16 = 0;
     TRANSCHAR c;
@@ -2330,7 +2330,7 @@ Exporting size_t size_w(wchar_t* w) {
 
 size_t size_w(wstring& w) {
     long lg = w.size();
-	
+
 	long sz = 0;
 	long i = 0;
 
@@ -2446,10 +2446,10 @@ Exporting long convertpostochar(wstring& w, long first, long spos) {
 	if (!check_large_char(WSTR(w), w.size(), first))
         return spos;
 #endif
-    
+
     if (spos <= first)
         return spos;
-    
+
 	long  i = first;
 	long j;
 	TRANSCHAR c;
@@ -2477,10 +2477,10 @@ Exporting long convertchartopos(wstring& w, long first, long cpos) {
 	if (!check_large_char(WSTR(w), w.size(), first))
         return cpos;
 #endif
-    
+
     if (cpos <= first)
         return cpos;
-    
+
 	long  i = first;
 	long j;
 	TRANSCHAR c;
@@ -2565,7 +2565,7 @@ void convertpostochar(wstring& w, vector<long>& vspos) {
             vcpos.push_back(vspos[i]);
             continue;
         }
-        
+
         while (realpos != vspos[i]) {
             if ((w[realpos] & 0xFF00) == 0xD800) {
                 realpos += getChar(w, realpos, c);
@@ -2579,7 +2579,7 @@ void convertpostochar(wstring& w, vector<long>& vspos) {
             }
             else
                 realpos++;
-            
+
             charpos++;
         }
         vcpos.push_back(charpos);
@@ -2592,8 +2592,10 @@ Exporting void sc_unicode_to_utf8(string& s, wstring& str) {
 	char inter[5];
 	long ineo = 0;
 	long sz = str.size();
-	if (!sz)
+    if (!sz) {
+        s = "";
 		return;
+    }
 	long szo = 1 + (sz << 1);
 	char* neo = new char[szo];
 	neo[0] = 0;
@@ -2621,8 +2623,10 @@ Exporting void sc_unicode_to_utf8(string& s, wstring& str) {
 }
 
 Exporting void sc_utf8_to_unicode(wstring& w, unsigned char* str, long sz) {
-	if (!sz)
+    if (!sz) {
+        w = L"";
 		return;
+    }
 
     long ineo = 0;
     wchar_t* neo = new wchar_t[sz + 1];
@@ -2657,11 +2661,11 @@ Exporting void sc_utf8_to_unicode(wstring& w, unsigned char* str, long sz) {
 			neo[ineo++] = (wchar_t)(c16 & 0xFFFF);
 			continue;
 		}
-        
+
 		neo[ineo++] = (wchar_t)*str;
 		++str;
 	}
-    
+
     neo[ineo] = 0;
     w = neo;
     delete[] neo;
@@ -2674,7 +2678,7 @@ Exporting void s_latin_to_unicode(wstring& res, unsigned char* contenu, long sz)
     long ineo = 0;
     wchar_t* neo = new wchar_t[sz+1];
     neo[0] = 0;
-    
+
 #ifdef INTELINTRINSICS
     long i;
     if (check_ascii(contenu, sz, i)) {
@@ -2686,10 +2690,10 @@ Exporting void s_latin_to_unicode(wstring& res, unsigned char* contenu, long sz)
         return;
     }
 #endif
-    
+
     TRANSCHAR code, c16;
     uchar nb;
-    
+
     while (sz--) {
         if (*contenu & 0x80) {
                 //it could be a utf8 character...
@@ -2715,22 +2719,24 @@ Exporting void s_latin_to_unicode(wstring& res, unsigned char* contenu, long sz)
                 }
 #endif
             }
-            
+
             continue;
         }
-        
+
         neo[ineo++] = (wchar_t)*contenu;
         ++contenu;
     }
-    
+
     neo[ineo] = 0;
     res += neo;
     delete[] neo;
 }
 
 Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz) {
-	if (!sz)
+    if (!sz) {
+        res = L"";
 		return;
+    }
 
     long ineo = 0;
     wchar_t* neo = new wchar_t[sz+1];
@@ -2779,11 +2785,11 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
 
 			continue;
 		}
-        
+
 		neo[ineo++] = (wchar_t)*contenu;
 		++contenu;
 	}
-    
+
     neo[ineo] = 0;
     res= neo;
     delete[] neo;
@@ -2797,7 +2803,7 @@ Exporting long convertchartopos(wstring& w, long first, long cpos) {
     if (!check_large_char(WSTR(w), w.size(), first))
         return cpos;
 #endif
-    
+
     if (cpos <= first)
         return cpos;
 
@@ -2825,7 +2831,7 @@ Exporting long convertpostochar(wstring& w, long first, long spos) {
 
     if (spos <= first)
         return spos;
-    
+
     long realpos = first;
     while (realpos != spos) {
         if (((w[realpos] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[realpos])) {
@@ -2890,7 +2896,7 @@ void convertpostochar(wstring& w, vector<long>& vspos) {
             vcpos.push_back(vspos[i]);
             continue;
         }
-        
+
         while (realpos != vspos[i]) {
             if (((w[realpos] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[realpos])) {
                 realpos++;
@@ -2916,7 +2922,7 @@ Exporting long c_char_to_pos_emoji(wstring& w, long charpos) {
     if (!check_large_char(WSTR(w), charpos, i))
         return charpos;
 #endif
-    
+
         //there is one in the block starting at i...
     charpos -= i;
     while (charpos > 0) {
@@ -2933,8 +2939,10 @@ Exporting long c_char_to_pos_emoji(wstring& w, long charpos) {
 }
 
 Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz) {
-	if (!sz)
+    if (!sz) {
+        res = L"";
 		return;
+    }
 
     long ineo = 0;
     wchar_t* neo = new wchar_t[sz+1];
@@ -2980,7 +2988,7 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
 		neo[ineo++]= (wchar_t)*contenu;
 		++contenu;
 	}
-    
+
     neo[ineo] = 0;
     res = neo;
     delete[] neo;
@@ -2992,8 +3000,10 @@ Exporting void sc_unicode_to_utf8(string& s, wstring& str) {
 	char inter[5];
     long ineo = 0;
     long sz = str.size();
-	if (!sz)
+    if (!sz) {
+        s = "";
 		return;
+    }
     long szo = 1 + (sz << 1);
     char* neo = new char[szo];
     neo[0] = 0;
@@ -3005,18 +3015,18 @@ Exporting void sc_unicode_to_utf8(string& s, wstring& str) {
             i++;
             continue;
         }
-        
+
         nb = c_unicode_to_utf8(str[i], (uchar*)inter);
         neo = concatstrings(neo,inter,ineo, szo, nb);
         i++;
     }
-    
+
     neo[ineo] = 0;
     s = neo;
     delete[] neo;
 }
 
-Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz) {
+Exporting void sx_unicode_to_utf8(string& s, wchar_t* str, long sz) {
 	if (!sz)
 		return;
     long i = 0;
@@ -3033,12 +3043,12 @@ Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz) {
             i++;
             continue;
         }
-        
+
         nb = c_unicode_to_utf8(str[i], (uchar*)inter);
         neo = concatstrings(neo,inter,ineo, szo, nb);
         i++;
     }
-    
+
     neo[ineo] = 0;
     s += neo;
     delete[] neo;
@@ -3046,8 +3056,10 @@ Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz) {
 
 
 Exporting void sc_utf8_to_unicode(wstring& w, unsigned char* str, long sz) {
-	if (!sz)
+    if (!sz) {
+        w = L"";
 		return;
+    }
 
 	w = L"";
     long ineo = 0;
@@ -3132,7 +3144,7 @@ Exporting void conversion_utf8_to_fatOne(string contenu, string& s) {
 
 Exporting string s_utf8_to_latin(unsigned char* contenu, long sz) {
     string res;
-    
+
 #ifdef INTELINTRINSICS
     long i;
     if (check_ascii(contenu,sz,i))
@@ -3148,12 +3160,12 @@ Exporting string s_utf8_to_latin(unsigned char* contenu, long sz) {
         sz -= i;
     }
 #endif
-    
+
     uchar nb;
     TRANSCHAR code;
-    
+
     while (sz--) {
-        
+
         if (*contenu & 0x80) {
             nb = c_utf8_to_unicode(contenu, code);
             switch(code) {
@@ -3169,7 +3181,7 @@ Exporting string s_utf8_to_latin(unsigned char* contenu, long sz) {
                     else
                         res += ".";
             }
-            
+
             contenu += nb+1;
             sz -= nb;
 #ifdef INTELINTRINSICS
@@ -3188,7 +3200,7 @@ Exporting string s_utf8_to_latin(unsigned char* contenu, long sz) {
 #endif
             continue;
         }
-        
+
         res+=*contenu;
         ++contenu;
     }
@@ -3230,25 +3242,25 @@ string conversion_latin_to_utf8(unsigned char* contenu, long sz) {
 
 Exporting string conversion_latin_table_to_utf8(short tableindex, unsigned char* contenu, long sz) {
     string res;
-    
+
     if (!tableindex || tableindex == 1) {
         s_latin_to_utf8(res, contenu, sz);
         return res;
     }
-    
+
     if (!alllatincodes.check(tableindex))
         return "";
-    
+
 #ifdef INTELINTRINSICS
     long i;
     if (check_ascii(contenu,sz,i))
         return (char*)contenu;
 #endif
-    
+
     uchar ch[5];
     uchar nb;
-    
-    
+
+
 	basebin_hash<TRANSCHAR>& thetable = *alllatincodes[tableindex];
     while (sz--) {
         if (*contenu & 0x80) {
@@ -3258,7 +3270,7 @@ Exporting string conversion_latin_table_to_utf8(short tableindex, unsigned char*
                 ++contenu;
                 continue;
             }
-            
+
             //it could be a utf8 character...
             nb = c_latin_to_utf8(contenu, ch, true);
             res += (char*)ch;
@@ -3266,7 +3278,7 @@ Exporting string conversion_latin_table_to_utf8(short tableindex, unsigned char*
             sz -= nb;
             continue;
         }
-        
+
         res += *contenu;
         ++contenu;
     }
@@ -3275,18 +3287,18 @@ Exporting string conversion_latin_table_to_utf8(short tableindex, unsigned char*
 
 Exporting wstring conversion_latin_table_to_unicode(short tableindex, unsigned char* contenu, long sz) {
     wstring res;
-    
+
     if (!tableindex || tableindex == 1) {
         sc_latin_to_unicode(res,contenu,sz);
         return res;
     }
-    
+
     if (!alllatincodes.check(tableindex))
         return L"";
-    
+
 	basebin_hash<TRANSCHAR>& thetable = *alllatincodes[tableindex];
     uchar nb;
-    
+
 #ifdef INTELINTRINSICS
     long i;
     if (check_ascii(contenu,sz,i)) {
@@ -3295,7 +3307,7 @@ Exporting wstring conversion_latin_table_to_unicode(short tableindex, unsigned c
         return res;
     }
 #endif
-    
+
     while (sz--) {
         if (*contenu & 0x80) {
             if (thetable.check(*contenu)) {
@@ -3309,11 +3321,11 @@ Exporting wstring conversion_latin_table_to_unicode(short tableindex, unsigned c
             sz -= nb;
             continue;
         }
-        
+
         res += (wchar_t)*contenu;
         ++contenu;
     }
-    
+
     return res;
 }
 
@@ -3325,7 +3337,7 @@ Exporting void s_latin_to_utf8(string& res, unsigned char* contenu, long sz) {
         res = (char*)contenu;
         return;
     }
-    
+
     //otherwise, it is in ASCII up to i
     uchar c;
     if (i) {
@@ -3339,7 +3351,7 @@ Exporting void s_latin_to_utf8(string& res, unsigned char* contenu, long sz) {
 #endif
     uchar ch[5];
     uchar nb;
-    
+
     while (sz--) {
         if (*contenu & 0x80) {
             //it could be a utf8 character...
@@ -3347,13 +3359,13 @@ Exporting void s_latin_to_utf8(string& res, unsigned char* contenu, long sz) {
             res += (char*)ch;
             contenu += nb--;
             sz-=nb;
-            
+
 #ifdef INTELINTRINSICS
             if (check_ascii(contenu,sz,i)) {
                 res += (char*)contenu;
                 return;
             }
-            
+
             if (i) {
                 c=contenu[i];
                 contenu[i]=0;
@@ -3407,7 +3419,7 @@ Exporting string s_replacestring(string& s, string& reg, string& rep) {
 
 Exporting string s_replacestrings(string& s, string reg, string rep) {
     string neo;
-    
+
 #ifdef INTELINTRINSICS
     if (!replace_intel_all(neo, s, reg, rep))
         return s;
@@ -3415,10 +3427,10 @@ Exporting string s_replacestrings(string& s, string reg, string rep) {
     long gsz = reg.size();
     if (!gsz)
         return s;
-    
+
     long rsz = s.size();
     long from = 0;
-    
+
     long foundHere;
     while ((foundHere = s.find(reg, from)) != string::npos) {
         if (foundHere != from)
@@ -3434,7 +3446,7 @@ Exporting string s_replacestrings(string& s, string reg, string rep) {
 
 Exporting wstring s_replacestring(wstring& s, wstring reg, wstring rep) {
     wstring neo;
-    
+
 #ifdef INTELINTRINSICS
     if (!replace_intel_all(neo, s, reg, rep))
         return s;
@@ -3442,10 +3454,10 @@ Exporting wstring s_replacestring(wstring& s, wstring reg, wstring rep) {
     long gsz = reg.size();
     if (!gsz)
         return s;
-    
+
     long rsz = s.size();
     long from = 0;
-    
+
     long foundHere;
     while ((foundHere = s.find(reg, from)) != string::npos) {
         if (foundHere != from)
@@ -3460,7 +3472,7 @@ Exporting wstring s_replacestring(wstring& s, wstring reg, wstring rep) {
 }
 
 Exporting long c_char_next(unsigned char* m, long& i) {
-    
+
     long nb = c_test_utf8(m + i);
     i += nb;
     return (nb + 1);
@@ -3475,12 +3487,12 @@ Exporting long c_code_get(unsigned char* m, long& i, TRANSCHAR& code) {
 Exporting string c_char_get_next(unsigned char* m, size_t& i) {
     long nb = c_test_utf8(m + i);
     char str[] = { (char)m[i], 0, 0, 0, 0, 0, 0, 0 };
-    
+
     if (nb == 0) {
         i++;
         return str;
     }
-    
+
     char cc = m[i + nb + 1];
     m[i + nb + 1] = 0;
     strcpy_s(str, 8, (char*)(m + i));
@@ -3579,9 +3591,9 @@ Exporting string c_char_index_remove(string& s, size_t i) {
     long lg = s.size();
 
     string res;
-    
+
     unsigned char* content = USTR(s);
-    
+
     long x = getindex(content, lg, i);
     if (x == i) {
         res = s[i];
@@ -3600,7 +3612,7 @@ Exporting string c_char_index(string& s, size_t i) {
     long lg = s.size();
     long x = getindex(USTR(s), lg, i);
     if (x >= lg)
-        return "";    
+        return "";
     return c_char_get(USTR(s), x);
 }
 
@@ -3748,7 +3760,7 @@ string& Trim(string& chaine) {
         if ((uchar)chaine[d]>32)
             break;
     }
-    
+
     for (f = chaine.size() - 1; f >= 0; f--) {
         if ((uchar)chaine[f] > 32)
             break;
@@ -3772,19 +3784,19 @@ string& Trim(string& chaine) {
 char x_wreading::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, long& itoken, short& r, long& l, long& posc) {
     long sz;
     short type;
-    
+
     vector<short>& element = ruleelements[i];
     short* closed = closing[i];
     vector<wstring>& rule = tokenizer[i];
 
     sz = rule.size();
-    
+
     for (;r<sz;r++) {
         type=element[r];
         if (r && (type & xr_optionality)) {
             if (verif(type,xr_endoptional))
                 return true;
-            
+
             if (verif(type,xr_optional)) {
                 long ps = posc;
                 long itok =  itoken;
@@ -3798,17 +3810,17 @@ char x_wreading::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, l
                     posc = ps;
                     continue;
                 }
-                
+
                 token[itoken] = 0;
-         
+
                 //we need to find the closing parenthesis
                 r = closed[r];
                 continue;
             }
         }
-        
+
         wstring& label = rule[r];
-        
+
         switch(check(label,type, chr)) {
             case 0:
                 if (!r && verif(type,xr_char))
@@ -3821,7 +3833,7 @@ char x_wreading::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, l
 
         if (!verif(type,xr_skip)) //do not store this character
             waddtoken(token,chr,itoken);
-        
+
         getnext(toparse,chr,posc,l);
 
         if (verif(type,xr_singlebody)) //this is a single body rule, we can stop here...
@@ -3842,7 +3854,7 @@ char x_wreading::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, l
             }
 
             short esc_char = check(label,type,chr);
-            
+
             while (esc_char) {
                 if (esc_char==2) {
                     waddtoken(token,chr,itoken);
@@ -3853,7 +3865,7 @@ char x_wreading::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, l
                         if (check(rule[r + 1], element[r + 1], chr)) {
                             if (nxt==1)
                                 break;
-                            
+
                             long cp = posc;
                             wchar_t cc[] = {0,0,0};
                             getnext(toparse, cc, cp);
@@ -3865,13 +3877,13 @@ char x_wreading::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, l
                                 }
                                 getnext(toparse, cc, cp);
                             }
-                            
+
                             if (found)
                                 break;
                         }
                     }
                 }
-                
+
                 waddtoken(token,chr,itoken);
                 getnext(toparse,chr,posc,l);
                 esc_char = check(label,type,chr);
@@ -3894,9 +3906,9 @@ void x_wreading::apply(wstring& toparse, bool keepos, vector<wstring>* vstack, v
     short r;
     long pos=0, posc;
     long sztokenizer;
-    
+
     short ty;
-    
+
     bool getit=false;
     char found=true;
     bool storetype=true;
@@ -3907,10 +3919,10 @@ void x_wreading::apply(wstring& toparse, bool keepos, vector<wstring>* vstack, v
         parserules();
         loaded=true;
     }
-    
+
     if (vstack==NULL)
         vstack=&stack;
-    
+
     if (vtype==NULL) {
         vtype=&stacktype;
         storetype=false;
@@ -3934,7 +3946,7 @@ void x_wreading::apply(wstring& toparse, bool keepos, vector<wstring>* vstack, v
                     ty = action[i];
                     if (ty != -1) {
                         vstack->push_back(currentchr);
-                        
+
                         if (!juststack) {
                             stackln.push_back(line);
                             vtype->push_back(ty);
@@ -3956,7 +3968,7 @@ void x_wreading::apply(wstring& toparse, bool keepos, vector<wstring>* vstack, v
         for (;i<sztokenizer;i++) {
             if (action[i]==xr_skiprule)
                 continue;
-                        
+
             token[0] = 0;
             l = line;
             wset(chr, currentchr);
@@ -3971,7 +3983,7 @@ void x_wreading::apply(wstring& toparse, bool keepos, vector<wstring>* vstack, v
                     i = firstrule - 1;
                     breaking = true;
                 }
-                
+
                 continue;
             }
 
@@ -3995,7 +4007,7 @@ void x_wreading::apply(wstring& toparse, bool keepos, vector<wstring>* vstack, v
             pos=posc;
             break;
         }
-        
+
         if (!getit) { //Character not taken into account by a rule, we suppose it is a simple UTF8 character...
             vstack->push_back(currentchr);
             stackln.push_back(line);
@@ -4042,3 +4054,4 @@ Exporting bool compare_vowel(TRANSCHAR c, TRANSCHAR cc) {
 Exporting bool c_is_punctuation(TRANSCHAR c) {
     return handlingutf8->c_is_punctuation(c);
 }
+

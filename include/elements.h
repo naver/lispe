@@ -44,7 +44,7 @@ typedef enum {
     
     //Recording in the stack or in memory
     l_sleep, l_wait,
-    l_lambda, l_defun, l_dethread, l_deflib, l_defpat, l_defmacro, l_lib,
+    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib,
     l_label, l_setq, l_setg, l_block,
     l_if, l_ife,  l_ncheck, l_check, l_cond, 
     l_catch, l_throw, l_maybe, l_terminal,
@@ -58,10 +58,10 @@ typedef enum {
     //+11 = l_opequal
     l_plusequal, l_minusequal, l_multiplyequal,  l_powerequal,
     l_leftshiftequal, l_rightshiftequal, l_bitandequal, l_bitorequal, l_bitxorequal,
-    l_divide, l_mod, l_divideequal,l_modequal,
+    l_divide, l_mod, l_divideequal,l_modequal, l_concatenate,
     l_sum, l_product,
     l_innerproduct, l_matrix, l_tensor, l_outerproduct, l_factorial, l_iota, l_iota0,
-    l_reduce, l_scan, l_equalonezero, l_rho, l_concatenate, l_rank,
+    l_reduce, l_scan, l_backreduce, l_backscan, l_equalonezero, l_rho, l_rank,
     l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     
     //Comparisons
@@ -270,6 +270,12 @@ public:
      
      */
 
+    Element* duplicate() {
+        if (!status)
+            return this;
+        return copying(true);
+    }
+    
     virtual Element* fullcopy() {
         return copying(true);
     }
@@ -333,6 +339,9 @@ public:
      but must not modify a value stored in the garbage collector from the compilation.
      */
     
+    virtual Element* quoted(LispE*) {
+        return this;
+    }
     
     void prettyfying(LispE* lisp, string& code);
     string prettify(LispE* lisp);

@@ -171,12 +171,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_bernoulli_distribution(LispE* lisp) {
@@ -222,7 +222,7 @@ public:
             return lisp->provideInteger((long)dis(gen));
 
         
-        Numbers* iv = new Numbers;
+        Integers* iv = new Integers;
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(dis(gen));
@@ -241,9 +241,9 @@ public:
         
         std::negative_binomial_distribution<long> d(alpha, beta);
         if (nb == 1)
-            return lisp->provideNumber(d(gen));
+            return lisp->provideInteger(d(gen));
         
-        Numbers* iv = new Numbers;
+        Integers* iv = new Integers;
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(d(gen));
@@ -264,12 +264,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_discrete_distribution(LispE* lisp) {
@@ -293,13 +293,20 @@ public:
             std::discrete_distribution<long> d(vect.begin(), vect.end());
         #endif
         
-        if (nb == 1)
-            return lisp->provideNumber(d(gen));
+        if (nb == 1) {
+            i = d(gen);
+            return tvect->value_on_index(lisp,i);
+        }
+        Element* iv;
+        if (tvect->type == t_integers)
+            iv = new Integers;
+        else
+            iv = new Numbers;
         
-        Numbers* iv = new Numbers;
-        
+        long idx;
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            idx = d(gen);
+            iv->append(tvect->index(idx));
         }
         return iv;
     }
@@ -327,12 +334,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_piecewise_linear_distribution(LispE* lisp) {
@@ -358,12 +365,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     
@@ -380,12 +387,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_geometric_distribution(LispE* lisp) {
@@ -397,9 +404,9 @@ public:
         
         std::geometric_distribution<long> d(alpha);
         if (nb == 1)
-            return lisp->provideNumber(d(gen));
+            return lisp->provideInteger(d(gen));
         
-        Numbers* iv = new Numbers;
+        Integers* iv = new Integers;
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(d(gen));
@@ -420,12 +427,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_fisher_distribution(LispE* lisp) {
@@ -440,12 +447,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_student_distribution(LispE* lisp) {
@@ -459,12 +466,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_extreme_value_distribution(LispE* lisp) {
@@ -479,12 +486,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     
@@ -498,9 +505,9 @@ public:
         
         std::poisson_distribution<long> d(alpha);
         if (nb == 1)
-            return lisp->provideNumber(d(gen));
+            return lisp->provideInteger(d(gen));
         
-        Numbers* iv = new Numbers;
+        Integers* iv = new Integers;
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(d(gen));
@@ -516,13 +523,15 @@ public:
         double alpha = lisp->get(v_alpha)->asNumber();
         
         std::exponential_distribution<double> d(alpha);
+        if (nb == 1)
+            return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_gamma_distribution(LispE* lisp) {
@@ -535,14 +544,14 @@ public:
         
         std::gamma_distribution<double> d(alpha, beta);
         if (nb == 1)
-            return lisp->provideNumber((double)d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_weibull_distribution(LispE* lisp) {
@@ -557,12 +566,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     
@@ -577,12 +586,12 @@ public:
         if (nb == 1)
             return lisp->provideNumber((double)d(gen));
         
-        Numbers* iv = new Numbers;
+        Numbers* fv = new Numbers;
         
         for (long i = 0; i < nb; i++) {
-            iv->liste.push_back(d(gen));
+            fv->liste.push_back(d(gen));
         }
-        return iv;
+        return fv;
     }
     
     Element* Proc_shuffle(LispE* lisp) {

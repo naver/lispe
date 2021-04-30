@@ -781,9 +781,9 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element*
 
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
-            if (threading && data->status) {
+            if (threading) {
                 //containers should be duplicated...
-                data = data->copying(true);
+                data = data->duplicate();
             }
             
             thread_lisp->recording(data, label);
@@ -895,9 +895,9 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Ele
 
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
-            if (threading && data->status) {
+            if (threading) {
                 //containers should be duplicated...
-                data = data->copying(true);
+                data = data->duplicate();
             }
             
             thread_lisp->recording(data, label);
@@ -2026,7 +2026,7 @@ Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Ele
         call.liste[1] = l1->index(i);
         call.liste[2] = l2->index(i);
         e = call.eval(lisp);
-        res->append(e);
+        res->append(e->quoted(lisp));
     }
     //Then we do a reduce on this list with the first operator
     call.liste[0] = op1;
@@ -2037,7 +2037,7 @@ Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Ele
             e = call.eval(lisp);
             if (e != call.liste[1]) {
                 call.liste[1]->release();
-                call.liste[1] = e;
+                call.liste[1] = e->quoted(lisp);
             }
         }
     }
@@ -2318,7 +2318,8 @@ Element* List::evall_reduce(LispE* lisp) {
             //This is a copy
             l1 = liste[1]->eval(lisp);
             op = l1->fullcopy();
-            l1->release();
+            if (op != l1)
+                l1->release();
             return op;
         }
         
@@ -2343,7 +2344,7 @@ Element* List::evall_reduce(LispE* lisp) {
             switch (l1->type) {
                 case t_numbers : {
                     res = new Numbers;
-                    for (long i = 0; i < op->size() && i < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && i < sz; i++) {
                         if (op->index(i)->Boolean())
                             ((Numbers*)res)->liste.push_back(((Numbers*)l1)->liste[i]);
                     }
@@ -2351,7 +2352,7 @@ Element* List::evall_reduce(LispE* lisp) {
                 }
                 case t_integers: {
                     res = new Integers;
-                    for (long i = 0; i < op->size() && i < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && i < sz; i++) {
                         if (op->index(i)->Boolean())
                             ((Integers*)res)->liste.push_back(((Integers*)l1)->liste[i]);
                     }
@@ -2359,7 +2360,7 @@ Element* List::evall_reduce(LispE* lisp) {
                 }
                 case t_strings: {
                     res = new Strings();
-                    for (long i = 0; i < op->size() && i < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && i < sz; i++) {
                         if (op->index(i)->Boolean())
                             ((Strings*)res)->liste.push_back(((Strings*)l1)->liste[i]);
                     }
@@ -2367,7 +2368,7 @@ Element* List::evall_reduce(LispE* lisp) {
                 }
                 default: {
                     res = new List;
-                    for (long i = 0; i < op->size() && i < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && i < sz; i++) {
                         if (op->index(i)->Boolean())
                             res->append(l1->index(i));
                     }
@@ -2386,7 +2387,122 @@ Element* List::evall_reduce(LispE* lisp) {
         call.append(null_);
         call.liste[1] = l1->value_on_index(lisp, (long)0);
         Element* e;
-        for (long i = 1; i < l1->size(); i++) {
+        for (long i = 1; i < sz; i++) {
+            call.liste[2] = l1->index(i);
+            e = call.eval(lisp);
+            if (e != call.liste[1]) {
+                call.liste[1]->release();
+                call.liste[1] = e;
+            }
+        }
+        l1->release();
+        op->release();
+        lisp->set_true_as_true();
+        return call.liste[1];
+    }
+    catch (Error* err) {
+        lisp->set_true_as_true();
+        l1->release();
+        op->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+inline long mmin(long x, long y) {
+    return (x <= y?x:y);
+}
+
+Element* List::evall_backreduce(LispE* lisp) {
+    short listsz = liste.size();
+    if (listsz != 2 && listsz != 3)
+        throw new Error("Error: wrong number of arguments for '//-'");
+    //Operation is: (//- operation l1)
+    
+    Element* l1 = null_;
+    Element* op = null_;
+    
+    lisp->display_trace(this);
+    lisp->set_true_as_one();
+    
+    try {
+        if (listsz == 2) {
+            //This is a copy
+            l1 = liste[1]->eval(lisp);
+            op = l1->reverse(lisp);
+            if (op != l1)
+                l1->release();
+            return op;
+        }
+        
+        l1 = liste[2]->eval(lisp);
+        
+        if (!l1->isList())
+            throw new Error("Error: arguments for '//-' is a list");
+        
+        op = liste[1]->eval(lisp);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+
+        long sz = l1->size();
+        if (!sz) {
+            lisp->set_true_as_true();
+            return null_;
+        }
+                
+        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+            //this is a filter, the first list
+            Element* res;
+            long mxcount = mmin(op->size(),sz) - 1;
+            switch (l1->type) {
+                case t_numbers : {
+                    res = new Numbers;
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean())
+                            ((Numbers*)res)->liste.push_back(((Numbers*)l1)->liste[i]);
+                    }
+                    break;
+                }
+                case t_integers: {
+                    res = new Integers;
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean())
+                            ((Integers*)res)->liste.push_back(((Integers*)l1)->liste[i]);
+                    }
+                    break;
+                }
+                case t_strings: {
+                    res = new Strings();
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean())
+                            ((Strings*)res)->liste.push_back(((Strings*)l1)->liste[i]);
+                    }
+                    break;
+                }
+                default: {
+                    res = new List;
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean())
+                            res->append(l1->index(i));
+                    }
+                }
+            }
+            lisp->set_true_as_true();
+            return res;
+        }
+        
+        if (sz == 1)
+            return l1->value_on_index(lisp, (long)0);
+        
+        List call;
+        call.append(op);
+        call.append(null_);
+        call.append(null_);
+        sz--;
+        call.liste[1] = l1->value_on_index(lisp, sz);
+        Element* e;
+        for (long i = sz-1; i>= 0; i--) {
             call.liste[2] = l1->index(i);
             e = call.eval(lisp);
             if (e != call.liste[1]) {
@@ -2449,18 +2565,34 @@ Element* List::evall_concatenate(LispE* lisp) {
             return res;
         }
 
-        if (!first_element->isList())
-            throw new Error("Error: First argument should be a list");
+        if (!first_element->isList()) {
+            switch (first_element->type) {
+                case t_integer:
+                    second_element = new Integers;
+                    break;
+                case t_number:
+                    second_element = new Numbers;
+                    break;
+                case t_string:
+                    second_element = new Strings;
+                    break;
+                default:
+                    second_element = new List;
+            }
+            second_element->append(first_element);
+            first_element->release();
+            first_element = second_element;
+        }
         
-        vector<long> sz1;
-        vector<long> sz2;
         second_element = liste[2]->eval(lisp);
-        first_element->getShape(sz1);
-        second_element->getShape(sz2);
-        if (sz1.size() < sz2.size())
-            throw new Error("Error: Dimension error");
         
         if (first_element->type == t_matrix) {
+            vector<long> sz1;
+            vector<long> sz2;
+            first_element->getShape(sz1);
+            second_element->getShape(sz2);
+            if (sz1.size() < sz2.size())
+                throw new Error("Error: Dimension error");
             res = new Matrice(sz1[0], sz1[1], 0.0);
             ((Matrice*)res)->setvalue((Matrice*)first_element);
             res->concatenate(lisp,second_element);
@@ -2469,9 +2601,16 @@ Element* List::evall_concatenate(LispE* lisp) {
             else
                 sz1[1] += 1;
             ((Matrice*)res)->size_y = sz1[1];
+            first_element->release();
         }
         else {
             if (first_element->type == t_tensor) {
+                vector<long> sz1;
+                vector<long> sz2;
+                first_element->getShape(sz1);
+                second_element->getShape(sz2);
+                if (sz1.size() < sz2.size())
+                    throw new Error("Error: Dimension error");
                 res = new Tenseur(sz1, zero_);
                 ((Tenseur*)res)->setvalue((Tenseur*)first_element);
                 res->concatenate(lisp, second_element);
@@ -2481,16 +2620,18 @@ Element* List::evall_concatenate(LispE* lisp) {
                     ((Tenseur*)res)->shape[i] += 1;
                 else
                     ((Tenseur*)res)->shape[i] += sz2[i];
+                first_element->release();
             }
             else {
-                res = first_element->copying(true);
+                res = first_element->duplicate();
                 res->concatenate(lisp, second_element);
+                if (res != first_element)
+                    first_element->release();
             }
         }
 
         lisp->set_true_as_true();
         second_element->release();
-        first_element->release();
         return res;
     }
     catch (Error* err) {
@@ -2745,7 +2886,7 @@ Element* List::evall_scan(LispE* lisp) {
             switch (l1->type) {
                 case t_numbers: {
                     Numbers* res = new Numbers;
-                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && j < sz; i++) {
                         if (op->index(i)->Boolean()) {
                             res->liste.push_back(((Numbers*)l1)->liste[j]);
                             j++;
@@ -2758,7 +2899,7 @@ Element* List::evall_scan(LispE* lisp) {
                 }
                 case t_integers: {
                     Integers* res = new Integers;
-                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && j < sz; i++) {
                         if (op->index(i)->Boolean()) {
                             res->liste.push_back(((Integers*)l1)->liste[j]);
                             j++;
@@ -2771,7 +2912,7 @@ Element* List::evall_scan(LispE* lisp) {
                 }
                 case t_strings: {
                     Strings* res = new Strings();
-                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && j < sz; i++) {
                         if (op->index(i)->Boolean()) {
                             res->liste.push_back(((Strings*)l1)->liste[j]);
                             j++;
@@ -2784,7 +2925,7 @@ Element* List::evall_scan(LispE* lisp) {
                 }
                 default: {
                     List* res = new List;
-                    for (long i = 0; i < op->size() && j < l1->size(); i++) {
+                    for (long i = 0; i < op->size() && j < sz; i++) {
                         if (op->index(i)->Boolean()) {
                             res->append(l1->index(j));
                             j++;
@@ -2813,7 +2954,7 @@ Element* List::evall_scan(LispE* lisp) {
         res->append(call.liste[1]);
         if (!monadic) {
             call.append(null_);
-            for (long i = 1; i < l1->size(); i++) {
+            for (long i = 1; i < sz; i++) {
                 call.liste[2] = l1->index(i);
                 e = call.eval(lisp);
                 res->append(e);
@@ -2821,7 +2962,7 @@ Element* List::evall_scan(LispE* lisp) {
             }
         }
         else {
-            for (long i = 1; i < l1->size(); i++) {
+            for (long i = 1; i < sz; i++) {
                 call.liste[1] = l1->index(i);
                 e = call.eval(lisp);
                 res->append(e);
@@ -2843,6 +2984,139 @@ Element* List::evall_scan(LispE* lisp) {
     return null_;
 }
 
+Element* List::evall_backscan(LispE* lisp) {
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments for '\\\\'");
+    //Operation is: (° operation l1 l2)
+    
+    Element* l1 = null_;
+    Element* op = null_;
+    
+    lisp->display_trace(this);
+    lisp->set_true_as_one();
+
+    try {
+        l1 = liste[2]->eval(lisp);
+        
+        if (!l1->isList())
+            throw new Error("Error: arguments for '\\\\' is a list");
+        
+        op = liste[1]->eval(lisp);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+
+        long sz = l1->size();
+        if (!sz) {
+            lisp->set_true_as_true();
+            return null_;
+        }
+                
+        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+            //this is a filter, the first list
+            long j = 0;
+            long mxcount = mmin(sz, op->size()) - 1;
+            
+            switch (l1->type) {
+                case t_numbers: {
+                    Numbers* res = new Numbers;
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean()) {
+                            res->liste.push_back(((Numbers*)l1)->liste[j]);
+                            j++;
+                        }
+                        else
+                            res->liste.push_back(0);
+                    }
+                    lisp->set_true_as_true();
+                    return res;
+                }
+                case t_integers: {
+                    Integers* res = new Integers;
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean()) {
+                            res->liste.push_back(((Integers*)l1)->liste[j]);
+                            j++;
+                        }
+                        else
+                            res->liste.push_back(0);
+                    }
+                    lisp->set_true_as_true();
+                    return res;
+                }
+                case t_strings: {
+                    Strings* res = new Strings();
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean()) {
+                            res->liste.push_back(((Strings*)l1)->liste[j]);
+                            j++;
+                        }
+                        else
+                            res->liste.push_back(L"");
+                    }
+                    lisp->set_true_as_true();
+                    return res;
+                }
+                default: {
+                    List* res = new List;
+                    for (long i = mxcount; i >= 0; i--) {
+                        if (op->index(i)->Boolean()) {
+                            res->append(l1->index(j));
+                            j++;
+                        }
+                        else
+                            res->append(zero_);
+                    }
+                    lisp->set_true_as_true();
+                    return res;
+                }
+            }
+        }
+        
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+        
+        bool monadic = op->check_arity(lisp, P_TWO);
+        
+
+        List call;
+        call.append(op);
+        call.append(null_);
+        Element* e;
+        List* res = new List;
+        sz--;
+        call.liste[1] = l1->value_on_index(lisp, sz);
+        res->append(call.liste[1]);
+        if (!monadic) {
+            call.append(null_);
+            for (long i = sz-1; i >= 0; i--) {
+                call.liste[2] = l1->index(i);
+                e = call.eval(lisp);
+                res->append(e);
+                call.liste[1] = e;
+            }
+        }
+        else {
+            for (long i = sz-1; i >= 0; i--) {
+                call.liste[1] = l1->index(i);
+                e = call.eval(lisp);
+                res->append(e);
+            }
+        }
+        
+        l1->release();
+        op->release();
+        lisp->set_true_as_true();
+        return res;
+    }
+    catch (Error* err) {
+        lisp->set_true_as_true();
+        l1->release();
+        op->release();
+        throw err;
+    }
+
+    return null_;
+}
 Element* List::evall_catch(LispE* lisp) {
     short listsize = liste.size();
     if (listsize < 2)
@@ -3233,8 +3507,6 @@ Element* List::evall_data(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
-    lisp->display_trace(this);
-
     try {
         //We record a data structure of the form: (data (Atom x y z) (Atom x y))
         short lab;
@@ -3282,6 +3554,21 @@ Element* List::evall_deflib(LispE* lisp) {
     return lisp->recordingunique(this, label);
 }
 
+Element* List::evall_deflibpat(LispE* lisp) {
+    if (liste.size() != 3)
+        throw new Error("Error: wrong number of arguments");
+    
+    short label;
+    lisp->display_trace(this);
+    
+    //We declare a function
+    label = liste[1]->label();
+    if (label == v_null)
+        throw new Error(L"Error: Missing name in the declaration of a function");
+    if (!liste[2]->isList())
+        throw new Error(L"Error: List of missing parameters in a function declaration");
+    return lisp->recordingMethod(this, label);
+}
 
 Element* List::evall_defmacro(LispE* lisp) {
     if (liste.size() != 4)

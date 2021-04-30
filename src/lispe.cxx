@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.28.18.00";
+static std::string version = "1.2021.4.30.10.30";
 string LispVersion() {
     return version;
 }
@@ -180,6 +180,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_converttostring, "string", P_TWO, &List::evall_converttostring);
     set_instruction(l_data, "data", P_ATLEASTTWO, &List::evall_data);
     set_instruction(l_deflib, "deflib", P_THREE, &List::evall_deflib);
+    set_instruction(l_deflibpat, "deflibpat", P_THREE, &List::evall_deflibpat);
     set_instruction(l_defmacro, "defmacro", P_FOUR, &List::evall_defmacro);
     set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
@@ -334,12 +335,14 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
     set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce);
     set_instruction(l_scan, "scan", P_THREE, &List::evall_scan);
+    set_instruction(l_backreduce, "backreduce", P_TWO | P_THREE, &List::evall_backreduce);
+    set_instruction(l_backscan, "backscan", P_THREE, &List::evall_backscan);
     set_instruction(l_rank, "rank", P_ATLEASTTHREE, &List::evall_rank);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
     set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
     set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
     
-    //This
+    //Operators
     operators[l_bitand] = true;
     operators[l_bitor] = true;
     operators[l_bitxor] = true;
@@ -373,6 +376,8 @@ void Delegation::initialisation(LispE* lisp) {
     operators[l_greater] = true;
     operators[l_lowerorequal] = true;
     operators[l_greaterorequal] = true;
+    operators[l_concatenate] = true;
+
 
     Element* e;
 
@@ -439,6 +444,8 @@ void Delegation::initialisation(LispE* lisp) {
 
     _DICO_KEY = (Atome*)lisp->provideAtomOrInstruction(l_key);
     _DICO_KEYN = (Atome*)lisp->provideAtomOrInstruction(l_keyn);
+
+    _QUOTE = (Atome*)lisp->provideAtomOrInstruction(l_quote);
 
     _THEEND = new Error(L"Break Requested", s_constant);
 
@@ -531,6 +538,12 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = L"\\\\";
     string_to_code[w] = l_scan;
+
+    w = L"-//";
+    string_to_code[w] = l_backreduce;
+    
+    w = L"-\\\\";
+    string_to_code[w] = l_backscan;
 
     w = L"⍳";
     string_to_code[w] = l_iota;
@@ -1029,7 +1042,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                         break;
                     }
                     default:
-                        if (lc >= l_plus && lc <= l_modequal)
+                        if (lc >= l_plus && lc <= l_concatenate)
                             infos.append(tampon, t_operator, line_number, current_i, i);
                         else
                             infos.append(tampon, t_atom, line_number, current_i, i);
@@ -1084,6 +1097,7 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
                 }
                 break;
             case ';':
+            case ',':
             case '#':
             case '\'':
             case '`':
@@ -1571,8 +1585,6 @@ Element* LispE::compile(string& code) {
 //This method allows us to add new features in LispE in the form of
 //loading of external libraries. See system.cxx for an example.
 Element* LispE::extension(string code, Element* etendre) {
-    if (code.find("deflib ") == -1)
-        throw new Error("Error: 'deflib' missing from the code");
     List* current_list = NULL;
 
     Tokenizer parse;
@@ -1602,8 +1614,10 @@ Element* LispE::extension(string code, Element* etendre) {
         long index = 0;
         abstractSyntaxTree(current_list, parse, index);
         Element* body = current_list->eval(this);
-        body->append(etendre);
-        garbaging(etendre);
+        if (etendre != NULL) {
+            body->append(etendre);
+            garbaging(etendre);
+        }
         return body;
     }
     catch(Error* err) {
