@@ -789,7 +789,14 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
         last_element->append(keyvalues[i]);
         last_element->append(valuevalues[i]);
     }
-    return last_element;
+    try {
+        keycmd = last_element->eval(lisp);
+        last_element->release();
+        return keycmd;
+    }
+    catch(Error* err) {
+        return last_element;
+    }
 }
 
 //------------------------------------------------------------------------------------------
@@ -1975,10 +1982,6 @@ Element* Dictionary_n::reverse(LispE* lisp, bool duplique) {
     return dico;
 }
 //------------------------------------------------------------------------------------------
-Element* Element::protected_index(LispE* lisp,Element*) {
-    return null_;
-}
-
 Element* Element::protected_index(LispE* lisp,long i) {
     return null_;
 }
@@ -2220,49 +2223,8 @@ Element* Dictionary_n::value_on_index(LispE* lisp, Element* idx) {
     }
 }
 //------------------------------------------------------------------------------------------
-
-Element* List::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
-    if (i < 0)
-        i = liste.size() + i;
-    
-    if (i >= 0 && i < liste.size())
-        return liste[i];
-    
-    return null_;
-}
-
-Element* Numbers::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
-    if (i < 0)
-        i = liste.size() + i;
-    
-    if (i >= 0 && i < liste.size())
-        return lisp->provideNumber(liste[i]);
-    
-    return null_;
-}
-
-Element* Integers::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
-    if (i < 0)
-        i = liste.size() + i;
-    
-    if (i >= 0 && i < liste.size())
-        return lisp->provideInteger(liste[i]);
-    
-    return null_;
-}
-
-Element* Strings::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
-    if (i < 0)
-        i = liste.size() + i;
-    
-    if (i >= 0 && i < liste.size())
-        return lisp->provideString(liste[i]);
-    
-    return null_;
+Element* Element::protected_index(LispE* lisp,Element*) {
+    throw new Error("Error: value cannot be access through index");
 }
 
 Element* String::protected_index(LispE* lisp, Element* idx) {
@@ -2273,7 +2235,51 @@ Element* String::protected_index(LispE* lisp, Element* idx) {
     
     if (i >= 0 && i < content.size())
         return lisp->provideString(content[i]);
-    return null_;
+    throw new Error("Error: index out of bounds");
+}
+
+Element* List::protected_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return liste[i];
+    
+    throw new Error("Error: index out of bounds");
+}
+
+Element* Numbers::protected_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideNumber(liste[i]);
+    
+    throw new Error("Error: index out of bounds");
+}
+
+Element* Integers::protected_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideInteger(liste[i]);
+    
+    throw new Error("Error: index out of bounds");
+}
+
+Element* Strings::protected_index(LispE* lisp, Element* idx) {
+    long i = idx->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return lisp->provideString(liste[i]);
+    
+    throw new Error("Error: index out of bounds");
 }
 
 Element* Dictionary::protected_index(LispE* lisp, Element* idx) {
@@ -2282,7 +2288,7 @@ Element* Dictionary::protected_index(LispE* lisp, Element* idx) {
         return dictionary.at(k);
     }
     catch (const std::out_of_range& oor) {
-        return null_;
+        throw new Error("Error: index out of bounds");
     }
 }
 
@@ -2291,7 +2297,7 @@ Element* Dictionary_n::protected_index(LispE* lisp, Element* idx) {
         return dictionary.at(idx->checkNumber(lisp));
     }
     catch (const std::out_of_range& oor) {
-        return null_;
+        throw new Error("Error: index out of bounds");
     }
 }
 
@@ -2427,7 +2433,7 @@ wstring Error::asString(LispE* lisp) {
         wstring w;
         s_utf8_to_unicode(w, USTR(s), s.size());
         std::wstringstream msg;
-        msg << message << L" line: " << lisp->delegation->i_current_line << L" in: " << w;
+        msg << message << L", line: " << lisp->delegation->i_current_line << L" in: " << w;
         return msg.str();
     }
     else

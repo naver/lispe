@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.4.30.10.30";
+static std::string version = "1.2021.5.04.14.45";
 string LispVersion() {
     return version;
 }
@@ -152,6 +152,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
+    set_instruction(l_maplist, "maplist", P_THREE, &List::evall_maplist);
     set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
     set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp);
     set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
@@ -207,6 +208,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife);
     set_instruction(l_in, "in", P_THREE|P_FOUR, &List::evall_in);
     set_instruction(l_at_index, "at", P_THREE|P_FOUR, &List::evall_at_index);
+    set_instruction(l_index, "@", P_ATLEASTTHREE, &List::evall_index);
+    set_instruction(l_set_at, "set@", P_ATLEASTFOUR, &List::evall_set_at);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
     set_instruction(l_insert, "insert", P_FOUR, &List::evall_insert);
     set_instruction(l_irange, "irange", P_THREE, &List::evall_irange);
@@ -934,6 +937,9 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 break;
             }
             default: {
+				if (c < 32)
+					continue;
+
                 //If the character is a multi-byte character, we need
                 //to position on the beginning of the character again
                 //Cases to stop looking for an atom: ()]{}'9 32 10 13" 171 8220
@@ -1175,102 +1181,7 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
  As far as possible, we will try to avoid the multiplication of objects.
  status == s_constant means that the object is a constant and can never be destroyed...
 
- */
 
-
-//We keep the numbers described in the code
-Element* LispE::provideNumber(double d) {
-    Number* n = number_pool[d];
-    if (n == NULL) {
-        n = new Number(d, s_constant);
-        number_pool[d] = n;
-    }
-    return n;
-}
-
-//We keep the numbers described in the code
-Element* LispE::provideInteger(long d) {
-    Integer* n = integer_pool[d];
-    if (n == NULL) {
-        n = new Integer(d, s_constant);
-        integer_pool[d] = n;
-    }
-    return n;
-}
-
-//The strings described in the code are kept.
-Element* LispE::provideString(string& str) {
-    wstring s;
-    s_utf8_to_unicode(s, USTR(str), str.size());
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
-}
-
-Element* LispE::provideString(wchar_t ch) {
-    wstring s;
-    s = ch;
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
-}
-
-Element* LispE::provideString(wstring& s) {
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
-}
-
-/*
- Saving arguments in a list: _args
- */
-void LispE::arguments(std::vector<string>& args) {
-    List* l = new List;
-    for (auto& a: args) {
-        l->append(provideString(a));
-    }
-    string nom = "_args";
-    recordingunique(l, encode(nom));
-}
-
-void LispE::current_path() {
-    if (delegation->allfiles.size() >= 2) {
-        wstring nom = L"_current";
-        string spath = delegation->allfiles_names[1];
-        char localpath[4096];
-        localpath[0] = 0;
-
-#ifdef WIN32
-		_fullpath(localpath, ".", 4096);
-#else
-		realpath(".", localpath);
-#endif
-
-
-        long pos = spath.rfind("/");
-        if (pos == string::npos) {
-            spath = localpath;
-            if (localpath[spath.size() - 1] != '/')
-                spath += "/";
-        }
-        else
-            spath = spath.substr(0, pos + 1);
-
-        Element* e = provideString(spath);
-        execution_stack.top()->recordingunique(e, encode(nom));
-    }
-}
-
-/*
  In Lisp, the abstract syntax tree and the execution tree are merged...
  We will build a structure in which we will browse the list of segments and for each parenthesis, we will
  build a sub-list...
@@ -1793,6 +1704,97 @@ bool Element::replaceVariableNames(LispE* lisp) {
     return true;
 }
 
+//We keep the numbers described in the code
+Element* LispE::provideNumber(double d) {
+    Number* n = number_pool[d];
+    if (n == NULL) {
+        n = new Number(d, s_constant);
+        number_pool[d] = n;
+    }
+    return n;
+}
+
+//We keep the numbers described in the code
+Element* LispE::provideInteger(long d) {
+    Integer* n = integer_pool[d];
+    if (n == NULL) {
+        n = new Integer(d, s_constant);
+        integer_pool[d] = n;
+    }
+    return n;
+}
+
+//The strings described in the code are kept.
+Element* LispE::provideString(string& str) {
+    wstring s;
+    s_utf8_to_unicode(s, USTR(str), str.size());
+    String* c = string_pool[s];
+    if (c == NULL) {
+        c = new String(s, s_constant);
+        string_pool[s] = c;
+    }
+    return c;
+}
+
+Element* LispE::provideString(wchar_t ch) {
+    wstring s;
+    s = ch;
+    String* c = string_pool[s];
+    if (c == NULL) {
+        c = new String(s, s_constant);
+        string_pool[s] = c;
+    }
+    return c;
+}
+
+Element* LispE::provideString(wstring& s) {
+    String* c = string_pool[s];
+    if (c == NULL) {
+        c = new String(s, s_constant);
+        string_pool[s] = c;
+    }
+    return c;
+}
+
+/*
+ Saving arguments in a list: _args
+ */
+void LispE::arguments(std::vector<string>& args) {
+    List* l = new List;
+    for (auto& a: args) {
+        l->append(provideString(a));
+    }
+    string nom = "_args";
+    recordingunique(l, encode(nom));
+}
+
+void LispE::current_path() {
+    if (delegation->allfiles.size() >= 2) {
+        wstring nom = L"_current";
+        string spath = delegation->allfiles_names[1];
+        char localpath[4096];
+        localpath[0] = 0;
+
+#ifdef WIN32
+        _fullpath(localpath, ".", 4096);
+#else
+        realpath(".", localpath);
+#endif
+
+
+        long pos = spath.rfind("/");
+        if (pos == string::npos) {
+            spath = localpath;
+            if (localpath[spath.size() - 1] != '/')
+                spath += "/";
+        }
+        else
+            spath = spath.substr(0, pos + 1);
+
+        Element* e = provideString(spath);
+        execution_stack.top()->recordingunique(e, encode(nom));
+    }
+}
 
 
 

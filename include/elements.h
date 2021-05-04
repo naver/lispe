@@ -66,7 +66,8 @@ typedef enum {
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
-    l_size, l_use, l_at_index, l_extract, l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last,
+    l_size, l_use, l_index, l_at_index, l_set_at, l_extract,
+    l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last,
     l_fread, l_fwrite, l_fappend,
     l_and, l_or, l_xor, l_not, l_eq, l_neq,
     
@@ -80,7 +81,7 @@ typedef enum {
     
     l_self, l_while, l_eval, l_mark, l_resetmark, l_loop, l_loopcount, l_range, l_irange, l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
-    l_apply, l_mapping, l_checking, l_folding,
+    l_apply, l_maplist, l_mapping, l_checking, l_folding,
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
     l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
@@ -392,6 +393,10 @@ public:
     
     virtual void appendraw(Element* e) {}
     virtual Element* replace(LispE* lisp, long i, Element* e);
+    virtual Element* replace(LispE* lisp, Element* i, Element* e) {
+        return replace(lisp, i->asInteger(), e);
+    }
+    
     virtual void replacing(long i, Element* e) {}
     virtual void change(long i, Element* e) {}
     virtual void changelast(Element* e) {}
@@ -1667,6 +1672,12 @@ public:
         e->incrementstatus(status+1,false);
     }
     
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        wstring k = i->asString(lisp);
+        recording(k, e);
+        return this;
+    }
+
     Element* thekeys(LispE* lisp);
     
     Element* thevalues(LispE* lisp);
@@ -1998,6 +2009,11 @@ public:
             dictionary[k] = e;
         }
         e->incrementstatus(status+1,false);
+    }
+    
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        recording(i->asNumber(), e);
+        return e;
     }
     
     Element* thekeys(LispE* lisp);

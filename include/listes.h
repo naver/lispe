@@ -969,6 +969,8 @@ public:
     Element* evall_sign(LispE* lisp);
     Element* evall_use(LispE* lisp);
     Element* evall_at_index(LispE* lisp);
+    Element* evall_index(LispE* lisp);
+    Element* evall_set_at(LispE* lisp);
     Element* evall_extract(LispE* lisp);
     Element* evall_in(LispE* lisp);
     Element* evall_search(LispE* lisp);
@@ -981,6 +983,7 @@ public:
     Element* evall_checking(LispE* lisp);
     Element* evall_folding(LispE* lisp);
     Element* evall_apply(LispE* lisp);
+    Element* evall_maplist(LispE* lisp);
     Element* evall_sort(LispE* lisp);
     Element* evall_zip(LispE* lisp);
     Element* evall_zipwith(LispE* lisp);
