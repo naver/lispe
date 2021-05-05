@@ -738,7 +738,6 @@ const char* Inputtext(const char* msg) {
     if (output != nil) {
         [self setDelegate: nil];
         NSRange r = [self selectedRange];
-        r.length = [output length];
         [self insertText: output replacementRange: r];
         [self setDelegate: currentdelegate];
     }
