@@ -431,6 +431,9 @@ public:
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         evals[instruction_code] = m;
+        wstring n;
+        s_utf8_to_unicode(n, USTR(name), name.size());
+        code_to_string[instruction_code] = n;
     }
 
     inline void clear_breakpoints() {

@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.5.04.14.45";
+static std::string version = "1.2021.5.31.13.30";
 string LispVersion() {
     return version;
 }
@@ -42,6 +42,8 @@ wstring Stackelement::asString(LispE* lisp) {
 List* Stackelement::atomes(LispE* lisp) {
     List* liste = new List;
     for (auto& a: variables)
+        liste->append(lisp->provideAtom(a.first));
+    for (auto& a: lisp->delegation->function_pool)
         liste->append(lisp->provideAtom(a.first));
     return liste;
 }
@@ -121,6 +123,7 @@ void moduleMaths(LispE* lisp);
 void moduleAleatoire(LispE* lisp);
 void moduleRGX(LispE* lisp);
 void moduleSocket(LispE* lisp);
+void moduleOntology(LispE* lisp);
 #ifdef FLTKGUI
 void moduleGUI(LispE* lisp);
 #endif
@@ -153,10 +156,14 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
     set_instruction(l_maplist, "maplist", P_THREE, &List::evall_maplist);
+    set_instruction(l_filterlist, "filterlist", P_THREE, &List::evall_filterlist);
     set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
     set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp);
     set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
     set_instruction(l_bitand, "&", P_ATLEASTTHREE, &List::evall_bitand);
+    set_instruction(l_bitandnot, "&~", P_ATLEASTTHREE, &List::evall_bitandnot);
+    set_instruction(l_bitandnotequal, "&~=", P_ATLEASTTHREE, &List::evall_bitandnotequal);
+    set_instruction(l_bitnot, "~", P_ATLEASTTWO, &List::evall_bitnot);
     set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
     set_instruction(l_bitor, "|", P_ATLEASTTHREE, &List::evall_bitor);
     set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE, &List::evall_bitorequal);
@@ -210,6 +217,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_at_index, "at", P_THREE|P_FOUR, &List::evall_at_index);
     set_instruction(l_index, "@", P_ATLEASTTHREE, &List::evall_index);
     set_instruction(l_set_at, "set@", P_ATLEASTFOUR, &List::evall_set_at);
+    set_instruction(l_infix, "infix", P_FULL, &List::evall_infix);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
     set_instruction(l_insert, "insert", P_FOUR, &List::evall_insert);
     set_instruction(l_irange, "irange", P_THREE, &List::evall_irange);
@@ -294,6 +302,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger);
     set_instruction(l_type, "type", P_TWO, &List::evall_type);
     set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
+    set_instruction(l_rotate, "rotate", P_TWO, &List::evall_rotate);
     set_instruction(l_use, "use", P_TWO, &List::evall_use);
     set_instruction(l_values, "values", P_TWO, &List::evall_values);
     set_instruction(l_wait, "wait", P_ONE, &List::evall_wait);
@@ -305,7 +314,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith);
 
     // High level functions
-    set_instruction(l_composenot, "~", P_ATLEASTTHREE, &List::evall_compose);
+    set_instruction(l_composenot, "?", P_ATLEASTTHREE, &List::evall_compose);
     set_instruction(l_cycle, "cycle", P_TWO, &List::evall_compose);
     set_instruction(l_drop, "drop", P_THREE, &List::evall_compose);
     set_instruction(l_dropwhile, "dropwhile", P_THREE, &List::evall_compose);
@@ -343,10 +352,13 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_rank, "rank", P_ATLEASTTHREE, &List::evall_rank);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
     set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
+    set_instruction(l_member, "member", P_ATLEASTTHREE, &List::evall_member);
     set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
     
     //Operators
+    operators[l_bitnot] = true;
     operators[l_bitand] = true;
+    operators[l_bitandnot] = true;
     operators[l_bitor] = true;
     operators[l_bitxor] = true;
     operators[l_plus] = true;
@@ -389,13 +401,6 @@ void Delegation::initialisation(LispE* lisp) {
         e = new Operator(a.first, code_to_string[a.first]);
         e->status = s_constant;
         operator_pool[a.first] = e;
-    }
-
-    wstring w;
-    for (auto& a: instructions) {
-        w = L"";
-        s_utf8_to_unicode(w, USTR(a.second), a.second.size());
-        code_to_string[a.first] = w;
     }
 
     code_to_string[t_string] = L"string_";
@@ -460,7 +465,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     
     //rest separator in a pattern matching operation
-    w = L"$";
+    wstring w = L"$";
     _LISTSEPARATOR = (Atome*)lisp->provideAtom(w);
 
     // Special case, they are now part of the default values
@@ -522,6 +527,15 @@ void Delegation::initialisation(LispE* lisp) {
     w = L"_";
     string_to_code[w] = v_null;
 
+    w = L"§";
+    string_to_code[w] = l_infix;
+    
+    w = L"•";
+    string_to_code[w] = l_infix;
+    
+    w = L"/\\";
+    string_to_code[w] = l_infix;
+
     //But also 'false', which is a substitute to nil as well
     w = L"false";
     string_to_code[w] = v_null;
@@ -544,8 +558,14 @@ void Delegation::initialisation(LispE* lisp) {
 
     w = L"-//";
     string_to_code[w] = l_backreduce;
-    
+
+    w = L"⌿";
+    string_to_code[w] = l_backreduce;
+
     w = L"-\\\\";
+    string_to_code[w] = l_backscan;
+
+    w = L"⍀";
     string_to_code[w] = l_backscan;
 
     w = L"⍳";
@@ -559,7 +579,10 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = L"⍉";
     string_to_code[w] = l_transpose;
-    
+
+    w = L"⌽";
+    string_to_code[w] = l_reverse;
+
     w = L"¬";
     string_to_code[w] = l_not;
 
@@ -574,6 +597,9 @@ void Delegation::initialisation(LispE* lisp) {
 
     w = L"⍤";
     string_to_code[w] = l_rank;
+    
+    w = L"∈";
+    string_to_code[w] = l_member;
     
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
@@ -603,6 +629,7 @@ void Delegation::initialisation(LispE* lisp) {
     moduleAleatoire(lisp);
     moduleRGX(lisp);
     moduleSocket(lisp);
+    moduleOntology(lisp);
 #ifdef FLTKGUI
     moduleGUI(lisp);
 #endif
@@ -708,6 +735,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         }
 
         stops['!'] = true;
+        stops['?'] = true;
         stops['('] = true;
         stops[')'] = true;
         stops[':'] = true;
@@ -1218,6 +1246,13 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             e->eval(this);
                             removefromgarbage(e);
                             break;
+                        }
+                        if (lab == l_infix) {
+                            Element* inter = ((Listincode*)e)->evall_infix(this);
+                            if (inter != e) {
+                                removefromgarbage(e);
+                                e = inter;
+                            }
                         }
 
                         bool docompose = true;

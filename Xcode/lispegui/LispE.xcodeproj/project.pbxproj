@@ -26,6 +26,7 @@
 		0B55A5151FC3140F005339A9 /* Lecode.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B55A5141FC3140F005339A9 /* Lecode.m */; };
 		0B55A5181FC316B4005339A9 /* CodeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B55A5171FC316B4005339A9 /* CodeViewController.m */; };
 		0B6B3CBF260DE7460062212D /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0B6B3CBE260DE7460062212D /* AppIcon.icns */; };
+		0B9A3AA3265D2A0F00F1D1DD /* ontology.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */; };
 		0BF4E3EA1FC2D12D004C0821 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E3E91FC2D12D004C0821 /* AppDelegate.m */; };
 		0BF4E3ED1FC2D12D004C0821 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E3EC1FC2D12D004C0821 /* ViewController.m */; };
 		0BF4E3EF1FC2D12D004C0821 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0BF4E3EE1FC2D12D004C0821 /* Assets.xcassets */; };
@@ -55,6 +56,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0B0B6D812629B89A003B81C8 /* tokens.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = tokens.h; path = ../../../include/tokens.h; sourceTree = "<group>"; };
 		0B46A89620DD397200DD338E /* LispE.profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = LispE.profdata; sourceTree = "<group>"; };
 		0B4E1A82260B85B900BBAE21 /* vecte.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = vecte.h; path = ../../../include/vecte.h; sourceTree = "<group>"; };
 		0B4E1A83260B85B900BBAE21 /* segmentation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = segmentation.h; path = ../../../include/segmentation.h; sourceTree = "<group>"; };
@@ -93,6 +95,8 @@
 		0B55A5161FC316B4005339A9 /* CodeViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CodeViewController.h; sourceTree = "<group>"; };
 		0B55A5171FC316B4005339A9 /* CodeViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CodeViewController.m; sourceTree = "<group>"; };
 		0B6B3CBE260DE7460062212D /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		0B7C15FA265E38BE00EC82A5 /* ontology.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ontology.h; path = ../../../include/ontology.h; sourceTree = "<group>"; };
+		0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ontology.cxx; path = ../../../src/ontology.cxx; sourceTree = "<group>"; };
 		0BF4E3E51FC2D12D004C0821 /* LispE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LispE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BF4E3E81FC2D12D004C0821 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		0BF4E3E91FC2D12D004C0821 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -178,6 +182,7 @@
 		0B09F07822930E7D00CD9755 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */,
 				0B4E1A90260B85D700BBAE21 /* composing.cxx */,
 				0B4E1A92260B85D700BBAE21 /* elements.cxx */,
 				0B4E1A9B260B85D700BBAE21 /* eval.cxx */,
@@ -205,10 +210,12 @@
 				0B4E1A89260B85B900BBAE21 /* jagrgx.h */,
 				0B4E1A8E260B85B900BBAE21 /* lispe.h */,
 				0B4E1A85260B85B900BBAE21 /* lispeditor.h */,
+				0B7C15FA265E38BE00EC82A5 /* ontology.h */,
 				0B4E1A8B260B85B900BBAE21 /* listes.h */,
 				0B4E1A86260B85B900BBAE21 /* rgx.h */,
 				0B4E1A83260B85B900BBAE21 /* segmentation.h */,
 				0B4E1A8A260B85B900BBAE21 /* stack.h */,
+				0B0B6D812629B89A003B81C8 /* tokens.h */,
 				0B4E1A8C260B85B900BBAE21 /* tools.h */,
 				0B4E1A82260B85B900BBAE21 /* vecte.h */,
 			);
@@ -429,6 +436,7 @@
 				0B4E1AAA260B85D800BBAE21 /* randoms.cxx in Sources */,
 				0B4E1AAC260B85D800BBAE21 /* tools.cxx in Sources */,
 				0B55A5181FC316B4005339A9 /* CodeViewController.m in Sources */,
+				0B9A3AA3265D2A0F00F1D1DD /* ontology.cxx in Sources */,
 				0B4E1AA3260B85D800BBAE21 /* lispe.cxx in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -597,7 +605,6 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DPOSIXREGEX",
-					"-DEBUG",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "NAVER-labs.lispe";
 				PRODUCT_NAME = LispE;

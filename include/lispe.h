@@ -612,6 +612,16 @@ public:
         execution_stack.top()->remove(label);
     }
     
+    inline Stackelement* topStack() {
+        if (execution_stack.size() == 1)
+            return NULL;
+        return execution_stack.top();
+    }
+    
+    inline void setElementStack(Stackelement* stack) {
+        execution_stack.top()->setElements(stack);
+    }
+    
     inline Element* get(wstring name) {
         short label = encode(name);
         try {

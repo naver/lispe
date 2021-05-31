@@ -108,6 +108,17 @@ public:
         return this;
     }
     
+    //We only copy unknown values
+    //used for lambdas to keep track of values from the previous stack
+    void setElements(Stackelement* stack) {
+        for (auto& a: stack->variables) {
+            if (variables.find(a.first) == variables.end()) {
+                variables[a.first] = a.second;
+                a.second->incrementstatus(1, true);
+            }
+        }
+    }
+    
     void atoms(vector<short>& v_atoms) {
         for (auto& a: variables)
             v_atoms.push_back(a.first);

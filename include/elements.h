@@ -27,9 +27,9 @@ typedef enum {
     v_null, v_emptylist, v_emptyatom, v_true,
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_number, t_integer, t_matrix, t_tensor,
+    t_emptystring, t_operator, t_atom, t_number, t_integer,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
-    t_numbers, t_integers, t_strings, t_list,
+    t_numbers, t_integers, t_strings, t_list, t_matrix, t_tensor,
     t_dictionary, t_dictionaryn, t_data, t_maybe, t_pair, t_error,
     
     l_set_max_stack_size,
@@ -44,7 +44,7 @@ typedef enum {
     
     //Recording in the stack or in memory
     l_sleep, l_wait,
-    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib,
+    l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib,
     l_label, l_setq, l_setg, l_block,
     l_if, l_ife,  l_ncheck, l_check, l_cond, 
     l_catch, l_throw, l_maybe, l_terminal,
@@ -54,15 +54,16 @@ typedef enum {
     
     //Numerical operations
     l_sign, l_minus_plus, l_plus, l_minus, l_multiply, l_power,
-    l_leftshift, l_rightshift, l_bitand, l_bitor, l_bitxor,
+    l_leftshift, l_rightshift, l_bitand, l_bitor, l_bitxor, l_bitandnot,
     //+11 = l_opequal
     l_plusequal, l_minusequal, l_multiplyequal,  l_powerequal,
-    l_leftshiftequal, l_rightshiftequal, l_bitandequal, l_bitorequal, l_bitxorequal,
+    l_leftshiftequal, l_rightshiftequal,
+    l_bitnot, l_bitandequal, l_bitandnotequal, l_bitorequal, l_bitxorequal,
     l_divide, l_mod, l_divideequal,l_modequal, l_concatenate,
     l_sum, l_product,
     l_innerproduct, l_matrix, l_tensor, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_equalonezero, l_rho, l_rank,
-    l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
+    l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     
     //Comparisons
     l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
@@ -73,7 +74,8 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop,
-    l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_unique, l_duplicate,
+    l_list, l_cons, l_flatten, l_nconc, l_push, l_insert,
+    l_unique, l_duplicate, l_rotate,
     l_numbers, l_integers, l_strings,
     
     //Display values
@@ -81,7 +83,7 @@ typedef enum {
     
     l_self, l_while, l_eval, l_mark, l_resetmark, l_loop, l_loopcount, l_range, l_irange, l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
-    l_apply, l_maplist, l_mapping, l_checking, l_folding,
+    l_apply, l_maplist, l_filterlist, l_mapping, l_checking, l_folding,
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
     l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
@@ -218,7 +220,11 @@ public:
     virtual Element* transposed(LispE* lisp) {
         return this;
     }
-    
+
+    virtual Element* rotate(LispE* lisp, long axis) {
+        return reverse(lisp, true);
+    }
+
     virtual void concatenate(LispE* lisp, Element* e) {}
 
     virtual Element* last_element(LispE* lisp);
@@ -229,7 +235,11 @@ public:
     virtual Element* unique(LispE* lisp) {
         return this;
     }
-    
+
+    virtual Element* rotate(bool left) {
+        return this;
+    }
+
     virtual bool tobegarbaged() {
         return true;
     }
@@ -284,11 +294,15 @@ public:
     virtual Element* copyatom(uchar s) {
         return this;
     }
-    
+
+    virtual Element* newInstance() {
+        return this;
+    }
+
     virtual Element* newInstance(Element* v) {
         return this;
     }
-    
+
     virtual bool checkShape(long depth, vector<long>& sz) {
         return false;
     }
@@ -327,6 +341,9 @@ public:
     virtual void resetusermark() {}
     
     virtual bool unify(LispE* lisp, Element* value, bool record);
+    virtual Element* check_member(LispE*, Element* s) {
+        return this;
+    }
     
     virtual void setterminal(bool v = true) {}
     /*
@@ -343,6 +360,8 @@ public:
     virtual Element* quoted(LispE*) {
         return this;
     }
+    
+    virtual Element* quoting(Element*);
     
     void prettyfying(LispE* lisp, string& code);
     string prettify(LispE* lisp);
@@ -522,6 +541,10 @@ public:
         return 0;
     }
     
+    virtual long shapesize() {
+        return 0;
+    }
+    
     virtual short label() {
         return type;
     }
@@ -576,7 +599,9 @@ public:
     
     virtual Element* reverse(LispE*, bool duplique = true);
     
+    virtual Element* bit_not(LispE* l);
     virtual Element* bit_and(LispE* l, Element* e);
+    virtual Element* bit_and_not(LispE* l, Element* e);
     virtual Element* bit_or(LispE* l, Element* e);
     virtual Element* bit_xor(LispE* l, Element* e);
     virtual Element* plus(LispE* l, Element* e);
@@ -875,7 +900,11 @@ public:
     bool equalvalue(double v) {
         return (v == number);
     }
-    
+
+    Element* quoting(Element*) {
+        return this;
+    }
+
     Element* equal(LispE* lisp, Element* e);
     Element* less(LispE* lisp, Element* e);
     Element* lessorequal(LispE* lisp, Element* e);
@@ -948,7 +977,9 @@ public:
         return new Number(number);
     }
     
+    Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
     Element* bit_or(LispE* l, Element* e);
     Element* bit_xor(LispE* l, Element* e);
     Element* plus(LispE* l, Element* e);
@@ -981,7 +1012,11 @@ public:
     }
     
     Integer(long d, uchar s) : integer(d), Element(t_integer, s) {}
-    
+
+    Element* quoting(Element*) {
+        return this;
+    }
+
     Element* equal(LispE* lisp, Element* e);
     Element* less(LispE* lisp, Element* e);
     Element* lessorequal(LispE* lisp, Element* e);
@@ -1056,8 +1091,9 @@ public:
         return new Integer(integer);
     }
     
-    
+    Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
     Element* bit_or(LispE* l, Element* e);
     Element* bit_xor(LispE* l, Element* e);
     Element* plus(LispE* l, Element* e);
@@ -1099,6 +1135,12 @@ public:
         return true;
     }
     
+    Element* quoting(Element*) {
+        return this;
+    }
+    
+    Element* rotate(bool left);
+    
     char check_match(LispE* lisp, Element* value) {
         if (content == value->asString(lisp))
             return check_ok;
@@ -1134,6 +1176,7 @@ public:
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     Element* reverse(LispE*, bool duplique = true);
+
     Element* last_element(LispE* lisp);
     
     //The strings cannot be present in the garbage

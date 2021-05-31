@@ -3,7 +3,7 @@ include Makefile.in
 ################################################################
 COMPPLUSPLUS = g++
 ################ Compiler LispE #################################
-SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx
+SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx ontology.cxx
 SOURCEMAIN = jag.cxx main.cxx lispeditor.cxx
 SOURCEJAG = jagmain.cxx jag.cxx jagget.cxx jagrgx.cxx jagtools.cxx
 #------------------------------------------------------------
@@ -62,5 +62,5 @@ libs:
 	$(MAKE) -C sqlite clean all
 	$(MAKE) -C pythonlispe clean all
 	$(MAKE) -C transducer clean all
-
+	$(MAKE) -C gui clean all
 

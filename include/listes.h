@@ -227,6 +227,11 @@ public:
         item->last = home;
     }
 
+    void clean() {
+        item->decrement();
+        item->last = home;
+    }
+    
     inline void pop_back() {
         item->last--;
     }
@@ -363,7 +368,7 @@ public:
         terminal = v;
     }
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    virtual Element* loop(LispE* lisp, short label,  List* code);
     Element* multiloop(LispE* lisp);
     
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -431,6 +436,7 @@ public:
     
     Element* quoted(LispE*);
     Element* unique(LispE* lisp);
+    Element* rotate(bool left);
 
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
@@ -507,6 +513,10 @@ public:
         return liste.size();
     }
     
+    virtual long shapesize() {
+        return liste.size();
+    }
+
     //This function is only used to compare the number of
     //parameters of a function and its arguments
     long argumentsize(LispE* lisp, long sz);
@@ -761,7 +771,8 @@ public:
     }
     
     virtual Element* transposed(LispE* lisp);
-    
+    virtual Element* rotate(LispE* lisp, long axis);
+
     bool checkShape(long depth, vector<long>& sz) {
         if (size() != sz[depth])
             return false;
@@ -794,6 +805,8 @@ public:
         }
     }
 
+    virtual Element* check_member(LispE*, Element* the_set);
+    
     Element* insert(LispE* lisp, Element* e, long idx);
 
     virtual void set_current_line(LispE*) {}
@@ -811,6 +824,10 @@ public:
             liste.decrement_and_clear();
     }
 
+    void clean() {
+        liste.clean();
+    }
+    
 #ifdef MAX_STACK_SIZE_ENABLED
     Element* evall_set_max_stack_size(LispE* lisp);
 #endif
@@ -829,7 +846,9 @@ public:
     Element* evall_rightshift(LispE* lisp);
     Element* evall_divide(LispE* lisp);
     Element* evall_mod(LispE* lisp);
+    Element* evall_bitnot(LispE* lisp);
     Element* evall_bitand(LispE* lisp);
+    Element* evall_bitandnot(LispE* lisp);
     Element* evall_bitor(LispE* lisp);
     Element* evall_bitxor(LispE* lisp);
     Element* evall_plusequal(LispE* lisp);
@@ -838,6 +857,7 @@ public:
     Element* evall_powerequal(LispE* lisp);
     Element* evall_leftshiftequal(LispE* lisp);
     Element* evall_rightshiftequal(LispE* lisp);
+    Element* evall_bitandnotequal(LispE* lisp);
     Element* evall_bitandequal(LispE* lisp);
     Element* evall_bitorequal(LispE* lisp);
     Element* evall_bitxorequal(LispE* lisp);
@@ -892,8 +912,10 @@ public:
     Element* evall_keyn(LispE* lisp);
     Element* evall_last(LispE* lisp);
     Element* evall_push(LispE* lisp);
+    Element* evall_infix(LispE* lisp);
     Element* evall_insert(LispE* lisp);
     Element* evall_unique(LispE* lisp);
+    Element* evall_rotate(LispE* lisp);
     Element* evall_pop(LispE* lisp);
     Element* evall_keys(LispE* lisp);
     Element* evall_values(LispE* lisp);
@@ -927,6 +949,7 @@ public:
     Element* evall_rank(LispE* lisp);
     Element* evall_equalonezero(LispE* lisp);
     Element* evall_rho(LispE* lisp);
+    Element* evall_member(LispE* lisp);
     Element* evall_factorial(LispE* lisp);
     Element* evall_iota(LispE* lisp);
     Element* evall_iota0(LispE* lisp);
@@ -984,13 +1007,16 @@ public:
     Element* evall_folding(LispE* lisp);
     Element* evall_apply(LispE* lisp);
     Element* evall_maplist(LispE* lisp);
+    Element* evall_filterlist(LispE* lisp);
     Element* evall_sort(LispE* lisp);
     Element* evall_zip(LispE* lisp);
     Element* evall_zipwith(LispE* lisp);
     
     bool eval_Boolean(LispE* lisp, short instruction);
 
+    Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
     Element* bit_or(LispE* l, Element* e);
     Element* bit_xor(LispE* l, Element* e);
     Element* plus(LispE* l, Element* e);
@@ -1013,6 +1039,10 @@ public:
         return l;
     }
 
+    virtual Element* newInstance() {
+        return new List;
+    }
+    
     virtual Element* newInstance(Element* v);
 
 };
@@ -1026,6 +1056,7 @@ public:
     Listincode(uchar s) : List(s) {}
     Listincode() {}
     
+    Element* evall_infix(LispE* lisp);
     void set_current_line(LispE*);
 
 };
@@ -1126,7 +1157,11 @@ public:
     }
     Numbers(uchar s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
-    
+
+    Element* newInstance() {
+        return new Numbers;
+    }
+
     Element* newInstance(Element* v) {
         return new Numbers(liste.size(), v->asNumber());
     }
@@ -1141,6 +1176,31 @@ public:
         }
     }
 
+    Element* rotate(LispE* lisp, long axis) {
+        Numbers* n = new Numbers;
+        for (long i = liste.size()-1; i >= 0; i--)
+            n->liste.push_back(liste[i]);
+        return n;
+    }
+
+    Element* check_member(LispE*, Element* the_set) {
+        Numbers* n = new Numbers;
+        double v;
+        long i, j;
+        long sz = the_set->size();
+        for (j = 0; j < size(); j++) {
+            for (i = 0; i < sz; i++) {
+                v = the_set->index(i)->asNumber();
+                if (liste[j] == v) {
+                    n->liste.push_back(1);
+                    break;
+                }
+            }
+            if (i == sz)
+                n->liste.push_back(0);
+        }
+        return n;
+    }
 
     bool isContainer() {
         return true;
@@ -1193,6 +1253,7 @@ public:
     }
     
     Element* unique(LispE* lisp);
+    Element* rotate(bool left);
 
     
     Element* copying(bool duplicate = true) {
@@ -1425,7 +1486,9 @@ public:
         return n;
     }
 
+    Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
     Element* bit_or(LispE* l, Element* e);
     Element* bit_xor(LispE* l, Element* e);
     Element* plus(LispE* l, Element* e);
@@ -1453,6 +1516,10 @@ public:
     Integers(uchar s) : Element(t_integers, s), exchange_value(0) {}
     Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
     
+    Element* newInstance() {
+        return new Integers;
+    }
+
     Element* newInstance(Element* v) {
         return new Integers(liste.size(), v->asInteger());
     }
@@ -1467,6 +1534,25 @@ public:
         }
     }
 
+    Element* check_member(Element* the_set) {
+        Integers* n = new Integers;
+        long v;
+        long i, j;
+        long sz = the_set->size();
+        for (j = 0; j < size(); j++) {
+            for (i = 0; i < sz; i++) {
+                v = the_set->index(i)->asInteger();
+                if (liste[j] == v) {
+                    n->liste.push_back(1);
+                    break;
+                }
+            }
+            if (i == sz)
+                n->liste.push_back(0);
+        }
+        return n;
+    }
+    
     bool isContainer() {
         return true;
     }
@@ -1518,6 +1604,7 @@ public:
     }
     
     Element* unique(LispE* lisp);
+    Element* rotate(bool left);
 
     
     Element* copying(bool duplicate = true) {
@@ -1688,6 +1775,14 @@ public:
 
     Element* reverse(LispE*, bool duplique = true);
     
+    Element* rotate(LispE* lisp, long axis) {
+        Integers* n = new Integers;
+        for (long i = liste.size()-1; i >= 0; i--)
+            n->liste.push_back(liste[i]);
+        return n;
+    }
+
+    
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
     void storevalue(LispE*, wstring& v);
@@ -1751,7 +1846,9 @@ public:
         return n;
     }
 
+    Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
     Element* bit_or(LispE* l, Element* e);
     Element* bit_xor(LispE* l, Element* e);
     Element* plus(LispE* l, Element* e);
@@ -1772,6 +1869,10 @@ class Matrice : public List {
 public:
     long size_x, size_y;
 
+    Matrice() {
+        type = t_matrix;
+    }
+    
     Matrice(long x, long y, Element* n) {
         type = t_matrix;
         size_x = x;
@@ -1822,6 +1923,14 @@ public:
         size_y = l->index(0)->size();
     }
 
+    long shapesize() {
+        return 2;
+    }
+
+    Element* check_member(LispE*, Element* the_set);
+    
+    Element* loop(LispE* lisp, short label,  List* code);
+    
     inline double val(long i, long j) {
         return ((Numbers*)liste[i])->liste[j];
     }
@@ -1923,7 +2032,11 @@ public:
     }
     
     Element* transposed(LispE* lisp);
-    
+    Element* rotate(LispE* lisp, long axis);
+    Element* reverse(LispE* lisp, bool duplique = true) {
+        return rotate(lisp, 1);
+    }
+
     void concatenate(LispE* lisp, Element* e) {
         if (e->isList()) {
             if (e->size() != size_x)
@@ -1944,12 +2057,21 @@ public:
     Element* newInstance(Element* e) {
         return new Matrice(size_x, size_y, e);
     }
+    
+    Element* newInstance() {
+        return new Matrice(size_x, size_y, 0.0);
+    }
+
 };
 
 class Tenseur : public List {
 public:
     vector<long> shape;
 
+    Tenseur() {
+        type = t_tensor;
+    }
+    
     Tenseur(std::vector<long>& sz, Element* n) {
         type = t_tensor;
         shape = sz;
@@ -1988,6 +2110,22 @@ public:
             e = e->index(0);
         }
     }
+    
+    long shapesize() {
+        return shape.size();
+    }
+
+    Element* check_member(LispE*, Element* the_set);
+    
+    long nbelements() {
+        long nb = 1;
+        for (short i = 0; i < shape.size(); i++)
+            nb*=shape[i];
+        return nb;
+    }
+    
+    
+    Element* loop(LispE* lisp, short label,  List* code);
     
     Element* duplicate_constant_container(bool pair = false) {
         if (status == s_constant)
@@ -2160,6 +2298,11 @@ public:
     }
 
     Element* transposed(LispE* lisp);
+    Element* rotate(LispE* lisp, long axis);
+    Element* reversion(LispE* lisp, Element* value, long pos, long axis, bool init);
+    Element* reverse(LispE* lisp, bool duplique = true) {
+        return rotate(lisp, shape.size()-1);
+    }
     
     void concatenate(LispE* lisp, long isz, Element* res, Element* e) {
         if (res->isValueList()) {
@@ -2206,6 +2349,10 @@ public:
         setvalue(this, lst);
     }
 
+    Element* newInstance() {
+        return new Tenseur(shape, 0.0);
+    }
+
     Element* newInstance(Element* e) {
         return new Tenseur(shape, e);
     }
@@ -2227,10 +2374,35 @@ public:
         }
     }
 
+    Element* newInstance() {
+        return new Strings;
+    }
+
     Element* newInstance(Element* v) {
         return new Strings(liste.size(), v->asString(NULL));
     }
 
+    Element* check_member(LispE* lisp, Element* the_set) {
+        Strings* n = new Strings;
+        long sz = the_set->size();
+        std::vector<wstring> v;
+        long i, j;
+        for (i = 0; i < sz; i++)
+            v.push_back(the_set->index(i)->asString(lisp));
+        
+        for (j = 0; j < size(); j++) {
+            for (i = 0; i < sz; i++) {
+                if (liste[j] == v[i]) {
+                    n->liste.push_back(v[i]);
+                    break;
+                }
+            }
+            if (i == sz)
+                n->liste.push_back(L"");
+        }
+        return n;
+    }
+    
     void concatenate(LispE* lisp, Element* e) {
         if (!e->isList())
             liste.push_back(e->asString(lisp));
@@ -2292,6 +2464,7 @@ public:
     }
     
     Element* unique(LispE* lisp);
+    Element* rotate(bool left);
 
     
     Element* copying(bool duplicate = true) {
@@ -2471,6 +2644,13 @@ public:
     }
 
     Element* reverse(LispE*, bool duplique = true);
+    Element* rotate(LispE* lisp, long axis) {
+        Strings* n = new Strings;
+        for (long i = liste.size()-1; i >= 0; i--)
+            n->liste.push_back(liste[i]);
+        return n;
+    }
+
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);

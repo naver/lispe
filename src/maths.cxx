@@ -395,28 +395,26 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib degree (val)", new Math(lisp, math_degree));
 
     wstring nom = L"_pi";
-    Element* pi = lisp->provideNumber(M_PI);
-    lisp->recordingunique(pi, lisp->encode(nom));
+    Element* value = lisp->provideNumber(M_PI);
+    lisp->recordingunique(value, lisp->encode(nom));
     nom = L"π";
-    lisp->recordingunique(pi, lisp->encode(nom));
+    lisp->recordingunique(value, lisp->encode(nom));
     
     nom = L"_tau";
-    pi = lisp->provideNumber(2 * M_PI);
-    lisp->recordingunique(pi, lisp->encode(nom));
+    value = lisp->provideNumber(2 * M_PI);
+    lisp->recordingunique(value, lisp->encode(nom));
     nom = L"τ";
-    lisp->recordingunique(pi, lisp->encode(nom));
+    lisp->recordingunique(value, lisp->encode(nom));
     
     nom = L"_e";
-    pi = lisp->provideNumber(M_E);
-    lisp->recordingunique(pi, lisp->encode(nom));
+    value = lisp->provideNumber(M_E);
+    lisp->recordingunique(value, lisp->encode(nom));
     nom = L"ℯ";
-    lisp->recordingunique(pi, lisp->encode(nom));
+    lisp->recordingunique(value, lisp->encode(nom));
     
     nom = L"_phi";
-    pi = lisp->provideNumber(M_GOLDEN);
-    lisp->recordingunique(pi, lisp->encode(nom));
-    nom = L"φ";
-    lisp->recordingunique(pi, lisp->encode(nom));
+    value = lisp->provideNumber(M_GOLDEN);
+    lisp->recordingunique(value, lisp->encode(nom));
 
 }
 //------ Matrix operations ------------------------

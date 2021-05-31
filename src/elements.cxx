@@ -21,6 +21,13 @@ Element* List::quoted(LispE* lisp) {
     l->append(this);
     return l;
 }
+
+Element* Element::quoting(Element* quote) {
+    List* l = new List;
+    l->append(quote);
+    l->append(this);
+    return l;
+}
 //------------------------------------------------------------------------------------------
 union double64 {
 public:
@@ -40,6 +47,40 @@ Infinitelist::Infinitelist(LispE* lisp) : Element(t_list) {
 
 Cyclelist::Cyclelist(LispE* lisp) : Element(t_list) {
     value = null_;
+}
+
+//------------------------------------------------------------------------------------------
+Element* List::check_member(LispE* lisp, Element* the_set) {
+    List* r = new List;
+    Element* e;
+    for (long i = 0; i < size(); i++) {
+        e = liste[i]->check_member(lisp,the_set);
+        r->append(e);
+    }
+    return r;
+}
+
+Element* Matrice::check_member(LispE* lisp,Element* the_set) {
+    Matrice* r = new Matrice;
+    r->size_x = size_x;
+    r->size_y = size_y;
+    Element* e;
+    for (long i = 0; i < size(); i++) {
+        e = liste[i]->check_member(lisp, the_set);
+        r->append(e);
+    }
+    return r;
+}
+
+Element* Tenseur::check_member(LispE* lisp, Element* the_set) {
+    Tenseur* r = new Tenseur;
+    r->shape = shape;
+    Element* e;
+    for (long i = 0; i < size(); i++) {
+        e = liste[i]->check_member(lisp, the_set);
+        r->append(e);
+    }
+    return r;
 }
 
 //------------------------------------------------------------------------------------------
@@ -1016,6 +1057,40 @@ Element* List::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
+Element* Matrice::loop(LispE* lisp, short label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    Element* element;
+    long sz = code->liste.size();
+    for (long i = 0; i < size_x; i++) {
+        for (long j = 0; j < size_y; j++) {
+            element = lisp->provideNumber(liste[i]->index(j)->asNumber());
+            lisp->recording(element, label);
+            e = null_;
+            //We then execute our instructions
+            for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+                e->release();
+                e = code->liste[i_loop]->eval(lisp);
+            }
+            if (e->type == l_return) {
+                if (e->isBreak())
+                    return null_;
+                return e;
+            }
+        }
+    }
+    return e;
+}
+
+Element* Tenseur::loop(LispE* lisp, short label, List* code) {
+    Numbers* n = new Numbers;
+    flatten(lisp, n);
+    Element* e = n->loop(lisp, label, code);
+    delete n;
+    return e;
+}
+
 Element* Numbers::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
@@ -1335,9 +1410,9 @@ Element* List::multiloop(LispE* lisp) {
             e = values.liste[var]->value_on_index(lisp, idx);
             lisp->recording(e, label);
         }
-        e = null_;
         if (!looping)
             break;
+        e = null_;
         //We then execute our instructions
         for (i_loop = b_loop; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -1408,6 +1483,24 @@ Element* List::insert(LispE* lisp, Element* e, long idx) {
     return l;
 }
 
+Element* List::rotate(bool left) {
+    if (liste.size() <= 1)
+        return this;
+    
+    List* l = new List;
+    if (left) {
+        for (long i = 1; i < liste.size(); i++)
+            l->append(liste[i]->copying(false));
+        l->append(liste[0]->copying(false));
+        return l;
+    }
+    
+    l->append(liste.back()->copying(false));
+    for (long i = 0; i < liste.size() - 1; i ++)
+        l->append(liste[i]->copying(false));
+    return l;
+}
+
 Element* List::unique(LispE* lisp) {
     if (liste.size() == 0)
         return this;
@@ -1436,6 +1529,24 @@ Element* Numbers::insert(LispE* lisp, Element* e, long idx) {
  
     Numbers* l = (Numbers*)duplicate_constant_container();
     l->liste.insert(l->liste.begin()+idx, e->asNumber());
+    return l;
+}
+
+Element* Numbers::rotate(bool left) {
+    if (liste.size() <= 1)
+        return this;
+    
+    Numbers* l = new Numbers;
+    if (left) {
+        for (long i = 1; i < liste.size(); i++)
+            l->liste.push_back(liste[i]);
+        l->liste.push_back(liste[0]);
+        return l;
+    }
+    
+    l->liste.push_back(liste.back());
+    for (long i = 0; i < liste.size() - 1; i ++)
+        l->liste.push_back(liste[i]);
     return l;
 }
 
@@ -1470,6 +1581,24 @@ Element* Integers::insert(LispE* lisp, Element* e, long idx) {
     return l;
 }
 
+Element* Integers::rotate(bool left) {
+    if (liste.size() <= 1)
+        return this;
+    
+    Integers* l = new Integers;
+    if (left) {
+        for (long i = 1; i < liste.size(); i++)
+            l->liste.push_back(liste[i]);
+        l->liste.push_back(liste[0]);
+        return l;
+    }
+
+    l->liste.push_back(liste.back());
+    for (long i = 0; i < liste.size() - 1; i ++)
+        l->liste.push_back(liste[i]);
+    return l;
+}
+
 Element* Integers::unique(LispE* lisp) {
     if (liste.size() == 0)
         return this;
@@ -1498,6 +1627,39 @@ Element* Strings::insert(LispE* lisp, Element* e, long idx) {
  
     Strings* l = (Strings*)duplicate_constant_container();
     l->liste.insert(l->liste.begin()+idx, e->asString(lisp));
+    return l;
+}
+
+Element* String::rotate(bool left) {
+    if (content.size() <= 1)
+        return this;
+    
+    String* s = new String(L"");
+    if (left) {
+        s->content = content.substr(1,content.size());
+        s->content += content[0];
+        return s;
+    }
+    s->content = content.back();
+    s->content += content.substr(0, content.size()-1);
+    return s;
+}
+
+Element* Strings::rotate(bool left) {
+    if (liste.size() <= 1)
+        return this;
+    
+    Strings* l = new Strings;
+    if (left) {
+        for (long i = 1; i < liste.size(); i++)
+            l->liste.push_back(liste[i]);
+        l->liste.push_back(liste[0]);
+        return l;
+    }
+
+    l->liste.push_back(liste.back());
+    for (long i = 0; i < liste.size() - 1; i ++)
+        l->liste.push_back(liste[i]);
     return l;
 }
 
@@ -1981,6 +2143,60 @@ Element* Dictionary_n::reverse(LispE* lisp, bool duplique) {
     }
     return dico;
 }
+
+Element* List::rotate(LispE* lisp, long axis) {
+    return reverse(lisp, true);
+}
+
+Element* Matrice::rotate(LispE* lisp, long axis) {
+    Matrice* revert_matrix = new Matrice;
+    revert_matrix->size_x = size_x;
+    revert_matrix->size_y = size_y;
+    
+    long i;
+   
+    if (axis == 1) {
+        for (i = 0; i < size_x; i++) {
+            revert_matrix->append(liste[i]->rotate(lisp,0));
+        }
+        return revert_matrix;
+    }
+    
+    Element* e;
+    for (i = size_x-1; i>= 0;  i--) {
+        e = new Numbers((Numbers*)liste[i]);
+        revert_matrix->append(e);
+    }
+    return revert_matrix;
+}
+
+Element* Tenseur::reversion(LispE* lisp, Element* value, long pos, long axis, bool init) {
+    if (pos == axis)
+        return value->reverse(lisp,true);
+    
+    if (pos == shape.size() -1)
+        return new Numbers((Numbers*)value);
+    
+    Element* r;
+    if (init) {
+        r = new Tenseur;
+        ((Tenseur*)r)->shape = shape;
+    }
+    else
+        r = new List;
+    
+    Element* e;
+    for (long i = 0; i < shape[pos]; i++) {
+        e = reversion(lisp, value->index(i), pos+1, axis, false);
+        r->append(e);
+    }
+    return r;
+}
+
+Element* Tenseur::rotate(LispE* lisp, long axis) {
+    return reversion(lisp, this, 0, axis, true);
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::protected_index(LispE* lisp,long i) {
     return null_;
@@ -2582,7 +2798,15 @@ Element* Element::plus(LispE* lisp, Element* e) {
     throw new Error("Error: cannot evaluate '+' with these operands");
 }
 
+Element* Element::bit_not(LispE* lisp) {
+    throw new Error("Error: cannot evaluate '~' for this operand");
+}
+
 Element* Element::bit_and(LispE* lisp, Element* e) {
+    throw new Error("Error: cannot evaluate '&' with these operands");
+}
+
+Element* Element::bit_and_not(LispE* lisp, Element* e) {
     throw new Error("Error: cannot evaluate '&' with these operands");
 }
 
@@ -2625,6 +2849,7 @@ Element* Element::rightshift(LispE* lisp, Element* e) {
 Element* String::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->plus(lisp, e);
     }
 
@@ -2653,6 +2878,7 @@ long Element::checkInteger(LispE* lisp) {
 Element* Number::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->plus(lisp, e);
     }
     if (status != s_constant) {
@@ -2665,6 +2891,7 @@ Element* Number::plus(LispE* lisp, Element* e) {
 Element* Number::minus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->minus(lisp, e);
     }
     if (status != s_constant) {
@@ -2677,6 +2904,7 @@ Element* Number::minus(LispE* lisp, Element* e) {
 Element* Number::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->multiply(lisp, e);
     }
     if (status != s_constant) {
@@ -2687,13 +2915,14 @@ Element* Number::multiply(LispE* lisp, Element* e) {
 }
 
 Element* Number::divide(LispE* lisp, Element* e) {
-    double v = e->checkNumber(lisp);
-    if (v == 0)
-        throw new Error("Error: division by zero");
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->divide(lisp, e);
     }
+    double v = e->checkNumber(lisp);
+    if (!v)
+        throw new Error("Error: division by zero");
     if (status != s_constant) {
         number /= v;
         return this;
@@ -2702,23 +2931,27 @@ Element* Number::divide(LispE* lisp, Element* e) {
 }
 
 Element* Number::mod(LispE* lisp, Element* e) {
-    long v = e->checkNumber(lisp);
-    if (v == 0)
-        throw new Error("Error: division by zero");
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->mod(lisp, e);
     }
+
+    long v = e->checkInteger(lisp);
+    if (!v)
+        throw new Error("Error: division by zero");
+
     if (status != s_constant) {
         number = (long)number % v;
         return this;
     }
-    return lisp->provideInteger((long)number%v);
+    return lisp->provideNumber((long)number%v);
 }
 
 Element* Number::power(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->power(lisp, e);
     }
     if (status != s_constant) {
@@ -2728,9 +2961,38 @@ Element* Number::power(LispE* lisp, Element* e) {
     return lisp->provideNumber(pow(number, e->checkNumber(lisp)));
 }
 
+Element* Number::bit_not(LispE* lisp)  {
+    double64 d(number);
+    d.bits = ~d.bits;
+    if (status != s_constant) {
+        number = d.v;
+        return this;
+    }
+
+    return lisp->provideNumber(d.v);
+}
+
+
+Element* Number::bit_and_not(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->bit_and_not(lisp, e);
+    }
+    double64 d(number);
+    d.bits &= ~e->checkInteger(lisp);
+    if (status != s_constant) {
+        number = d.v;
+        return this;
+    }
+
+    return lisp->provideNumber(d.v);
+}
+
 Element* Number::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->bit_and(lisp, e);
     }
     double64 d(number);
@@ -2743,9 +3005,11 @@ Element* Number::bit_and(LispE* lisp, Element* e)  {
     return lisp->provideNumber(d.v);
 }
 
+
 Element* Number::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->bit_or(lisp, e);
     }
     double64 d(number);
@@ -2761,6 +3025,7 @@ Element* Number::bit_or(LispE* lisp, Element* e)  {
 Element* Number::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->bit_xor(lisp, e);
     }
     double64 d(number);
@@ -2776,6 +3041,7 @@ Element* Number::bit_xor(LispE* lisp, Element* e)  {
 Element* Number::leftshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->leftshift(lisp, e);
     }
     double64 d(number);
@@ -2791,6 +3057,7 @@ Element* Number::leftshift(LispE* lisp, Element* e)  {
 Element* Number::rightshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->rightshift(lisp, e);
     }
     double64 d(number);
@@ -2806,6 +3073,7 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
 Element* Integer::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->plus(lisp, e);
     }
     if (e->type == t_number) {
@@ -2824,6 +3092,7 @@ Element* Integer::plus(LispE* lisp, Element* e) {
 Element* Integer::minus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->minus(lisp, e);
     }
     if (e->type == t_number) {
@@ -2841,6 +3110,7 @@ Element* Integer::minus(LispE* lisp, Element* e) {
 Element* Integer::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->multiply(lisp, e);
     }
     if (e->type == t_number) {
@@ -2856,29 +3126,29 @@ Element* Integer::multiply(LispE* lisp, Element* e) {
 }
 
 Element* Integer::divide(LispE* lisp, Element* e) {
-    double v = e->checkNumber(lisp);
-    if (v == 0)
-        throw new Error("Error: division by zero");
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), v);
+        Element* n = e->newInstance(this);
+        release();
         return n->divide(lisp, e);
     }
-    v = (double)integer/v;
+    double v =  e->checkNumber(lisp);
+    if (!v)
+        throw new Error("Error: division by zero");
     release();
-    if (v == (long)v)
-        return lisp->provideInteger(v);
-    return lisp->provideNumber(v);
+    return lisp->provideNumber((double)integer/v);
 }
 
 
 Element* Integer::mod(LispE* lisp, Element* e) {
-    long v = e->checkInteger(lisp);
-    if (v == 0)
-        throw new Error("Error: division by zero");
     if (e->isList()) {
-        Integers* n = new Integers(e->size(), v);
+        Element* n = e->newInstance(this);
+        release();
         return n->mod(lisp, e);
     }
+    long v =  e->checkInteger(lisp);
+    if (!v)
+        throw new Error("Error: division by zero");
+    
     if (status != s_constant) {
         integer %= v;
         return this;
@@ -2896,9 +3166,19 @@ Element* Integer::power(LispE* lisp, Element* e) {
     return lisp->provideNumber(v);
 }
 
+Element* Integer::bit_not(LispE* lisp)  {
+    if (status != s_constant) {
+        integer = ~integer;
+        return this;
+    }
+    return lisp->provideInteger(~integer);
+}
+
+
 Element* Integer::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->bit_and(lisp, e);
     }
     if (status != s_constant) {
@@ -2908,9 +3188,23 @@ Element* Integer::bit_and(LispE* lisp, Element* e)  {
     return lisp->provideInteger(integer&e->checkInteger(lisp));
 }
 
+Element* Integer::bit_and_not(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->bit_and_not(lisp, e);
+    }
+    if (status != s_constant) {
+        integer &= ~e->checkInteger(lisp);
+        return this;
+    }
+    return lisp->provideInteger(integer&~e->checkInteger(lisp));
+}
+
 Element* Integer::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->bit_or(lisp, e);
     }
     if (status != s_constant) {
@@ -2923,6 +3217,7 @@ Element* Integer::bit_or(LispE* lisp, Element* e)  {
 Element* Integer::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->bit_xor(lisp, e);
     }
     if (status != s_constant) {
@@ -2936,6 +3231,7 @@ Element* Integer::bit_xor(LispE* lisp, Element* e)  {
 Element* Integer::leftshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->leftshift(lisp, e);
     }
     if (status != s_constant) {
@@ -2949,6 +3245,7 @@ Element* Integer::leftshift(LispE* lisp, Element* e)  {
 Element* Integer::rightshift(LispE* lisp, Element* e)  {
     if (e->isList()) {
         Element* n = e->newInstance(this);
+        release();
         return n->rightshift(lisp, e);
     }
     if (status != s_constant) {
@@ -2957,6 +3254,22 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
     }
     return lisp->provideInteger(integer>>e->checkInteger(lisp));
 }
+
+Element* List::bit_not(LispE* l) {
+    //Two cases either e is a number or it is a list...
+    if (!status) {
+        for (long i = 0; i < size(); i++) {
+            replacing(i, liste[i]->bit_not(l));
+        }
+        return this;
+    }
+    List* lst = new List;
+    for (long i = 0; i < size(); i++) {
+        lst->append(liste[i]->bit_not(l));
+    }
+    return lst;
+}
+
 
 Element* List::bit_and(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
@@ -2971,6 +3284,21 @@ Element* List::bit_and(LispE* l, Element* e) {
     }
     return this;
 }
+
+Element* List::bit_and_not(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, liste[i]->bit_and_not(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, liste[i]->bit_and_not(l, e));
+    }
+    return this;
+}
+
 
 Element* List::bit_or(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
@@ -3114,6 +3442,13 @@ Element* List::rightshift(LispE* l, Element* e) {
 
 Element* Strings::plus(LispE* l, Element* e) {
     //Two cases either e is a string or it is a list...
+    if (e == NULL) {
+        wstring d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d += liste[i];
+        }
+        return l->provideString(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] += e->index(i)->asString(l);
@@ -3126,8 +3461,35 @@ Element* Strings::plus(LispE* l, Element* e) {
     return this;
 }
 
+Element* Numbers::bit_not(LispE* l) {
+    //Two cases either e is a number or it is a list...
+    if (!status) {
+        for (long i = 0; i < size(); i++) {
+            replacing(i, index(i)->bit_not(l));
+        }
+        return this;
+    }
+    double64 d(0);
+    Numbers* num = new Numbers;
+    for (long i = 0; i < size(); i++) {
+        d.v = liste[i];
+        d.bits = ~d.bits;
+        num->liste.push_back(d.v);
+    }
+    return num;
+}
+
 
 Element* Numbers::bit_and(LispE* l, Element* e) {
+    if (e == NULL) {
+        double64 r(0);
+        double64 d(liste[0]);
+        for (long i = 1; i < size(); i++) {
+            r.v = liste[i];
+            d.bits &= r.bits;
+        }
+        return l->provideNumber(d.v);
+    }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3141,7 +3503,40 @@ Element* Numbers::bit_and(LispE* l, Element* e) {
     return this;
 }
 
+Element* Numbers::bit_and_not(LispE* l, Element* e) {
+    if (e == NULL) {
+        double64 r(0);
+        double64 d(liste[0]);
+        for (long i = 1; i < size(); i++) {
+            r.v = liste[i];
+            d.bits &= ~r.bits;
+        }
+        return l->provideNumber(d.v);
+    }
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->bit_and_not(l, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->bit_and_not(l, e));
+    }
+    return this;
+}
+
 Element* Numbers::bit_or(LispE* l, Element* e) {
+    if (e == NULL) {
+        double64 r(0);
+        double64 d(liste[0]);
+        for (long i = 1; i < size(); i++) {
+            r.v = liste[i];
+            d.bits |= r.bits;
+        }
+        return l->provideNumber(d.v);
+    }
+
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3156,6 +3551,16 @@ Element* Numbers::bit_or(LispE* l, Element* e) {
 }
 
 Element* Numbers::bit_xor(LispE* l, Element* e) {
+    if (e == NULL) {
+        double64 r(0);
+        double64 d(liste[0]);
+        for (long i = 1; i < size(); i++) {
+            r.v = liste[i];
+            d.bits ^= r.bits;
+        }
+        return l->provideNumber(d.v);
+    }
+
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3171,6 +3576,14 @@ Element* Numbers::bit_xor(LispE* l, Element* e) {
 
 Element* Numbers::plus(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        double d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d += liste[i];
+        }
+        return l->provideNumber(d);
+    }
+
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] += e->index(i)->asNumber();
@@ -3185,6 +3598,14 @@ Element* Numbers::plus(LispE* l, Element* e) {
 
 Element* Numbers::minus(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        double d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d -= liste[i];
+        }
+        return l->provideNumber(d);
+    }
+
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] -= e->index(i)->asNumber();
@@ -3199,6 +3620,14 @@ Element* Numbers::minus(LispE* l, Element* e) {
 
 Element* Numbers::multiply(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        double d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d *= liste[i];
+        }
+        return l->provideNumber(d);
+    }
+
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] *= e->index(i)->asNumber();
@@ -3213,6 +3642,16 @@ Element* Numbers::multiply(LispE* l, Element* e) {
 
 Element* Numbers::divide(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        double d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            if (!liste[i])
+                throw new Error("Error: division by zero");
+            d /= liste[i];
+        }
+        return l->provideNumber(d);
+    }
+
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             replacing(i, index(i)->divide(l, e->index(i)));
@@ -3227,6 +3666,15 @@ Element* Numbers::divide(LispE* l, Element* e) {
 
 Element* Numbers::mod(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            if (liste[i] == 0)
+                throw new Error("Error: division by zero");
+            d %= (long)liste[i];
+        }
+        return l->provideNumber(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             replacing(i, index(i)->mod(l, e->index(i)));
@@ -3241,6 +3689,13 @@ Element* Numbers::mod(LispE* l, Element* e) {
 
 Element* Numbers::power(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        double d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d = pow(d,liste[i]);
+        }
+        return l->provideNumber(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             replacing(i, index(i)->power(l, e->index(i)));
@@ -3255,6 +3710,14 @@ Element* Numbers::power(LispE* l, Element* e) {
 
 Element* Numbers::leftshift(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        double64 d(liste[0]);
+        for (long i = 1; i < size(); i++) {
+            d.bits <<= (long)liste[i];
+        }
+        return l->provideNumber(d.v);
+    }
+
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             replacing(i, index(i)->leftshift(l, e->index(i)));
@@ -3268,6 +3731,13 @@ Element* Numbers::leftshift(LispE* l, Element* e) {
 }
 
 Element* Numbers::rightshift(LispE* l, Element* e) {
+    if (e == NULL) {
+        double64 d(liste[0]);
+        for (long i = 1; i < size(); i++) {
+            d.bits >>= (long)liste[i];
+        }
+        return l->provideNumber(d.v);
+    }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3281,8 +3751,30 @@ Element* Numbers::rightshift(LispE* l, Element* e) {
     return this;
 }
 
+Element* Integers::bit_not(LispE* l) {
+    if (!status) {
+        for (long i = 0; i < size(); i++) {
+            liste[i] = ~liste[i];
+        }
+        return this;
+    }
+    Integers* num = new Integers;
+    for (long i = 0; i < size(); i++)
+        num->liste.push_back(~liste[i]);
+    return num;
+}
+
+
 Element* Integers::bit_and(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d &= liste[i];
+        }
+        return l->provideInteger(d);
+    }
+
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] &= e->index(i)->asInteger();
@@ -3295,8 +3787,38 @@ Element* Integers::bit_and(LispE* l, Element* e) {
     return this;
 }
 
+Element* Integers::bit_and_not(LispE* l, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d &= ~liste[i];
+        }
+        return l->provideInteger(d);
+    }
+
+    if (e->isList()) {
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] &= ~e->index(i)->asInteger();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] &= ~e->asInteger();
+    }
+    return this;
+}
+
+
 Element* Integers::bit_or(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d |= liste[i];
+        }
+        return l->provideInteger(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] |= e->index(i)->asInteger();
@@ -3311,6 +3833,13 @@ Element* Integers::bit_or(LispE* l, Element* e) {
 
 Element* Integers::bit_xor(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d ^= liste[i];
+        }
+        return l->provideInteger(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] ^= e->index(i)->asInteger();
@@ -3325,6 +3854,13 @@ Element* Integers::bit_xor(LispE* l, Element* e) {
 
 Element* Integers::plus(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d += liste[i];
+        }
+        return l->provideInteger(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] += e->index(i)->asInteger();
@@ -3338,6 +3874,13 @@ Element* Integers::plus(LispE* l, Element* e) {
 }
 
 Element* Integers::minus(LispE* l, Element* e) {
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d -= liste[i];
+        }
+        return l->provideInteger(d);
+    }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3352,6 +3895,13 @@ Element* Integers::minus(LispE* l, Element* e) {
 }
 
 Element* Integers::multiply(LispE* l, Element* e) {
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d *= liste[i];
+        }
+        return l->provideInteger(d);
+    }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3367,6 +3917,15 @@ Element* Integers::multiply(LispE* l, Element* e) {
 
 Element* Integers::divide(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            if (!liste[i])
+                throw new Error("Error: division by zero");
+            d /= liste[i];
+        }
+        return l->provideInteger(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             replacing(i, index(i)->divide(l, e->index(i)));
@@ -3380,6 +3939,15 @@ Element* Integers::divide(LispE* l, Element* e) {
 }
 
 Element* Integers::mod(LispE* l, Element* e) {
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            if (!liste[i])
+                throw new Error("Error: division by zero");
+            d %= liste[i];
+        }
+        return l->provideInteger(d);
+    }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3394,6 +3962,13 @@ Element* Integers::mod(LispE* l, Element* e) {
 }
 
 Element* Integers::power(LispE* l, Element* e) {
+    if (e == NULL) {
+        double d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d = pow(d, (double)liste[i]);
+        }
+        return l->provideInteger(d);
+    }
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
@@ -3408,7 +3983,14 @@ Element* Integers::power(LispE* l, Element* e) {
 }
 
 Element* Integers::leftshift(LispE* l, Element* e) {
-    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d <<= liste[i];
+        }
+        return l->provideInteger(d);
+    }
+   //Two cases either e is a number or it is a list...
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] <<= e->index(i)->asInteger();
@@ -3423,6 +4005,13 @@ Element* Integers::leftshift(LispE* l, Element* e) {
 
 Element* Integers::rightshift(LispE* l, Element* e) {
     //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        long d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d >>= liste[i];
+        }
+        return l->provideInteger(d);
+    }
     if (e->isList()) {
         for (long i = 0; i < e->size() && i < size(); i++) {
             liste[i] >>= e->index(i)->asInteger();
