@@ -510,7 +510,7 @@ Concept* Concept::concept_xor(Concept* c) {
     if (c->ontologie != ontologie)
         throw new Error("Error: these concepts do not belong to the same ontology");
     Concept* n = new Concept(ontologie);
-    concept.concept_or(n->concept, c->concept);
+    concept.concept_xor(n->concept, c->concept);
     if (n->concept.isempty()) {
         delete n;
         return ontologie->absurd;
