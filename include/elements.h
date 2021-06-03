@@ -556,6 +556,10 @@ public:
     virtual Element* thekeys(LispE* lisp);
     virtual Element* thevalues(LispE* lisp);
     
+    virtual Element* minimum(LispE*);
+
+    virtual Element* maximum(LispE*);
+
     virtual Element* value_on_index(LispE*, Element* idx);
     virtual Element* value_on_index(LispE*, long i);
     virtual Element* value_on_index(wstring& k, LispE* l);
@@ -1454,6 +1458,8 @@ public:
     
     Element* loop(LispE* lisp, short label,  List* code);
     
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
     void flatten(LispE*, List* l);
     
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -1799,6 +1805,9 @@ public:
         }
         marking = false;
     }
+
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
 
     void flatten(LispE*, List* l);
     

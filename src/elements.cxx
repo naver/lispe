@@ -469,6 +469,170 @@ void Strings::sorting(LispE* lisp, List* comparison) {
     sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
 }
 //------------------------------------------------------------------------------------------
+Element* Element::minimum(LispE* lisp) {
+    throw new Error("Error: cannot find the minimum for this object");
+}
+
+Element* List::minimum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    Element* v = index(0);
+    for (long i = 1; i < liste.size(); i++) {
+        if (v->more(lisp, liste[i]) == true_)
+            v = liste[i];
+    }
+    return v->copying(false);
+}
+
+Element* Numbers::minimum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    double v = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v > liste[i])
+            v = liste[i];
+    }
+    return lisp->provideNumber(v);
+}
+
+Element* Integers::minimum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    long v = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v > liste[i])
+            v = liste[i];
+    }
+    return lisp->provideInteger(v);
+}
+
+Element* Strings::minimum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    wstring v = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v > liste[i])
+            v = liste[i];
+    }
+    return lisp->provideString(v);
+}
+
+Element* Dictionary::minimum(LispE* lisp) {
+    if (!dictionary.size())
+        return null_;
+    Element* e = NULL;
+    
+    for (auto& a : dictionary) {
+        if (e == NULL)
+            e = a.second;
+        else {
+            if (e->more(lisp, a.second))
+                e = a.second;
+        }
+    }
+    
+    return e->copying(false);
+}
+
+Element* Dictionary_n::minimum(LispE* lisp) {
+    if (!dictionary.size())
+        return null_;
+    Element* e = NULL;
+    
+    for (auto& a : dictionary) {
+        if (e == NULL)
+            e = a.second;
+        else {
+            if (e->more(lisp, a.second))
+                e = a.second;
+        }
+    }
+    
+    return e->copying(false);
+}
+//------------------------------------------------------------------------------------------
+Element* Element::maximum(LispE* lisp) {
+    throw new Error("Error: cannot find the maximum for this object");
+}
+
+Element* List::maximum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    Element* v = index(0);
+    for (long i = 1; i < liste.size(); i++) {
+        if (v->less(lisp, liste[i]) == true_)
+            v = liste[i];
+    }
+    return v->copying(false);
+}
+
+Element* Numbers::maximum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    double v = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v < liste[i])
+            v = liste[i];
+    }
+    return lisp->provideNumber(v);
+}
+
+Element* Integers::maximum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    long v = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v < liste[i])
+            v = liste[i];
+    }
+    return lisp->provideInteger(v);
+}
+
+Element* Strings::maximum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    wstring v = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v < liste[i])
+            v = liste[i];
+    }
+    return lisp->provideString(v);
+}
+
+Element* Dictionary::maximum(LispE* lisp) {
+    if (!dictionary.size())
+        return null_;
+    Element* e = NULL;
+    
+    for (auto& a : dictionary) {
+        if (e == NULL)
+            e = a.second;
+        else {
+            if (e->less(lisp, a.second))
+                e = a.second;
+        }
+    }
+    
+    return e->copying(false);
+}
+
+Element* Dictionary_n::maximum(LispE* lisp) {
+    if (!dictionary.size())
+        return null_;
+    Element* e = NULL;
+    
+    for (auto& a : dictionary) {
+        if (e == NULL)
+            e = a.second;
+        else {
+            if (e->less(lisp, a.second))
+                e = a.second;
+        }
+    }
+    
+    return e->copying(false);
+}
+//------------------------------------------------------------------------------------------
 void Element::flatten(LispE* lisp, List* l) {
     l->append(this);
 }

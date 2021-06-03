@@ -6025,25 +6025,14 @@ Element* List::evall_max(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    Element* third_element = null_;
 
     try {
         if (listsize == 2) {
             //In this case, the argument must be a list
             first_element = liste[1]->eval(lisp);
-            if (!first_element->isList())
-                throw new Error("Error: the first argument must be a list");
-            if (first_element->size() == 0)
-                return null_;
-            third_element = first_element->index(0);
-            if (first_element->size() == 1)
-                return third_element->copying(false);
-            for (long i = 1; i < first_element->size(); i++) {
-                second_element = first_element->index(i);
-                if (third_element->less(lisp, second_element)->Boolean())
-                    third_element = second_element;
-            }
-            return third_element->copying(false);
+            second_element = first_element->maximum(lisp);
+            first_element->release();
+            return second_element;
         }
 
         first_element = liste[1]->eval(lisp);
@@ -6062,7 +6051,6 @@ Element* List::evall_max(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        third_element->release();
         throw err;
     }
 
@@ -6107,25 +6095,14 @@ Element* List::evall_min(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
-    Element* third_element = null_;
 
     try {
         if (listsize == 2) {
             //In this case, the argument must be a list
             first_element = liste[1]->eval(lisp);
-            if (!first_element->isList())
-                throw new Error("Error: the first argument must be a list");
-            if (first_element->size() == 0)
-                return null_;
-            third_element = first_element->index(0);
-            if (first_element->size() == 1)
-                return third_element->copying(false);
-            for (long i = 1; i < first_element->size(); i++) {
-                second_element = first_element->index(i);
-                if (third_element->more(lisp, second_element)->Boolean())
-                    third_element = second_element;
-            }
-            return third_element->copying(false);
+            second_element = first_element->minimum(lisp);
+            first_element->release();
+            return second_element;
         }
 
         first_element = liste[1]->eval(lisp);
@@ -6144,7 +6121,6 @@ Element* List::evall_min(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        third_element->release();
         throw err;
     }
 

@@ -494,6 +494,10 @@ public:
     Element* index(long i) {
         return liste[i];
     }
+    
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+
     Element* protected_index(LispE*,long i);
     
     Element* value_on_index(LispE*, long i);
@@ -1176,6 +1180,9 @@ public:
         }
     }
 
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+
     Element* rotate(LispE* lisp, long axis) {
         Numbers* n = new Numbers;
         for (long i = liste.size()-1; i >= 0; i--)
@@ -1659,6 +1666,9 @@ public:
         return &exchange_value;
     }
     
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     
@@ -2519,6 +2529,9 @@ public:
         return &exchange_value;
     }
     
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     
