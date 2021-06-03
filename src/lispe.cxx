@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.6.3.15.30";
+static std::string version = "1.2021.6.3.20.30";
 string LispVersion() {
     return version;
 }
@@ -805,7 +805,10 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
             case '`': { // a string containing what we want...
                 idx = i + 1;
                 tampon = "";
+                long ln = 0;
                 while (idx < sz && code[idx] != '`') {
+                    if (code[idx] == '\n')
+                        ln++;
                     idx++;
                 }
                 if (idx == sz)
@@ -822,6 +825,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     current_line += "`";
                 }
                 i = idx;
+                line_number += ln;
                 break;
             }
             case '"': {
