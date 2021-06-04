@@ -4193,40 +4193,190 @@ Element* Element::extraction(LispE* lisp, List* l) {
 }
 
 Element* List::extraction(LispE* lisp, List* l) {
-    long depuis;
-    l->evalAsInteger(2, lisp, depuis);
-    if (depuis >= 0) {
-        if (depuis >= liste.size())
-            return null_;
+    Element* e_from = l->liste[2];
+    Element* e;
+    
+    long from = 0;
+    long firstisString = -1;
+    short nxt = 3;
+    short ty;
+    switch (e_from->label()) {
+        case l_minus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-'");
+            break;
+        case l_plus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '+'");
+            break;
+        case l_minus_plus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-+'");
+            break;
+        default:
+            e_from = e_from->eval(lisp);
+            ty = e_from->type;
     }
-    else {
-        //We start from the end...
-        depuis = liste.size() + depuis;
-        if (depuis < 0)
-            return null_;
+
+    switch (ty) {
+        case t_string: {
+            e = search_element(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            from = e->asInteger();
+            firstisString = 0;
+            break;
+        }
+        case t_plus_string: {
+            e = search_element(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            firstisString = e->asInteger();
+            break;
+        }
+        case t_minus_string: {
+            e = search_reverse(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            //We skip the first characters
+            from = e->asInteger() + 1;
+            firstisString = 0;
+            break;
+        }
+        case t_minus_plus_string: {
+            e = search_reverse(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            firstisString = e->asInteger();
+            break;
+        }
+        case t_number:
+        case t_integer:
+            from = e_from->asInteger();
+            if (from < 0)
+                from = size() + from;
+            break;
+        default:
+            e_from->release();
+            throw new Error("Error: cannot use the first position in 'extract'");
     }
-    if (l->size() == 3) {
-        //On returns only one element
-        return liste[depuis]->copying(false);
+    
+    e_from->release();
+
+    if (from < 0 || from >= size())
+        return emptylist_;
+
+    if (nxt == l->size()) {
+        //Only one element is returned
+        return liste[from]->copying(false);
     }
+
+    Element* e_upto = l->liste[nxt];
+    switch (e_upto->label()) {
+        case l_minus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-'");
+            break;
+        case l_plus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '+'");
+            break;
+        case l_minus_plus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-+'");
+            break;
+        default:
+            e_upto = e_upto->eval(lisp);
+            ty = e_upto->type;
+    }
+
     long upto;
-    l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
-        if (upto >= liste.size())
-            upto = liste.size();
+
+    switch (ty) {
+        case t_string: {
+            e = search_element(lisp, e_upto, from + firstisString);
+            if (e == null_)
+                return emptylist_;
+            upto = e->asInteger();
+            break;
+        }
+        case t_plus_string: {
+            e = search_element(lisp, e_upto, from + firstisString);
+            if (e == null_)
+                return emptylist_;
+            //All characters are integrated
+            upto = e->asInteger() + 1;
+            break;
+        }
+        case t_minus_string: {
+            e = search_reverse(lisp, e_upto, 0);
+            if (e == null_)
+                return emptylist_;
+            upto = e->asInteger();
+            break;
+        }
+        case t_minus_plus_string: {
+            e = search_reverse(lisp, e_upto, 0);
+            if (e == null_)
+                return emptylist_;
+            upto = e->asInteger() - 1;
+            break;
+        }
+        case t_number:
+        case t_integer:
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto > 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
+            else {
+                if (upto <= 0) {
+                    //We start from the end...
+                    upto = size() + upto;
+                }
+            }
+            break;
+        default:
+            e_upto->release();
+            throw new Error("Error: cannot use the second position in 'extract'");
     }
-    else {
-        //We start from the end...
-        upto = liste.size() + upto;
-        if (upto < 0)
-            return null_;
-    }
-    if (upto < depuis) {
-        return null_;
-    }
+
+    e_upto->release();
+    if (upto <= from)
+        return emptylist_;
+
+    if (upto > size())
+        upto = size();
     l = new List;
-    for (;depuis < upto; depuis++)
-        l->append(liste[depuis]->copying(false));
+    for (;from < upto; from++)
+        l->append(liste[from]->copying(false));
     return l;
 }
 
@@ -4235,13 +4385,13 @@ Element* Numbers::extraction(LispE* lisp, List* l) {
     l->evalAsInteger(2, lisp, depuis);
     if (depuis >= 0) {
         if (depuis >= liste.size())
-            return null_;
+            return emptylist_;
     }
     else {
         //We start from the end...
         depuis = liste.size() + depuis;
         if (depuis < 0)
-            return null_;
+            return emptylist_;
     }
     if (l->size() == 3) {
         //On returns only one element
@@ -4257,10 +4407,10 @@ Element* Numbers::extraction(LispE* lisp, List* l) {
         //We start from the end...
         upto = liste.size() + upto;
         if (upto < 0)
-            return null_;
+            return emptylist_;
     }
     if (upto < depuis) {
-        return null_;
+        return emptylist_;
     }
 
     Numbers* n = new Numbers;
@@ -4275,13 +4425,13 @@ Element* Integers::extraction(LispE* lisp, List* l) {
     l->evalAsInteger(2, lisp, depuis);
     if (depuis >= 0) {
         if (depuis >= liste.size())
-            return null_;
+            return emptylist_;
     }
     else {
         //We start from the end...
         depuis = liste.size() + depuis;
         if (depuis < 0)
-            return null_;
+            return emptylist_;
     }
     if (l->size() == 3) {
         //On returns only one element
@@ -4297,10 +4447,10 @@ Element* Integers::extraction(LispE* lisp, List* l) {
         //We start from the end...
         upto = liste.size() + upto;
         if (upto < 0)
-            return null_;
+            return emptylist_;
     }
     if (upto < depuis) {
-        return null_;
+        return emptylist_;
     }
 
     Integers* n = new Integers;
@@ -4311,41 +4461,191 @@ Element* Integers::extraction(LispE* lisp, List* l) {
 }
 
 Element* Strings::extraction(LispE* lisp, List* l) {
-    long depuis;
-    l->evalAsInteger(2, lisp, depuis);
-    if (depuis >= 0) {
-        if (depuis >= liste.size())
-            return null_;
-    }
-    else {
-        //We start from the end...
-        depuis = liste.size() + depuis;
-        if (depuis < 0)
-            return null_;
-    }
-    if (l->size() == 3) {
-        //On returns only one element
-        return lisp->provideString(liste[depuis]);
-    }
-    long upto;
-    l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
-        if (upto >= liste.size())
-            upto = liste.size();
-    }
-    else {
-        //We start from the end...
-        upto = liste.size() + upto;
-        if (upto < 0)
-            return null_;
-    }
-    if (upto < depuis) {
-        return null_;
+
+    Element* e_from = l->liste[2];
+    Element* e;
+    
+    long from = 0;
+    long firstisString = -1;
+    short nxt = 3;
+    short ty;
+    switch (e_from->label()) {
+        case l_minus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-'");
+            break;
+        case l_plus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '+'");
+            break;
+        case l_minus_plus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-+'");
+            break;
+        default:
+            e_from = e_from->eval(lisp);
+            ty = e_from->type;
     }
 
+    switch (ty) {
+        case t_string: {
+            e = search_element(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            from = e->asInteger();
+            firstisString = 0;
+            break;
+        }
+        case t_plus_string: {
+            e = search_element(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            firstisString = e->asInteger();
+            break;
+        }
+        case t_minus_string: {
+            e = search_reverse(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            //We skip the first characters
+            from = e->asInteger() + 1;
+            firstisString = 0;
+            break;
+        }
+        case t_minus_plus_string: {
+            e = search_reverse(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            firstisString = e->asInteger();
+            break;
+        }
+        case t_number:
+        case t_integer:
+            from = e_from->asInteger();
+            if (from < 0)
+                from = size() + from;
+            break;
+        default:
+            e_from->release();
+            throw new Error("Error: cannot use the first position in 'extract'");
+    }
+    
+    e_from->release();
+
+    if (from < 0 || from >= size())
+        return emptylist_;
+
+    if (nxt == l->size()) {
+        //Only one element is returned
+        return lisp->provideString(liste[from]);
+    }
+
+    Element* e_upto = l->liste[nxt];
+    switch (e_upto->label()) {
+        case l_minus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-'");
+            break;
+        case l_plus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '+'");
+            break;
+        case l_minus_plus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-+'");
+            break;
+        default:
+            e_upto = e_upto->eval(lisp);
+            ty = e_upto->type;
+    }
+
+    long upto;
+
+    switch (ty) {
+        case t_string: {
+            e = search_element(lisp, e_upto, from + firstisString);
+            if (e == null_)
+                return emptylist_;
+            upto = e->asInteger();
+            break;
+        }
+        case t_plus_string: {
+            e = search_element(lisp, e_upto, from + firstisString);
+            if (e == null_)
+                return emptylist_;
+            //All characters are integrated
+            upto = e->asInteger() + 1;
+            break;
+        }
+        case t_minus_string: {
+            e = search_reverse(lisp, e_upto, 0);
+            if (e == null_)
+                return emptylist_;
+            upto = e->asInteger();
+            break;
+        }
+        case t_minus_plus_string: {
+            e = search_reverse(lisp, e_upto, 0);
+            if (e == null_)
+                return emptylist_;
+            upto = e->asInteger() - 1;
+            break;
+        }
+        case t_number:
+        case t_integer:
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto > 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
+            else {
+                if (upto <= 0) {
+                    //We start from the end...
+                    upto = size() + upto;
+                }
+            }
+            break;
+        default:
+            e_upto->release();
+            throw new Error("Error: cannot use the second position in 'extract'");
+    }
+
+    e_upto->release();
+    if (upto <= from)
+        return emptylist_;
+
+    if (upto > size())
+        upto = size();
     Strings* n = new Strings();
-    for (;depuis < upto; depuis++) {
-        n->liste.push_back(liste[depuis]);
+    for (;from < upto; from++) {
+        n->liste.push_back(liste[from]);
     }
     return n;
 }
@@ -4483,14 +4783,14 @@ Element* String::extraction(LispE* lisp, List* liste) {
     switch (ty) {
         case t_string: {
             wstring ch = e_upto->asString(lisp);
-            upto = content.find(ch, from + 1);
+            upto = content.find(ch, from + firstisString);
             if (upto == -1)
                 return emptystring_;
             break;
         }
         case t_plus_string: {
 			wstring ch = e_upto->asString(lisp);
-            upto = content.find(ch, from + 1);
+            upto = content.find(ch, from + firstisString);
             if (upto == -1)
                 return emptystring_;
             //All characters are integrated
