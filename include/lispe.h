@@ -762,7 +762,7 @@ public:
 
     inline bool checkFunctionLabel(short label) {
         try {
-            return stack_pool[0]->variables.at(label)->isFunction();
+            return delegation->function_pool.at(label)->isFunction();
         }
         catch(const std::out_of_range& oor) {
             return false;
