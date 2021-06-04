@@ -4251,7 +4251,7 @@ Element* List::extraction(LispE* lisp, List* l) {
         }
         case t_minus_string: {
             e = search_reverse(lisp, e_from, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             //We skip the first characters
             from = e->asInteger() + 1;
@@ -4260,7 +4260,7 @@ Element* List::extraction(LispE* lisp, List* l) {
         }
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_from, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             firstisString = e->asInteger();
             break;
@@ -4337,14 +4337,14 @@ Element* List::extraction(LispE* lisp, List* l) {
         }
         case t_minus_string: {
             e = search_reverse(lisp, e_upto, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             upto = e->asInteger();
             break;
         }
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_upto, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             upto = e->asInteger() - 1;
             break;
@@ -4520,7 +4520,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         }
         case t_minus_string: {
             e = search_reverse(lisp, e_from, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             //We skip the first characters
             from = e->asInteger() + 1;
@@ -4529,7 +4529,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         }
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_from, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             firstisString = e->asInteger();
             break;
@@ -4606,14 +4606,14 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         }
         case t_minus_string: {
             e = search_reverse(lisp, e_upto, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             upto = e->asInteger();
             break;
         }
         case t_minus_plus_string: {
             e = search_reverse(lisp, e_upto, 0);
-            if (e == null_)
+            if (e == minusone_)
                 return emptylist_;
             upto = e->asInteger() - 1;
             break;
