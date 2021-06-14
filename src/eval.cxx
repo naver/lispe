@@ -5307,7 +5307,8 @@ Element* List::evall_input(LispE* lisp) {
 
 
 Element* List::evall_insert(LispE* lisp) {
-    if (liste.size() != 4)
+    short lstsize = liste.size();
+    if (lstsize != 3 && lstsize != 4)
         throw new Error("Error: wrong number of arguments");
     Element* first_element = liste[0];
     Element* second_element = null_;
@@ -5320,7 +5321,10 @@ Element* List::evall_insert(LispE* lisp) {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
         long idx;
-        evalAsInteger(3, lisp, idx);
+        if (lstsize == 3)
+            idx = first_element->size();
+        else
+            evalAsInteger(3, lisp, idx);
         third_element = first_element->insert(lisp, second_element, idx);
         second_element->release();
         if (third_element != first_element) {
@@ -6736,6 +6740,88 @@ Element* List::evall_integers(LispE* lisp) {
             }
             else
                 n->liste.push_back(values->asInteger());
+            _releasing(values);
+        }
+        
+        return n;
+    }
+    catch (Error* err) {
+        delete n;
+        values->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_set(LispE* lisp) {
+    long listsz = size();
+    if (listsz == 1)
+        return new Set();
+
+    if (listsz < 2)
+        throw new Error("Error: wrong number of arguments");
+
+    Set* n = new Set;
+    Element* values = null_;
+
+    lisp->display_trace(this);
+
+    try {
+        for (long e = 1; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->type == t_set)
+                n->ensemble = ((Set*)values)->ensemble;
+            else {
+                if (values->isList()) {
+                    for (long i = 0; i < values->size(); i++) {
+                        n->add(values->index(i)->asString(lisp));
+                    }
+                }
+                else
+                    n->add(values->asString(lisp));
+            }
+            _releasing(values);
+        }
+        
+        return n;
+    }
+    catch (Error* err) {
+        delete n;
+        values->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_setn(LispE* lisp) {
+    long listsz = size();
+    if (listsz == 1)
+        return new Set();
+
+    if (listsz < 2)
+        throw new Error("Error: wrong number of arguments");
+
+    Set_n* n = new Set_n;
+    Element* values = null_;
+
+    lisp->display_trace(this);
+
+    try {
+        for (long e = 1; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->type == t_setn)
+                n->ensemble = ((Set_n*)values)->ensemble;
+            else {
+                if (values->isList()) {
+                    for (long i = 0; i < values->size(); i++) {
+                        n->add(values->index(i)->asNumber());
+                    }
+                }
+                else
+                    n->add(values->asNumber());
+            }
             _releasing(values);
         }
         

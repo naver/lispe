@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.6.4.21.00";
+static std::string version = "1.2021.6.9.11.30";
 string LispVersion() {
     return version;
 }
@@ -256,8 +256,10 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp);
     set_instruction(l_matrix, "matrix", P_THREE|P_FOUR, &List::evall_matrix);
     set_instruction(l_tensor, "tensor", P_ATLEASTTHREE, &List::evall_tensor);
-    set_instruction(l_numbers, "numbers", P_TWO, &List::evall_numbers);
-    set_instruction(l_integers, "integers", P_TWO, &List::evall_integers);
+    set_instruction(l_set, "set", P_ATLEASTTWO, &List::evall_set);
+    set_instruction(l_setn, "setn", P_ATLEASTTWO, &List::evall_setn);
+    set_instruction(l_numbers, "numbers", P_ATLEASTTWO, &List::evall_numbers);
+    set_instruction(l_integers, "integers", P_ATLEASTTWO, &List::evall_integers);
     set_instruction(l_strings, "strings", P_TWO, &List::evall_strings);
     set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or);
     set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe);
@@ -418,6 +420,8 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_error] = L"error_";
     code_to_string[t_dictionary] = L"dictionary_";
     code_to_string[t_dictionaryn] = L"dictionary_n_";
+    code_to_string[t_set] = L"set_";
+    code_to_string[t_setn] = L"set_n_";
     code_to_string[t_atom] = L"atom_";
 
     code_to_string[v_null] = L"nil";
@@ -506,6 +510,8 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_maybe);
     provideAtomType(t_dictionary);
     provideAtomType(t_dictionaryn);
+    provideAtomType(t_set);
+    provideAtomType(t_setn);
     provideAtomType(t_atom);
     
     recordingData(lisp->create_instruction(t_string, _NULL), t_string, v_null);
@@ -521,6 +527,8 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_maybe, _NULL), t_maybe, v_null);
     recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
     recordingData(lisp->create_instruction(t_dictionaryn, _NULL), t_dictionaryn, v_null);
+    recordingData(lisp->create_instruction(t_set, _NULL), t_set, v_null);
+    recordingData(lisp->create_instruction(t_setn, _NULL), t_setn, v_null);
     recordingData(lisp->create_instruction(t_atom, _NULL), t_atom, v_null);
 
     //We introduce _ as a substitute to nil

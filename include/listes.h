@@ -974,6 +974,8 @@ public:
     Element* evall_matrix(LispE* lisp);
     Element* evall_tensor(LispE* lisp);
     Element* evall_strings(LispE* lisp);
+    Element* evall_set(LispE* lisp);
+    Element* evall_setn(LispE* lisp);
     Element* evall_numbers(LispE* lisp);
     Element* evall_integers(LispE* lisp);
     Element* evall_resetmark(LispE* lisp);
@@ -1180,6 +1182,7 @@ public:
         }
     }
 
+    Element* equal(LispE* lisp, Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
 
@@ -1666,6 +1669,7 @@ public:
         return &exchange_value;
     }
     
+    Element* equal(LispE* lisp, Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
 
@@ -2423,6 +2427,8 @@ public:
         }
     }
 
+    Element* equal(LispE* lisp, Element* e);
+    
     bool isContainer() {
         return true;
     }
@@ -2499,26 +2505,6 @@ public:
         return (liste.size());
     }
     
-    void incrementstatus(uchar nb, bool top) {
-        if (status < s_protect)
-            status += nb;
-    }
-    
-    void decrementstatus(uchar nb, bool top) {
-        if (status > s_destructible && status < s_protect) {
-            status -= nb;
-        }
-        
-        if (!status) {
-            delete this;
-        }
-    }
-    
-    //The status is decremented without destroying the element.
-    void decrementSansDelete(uchar nb) {
-        if (status > s_destructible && status < s_protect)
-            status -= nb;
-    }
     
     Element* join_in_list(LispE* lisp, wstring& sep);
     
