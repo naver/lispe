@@ -198,6 +198,8 @@ The difference between check and ncheck is that ncheck executes the ELSE when th
  //(scanl1 '+ (filter '(< 20) (map '* '(1 2 3 4))))
  //(scanl1 '+ (take 3 (map '* '(1 2 3 4))))
  //(scanl1 '+ (map '* (filter '(< 20) '(1 2 3 4))))
+ //(defun x(v) (for i (map '+ (range 1 10 1)) (+ i 10)))
+ //(defun xx(v) (for i (map '+ (range 1 10 1)) (+ i 10) (> i 3)))
  */
 
 #define P(x) lisp->provideAtom(x)
@@ -214,6 +216,22 @@ static bool findvariable(Element* L, Element* v) {
     }
     return false;
 }
+
+static void replacevariable(Element* L, Element* v, Element* n) {
+    if (L->isList()) {
+        Element* e;
+        for (long i = 0; i < L->size(); i++) {
+            e = L->index(i);
+            if (e->label() == l_lambda)
+                return;
+            if (e == v)
+                L->change(i, n);
+            else
+                replacevariable(e, v, n);
+        }
+    }
+}
+
 
 static bool replace_recipient(Element* L, Element* rec, Element* accu) {
     short label = L->index(0)->label();
@@ -244,7 +262,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
     List* loop;
     Element* iterator_variable;
     
-    Element* _iterator;
+    Element* _iterator = null_;
     Element* _recipient;
     Element* _value;
     Element* _check = null_;
@@ -258,26 +276,60 @@ Element* List::composing(LispE* lisp, bool docompose) {
     first_element = liste[1];
     
     element = null_;
-    if (labeltype == l_repeat || labeltype == l_cycle) {
-        if (listsize != 2)
+    if (labeltype == l_for) {
+        if (listsize != 4 && listsize != 5)
             throw new Error("Error: Wrong number of arguments");
-        
-        if (labeltype == l_cycle)
-            element = new Cyclelist(lisp);
-        else
-            element = new Infinitelist(lisp);
-        lisp->garbaging(element);
+        element = liste[2];
+        _iterator = liste[1];
+        if (docompose && element->index(0)->label() == l_compose) {
+            //We are composing with a substructure...
+            compose = (List*)element;
+            //First, we replace the current variable with our local iterator
+            replacevariable(compose, compose->liste.back()->index(1), _iterator);
+            if (listsize == 5) {
+                //We first create a filter
+                loop = (List*)lisp->create_local_instruction(l_filter, liste[4], compose, _iterator);
+                _check = loop->composing(lisp, true);
+                //Then we create our map...
+                compose = (List*)lisp->create_local_instruction(l_map, liste[3], _check, _iterator);
+                operation =  compose->composing(lisp, true);
+                loop->release();
+                compose->release();
+                return operation;
+            }
+            compose = (List*)lisp->create_local_instruction(l_map, liste[3], compose, _iterator);
+            operation =  compose->composing(lisp, true);
+            compose->release();
+            return operation;
+        }
+        docompose = false;
     }
     else {
-        if (listsize == 3)
-            element = liste[2];
-        else {
-            if (labeltype < l_foldl)
+        if (labeltype == l_repeat || labeltype == l_cycle) {
+            if (listsize != 2)
                 throw new Error("Error: Wrong number of arguments");
-            element = liste[3];
+            
+            if (labeltype == l_cycle)
+                element = new Cyclelist(lisp);
+            else
+                element = new Infinitelist(lisp);
+            lisp->garbaging(element);
+        }
+        else {
+            if (listsize == 4 && (labeltype == l_map || labeltype == l_filter)) {
+                //This map or this filter was issued from a for interpretation
+                _iterator = liste[3];
+                listsize = 3;
+            }
+            if (listsize == 3)
+                element = liste[2];
+            else {
+                if (labeltype < l_foldl)
+                    throw new Error("Error: Wrong number of arguments");
+                element = liste[3];
+            }
         }
     }
-    
     wchar_t buffer[20];
 
     int idx = idx_var;
@@ -291,7 +343,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
     else {
         _id_var = new List;
         lisp->garbaging(_id_var);
-        _id_var->append(lisp->provideInteger(idx_var++));
+        _id_var->append(new Integer(idx_var++));
         _id_var->append(zero_);
         //We only create a certain number of variables
         //we expect encapsulation to be less than 16...
@@ -299,8 +351,10 @@ Element* List::composing(LispE* lisp, bool docompose) {
             idx_var = 0;
     }
 
-    swprintf_s(buffer,20, L"#i%d", idx);
-    _iterator = P(buffer);
+    if (_iterator == null_) {
+        swprintf_s(buffer,20, L"#i%d", idx);
+        _iterator = P(buffer);
+    }
     
     swprintf_s(buffer,20, L"#recipient%d", idx);
     _recipient = P(buffer);
@@ -325,6 +379,21 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 element = lisp->create_instruction(l_setq, _recipient, emptylist_);
                 compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, loop);
                 break;
+            case l_for:
+                operation = lisp->create_instruction(l_setq, _value, liste[3]);
+                final_section = lisp->create_instruction(l_push, _recipient, _value);
+                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
+                if (listsize == 5) {
+                    action = lisp->create_instruction(l_check, liste[4], operation, final_section);
+                    loop = lisp->create_instruction(l_loop, _iterator, liste[2], action);
+                    compose = lisp->create_instruction(l_compose, _id_var, operation, action, element, loop);
+                    _id_var->change(1, one_);
+                }
+                else {
+                    loop = lisp->create_instruction(l_loop, _iterator, liste[2], operation, final_section);
+                    compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, loop);
+                }
+                return compose;
             case l_foldl:
                 //First we need to initialize out value
                 //(foldl op init list)
@@ -795,128 +864,137 @@ Element* List::composing(LispE* lisp, bool docompose) {
     }
     
     action = NULL;
-    
-    if (labeltype >= l_take && labeltype <= l_drop)
+    if (findvariable(first_element, _iterator)) {
+        //We are in a "for" action through a map recomposition
+        //(for i (map '+ '(1 2 3)) (+ i 10))
+        // --> (map (+ i 10) (compose ...))
+        // iterator_variable is: (+ #i1 #i1)
+        // --> we replace "i" with the iterator_variable
+        replacevariable(first_element, _iterator, iterator_variable);
         action = first_element;
+    }
     else {
-        if (first_element->isList()) {
-            first_element = first_element->eval(lisp);
-        }
-        else
-            if (first_element->isInstruction())
-                return first_element->eval(lisp); //we send an error message back
-        
-        if (first_element->isList()) {
-            long sz = first_element->size();
-            if (sz == 2) {
-                action = new List;
-                // (map '(- 1) '(1 2 3 4))
-                if (first_element->index(0)->isInstruction()) {
-                    action->append(first_element->index(0));
-                    action->append(iterator_variable); //the iterator variable
-                    action->append(first_element->index(1));
-                }
-                else { // (_map '(1 -) '(1 2 3 4))
-                    // First we append the operator
-                    if (first_element->index(1)->isInstruction()) {
-                        action->append(first_element->index(1));
-                        action->append(first_element->index(0)); //finally the number itself so as to have: (- x 1)
-                        action->append(iterator_variable); //the position of the second number
-                    }
-                    else {
-                        //This is a tricky case, the operator or the function could be given as an atom, which is
-                        //should be evaluated later on the fly
-                        action->append(P(l_checking));
-                        action->append(first_element->index(0)); //this could be an instruction or else
-                        action->append(first_element->index(1));
-                        action->append(iterator_variable);
-                    }
-                }
-            }
-            else {//lambda
-                if (sz && first_element->index(0)->label() == l_lambda) {
-                    action = new Listlambda;
-                    action->append(first_element);
-                    switch (fold_ordering) {
-                        case 0:
-                            action->append(iterator_variable);
-                            break;
-                        case 1:
-                            action->append(_value);
-                            action->append(iterator_variable);
-                            break;
-                        case 2:
-                            action->append(iterator_variable);
-                            action->append(_value);
-                            break;
-                    }
-                }
-                else
-                    action = liste[1];
-            }
-        }
+        if ((labeltype >= l_take && labeltype <= l_drop))
+            action = first_element;
         else {
-            if (lisp->is_math_operator(first_element->type)) {
-                //This is a single operator (map only)
-                //we use the variable twice then
-                switch (fold_ordering) {
-                    case 0:
-                        if (labeltype == l_map) {
-                            action = new List;
-                            action->append(first_element);
-                            action->append(iterator_variable);
+            if (first_element->isList()) {
+                first_element = first_element->eval(lisp);
+            }
+            else
+                if (first_element->isInstruction())
+                    return first_element->eval(lisp); //we send an error message back
+            
+            if (first_element->isList()) {
+                long sz = first_element->size();
+                if (sz == 2) {
+                    action = new List;
+                    // (map '(- 1) '(1 2 3 4))
+                    if (first_element->index(0)->isInstruction()) {
+                        action->append(first_element->index(0));
+                        action->append(iterator_variable); //the iterator variable
+                        action->append(first_element->index(1));
+                    }
+                    else { // (_map '(1 -) '(1 2 3 4))
+                        // First we append the operator
+                        if (first_element->index(1)->isInstruction()) {
+                            action->append(first_element->index(1));
+                            action->append(first_element->index(0)); //finally the number itself so as to have: (- x 1)
+                            action->append(iterator_variable); //the position of the second number
+                        }
+                        else {
+                            //This is a tricky case, the operator or the function could be given as an atom, which is
+                            //should be evaluated later on the fly
+                            action->append(P(l_checking));
+                            action->append(first_element->index(0)); //this could be an instruction or else
+                            action->append(first_element->index(1));
                             action->append(iterator_variable);
                         }
-                        break;
-                    case 1: {
-                        action = new List;
-                        //We push our value first then the iterator variable
-                        action->append(first_element);
-                        action->append(_value);
-                        action->append(iterator_variable);
-                        break;
                     }
-                    case 2: {
-                        action = new List;
-                        //We push our iterator variable first
+                }
+                else {//lambda
+                    if (sz && first_element->index(0)->label() == l_lambda) {
+                        action = new Listlambda;
                         action->append(first_element);
-                        action->append(iterator_variable);
-                        action->append(_value);
+                        switch (fold_ordering) {
+                            case 0:
+                                action->append(iterator_variable);
+                                break;
+                            case 1:
+                                action->append(_value);
+                                action->append(iterator_variable);
+                                break;
+                            case 2:
+                                action->append(iterator_variable);
+                                action->append(_value);
+                                break;
+                        }
                     }
+                    else
+                        action = liste[1];
                 }
             }
             else {
-                if (first_element->isAtom()) {
-                    //then it has to be a function name or an instruction
-                    //otherwise it will fail
-                    action = new List;
-                    //if it is not a quoted expression, we add a l_mapping
-                    if (liste[1] == first_element)
-                        action->append(P(l_mapping));
-
+                if (lisp->is_math_operator(first_element->type)) {
+                    //This is a single operator (map only)
+                    //we use the variable twice then
                     switch (fold_ordering) {
                         case 0:
-                            //We will check on the fly what to do with this structure
-                            action->append(first_element);
-                            action->append(iterator_variable);
+                            if (labeltype == l_map) {
+                                action = new List;
+                                action->append(first_element);
+                                action->append(iterator_variable);
+                                action->append(iterator_variable);
+                            }
                             break;
-                        case 1:
+                        case 1: {
+                            action = new List;
                             //We push our value first then the iterator variable
                             action->append(first_element);
                             action->append(_value);
                             action->append(iterator_variable);
                             break;
-                        case 2:
+                        }
+                        case 2: {
+                            action = new List;
                             //We push our iterator variable first
                             action->append(first_element);
                             action->append(iterator_variable);
                             action->append(_value);
+                        }
+                    }
+                }
+                else {
+                    if (first_element->isAtom()) {
+                        //then it has to be a function name or an instruction
+                        //otherwise it will fail
+                        action = new List;
+                        //if it is not a quoted expression, we add a l_mapping
+                        if (liste[1] == first_element)
+                            action->append(P(l_mapping));
+                        
+                        switch (fold_ordering) {
+                            case 0:
+                                //We will check on the fly what to do with this structure
+                                action->append(first_element);
+                                action->append(iterator_variable);
+                                break;
+                            case 1:
+                                //We push our value first then the iterator variable
+                                action->append(first_element);
+                                action->append(_value);
+                                action->append(iterator_variable);
+                                break;
+                            case 2:
+                                //We push our iterator variable first
+                                action->append(first_element);
+                                action->append(iterator_variable);
+                                action->append(_value);
+                        }
                     }
                 }
             }
         }
     }
-    
     if (action == NULL) {
         wstring msg = L"Error: cannot use: '";
         msg += first_element->asString(lisp);
@@ -1012,5 +1090,65 @@ Element* List::composing(LispE* lisp, bool docompose) {
     }
     compose->liste[3] = test;
     return compose;
+}
+
+//--------------------------------------------------------------------------------
+//This method is used to promote some arguments from a defpat function into
+//more efficient objects.
+//Each of these objects implement its own unify method.
+//Note that the way LIST is implemented allows for "list borrowing"...
+//Which we do here...
+Element* List::transformargument(LispE* lisp) {
+    if (!liste.size())
+        throw new Error("Error: Wrong argument in defpat function");
+    
+    List* fin = this;
+    short lab = liste[0]->label();
+    if (lab == l_set || lab == l_setn)
+        fin = new Listargumentset(this);
+    else {
+        if (lab == l_quote)
+            fin = new Listargumentquote(this);
+        else {
+            short ilabel = ilabel = lisp->extractlabel(this);
+            if (ilabel == v_null) {
+                if (isExecutable(lisp)) {
+                    Element* arg = liste.back();
+                    while (arg->isExecutable(lisp))
+                        arg = arg->last();
+                    if (arg == null_)
+                        throw new Error("Error: Missing argument in defpat function");
+                    return new Listargumentfunction(this, arg);
+                }
+                long sz = liste.size();
+                if (sz > 1 && liste[sz-2] == separator_)
+                    return new Listargumentseparator(this);
+                return this;
+            }
+            
+            if (ilabel >= t_atom && ilabel <= t_maybe) {
+                if (liste.back() != null_)
+                    fin = new Listargumentlabel(this, ilabel);
+            }
+            else {
+                fin = new Listargumentdata(this);
+                Element* exec;
+                for (long i = 1; i < fin->size(); i++) {
+                    exec = fin->liste[i]->transformargument(lisp);
+                    if (exec != fin->liste[i]) {
+                        lisp->removefromgarbage(fin->liste.exchange(i, exec));
+                    }
+                }
+                return fin;
+            }
+        }
+    }
+    if (fin != this && liste.size() > 1) {
+        Element* exec = fin->liste.back()->transformargument(lisp);
+        if (exec != fin->liste.back()) {
+            lisp->removefromgarbage(fin->liste.exchangelast(exec));
+        }
+    }
+    return fin;
 }
 

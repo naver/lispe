@@ -44,9 +44,7 @@ public:
     unordered_map<wstring, Element*> pools;
     vector<Element*> vpools;
 
-    unordered_map<double, Number*> number_pool;
-    unordered_map<long, Integer*> integer_pool;
-    unordered_map<wstring, String*> string_pool;
+    unordered_map<u_ustring, String*> string_pool;
     
     
     //Delegation is a class that records any data
@@ -64,9 +62,11 @@ public:
     
     bool isThread;
     bool hasThread;
+    bool evaluating;
     char trace;
 
     LispE() {
+        evaluating = false;
         id_thread = 0;
         max_stack_size = 10000;
         trace = debug_none;
@@ -79,6 +79,10 @@ public:
         current_body = NULL;
         handlingutf8 = new Chaine_UTF8;
         delegation->initialisation(this);
+    }
+    
+    inline bool checkArity(List* l) {
+        return (!evaluating || delegation->checkArity(l->liste[0]->type, l->size()));
     }
     
     LispE(LispE*, List* function, Element* body);
@@ -101,7 +105,7 @@ public:
         try {
             return stack_pool.at(execution_stack.size())->setFunction(function);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             for (long i = 0; i < 32; i++) {
                 stack_pool.push_back(new Stackelement(NULL));
             }
@@ -113,7 +117,12 @@ public:
         execution_stack.pop();
         stack_pool[execution_stack.size()]->clear();
     }
-    
+
+    void removeStackElement(Element* keep) {
+        execution_stack.pop();
+        stack_pool[execution_stack.size()]->clear(keep);
+    }
+
     inline long threadId() {
         return id_thread;
     }
@@ -165,7 +174,16 @@ public:
                              Element* eeeee = NULL,
                              Element* eeeeee = NULL,
                              Element* eeeeeee = NULL);
-        
+
+    List* create_local_instruction(short label,
+                             Element* e = NULL,
+                             Element* ee = NULL,
+                             Element* eee = NULL,
+                             Element* eeee = NULL,
+                             Element* eeeee = NULL,
+                             Element* eeeeee = NULL,
+                             Element* eeeeeee = NULL);
+
     //We have an internal pooling for elements that should be shared across
     //threads. We use it in the interpreter for regular expressions for instance
     //These instructions are used to handle elements that should be
@@ -178,7 +196,7 @@ public:
         try {
             return pools.at(key);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return delegation->_NULL;
         }
     }
@@ -227,6 +245,7 @@ public:
     }
   
     inline void set_current_line(long l, long f) {
+        (!delegation->stop_execution || sendError());
         delegation->i_current_line = l;
         delegation->i_current_file = f;
     }
@@ -243,7 +262,7 @@ public:
         try {
             return delegation->allfiles_names.at(i);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return "";
         }
     }
@@ -252,7 +271,7 @@ public:
         try {
             return delegation->allfiles_names.at(delegation->i_current_file);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return "";
         }
     }
@@ -284,12 +303,12 @@ public:
         return delegation->is_math_operator(c);
     }
     
-    short is_atom(wstring& s) {
+    short is_atom(u_ustring& s) {
         return delegation->is_atom(s);
     }
     
     short is_atom(string str) {
-        wstring s;
+        u_ustring s;
         s_utf8_to_unicode(s, USTR(str), str.size());
         return delegation->is_atom(s);
     }
@@ -303,7 +322,7 @@ public:
         return eval(s);
     }
     
-    Element* atomise(wstring a);
+    Element* atomise(u_ustring a);
     void cleaning();
     
     Element* execute(string code);
@@ -369,6 +388,30 @@ public:
         return (execution_stack.size() >= max_stack_size?0x200:delegation->stop_execution);
     }
         
+    inline bool sendError() {
+        throw delegation->_THEEND;
+    }
+    
+    inline bool sendError(u_ustring msg) {
+        throw new Error(msg);
+    }
+    
+    inline short checkState(List* l) {
+        (
+         (
+          !delegation->stop_execution &&
+          l->size() &&
+          (
+           !evaluating ||
+           delegation->checkArity(l->liste.get0(), l->size()) ||
+           sendError(U"Error: wrong number of arguments")
+           )
+          ) ||
+         sendError()
+         );
+        return l->liste.get0();
+    }
+
     void display_trace(List*);
 
     inline string toString(short c) {
@@ -377,6 +420,10 @@ public:
 
     inline wstring asString(short c) {
         return delegation->asString(c);
+    }
+
+    inline u_ustring asUString(short c) {
+        return delegation->asUString(c);
     }
 
     inline long nbvariables() {
@@ -425,7 +472,27 @@ public:
     }
     
     inline void push(Element* fonction) {
+        (
+         execution_stack.size() < max_stack_size ||
+         sendError(U"stack overflow")
+         );
         execution_stack.push(provideStackElement(fonction));
+    }
+
+    inline Stackelement* providingStack(Element* fonction) {
+        (
+         execution_stack.size() < max_stack_size ||
+         sendError(U"stack overflow")
+         );
+        return provideStackElement(fonction);
+    }
+
+    inline void popping() {
+        execution_stack.pop();
+    }
+    
+    inline void pushing(Stackelement* s) {
+        execution_stack.push(s);
     }
     
     inline List* atomes() {
@@ -437,9 +504,7 @@ public:
     }
     
     inline Element* pop(Element* e) {
-        e->incrementstatus(1, true);
-        removeStackElement();
-        e->decrementSansDelete(1);
+        removeStackElement(e);
         return e;
     }
 
@@ -524,7 +589,7 @@ public:
     }
     
     inline bool checkAncestor(Element* ancestor, Element* label) {
-        return delegation->checkAncestor(ancestor, label);
+        return delegation->checkAncestor(ancestor, label->label());
     }
     
     inline Element* getMethod(short label, short sublabel, long i) {
@@ -567,11 +632,11 @@ public:
     }
     
     inline Element* getDataStructure(short label) {
-        Element* e = delegation->getDataStructure(label);
+        Element* e = delegation->data_pool.at(label);
         if (e == NULL) {
-            wstring msg = L"Error: Unbounded atom: '";
+            u_ustring msg = U"Error: Unbounded atom: '";
             msg += delegation->code_to_string[label];
-            msg += L"'";
+            msg += U"'";
             throw new Error(msg);
         }
         return e;
@@ -590,7 +655,7 @@ public:
     inline Element* recordingunique(Element* e, short label) {
         if (!execution_stack.top()->recordingunique(e, label)) {
             std::wstringstream w;
-            w << "Error: '" << delegation->code_to_string[label] << "' has been recorded already";
+            w << "Error: '" << u_to_w(delegation->code_to_string[label]) << "' has been recorded already";
             throw new Error(w.str());
         }
         return e;
@@ -599,13 +664,17 @@ public:
     inline Element* recording(Element* e, short label) {
         return execution_stack.top()->recording(e, label);
     }
-    
+
+    inline Element* recordingvalue(Element* e, short label) {
+        return execution_stack.top()->recordingvalue(e, label);
+    }
+
     inline Element* recordingglobal(Element* e, short label) {
-        return stack_pool[0]->recording(e, label);
+        return stack_pool[0]->recordingvalue(e, label);
     }
 
     inline Element* recordingglobal(wstring label, Element* e) {
-        return stack_pool[0]->recording(e, delegation->encode(label));
+        return stack_pool[0]->recordingvalue(e, delegation->encode(label));
     }
 
     inline void removefromstack(short label) {
@@ -622,151 +691,75 @@ public:
         execution_stack.top()->setElements(stack);
     }
     
-    inline Element* get(wstring name) {
+    inline Element* getElementFromStack(short label) {
+        Element* e = execution_stack.top()->get(label);
+        if (e == NULL && execution_stack.size() != 1)
+            return stack_pool[0]->get(label);
+        return e;
+    }
+    
+    inline Element* get(u_ustring name) {
         short label = encode(name);
-        try {
-            return execution_stack.top()->variables.at(label);
-        }
-        catch(const std::out_of_range& oor) {
-            //Is it a global variable?
-            if (execution_stack.size() == 1) {
-                try {
-                    return delegation->function_pool.at(label);
-                }
-                catch(const std::out_of_range& oor) {
-                    wstring err = L"Error: unknown label: '";
-                    err += name;
-                    err += L"'";
-                    throw new Error(err);
-                }
-            }
+        Element* e = getElementFromStack(label);
+        if (e == NULL) {
+            if (delegation->function_pool.check(label))
+                return delegation->function_pool.at(label);
             
-            try {
-                return stack_pool[0]->variables.at(label);
-            }
-            catch(const std::out_of_range& oor) {
-                try {
-                    return delegation->function_pool.at(label);
-                }
-                catch(const std::out_of_range& oor) {
-                    wstring err = L"Error: unknown label: '";
-                    err += name;
-                    err += L"'";
-                    throw new Error(err);
-                }
-            }
+            u_ustring err = U"Error: unknown label: '";
+            err += name;
+            err += U"'";
+            throw new Error(err);
         }
+        return e;
     }
 
     inline Element* get(string name) {
         short label = encode(name);
-        try {
-            return execution_stack.top()->variables.at(label);
-        }
-        catch(const std::out_of_range& oor) {
-            //Is it a global variable?
-            if (execution_stack.size() == 1) {
-                try {
-                    return delegation->function_pool.at(label);
-                }
-                catch(const std::out_of_range& oor) {
-                    string err = "Error: unknown label: '";
-                    err += name;
-                    err += "'";
-                    throw new Error(err);
-                }
-            }
+        Element* e = getElementFromStack(label);
+        if (e == NULL) {
+            if (delegation->function_pool.check(label))
+                return delegation->function_pool.at(label);
             
-            try {
-                return stack_pool[0]->variables.at(label);
-            }
-            catch(const std::out_of_range& oor) {
-                try {
-                    return delegation->function_pool.at(label);
-                }
-                catch(const std::out_of_range& oor) {
-                    string err = "Error: unknown label: '";
-                    err += name;
-                    err += "'";
-                    throw new Error(err);
-                }
-            }
+            string err = "Error: unknown label: '";
+            err += name;
+            err += "'";
+            throw new Error(err);
         }
+        return e;
     }
 
     inline Element* get(short label) {
-        try {
-            return execution_stack.top()->variables.at(label);
+        Element* e = getElementFromStack(label);
+        if (e == NULL) {
+            if (delegation->function_pool.check(label))
+                return delegation->function_pool.at(label);
+            
+            if (delegation->data_pool.check(label))
+                return delegation->data_pool.at(label);
+            
+            u_ustring name = delegation->code_to_string[label];
+            u_ustring err = U"Error: unknown label: '";
+            err += name;
+            err += U"'";
+            throw new Error(err);
         }
-        catch(const std::out_of_range& oor) {
-            //Is it a global variable?
-            if (execution_stack.size() == 1) {
-                try {
-                    return delegation->function_pool.at(label);
-                }
-                catch(const std::out_of_range& oor) {
-                    try {
-                        return delegation->data_pool.at(label);
-                    }
-                    catch(const std::out_of_range& oor) {
-                        wstring name = delegation->code_to_string[label];
-                        wstring err = L"Error: unknown label: '";
-                        err += name;
-                        err += L"'";
-                        throw new Error(err);
-                    }
-                }
-            }
-            try {
-                return stack_pool[0]->variables.at(label);
-            }
-            catch(const std::out_of_range& oor) {
-                try {
-                    return delegation->function_pool.at(label);
-                }
-                catch(const std::out_of_range& oor) {
-                    try {
-                        return delegation->data_pool.at(label);
-                    }
-                    catch(const std::out_of_range& oor) {
-                        wstring name = delegation->code_to_string[label];
-                        wstring err = L"Error: unknown label: '";
-                        err += name;
-                        err += L"'";
-                        throw new Error(err);
-                    }
-                }
-            }
-        }
+        return e;
     }
+
     
     inline Element* getvalue(short label) {
-        try {
-            return execution_stack.top()->variables.at(label);
-        }
-        catch(const std::out_of_range& oor) {
-            if (execution_stack.size() == 1)
-                return delegation->_NULL;
-            try {
-                return stack_pool[0]->variables.at(label);
-            }
-            catch(const std::out_of_range& oor) {
-                return delegation->_NULL;
-            }
-        }
+        Element* e = getElementFromStack(label);
+        if (e == NULL)
+            return delegation->_NULL;
+        return e;
     }
-    
+
     inline Element* checkLabel(short label) {
         return execution_stack.top()->get(label);
     }
 
     inline bool checkFunctionLabel(short label) {
-        try {
-            return delegation->function_pool.at(label)->isFunction();
-        }
-        catch(const std::out_of_range& oor) {
-            return false;
-        }
+        return delegation->function_pool.check(label);
     }
     
 
@@ -818,15 +811,20 @@ public:
         return delegation->provideAtom(identifier);
     }
 
-    Element* provideAtom(wstring identifier)  {
+    Element* provideAtom(u_ustring identifier)  {
            return delegation->provideAtom(identifier);
     }
-    
-    Element* provideAtomProtected(wstring& identifier)  {
+
+    Element* provideAtom(wstring idf)  {
+        u_pstring identifier = _w_to_u(idf);
+        return delegation->provideAtom(identifier);
+    }
+
+    Element* provideAtomProtected(u_ustring& identifier)  {
            return delegation->provideAtom(identifier, checkforLock());
     }
     
-    void replaceAtom(wstring& identifier, short code) {
+    void replaceAtom(u_ustring& identifier, short code) {
         delegation->replaceAtom(identifier, code, checkforLock());
     }
     
@@ -844,18 +842,26 @@ public:
         return delegation->provideCADR(c);
     }
     
-    Element* provideNumber(double d);
-    Element* provideInteger(long d);
+    Element* provideNumber(double d) {
+        return new Number(d);
+    }
+    
+    Element* provideInteger(long d) {
+        return new Integer(d);
+    }
+    
     Element* provideString(wstring& c);
+    Element* provideString(u_ustring& c);
     Element* provideString(string& c);
     Element* provideString(wchar_t c);
+    Element* provideString(u_uchar c);
     
-    bool checkencoding(wstring str) {
+    bool checkencoding(u_ustring str) {
         try {
             delegation->string_to_code.at(str);
             return true;
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return false;
         }
     }
@@ -864,7 +870,12 @@ public:
         return delegation->encode(str);
     }
     
-    short encode(wstring& s) {
+    short encode(u_ustring& s) {
+        return delegation->encode(s);
+    }
+    
+    short encode(wstring& w) {
+        u_pstring s = _w_to_u(w);
         return delegation->encode(s);
     }
     

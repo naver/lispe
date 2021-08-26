@@ -16,7 +16,6 @@
 #include <vector>
 #include <unordered_map>
 
-using std::wstring;
 using std::vector;
 using std::unordered_map;
 
@@ -39,20 +38,20 @@ using std::unordered_map;
 
 class x_tokens {
 public:
-    vector<wstring> rules;
-    vector<wstring> stack;
-    vector<vector<wstring> > disjunctions;
+    vector<u_ustring> rules;
+    vector<u_ustring> stack;
+    vector<vector<u_ustring> > disjunctions;
 
-    unordered_map<wstring, bool> operators;
-    vector<vector<wstring> > tokenizer;
+    unordered_map<u_ustring, bool> operators;
+    vector<vector<u_ustring> > tokenizer;
 
     vector<vector<short> > ruleelements;
     vector<short*> closing;
     vector<short> action;
 
     vector<long> stackln;
-    vector<unsigned char> stacktype;
-    vector<long> cpos;
+    vector<long> stacktype;
+    //vector<long> cpos;
     
     Chaine_UTF8* access;
 
@@ -87,14 +86,14 @@ public:
         
         //the escape character: by default it is \x
         escape='\\';
-        operators[L"≠"]=true;
-        operators[L"∨"]=true;
-        operators[L"∧"]=true;
-        operators[L"÷"]=true;
-        operators[L"×"]=true;
-        operators[L"²"]=true;
-        operators[L"³"]=true;
-        operators[L"¬"]=true;
+        operators[U"≠"]=true;
+        operators[U"∨"]=true;
+        operators[U"∧"]=true;
+        operators[U"÷"]=true;
+        operators[U"×"]=true;
+        operators[U"²"]=true;
+        operators[U"³"]=true;
+        operators[U"¬"]=true;
     }
 
     void reset() {
@@ -121,38 +120,38 @@ public:
         disjunctions.clear();
         
         operators.clear();
-        operators[L"≠"]=true;
-        operators[L"∨"]=true;
-        operators[L"∧"]=true;
-        operators[L"÷"]=true;
-        operators[L"×"]=true;
-        operators[L"²"]=true;
-        operators[L"³"]=true;
-        operators[L"¬"]=true;
+        operators[U"≠"]=true;
+        operators[U"∨"]=true;
+        operators[U"∧"]=true;
+        operators[U"÷"]=true;
+        operators[U"×"]=true;
+        operators[U"²"]=true;
+        operators[U"³"]=true;
+        operators[U"¬"]=true;
     }
 
-    void replacemetas(map<wstring, wstring>& metalines, wstring& line) {
-        if (line.find(L"%") == -1 || line.size()==1)
+    void replacemetas(map<u_ustring, u_ustring>& metalines, u_ustring& line) {
+        if (line.find(U"%") == -1 || line.size()==1)
             return;
 
-        wstring rep;
-        wstring fd;
+        u_ustring rep;
+        u_ustring fd;
         for (auto& k : metalines) {
             if (line.find(k.first) != -1) {
                 fd = k.first;
                 rep = k.second;
-                line = s_wreplacestring(line, fd, rep);
+                line = s_ureplacestring(line, fd, rep);
             }
         }
     }
     
-    void setrules(vector<wstring>& r) {
+    void setrules(vector<u_ustring>& r) {
         reset();
         rules=r;
         parserules();
     }
     
-    void getrules(vector<wstring>& r) {
+    void getrules(vector<u_ustring>& r) {
         if (!rules.size()) {
             setrules();
             r=rules;
@@ -170,7 +169,7 @@ public:
          a) A metarule is composed of two parts: c:expression, where c is the metacharacter that be accessed through %c and expression is a single body rule.
          
          for instance, we could have encoded %o as:
-                    rules.push_back(L"o:[≠ ∨ ∧ ÷ × ² ³ ¬]");
+                    rules.push_back(U"o:[≠ ∨ ∧ ÷ × ² ³ ¬]");
         
          (see conversion.cxx: x_tokenize for examples of these rules)
          
@@ -180,7 +179,7 @@ public:
          If you use a character that is already a meta-character (such as "a" or "d"), then the meta-character will be replaced with
          this new description... However, its content might still use the standard declaration:
          
-                rules.push_back(L"a:{%a %d %p}"); "%1 is now a combination of alphabetical characters, digits and punctuations
+                rules.push_back(U"a:{%a %d %p}"); "%1 is now a combination of alphabetical characters, digits and punctuations
 
          
         b) A rule is composed of two parts: body = action
@@ -250,91 +249,80 @@ public:
          */
         
         //Spaces, skipped in the parsing string
-        rules.push_back(L" =#");                         //0     space (not kept)
-        rules.push_back(L"\t=#");                        //1     tab (not kept)
-        rules.push_back(L"\n=#");                        //2     cr (not kept)
-        rules.push_back(L"\r=#");                        //3     cr (not kept)
+        rules.push_back(U" +=20");                         //0     space (not kept)
+        rules.push_back(U"\t+=21");                        //1     tab (not kept)
+        rules.push_back(U"\n+=22");                        //2     cr (not kept)
+        rules.push_back(U"\r=#");                        //3     cr (not kept)
         
-        rules.push_back(L"1:{%d #A-F #a-f}");            //2     metarule on 1, for hexadecimal digits
+        rules.push_back(U"1:{%d #A-F #a-f}");            //2     metarule on 1, for hexadecimal digits
 
         //Fast tracks for recurrent punctations
-        rules.push_back(L";=0");                         //4     ;
-        rules.push_back(L",=0");                         //5     ,
-        rules.push_back(L"==0");                         //6     =
-        rules.push_back(L"~=0");                         //7     ~
-        rules.push_back(L"!=0");                         //8     !
-        rules.push_back(L"(=0");                         //9     (
-        rules.push_back(L")=0");                         //10    )
-        rules.push_back(L"[=0");                         //11    [
-        rules.push_back(L"]=0");                         //12    ]
-        rules.push_back(L"{=0");                         //13    {
-        rules.push_back(L"}=0");                         //14    }
-        rules.push_back(L"..=0");                        //15    ..
-        rules.push_back(L".=0");                         //16    .
-        rules.push_back(L"^=0");                         //17    ^
-        rules.push_back(L"+=0");                         //18    +
-        rules.push_back(L"-=0");                         //19    -
-        rules.push_back(L"*=0");                         //20    *
-        rules.push_back(L"%=0");                         //21    %
-        rules.push_back(L"<=0");                         //22    <
-        rules.push_back(L">=0");                         //23    >
-        rules.push_back(L"|=0");                         //24    |
-        rules.push_back(L"&=0");                         //25    &
-        rules.push_back(L":=0");                         //26    :
-        rules.push_back(L"$=0");                         //27    $
-        rules.push_back(L"#=0");                         //28    #
-        rules.push_back(L"?=0");                         //29    ?
-        rules.push_back(L"\\=0");                        //29    ?
+        rules.push_back(U";=0");                         //4     ;
+        rules.push_back(U",=0");                         //5     ,
+        rules.push_back(U"==0");                         //6     =
+        rules.push_back(U"~=0");                         //7     ~
+        rules.push_back(U"!=0");                         //8     !
+        rules.push_back(U"(=0");                         //9     (
+        rules.push_back(U")=0");                         //10    )
+        rules.push_back(U"[=0");                         //11    [
+        rules.push_back(U"]=0");                         //12    ]
+        rules.push_back(U"{=0");                         //13    {
+        rules.push_back(U"}=0");                         //14    }
+        rules.push_back(U"..=0");                        //15    ..
+        rules.push_back(U".=0");                         //16    .
+        rules.push_back(U"^=0");                         //17    ^
+        rules.push_back(U"+=0");                         //18    +
+        rules.push_back(U"-=0");                         //19    -
+        rules.push_back(U"*=0");                         //20    *
+        rules.push_back(U"%=0");                         //21    %
+        rules.push_back(U"<=0");                         //22    <
+        rules.push_back(U">=0");                         //23    >
+        rules.push_back(U"|=0");                         //24    |
+        rules.push_back(U"&=0");                         //25    &
+        rules.push_back(U":=0");                         //26    :
+        rules.push_back(U"$=0");                         //27    $
+        rules.push_back(U"#=0");                         //28    #
+        rules.push_back(U"?=0");                         //29    ?
+        rules.push_back(U"\\=0");                        //29    ?
 
         //Comments
-        rules.push_back(L"//%.~%r+=#");                  //30    comments starting with // with no carriage return (CR) inside (not kept)
-        rules.push_back(L"//=#");                        //31    empty comment starting with // with no carriage return (CR) inside (not kept)
-        rules.push_back(L"/@%.+@/=#");                   //32    long comments starting with /@ and finishing with @/ (not kept)
-        rules.push_back(L"/@@/=#");                      //33    empty long comment starting with /@ and finishing with @/
-        rules.push_back(L"/=0");                         //34    /
+        rules.push_back(U"//%.~%r+=#");                  //30    comments starting with // with no carriage return (CR) inside (not kept)
+        rules.push_back(U"//=#");                        //31    empty comment starting with // with no carriage return (CR) inside (not kept)
+        rules.push_back(U"/=0");                         //34    /
         
         //Strings
         //Double quote
-        rules.push_back(L"\"\"=1");                      //35    empty string ""
-        rules.push_back(L"\"%?~%r+\"=1");                //36    string "" does not contain CR and can escape characters (%?)
+        rules.push_back(U"\"\"=1");                      //35    empty string ""
+        rules.push_back(U"\"\"\"%?+\"\"\"=8");             //45    empty string u@""@
+        rules.push_back(U"\"%?~%r+\"=1");                //36    string "" does not contain CR and can escape characters (%?)
         
         //Single quote
-        rules.push_back(L"''=2");                        //37    empty string ''
-        rules.push_back(L"'%.~%r+'=2");                  //38    string '' does not contain CR and does not process escape characters
+        rules.push_back(U"''=2");                        //37    empty string ''
+        rules.push_back(U"'%?~%r+'=2");                  //38    string '' does not contain CR and does not process escape characters
         
-        //Long quotes
-        rules.push_back(L"@-\"\"@-=5");                  //39    empty string @""@
-        rules.push_back(L"@-\"%?+\"@-=5");               //40    string @" "@ can contain CR and escape characters (we do not keep the @s)
         
         //tamgu regular expression strings
-        rules.push_back(L"r-\"%?~%r+\"=9");              //42    string r"" tamgu regular expression (we do not keep the r in the parse)
-        rules.push_back(L"r-'%?~%r+'=10");               //42    string r"" tamgu regular expression (we do not keep the r in the parse)
-        rules.push_back(L"p-\"%?~%r+\"=11");             //42    string p"" tamgu posix expression (we do not keep the p in the parse)
-        rules.push_back(L"p-'%?~%r+'=12");               //42    string p"" tamgu posix expression (we do not keep the p in the parse)
+        rules.push_back(U"r-\"%?~%r+\"=9");              //42    string r"" tamgu regular expression (we do not keep the r in the parse)
+        rules.push_back(U"r-'%?~%r+'=10");               //42    string r"" tamgu regular expression (we do not keep the r in the parse)
 
         //Unicode double quote strings
-        rules.push_back(L"u-\"\"=6");                    //41    empty string u""
-        rules.push_back(L"u-\"%?~%r+\"=6");              //42    string u"" unicode string (we do not keep the u in the parse)
+        rules.push_back(U"u-\"\"=6");                    //41    empty string u""
+        rules.push_back(U"u-\"%?~%r+\"=6");              //42    string u"" unicode string (we do not keep the u in the parse)
         
         //Unicode single quote strings
-        rules.push_back(L"u-''=7");                      //43    empty string u''
-        rules.push_back(L"u-'%.~%r+'=7");                //44    string u'' unicode string
+        rules.push_back(U"u-''=7");                      //43    empty string u''
+        rules.push_back(U"u-'%?~%r+'=7");                //44    string u'' unicode string
         
-        //Unicode long quote strings
-        rules.push_back(L"u-@-\"%?+\"@-=8");             //45    empty string u@""@
-        rules.push_back(L"u-@-\"%?+\"@-=8");             //46    string u@".."@ unicode string
-        
-        
-        rules.push_back(L"0x%1+(.%1+)([p P]([- +])%d+)=3");  //47 hexadecimal: can handle 0x1.16bca4f9165dep-3
-        rules.push_back(L"%d+(.%d+)([e E]([- +])%d+)=3");    //48    exponential digits
+        rules.push_back(U"0x%1+(.%1+)([p P]([- +])%d+)=3");  //47 hexadecimal: can handle 0x1.16bca4f9165dep-3
+        rules.push_back(U"%d+(.%d+)([e E]([- +])%d+)=3");    //48    exponential digits
         
         // Rules start here
         //This character should be interpreted as one
-        rules.push_back(L"{%a %d %H}+=4");               //49    label a combination of alpha, digits and hangul characters
-        rules.push_back(L"%n=#");                        //1     non-breaking space (not kept)
-        rules.push_back(L"%o=0");                        //51    operators
-        rules.push_back(L"%p=0");                        //50    punctuation
-        rules.push_back(L"%.~{%S %p %o}+=4");            //52    An unknown UTF8 token separated with spaces, punctuation or operators...
+        rules.push_back(U"{%a %d %H}+=4");               //49    label a combination of alpha, digits and hangul characters
+        rules.push_back(U"%n=#");                        //1     non-breaking space (not kept)
+        rules.push_back(U"%o=40");                        //51    operators
+        rules.push_back(U"%p=30");                        //50    punctuation
+        rules.push_back(U"%.~{%S %p %o}+=4");            //52    An unknown UTF8 token separated with spaces, punctuation or operators...
     }
     void parserules() {
         
@@ -374,16 +362,16 @@ public:
         
         char x_actions[]="?aCcdHnopSsr.";
         
-        wstring line;
-        wstring sub;
-        wstring equal(L"=");
-        wstring res;
+        u_ustring line;
+        u_ustring sub;
+        u_ustring equal(U"=");
+        u_ustring res;
 
         long k;
         long i, pos;
 
-        wchar_t brk=L']', metakey;
-        wchar_t cc;
+        u_uchar brk=L']', metakey;
+        u_uchar cc;
         
         short opening;
         short mx = 0;
@@ -392,12 +380,12 @@ public:
         bool aplus;
         bool neg=false;
         bool addfirstrule;
-        map<wstring, wstring> metalines;
+        map<u_ustring, u_ustring> metalines;
         bool initmetakey=false;
         vector<short> e;
         vector<short> stackopen;
         vector<short> stackpar;
-        vector<wstring> rule;
+        vector<u_ustring> rule;
 
 
         for (i=0;i<rules.size();i++) {
@@ -413,7 +401,7 @@ public:
             if (line[1]==':') { //we detect a meta-rule...
                 metakey=line[0];
                 line=line.c_str()+2;
-                wstring key=L"%";
+                u_ustring key=U"%";
                 key+=metakey;
                 if (initmetakey)
                     replacemetas(metalines,line);
@@ -438,7 +426,7 @@ public:
             
             res=line.c_str()+pos+1;
             
-            if (res!=L"#")
+            if (res!=U"#")
                 r=convertinginteger(res);
             
             action.push_back(r);
@@ -459,7 +447,7 @@ public:
                                 if (!metakey && table['%']==255)
                                     table['%']=i;
                                 
-                                sub=L"%";
+                                sub = U"%";
                                 rule.push_back(sub);
                                 ruleelements[i].push_back(xr_char);
                                 break;
@@ -513,7 +501,7 @@ public:
                         if (addfirstrule && firstrule==-1 && !metakey)
                             firstrule=i;
 
-                        sub= L"%";
+                        sub = U"%";
                         sub+=cc;
                         if (neg) {
                             rule.back()+=sub;
@@ -556,12 +544,12 @@ public:
                         sub=line.substr(j+1,k-j-1);
 
                         if (typebrk==xr_chardisjunction)
-                            sub+=L" ";
+                            sub+=U" ";
                         else {
-                            vector<wstring> vsub;
+                            vector<u_ustring> vsub;
                             //we split at the " "
                             long d=0,e;
-                            wstring sx;
+                            u_ustring sx;
                             for (e=0;e<sub.size();e++) {
                                 if (sub[e]==' ') {
                                     sx=sub.substr(d,e-d);
@@ -571,7 +559,7 @@ public:
                             }
                             sx=sub.substr(d,e-d);
                             vsub.push_back(sx);
-                            sub = convertToWString((long)disjunctions.size());
+                            sub = convertToUString((long)disjunctions.size());
                             disjunctions.push_back(vsub);
                         }
                         
@@ -625,7 +613,7 @@ public:
                                 k++;
                             }
                             if (found) {
-                                sub=L"(";
+                                sub = U"(";
                                 rule.push_back(sub);
                                 mx = ruleelements[i].size();
                                 stackopen.push_back(mx);
@@ -637,7 +625,7 @@ public:
                     case L')':
                         if (j) {
                             if (opening) {
-                                sub=L")";
+                                sub = U")";
                                 rule.push_back(sub);
                                 stackpar.push_back(stackopen.back());
                                 stackpar.push_back(ruleelements[i].size());
@@ -673,7 +661,7 @@ public:
         rules.clear();
     }
 
-    char check(wstring& label, short type, wchar_t* chr) {
+    char check(u_ustring& label, short type, u_uchar* chr) {
         if (!chr[0])
             return false;
         
@@ -684,7 +672,7 @@ public:
         }
         
         if (verif(type,xr_negation)) { //negation
-            wstring sb;
+            u_ustring sb;
             if (verif(type,xr_metadisjunction)) {
                 type=8;
                 sb=label.c_str()+3;
@@ -720,16 +708,16 @@ public:
         }
 
         if (verif(type,xr_chardisjunction)) { // [] brackets
-            wstring sb=chr;
-            sb+=L" ";
+            u_ustring sb=chr;
+            sb += U" ";
             if (label.find(sb)!= string::npos)
                 return true;
             return false;
         }
         
         if (verif(type,xr_meta)) {
-            wchar_t lb=label[1];
-            wchar_t car=chr[0];
+            u_uchar lb=label[1];
+            u_uchar car=chr[0];
             
             if (label[0]==L'#') {
                 if (label[2]=='-') {
@@ -800,16 +788,16 @@ public:
         return false;
     }
     
-    void apply(wstring& toparse, vector<wstring>* vstack);
-    char loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, long& itoken, short& r, long& line, long& posc);
+    void apply(u_ustring& toparse, vector<u_ustring>* vstack);
+    char loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, long& itoken, short& r, long& line, long& posc);
 
-    wstring next(wstring& w, long& pos, long& l) {
+    u_ustring next(u_ustring& w, long& pos, long& l) {
         if (pos>=w.size())
-            return L"";
+            return U"";
         
         if (w[pos]==L'\n')
             l++;
-        wstring res;
+        u_ustring res;
         res=w[pos++];
 #ifdef WSTRING_IS_UTF16
         if (checklargeutf16(res[0]))
@@ -818,7 +806,7 @@ public:
         return res;
     }
     
-    void getnext(wstring& w, wchar_t* res, long& pos, long& l) {
+    void getnext(u_ustring& w, u_uchar* res, long& pos, long& l) {
         if (pos>=w.size()) {
             res[0] =  0;
             return;
@@ -835,7 +823,7 @@ public:
 #endif
     }
     
-    void getnext(wstring& w, wchar_t* res, long& pos) {
+    void getnext(u_ustring& w, u_uchar* res, long& pos) {
         if (pos>=w.size()) {
             res[0] =  0;
             return;
@@ -851,7 +839,7 @@ public:
     }
     
 
-    void tokenize(wstring& thestr, vector<wstring>* vstack) {
+    void tokenize(u_ustring& thestr, vector<u_ustring>* vstack) {
         //only stack is necessary
         if (vstack==NULL)
             stack.clear();

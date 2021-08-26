@@ -122,7 +122,7 @@ public:
         lastline = 0;
         lispe = NULL;
         tid = NULL;
-        lispfile = true;
+        filetype = lisp_type;
     }
     
     void LispSetCode(string& c) {
@@ -146,16 +146,16 @@ public:
     }
     
     
-    string coloringline(wstring& l) {
+    string coloringline(wstring& l, long i) {
         string line = convert(l);
-        return coloringline(line, false);
+        return coloringline(line, i, false);
     }
     
     void initlisp(bool init, bool setpath);
     
     //long splitline(wstring& l, long linenumber, vector<wstring>& subs);
 
-    string coloringline(string line, bool thread);
+    string coloringline(string line, long i, bool thread);
     
     void displaythehelp(long i);
 
@@ -177,7 +177,7 @@ public:
                 if (editor_breakpoints.at(thecurrentfilename).at(n))
                     return "^^";
             }
-            catch(const std::out_of_range& oor) {}
+            catch(...) {}
         }
         return prefix;
     }
@@ -211,15 +211,17 @@ public:
         
     }
 
-    void printline(long n, wstring& l, long i = -1) {
+    void printline(long n, wstring& l, long i) {
         if (emode()) {
+            if (n > 0 && n < lines.size())
+                n = lines.numeros[n - 1];
             if (noprefix)
-                cout << back << coloringline(l);
+                cout << back << coloringline(l, i);
             else
-                cout << back << m_dore << prefixstring(n) << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l);
+                cout << back << m_dore << prefixstring(n) << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l, i);
         }
         else
-            cout << back << m_dore << prefix << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l);
+            cout << back << m_dore << prefix << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l, i);
     }
 
     //this is the method to handle up and down key strokes
@@ -232,7 +234,7 @@ public:
                 clearline();
                 line = commandlines[--poscommand];
                 posinstring = linesize();
-                printline(pos+1, line);
+                printline(pos+1, line, -1);
             }
             return false;
         }
@@ -242,7 +244,7 @@ public:
         if (poscommand >= 0 && poscommand < i - 1) {
             line = commandlines[++poscommand];
             posinstring = linesize();
-            printline(pos+1, line);
+            printline(pos+1, line, -1);
         }
         else {
             line = L"";
@@ -263,10 +265,10 @@ public:
             if (editmode) {
                 if (lines.status[pos] == concat_line) {
                     if (noprefix)
-                        cout << back << coloringline(line);
+                        cout << back << coloringline(line, poslines[currentline]);
                     else {
                         string space(prefixe(), ' ');
-                        cout << back << space << coloringline(line);
+                        cout << back << space << coloringline(line, poslines[currentline]);
                     }
                 }
                 else {
@@ -281,7 +283,7 @@ public:
                 }
             }
             else
-                printline(pos+1, line);
+                printline(pos+1, line, -1);
         }
     }
 
@@ -360,12 +362,12 @@ public:
             for (long i = beg; i < lines.size(); i++) {
                 string space(prefixe(), ' ');
                 if (lines.status[i] == concat_line)
-                    blk << space << coloringline(lines[i]) << endl;
+                    blk << space << coloringline(lines[i], i) << endl;
                 else {
                     if (noprefix)
-                        blk << coloringline(lines[i]) << endl;
+                        blk << coloringline(lines[i], i) << endl;
                     else {
-                        blk << m_dore << prefixstring(lines.numeros[i]) << m_current << m_lightgray << std::setw(prefixsize) << lines.numeros[i] << "> " << m_current << coloringline(lines[i]) << endl;
+                        blk << m_dore << prefixstring(lines.numeros[i]) << m_current << m_lightgray << std::setw(prefixsize) << lines.numeros[i] << "> " << m_current << coloringline(lines[i], i) << endl;
                     }
                 }
                 poslines.push_back(i);
@@ -393,12 +395,12 @@ public:
         for (long i = beg; i <= end; i++) {
             string space(prefixe(), ' ');
             if (lines.status[i] == concat_line)
-                blk << space << coloringline(lines[i]) << endl;
+                blk << space << coloringline(lines[i], i) << endl;
             else {
                 if (noprefix)
-                    blk << coloringline(lines[i]) << endl;
+                    blk << coloringline(lines[i], i) << endl;
                 else {
-                    blk << m_dore << prefixstring(lines.numeros[i]) << m_current << m_lightgray << std::setw(prefixsize) << lines.numeros[i] << "> " << m_current << coloringline(lines[i]);
+                    blk << m_dore << prefixstring(lines.numeros[i]) << m_current << m_lightgray << std::setw(prefixsize) << lines.numeros[i] << "> " << m_current << coloringline(lines[i], i);
                 }
             }
             asz = blk.str().size();
@@ -668,231 +670,7 @@ public:
         currentline = 0;
     }
 
-    bool checkcommand(char c);    
-    void ls(string cmd, string path, vector<wstring>& paths) {
-        FILE *fp;
-
-        char chemin[PATH_MAX];
-        
-        cmd += path;
-        
-#ifdef WIN32
-        fp = _popen(STR(cmd), "r");
-#else
-        fp = popen(STR(cmd), "r");
-#endif
-        if (fp == NULL)
-            return;
-        
-        wstring l;
-        while (fgets(chemin, PATH_MAX, fp) != NULL) {
-            cmd = chemin;
-            cmd = s_trim(cmd);
-            l = wconvert(cmd);
-            paths.push_back(l);
-        }
-        
-#ifdef WIN32
-        _pclose(fp);
-#else
-        pclose(fp);
-#endif
-    }
-    
-#ifdef WIN32
-    bool checkpath() {
-        //The first part should be a command such as open or load...
-        long pos = line.rfind(' ');
-        if (pos == -1)
-            return false;
-        
-        wstring root = line.substr(0, pos);
-        wstring name;
-        wstring path = line.substr(pos, line.size());
-        path = s_trim(path);
-        //Two cases, we have a "\\" in it...
-        pos = path.rfind(L"\\");
-        //We need to extract it
-        if (pos != -1) {
-            name = path.substr(pos+1, path.size()-pos);
-            path = path.substr(0, pos+1);
-        }
-        else {
-            name = path;
-            path = L".";
-        }
-        vector<wstring> paths;
-        vector<wstring> targets;
-        //First the directories
-        string cmd = "dir /B ";
-        ls(cmd, convert(path), paths);
-        //Now we look for continuation
-        long i;
-        for (i = 0; i < paths.size(); i++) {
-            if (paths[i].substr(0, name.size()) == name)
-                targets.push_back(paths[i]);
-        }
-        if (path == L".")
-            path = L"";
-        
-        if (targets.size() == 0)
-            return false;
-        
-        paths.clear();
-        //Only directories, we want to add a _sep at the end...
-        cmd = "dir /AD /B ";
-        ls(cmd, convert(path), paths);
-        for (i = 0; i < paths.size(); i++) {
-            for (long j = 0; j < targets.size(); j++) {
-                if (targets[j] == paths[i])
-                    targets[j] += L"\\";
-            }
-        }
-
-        if (targets.size() == 1) {
-            line = root;
-            line += L" ";
-            line += path;
-            line += targets[0];
-            clearline();
-            displaygo(true);
-            posinstring = line.size();
-            movetoposition();
-            return true;
-        }
-        
-        wstring common;
-        long ln  = name.size();
-        bool end = false;
-        while (!end) {
-            //We add one letter from the targets and see if it is common to all targets
-            for (i = 0; i < targets.size(); i++) {
-                if (ln >= targets[i].size()) {
-                    end = true;
-                    break;
-                }
-            }
-            if (!end) {
-                ++ln;
-                common = targets[0].substr(0, ln);
-                for (i = 1; i < targets.size(); i++) {
-                    if (targets[i].substr(0, ln) != common) {
-                        end = true;
-                        break;
-                    }
-                }
-                if (!end)
-                    name = common;
-            }
-        }
-        
-        
-        cerr << endl << endl << m_red;
-        for (i = 0; i < targets.size(); i++)
-            cerr << convert(targets[i]) << " ";
-        cerr << m_current << endl << endl;
-        
-        line = root;
-        line += L" ";
-        line += path;
-        line += name;
-        clearline();
-        displaygo(true);
-        posinstring = line.size();
-        movetoposition();
-        return true;
-    }
-#else
-    bool checkpath() {
-        //The first part should be a command such as open or load...
-        long pos = line.rfind(' ');
-        if (pos == -1)
-            return false;
-        
-        wstring root = line.substr(0, pos);
-        wstring name;
-        wstring path = line.substr(pos, line.size());
-        path = s_trim(path);
-        //Two cases, we have a "/" in it...
-        pos = path.rfind(L"/");
-        if (pos != -1) {
-            name = path.substr(pos+1, path.size()-pos);
-            path = path.substr(0, pos+1);
-        }
-        else {
-            name = path;
-            path = L".";
-        }
-        vector<wstring> paths;
-        vector<wstring> targets;
-        string cmd = "ls -1 -p ";
-        ls(cmd, convert(path), paths);
-        //Now we look for continuation
-        long i;
-        for (i = 0; i < paths.size(); i++) {
-            if (paths[i].substr(0, name.size()) == name)
-                targets.push_back(paths[i]);
-        }
-        if (path == L".")
-            path = L"";
-        
-        if (targets.size() == 0)
-            return true;
-        
-        if (targets.size() == 1) {
-            line = root;
-            line += L" ";
-            line += path;
-            line += targets[0];
-            clearline();
-            displaygo(true);
-            posinstring = line.size();
-            movetoposition();
-            return true;
-        }
-        
-        wstring common;
-        long ln  = name.size();
-        bool end = false;
-        while (!end) {
-            //We add one letter from the targets and see if it is common to all targets
-            for (i = 0; i < targets.size(); i++) {
-                if (ln >= targets[i].size()) {
-                    end = true;
-                    break;
-                }
-            }
-            if (!end) {
-                ++ln;
-                common = targets[0].substr(0, ln);
-                for (i = 1; i < targets.size(); i++) {
-                    if (targets[i].substr(0, ln) != common) {
-                        end = true;
-                        break;
-                    }
-                }
-                if (!end)
-                    name = common;
-            }
-        }
-        
-        
-        cerr << endl << endl << m_redital;
-        for (i = 0; i < targets.size(); i++)
-            cerr << convert(targets[i]) << " ";
-        cerr << m_current << endl << endl;
-        
-        line = root;
-        line += L" ";
-        line += path;
-        line += name;
-        clearline();
-        displaygo(true);
-        posinstring = line.size();
-        movetoposition();
-        return true;
-    }
-#endif
+    bool checkcommand(char c);
     
     void clean_breakpoints(long);
     
@@ -955,7 +733,7 @@ public:
                 if (option != x_none)
                     displaygo(true);
                 else
-                    printline(pos+1, line);
+                    printline(pos+1, line, -1);
                 return true;
             case 12: //ctrl-l: reload file
                 if (emode())

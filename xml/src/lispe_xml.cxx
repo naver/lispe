@@ -269,95 +269,95 @@ public:
                 long iddoc = lisp->vpool_slot();
                 Lispe_xmldoc* doc = new Lispe_xmldoc(lisp, iddoc, type_xmldoc);
                 lisp->vpool_in(doc, iddoc);
-                string pathname = lisp->get(L"pathname")->toString(lisp);
+                string pathname = lisp->get(U"pathname")->toString(lisp);
                 return doc->load(pathname);
             }
             case xml_parse: {
                 long iddoc = lisp->vpool_slot();
                 Lispe_xmldoc* doc = new Lispe_xmldoc(lisp, iddoc, type_xmldoc);
                 lisp->vpool_in(doc, iddoc);
-                string buffer = lisp->get(L"buffer")->toString(lisp);
+                string buffer = lisp->get(U"buffer")->toString(lisp);
                 return doc->parse(buffer);
             }
             case xml_root: {
                 //The first parameter should be a doc
-                Element* doc = lisp->get(L"doc");
+                Element* doc = lisp->get(U"doc");
                 if (doc->type != type_xmldoc)
                     throw new Error("Error: the first parameter should be an 'xmldoc'");
                 return ((Lispe_xmldoc*)doc)->root(type_xmlnode);
             }
             case xml_next: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->next();
             }
             case xml_previous: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->previous();
             }
             case xml_child: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->child();
             }
             case xml_parent: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->parent();
             }
             case xml_name: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->name();
             }
             case xml_properties: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->properties();
             }
             case xml_line: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->line();
             }
 
             case xml_namespace: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->name_space();
             }
             case xml_type: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->node_type();
             }
             case xml_content: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->content();
             }
             case xml_nodeid: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
                 return ((Lispe_xmlnode*)node)->node_id();
             }
             case xml_setnodeid: {
-                Element* node = lisp->get("node");
+                Element* node = lisp->get(U"node");
                 if (node->type != type_xmlnode)
                     throw new Error("Error: the first parameter should be an 'xmlnode'");
-                long idx = lisp->get("id")->asInteger();
+                long idx = lisp->get(U"id")->asInteger();
                 return ((Lispe_xmlnode*)node)->set_node_id(idx);
             }
         }
@@ -412,7 +412,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
 
     wstring w = L"xml";
     short identifier = lisp->encode(w);
-        
+
     lisp->extension("deflib xml_load (pathname)", new Lispe_xml(lisp, xml_load, identifier));
     lisp->extension("deflib xml_parse (buffer)", new Lispe_xml(lisp, xml_parse, identifier));
     lisp->extension("deflib xml_root (doc)", new Lispe_xml(lisp, xml_root, identifier));

@@ -54,8 +54,8 @@ Chaine_UTF8* Au_meta::met = new Chaine_UTF8;
 #define addtoken(tok,c) tok.add((uchar*)c,charsz(c))
 #define checkcr if (chr[0] == '\n') l++
 //---------------------------------------AUTOMATON------------------------------------------------------------
-static bool tokenize(wstring& rg, vector<wstring>& stack, vector<aut_actions>& vtypes) {
-    wstring sub;
+static bool tokenize(u_ustring& rg, vector<u_ustring>& stack, vector<aut_actions>& vtypes) {
+    u_ustring sub;
     long sz = rg.size();
     uchar type=aut_reg;
     long inbracket = 0;
@@ -73,23 +73,23 @@ static bool tokenize(wstring& rg, vector<wstring>& stack, vector<aut_actions>& v
                         sub+=rg[i+1];
                         sub+=rg[i+2];
                         i+=2;
-                        sub = (wchar_t)convertinginteger(sub);
+                        sub = (u_uchar)convertinginteger(sub);
                     }
                     else //we also accept four hexa: \xFFFF
                         if (rg[i] == 'x' && (i+4)<sz && c_is_hexa(rg[i+1]) && c_is_hexa(rg[i+2]) && c_is_hexa(rg[i+3]) && c_is_hexa(rg[i+4])) {
-                            sub=L"0x";
+                            sub=U"0x";
                             sub+=rg[i+1];
                             sub+=rg[i+2];
                             sub+=rg[i+3];
                             sub+=rg[i+4];
                             i+=4;
-                            sub = (wchar_t)convertinginteger(sub);
+                            sub = (u_uchar)convertinginteger(sub);
                         }
                     type = aut_reg;
                 }
                 break;
             case '%':
-                sub = L"%";
+                sub = U"%";
                 if ((i + 1) < sz) {
                     type = aut_meta;
                     i++;
@@ -109,7 +109,7 @@ static bool tokenize(wstring& rg, vector<wstring>& stack, vector<aut_actions>& v
                 type = aut_opar;
                 break;
             case ')':
-                stack.push_back(L")");
+                stack.push_back(U")");
                 vtypes.push_back(aut_cpar);
                 continue; //we cannot have: ..)+ or ..)*
             case '[':
@@ -137,7 +137,7 @@ static bool tokenize(wstring& rg, vector<wstring>& stack, vector<aut_actions>& v
                     //{a-z} or [a-z]
                     //in that case, we build the character list between the current character and the next one...
                     sub = stack.back();
-                    wstring nxt;
+                    u_ustring nxt;
                     nxt = rg[++i];
                     ++sub[0];
                     while (sub[0] <= nxt[0]) {
@@ -222,7 +222,7 @@ void Au_state::addrule(Au_arc* r) {
 }
 
 //----------------------------------------------------------------
-bool Au_state::match(wstring& w, long i) {
+bool Au_state::match(u_ustring& w, long i) {
     if ((status&an_error) == an_error)
         return false;
 
@@ -251,7 +251,7 @@ bool Au_state::match(wstring& w, long i) {
     return false;
 }
 
-bool Au_automaton::match(wstring& w) {
+bool Au_automaton::match(u_ustring& w) {
     return first->match(w,0);
 }
 
@@ -272,7 +272,7 @@ void Au_state::storerulearcs(std::unordered_map<long,bool>& rules) {
 
 //----------------------------------------------------------------
 
-long Au_state::loop(wstring& w, long i) {
+long Au_state::loop(u_ustring& w, long i) {
     if ((status & an_error) == an_error)
         return au_stop;
     
@@ -321,7 +321,7 @@ long Au_state::loop(wstring& w, long i) {
     return au_error;
 }
 
-long Au_automaton::find(wstring& w) {
+long Au_automaton::find(u_ustring& w) {
     long sz = w.size();
     for (long d=0;d<sz;d++) {
         if (first->loop(w,d) != au_error) {
@@ -331,7 +331,7 @@ long Au_automaton::find(wstring& w) {
     return au_error;
 }
 
-long Au_automaton::find(wstring& w, long i) {
+long Au_automaton::find(u_ustring& w, long i) {
     long sz = w.size();
     for (long d = i ; d < sz; d++) {
         if (first->loop(w,d) != au_error) {
@@ -341,7 +341,7 @@ long Au_automaton::find(wstring& w, long i) {
     return au_error;
 }
 
-bool Au_automaton::search(wstring& w) {
+bool Au_automaton::search(u_ustring& w) {
     long sz = w.size();
     for (long d=0;d<sz;d++) {
         if (first->loop(w,d) != au_error)
@@ -350,7 +350,7 @@ bool Au_automaton::search(wstring& w) {
     return false;
 }
 
-bool Au_automaton::search(wstring& w, long& b, long& e, long init) {
+bool Au_automaton::search(u_ustring& w, long& b, long& e, long init) {
     long sz = w.size();
     for (b=init;b<sz;b++) {
         e=first->loop(w,b);
@@ -362,7 +362,7 @@ bool Au_automaton::search(wstring& w, long& b, long& e, long init) {
     return false;
 }
 
-bool Au_automaton::searchlast(wstring& w, long& b, long& e, long init) {
+bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
     b=au_error;
     long f;
     long sz = w.size();
@@ -383,7 +383,7 @@ bool Au_automaton::searchlast(wstring& w, long& b, long& e, long init) {
 
 
 //----------------------------------------------------------------
-void Au_automaton::searchall(wstring& w, vector<long>& res, long init) {
+void Au_automaton::searchall(u_ustring& w, vector<long>& res, long init) {
     long f;
     long sz = w.size();
     
@@ -398,7 +398,7 @@ void Au_automaton::searchall(wstring& w, vector<long>& res, long init) {
 }
 
 //----------------------------------------------------------------
-bool Au_arc::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
+bool Au_arc::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
     if (i==w.size())
         return false;
     
@@ -417,7 +417,7 @@ bool Au_arc::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
     return false;
 }
 
-bool Au_state::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
+bool Au_state::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
     long ps=res.size();
     long j;
     
@@ -453,7 +453,7 @@ bool Au_state::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
 //----------------------------------------------------------------
 //The next two methods return raw indexes... No conversion needed
 //This is used in LispEregularexpression::in
-bool Au_automaton::bytesearch(wstring& w, long& b, long& e) {
+bool Au_automaton::bytesearch(u_ustring& w, long& b, long& e) {
     long sz = w.size();
     for (b=0; b<sz; b++) {
         e=first->loop(w,b);
@@ -465,7 +465,7 @@ bool Au_automaton::bytesearch(wstring& w, long& b, long& e) {
 }
 
 
-void Au_automaton::bytesearchall(wstring& w, vector<long>& res) {
+void Au_automaton::bytesearchall(u_ustring& w, vector<long>& res) {
     long f;
     long sz = w.size();
     for (long d=0; d<sz; d++) {
@@ -512,25 +512,40 @@ void Au_state::merge(Au_state* a) {
 }
 //----------------------------------------------------------------
 
-Au_automate::Au_automate(wstring& wrgx) {
+Au_automate::Au_automate(u_ustring& wrgx) {
     first=NULL;
     if (!parse(wrgx,&garbage))
         first = NULL;
 }
 
-Au_automaton::Au_automaton(wstring wrgx) {
+#ifdef WIN32
+Au_automate::Au_automate(wstring& wrgx) {
+    first=NULL;
+	u_ustring u = _w_to_u(wrgx);
+    if (!parse(u,&garbage))
+        first = NULL;
+}
+#else
+Au_automate::Au_automate(wstring& wrgx) {
+	first = NULL;
+	if (!parse(_w_to_u(wrgx), &garbage))
+		first = NULL;
+}
+#endif
+
+Au_automaton::Au_automaton(u_ustring wrgx) {
     first=NULL;
     if (!parse(wrgx))
         first = NULL;
 }
 
-bool Au_automaton::parse(wstring& w, Au_automatons* aus) {
+bool Au_automaton::parse(u_ustring& w, Au_automatons* aus) {
     //static x_wautomaton xtok;
     //first we tokenize
     
     //First we detect the potential %X, where X is a macro
     
-    vector<wstring> toks;
+    vector<u_ustring> toks;
     vector<aut_actions> types;
     if (!tokenize(w,toks, types))
         return false;
@@ -558,11 +573,11 @@ bool Au_automaton::parse(wstring& w, Au_automatons* aus) {
     return true;
 }
 
-bool Au_automate::compiling(wstring& w,long r) {
+bool Au_automate::compiling(u_ustring& w,long r) {
     //static x_wautomaton xtok;
     //first we tokenize
     
-    vector<wstring> toks;
+    vector<u_ustring> toks;
     vector<aut_actions> types;
     if (!tokenize(w,toks, types))
         return false;
@@ -592,7 +607,7 @@ bool Au_automate::compiling(wstring& w,long r) {
 //----------------------------------------------------------------------------------------
 #define an_mandatory 8
 
-Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vector<aut_actions>& types, Au_state* common) {
+Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, vector<aut_actions>& types, Au_state* common) {
     mark=false;
     Au_arc* ar;
     bool nega = false;
@@ -615,7 +630,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vect
     long j;
     bool stop;
     short count;
-    vector<wstring> ltoks;
+    vector<u_ustring> ltoks;
     vector<aut_actions> ltypes;
     Au_state* ret = NULL;
     uchar localtype = types[i];
@@ -823,12 +838,12 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vect
     else
         next=NULL;
     
-    if (toks[i] == L"^") {
+    if (toks[i] == U"^") {
         status |= an_beginning;
         return build(aus, i+1,toks,types,common);
     }
     
-    if (toks[i] == L"$") {
+    if (toks[i] == U"$") {
         ret = build(aus, i+1,toks,types,common);
         ret->status |= an_ending;
         return ret;
@@ -856,7 +871,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vect
     return next;
 }
 
-bool checkmeta(wstring& tok) {
+bool checkmeta(u_ustring& tok) {
     switch(tok[1]) {
         case 'C':
         case 'E':
@@ -876,7 +891,7 @@ bool checkmeta(wstring& tok) {
     }
 }
 
-Au_arc* Au_state::build(Au_automatons* aus, wstring& token, uchar type, Au_state* common, bool nega) {
+Au_arc* Au_state::build(Au_automatons* aus, u_ustring& token, uchar type, Au_state* common, bool nega) {
     //First we scan the arcs, in case, it was already created...
     Au_any* a=NULL;
     

@@ -11,7 +11,9 @@
 
 #include <stdio.h>
 
-#ifndef WIN32
+#ifdef WIN32
+#define PATH_MAX 4096
+#else
 #include <unistd.h>   //_getch
 #include <termios.h>  //_getch
 #include <sys/ioctl.h>
@@ -114,7 +116,7 @@ long editor_lines::indent(long p) {
     wstring cd = code(i, p + 1);
     string ccd;
     s_unicode_to_utf8(ccd, cd);
-    long ln = VirtualIndentation(ccd, jag->lispfile, jag->pythonfile);
+    long ln = VirtualIndentation(ccd, (jag->filetype == lisp_type), (jag->filetype == python_type));
     return ln;
 }
 
@@ -201,6 +203,17 @@ bool jag_editor::check_utf8(string& buff, string& buffer) {
 }
 
 //------------------------------------------------------------------------------------
+bool evaluate_quotes(wstring& l) {
+    long pos = l.find(L"\"");
+    char nb = false;
+    while (pos != -1) {
+        if (!pos || l[pos-1] != '\\')
+            nb = 1 - nb;
+        pos = l.find(L"\"", pos + 1);
+    }
+    return nb;
+}
+//------------------------------------------------------------------------------------
 void jag_editor::vsplit(wstring& thestr, wstring thesplitter, vector<wstring>& vs) {
     s_split(thestr, thesplitter, vs, true);
 }
@@ -245,9 +258,7 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     tooglehelp = false;
     regularexpressionfind = false;
     rgx = NULL;
-
-    pythonfile = false;
-    lispfile = false;
+    filetype = java_type;
     
 #ifdef POSIXREGEX
     posixrgx = NULL;
@@ -574,11 +585,11 @@ void jag_editor::deletechar(bool left) {
             if (lines.Status(pos))
                 lines.refactoring(pos);
             clearline();
-            printline(pos+1, line);
+            printline(pos+1, line, -1);
 		}
         else {
 			posinstring = pins;
-            printline(pos+1, line);
+            printline(pos+1, line, -1);
         }
 
         movetoposition();
@@ -834,7 +845,7 @@ void jag_editor::displaygo(bool full) {
             if (full) {
                 if (lines.status[pos] == concat_line) {
                     string space(prefixe(), ' ');
-                    cout << back << space << convert(line);
+                    cout << back << space << coloringline(line, pos);
                 }
                 else
                     printline(lines.numeros[pos], line, pos);
@@ -900,12 +911,12 @@ void jag_editor::displaylist(long beg) {
         poslines.push_back(i);
         string space(prefixe(), ' ');
         if (noprefix)
-            blk << coloringline(lines[i]) << endl;
+            blk << coloringline(lines[i],i) << endl;
         else
         if (lines.status[i] == concat_line)
-            blk << space << coloringline(lines[i]) << endl;
+            blk << space << coloringline(lines[i], i) << endl;
         else
-            blk << m_dore << prefixstring(lines.numeros[i]) << m_current << m_lightgray << std::setw(prefixsize) << lines.numeros[i] << "> " << m_current << coloringline(lines[i]) << endl;
+            blk << m_dore << prefixstring(lines.numeros[i]) << m_current << m_lightgray << std::setw(prefixsize) << lines.numeros[i] << "> " << m_current << coloringline(lines[i], i) << endl;
         nb++;
         if (nb > row_size) // we have displayed all lines
             break;
@@ -1226,10 +1237,10 @@ long jag_editor::handlemultiline() {
 	else {
 		if (pos > 0 && stat == solo_line) {
 			clearline();
-			printline(pos, lines[pos - 1]);
+			printline(pos, lines[pos - 1], pos - 1);
 			insertaline = true;
 			displaylist(poslines[0]);
-			printline(pos + 1, lines[pos]);
+			printline(pos + 1, lines[pos], pos);
 			insertaline = false;
 		}
 		else
@@ -1813,7 +1824,7 @@ void jag_editor::indentplus() {
     line = blanks + line;
     undo(lines[pos],pos, u_modif);
     lines[pos] = line;
-    printline(pos, line);
+    printline(pos, line, -1);
     movetoline(currentline);
     movetoposition();
 }
@@ -1848,7 +1859,7 @@ void jag_editor::deindentminus() {
         line = line.substr(nb, line.size());
         undo(lines[pos],pos, u_modif);
         lines[pos] = line;
-        printline(pos, line);
+        printline(pos, line, -1);
         movetoline(currentline);
         movetoposition();
     }
@@ -1993,6 +2004,258 @@ bool jag_editor::checkcommand(char cmd) {
     return false;
 }
 
+void jag_editor::ls(string cmd, string path, vector<wstring>& paths) {
+    FILE *fp;
+
+    char chemin[PATH_MAX];
+    
+    cmd += path;
+    
+#ifdef WIN32
+    fp = _popen(STR(cmd), "r");
+#else
+    fp = popen(STR(cmd), "r");
+#endif
+    if (fp == NULL)
+        return;
+    
+    wstring l;
+    while (fgets(chemin, PATH_MAX, fp) != NULL) {
+        cmd = chemin;
+        cmd = s_trim(cmd);
+        l = wconvert(cmd);
+        paths.push_back(l);
+    }
+    
+#ifdef WIN32
+    _pclose(fp);
+#else
+    pclose(fp);
+#endif
+}
+
+#ifdef WIN32
+    bool jag_editor::checkpath(bool checkcmd) {
+        //The first part should be a command such as open or load...
+        long pos = line.rfind(' ');
+        wstring root;
+        wstring name;
+        wstring path;
+        if (checkcmd) {
+            if (pos == -1)
+                return false;
+            root = line.substr(0, pos);
+            path = line.substr(pos, line.size());
+        }
+        else
+            path = line;
+
+        path = s_trim(path);
+        //Two cases, we have a "\\" in it...
+        pos = path.rfind(L"\\");
+        //We need to extract it
+        if (pos != -1) {
+            name = path.substr(pos+1, path.size()-pos);
+            path = path.substr(0, pos+1);
+        }
+        else {
+            name = path;
+            path = L".";
+        }
+        vector<wstring> paths;
+        vector<wstring> targets;
+        //First the directories
+        string cmd = "dir /B ";
+        ls(cmd, convert(path), paths);
+        //Now we look for continuation
+        long i;
+        for (i = 0; i < paths.size(); i++) {
+            if (paths[i].substr(0, name.size()) == name)
+                targets.push_back(paths[i]);
+        }
+        if (path == L".")
+            path = L"";
+        
+        if (targets.size() == 0)
+            return false;
+        
+        paths.clear();
+        //Only directories, we want to add a _sep at the end...
+        cmd = "dir /AD /B ";
+        ls(cmd, convert(path), paths);
+        for (i = 0; i < paths.size(); i++) {
+            for (long j = 0; j < targets.size(); j++) {
+                if (targets[j] == paths[i])
+                    targets[j] += L"\\";
+            }
+        }
+
+        if (targets.size() == 1) {
+            if (checkcmd) {
+                line = root;
+                line += L" ";
+                line += path;
+            }
+            else
+                line = path;
+            line += targets[0];
+            clearline();
+            displaygo(true);
+            posinstring = line.size();
+            movetoposition();
+            return true;
+        }
+        
+        wstring common;
+        long ln  = name.size();
+        bool end = false;
+        while (!end) {
+            //We add one letter from the targets and see if it is common to all targets
+            for (i = 0; i < targets.size(); i++) {
+                if (ln >= targets[i].size()) {
+                    end = true;
+                    break;
+                }
+            }
+            if (!end) {
+                ++ln;
+                common = targets[0].substr(0, ln);
+                for (i = 1; i < targets.size(); i++) {
+                    if (targets[i].substr(0, ln) != common) {
+                        end = true;
+                        break;
+                    }
+                }
+                if (!end)
+                    name = common;
+            }
+        }
+        
+        
+        cerr << endl << endl << m_red;
+        for (i = 0; i < targets.size(); i++)
+            cerr << convert(targets[i]) << " ";
+        cerr << m_current << endl << endl;
+        
+        if (checkcmd) {
+            line = root;
+            line += L" ";
+            line += path;
+        }
+        else
+            line = path;
+        line += name;
+        clearline();
+        displaygo(true);
+        posinstring = line.size();
+        movetoposition();
+        return true;
+    }
+#else
+    bool jag_editor::checkpath(bool checkcmd) {
+        //The first part should be a command such as open or load...
+        long pos = line.rfind(' ');
+        wstring root;
+        wstring name;
+        wstring path;
+        if (checkcmd) {
+            if (pos == -1)
+                return false;
+            root = line.substr(0, pos);
+            path = line.substr(pos, line.size());
+        }
+        else
+            path = line;
+        
+        path = s_trim(path);
+        //Two cases, we have a "/" in it...
+        pos = path.rfind(L"/");
+        if (pos != -1) {
+            name = path.substr(pos+1, path.size()-pos);
+            path = path.substr(0, pos+1);
+        }
+        else {
+            name = path;
+            path = L".";
+        }
+        vector<wstring> paths;
+        vector<wstring> targets;
+        string cmd = "ls -1 -p ";
+        ls(cmd, convert(path), paths);
+        //Now we look for continuation
+        long i;
+        for (i = 0; i < paths.size(); i++) {
+            if (paths[i].substr(0, name.size()) == name)
+                targets.push_back(paths[i]);
+        }
+        if (path == L".")
+            path = L"";
+        
+        if (targets.size() == 0)
+            return true;
+        
+        if (targets.size() == 1) {
+            if (checkcmd) {
+                line = root;
+                line += L" ";
+                line += path;
+            }
+            else
+                line = path;
+            line += targets[0];
+            clearline();
+            displaygo(true);
+            posinstring = line.size();
+            movetoposition();
+            return true;
+        }
+        
+        wstring common;
+        long ln  = name.size();
+        bool end = false;
+        while (!end) {
+            //We add one letter from the targets and see if it is common to all targets
+            for (i = 0; i < targets.size(); i++) {
+                if (ln >= targets[i].size()) {
+                    end = true;
+                    break;
+                }
+            }
+            if (!end) {
+                ++ln;
+                common = targets[0].substr(0, ln);
+                for (i = 1; i < targets.size(); i++) {
+                    if (targets[i].substr(0, ln) != common) {
+                        end = true;
+                        break;
+                    }
+                }
+                if (!end)
+                    name = common;
+            }
+        }
+        
+        
+        cerr << endl << endl << m_redital;
+        for (i = 0; i < targets.size(); i++)
+            cerr << convert(targets[i]) << " ";
+        cerr << m_current << endl << endl;        
+        if (checkcmd) {
+            line = root;
+            line += L" ";
+            line += path;
+        }
+        else
+            line = path;
+        line += name;
+        clearline();
+        displaygo(true);
+        posinstring = line.size();
+        movetoposition();
+        return true;
+    }
+#endif
+    
 //This section handles combined commands introduced with Ctrl-x
 void jag_editor::handlecommands() {
     currentposinstring = posinstring;
@@ -2038,6 +2301,11 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
         case 4: //ctrl-d exiting
             if (emode())
                 deleteline(0);
+            return true;
+        case 9:
+            if (emode())
+                return false;
+            checkpath(false);
             return true;
         case 5://ctrl-e, moving to the end of the line...
             posinstring = line.size();
@@ -2375,7 +2643,7 @@ void jag_editor::cleanheaders(wstring& w) {
 }
 
 void jag_editor::addabuffer(wstring& b, bool instring) {
-    if (isMouseAction(b))
+    if (isMouseAction(b) || b == L"")
         return;
     
     //We only keep displayable characters
@@ -2469,7 +2737,7 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
                 line = b;
                 posinstring = 0;
             }
-            printline(pos, line);
+            printline(pos, line, -1);
         }
         else {
             string ln = convert(line);
@@ -2533,7 +2801,7 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
     }
     else {
         if (option == x_none) {
-            printline(pos+1, line);
+            printline(pos+1, line, -1);
             movetoposition();
         }
         else
@@ -2577,7 +2845,7 @@ void jag_editor::deleteselection() {
         deleteachar(line, false, selected_x);
         lines[selected_pos] = line;
         clearline();
-        printline(pos+1, line);
+        printline(pos+1, line, -1);
         posinstring = selected_x;
         movetoposition();
 		resetselection();
@@ -2670,7 +2938,7 @@ void jag_editor::displayextract(wstring& sub, long pos, long from_pos, long to_p
         printline(pos + 1, inter);
     }
     else
-        printline(pos + 1, sub);
+        printline(pos + 1, sub, -1);
 }
 
 void jag_editor::selectlines(long from_line, long to_line, long from_pos, long to_pos) {
@@ -2905,15 +3173,16 @@ void jag_editor::handlemousectrl(string& mousectrl) {
 }
 
 //This function is defined as a stud in lispeditor or jagtools
-string coloring_line(string& line, vector<string>& colors, bool lisp, bool python);
-string jag_editor::coloringline(string line, bool thread) {
-    return coloring_line(line, colors, lispfile, pythonfile);
+string coloring_line(editor_lines& lines, long currentline, string& line, vector<string>& colors, file_types filetype);
+string jag_editor::coloringline(string line, long i,  bool thread) {
+    return coloring_line(lines, i, line, colors, filetype);
 }
 
-string jag_editor::coloringline(wstring& w) {
+string jag_editor::coloringline(wstring& w, long i) {
     string l = convert(w);
-    return coloring_line(l, colors, lispfile, pythonfile);
+    return coloring_line(lines, i, l, colors, filetype);
 }
+
     
 //This is the main method that launches the terminal
 void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& args) {

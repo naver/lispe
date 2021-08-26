@@ -120,13 +120,13 @@ static Element* toLispE(LispE* lisp, PyObject* po) {
         Py_ssize_t pos = 0;
         Element* k = null_;
         PyObject* key;
-        wstring kval;
+        u_ustring kval;
         try {
             while (PyDict_Next(po, &pos, &key, &pelement)) {
                 if (key != NULL && pelement != NULL) {
                     k = toLispE(lisp, key);
                     e = toLispE(lisp, pelement);
-                    kval = k->asString(lisp);
+                    kval = k->asUString(lisp);
                     kmap->recording(kval, e);
                     k->release();
                 }
@@ -200,7 +200,7 @@ static PyObject* toPython(LispE* lisp, Element* resultat) {
     if (resultat->type == t_dictionary) {
         PyObject* dico = PyDict_New();
         Dictionary* d = (Dictionary*)resultat;
-        wstring wkey;
+        u_ustring wkey;
         string key;
         for (auto& a: d->dictionary) {
             pcourant = toPython(lisp, a.second);
@@ -731,30 +731,30 @@ public:
             case python_new:
                 return new Pythoninterpreter(python_type);
             case python_run: {
-                string code = lisp->get(L"code")->toString(lisp);
+                string code = lisp->get(U"code")->toString(lisp);
                 return py->methodRun(lisp, code);
             }
             case python_runfile: {
-                string path = lisp->get(L"path")->toString(lisp);
+                string path = lisp->get(U"path")->toString(lisp);
                 return py->methodRunFile(lisp, path);
             }
             case python_setpath:{
-                string path = lisp->get(L"path")->toString(lisp);
+                string path = lisp->get(U"path")->toString(lisp);
                 return py->methodSetpath(lisp, path);
             }
             case python_import:{
-                string path = lisp->get(L"path")->toString(lisp);
+                string path = lisp->get(U"path")->toString(lisp);
                 return py->methodImport(lisp, path);
             }
             case python_execute:{
-                Element* args = lisp->get(L"arguments");
+                Element* args = lisp->get(U"arguments");
                 if (!args->isList())
                     throw new Error("Error: arguments should be a list");
-                string funcname = lisp->get(L"name")->toString(lisp);
+                string funcname = lisp->get(U"name")->toString(lisp);
                 return py->methodExecute(lisp, funcname, args);
             }
             case python_simplestring: {
-                string code = lisp->get(L"code")->toString(lisp);
+                string code = lisp->get(U"code")->toString(lisp);
                 return py->methodSimpleString(lisp, code);
             }
             case python_close:{

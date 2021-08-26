@@ -21,6 +21,18 @@
 #include <dlfcn.h>
 #endif
 
+#ifndef WIN32
+#include <unistd.h>   //_getch
+#include <termios.h>  //_getch
+#include <sys/ioctl.h>
+#endif
+
+#include <signal.h>
+#include <iomanip>
+
+#include "jag.h"
+#include "rgx.h"
+
 /*
  Some utility functions to manipulate strings
  Essentially:
@@ -36,6 +48,7 @@
 
 #define strcpy_s(a,c,b) strncpy(a,b,c)
 #define strcat_s(a,c,b) strncat(a,b,c)
+bool evaluate_quotes(wstring& l);
 
 extern Chaine_UTF8 special_characters;
 
@@ -392,32 +405,6 @@ static UWCHAR temojiscomplement[] = {
     0xFE0F, 0};
 
 
-bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
-    if (c < min_emoji)
-        return false;
-    
-    try {
-        emojis.at(c);
-        return true;
-    }
-    catch(const std::out_of_range& oor) {
-        return false;
-    }
-}
-
-bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
-    if (c < min_emojicomp)
-        return false;
-    
-    try {
-        emojiscomplement.at(c);
-        return true;
-    }
-    catch(const std::out_of_range& oor) {
-        return false;
-    }
-}
-
 //We position on 'position' in the string
 long Chaine_UTF8::getonchar(wstring& w, long position) {
     long i = 0;
@@ -449,72 +436,15 @@ UWCHAR getonechar(unsigned char* s, long& i) {
     }
     return result;
 }
-
-inline UWCHAR getuwchar(wstring& s, long& i) {
-    UWCHAR c;
-    if (c_utf16_to_unicode(c, s[i], false))
-        c_utf16_to_unicode(c, s[++i], true);
-    i++;
-    return c;
-}
-
-void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
-    UWCHAR c = getuwchar(s, i);
-    res = c;
-    try {
-        emojis.at(c);
-        long j = i;
-        c = getuwchar(s, j);
-        while (j < sz && c_is_emojicomp(c)) {
-            res += c;
-            i = j;
-            c = getuwchar(s, j);
-        }
-    }
-    catch(const std::out_of_range& oor) {
-    }
-}
-
-UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
-    UWCHAR res = getuwchar(s, i);
-    try {
-        emojis.at(res);
-        UWCHAR c;
-        long j = i;
-        c = getuwchar(s, j);
-        while (j < s.size() && c_is_emojicomp(c)) {
-            i = j;
-            c = getuwchar(s, j);
-        }
-    }
-    catch(const std::out_of_range& oor) {
-    }
-    
-    i--;
-    return res;
-}
 #else
-
 UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR code;
     i += c_utf8_to_unicode(s + i, code);
     return code;
 }
+#endif
 
-void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
-    try {
-        emojis.at(s[i]);
-        res = s[i++];
-        while (i < sz && c_is_emojicomp(s[i])) {
-            res += s[i++];
-        }
-    }
-    catch(const std::out_of_range& oor) {
-        res = s[i++];
-    }
-}
-
-UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
+UWCHAR Chaine_UTF8::getachar(u_ustring& s, long& i) {
     UWCHAR res;
     try {
         emojis.at(s[i]);
@@ -522,12 +452,21 @@ UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
         while (i < s.size() && c_is_emojicomp(s[i])) {++i;}
         --i;
     }
-    catch(const std::out_of_range& oor) {
+    catch(...) {
         res = s[i];
     }
     return res;
 }
-#endif
+//------------------------------------------------------------------------
+// EMOJIS
+//------------------------------------------------------------------------
+bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
+    return ((u_uchar)c >= min_emoji && emojis.find(c) != emojis.end());
+}
+
+bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
+    return ((u_uchar)c >= min_emojicomp && emojiscomplement.find(c) != emojiscomplement.end());
+}
 
 bool Chaine_UTF8::c_is_emoji(unsigned char* m, long& i) {
     return c_is_emoji(getonechar(m, i));
@@ -563,13 +502,13 @@ bool Chaine_UTF8::s_is_emoji(string& s) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_emoji(wstring& s) {
-    if (s == L"")
+bool Chaine_UTF8::u_is_emoji(u_ustring& s) {
+    if (s == U"")
         return false;
     long lg = s.size();
     bool check_comp = false;
     
-    UWCHAR c;
+    u_uchar c;
     
     for (long i = 0; i < lg; i++) {
         c = getonewchar(s, i);
@@ -587,35 +526,37 @@ bool Chaine_UTF8::s_is_emoji(wstring& s) {
     return true;
 }
 
+bool Chaine_UTF8::s_is_emoji(wstring& w) {
+    u_pstring s =  _w_to_u(w);
+    return u_is_emoji(s);
+}
+
 string Chaine_UTF8::emoji_description(string& s) {
     if (s.size() == 0)
         return "";
     UWCHAR c;
     c_utf8_to_unicode(USTR(s), c);
     if (emojis.find(c) != emojis.end())
-        return emojis[c];
+        return emojis.at(c);
     return "";
 }
 
-string Chaine_UTF8::emoji_description(wstring& s) {
-    if (s.size() == 0)
-        return "";
-    
-    try {
+string Chaine_UTF8::emoji_description(u_ustring& s) {
+    if (s.size() != 0 && emojis.find(s[0]) != emojis.end())
         return emojis.at(s[0]);
-    }
-    catch(const std::out_of_range& oor) {
-        return "";
-    }
+    return "";
 }
 
+string Chaine_UTF8::emoji_description(wstring& w) {
+    u_pstring s =  _w_to_u(w);
+    return emoji_description(s);
+}
+
+
 string Chaine_UTF8::emoji_description(UWCHAR c) {
-    try {
+    if (emojis.find(c) != emojis.end())
         return emojis.at(c);
-    }
-    catch(const std::out_of_range& oor) {
-        return "";
-    }
+    return "";
 }
 
 void Chaine_UTF8::l_emojis(map<UWCHAR, string>& dico) {
@@ -1201,15 +1142,20 @@ wstring wjsonstring(wstring value) {
 }
 //--------------------------------------------------------------------
 
+bool Chaine_UTF8::c_is_punctuation(u_uchar c) {
+    return punctuations.check(c);
+}
+
 bool Chaine_UTF8::c_is_punctuation(wchar_t c) {
-    
-    try {
-        punctuations.at(c);
-        return true;
+    return punctuations.check(c);
+}
+
+bool Chaine_UTF8::u_is_punctuation(u_ustring& str) {
+    for (long i = 0; i < str.size(); i++) {
+        if (!c_is_punctuation(str[i]))
+            return false;
     }
-    catch(const std::out_of_range& oor) {
-        return false;
-    }
+    return true;
 }
 
 bool Chaine_UTF8::s_is_punctuation(wstring& str) {
@@ -1224,36 +1170,16 @@ bool Chaine_UTF8::s_is_punctuation(wstring& str) {
 char Chaine_UTF8::c_is_alpha(unsigned char* m, long& i) {
     UWCHAR v;
     i += c_utf8_to_unicode(m + i, v);
-    
-    try {
-        utf8codemin.at(v);
-        return 1;
-    }
-    catch(const std::out_of_range& oor) {
-        try {
-            utf8codemaj.at(v);
-            return 2;
-        }
-        catch(const std::out_of_range& oor) {}
-    }
-    return 0;
+    return (utf8codemin.check(v) + (2 * (char)utf8codemaj.check(v)));
+}
+
+char Chaine_UTF8::c_is_alpha(u_uchar v) {
+    return (utf8codemin.check(v) + (2 * (char)utf8codemaj.check(v)));
 }
 
 char Chaine_UTF8::c_is_alpha(wchar_t v) {
-    try {
-        utf8codemin.at(v);
-        return 1;
-    }
-    catch(const std::out_of_range& oor) {
-        try {
-            utf8codemaj.at(v);
-            return 2;
-        }
-        catch(const std::out_of_range& oor) {}
-    }
-    return 0;
+    return (utf8codemin.check(v) + (2 * (char)utf8codemaj.check(v)));
 }
-
 
 char Chaine_UTF8::is_a_valid_letter(unsigned char* m, long& i) {
     if (m[i] == '_' || isadigit(m[i]))
@@ -1273,13 +1199,47 @@ char Chaine_UTF8::is_a_valid_letter(wstring& m, long& i) {
     return c_is_alpha(m[i]);
 }
 
+bool Chaine_UTF8::u_is_alpha(u_ustring& s) {
+    if (s == U"")
+        return false;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++) {
+        if (!c_is_alpha(s[i]))
+            return false;
+    }
+    return true;
+}
+
 bool Chaine_UTF8::s_is_alpha(wstring& s) {
     if (s == L"")
         return false;
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
-        char ty = c_is_alpha(s[i]);
-        if (ty == 0)
+        if (!c_is_alpha(s[i]))
+            return false;
+    }
+    return true;
+}
+
+
+bool Chaine_UTF8::u_is_upper(u_ustring& s) {
+    if (s == U"")
+        return false;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++) {
+        if (c_is_alpha(s[i]) != 2)
+            return false;
+    }
+    return true;
+}
+
+bool Chaine_UTF8::u_is_lower(u_ustring& s) {
+    if (s == U"")
+        return false;
+    
+    long lg = s.size();
+    for (long i = 0; i < lg; i++) {
+        if (c_is_alpha(s[i]) != 1)
             return false;
     }
     return true;
@@ -1290,8 +1250,7 @@ bool Chaine_UTF8::s_is_upper(wstring& s) {
         return false;
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
-        char ty = c_is_alpha(s[i]);
-        if (ty != 2)
+        if (c_is_alpha(s[i]) != 2)
             return false;
     }
     return true;
@@ -1303,29 +1262,34 @@ bool Chaine_UTF8::s_is_lower(wstring& s) {
     
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
-        char ty = c_is_alpha(s[i]);
-        if (ty != 1)
+        if (c_is_alpha(s[i]) != 1)
             return false;
     }
     return true;
 }
 
-wchar_t Chaine_UTF8::c_to_lower(wchar_t c) {
-    try {
+u_uchar Chaine_UTF8::uc_to_lower(u_uchar c) {
+    if (utf8codemaj.check(c))
         return utf8codemaj.at(c);
-    }
-    catch(const std::out_of_range& oor) {
-        return c;
-    }
+    return c;
+}
+
+u_uchar Chaine_UTF8::uc_to_upper(u_uchar c) {
+    if (utf8codemin.check(c))
+        return utf8codemin.at(c);
+    return c;
+}
+
+wchar_t Chaine_UTF8::c_to_lower(wchar_t c) {
+    if (utf8codemaj.check(c))
+        return utf8codemaj.at(c);
+    return c;
 }
 
 wchar_t Chaine_UTF8::c_to_upper(wchar_t c) {
-    try {
+    if (utf8codemin.check(c))
         return utf8codemin.at(c);
-    }
-    catch(const std::out_of_range& oor) {
-        return c;
-    }
+    return c;
 }
 
 wstring Chaine_UTF8::s_to_lower(wstring& s) {
@@ -1344,7 +1308,7 @@ wstring Chaine_UTF8::s_to_upper(wstring& s) {
     return res;
 }
 
-bool c_is_space(wchar_t code) {
+bool c_is_space(u_uchar code) {
     static unsigned char spaces[] = { 9, 10, 13, 32, 160 };
     if ((code <= 160 && strchr((char*)spaces, (char)code)) || code == 0x202F || code == 0x3000)
         return true;
@@ -2287,6 +2251,48 @@ long convertinginteger(string& number) {
     return v*sign;
 }
 
+long convertinginteger(u_ustring& number) {
+    long ipos=0;
+    
+    while (number[ipos]<=32) ++ipos;
+    
+    
+    int sign = 1;
+    if (number[ipos] == '-') {
+        ++ipos;
+        sign = -1;
+    }
+    else
+        if (number[ipos] == '+')
+            ++ipos;
+    
+    long v = 0;
+    
+    uchar c = number[ipos++];
+    if (number.size() == ipos)
+        return (c - 48);
+    
+    if (c == '0' || number[ipos] == 'x') {
+        ipos++;
+        c = number[ipos++];
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = number[ipos++];
+        }
+        return v*sign;
+    }
+    else {
+        if (isadigit(c)) {
+            v = c & 15;
+            c = number[ipos++];
+            while (isadigit(c)) {
+                v = (v << 3) + (v << 1) + (c & 15);
+                c = number[ipos++];
+            }
+        }
+    }
+    return v*sign;
+}
 long convertinginteger(wstring& number) {
     long ipos=0;
     
@@ -3602,7 +3608,7 @@ void replacemetas(wstring& sub) {
 
 
 //Convert a unicode character into a utf16 character
-Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code) {
+Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code) {
     //A unicode character is encoded over 4 bytes: 3 -> 0
     //if we have bits on byte 2, then we need to provide 4 bytes...
     if ((code & 0x1F0000) == 0) {
@@ -3616,7 +3622,7 @@ Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code) {
     //wwww is uuuu-1
     //We need to provide 4 bytes...
     //The first byte should by 1101 1000 which is 0xD800
-    uint32_t r = 0xD800 | ((code & 0xFC00) >> 10) | ((((code & 0x1F0000) >> 16) - 1) << 6);
+    u_uchar r = 0xD800 | ((code & 0xFC00) >> 10) | ((((code & 0x1F0000) >> 16) - 1) << 6);
     
     //The xxxxx are the six bytes on the right of byte 1
     //the yyyyy
@@ -3625,7 +3631,7 @@ Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code) {
     return true;
 }
 
-Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second) {
+Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second) {
     if (second) {
         r |= code & 0x3FF;
         return false;
@@ -3737,9 +3743,8 @@ static const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#
     "zipwith","|","|=","∏","∑","√","∛", "" };
 
 typedef enum {
-    t_emptystring, t_word, t_keyword, t_number, t_string, t_method, t_comment,
-    c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_brace, c_closing_brace, c_colon,
-    e_no_error
+    jt_emptystring, jt_word, jt_keyword, jt_number, jt_string, jt_method, jt_comment, jt_finalcomment,
+    jt_longstring
 } jag_code;
 
 
@@ -3754,7 +3759,7 @@ static bool is_keyword(string s) {
     try {
         return words.at(s);
     }
-    catch(const std::out_of_range& oor) {
+    catch(...) {
         return false;
     }
 }
@@ -3776,13 +3781,14 @@ public:
     }
 };
 
-void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) {
+void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
     long idx;
     
     long sz = code.size();
     long i, current_i;
     //The first line of the code is 1
     long line_number = 1;
+    long last_i = 0;
     UWCHAR c, nxt;
     uchar lc;
     string current_line;
@@ -3810,40 +3816,104 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
             case '.':
                 point = true;
                 break;
+            case '@':
+                point = false;
+                if (filetype == tamgu_type) {
+                    idx = i + 1;
+                    if (code[idx] == '"') {
+                        idx++;
+                        while (idx < sz && code[idx]  != '\n') {
+                            if (code[idx] == '"' && code[idx + 1] == '@')
+                                break;
+                            idx++;
+                        }
+                        if (idx < sz && code[idx] != '\n') {
+                            infos.append(jt_string, i, idx + 1);
+                            i = idx;
+                        }
+                        else {
+                            infos.append(jt_string, i, idx);
+                            if (code[idx] == '\n') {
+                                i = idx;
+                                line_number++;
+                                last_i = i + 2;
+                            }
+                            i = idx;
+                        }
+                    }
+                    else {
+                        if (filetype == java_type && code[idx] == '/') {
+                            idx++;
+                            infos.append(jt_finalcomment, last_i, idx);
+                            i = idx;
+                        }
+                    }
+                }
+                break;
             case '/':
                 point = false;
-                idx = i + 1;
-                if (code[idx] == '/' || code[idx] == '*') {
-                    idx++;
-                    while (idx < sz && code[idx] != '\n') idx++;
-                    infos.append(t_comment, i, idx);
-                    i = idx;
-                    line_number++;
+                if (filetype == java_type) {
+                    idx = i + 1;
+                    if (code[idx] == '/' || code[idx] == '*') {
+                        idx++;
+                        while (idx < sz && code[idx] != '\n') idx++;
+                        infos.append(jt_comment, i, idx);
+                        i = idx;
+                        line_number++;
+                        last_i = i + 2;
+                    }
+                }
+                else {
+                    if (filetype == tamgu_type) {
+                        idx = i + 1;
+                        if (code[idx] == '/' || code[idx] == '@') {
+                            idx++;
+                            while (idx < sz && code[idx] != '\n') idx++;
+                            infos.append(jt_comment, i, idx);
+                            i = idx;
+                            line_number++;
+                            last_i = i + 2;
+                        }
+                    }
+                }
+                break;
+            case '*':
+                point = false;
+                if (filetype == java_type) {
+                    idx = i + 1;
+                    if (code[idx] == '/') {
+                        idx++;
+                        infos.append(jt_finalcomment, last_i, idx);
+                        i = idx;
+                    }
                 }
                 break;
             case ';':
                 point = false;
-                if (lisp) {
+                if (filetype == lisp_type) {
                     idx = i;
                     while (idx < sz && code[idx] != '\n') idx++;
-                    infos.append(t_comment, i, idx);
+                    infos.append(jt_comment, i, idx);
                     i = idx;
                     line_number++;
+                    last_i = i + 2;
                 }
                 break;
             case '#': //comments (we accept both with ; and #)
                 point = false;
-                if (python || lisp) {
+                if (filetype == lisp_type || filetype == python_type) {
                     idx = i;
                     while (idx < sz && code[idx] != '\n') idx++;
-                    infos.append(t_comment, i, idx);
+                    infos.append(jt_comment, i, idx);
                     i = idx;
                     line_number++;
+                    last_i = i + 2;
                 }
                 break;
             case '\n':
                 point = false;
                 line_number++;
+                last_i = i + 2;
                 break;
             case '\t':
             case '\r':
@@ -3883,32 +3953,43 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
                 }
                 
                 if (tampon == "")
-                    infos.append(t_emptystring, i, idx);
+                    infos.append(jt_emptystring, i, idx);
                 else
-                    infos.append(t_string, i, idx);
+                    infos.append(jt_string, i, idx);
                 i = idx;
                 break;            }
             case '`': { // a string containing what we want...
                 point = false;
-                idx = i + 1;
-                tampon = "";
-                while (idx < sz && code[idx] != '`') {
-                    idx++;
+                if (filetype == lisp_type) {
+                    idx = i + 1;
+                    tampon = "";
+                    while (idx < sz && code[idx] != '`') {
+                        idx++;
+                    }
+                    if (idx == sz) {
+                        continue;
+                    }
+                    tampon = code.substr(i+1, idx-i-1);
+                    if (tampon == "")
+                        infos.append(jt_emptystring, i, idx);
+                    else
+                        infos.append(jt_string, i, idx);
+                    i = idx;
                 }
-                if (idx == sz) {
-                    continue;
-                }
-                tampon = code.substr(i+1, idx-i-1);
-                if (tampon == "")
-                    infos.append(t_emptystring, i, idx);
-                else
-                    infos.append(t_string, i, idx);
-                i = idx;
                 break;
             }
             case '"': {
                 point = false;
                 idx = i + 1;
+                if (filetype == tamgu_type) {
+                    if (code[idx] == '@') {
+                        idx++;
+                        infos.append(jt_longstring, last_i, idx);
+                        i = idx;
+                        break;
+                    }
+                }
+
                 tampon = "";
                 while (idx < sz && code[idx] != '"') {
                     c = (uchar)code[idx];
@@ -3934,9 +4015,9 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
                     idx++;
                 }
                 if (tampon == "")
-                    infos.append(t_emptystring, i, idx);
+                    infos.append(jt_emptystring, i, idx);
                 else
-                    infos.append(t_string, i, idx);
+                    infos.append(jt_string, i, idx);
                 i = idx;
                 break;
             }
@@ -3963,7 +4044,7 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
                 point = false;
                 idx = 0;
                 convertingfloathexa(code.c_str() + i, idx);
-                infos.append(t_number, i, i + idx);
+                infos.append(jt_number, i, i + idx);
                 i += idx - 1;
                 break;
             }
@@ -3992,10 +4073,10 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
                 lc = tampon[0];
 
                 if (point)
-                    infos.append(t_method, current_i, i);
+                    infos.append(jt_method, current_i, i);
                 else {
                     if (is_keyword(tampon))
-                        infos.append(t_keyword, current_i, i);
+                        infos.append(jt_keyword, current_i, i);
                 }
                 
                 if (i != current_i)
@@ -4007,72 +4088,197 @@ void tokenize_line(string& code, Segmentingtype& infos, bool lisp, bool python) 
     }
 }
 
-static const char m_current[] = {27, '[', '0', 'm', 0};
-bool movedup();
+//static const char m_current[] = {27, '[', '0', 'm', 0};
 
-string coloring_line(string& line, vector<string>& colors, bool lisp, bool python) {
+bool check_string(editor_lines& lines, string& line, long currentline, wstring op, wstring cl, string color) {
+    long pos = currentline;
+    //We check if we are in a long comment
+    while (pos >= 0 && lines[pos].find(op) ==-1) {
+        wstring l = lines[pos];
+        if (lines[pos].find(cl) != -1) {
+            pos = -1;
+            break;
+        }
+        pos--;
+    }
+    
+    //We are in a long comment
+    if (pos != -1) {
+        while (pos < lines.size() && lines[pos].find(cl) == -1)
+            pos++;
+        if (pos >= currentline) {
+            line = color + line + m_current;
+            return true;
+        }
+    }
+    return false;
+}
+
+string coloring_line(editor_lines& lines, long currentline,
+                     string& line, vector<string>& colors,
+                     file_types filetype) {
     static Segmentingtype segments;
-    static char longcomment = 0;
-    static bool lastmove = false;
     string sub = line;
-    s_trimleft(sub);
+    s_trim(sub);
     
     if (sub == "")
         return line;
     
-    if (movedup()) {
-        if (!lastmove)
-            longcomment = false;
-        lastmove = true;
-        if (longcomment) {
-            if ( (sub[0] == '"' && sub[1] == '"' && sub[2] == '"') ||
-                (sub[0] == '/' && sub[1] == '*')) {
-                longcomment = false;
+    string root = "";
+    
+    long pos = currentline;
+    if (filetype == java_type || filetype == tamgu_type) {
+        if (filetype == java_type) {
+            if (sub == "*/") {
+                line = colors[4] + line + m_current;
+                return line;
             }
-            line = colors[4] + line + m_current;
-            return line;
+            if (check_string(lines, line, currentline, L"/*", L"*/", colors[4]))
+                return line;
         }
-        
-        if ( (sub[0] == '"' && sub[1] == '"' && sub[2] == '"') ||
-            (sub[0] == '/' && sub[1] == '*')) {
-            line = colors[4] + line + m_current;
-            longcomment = true;
-            return line;
+        else {
+            if (filetype == tamgu_type) {
+                if (sub == "@/") {
+                    line = colors[4] + line + m_current;
+                    return line;
+                }
+                if (sub == "\"@") {
+                    line = colors[0] + line + m_current;
+                    return line;
+                }
+                
+                if (line.find("\"@") == -1 && line.find("@\"") == -1) {
+                    if (check_string(lines, line, currentline, L"@\"", L"\"@", colors[0]))
+                        return line;
+                }
+                if (check_string(lines, line, currentline, L"/@", L"@/", colors[4]))
+                    return line;
+            }
         }
     }
     else {
-        if (lastmove)
-            longcomment = false;
-        lastmove = false;
-        if (longcomment) {
-            if (sub[0] == '*' && sub[1] == '/')
-                longcomment = false;
+        if (filetype == python_type) {
+            if (sub.find("\"\"\"") != -1 || sub.find("'''") != -1) {
+                line = colors[0] + line + m_current;
+                return line;
+            }
+
+            long ipos;
+            pos = 0;
+            long nb_simple = 0;
+            long nb_double = 0;
+            //We check if we are in a long comment
+            while (pos <= currentline) {
+                ipos = lines[pos].find(L"\"\"\"");
+                if (ipos == -1) {
+                    ipos = lines[pos].find(L"'''");
+                    while (ipos != -1) {
+                        nb_simple++;
+                        ipos = lines[pos].find(L"'''", ipos + 3);
+                    }
+                }
+                else {
+                    while (ipos != -1) {
+                        nb_double++;
+                        ipos = lines[pos].find(L"\"\"\"", ipos + 3);
+                    }
+                }
+                pos++;
+            }
+            
+            //We are in a long comment
+            if ((nb_simple % 2) == 1) {
+                while (pos < lines.size() && lines[pos].find(L"'''") == -1)
+                    pos++;
+                if (pos >= currentline) {
+                    line = colors[0] + line + m_current;
+                    return line;
+                }
+            }
+            //We are in a long comment
+            if ((nb_double % 2) == 1) {
+                while (pos < lines.size() && lines[pos].find(L"\"\"\"") == -1)
+                    pos++;
+                if (pos >= currentline) {
+                    line = colors[0] + line + m_current;
+                    return line;
+                }
+            }
+        }
+        if (sub[0] == '#' || sub[0] == ';') {
             line = colors[4] + line + m_current;
             return line;
         }
+    }
+    
+    pos = currentline;
+    if (pos > 0 && lines.Status(pos) == concat_line) {
+        bool q = false;
+        if (lines[pos].find(L'"') != -1) {
+            q = true;
+            long nb = std::count(lines[pos-1].begin(), lines[pos-1].end(), '"');
+            if ((nb % 2) == 1) {
+                nb = line.find("\"");
+                if (nb != -1) {
+                    nb++;
+                    root = colors[0] + line.substr(0, nb);
+                    root += m_current;
+                    line = line.substr(nb,line.size());
+                }
+            }
+        }
+        else {
+            if (lines[pos].find(L'\'') != -1) {
+                q = true;
+                if (evaluate_quotes(lines[pos-1])) {
+                    long nb = line.find("\"");
+                    if (nb != -1) {
+                        nb++;
+                        root = colors[0] + line.substr(0, nb);
+                        root += m_current;
+                        line = line.substr(nb,line.size());
+                    }
+                }
+            }
+        }
+        pos--;
+        while (pos > 0 && lines.Status(pos) == concat_line) pos--;
         
-        if (sub[0] == '/' && sub[1] == '*') {
-            line = colors[4] + line + m_current;
-            longcomment = true;
-            return line;
+        if (pos && lines[pos].size()) {
+            long i = 0;
+            while (lines[pos][i] && lines[pos][i] <= 32) i++;
+            wchar_t c = lines[pos][i];
+            if (c == '/' || c == '#' || c == ';') {
+                switch (filetype) {
+                    case java_type:
+                    case tamgu_type:
+                        if (c == '/' && lines[pos][1] == '/') {
+                            line = colors[4] + line + m_current;
+                            return line;
+                        }
+                        break;
+                    case python_type:
+                        if (c == '#') {
+                            line = colors[4] + line + m_current;
+                            return line;
+                        }
+                        break;
+                    case lisp_type:
+                        if (c == '#' || c == ';') {
+                            line = colors[4] + line + m_current;
+                            return line;
+                        }
+                        break;
+                }
+            }
         }
     }
-        
-    if (sub[0] == '#' || sub[0] == ';') {
-        line = colors[4] + line + m_current;
-        return line;
-    }
-    
-    if (sub[0] == '/' && sub[1] == '/') {
-        line = colors[4] + line + m_current;
-        return line;
-    }
-    
+
     string substring;
     
-    bool add = false;
+    char add = false;
     
-    tokenize_line(line, segments, lisp, python);
+    tokenize_line(line, segments, filetype);
     
     long left, right = -1;
     for (long isegment = segments.types.size() - 1, ipos = segments.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
@@ -4081,36 +4287,59 @@ string coloring_line(string& line, vector<string>& colors, bool lisp, bool pytho
         sub = line.substr(0, left);
         add = false;
         switch (segments.types[isegment]) {
-            case t_emptystring:
-            case t_string:
+            case jt_emptystring:
+            case jt_string:
                 right += 1;
                 sub += colors[0];
                 add = true;
                 break;
-            case t_number: //methods
+            case jt_number: //methods
                 sub += colors[1];
                 add = true;
                 break;
-            case t_keyword: //methods
+            case jt_keyword: //methods
                 sub += colors[2];
                 add = true;
                 break;
-            case t_method: //methods
+            case jt_method: //methods
                 sub += colors[3];
                 add = true;
                 break;
-            case t_comment:
+            case jt_comment:
                 sub += colors[4];
                 if (right > left)
                     sub += line.substr(left, right-left);
                 sub += m_current;
                 line = sub;
                 break;
+            case jt_finalcomment:
+                sub += colors[4];
+                if (right > left)
+                    sub += line.substr(left, right-left);
+                sub += m_current;
+                if (right < line.size())
+                    sub += line.substr(right, line.size() - right);
+                line = sub;
+                add = 2;
+                break;
+            case jt_longstring:
+                sub += colors[0];
+                if (right > left)
+                    sub += line.substr(left, right-left);
+                sub += m_current;
+                if (right < line.size())
+                    sub += line.substr(right, line.size() - right);
+                line = sub;
+                add = 2;
+                break;
             default:
                 add = false;
         }
         
         if (add) {
+            if (add == 2)
+                break;
+            
             if (right > left)
                 sub += line.substr(left, right-left);
             sub += m_current;
@@ -4121,5 +4350,71 @@ string coloring_line(string& line, vector<string>& colors, bool lisp, bool pytho
         
     }
         
+    if (root != "")
+        line = root + line;
     return line;
 }
+
+#ifdef WIN32
+Exporting wstring u_to_w(u_ustring u) {
+	wstring w;
+
+	u_uchar c;
+	u_uchar c16;
+
+	for (long i = 0; i < u.size(); i++) {
+		c = u[i];
+		if (!(c & 0xFFFF0000)) {
+			w += (wchar_t)c;
+			continue;
+		}
+
+		c_unicode_to_utf16(c16, c);
+		w += (wchar_t)(c16 >> 16);
+		w += (wchar_t)(c16 & 0xFFFF);
+	}
+	return w;
+}
+
+Exporting u_ustring w_to_u(wstring w) {
+	u_ustring u;
+	u_uchar c;
+	for (long i = 0; i < w.size(); i++) {
+		if (c_utf16_to_unicode(c, w[i], false))
+			c_utf16_to_unicode(c, w[++i], true);
+		u += c;
+	}
+	return u;
+}
+
+Exporting wstring _u_to_w(u_ustring& u) {
+	wstring w;
+
+	u_uchar c;
+	u_uchar c16;
+
+	for (long i = 0; i < u.size(); i++) {
+		c = u[i];
+		if (!(c & 0xFFFF0000)) {
+			w += (wchar_t)c;
+			continue;
+		}
+
+		c_unicode_to_utf16(c16, c);
+		w += (wchar_t)(c16 >> 16);
+		w += (wchar_t)(c16 & 0xFFFF);
+	}
+	return w;
+}
+
+Exporting u_ustring _w_to_u(wstring& w) {
+	u_ustring u;
+	u_uchar c;
+	for (long i = 0; i < w.size(); i++) {
+		if (c_utf16_to_unicode(c, w[i], false))
+			c_utf16_to_unicode(c, w[++i], true);
+		u += c;
+	}
+	return u;
+}
+#endif

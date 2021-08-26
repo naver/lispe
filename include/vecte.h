@@ -318,6 +318,19 @@ public:
         }
         return false;
     }
+    
+    inline bool checkanderase(Z v) {
+        for (long i = 0; i < last; i++) {
+            if (vecteur[i] == v) {
+                last--;
+                for (long k = i; k < last; k++)
+                    vecteur[k] = vecteur[k + 1];
+                vecteur[last] = NULL;
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 #endif

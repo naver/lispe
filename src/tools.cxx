@@ -137,6 +137,13 @@ string convertToString(double d) {
     return buff;
 }
 
+u_ustring convertToUString(long d) {
+    return w_to_u(convertToWString(d));
+}
+
+u_ustring convertToUString(double d) {
+    return w_to_u(convertToWString(d));
+}
 
 //------------------------------------------------------------------------
 static wchar_t ponctuations[] = {
@@ -150,10 +157,7 @@ static wchar_t ponctuations[] = {
     0x2192, 0x2193, 0x2264, 1470, 1472, 1475, 1478, 1523, 1524, 0x2265,
     0x263A, 0x3008, 0x3009, 1548, 1549, 1550, 1551, 1567, 1645, 1757, 1758, 1769, 0xFD3E,
     0xFD3F, 0x3001, 0xFF0C, 0x2025, 0x2026, 0x3002, 0x303D, 0x300C,0x300D, 0x300E,0x300F,
-    0x301D, 0x301F, 0x301C, 0xff1a, 0xff01, 0xff1f, 0x266a, 0, 0x43, 0x4C, 0x41, 0x55, 0x44,
-    0x49, 0x55, 0x53, 0x52, 0x55, 0x46, 0x55, 0x53, 0x4C, 0x49, 0x53, 0x50, 0x45, 0x4D, 0x46,
-    0x45, 0x43, 0x49, 0x54, 0x41, 0x4E,0x4E, 0x4F, 0x4D, 0x4D, 0x58, 0x58
-};
+    0x301D, 0x301F, 0x301C, 0xff1a, 0xff01, 0xff1f, 0x266a, 0};
 
 static wchar_t codingtable[] = { 65,97,2,66,98,2,67,99,2,68,100,2,69,101,2,70,102,2,71,103,2,72,104,2,73,105,2,74,106,2,75,107,2,76,
     108,2,77,109,2,78,110,2,79,111,2,80,112,2,81,113,2,82,114,2,83,115,2,84,116,2,85,117,2,86,118,2,87,119,
@@ -550,37 +554,10 @@ static UWCHAR temojiscomplement[] = {
     0xFE0F, 0};
 
 
-bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
-    if ((uint32_t)c < min_emoji)
-        return false;
-
-    try {
-        emojis.at(c);
-        return true;
-    }
-    catch(const std::out_of_range& oor) {
-        return false;
-    }
-}
-
-bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
-    if ((uint32_t)c < min_emojicomp)
-        return false;
-    
-    try {
-        emojiscomplement.at(c);
-        return true;
-    }
-    catch(const std::out_of_range& oor) {
-        return false;
-    }
-}
-
-//We position on 'position' in the string
-long Chaine_UTF8::getonchar(wstring& w, long position) {
+long Chaine_UTF8::getonchar(u_ustring& w, long position) {
     long i = 0;
     long nb = 0;
-    UWCHAR c;
+    u_uchar c;
     while (nb < position) {
         c = getonewchar(w, i);
         if (c_is_emoji(c)) {
@@ -607,131 +584,16 @@ UWCHAR getonechar(unsigned char* s, long& i) {
     }
     return result;
 }
-
-inline UWCHAR getuwchar(wstring& s, long& i) {
-    UWCHAR c;
-    if (c_utf16_to_unicode(c, s[i], false))
-        c_utf16_to_unicode(c, s[++i], true);
-    i++;
-    return c;
-}
-
-void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
-    UWCHAR c = getuwchar(s, i);
-    res = c;
-    try {
-        emojis.at(c);
-        long j = i;
-        c = getuwchar(s, j);
-        while (j < sz && c_is_emojicomp(c)) {
-            res += c;
-            i = j;
-            c = getuwchar(s, j);
-        }
-    }
-    catch(const std::out_of_range& oor) {
-    }
-}
-
-inline UWCHAR getadduwchar(wstring& s, wstring& res, long& i) {
-    UWCHAR c;
-    res += s[i];
-    if (c_utf16_to_unicode(c, s[i], false)) {
-        c_utf16_to_unicode(c, s[++i], true);
-        res += s[i];
-    }
-    i++;
-    return c;
-}
-
-void Chaine_UTF8::getandaddchar(wstring& s, wstring& res, long& i, long sz) {
-    UWCHAR c = getadduwchar(s, res, i);
-    try {
-        emojis.at(c);
-        long j = i;
-        wstring sub;
-        c = getadduwchar(s, sub, j);
-        if (!c_is_emojicomp(c))
-            return;
-        
-        while (j < sz && c_is_emojicomp(c)) {
-            i = j;
-            c = getadduwchar(s, sub, j);
-        }
-        res += sub;
-    }
-    catch(const std::out_of_range& oor) {
-    }
-}
-
-//👨‍👩‍👧‍👧🏂🙇‍🚴‍
-wstring Chaine_UTF8::s_insert_sep(wstring& s, wstring sep) {
-    wstring res;
-    long lg = s.size();
-    long i = 0;
-    while (i < lg) {
-        if (i)
-            res += sep;
-        getandaddchar(s, res, i, lg);
-    }
-    return res;
-}
-
-UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
-    UWCHAR res = getuwchar(s, i);
-    try {
-        emojis.at(res);
-        UWCHAR c;
-        long j = i;
-        c = getuwchar(s, j);
-        while (j < s.size() && c_is_emojicomp(c)) {
-            i = j;
-            c = getuwchar(s, j);
-        }
-    }
-    catch(const std::out_of_range& oor) {
-    }
-    
-    i--;
-    return res;
-}
 #else
-
 UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR code;
     i += c_utf8_to_unicode(s + i, code);
     return code;
 }
+#endif
 
-void Chaine_UTF8::getchar(wstring& s, wstring& res,  long& i, long sz) {
-    try {
-        emojis.at(s[i]);
-        res = s[i++];
-        while (i < sz && c_is_emojicomp(s[i])) {
-            res += s[i++];
-        }
-    }
-    catch(const std::out_of_range& oor) {
-        res = s[i++];
-    }
-}
-
-void Chaine_UTF8::getandaddchar(wstring& s, wstring& res, long& i, long sz) {
-    try {
-        emojis.at(s[i]);
-        res += s[i++];
-        while (i < sz && c_is_emojicomp(s[i])) {
-            res += s[i++];
-        }
-    }
-    catch(const std::out_of_range& oor) {
-        res += s[i++];
-    }
-}
-
-//👨‍👩‍👧‍👧🏂🙇‍♀️🚴‍♀️
-wstring Chaine_UTF8::s_insert_sep(wstring& s, wstring sep) {
-    wstring res;
+u_ustring Chaine_UTF8::u_insert_sep(u_ustring& s, u_ustring sep) {
+    u_ustring res;
     long lg = s.size();
     long i = 0;
     while (i < lg) {
@@ -743,7 +605,8 @@ wstring Chaine_UTF8::s_insert_sep(wstring& s, wstring sep) {
 }
 
 
-UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
+
+UWCHAR Chaine_UTF8::getachar(u_ustring& s, long& i) {
     UWCHAR res;
     try {
         emojis.at(s[i]);
@@ -751,12 +614,44 @@ UWCHAR Chaine_UTF8::getachar(wstring& s, long& i) {
         while (i < s.size() && c_is_emojicomp(s[i])) {++i;}
         --i;
     }
-    catch(const std::out_of_range& oor) {
+    catch(...) {
         res = s[i];
     }
     return res;
 }
-#endif
+
+void Chaine_UTF8::getchar(u_ustring& s, u_ustring& res,  long& i, long sz) {
+    if (emojis.find(s[i]) != emojis.end()) {
+        res = s[i++];
+        while (i < sz && c_is_emojicomp(s[i])) {
+            res += s[i++];
+        }
+    }
+    else
+        res = s[i++];
+}
+
+void Chaine_UTF8::getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz) {
+    if (emojis.find(s[i]) != emojis.end()) {
+        res += s[i++];
+        while (i < sz && c_is_emojicomp(s[i])) {
+            res += s[i++];
+        }
+    }
+    else
+        res += s[i++];
+}
+
+//------------------------------------------------------------------------
+// EMOJIS
+//------------------------------------------------------------------------
+bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
+    return ((uint32_t)c >= min_emoji && emojis.find(c) != emojis.end());
+}
+
+bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
+    return ((uint32_t)c >= min_emojicomp && emojiscomplement.find(c) != emojiscomplement.end());
+}
 
 bool Chaine_UTF8::c_is_emoji(unsigned char* m, long& i) {
     return c_is_emoji(getonechar(m, i));
@@ -792,13 +687,13 @@ bool Chaine_UTF8::s_is_emoji(string& s) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_emoji(wstring& s) {
-    if (s == L"")
+bool Chaine_UTF8::u_is_emoji(u_ustring& s) {
+    if (s == U"")
         return false;
     long lg = s.size();
     bool check_comp = false;
     
-    UWCHAR c;
+    u_uchar c;
     
     for (long i = 0; i < lg; i++) {
         c = getonewchar(s, i);
@@ -816,35 +711,37 @@ bool Chaine_UTF8::s_is_emoji(wstring& s) {
     return true;
 }
 
+bool Chaine_UTF8::s_is_emoji(wstring& w) {
+    u_pstring s =  _w_to_u(w);
+    return u_is_emoji(s);
+}
+
 string Chaine_UTF8::emoji_description(string& s) {
     if (s.size() == 0)
         return "";
     UWCHAR c;
     c_utf8_to_unicode(USTR(s), c);
     if (emojis.find(c) != emojis.end())
-        return emojis[c];
+        return emojis.at(c);
     return "";
 }
 
-string Chaine_UTF8::emoji_description(wstring& s) {
-    if (s.size() == 0)
-        return "";
-
-    try {
+string Chaine_UTF8::emoji_description(u_ustring& s) {
+    if (s.size() != 0 && emojis.find(s[0]) != emojis.end())
         return emojis.at(s[0]);
-    }
-    catch(const std::out_of_range& oor) {
-        return "";
-    }
+    return "";
 }
 
+string Chaine_UTF8::emoji_description(wstring& w) {
+    u_pstring s =  _w_to_u(w);
+    return emoji_description(s);
+}
+
+
 string Chaine_UTF8::emoji_description(UWCHAR c) {
-    try {
+    if (emojis.find(c) != emojis.end())
         return emojis.at(c);
-    }
-    catch(const std::out_of_range& oor) {
-        return "";
-    }
+    return "";
 }
 
 void Chaine_UTF8::l_emojis(map<UWCHAR, string>& dico) {
@@ -1005,7 +902,7 @@ union bulongchar {
     }
 };
 
-Chaine_UTF8::Chaine_UTF8() {    
+Chaine_UTF8::Chaine_UTF8() : emojiscomplement(true) {    
     wchar_t unicode;
     bulongchar xs;
     bulongchar xse;
@@ -1429,17 +1326,46 @@ Exporting wstring wjsonstring(wstring value) {
     res += L"\"";
     return res;
 }
+
+Exporting wstring wjsonstring(u_ustring value) {
+    return wjsonstring(_u_to_w(value));
+}
+
+Exporting u_ustring ujsonstring(u_ustring value) {
+    if (value == U"")
+        return U"\"\"";
+    
+    u_ustring res;
+    
+    if (value.find(U"\\") != -1)
+        value = s_ureplacestring(value, U"\\", U"\\\\");
+    
+    if (value.find(U"\"") != -1) {
+        value = s_ureplacestring(value, U"\"", U"\\\"");
+    }
+    res += U"\"";
+    res += value;
+    res += U"\"";
+    return res;
+}
+
+
 //--------------------------------------------------------------------
 
+bool Chaine_UTF8::c_is_punctuation(u_uchar c) {
+    return punctuations.check(c);
+}
+
 bool Chaine_UTF8::c_is_punctuation(wchar_t c) {
-    
-    try {
-        punctuations.at(c);
-        return true;
+    return punctuations.check(c);
+}
+
+bool Chaine_UTF8::u_is_punctuation(u_ustring& str) {
+    for (long i = 0; i < str.size(); i++) {
+        if (!c_is_punctuation(str[i]))
+            return false;
     }
-    catch(const std::out_of_range& oor) {
-        return false;
-    }
+    return true;
 }
 
 bool Chaine_UTF8::s_is_punctuation(wstring& str) {
@@ -1452,37 +1378,19 @@ bool Chaine_UTF8::s_is_punctuation(wstring& str) {
 
 
 char Chaine_UTF8::c_is_alpha(unsigned char* m, long& i) {
-	UWCHAR v;
+    UWCHAR v;
     i += c_utf8_to_unicode(m + i, v);
-    
-    try {
-        utf8codemin.at(v);
-        return 1;
-    }
-    catch(const std::out_of_range& oor) {
-        try {
-            utf8codemaj.at(v);
-            return 2;
-        }
-        catch(const std::out_of_range& oor) {}
-    }
-    return 0;
+    return (utf8codemin.check(v) + ((char)utf8codemaj.check(v) << 1));
+}
+
+char Chaine_UTF8::c_is_alpha(u_uchar v) {
+    return (utf8codemin.check(v) + (2 * (char)utf8codemaj.check(v)));
 }
 
 char Chaine_UTF8::c_is_alpha(wchar_t v) {
-    try {
-        utf8codemin.at(v);
-        return 1;
-    }
-    catch(const std::out_of_range& oor) {
-        try {
-            utf8codemaj.at(v);
-            return 2;
-        }
-        catch(const std::out_of_range& oor) {}
-    }
-    return 0;
+    return (utf8codemin.check(v) + (2 * (char)utf8codemaj.check(v)));
 }
+
 
 
 char Chaine_UTF8::is_a_valid_letter(unsigned char* m, long& i) {
@@ -1503,13 +1411,47 @@ char Chaine_UTF8::is_a_valid_letter(wstring& m, long& i) {
     return c_is_alpha(m[i]);
 }
 
+bool Chaine_UTF8::u_is_alpha(u_ustring& s) {
+    if (s == U"")
+        return false;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++) {
+        if (!c_is_alpha(s[i]))
+            return false;
+    }
+    return true;
+}
+
 bool Chaine_UTF8::s_is_alpha(wstring& s) {
     if (s == L"")
         return false;
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
-        char ty = c_is_alpha(s[i]);
-        if (ty == 0)
+        if (!c_is_alpha(s[i]))
+            return false;
+    }
+    return true;
+}
+
+
+bool Chaine_UTF8::u_is_upper(u_ustring& s) {
+    if (s == U"")
+        return false;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++) {
+        if (c_is_alpha(s[i]) != 2)
+            return false;
+    }
+    return true;
+}
+
+bool Chaine_UTF8::u_is_lower(u_ustring& s) {
+    if (s == U"")
+        return false;
+    
+    long lg = s.size();
+    for (long i = 0; i < lg; i++) {
+        if (c_is_alpha(s[i]) != 1)
             return false;
     }
     return true;
@@ -1520,8 +1462,7 @@ bool Chaine_UTF8::s_is_upper(wstring& s) {
         return false;
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
-        char ty = c_is_alpha(s[i]);
-        if (ty != 2)
+        if (c_is_alpha(s[i]) != 2)
             return false;
     }
     return true;
@@ -1533,38 +1474,44 @@ bool Chaine_UTF8::s_is_lower(wstring& s) {
     
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
-        char ty = c_is_alpha(s[i]);
-        if (ty != 1)
+        if (c_is_alpha(s[i]) != 1)
             return false;
     }
     return true;
 }
 
-wchar_t Chaine_UTF8::c_to_lower(wchar_t c) {
-    try {
+u_uchar Chaine_UTF8::uc_to_lower(u_uchar c) {
+    if (utf8codemaj.check(c))
         return utf8codemaj.at(c);
-    }
-    catch(const std::out_of_range& oor) {
-        return c;
-    }
+    return c;
+}
+
+u_uchar Chaine_UTF8::uc_to_upper(u_uchar c) {
+    if (utf8codemin.check(c))
+        return utf8codemin.at(c);
+    return c;
+}
+
+wchar_t Chaine_UTF8::c_to_lower(wchar_t c) {
+    if (utf8codemaj.check(c))
+        return utf8codemaj.at(c);
+    return c;
 }
 
 wchar_t Chaine_UTF8::c_to_upper(wchar_t c) {
-    try {
+    if (utf8codemin.check(c))
         return utf8codemin.at(c);
-    }
-    catch(const std::out_of_range& oor) {
-        return c;
-    }
+    return c;
 }
 
+
 string Chaine_UTF8::u_to_lower(string& u) {
-	wstring res;
-	wstring s;
+	u_ustring res;
+	u_ustring s;
 	s_utf8_to_unicode(s, USTR(u), u.size());
 	long lg = s.size();
 	for (long i = 0; i < lg; i++)
-		res += (wchar_t)c_to_lower(s[i]);
+		res += (u_uchar)uc_to_lower(s[i]);
 	string r;
 	s_unicode_to_utf8(r, res);
 	return r;
@@ -1585,8 +1532,23 @@ wstring Chaine_UTF8::s_to_upper(wstring& s) {
         res += (wchar_t)c_to_upper(s[i]);
     return res;
 }
+u_ustring Chaine_UTF8::u_to_lower(u_ustring& s) {
+    u_ustring res;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++)
+        res += (u_uchar)uc_to_lower(s[i]);
+    return res;
+}
 
-bool c_is_space(wchar_t code) {
+u_ustring Chaine_UTF8::u_to_upper(u_ustring& s) {
+    u_ustring res;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++)
+        res += (u_uchar)c_to_upper(s[i]);
+    return res;
+}
+
+bool c_is_space(u_uchar code) {
     static unsigned char spaces[] = { 9, 10, 13, 32, 160 };
     if ((code <= 160 && strchr((char*)spaces, (char)code)) || code == 0x202F || code == 0x3000)
         return true;
@@ -1606,9 +1568,30 @@ bool Chaine_UTF8::s_is_space(string& str) {
     return true;
 }
 
+bool Chaine_UTF8::s_is_space(u_ustring& str) {
+    long lg = str.size();
+    u_uchar code;
+    for (long i = 0; i < lg; i++) {
+        code = str[i];
+        switch (code) {
+            case 9:
+            case 10:
+            case 13:
+            case 32:
+            case 160:
+            case 0x202F:
+            case 0x3000:
+                continue;
+            default:
+                return false;
+        }
+    }
+    return true;
+}
+
 bool Chaine_UTF8::s_is_space(wstring& str) {
     long lg = str.size();
-    wchar_t code;
+    u_uchar code;
     for (long i = 0; i < lg; i++) {
         code = str[i];
         switch (code) {
@@ -1686,6 +1669,17 @@ wstring& s_trim0(wstring& strvalue) {
     return strvalue;
 }
 
+u_ustring& u_trim0(u_ustring& strvalue) {
+    if (strvalue.find(U".") != -1) {
+        long i = strvalue.size() - 1;
+        while (strvalue[i] == '0') i--;
+        if (strvalue[i] == '.')
+            i--;
+        strvalue = strvalue.substr(0, i + 1);
+    }
+    return strvalue;
+}
+
 wstring& s_trim(wstring& strvalue) {
     long d, f;
     for (d = 0; d<strvalue.size(); d++) {
@@ -1704,6 +1698,26 @@ wstring& s_trim(wstring& strvalue) {
         strvalue = L"";
     return strvalue;
 }
+
+u_ustring& u_trim(u_ustring& strvalue) {
+    long d, f;
+    for (d = 0; d<strvalue.size(); d++) {
+        if (strvalue[d]>32)
+            break;
+    }
+    
+    for (f = strvalue.size() - 1; f >= 0; f--) {
+        if (strvalue[f] > 32)
+            break;
+    }
+    long lg = f - d + 1;
+    if (lg >= 1)
+        strvalue = strvalue.substr(d, lg);
+    else
+        strvalue = U"";
+    return strvalue;
+}
+
 
 wstring& s_trimleft(wstring& strvalue) {
     long d, f;
@@ -1736,6 +1750,39 @@ wstring& s_trimright(wstring& strvalue) {
         strvalue = L"";
     return strvalue;
 }
+
+u_ustring& u_trimleft(u_ustring& strvalue) {
+    long d, f;
+    f = strvalue.size() - 1;
+    for (d = 0; d<strvalue.size(); d++) {
+        if (strvalue[d]>32)
+            break;
+    }
+    
+    long lg = f - d + 1;
+    if (lg >= 1)
+        strvalue = strvalue.substr(d, lg);
+    else
+        strvalue = U"";
+    return strvalue;
+}
+
+u_ustring& u_trimright(u_ustring& strvalue) {
+    long d = 0, f;
+    
+    for (f = strvalue.size() - 1; f >= 0; f--) {
+        if (strvalue[f] > 32)
+            break;
+    }
+    
+    long lg = f - d + 1;
+    if (lg >= 1)
+        strvalue = strvalue.substr(d, lg);
+    else
+        strvalue = U"";
+    return strvalue;
+}
+
 string& s_trim(string& strvalue) {
     long d, f;
     for (d = 0; d<strvalue.size(); d++) {
@@ -1892,6 +1939,39 @@ wstring s_wmiddle(wstring& s, long l, long nb) {
     return s.substr(l, nb);
 }
 
+u_ustring s_uleft(u_ustring& s, long nb) {
+    if (nb <= 0)
+        return U"";
+    
+    long lg = s.size();
+    if (nb >= lg)
+        return s;
+    
+    return s.substr(0, nb);
+}
+
+u_ustring s_uright(u_ustring& s, long nb) {
+    if (nb <= 0)
+        return U"";
+
+    long lg = s.size();
+
+    long l = lg - nb;
+
+    if (l <= 0)
+        return s;
+    
+    return s.substr(l, lg);
+}
+
+u_ustring s_umiddle(u_ustring& s, long l, long nb) {
+    long lg = s.size();
+
+    if (l >= lg)
+        return U"";
+
+    return s.substr(l, nb);
+}
 //------------------------------------------------------------------------
 string s_replacingstring(string& s, string reg, string rep) {
     string neo;
@@ -1936,6 +2016,29 @@ wstring s_wreplacestring(wstring& s, wstring reg, wstring rep) {
         neo += s.substr(from, rsz - from);
     return neo;
 }
+
+u_ustring s_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep) {
+    u_ustring neo;
+    
+    long gsz = reg.size();
+    if (!gsz)
+        return s;
+    
+    long rsz = s.size();
+    long from = 0;
+    
+    long foundHere;
+    while ((foundHere = s.find(reg, from)) != string::npos) {
+        if (foundHere != from)
+            neo += s.substr(from, foundHere - from);
+        neo += rep;
+        from = foundHere + gsz;
+    }
+    if (from < rsz)
+        neo += s.substr(from, rsz - from);
+    return neo;
+}
+
 
 //------------------------------------------------------------------------
 /*
@@ -2157,6 +2260,129 @@ double conversiontofloathexa(const wchar_t* s, int sign) {
     return res*sign;
 }
 double convertingfloathexa(const wchar_t* s) {
+    while (*s!=0 && *s<=32) ++s;
+    //End of string...
+    if (*s ==0 )
+        return 0;
+    
+    int sign = 1;
+    
+    //Sign
+    if (*s=='-') {
+        sign = -1;
+        ++s;
+    }
+    else
+        if (*s=='+')
+            ++s;
+    
+    if (*s=='0' && s[1]=='x') {
+        s+=2;
+        return conversiontofloathexa(s, sign);
+    }
+    
+    long v;
+    if (isadigit(*s)) {
+        v = *s++ & 15;
+        while (isadigit(*s)) {
+            v = (v << 3) + (v << 1) + (*s++ & 15);
+        }
+        if (!*s)
+            return v*sign;
+    }
+    else
+        return 0;
+    
+    double res = v;
+    
+    if (*s=='.') {
+        ++s;
+        if (isadigit(*s)) {
+            uchar mantissa = 1;
+            v = *s++ & 15;
+            while (isadigit(*s)) {
+                v = (v << 3) + (v << 1) + (*s++ & 15);
+                ++mantissa;
+            }
+            res += (double)v / power10(mantissa);
+        }
+        else
+            return res*sign;
+    }
+    
+    if ((*s &0xDF) == 'E') {
+        ++s;
+        long sgn = 1;
+        if (*s == '-') {
+            sgn = -1;
+            ++s;
+        }
+        else {
+            if (*s == '+')
+                ++s;
+        }
+        
+        if (isadigit(*s)) {
+            v = *s++ & 15;
+            while (isadigit(*s))
+                v = (v << 3) + (v << 1) + (*s++ & 15);
+            
+            res *= power10(v*sgn);
+        }
+    }
+    return res*sign;
+}
+
+double conversiontofloathexa(const u_uchar* s, int sign) {
+    long v = 0;
+    uchar c = *s++;
+    while (digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = *s++;
+    }
+    
+    double res = v;
+    
+    if (c == '.') {
+        uchar mantissa = 0;
+        v = 0;
+        c = *s++;
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = *s++;
+            mantissa += 4;
+        }
+        
+        res += (double)v/(double)(1 << mantissa);
+    }
+    
+    
+    if ((c &0xDF) == 'P') {
+        bool sgn = false;
+        if (*s == '-') {
+            sgn = true;
+            ++s;
+        }
+        else {
+            if (*s == '+')
+                ++s;
+        }
+        
+        v = *s++ & 15;
+        while (isadigit(*s)) {
+            v = (v << 3) + (v << 1) + (*s++ & 15);
+        }
+        v = 1 << v;
+        if (sgn)
+            res *= 1 / (double)v;
+        else
+            res *= v;
+        
+    }
+    
+    return res*sign;
+}
+double convertingfloathexa(const u_uchar* s) {
     while (*s!=0 && *s<=32) ++s;
     //End of string...
     if (*s ==0 )
@@ -2705,6 +2931,49 @@ long convertinginteger(wstring& number) {
     }
     return v*sign;
 }
+
+long convertinginteger(u_ustring& number) {
+    long ipos=0;
+    
+    while (number[ipos]<=32) ++ipos;
+    
+
+    int sign = 1;
+    if (number[ipos] == '-') {
+        ++ipos;
+        sign = -1;
+    }
+    else
+        if (number[ipos] == '+')
+            ++ipos;
+    
+    long v = 0;
+    
+    uchar c = number[ipos++];
+    if (number.size() == ipos)
+        return (c - 48);
+
+    if (c == '0' || number[ipos] == 'x') {
+        ipos++;
+        c = number[ipos++];
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = number[ipos++];
+        }
+        return v*sign;
+    }
+    else {
+        if (isadigit(c)) {
+            v = c & 15;
+            c = number[ipos++];
+            while (isadigit(c)) {
+                v = (v << 3) + (v << 1) + (c & 15);
+                c = number[ipos++];
+            }
+        }
+    }
+    return v*sign;
+}
 //------------------------------------------------------------------------
 double convertingtofloathexa(wchar_t* s, int sign, long& l) {
     long v = 0;
@@ -2766,6 +3035,155 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
 }
 
 double convertingfloathexa(wchar_t* s, long& l) {
+    l = 0;
+    //End of string...
+    if (*s ==0 )
+        return 0;
+    
+    int sign = 1;
+
+    //Sign
+    if (*s=='-') {
+        sign = -1;
+        l++;
+        ++s;
+    }
+    else
+        if (*s=='+') {
+            ++s;
+            l++;
+        }
+    
+    if (*s=='0' && s[1]=='x') {
+        s+=2;
+        l++;
+        return convertingtofloathexa(s, sign, l);
+    }
+    
+    long v;
+    if (isadigit(*s)) {
+        v = *s++ & 15;
+        l++;
+        while (isadigit(*s)) {
+            v = (v << 3) + (v << 1) + (*s++ & 15);
+            l++;
+        }
+        if (!*s)
+            return v*sign;
+    }
+    else
+        return 0;
+    
+    double res = v;
+
+    if (*s=='.') {
+        ++s;
+        l++;
+        if (isadigit(*s)) {
+            uchar mantissa = 1;
+            v = *s++ & 15;
+            l++;
+            while (isadigit(*s)) {
+                v = (v << 3) + (v << 1) + (*s++ & 15);
+                l++;
+                ++mantissa;
+            }
+            res += (double)v / power10(mantissa);
+        }
+        else
+            return res*sign;
+    }
+        
+    if ((*s &0xDF) == 'E') {
+        ++s;
+        l++;
+        long sgn = 1;
+        if (*s == '-') {
+            sgn = -1;
+            ++s;
+            l++;
+        }
+        else {
+            if (*s == '+') {
+                ++s;
+                ++l;
+            }
+        }
+        
+        if (isadigit(*s)) {
+            v = *s++ & 15;
+            l++;
+            while (isadigit(*s)) {
+                v = (v << 3) + (v << 1) + (*s++ & 15);
+                l++;
+            }
+            
+            res *= power10(v*sgn);
+        }
+    }
+    return res*sign;
+}
+
+double convertingtofloathexa(u_uchar* s, int sign, long& l) {
+    long v = 0;
+    u_uchar c = *s++;
+    l++;
+    
+    while (digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = *s++;
+        l++;
+    }
+    
+    double res = v;
+
+    if (c == '.') {
+        uchar mantissa = 0;
+        v = 0;
+        c = *s++;
+        l++;
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = *s++;
+            l++;
+            mantissa += 4;
+        }
+        res += (double)v/(double)(1 << mantissa);
+    }
+    
+
+    if ((c &0xDF) == 'P') {
+        bool sgn = false;
+        if (*s == '-') {
+            sgn = true;
+            ++s;
+            l++;
+        }
+        else {
+            if (*s == '+') {
+                ++s;
+                ++l;
+            }
+        }
+        
+        v = *s++ & 15;
+        l++;
+        while (isadigit(*s)) {
+            v = (v << 3) + (v << 1) + (*s++ & 15);
+            l++;
+        }
+        v = 1 << v;
+        if (sgn)
+            res *= 1 / (double)v;
+        else
+            res *= v;
+
+    }
+    
+    return res*sign;
+}
+
+double convertingfloathexa(u_uchar* s, long& l) {
     l = 0;
     //End of string...
     if (*s ==0 )
@@ -2923,6 +3341,36 @@ Exporting void s_unicode_to_utf8(string& s, wstring& str) {
     delete[] neo;
 }
 
+Exporting void s_unicode_to_utf8(string& s, u_ustring& str) {
+    long i = 0;
+    char inter[5];
+    long ineo = 0;
+    long sz = str.size();
+    if (!sz)
+        return;
+
+    long szo = 1 + (sz << 1);
+    char* neo = new char[szo];
+    neo[0] = 0;
+    long nb;
+
+    while (i < sz) {
+        if (str[i] < 0x0080 && ineo < szo-1) {
+            neo[ineo++] = (char)str[i];
+            i++;
+            continue;
+        }
+        
+        nb = c_unicode_to_utf8(str[i], (uchar*)inter);
+        neo = concatstrings(neo,inter,ineo, szo, nb);
+        i++;
+    }
+    
+    neo[ineo] = 0;
+    s += neo;
+    delete[] neo;
+}
+
 Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz) {
 	long i = 0;
 	char inter[5];
@@ -3001,6 +3449,35 @@ Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
         ++str;
     }
 #endif
+    
+    neo[ineo] = 0;
+    w += neo;
+    delete[] neo;
+}
+
+Exporting void s_utf8_to_unicode(u_ustring& w, unsigned char* str , long sz) {
+    if (!sz)
+        return;
+
+    long ineo = 0;
+    u_uchar* neo = new u_uchar[sz+1];
+    neo[0] = 0;
+
+    UWCHAR c;
+    uchar nb;
+    
+
+    while (sz--) {
+        if (*str & 0x80) {
+            nb = c_utf8_to_unicode(str, c);
+            str += nb+1;
+            sz-=nb;
+            neo[ineo++] = c;
+            continue;
+        }
+        neo[ineo++] = (wchar_t)*str;
+        ++str;
+    }
     
     neo[ineo] = 0;
     w += neo;
@@ -3695,7 +4172,7 @@ Element* LispE::load_library(string nom_bib) {
         delegation->libraries.at(name);
         return delegation->_TRUE;
     }
-    catch(const std::out_of_range& oor) {}
+    catch(...) {}
     
     void* LoadMe;
     
@@ -3869,8 +4346,8 @@ Element* LispE::load_library(string nom_bib) {
 #endif
 //JSon
 
-void split_container(wchar_t* src, long lensrc, vector<long>& pos) {
-    wchar_t c;
+void split_container(u_uchar* src, long lensrc, vector<long>& pos) {
+    u_uchar c;
     
     for (long e = 0; e < lensrc; e++) {
         c = src[e];
@@ -3879,25 +4356,25 @@ void split_container(wchar_t* src, long lensrc, vector<long>& pos) {
     }
 }
 
-void replacemetas(wstring& sub) {
-    static wstring search(L"\\");
+void replacemetas(u_ustring& sub) {
+    static u_ustring search(U"\\");
     
     if (sub.find(search) == -1)
         return;
     
-    wstring thestr;
+    u_ustring thestr;
     long sz = sub.size();
     for (long i=0;i<sz;i++) {
         if (sub[i]=='\\') {
             switch(sub[++i]) {
                 case 'n':
-                    thestr+=L"\n";
+                    thestr+=U"\n";
                     break;
                 case 'r':
-                    thestr+=L"\r";
+                    thestr+=U"\r";
                     break;
                 case 't':
-                    thestr+=L"\t";
+                    thestr+=U"\t";
                     break;
                 default:
                     thestr+=sub[i];
@@ -3910,15 +4387,15 @@ void replacemetas(wstring& sub) {
     sub = thestr;
 }
 
-bool LispEJsonCompiler::compile(LispE* lisp, wstring& s) {
-    s = s_trim(s);    
+bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s) {
+    s = u_trim(s);    
     if (s[0] == '{')
         compiled_result = new Dictionary_as_buffer;
     else
         compiled_result = new List;
 
     pos.clear();
-    src = (wchar_t*)s.c_str();
+    src = (u_uchar*)s.c_str();
     split_container(src, s.size(), pos);
     r = 1;
     i = 1;
@@ -3958,14 +4435,14 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
             while (src[to] > 32 && to < pos[r]) to++;
             c = src[to];
             src[to] = 0;
-            token = (wchar_t*)src+i-1;
-            if (token == L"false")
+            token = (u_uchar*)src+i-1;
+            if (token == U"false")
                 container->append(false_);
             else {
-                if (token == L"true")
+                if (token == U"true")
                     container->append(true_);
                 else {
-                    if (token == L"null" || token == L"nil")
+                    if (token == U"null" || token == U"nil")
                         container->append(null_);
                     else
                         container->append(lisp, token);
@@ -3990,7 +4467,7 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
                 }
                 c= src[to];
                 src[to] = 0;
-                token = (wchar_t*)src+i;
+                token = (u_uchar*)src+i;
                 replacemetas(token);
                 container->append(lisp, token);
                 checknext = container->verify();
@@ -4008,7 +4485,7 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
                 }
                 c= src[to];
                 src[to] = 0;
-                wstring locstr = (wchar_t*)src+i;
+                u_ustring locstr = (u_uchar*)src+i;
                 container->append(lisp, locstr);
                 
                 checknext = container->verify();
@@ -4106,14 +4583,14 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
 
 
 //Convert a unicode character into a utf16 character
-Exporting bool c_utf16(uint32_t code) {
+Exporting bool c_utf16(u_uchar code) {
     //A unicode character is encoded over 4 bytes: 3 -> 0
     //if we have bits on byte 2, then we need to provide 4 bytes...
     return ((code & 0x1F0000));
 }
 
 //Convert a unicode character into a utf16 character
-Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code) {
+Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code) {
         //A unicode character is encoded over 4 bytes: 3 -> 0
         //if we have bits on byte 2, then we need to provide 4 bytes...
     if ((code & 0x1F0000) == 0) {
@@ -4136,7 +4613,7 @@ Exporting bool c_unicode_to_utf16(uint32_t& res, uint32_t code) {
     return true;
 }
 
-Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second) {
+Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second) {
     if (second) {
         r |= code & 0x3FF;
         return false;
@@ -4154,3 +4631,66 @@ Exporting bool c_utf16_to_unicode(uint32_t& r, uint32_t code, bool second) {
     return false;
 }
 
+#ifdef WIN32
+Exporting wstring u_to_w(u_ustring u) {
+    wstring w;
+    
+    u_uchar c;
+    u_uchar c16;
+    
+    for (long i = 0; i < u.size(); i++) {
+        c = u[i];
+        if (!(c & 0xFFFF0000)) {
+            w += (wchar_t)c;
+            continue;
+        }
+        
+        c_unicode_to_utf16(c16, c);
+        w += (wchar_t)(c16 >> 16);
+        w += (wchar_t)(c16 & 0xFFFF);
+    }
+    return w;
+}
+
+Exporting u_ustring w_to_u(wstring w) {
+    u_ustring u;
+    u_uchar c;
+    for (long i = 0; i < w.size(); i++) {
+        if (c_utf16_to_unicode(c, w[i], false))
+            c_utf16_to_unicode(c, w[++i], true);
+        u += c;
+    }
+    return u;
+}
+
+Exporting wstring _u_to_w(u_ustring& u) {
+    wstring w;
+    
+    u_uchar c;
+    u_uchar c16;
+    
+    for (long i = 0; i < u.size(); i++) {
+        c = u[i];
+        if (!(c & 0xFFFF0000)) {
+            w += (wchar_t)c;
+            continue;
+        }
+        
+        c_unicode_to_utf16(c16, c);
+        w += (wchar_t)(c16 >> 16);
+        w += (wchar_t)(c16 & 0xFFFF);
+    }
+    return w;
+}
+
+Exporting u_ustring _w_to_u(wstring& w) {
+    u_ustring u;
+    u_uchar c;
+    for (long i = 0; i < w.size(); i++) {
+        if (c_utf16_to_unicode(c, w[i], false))
+            c_utf16_to_unicode(c, w[++i], true);
+        u += c;
+    }
+    return u;
+}
+#endif

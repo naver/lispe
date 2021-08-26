@@ -68,14 +68,14 @@ class Concept : public Element {
 public:
 
     Concept_element concept;
-    wstring semme;
+    u_ustring semme;
     Ontology* ontologie;
     long index;
 
     Concept(Ontology* h);
     Concept(Concept* c);
-    Concept(Ontology* h, Concept* c, wstring& s,long i);
-    Concept(Ontology* h, wstring& s,long i);
+    Concept(Ontology* h, Concept* c, u_ustring& s,long i);
+    Concept(Ontology* h, u_ustring& s,long i);
 
     Concept* concept_add(Concept* c) {
         if (c->ontologie != ontologie)
@@ -111,22 +111,23 @@ public:
     }
     
     wstring asString(LispE*);
+    u_ustring asUString(LispE*);
     Element* asList();
 };
 
 
 class Ontology : public Element {
 public:
-    std::vector<wstring> concepts;
-    std::unordered_map<wstring, Concept*> indexes;
-    wstring name;
+    std::vector<u_ustring> concepts;
+    std::unordered_map<u_ustring, Concept*> indexes;
+    u_ustring name;
     Concept* absurd;
     short local_concept;
 
-    Ontology(wstring& n, short l_hie, short l_conc) : Element(l_hie) {
+    Ontology(u_ustring& n, short l_hie, short l_conc) : Element(l_hie) {
         local_concept = l_conc;
         name = n;
-        wstring s_absurd = L"_absurd";
+        u_ustring s_absurd = U"_absurd";
         absurd = new Concept(this, s_absurd, 0);
         absurd->status = s_constant;
         concepts.push_back(s_absurd);
@@ -139,18 +140,23 @@ public:
     }
     
     wstring asString(LispE*) {
+        return _u_to_w(name);
+    }
+
+    u_ustring asUString(LispE*) {
         return name;
     }
     
+
     long size() {
         return concepts.size();
     }
     
-    Concept* create(wstring& w) {
+    Concept* create(u_ustring& w) {
         try {
             return indexes.at(w);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             Concept* c = new Concept(this, w, concepts.size());
             c->status = 1;
             concepts.push_back(w);
@@ -159,14 +165,14 @@ public:
         }
     }
 
-    Concept* create(wstring& w, Concept* conc) {
+    Concept* create(u_ustring& w, Concept* conc) {
         if (conc == absurd)
             return conc;
         
         try {
             return indexes.at(w);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             Concept* c = new Concept(this, conc, w, concepts.size());
             c->status = 1;
             concepts.push_back(w);
@@ -178,7 +184,7 @@ public:
     Element* loop(LispE* lisp, short label,  List* code);
     
     Element* find(LispE* lisp, Concept* c);
-    Element* find(LispE* lisp, wstring& w);
+    Element* find(LispE* lisp, u_ustring& w);
 };
 #endif
 

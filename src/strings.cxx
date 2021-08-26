@@ -28,13 +28,13 @@
 #define waddtoken(tok, c, itok) tok[itok++] = c[0]; tok[itok] = 0
 #endif
 
-char x_tokens::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, long& itoken, short& r, long& l, long& posc) {
+char x_tokens::loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, long& itoken, short& r, long& l, long& posc) {
     long sz;
     short type;
     
     vector<short>& element = ruleelements[i];
     short* closed = closing[i];
-    vector<wstring>& rule = tokenizer[i];
+    vector<u_ustring>& rule = tokenizer[i];
 
     sz = rule.size();
     
@@ -66,7 +66,7 @@ char x_tokens::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, lon
             }
         }
         
-        wstring& label = rule[r];
+        u_ustring& label = rule[r];
         
         switch(check(label,type, chr)) {
             case 0:
@@ -114,7 +114,7 @@ char x_tokens::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, lon
                                 break;
                             
                             long cp = posc;
-                            wchar_t cc[] = {0,0,0};
+                            u_uchar cc[] = {0,0,0};
                             getnext(toparse, cc, cp);
                             bool found = true;
                             for (short k = r+2; k < ni; k++) {
@@ -140,13 +140,13 @@ char x_tokens::loop(wstring& toparse, short i, wchar_t* token, wchar_t* chr, lon
     return true;
 }
 
-void x_tokens::apply(wstring& toparse, vector<wstring>* vstack) {
-    wchar_t chr[] = {0,0,0};
-    wchar_t currentchr[] = {0,0,0};
+void x_tokens::apply(u_ustring& toparse, vector<u_ustring>* vstack) {
+    u_uchar chr[] = {0,0,0};
+    u_uchar currentchr[] = {0,0,0};
 
     long wsz=toparse.size();
 
-    wchar_t* token =  new wchar_t[wsz+1];
+    u_uchar* token =  new u_uchar[wsz+1];
 
     long itoken = 0;
     long line=0,i, l;
@@ -164,6 +164,8 @@ void x_tokens::apply(wstring& toparse, vector<wstring>* vstack) {
         parserules();
         loaded=true;
     }
+    
+    stacktype.clear();
     
     if (vstack==NULL)
         vstack=&stack;
@@ -186,7 +188,7 @@ void x_tokens::apply(wstring& toparse, vector<wstring>* vstack) {
                     ty = action[i];
                     if (ty != -1) {
                         vstack->push_back(currentchr);
-                        
+                        stacktype.push_back(ty);
                         if (!juststack) {
                             stackln.push_back(line);
                         }
@@ -222,6 +224,7 @@ void x_tokens::apply(wstring& toparse, vector<wstring>* vstack) {
             ty=action[i];
             if (ty != -1) {
                 vstack->push_back(token);
+                stacktype.push_back(ty);
                 if (!juststack) {
                     stackln.push_back(line);
                 }
@@ -235,6 +238,7 @@ void x_tokens::apply(wstring& toparse, vector<wstring>* vstack) {
         
         if (!getit) { //Character not taken into account by a rule, we suppose it is a simple UTF8 character...
             vstack->push_back(currentchr);
+            stacktype.push_back(0);
             stackln.push_back(line);
             getnext(toparse,currentchr, pos,l);
         }
@@ -276,21 +280,21 @@ public:
     
     Stringmethod(LispE* lisp, string_method s) : met(s), Element(l_lib) {
         //We know the names of variables in advance, so we might as well take advantage of it to retrieve their codes.
-        wstring nom = L"str";
+        u_ustring nom = U"str";
         v_str = lisp->encode(nom);
-        nom = L"fnd";
+        nom = U"fnd";
         v_fnd = lisp->encode(nom);
-        nom = L"rep";
+        nom = U"rep";
         v_rep = lisp->encode(nom);
-        nom = L"nb";
+        nom = U"nb";
         v_nb = lisp->encode(nom);
-        nom = L"pos";
+        nom = U"pos";
         v_pos = lisp->encode(nom);
-        nom = L"tokenize_rule";
+        nom = U"tokenize_rule";
         l_tokenize = lisp->encode(nom);
     }
     
-    Element* parse_json(LispE* lisp, wstring& w) {
+    Element* parse_json(LispE* lisp, u_ustring& w) {
         LispEJsonCompiler json;
         if (!json.compile(lisp, w)) {
             std::wstringstream wstr;
@@ -312,55 +316,55 @@ public:
         //eval is either: command, setenv or getenv...
         switch (met) {
             case str_remplace: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
-                wstring cherche = lisp->get(v_fnd)->asString(lisp);
-                wstring remplacement = lisp->get(v_rep)->asString(lisp);
-                strvalue = s_wreplacestring(strvalue,cherche, remplacement);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring cherche = lisp->get(v_fnd)->asUString(lisp);
+                u_ustring remplacement = lisp->get(v_rep)->asUString(lisp);
+                strvalue = s_ureplacestring(strvalue,cherche, remplacement);
                 return lisp->provideString(strvalue);
             }
             case str_lowercase: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
-                s = lisp->handlingutf8->s_to_lower(s);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                s = lisp->handlingutf8->u_to_lower(s);
                 return lisp->provideString(s);
             }
             case str_uppercase: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
-                s = lisp->handlingutf8->s_to_upper(s);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                s = lisp->handlingutf8->u_to_upper(s);
                 return lisp->provideString(s);
             }
             case str_is_emoji: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
-                return booleans_[lisp->handlingutf8->s_is_emoji(s)];
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                return booleans_[lisp->handlingutf8->u_is_emoji(s)];
             }
             case str_is_lowercase: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
-                return booleans_[lisp->handlingutf8->s_is_lower(s)];
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                return booleans_[lisp->handlingutf8->u_is_lower(s)];
             }
             case str_is_uppercase: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
-                return booleans_[lisp->handlingutf8->s_is_upper(s)];
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                return booleans_[lisp->handlingutf8->u_is_upper(s)];
             }
             case str_is_alpha: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
-                return booleans_[lisp->handlingutf8->s_is_alpha(s)];
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                return booleans_[lisp->handlingutf8->u_is_alpha(s)];
             }
             case str_left: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
                 long n = lisp->get(v_nb)->asInteger();
-                s = s_wleft(s,n);
+                s = s_uleft(s,n);
                 return lisp->provideString(s);
             }
             case str_right: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
                 long n = lisp->get(v_nb)->asInteger();
-                s = s_wright(s, n);
+                s = s_uright(s, n);
                 return lisp->provideString(s);
             }
             case str_middle: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
                 long p = lisp->get(v_pos)->asInteger();
                 long n = lisp->get(v_nb)->asInteger();
-                strvalue = s_wmiddle(strvalue,p,n);
+                strvalue = s_umiddle(strvalue,p,n);
                 return lisp->provideString(strvalue);
             }
             case str_ngrams: {
@@ -368,13 +372,13 @@ public:
                 if (nb <= 0)
                     throw new Error("Error: nb should be a positive value");
                 
-                wstring s =  lisp->get(v_str)->asString(lisp);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
                 long j;
                 long mx = s.size() - nb + 1;
-                wstring u;
+                u_ustring u;
                 Strings* ke = new Strings;
                 for (long i = 0; i < mx; i++) {
-                    u = L"";
+                    u = U"";
                     for (j = i; j < i + nb; j++) {
                         u += lisp->handlingutf8->getachar(s,j);
                     }
@@ -383,27 +387,27 @@ public:
                 return ke;
             }
             case str_trim0: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
-                strvalue = s_trim0(strvalue);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                strvalue = u_trim0(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trim:  {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
-                strvalue = s_trim(strvalue);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                strvalue = u_trim(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimleft:  {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
-                strvalue = s_trimleft(strvalue);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                strvalue = u_trimleft(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimright:  {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
-                strvalue = s_trimright(strvalue);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                strvalue = u_trimright(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_emoji_description: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
                 string res = lisp->handlingutf8->emoji_description(strvalue);
                 return lisp->provideString(res);
             }
@@ -416,12 +420,12 @@ public:
                 return lisp->tokenize(strvalue, true);
             }
             case str_split_empty: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
-                wstring search_string =  lisp->get(v_fnd)->asString(lisp);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring search_string =  lisp->get(v_fnd)->asUString(lisp);
                 Strings* result = new Strings;
-                wstring localvalue;
+                u_ustring localvalue;
                 long pos = 0;
-                if (search_string == L"") {
+                if (search_string == U"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters
                     while (pos < strvalue.size()) {
@@ -451,13 +455,13 @@ public:
                 return result;
             }
             case str_split: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
-                wstring search_string =  lisp->get(v_fnd)->asString(lisp);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring search_string =  lisp->get(v_fnd)->asUString(lisp);
                 
                 Strings* result = new Strings;
-                wstring localvalue;
+                u_ustring localvalue;
                 long pos = 0;
-                if (search_string == L"") {
+                if (search_string == U"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters
                     while (pos < strvalue.size()) {
@@ -472,7 +476,7 @@ public:
                     found = strvalue.find(search_string, pos);
                     if (found != string::npos) {
                         localvalue = strvalue.substr(pos, found - pos);
-                        if (localvalue != L"") {
+                        if (localvalue != U"") {
                             result->append(localvalue);
                         }
                         pos = found + search_string.size();
@@ -482,14 +486,14 @@ public:
                 }
                 
                 localvalue = strvalue.substr(pos, strvalue.size() - pos);
-                if (localvalue != L"") {
+                if (localvalue != U"") {
                     result->append(localvalue);
                 }
                 
                 return result;
             }
             case str_ord: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
+                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
                 if (strvalue.size() == 0)
                     return emptylist_;
                 
@@ -500,36 +504,36 @@ public:
                 return liste;
             }
             case str_chr: {
-                wchar_t c = (wchar_t)lisp->get(v_nb)->asInteger();
+                u_uchar c = (u_uchar)lisp->get(v_nb)->asInteger();
                 return lisp->provideString(c);
             }
             case str_is_punctuation: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
-                return booleans_[lisp->handlingutf8->s_is_punctuation(s)];
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                return booleans_[lisp->handlingutf8->u_is_punctuation(s)];
             }
             case str_read_json: {
-                string filename = lisp->get(L"filename")->toString(lisp);
+                string filename = lisp->get(U"filename")->toString(lisp);
                 return read_json(lisp, filename);
             }
             case str_parse_json: {
-                wstring str = lisp->get(L"str")->asString(lisp);
+                u_ustring str = lisp->get(U"str")->asUString(lisp);
                 return parse_json(lisp, str);
             }
             case str_string_json: {
-                Element* e = lisp->get(L"element");
+                Element* e = lisp->get(U"element");
                 wstring w = e->jsonString(lisp);
                 return lisp->provideString(w);
             }
             case str_is_vowel: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->s_is_vowel(s)];
             }
             case str_is_consonant: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->s_is_consonant(s)];
             }
             case str_deaccentuate: {
-                wstring s =  lisp->get(v_str)->asString(lisp);
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
                 s = lisp->handlingutf8->s_deaccentuate(s);
                 return lisp->provideString(s);
             }
@@ -537,16 +541,25 @@ public:
                 return new Rulemethod(lisp, l_tokenize);
             }
             case str_tokenize_rules: {
-                Element* tok = lisp->get(L"rules");
+                Element* tok = lisp->get(U"rules");
                 if (tok->type != l_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
-                wstring s =  lisp->get(v_str)->asString(lisp);
+                Element* types = lisp->get(U"types");
+                u_ustring s =  lisp->get(v_str)->asUString(lisp);
                 Strings* vstr = new Strings;
                 ((Rulemethod*)tok)->tok.tokenize(s, &vstr->liste);
+                if (types != null_) {
+                    List* l = new List;
+                    l->append(vstr);
+                    Integers* t_ypes = new Integers;
+                    t_ypes->liste = ((Rulemethod*)tok)->tok.stacktype;
+                    l->append(t_ypes);
+                    return l;
+                }
                 return vstr;
             }
             case str_getrules: {
-                Element* tok = lisp->get(L"rules");
+                Element* tok = lisp->get(U"rules");
                 if (tok->type != l_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
                 Strings* vstr = new Strings;
@@ -554,15 +567,15 @@ public:
                 return vstr;
             }
             case str_setrules: {
-                Element* tok = lisp->get(L"rules");
+                Element* tok = lisp->get(U"rules");
                 if (tok->type != l_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
-                Element* lst = lisp->get(L"lst");
+                Element* lst = lisp->get(U"lst");
                 if (!lst->isList())
                     throw new Error("Error: This function expects a list");
-                vector<wstring> wlst;
+                vector<u_ustring> wlst;
                 for (long i = 0; i < lst->size(); i++) {
-                    wlst.push_back(lst->index(i)->asString(lisp));
+                    wlst.push_back(lst->index(i)->asUString(lisp));
                 }
                 ((Rulemethod*)tok)->tok.setrules(wlst);
                 return true_;
@@ -695,7 +708,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
     lisp->extension("deflib tokenizer_rules ()", new Stringmethod(lisp, str_rules));
-    lisp->extension("deflib tokenize_rules (rules str)", new Stringmethod(lisp, str_tokenize_rules));
+    lisp->extension("deflib tokenize_rules (rules str (types))", new Stringmethod(lisp, str_tokenize_rules));
     lisp->extension("deflib get_tokenizer_rules (rules)", new Stringmethod(lisp, str_getrules));
     lisp->extension("deflib set_tokenizer_rules (rules lst)", new Stringmethod(lisp, str_setrules));
 

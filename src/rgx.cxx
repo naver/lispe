@@ -56,8 +56,8 @@ Chaine_UTF8* Au_meta::met = NULL;
 #define addtoken(tok,c) tok.add((uchar*)c,charsz(c))
 #define checkcr if (chr[0] == '\n') l++
 //---------------------------------------AUTOMATON------------------------------------------------------------
-static bool tokenize(wstring& rg, vector<wstring>& stack, vector<aut_actions>& vtypes) {
-    wstring sub;
+static bool tokenize(u_ustring& rg, vector<u_ustring>& stack, vector<aut_actions>& vtypes) {
+    u_ustring sub;
     long sz = rg.size();
     uchar type=aut_reg;
     long inbracket = 0;
@@ -75,23 +75,23 @@ static bool tokenize(wstring& rg, vector<wstring>& stack, vector<aut_actions>& v
                         sub+=rg[i+1];
                         sub+=rg[i+2];
                         i+=2;
-                        sub = (wchar_t)convertinginteger(sub);
+                        sub = (u_uchar)convertinginteger(sub);
                     }
                     else //we also accept four hexa: \xFFFF
                         if (rg[i] == 'x' && (i+4)<sz && c_is_hexa(rg[i+1]) && c_is_hexa(rg[i+2]) && c_is_hexa(rg[i+3]) && c_is_hexa(rg[i+4])) {
-                            sub=L"0x";
+                            sub=U"0x";
                             sub+=rg[i+1];
                             sub+=rg[i+2];
                             sub+=rg[i+3];
                             sub+=rg[i+4];
                             i+=4;
-                            sub = (wchar_t)convertinginteger(sub);
+                            sub = (u_uchar)convertinginteger(sub);
                         }
                     type = aut_reg;
                 }
                 break;
             case '%':
-                sub = L"%";
+                sub = U"%";
                 if ((i + 1) < sz) {
                     type = aut_meta;
                     i++;
@@ -111,7 +111,7 @@ static bool tokenize(wstring& rg, vector<wstring>& stack, vector<aut_actions>& v
                 type = aut_opar;
                 break;
             case ')':
-                stack.push_back(L")");
+                stack.push_back(U")");
                 vtypes.push_back(aut_cpar);
                 continue; //we cannot have: ..)+ or ..)*
             case '[':
@@ -224,7 +224,7 @@ void Au_state::addrule(Au_arc* r) {
 }
 
 //----------------------------------------------------------------
-bool Au_state::match(wstring& w, long i) {
+bool Au_state::match(u_ustring& w, long i) {
     if ((status&an_error) == an_error)
         return false;
 
@@ -253,7 +253,7 @@ bool Au_state::match(wstring& w, long i) {
     return false;
 }
 
-bool Au_automaton::match(wstring& w) {
+bool Au_automaton::match(u_ustring& w) {
     return first->match(w,0);
 }
 
@@ -274,7 +274,7 @@ void Au_state::storerulearcs(std::unordered_map<long,bool>& rules) {
 
 //----------------------------------------------------------------
 
-long Au_state::loop(wstring& w, long i) {
+long Au_state::loop(u_ustring& w, long i) {
     if ((status & an_error) == an_error)
         return au_stop;
     
@@ -323,7 +323,7 @@ long Au_state::loop(wstring& w, long i) {
     return au_error;
 }
 
-long Au_automaton::find(wstring& w) {
+long Au_automaton::find(u_ustring& w) {
     long sz = w.size();
     for (long d=0;d<sz;d++) {
         if (first->loop(w,d) != au_error) {
@@ -333,7 +333,7 @@ long Au_automaton::find(wstring& w) {
     return au_error;
 }
 
-long Au_automaton::find(wstring& w, long i) {
+long Au_automaton::find(u_ustring& w, long i) {
     long sz = w.size();
     for (long d = i ; d < sz; d++) {
         if (first->loop(w,d) != au_error) {
@@ -343,7 +343,7 @@ long Au_automaton::find(wstring& w, long i) {
     return au_error;
 }
 
-bool Au_automaton::search(wstring& w) {
+bool Au_automaton::search(u_ustring& w) {
     long sz = w.size();
     for (long d=0;d<sz;d++) {
         if (first->loop(w,d) != au_error)
@@ -352,7 +352,7 @@ bool Au_automaton::search(wstring& w) {
     return false;
 }
 
-bool Au_automaton::search(wstring& w, long& b, long& e, long init) {
+bool Au_automaton::search(u_ustring& w, long& b, long& e, long init) {
     long sz = w.size();
     for (b=init;b<sz;b++) {
         e=first->loop(w,b);
@@ -364,7 +364,7 @@ bool Au_automaton::search(wstring& w, long& b, long& e, long init) {
     return false;
 }
 
-bool Au_automaton::searchlast(wstring& w, long& b, long& e, long init) {
+bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
     b=au_error;
     long f;
     long sz = w.size();
@@ -385,7 +385,7 @@ bool Au_automaton::searchlast(wstring& w, long& b, long& e, long init) {
 
 
 //----------------------------------------------------------------
-void Au_automaton::searchall(wstring& w, vector<long>& res, long init) {
+void Au_automaton::searchall(u_ustring& w, vector<long>& res, long init) {
     long f;
     long sz = w.size();
     
@@ -400,7 +400,7 @@ void Au_automaton::searchall(wstring& w, vector<long>& res, long init) {
 }
 
 //----------------------------------------------------------------
-bool Au_arc::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
+bool Au_arc::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
     if (i==w.size())
         return false;
     
@@ -419,7 +419,7 @@ bool Au_arc::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
     return false;
 }
 
-bool Au_state::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
+bool Au_state::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
     long ps=res.size();
     long j;
     
@@ -455,7 +455,7 @@ bool Au_state::find(wstring& w, wstring& wsep, long i, vector<long>& res) {
 //----------------------------------------------------------------
 //The next two methods return raw indexes... No conversion needed
 //This is used in LispEregularexpression::in
-bool Au_automaton::bytesearch(wstring& w, long& b, long& e) {
+bool Au_automaton::bytesearch(u_ustring& w, long& b, long& e) {
     long sz = w.size();
     for (b=0; b<sz; b++) {
         e=first->loop(w,b);
@@ -467,7 +467,7 @@ bool Au_automaton::bytesearch(wstring& w, long& b, long& e) {
 }
 
 
-void Au_automaton::bytesearchall(wstring& w, vector<long>& res) {
+void Au_automaton::bytesearchall(u_ustring& w, vector<long>& res) {
     long f;
     long sz = w.size();
     for (long d=0; d<sz; d++) {
@@ -514,25 +514,40 @@ void Au_state::merge(Au_state* a) {
 }
 //----------------------------------------------------------------
 
-Au_automate::Au_automate(wstring& wrgx) {
+Au_automate::Au_automate(u_ustring& wrgx) {
     first=NULL;
     if (!parse(wrgx,&garbage))
         first = NULL;
 }
 
-Au_automaton::Au_automaton(wstring wrgx) {
+#ifdef WIN32
+Au_automate::Au_automate(wstring& wrgx) {
+    first=NULL;
+	u_ustring u = _w_to_u(wrgx);
+    if (!parse(u, &garbage))
+        first = NULL;
+}
+#else
+Au_automate::Au_automate(wstring& wrgx) {
+	first = NULL;
+	if (!parse(_w_to_u(wrgx), &garbage))
+		first = NULL;
+}
+#endif
+
+Au_automaton::Au_automaton(u_ustring wrgx) {
     first=NULL;
     if (!parse(wrgx))
         first = NULL;
 }
 
-bool Au_automaton::parse(wstring& w, Au_automatons* aus) {
+bool Au_automaton::parse(u_ustring& w, Au_automatons* aus) {
     //static x_wautomaton xtok;
     //first we tokenize
     
     //First we detect the potential %X, where X is a macro
     
-    vector<wstring> toks;
+    vector<u_ustring> toks;
     vector<aut_actions> types;
     if (!tokenize(w,toks, types))
         return false;
@@ -563,11 +578,11 @@ bool Au_automaton::parse(wstring& w, Au_automatons* aus) {
     return true;
 }
 
-bool Au_automate::compiling(wstring& w,long r) {
+bool Au_automate::compiling(u_ustring& w,long r) {
     //static x_wautomaton xtok;
     //first we tokenize
     
-    vector<wstring> toks;
+    vector<u_ustring> toks;
     vector<aut_actions> types;
     if (!tokenize(w,toks, types))
         return false;
@@ -597,7 +612,7 @@ bool Au_automate::compiling(wstring& w,long r) {
 //----------------------------------------------------------------------------------------
 #define an_mandatory 8
 
-Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vector<aut_actions>& types, Au_state* common) {
+Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, vector<aut_actions>& types, Au_state* common) {
     mark=false;
     Au_arc* ar;
     bool nega = false;
@@ -620,7 +635,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vect
     long j;
     bool stop;
     short count;
-    vector<wstring> ltoks;
+    vector<u_ustring> ltoks;
     vector<aut_actions> ltypes;
     Au_state* ret = NULL;
     uchar localtype = types[i];
@@ -828,12 +843,12 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vect
     else
         next=NULL;
     
-    if (toks[i] == L"^") {
+    if (toks[i] == U"^") {
         status |= an_beginning;
         return build(aus, i+1,toks,types,common);
     }
     
-    if (toks[i] == L"$") {
+    if (toks[i] == U"$") {
         ret = build(aus, i+1,toks,types,common);
         ret->status |= an_ending;
         return ret;
@@ -861,7 +876,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<wstring>& toks, vect
     return next;
 }
 
-bool checkmeta(wstring& tok) {
+bool checkmeta(u_ustring& tok) {
     switch(tok[1]) {
         case 'C':
         case 'E':
@@ -881,7 +896,7 @@ bool checkmeta(wstring& tok) {
     }
 }
 
-Au_arc* Au_state::build(Au_automatons* aus, wstring& token, uchar type, Au_state* common, bool nega) {
+Au_arc* Au_state::build(Au_automatons* aus, u_ustring& token, uchar type, Au_state* common, bool nega) {
     //First we scan the arcs, in case, it was already created...
     Au_any* a=NULL;
     
@@ -955,9 +970,9 @@ class LispERegularExpressions : public Element {
 public:
     
     Au_automate au;
-    wstring strvalue;
+    u_ustring strvalue;
  
-    LispERegularExpressions(wstring str, short l_rgx) : au(str), strvalue(str), Element(l_rgx) {}
+    LispERegularExpressions(u_ustring str, short l_rgx) : au(str), strvalue(str), Element(l_rgx) {}
     
     bool verify() {
         if (au.first == NULL)
@@ -965,16 +980,16 @@ public:
         return true;
     }
     
-    Element* find(LispE* lisp, wstring& w, long pos) {
+    Element* find(LispE* lisp, u_ustring& w, long pos) {
         long debut, fin;
         if (au.search(w, debut, fin, pos)) {
-            wstring res = w.substr(debut, fin - debut);
+            u_ustring res = w.substr(debut, fin - debut);
             return lisp->provideString(res);
         }
         return emptystring_;
     }
 
-    Element* find_i(LispE* lisp, wstring& w, long pos) {
+    Element* find_i(LispE* lisp, u_ustring& w, long pos) {
         long debut, fin;
         Integers* positions = new Integers;
         if (au.search(w, debut, fin, pos)) {
@@ -985,7 +1000,7 @@ public:
     }
 
 
-    Element* findall(LispE* lisp, wstring& w, long pos) {
+    Element* findall(LispE* lisp, u_ustring& w, long pos) {
         vector<long> resultats;
         au.searchall(w, resultats, pos);
         
@@ -993,7 +1008,7 @@ public:
             return emptylist_;
 
         Strings* liste = new Strings;
-        wstring sub;
+        u_ustring sub;
         for (pos = 0; pos < resultats.size(); pos+=2) {
             sub = w.substr(resultats[pos], resultats[pos+1]-resultats[pos]);
             liste->append(sub);
@@ -1001,19 +1016,19 @@ public:
         return liste;
     }
 
-    Element* findall_i(LispE* lisp, wstring& w, long pos) {
+    Element* findall_i(LispE* lisp, u_ustring& w, long pos) {
         Integers* liste = new Integers;
         au.searchall(w, liste->liste, pos);
         return liste;
     }
 
-    Element* match(LispE* lisp, wstring& w) {
+    Element* match(LispE* lisp, u_ustring& w) {
         if (au.match(w))
             return true_;
         return false_;
     }
 
-    Element* replace(LispE* lisp, wstring& w, wstring& rep) {
+    Element* replace(LispE* lisp, u_ustring& w, u_ustring& rep) {
         vector<long> resultats;
         au.searchall(w, resultats, 0);
         if (resultats.size() == 0)
@@ -1024,7 +1039,7 @@ public:
         return lisp->provideString(w);
     }
 
-    Element* split(LispE* lisp, wstring& w) {
+    Element* split(LispE* lisp, u_ustring& w) {
         vector<long> values;
         au.searchall(w, values, 0);
         if (values.size() == 0)
@@ -1032,7 +1047,7 @@ public:
         
         Strings* result = new Strings;
         long pos = 0;
-        wstring sub;
+        u_ustring sub;
         for (long i = 0; i < values.size(); i += 2) {
             sub = w.substr(pos, values[i]-pos);
             result->append(sub);
@@ -1047,8 +1062,12 @@ public:
         return result;
     }
 
-    wstring asString(LispE* lisp) {
+    u_ustring asUString(LispE* lisp) {
         return strvalue;
+    }
+
+    wstring asString(LispE* lisp) {
+        return _u_to_w(strvalue);
     }
 };
 
@@ -1227,10 +1246,10 @@ public:
     short l_rgx;
     
     RegularExpressionConstructor(LispE* lisp, rgx r) : reg(r), Element(l_lib, s_constant) {
-        wstring wrgx = L"rgx";
+        u_ustring wrgx = U"rgx";
 #ifdef POSIXREGEX
         if (r >= prgx_rgx)
-            wrgx = L"prgx";
+            wrgx = U"prgx";
 #endif
         l_rgx = lisp->encode(wrgx);
     }
@@ -1240,7 +1259,7 @@ public:
         
         switch (reg) {
             case rgx_rgx: {
-                wstring expression = lisp->get(L"exp")->asString(lisp);
+                u_ustring expression = lisp->get(U"exp")->asUString(lisp);
                 LispERegularExpressions* e = new LispERegularExpressions(expression, l_rgx);
                 if (!e->verify()) {
                     delete e;
@@ -1249,62 +1268,62 @@ public:
                 return e;
             }
             case rgx_find: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                u_ustring value = lisp->get(U"str")->asUString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->find(lisp,value, pos);
             }
             case rgx_findall: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                u_ustring value = lisp->get(U"str")->asUString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->findall(lisp, value, pos);
             }
             case rgx_find_i: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                u_ustring value = lisp->get(U"str")->asUString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->find_i(lisp,value, pos);
             }
             case rgx_findall_i: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                u_ustring value = lisp->get(U"str")->asUString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->findall_i(lisp, value, pos);
             }
             case rgx_match: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
+                u_ustring value = lisp->get(U"str")->asUString(lisp);
                 return ((LispERegularExpressions*)e)->match(lisp, value);
             }
             case rgx_replace: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                wstring rep = lisp->get(L"rep")->asString(lisp);
+                u_ustring value = lisp->get(U"str")->asUString(lisp);
+                u_ustring rep = lisp->get(U"rep")->asUString(lisp);
                 return ((LispERegularExpressions*)e)->replace(lisp, value, rep);
             }
             case rgx_split: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
+                u_ustring value = lisp->get(U"str")->asUString(lisp);
                 return ((LispERegularExpressions*)e)->split(lisp, value);
             }
 #ifdef POSIXREGEX
             case prgx_rgx: {
-                wstring expression = lisp->get(L"exp")->asString(lisp);
+                wstring expression = lisp->get(U"exp")->asString(lisp);
                 LispEPosixRegularExpression* e = new LispEPosixRegularExpression(expression, l_rgx);
                 if (!e->verifie()) {
                     delete e;
@@ -1313,57 +1332,57 @@ public:
                 return e;
             }
             case prgx_find: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                wstring value = lisp->get(U"str")->asString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->find(lisp,value, pos);
             }
             case prgx_findall: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                wstring value = lisp->get(U"str")->asString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->findall(lisp, value, pos);
             }
             case prgx_find_i: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                wstring value = lisp->get(U"str")->asString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->find_i(lisp,value, pos);
             }
             case prgx_findall_i: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                long pos = lisp->get(L"pos")->asNumber();
+                wstring value = lisp->get(U"str")->asString(lisp);
+                long pos = lisp->get(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->findall_i(lisp, value, pos);
             }
             case prgx_split: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
+                wstring value = lisp->get(U"str")->asString(lisp);
                 return ((LispEPosixRegularExpression*)e)->split(lisp, value);
             }
             case prgx_match: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
+                wstring value = lisp->get(U"str")->asString(lisp);
                 return ((LispEPosixRegularExpression*)e)->match(lisp, value);
             }
             case prgx_replace: {
-                Element* e = lisp->get(L"exp");
+                Element* e = lisp->get(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(L"str")->asString(lisp);
-                wstring rep = lisp->get(L"rep")->asString(lisp);
+                wstring value = lisp->get(U"str")->asString(lisp);
+                wstring rep = lisp->get(U"rep")->asString(lisp);
                 return ((LispEPosixRegularExpression*)e)->replace(lisp, value, rep);
             }
 #endif
@@ -1439,9 +1458,9 @@ public:
     Element* eval(LispE* lisp) {
         Au_meta::met = lisp->handlingutf8;
         
-        wstring expression = lisp->get(L"exp")->asString(lisp);
+        wstring expression = lisp->get(U"exp")->asString(lisp);
         // As the construction of an rgx is expensive, they are kept in a pool .
-        Element* value = lisp->get(L"str");
+        Element* value = lisp->get(U"str");
         //We use our internal pool to factor out regular expressions and protect their storage in multi-threading
         
         Element* rgx = lisp->pool_out(expression);
@@ -1450,11 +1469,13 @@ public:
         if (rgx != null_) {
             if (value == null_)
                 return rgx;
-            wstring w = value->asString(lisp);
 #ifdef POSIXREGEX
-            if (reg == prgx_rgx)
+            if (reg == prgx_rgx) {
+                wstring w = value->asString(lisp);
                 return ((LispEPosixRegularExpression*)rgx)->match(lisp, w);
+            }
 #endif
+            u_ustring w = value->asUString(lisp);
             return ((LispERegularExpressions*)rgx)->match(lisp, w);
         }
         
@@ -1476,7 +1497,7 @@ public:
 #endif
         
         
-        LispERegularExpressions* e = new LispERegularExpressions(expression, l_rgx);
+        LispERegularExpressions* e = new LispERegularExpressions(_w_to_u(expression), l_rgx);
         if (!e->verify()) {
             delete e;
             throw new Error("Error: Unrecognized regular expression");
@@ -1485,7 +1506,7 @@ public:
         lisp->pool_in(expression, e);
         if (value == null_)
             return e;
-        wstring w = value->asString(lisp);
+        u_ustring w = value->asUString(lisp);
         return e->match(lisp,w);
     }
 };

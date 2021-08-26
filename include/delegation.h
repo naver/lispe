@@ -13,6 +13,7 @@
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include "mapbin.h"
 
 //------------------------------------------------------------
 class LispE;
@@ -89,27 +90,28 @@ public:
 //and won't budge after loading or compilation
 //The only exception is when creating new atoms
 typedef void (*reading_string)(string&, void*);
-typedef Element* (List::*methodEval)(LispE*);
 
 class Delegation {
 public:
     BlockThread trace_lock;
     ThreadLock lock;
 
-    unordered_map<wstring, short> string_to_code;
-    unordered_map<short, wstring> code_to_string;
+    unordered_map<u_ustring, short> string_to_code;
+    binHashe<u_ustring> code_to_string;
 
-    unordered_map<short, string> instructions;
-    unordered_map<short, short> data_ancestor;
+    binHashe<string> instructions;
+    binHash<short> data_ancestor;
     unordered_map<short, vector<short> > data_descendant;
-    unordered_map<short, bool> operators;
-    unordered_map<short, bool> math_operators;
-    unordered_map<short, Element*> operator_pool;
-    unordered_map<short, Element*> atom_pool;
-    unordered_map<short, Element*> data_pool;
+    binHash<Element*> function_pool;
+    binHash<Element*> data_pool;
+
+    binHash<bool> operators;
+    binHash<bool> math_operators;
+    binHash<Element*> operator_pool;
+    binHash<Element*> atom_pool;
     unordered_map<short, unordered_map<short, vector<Element*> > > method_pool;
-    unordered_map<long, unsigned long> arities;
-    unordered_map<short, Element*> macros;
+    binHash<unsigned long> arities;
+    binHash<Element*> macros;
 
     methodEval evals[l_final];
     
@@ -118,12 +120,11 @@ public:
     unordered_map<string, long> allfiles;
     unordered_map<long, Element*> entrypoints;
 
-    unordered_map<wstring, ThreadLock*> locks;
-    unordered_map<wstring, BlockThread*> waitons;
+    unordered_map<u_ustring, ThreadLock*> locks;
+    unordered_map<u_ustring, BlockThread*> waitons;
     
-    unordered_map<wstring, List> thread_pool;
+    unordered_map<u_ustring, List> thread_pool;
 
-    unordered_map<short, Element*> function_pool;
 
     //this is an all-purpose pool for internal usage
 
@@ -150,6 +151,8 @@ public:
     Atome* _DEFPAT;
     Atome* _DICO_KEYN;
     Atome* _DICO_KEY;
+    Atome* _DICO_SETN;
+    Atome* _DICO_SET;
     Atome* _QUOTE;
     Element* _BREAK;
     Listbreak _BREAKEVAL;
@@ -222,23 +225,24 @@ public:
     
     inline string toString(short c) {
         string s;
-        try {
-            wstring w = code_to_string.at(c);
+        if (code_to_string.check(c)) {
+            u_ustring w = code_to_string.at(c);
             s_unicode_to_utf8(s, w);
             return s;
         }
-        catch(const std::out_of_range& oor) {
-            return "nil";
-        }
+        return "nil";
     }
 
     inline wstring asString(short c) {
-        try {
+        if (code_to_string.check(c))
+            return u_to_w(code_to_string.at(c));
+        return L"nil";
+    }
+
+    inline u_ustring asUString(short c) {
+        if (code_to_string.check(c))
             return code_to_string.at(c);
-        }
-        catch(const std::out_of_range& oor) {
-            return L"nil";
-        }
+        return U"nil";
     }
 
     void updatepathname(string& pathname) {
@@ -256,7 +260,7 @@ public:
         try {
             listing.at(i_current_file).at(l);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             listing[i_current_file][l] = e;
         }
     }
@@ -266,12 +270,12 @@ public:
     }
     
     short encode(string& str) {
-        wstring s;
+        u_ustring s;
         s_utf8_to_unicode(s, USTR(str), str.size());
         try {
             return string_to_code.at(s);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -279,11 +283,24 @@ public:
         }
     }
 
-    short encode(wstring& s) {
+    short encode(wstring& w) {
+        u_pstring s = _w_to_u(w);
         try {
             return string_to_code.at(s);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
+            long idx = string_to_code.size() + l_final;
+            code_to_string[idx] = s;
+            string_to_code[s] = idx;
+            return idx;
+        }
+    }
+
+    short encode(u_ustring& s) {
+        try {
+            return string_to_code.at(s);
+        }
+        catch(...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -292,12 +309,12 @@ public:
     }
     
     short encode(wchar_t c) {
-        wstring s;
-        s = c;
+        u_ustring s;
+        s = (u_uchar)c;
         try {
             return string_to_code.at(s);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -305,7 +322,21 @@ public:
         }
     }
 
-    void replaceAtom(wstring& name, short code, bool tobelocked) {
+    short encode(u_uchar c) {
+        u_ustring s;
+        s = c;
+        try {
+            return string_to_code.at(s);
+        }
+        catch(...) {
+            long idx = string_to_code.size() + l_final;
+            code_to_string[idx] = s;
+            string_to_code[s] = idx;
+            return idx;
+        }
+    }
+
+    void replaceAtom(u_ustring& name, short code, bool tobelocked) {
         lock.locking(tobelocked);
         string_to_code[name] = code;
         lock.unlocking(tobelocked);
@@ -313,94 +344,86 @@ public:
 
 
     lisp_code check_atom(string& w) {
-        wstring s;
+        u_ustring s;
         s_utf8_to_unicode(s, USTR(w), w.size());
         try {
             short code = string_to_code.at(s);
-            atom_pool.at(code);
-            return (lisp_code)code;
+            if (atom_pool.check(code))
+                return (lisp_code)code;
         }
-        catch(const std::out_of_range& oor) {
-            return l_final;
+        catch(...) {
         }
+        return l_final;
     }
 
     short is_atom(string& w) {
-        wstring s;
+        u_ustring s;
         s_utf8_to_unicode(s, USTR(w), w.size());
         try {
             short code = string_to_code.at(s);
-            atom_pool.at(code);
-            return code;
+            if (atom_pool.check(code))
+                return code;
         }
-        catch(const std::out_of_range& oor) {
-            return -1;
+        catch(...) {
         }
+        return -1;
     }
 
-    short is_atom(wstring& s) {
+    short is_atom(u_ustring& s) {
         try {
             short code = string_to_code.at(s);
-            atom_pool.at(code);
-            return code;
+            if (atom_pool.check(code))
+                return code;
         }
-        catch(const std::out_of_range& oor) {
-            return -1;
+        catch(...) {
         }
+        return -1;
     }
 
-    bool is_instruction(short c) {
+    short is_atom(wstring& w) {
         try {
-            instructions.at(c);
-            return true;
+            short code = string_to_code.at(_w_to_u(w));
+            if (atom_pool.check(code))
+                return code;
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
+        }
+        return -1;
+    }
+
+
+    bool is_instruction(short c) {
+        return instructions.check(c);
+    }
+
+    bool is_instruction(u_ustring& s) {
+        try {
+            return (s == U"true" || s == U"nil" || instructions.check(string_to_code.at(s)));
+        }
+        catch(...) {
             return false;
         }
     }
 
     bool is_instruction(wstring& s) {
         try {
-            instructions.at(string_to_code.at(s));
-            return true;
+            return (s == L"true" || s == L"nil" || instructions.check(string_to_code.at(_w_to_u(s))));
         }
-        catch(const std::out_of_range& oor) {
-            if (s == L"true" || s == L"nil")
-                return true;
+        catch(...) {
             return false;
         }
     }
-    
+
     bool is_math_operator(short c) {
-        try {
-            math_operators.at(c);
-            return true;
-        }
-        catch(const std::out_of_range& oor) {
-            return false;
-        }
+        return math_operators.check(c);
     }
 
     bool is_operator(short c) {
-        try {
-            operators.at(c);
-            return true;
-        }
-        catch(const std::out_of_range& oor) {
-            return false;
-        }
+        return operators.check(c);
     }
 
     bool is_atom_code(short code) {
-        if (code < l_final)
-            return false;
-        try {
-            atom_pool.at(code);
-            return true;
-        }
-        catch(const std::out_of_range& oor) {
-            return false;
-        }
+        return (code > l_final && atom_pool.check(code));
     }
 
 
@@ -414,24 +437,32 @@ public:
     }
 
     Element* provideOperator(short code) {
-        return operator_pool[code];
+        return operator_pool.search(code);
     }
 
-    bool checkArity(short instruction_code, unsigned long arity) {
+    bool sameArity(short instruction_code, unsigned long arity) {
         try {
             return (arities.at(instruction_code) == arity);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return false;
         }
         return false;
+    }
+    
+    bool checkArity(short instruction_code, unsigned long sz) {
+        if (arities.check(instruction_code)) {
+            sz = 1 << ((sz < 16)?sz:15);
+            return ((arities.at(instruction_code)&sz) == sz);
+        }
+        return true;
     }
 
     inline void set_instruction(short instruction_code, string name,  unsigned long arity, methodEval m) {
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         evals[instruction_code] = m;
-        wstring n;
+        u_ustring n;
         s_utf8_to_unicode(n, USTR(name), name.size());
         code_to_string[instruction_code] = n;
     }
@@ -457,7 +488,7 @@ public:
                 }
             }
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return false;
         }
         return false;
@@ -467,20 +498,17 @@ public:
         try {
             return breakpoints.at(i_file).at(i_line);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return false;
         }
     }
     
     bool recordingFunction(Element* e, short label) {
-        try {
-            function_pool.at(label);
+        if (function_pool.check(label))
             return false;
-        }
-        catch(const std::out_of_range& oor) {
-            function_pool[label] = e;
-            e->status = s_constant;
-        }
+        
+        function_pool[label] = e;
+        e->status = s_constant;
         return true;
     }
     
@@ -491,7 +519,7 @@ public:
         try {
             method_pool.at(label);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             //We record the first instance of a defpat declaration
             if (stack == NULL)
                 recordingFunction(e, label);
@@ -506,55 +534,43 @@ public:
             for (auto& a: data_descendant.at(sublabel))
                 method_pool[label][a].push_back(e);
         }
-        catch(const std::out_of_range& oor) {}
+        catch(...) {}
         
         return e;
     }
     
     inline Element* recordingData(Element* e, short label, short ancestor) {
-        try {
-            data_pool.at(label);
+        if (data_pool.check(label))
             throw new Error("Error: data structure has already been recorded");
+        
+        data_pool[label] = e;
+        e->status = s_constant;
+        e->type = t_data;
+        if (ancestor != v_null) {
+            data_ancestor[label] = ancestor;
+            data_descendant[ancestor].push_back(label);
+            data_pool[ancestor] = _TRUE;
         }
-        catch(const std::out_of_range& oor) {
-            data_pool[label] = e;
-            e->status = s_constant;
-            e->type = t_data;
-            if (ancestor != v_null) {
-                data_ancestor[label] = ancestor;
-                data_descendant[ancestor].push_back(label);
-                data_pool[ancestor] = _TRUE;
-            }
-            return e;
-        }
+        return e;
     }
     
-    inline bool checkAncestor(Element* ancestor, Element* label) {
-        try {
-            return (data_ancestor.at(label->label()) == ancestor->label());
-        }
-        catch(const std::out_of_range& oor) {
-            return false;
-        }
+    inline bool checkAncestor(Element* ancestor, short label) {
+        return (data_ancestor.check(label) && (data_ancestor.at(label) == ancestor->label()));
     }
     
     inline Element* getMethod(short label, short sublabel, long i) {
         try {
             return method_pool.at(label).at(sublabel).at(i);
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             return _NULL;
         }
     }
         
     inline short checkDataStructure(short label) {
-        try {
-            data_pool.at(label);
+        if (data_pool.check(label))
             return label;
-        }
-        catch(const std::out_of_range& oor) {
-            return v_null;
-        }
+        return v_null;
     }
     
     //We delve into the argument structure to find the first label
@@ -568,25 +584,17 @@ public:
     }
     
     inline Element* getDataStructure(short label) {
-        try {
-            return data_pool.at(label);
-        }
-        catch(const std::out_of_range& oor) {
-            return NULL;
-        }
+        return data_pool.search(label);
     }
     
     inline Element* recordingMacro(LispE* lisp, Element* e, short label) {
-        try {
-            macros.at(label);
+        if (macros.check(label))
             throw new Error("Error: This macro has already been recorded");
-        }
-        catch(const std::out_of_range& oor) {
-            macros[label] = e;
-            if (!e->replaceVariableNames(lisp))
-                throw new Error("Error: The definition of a parameter should not be 'nil'");
-            return e;
-        }
+        
+        if (!e->replaceVariableNames(lisp))
+            throw new Error("Error: The definition of a parameter should not be 'nil'");
+        macros[label] = e;
+        return e;
     }
     
     void setError(Error* err) {
@@ -611,7 +619,7 @@ public:
         throw err;
     }
     
-    Element* atomise(wstring& a, bool tobelocked) {
+    Element* atomise(u_ustring& a, bool tobelocked) {
         List* liste = new List;
         Element* e;
         lock.locking(tobelocked);
@@ -623,7 +631,7 @@ public:
         return liste;
     }
 
-    ThreadLock* getlock(wstring& w) {
+    ThreadLock* getlock(u_ustring& w) {
         lock.locking();
         ThreadLock* l = locks[w];
         if (l == NULL) {
@@ -634,7 +642,7 @@ public:
         return l;
     }
     
-    void waiton(wstring& w) {
+    void waiton(u_ustring& w) {
         lock.locking();
         BlockThread* b = waitons[w];
         if (b == NULL) {
@@ -645,7 +653,7 @@ public:
         b->blocked();
     }
     
-    bool trigger(wstring& w) {
+    bool trigger(u_ustring& w) {
         lock.locking();
         try {
             BlockThread* b = waitons.at(w);
@@ -653,14 +661,14 @@ public:
             b->released();
             return true;
         }
-        catch(const std::out_of_range& oor) {
+        catch(...) {
             lock.unlocking();
         }
         return false;
     }
     
     //Storage for within threads
-    void thread_store(wstring& key, Element* e) {
+    void thread_store(u_ustring& key, Element* e) {
         e = e->fullcopy();
         lock.locking();
         thread_pool[key].status = 1;
@@ -670,7 +678,7 @@ public:
     
     Element* thread_retrieve_all() {
         Dictionary* d = new Dictionary;
-        wstring key;
+        u_ustring key;
         lock.locking();
         for (auto& a: thread_pool) {
             key = a.first;
@@ -680,13 +688,13 @@ public:
         return d;
     }
     
-    Element* thread_retrieve(wstring& key) {
+    Element* thread_retrieve(u_ustring& key) {
         Element* v = NULL;
         lock.locking();
         try {
             v = thread_pool.at(key).copying(true);
         }
-        catch(const std::out_of_range& oor) {}
+        catch(...) {}
         lock.unlocking();
         return v;
     }
@@ -700,31 +708,31 @@ public:
         lock.unlocking();
     }
     
-    bool thread_clear(wstring& key) {
+    bool thread_clear(u_ustring& key) {
         lock.locking();
         try {
             thread_pool.at(key).clear();
             lock.unlocking();
             return true;
         }
-        catch(const std::out_of_range& oor) {}
+        catch(...) {}
         lock.unlocking();
         return false;
     }
     
     Element* provideAtom(short code) {
-        Element* e = atom_pool[code];
+        Element* e =  atom_pool.search(code);
         if (e == NULL) {
-            e = new Atome(code, code_to_string[code]);
+            e = new Atome(code, code_to_string.at(code));
             e->status = s_constant;
             atom_pool[code] = e;
         }
         return e;
     }
 
-    Element* provideAtom(wstring& name) {
+    Element* provideAtom(u_ustring& name) {
         short code = encode(name);
-        Element* e = atom_pool[code];
+        Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Atome(code, name);
             e->status = s_constant;
@@ -734,19 +742,18 @@ public:
     }
 
     void provideAtomType(short code) {
-        Element* e = atom_pool[code];
-        if (e == NULL) {
-            e = new Atomtype(code, code_to_string[code]);
+        if (!atom_pool.check(code)) {
+            Element* e = new Atomtype(code, code_to_string.at(code));
             e->status = s_constant;
             atom_pool[code] = e;
         }
     }
 
 
-    Element* provideAtom(wstring& name, bool tobelocked) {
+    Element* provideAtom(u_ustring& name, bool tobelocked) {
         lock.locking(tobelocked);
         short code = encode(name);
-        Element* e = atom_pool[code];
+        Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Atome(code, name);
             e->status = s_constant;
@@ -757,15 +764,12 @@ public:
     }
 
     Element* provideAtomOrInstruction(short code) {
-        Element* e = atom_pool[code];
+        Element* e =  atom_pool.search(code);
         if (e == NULL) {
-            try {
-                instructions.at(code);
-                e = new Instruction(code, code_to_string[code]);
-            }
-            catch(const std::out_of_range& oor) {
-                e = new Atome(code, code_to_string[code]);
-            }
+            if (instructions.check(code))
+                e = new Instruction(code, code_to_string.at(code));
+            else
+                e = new Atome(code, code_to_string.at(code));
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -774,15 +778,12 @@ public:
 
     Element* provideAtomOrInstruction(string& identifier) {
         short code = encode(identifier);
-        Element* e = atom_pool[code];
+        Element* e =  atom_pool.search(code);
         if (e == NULL) {
-            try {
-                instructions.at(code);
-                e = new Instruction(code, code_to_string[code]);
-            }
-            catch(const std::out_of_range& oor) {
-                e = new Atome(code, code_to_string[code]);
-            }
+            if (instructions.check(code))
+                e = new Instruction(code, code_to_string.at(code));
+            else
+                e = new Atome(code, code_to_string.at(code));
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -791,9 +792,9 @@ public:
 
 
     Element* provideNonLabelAtom(short code) {
-        Element* e = atom_pool[code];
+        Element* e =  atom_pool.search(code);
         if (e == NULL) {
-            e = new Atomnotlabel(code, code_to_string[code]);
+            e = new Atomnotlabel(code, code_to_string.at(code));
             e->status = s_constant;
             atom_pool[code] = e;
         }
@@ -802,7 +803,7 @@ public:
 
     Element* provideCADR(string& strvalue) {
         short code = encode(strvalue);
-        Element* e = atom_pool[code];
+        Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Cadr(strvalue);
             e->status = s_constant;

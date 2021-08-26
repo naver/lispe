@@ -13,6 +13,8 @@
 #ifndef listes_h
 #define listes_h
 
+typedef Element* (List::*methodEval)(LispE*);
+
 class ITEM {
 public:
     Element** buffer;
@@ -153,6 +155,15 @@ public:
         }
     }
 
+    void decrement(Element* e) {
+        if (status)
+            return;
+        for (long i = 0; i < last; i++) {
+            if (e != buffer[i])
+                buffer[i]->decrementstatus(1, false);
+        }
+    }
+
     ~ITEM() {
         delete[] buffer;
     }
@@ -198,6 +209,22 @@ public:
         return ((item->last == 0 && l.item->last == 0) || (l.item == item && home == l.home));
     }
 
+    inline void put(long pos, Element* val) {
+        item->buffer[pos + home] = val;
+    }
+
+    inline Element* exchange(long pos, Element* val) {
+        Element* e = item->buffer[pos + home];
+        item->buffer[pos + home] = val;
+        return e;
+    }
+
+    inline Element* exchangelast(Element* val) {
+        Element* e = item->buffer[item->last - 1];
+        item->buffer[item->last - 1] = val;
+        return e;
+    }
+
     //if this a list, which is not duplicated through CDR calls
     bool nocdr() {
         return !item->status;
@@ -219,6 +246,10 @@ public:
         return usermarking;
     }
         
+    long _size() {
+        return item == NULL?0:item->last - home;
+    }
+
     long size() {
         return item->last - home;
     }
@@ -252,12 +283,16 @@ public:
         item->push_raw(val);
     }
     
-    inline Element*& operator [](long pos) {
+    inline Element*& operator[](long pos) {
         return item->buffer[pos+home];
     }
+    
+    inline short get0() {
+        return item->buffer[home]->type;
+    }
 
-    void erase(long i) {
-        item->erase(i+home);
+    void erase(long pos) {
+        item->erase(pos +home);
     }
 
     void reserve(long t) {
@@ -317,7 +352,26 @@ public:
             item->last = home;
         }
     }
-    
+
+    inline void decrement_and_clear(Element* e) {
+        //If there is some kind of sharing
+        //we re-create a new item, and release the grip
+        //on the current one...
+        //otherwise, we clean the current structure
+        //since, this is the only access...
+        if (item->status) {
+            item->status--;
+            item = new ITEM(item->sz);
+            home = 0;
+        }
+        else {
+            //We clean the whole structure
+            //and reset last to its first element
+            item->decrement(e);
+            item->last = home;
+        }
+    }
+
     inline Element* at(long i) {
         i += home;
         if (i < 0 || i >= item->last)
@@ -356,8 +410,12 @@ public:
     List() : terminal(false), liste(8), Element(t_list) {}
     List(uchar s) : terminal(false), liste(1), Element(t_list, s) {}
     
-    //When a CDR is called, we create a copy of LIST, which shared the same ITEM object
-    //but with a different home...
+    //In all other case, we "borrow" the ITEM object to create a LIST object that will
+    //share the same content. No copy or duplication is necessary.
+    //ITEM exposes a "status" value that is used to count the number of times an object has been borrowed
+    //to correctly assess when it can be safely deleted.
+    //When a CDR is called, it will share this list's item, but with a different "home" value.
+    //The "home value" in a LIST object defines where it starts in the internal buffer of ITEM
     List(List* l, long p) : terminal(false), liste(l->liste, p), Element(t_list) {}
 
     bool isContainer() {
@@ -370,7 +428,9 @@ public:
     
     virtual Element* loop(LispE* lisp, short label,  List* code);
     Element* multiloop(LispE* lisp);
+    Element* polyloop(LispE* lisp);
     
+    long find_element(LispE*, Element* element_value, long idx);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
@@ -457,8 +517,12 @@ public:
     // We must force the copy when it is a constant
     virtual Element* duplicate_constant_container(bool pair = false);
     
-    bool isList() {
+    virtual bool isList() {
         return true;
+    }
+    
+    bool isLambda() {
+        return (liste.size() && liste.item->buffer[0]->type == l_lambda);
     }
     
     bool isNotEmptyList() {
@@ -487,7 +551,7 @@ public:
             status -= nb;
     }
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
     
@@ -622,8 +686,38 @@ public:
         liste.setmark(false);
         return buffer;
     }
+
+    virtual u_ustring asUString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return U"()";
+        
+        if (liste[0]->type == l_quote && sz == 2) {
+            u_ustring buffer(U"'");
+            buffer += liste[1]->stringInUList(lisp);
+            return buffer;
+        }
+        
+        if (liste.mark())
+            return U"...";
+        
+        liste.setmark(true);
+
+        sz -= 1;
+        
+        u_ustring buffer(U"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += U" ";
+            buffer += liste[i]->stringInUList(lisp);
+        }
+        buffer += U")";
+        liste.setmark(false);
+        return buffer;
+    }
     
-    void append(LispE* lisp, wstring& k);
+    void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
 
@@ -678,17 +772,22 @@ public:
     }
     
     Element* composing(LispE*, bool compose);
-    Element* eval(LispE*);
+    virtual Element* eval(LispE*);
         
     bool Boolean() {
         return (liste.size());
     }
     
-    void evalthread(Element* corps, LispE*);
-    Element* evalfunction(Element* corps, LispE*);
-    Element* evalpattern(LispE* lisp, short function_name);
+    void evalthread(LispE*, Element* corps);
+    Element* evalfunction(LispE*, Element* corps);
     
-    void evalAsString(long i, LispE* lisp, wstring& w);
+    Element* eval_pattern(LispE* lisp, short function_name);
+    Element* eval_function(LispE*, Element* corps);
+    Element* eval_thread(LispE*, Element* corps);
+    Element* eval_data(LispE*, Element* corps);
+    Element* eval_lambda(LispE*, Element* corps);
+    
+    void evalAsUString(long i, LispE* lisp, u_ustring& w);
     void evalAsNumber(long i, LispE* lisp, double& d);
     void evalAsInteger(long i, LispE* lisp, long& d);
     
@@ -702,7 +801,7 @@ public:
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
-    void storevalue(LispE*, wstring& v);
+    void storevalue(LispE*, u_ustring& v);
     
     bool removelast() {
         if (!liste.size())
@@ -813,12 +912,14 @@ public:
     
     Element* insert(LispE* lisp, Element* e, long idx);
 
-    virtual void set_current_line(LispE*) {}
+    void sameSizeNoTerminalArguments(LispE* lisp, Element* body, Element* parameters);
+    void differentSizeNoTerminalArguments(LispE* lisp, Element* body, Element* parameters, long nbarguments, long defaultarguments);
 
-    void sameSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element* body, Element* parameters, bool threading);
-    void sameSizeTerminalArguments(LispE* lisp, Element* parameters);
-    void differentSizeNoTerminalArguments(LispE* lisp, LispE* thread_lisp, Element* body, Element* parameters, long nbarguments, long defaultarguments, bool threading);
+    void sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, Element* body, Element* parameters);
+    void differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, Element* body, Element* parameters, long nbarguments, long defaultarguments);
+
     void differentSizeTerminalArguments(LispE* lisp, Element* parameters, long nbarguments,  long defaultarguments);
+    void sameSizeTerminalArguments(LispE* lisp, Element* parameters);
 
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
@@ -828,196 +929,212 @@ public:
             liste.decrement_and_clear();
     }
 
+    void clear(Element* e) {
+        if (status < s_protect)
+            liste.decrement_and_clear(e);
+    }
+
     void clean() {
         liste.clean();
     }
+    
+    Element* transformargument(LispE*);
     
 #ifdef MAX_STACK_SIZE_ENABLED
     Element* evall_set_max_stack_size(LispE* lisp);
 #endif
 
+    Element* eval_call_function(LispE* lisp);
     Element* eval_error(LispE* lisp);
-    Element* evall_quote(LispE* lisp);
-    Element* evall_return(LispE* lisp);
-    Element* evall_break(LispE* lisp);
-    Element* evall_while(LispE* lisp);
-    Element* evall_link(LispE* lisp);
-    Element* evall_plus(LispE* lisp);
-    Element* evall_minus(LispE* lisp);
-    Element* evall_multiply(LispE* lisp);
-    Element* evall_power(LispE* lisp);
-    Element* evall_leftshift(LispE* lisp);
-    Element* evall_rightshift(LispE* lisp);
-    Element* evall_divide(LispE* lisp);
-    Element* evall_mod(LispE* lisp);
-    Element* evall_bitnot(LispE* lisp);
-    Element* evall_bitand(LispE* lisp);
-    Element* evall_bitandnot(LispE* lisp);
-    Element* evall_bitor(LispE* lisp);
-    Element* evall_bitxor(LispE* lisp);
-    Element* evall_plusequal(LispE* lisp);
-    Element* evall_minusequal(LispE* lisp);
-    Element* evall_multiplyequal(LispE* lisp);
-    Element* evall_powerequal(LispE* lisp);
-    Element* evall_leftshiftequal(LispE* lisp);
-    Element* evall_rightshiftequal(LispE* lisp);
-    Element* evall_bitandnotequal(LispE* lisp);
-    Element* evall_bitandequal(LispE* lisp);
-    Element* evall_bitorequal(LispE* lisp);
-    Element* evall_bitxorequal(LispE* lisp);
-    Element* evall_divideequal(LispE* lisp);
-    Element* evall_modequal(LispE* lisp);
-    Element* evall_eq(LispE* lisp);
-    Element* evall_neq(LispE* lisp);
-    Element* evall_throw(LispE* lisp);
-    Element* evall_catch(LispE* lisp);
-    Element* evall_maybe(LispE* lisp);
-    Element* evall_equal(LispE* lisp);
-    Element* evall_determinant(LispE* lisp);
-    Element* evall_solve(LispE* lisp);
-    Element* evall_different(LispE* lisp);
-    Element* evall_lower(LispE* lisp);
-    Element* evall_greater(LispE* lisp);
-    Element* evall_lowerorequal(LispE* lisp);
-    Element* evall_greaterorequal(LispE* lisp);
-    Element* evall_max(LispE* lisp);
-    Element* evall_min(LispE* lisp);
-    Element* evall_atomp(LispE* lisp);
-    Element* evall_numberp(LispE* lisp);
-    Element* evall_stringp(LispE* lisp);
-    Element* evall_consp(LispE* lisp);
-    Element* evall_zerop(LispE* lisp);
-    Element* evall_nullp(LispE* lisp);
-    Element* evall_data(LispE* lisp);
-    Element* evall_flip(LispE* lisp);
-    Element* evall_select(LispE* lisp);
-    Element* evall_compose(LispE* lisp);
-    Element* evall_loop(LispE* lisp);
-    Element* evall_loopcount(LispE* lisp);
-    Element* evall_or(LispE* lisp);
+    
     Element* evall_and(LispE* lisp);
-    Element* evall_xor(LispE* lisp);
-    Element* evall_ncheck(LispE* lisp);
-    Element* evall_check(LispE* lisp);
-    Element* evall_ife(LispE* lisp);
-    Element* evall_invert(LispE* lisp);
+    Element* evall_apply(LispE* lisp);
+    Element* evall_at_index(LispE* lisp);
+    Element* evall_atomise(LispE* lisp);
+    Element* evall_atomp(LispE* lisp);
+    Element* evall_atoms(LispE* lisp);
+    Element* evall_backreduce(LispE* lisp);
+    Element* evall_backscan(LispE* lisp);
+    Element* evall_bitand(LispE* lisp);
+    Element* evall_bitandequal(LispE* lisp);
+    Element* evall_bitandnot(LispE* lisp);
+    Element* evall_bitandnotequal(LispE* lisp);
+    Element* evall_bitnot(LispE* lisp);
+    Element* evall_bitor(LispE* lisp);
+    Element* evall_bitorequal(LispE* lisp);
+    Element* evall_bitxor(LispE* lisp);
+    Element* evall_bitxorequal(LispE* lisp);
     Element* evall_block(LispE* lisp);
+    Element* evall_bodies(LispE* lisp);
+    Element* evall_break(LispE* lisp);
+    Element* evall_cadr(LispE* lisp);
+    Element* evall_car(LispE* lisp);
+    Element* evall_catch(LispE* lisp);
+    Element* evall_cdr(LispE* lisp);
+    Element* evall_check(LispE* lisp);
+    Element* evall_checking(LispE* lisp);
+    Element* evall_compose(LispE* lisp);
+    Element* evall_concatenate(LispE* lisp);
+    Element* evall_cond(LispE* lisp);
+    Element* evall_cons(LispE* lisp);
+    Element* evall_consp(LispE* lisp);
     Element* evall_converttoatom(LispE* lisp);
     Element* evall_converttointeger(LispE* lisp);
     Element* evall_converttonumber(LispE* lisp);
     Element* evall_converttostring(LispE* lisp);
-    Element* evall_list(LispE* lisp);
-    Element* evall_reverse(LispE* lisp);
-    Element* evall_concatenate(LispE* lisp);
-    Element* evall_cons(LispE* lisp);
-    Element* evall_duplicate(LispE* lisp);
-    Element* evall_trace(LispE* lisp);
-    Element* evall_key(LispE* lisp);
-    Element* evall_keyn(LispE* lisp);
-    Element* evall_last(LispE* lisp);
-    Element* evall_push(LispE* lisp);
-    Element* evall_infix(LispE* lisp);
-    Element* evall_insert(LispE* lisp);
-    Element* evall_unique(LispE* lisp);
-    Element* evall_rotate(LispE* lisp);
-    Element* evall_pop(LispE* lisp);
-    Element* evall_keys(LispE* lisp);
-    Element* evall_values(LispE* lisp);
-    Element* evall_cond(LispE* lisp);
-    Element* evall_not(LispE* lisp);
-    Element* evall_nconc(LispE* lisp);
-    Element* evall_if(LispE* lisp);
-    Element* evall_car(LispE* lisp);
-    Element* evall_outerproduct(LispE* lisp);
-    Element* evall_innerproduct(LispE* lisp);
-    Element* evall_cdr(LispE* lisp);
-    Element* evall_cadr(LispE* lisp);
-    Element* evall_label(LispE* lisp);
-    Element* evall_setq(LispE* lisp);
-    Element* evall_setg(LispE* lisp);
+    Element* evall_data(LispE* lisp);
     Element* evall_deflib(LispE* lisp);
     Element* evall_deflibpat(LispE* lisp);
     Element* evall_defmacro(LispE* lisp);
-    Element* evall_sleep(LispE* lisp);
-    Element* evall_wait(LispE* lisp);
     Element* evall_defpat(LispE* lisp);
     Element* evall_defun(LispE* lisp);
-    Element* evall_bodies(LispE* lisp);
-    Element* evall_lambda(LispE* lisp);
-    Element* eval_call_function(LispE* lisp);
-    Element* evalt_list(LispE* lisp);
-    Element* evall_reduce(LispE* lisp);
-    Element* evall_scan(LispE* lisp);
-    Element* evall_backreduce(LispE* lisp);
-    Element* evall_backscan(LispE* lisp);
-    Element* evall_rank(LispE* lisp);
+    Element* evall_determinant(LispE* lisp);
+    Element* evall_different(LispE* lisp);
+    Element* evall_divide(LispE* lisp);
+    Element* evall_divideequal(LispE* lisp);
+    Element* evall_duplicate(LispE* lisp);
+    Element* evall_elapse(LispE* lisp);
+    Element* evall_eq(LispE* lisp);
+    Element* evall_equal(LispE* lisp);
     Element* evall_equalonezero(LispE* lisp);
-    Element* evall_rho(LispE* lisp);
-    Element* evall_member(LispE* lisp);
+    Element* evall_eval(LispE* lisp);
+    Element* evall_extend(LispE* lisp);
+    Element* evall_extract(LispE* lisp);
     Element* evall_factorial(LispE* lisp);
+    Element* evall_fappend(LispE* lisp);
+    Element* evall_filterlist(LispE* lisp);
+    Element* evall_flatten(LispE* lisp);
+    Element* evall_flip(LispE* lisp);
+    Element* evall_folding(LispE* lisp);
+    Element* evall_fread(LispE* lisp);
+    Element* evall_fwrite(LispE* lisp);
+    Element* evall_getchar(LispE* lisp);
+    Element* evall_greater(LispE* lisp);
+    Element* evall_greaterorequal(LispE* lisp);
+    Element* evall_if(LispE* lisp);
+    Element* evall_ife(LispE* lisp);
+    Element* evall_in(LispE* lisp);
+    Element* evall_index(LispE* lisp);
+    Element* evall_infix(LispE* lisp);
+    Element* evall_innerproduct(LispE* lisp);
+    Element* evall_input(LispE* lisp);
+    Element* evall_insert(LispE* lisp);
+    Element* evall_integers(LispE* lisp);
+    Element* evall_invert(LispE* lisp);
     Element* evall_iota(LispE* lisp);
     Element* evall_iota0(LispE* lisp);
+    Element* evall_irange(LispE* lisp);
+    Element* evall_join(LispE* lisp);
+    Element* evall_key(LispE* lisp);
+    Element* evall_keyn(LispE* lisp);
+    Element* evall_keys(LispE* lisp);
+    Element* evall_label(LispE* lisp);
+    Element* evall_lambda(LispE* lisp);
+    Element* evall_last(LispE* lisp);
+    Element* evall_leftshift(LispE* lisp);
+    Element* evall_leftshiftequal(LispE* lisp);
+    Element* evall_link(LispE* lisp);
+    Element* evall_list(LispE* lisp);
+    Element* evall_load(LispE* lisp);
     Element* evall_lock(LispE* lisp);
-    Element* evall_sum(LispE* lisp);
-    Element* evall_product(LispE* lisp);
-    Element* evall_waiton(LispE* lisp);
-    Element* evall_trigger(LispE* lisp);
-    Element* evall_threadstore(LispE* lisp);
-    Element* evall_threadclear(LispE* lisp);
-    Element* evall_threadretrieve(LispE* lisp);
-    Element* evall_print(LispE* lisp);
-    Element* evall_println(LispE* lisp);
-    Element* evall_printerr(LispE* lisp);
-    Element* evall_printerrln(LispE* lisp);
-    Element* evall_prettify(LispE* lisp);
+    Element* evall_loop(LispE* lisp);
+    Element* evall_loopcount(LispE* lisp);
+    Element* evall_lower(LispE* lisp);
+    Element* evall_lowerorequal(LispE* lisp);
+    Element* evall_lubksb(LispE* lisp);
+    Element* evall_ludcmp(LispE* lisp);
+    Element* evall_maplist(LispE* lisp);
+    Element* evall_mapping(LispE* lisp);
     Element* evall_mark(LispE* lisp);
     Element* evall_matrix(LispE* lisp);
-    Element* evall_tensor(LispE* lisp);
-    Element* evall_strings(LispE* lisp);
-    Element* evall_set(LispE* lisp);
-    Element* evall_setn(LispE* lisp);
+    Element* evall_max(LispE* lisp);
+    Element* evall_maybe(LispE* lisp);
+    Element* evall_member(LispE* lisp);
+    Element* evall_min(LispE* lisp);
+    Element* evall_minus(LispE* lisp);
+    Element* evall_minusequal(LispE* lisp);
+    Element* evall_mod(LispE* lisp);
+    Element* evall_modequal(LispE* lisp);
+    Element* evall_multiply(LispE* lisp);
+    Element* evall_multiplyequal(LispE* lisp);
+    Element* evall_ncheck(LispE* lisp);
+    Element* evall_nconc(LispE* lisp);
+    Element* evall_neq(LispE* lisp);
+    Element* evall_not(LispE* lisp);
+    Element* evall_nullp(LispE* lisp);
+    Element* evall_numberp(LispE* lisp);
     Element* evall_numbers(LispE* lisp);
-    Element* evall_integers(LispE* lisp);
-    Element* evall_resetmark(LispE* lisp);
-    Element* evall_atoms(LispE* lisp);
-    Element* evall_atomise(LispE* lisp);
-    Element* evall_join(LispE* lisp);
-    Element* evall_eval(LispE* lisp);
-    Element* evall_ludcmp(LispE* lisp);
-    Element* evall_lubksb(LispE* lisp);
-    Element* evall_type(LispE* lisp);
-    Element* evall_load(LispE* lisp);
-    Element* evall_input(LispE* lisp);
-    Element* evall_getchar(LispE* lisp);
+    Element* evall_or(LispE* lisp);
+    Element* evall_outerproduct(LispE* lisp);
     Element* evall_pipe(LispE* lisp);
-    Element* evall_flatten(LispE* lisp);
-    Element* evall_fread(LispE* lisp);
-    Element* evall_fappend(LispE* lisp);
-    Element* evall_fwrite(LispE* lisp);
-    Element* evall_size(LispE* lisp);
-    Element* evall_sign(LispE* lisp);
-    Element* evall_use(LispE* lisp);
-    Element* evall_at_index(LispE* lisp);
-    Element* evall_index(LispE* lisp);
-    Element* evall_set_at(LispE* lisp);
-    Element* evall_extract(LispE* lisp);
-    Element* evall_in(LispE* lisp);
+    Element* evall_plus(LispE* lisp);
+    Element* evall_plusequal(LispE* lisp);
+    Element* evall_pop(LispE* lisp);
+    Element* evall_power(LispE* lisp);
+    Element* evall_powerequal(LispE* lisp);
+    Element* evall_prettify(LispE* lisp);
+    Element* evall_print(LispE* lisp);
+    Element* evall_printerr(LispE* lisp);
+    Element* evall_printerrln(LispE* lisp);
+    Element* evall_println(LispE* lisp);
+    Element* evall_product(LispE* lisp);
+    Element* evall_push(LispE* lisp);
+    Element* evall_quote(LispE* lisp);
+    Element* evall_range(LispE* lisp);
+    Element* evall_rank(LispE* lisp);
+    Element* evall_reduce(LispE* lisp);
+    Element* evall_resetmark(LispE* lisp);
+    Element* evall_return(LispE* lisp);
+    Element* evall_reverse(LispE* lisp);
+    Element* evall_revertsearch(LispE* lisp);
+    Element* evall_rho(LispE* lisp);
+    Element* evall_rightshift(LispE* lisp);
+    Element* evall_rightshiftequal(LispE* lisp);
+    Element* evall_rotate(LispE* lisp);
+    Element* evall_scan(LispE* lisp);
     Element* evall_search(LispE* lisp);
     Element* evall_searchall(LispE* lisp);
-    Element* evall_revertsearch(LispE* lisp);
-    Element* evall_transpose(LispE* lisp);
-    Element* evall_irange(LispE* lisp);
-    Element* evall_range(LispE* lisp);
-    Element* evall_mapping(LispE* lisp);
-    Element* evall_checking(LispE* lisp);
-    Element* evall_folding(LispE* lisp);
-    Element* evall_apply(LispE* lisp);
-    Element* evall_maplist(LispE* lisp);
-    Element* evall_filterlist(LispE* lisp);
+    Element* evall_select(LispE* lisp);
+    Element* evall_set(LispE* lisp);
+    Element* evall_set_at(LispE* lisp);
+    Element* evall_setg(LispE* lisp);
+    Element* evall_setn(LispE* lisp);
+    Element* evall_setq(LispE* lisp);
+    Element* evall_sign(LispE* lisp);
+    Element* evall_size(LispE* lisp);
+    Element* evall_sleep(LispE* lisp);
+    Element* evall_solve(LispE* lisp);
     Element* evall_sort(LispE* lisp);
+    Element* evall_stringp(LispE* lisp);
+    Element* evall_strings(LispE* lisp);
+    Element* evall_sum(LispE* lisp);
+    Element* evall_tensor(LispE* lisp);
+    Element* evall_threadclear(LispE* lisp);
+    Element* evall_threadretrieve(LispE* lisp);
+    Element* evall_threadstore(LispE* lisp);
+    Element* evall_throw(LispE* lisp);
+    Element* evall_trace(LispE* lisp);
+    Element* evall_transpose(LispE* lisp);
+    Element* evall_trigger(LispE* lisp);
+    Element* evall_type(LispE* lisp);
+    Element* evall_unique(LispE* lisp);
+    Element* evall_use(LispE* lisp);
+    Element* evall_values(LispE* lisp);
+    Element* evall_wait(LispE* lisp);
+    Element* evall_waiton(LispE* lisp);
+    Element* evall_while(LispE* lisp);
+    Element* evall_xor(LispE* lisp);
+    Element* evall_zerop(LispE* lisp);
     Element* evall_zip(LispE* lisp);
     Element* evall_zipwith(LispE* lisp);
     
+    Element* evalt_data(LispE* lisp);
+    Element* evalt_function(LispE* lisp);
+    Element* evalt_lambda(LispE* lisp);
+    Element* evalt_list(LispE* lisp);
+    Element* evalt_pattern(LispE* lisp);
+    Element* evalt_thread(LispE* lisp);
+
     bool eval_Boolean(LispE* lisp, short instruction);
 
     Element* bit_not(LispE* l);
@@ -1050,21 +1167,96 @@ public:
     }
     
     virtual Element* newInstance(Element* v);
+    virtual bool incode() {
+        return false;
+    }
 
 };
+
+class Listargumentquote : public List {
+public:
+    
+    Listargumentquote(List* l) : List(l, 0) {}
+    
+    bool unify(LispE* lisp, Element* value, bool record);
+};
+
+class Listargumentdata : public List {
+public:
+    
+    Listargumentdata(List* l) : List(l, 0) {}
+    
+    bool unify(LispE* lisp, Element* value, bool record);
+};
+
+class Listargumentseparator : public List {
+public:
+    
+    Listargumentseparator(List* l) : List(l, 0) {}
+    
+    bool unify(LispE* lisp, Element* value, bool record);
+};
+
+class Listargumentset : public List {
+public:
+    
+    Listargumentset(List* l) : List(l, 0) {}
+    
+    bool isList() {
+        return false;
+    }
+    short label() {
+        if (liste[0]->type == l_set)
+            return t_set;
+        return t_setn;
+    }
+    
+    bool unify(LispE* lisp, Element* value, bool record);
+};
+
+
+
+class Listargumentlabel : public List {
+public:
+    short ilabel;
+    
+    Listargumentlabel(List* l, short lab) : ilabel(lab), List(l, 0) {}
+    
+    bool unify(LispE* lisp, Element* value, bool record);
+};
+
+class Listargumentfunction : public List {
+public:
+    Element* argument;
+    
+    Listargumentfunction(List* l, Element* e) : argument(e), List(l, 0) {}
+    bool unify(LispE* lisp, Element* value, bool record);
+};
+
 
 class Listincode : public List {
 public:
     long line;
     long fileidx;
     
-    Listincode(long l, long f) : line(l), fileidx(f), List(s_constant) {}
-    Listincode(uchar s) : List(s) {}
-    Listincode() {}
+    Listincode(long l, long f) : List(s_constant) {
+		line = l;
+		fileidx = f;
+	}
+    Listincode(uchar s) : List(s) {
+		line = 0;
+		fileidx = 0;
+	}
+    Listincode() {
+		line = 0;
+		fileidx = 0;
+	}
     
+    Element* eval(LispE*);
     Element* evall_infix(LispE* lisp);
-    void set_current_line(LispE*);
-
+    bool incode() {
+        return true;
+    }
 };
 
 class Listbreak : public Element {
@@ -1074,6 +1266,10 @@ public:
   
     bool isBreak() {
         return true;
+    }
+    
+    long size() {
+        return 1;
     }
     
     Element* eval(LispE*) {
@@ -1087,7 +1283,7 @@ public:
     Listlambda() : List() {}
     
     Element* eval(LispE* lisp) {
-        return evalfunction(liste[0]->eval(lisp), lisp);
+        return evalfunction(lisp, liste[0]->eval(lisp));
     }
 };
 
@@ -1149,6 +1345,29 @@ public:
         buffer += L")";
         return buffer;
     }
+
+    u_ustring asUString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return U"()";
+        
+        sz -= 1;
+        
+        u_ustring buffer(U"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i == sz)
+                buffer += U" . ";
+            else
+                if (i && i < sz)
+                    buffer+= U" ";
+            
+            buffer += liste[i]->stringInUList(lisp);
+        }
+        buffer += U")";
+        return buffer;
+    }
+
 };
 
 class Numbers : public Element {
@@ -1158,9 +1377,7 @@ public:
     vector<double> liste;
     
     Numbers() : Element(t_numbers), exchange_value(0) {}
-    Numbers(Numbers* n) : Element(t_numbers), exchange_value(0) {
-        liste = n->liste;
-    }
+    Numbers(Numbers* n) : liste(n->liste), Element(t_numbers), exchange_value(0) {}
     Numbers(uchar s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
 
@@ -1182,6 +1399,7 @@ public:
         }
     }
 
+    Element* inversion(LispE* lisp);
     Element* equal(LispE* lisp, Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -1307,7 +1525,7 @@ public:
             status -= nb;
     }
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
     
@@ -1385,8 +1603,27 @@ public:
         buffer += L")";
         return buffer;
     }
+
+    u_ustring asUString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return U"()";
+
+        sz -= 1;
+        
+        u_ustring buffer(U"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += U" ";
+            buffer += convertToUString(liste[i]);
+        }
+        buffer += U")";
+        return buffer;
+    }
     
-    void append(LispE* lisp, wstring& k);
+
+    void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
 
@@ -1434,7 +1671,7 @@ public:
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
-    void storevalue(LispE*, wstring& v);
+    void storevalue(LispE*, u_ustring& v);
     
     bool removelast() {
         if (!liste.size())
@@ -1491,9 +1728,7 @@ public:
         if (status < s)
             return this;
 
-        Numbers* n = new Numbers;
-        n->liste = liste;
-        return n;
+        return new Numbers(this);
     }
 
     Element* bit_not(LispE* l);
@@ -1525,11 +1760,13 @@ public:
     Integers() : Element(t_integers), exchange_value(0) {}
     Integers(uchar s) : Element(t_integers, s), exchange_value(0) {}
     Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
-    
+    Integers(Integers* i) : liste(i->liste), Element(t_integers), exchange_value(0) {}
+
     Element* newInstance() {
         return new Integers;
     }
 
+    Element* inversion(LispE* lisp);
     Element* newInstance(Element* v) {
         return new Integers(liste.size(), v->asInteger());
     }
@@ -1660,7 +1897,7 @@ public:
             status -= nb;
     }
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
     
@@ -1743,7 +1980,25 @@ public:
         return buffer;
     }
     
-    void append(LispE* lisp, wstring& k);
+    u_ustring asUString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return U"()";
+
+        sz -= 1;
+        
+        u_ustring buffer(U"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += U" ";
+            buffer += convertToUString(liste[i]);
+        }
+        buffer += U")";
+        return buffer;
+    }
+
+    void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
 
@@ -1799,7 +2054,7 @@ public:
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
-    void storevalue(LispE*, wstring& v);
+    void storevalue(LispE*, u_ustring& v);
     
     bool removelast() {
         if (!liste.size())
@@ -1855,9 +2110,7 @@ public:
         if (status < s)
             return this;
 
-        Integers* n = new Integers;
-        n->liste = liste;
-        return n;
+        return new Integers(this);
     }
 
     Element* bit_not(LispE* l);
@@ -2377,17 +2630,26 @@ public:
 class Strings : public Element {
 public:
     
-    vector<std::wstring> liste;
+    vector<u_ustring> liste;
     Conststring exchange_value;
     
-    Strings() : exchange_value(L""), Element(t_strings) {}
-    Strings(long nb, wstring v) : exchange_value(L""), Element(t_strings) {
+    Strings() : exchange_value(U""), Element(t_strings) {}
+    Strings(long nb, wstring w) : exchange_value(U""), Element(t_strings) {
+        u_pstring u = _w_to_u(w);
+        while (nb) {
+            liste.push_back(u);
+            nb--;
+        }
+    }
+    Strings(long nb, u_ustring v) : exchange_value(U""), Element(t_strings) {
         while (nb) {
             liste.push_back(v);
             nb--;
         }
     }
 
+    Strings(Strings* s) : liste(s->liste), exchange_value(U""), Element(t_strings) {}
+    
     Element* newInstance() {
         return new Strings;
     }
@@ -2399,10 +2661,10 @@ public:
     Element* check_member(LispE* lisp, Element* the_set) {
         Strings* n = new Strings;
         long sz = the_set->size();
-        std::vector<wstring> v;
+        std::vector<u_ustring> v;
         long i, j;
         for (i = 0; i < sz; i++)
-            v.push_back(the_set->index(i)->asString(lisp));
+            v.push_back(the_set->index(i)->asUString(lisp));
         
         for (j = 0; j < size(); j++) {
             for (i = 0; i < sz; i++) {
@@ -2412,17 +2674,17 @@ public:
                 }
             }
             if (i == sz)
-                n->liste.push_back(L"");
+                n->liste.push_back(U"");
         }
         return n;
     }
     
     void concatenate(LispE* lisp, Element* e) {
         if (!e->isList())
-            liste.push_back(e->asString(lisp));
+            liste.push_back(e->asUString(lisp));
         else {
             for (long i = 0; i < e->size(); i++) {
-                liste.push_back(e->index(i)->asString(lisp));
+                liste.push_back(e->index(i)->asUString(lisp));
             }
         }
     }
@@ -2446,25 +2708,25 @@ public:
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
-        liste.insert(liste.begin()+idx, e->asString(NULL));
+        liste.insert(liste.begin()+idx, e->asUString(NULL));
     }
     
     void swap(long i, long j) {
-        wstring v = liste[i];
+        u_ustring v = liste[i];
         liste[i] = liste[j];
         liste[j] = v;
     }
     
     void front(Element* e) {
-        liste.insert(liste.begin(), e->asString(NULL));
+        liste.insert(liste.begin(), e->asUString(NULL));
     }
     
     void beforelast(Element* e) {
         long sz = liste.size();
         if (!sz)
-            liste.push_back(e->asString(NULL));
+            liste.push_back(e->asUString(NULL));
         else
-            liste.insert(liste.begin()+sz-1, e->asString(NULL));
+            liste.insert(liste.begin()+sz-1, e->asUString(NULL));
     }
 
     Element* thekeys(LispE* lisp);
@@ -2506,7 +2768,7 @@ public:
     }
     
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
     
@@ -2587,47 +2849,71 @@ public:
         buffer += L")";
         return buffer;
     }
+
+    u_ustring asUString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return U"()";
+
+        sz -= 1;
+        
+        u_ustring buffer(U"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += U" ";
+            buffer += ujsonstring(liste[i]);
+        }
+        buffer += U")";
+        return buffer;
+    }
     
-    void append(wstring& k) {
+
+    void append(wstring& w) {
+        u_pstring k = _w_to_u(w);
+        liste.push_back(k);
+    }
+    
+    void append(u_ustring& k) {
         liste.push_back(k);
     }
     
     void append(string& k) {
-        wstring w;
+        u_ustring w;
         s_utf8_to_unicode(w, USTR(k), k.size());
         liste.push_back(w);
     }
     
-    void append(LispE* lisp, wstring& k);
+    void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
 
     void append(Element* e) {
-        liste.push_back(e->asString(NULL));
+        liste.push_back(e->asUString(NULL));
     }
     void appendraw(Element* e) {
-        liste.push_back(e->asString(NULL));
+        liste.push_back(e->asUString(NULL));
     }
 
     void change(long i, Element* e) {
-        liste[i] = e->asString(NULL);
+        liste[i] = e->asUString(NULL);
     }
 
     void changelast(Element* e) {
-        liste[liste.size()-1] = e->asString(NULL);
+        liste[liste.size()-1] = e->asUString(NULL);
     }
     
     void replacing(long i, Element* e) {
-        liste[i] = e->asString(NULL);
+        liste[i] = e->asUString(NULL);
     }
     
     Element* replace(LispE* lisp, long i, Element* e) {
         if (i < 0)
             throw new Error("Error: position does not exist");
         if (i >= liste.size())
-            liste.push_back(e->asString(NULL));
+            liste.push_back(e->asUString(NULL));
         else {
-            liste[i] = e->asString(NULL);
+            liste[i] = e->asUString(NULL);
         }
         return this;
     }
@@ -2653,7 +2939,7 @@ public:
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
-    void storevalue(LispE*, wstring& v);
+    void storevalue(LispE*, u_ustring& v);
     
     bool removelast() {
         if (!liste.size())
@@ -2709,9 +2995,7 @@ public:
         if (status < s)
             return this;
 
-        Strings* n = new Strings();
-        n->liste = liste;
-        return n;
+        return new Strings(this);
     }
 
     Element* plus(LispE* l, Element* e);

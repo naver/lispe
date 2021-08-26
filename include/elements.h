@@ -32,7 +32,7 @@ typedef enum {
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_numbers, t_set, t_setn, t_integers, t_strings, t_list, t_matrix, t_tensor,
     t_dictionary, t_dictionaryn, t_data, t_maybe,
-    t_pair, t_error,
+    t_pair, t_error, t_function, t_pattern, t_lambda, t_thread, 
     
     l_set_max_stack_size,
     
@@ -47,7 +47,7 @@ typedef enum {
     //Recording in the stack or in memory
     l_sleep, l_wait,
     l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib,
-    l_label, l_setq, l_setg, l_block,
+    l_label, l_setq, l_setg, l_block, l_elapse,
     l_if, l_ife,  l_ncheck, l_check, l_cond, 
     l_catch, l_throw, l_maybe, l_terminal,
     
@@ -76,18 +76,20 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop,
-    l_list, l_cons, l_flatten, l_nconc, l_push, l_insert,
+    l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
     l_numbers, l_integers, l_strings, l_set, l_setn,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
     
-    l_self, l_while, l_eval, l_mark, l_resetmark, l_loop, l_loopcount, l_range, l_irange, l_atoms, l_atomise, l_join, l_sort,
+    l_self, l_while, l_eval, l_mark, l_resetmark,
+    l_loop, l_loopcount, l_range, l_irange, l_multiloop, l_polyloop,
+    l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
     l_apply, l_maplist, l_filterlist, l_mapping, l_checking, l_folding,
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
-    l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
+    l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
     l_link,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon,
@@ -162,14 +164,14 @@ class Element {
 public:
     
     short type;
-#ifdef DEBUG
+#ifdef MACDEBUG
     lisp_code lc;
 #endif
     uchar status;
     
     Element(short ty) {
         type = ty;
-#ifdef DEBUG
+#ifdef MACDEBUG
         lc = (lisp_code)type;
 #endif
         status = s_destructible;
@@ -177,7 +179,7 @@ public:
     
     Element(short ty, uchar s) {
         type = ty;
-#ifdef DEBUG
+#ifdef MACDEBUG
         lc = (lisp_code)type;
 #endif 
         status = s;
@@ -190,6 +192,10 @@ public:
     void generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<short,Element*>& dico_variables);
     void replaceVariableNames(LispE* lisp, unordered_map<short, Element*>& names);
     bool replaceVariableNames(LispE* lisp);
+    
+    virtual Element* transformargument(LispE* lisp) {
+        return this;
+    }
     
     virtual void incrementstatus(uchar nb, bool top) {
         if (status < s_protect)
@@ -223,6 +229,8 @@ public:
         return this;
     }
 
+    virtual Element* inversion(LispE* lisp);
+    
     virtual Element* rotate(LispE* lisp, long axis) {
         return reverse(lisp, true);
     }
@@ -246,7 +254,7 @@ public:
         return true;
     }
     
-    virtual void append(LispE* lisp, wstring& k) {}
+    virtual void append(LispE* lisp, u_ustring& k) {}
     virtual void append(LispE* lisp, double v) {}
     virtual void append(LispE* lisp, long v) {}
     
@@ -325,14 +333,25 @@ public:
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
     
+    virtual void* begin_iter() {
+        return NULL;
+    }
+    
+    virtual Element* next_iter(LispE* lisp, void* it) {
+        return NULL;
+    }
+
+    virtual void clean_iter(void* it) {}
     virtual Element* search_element(LispE*, Element* element_value, long idx);
     virtual Element* search_all_elements(LispE*, Element* element_value, long idx);
     virtual Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    virtual bool compare_string(LispE* lisp, u_ustring& u) {
+        return (u == asUString(lisp));
+    }
+    
     virtual char check_match(LispE* lisp, Element* value) {
-        if (value == this)
-            return check_ok;
-        return false;
+        return check_ok*(value == this);
     }
     
     virtual bool check_arity(LispE* lisp, unsigned long);
@@ -370,16 +389,24 @@ public:
     
     virtual string toString(LispE* lisp) {
         string s;
-        wstring w = asString(lisp);
+        u_ustring w = asUString(lisp);
         s_unicode_to_utf8(s, w);
         return s;
     }
-    
+
+    virtual u_ustring asUString(LispE* lisp) {
+        return w_to_u(asString(lisp));
+    }
+
     virtual Element* loop(LispE* lisp, short label,  List* code);
     virtual wstring stringInList(LispE* lisp) {
         return asString(lisp);
     }
-    
+
+    virtual u_ustring stringInUList(LispE* lisp) {
+        return asUString(lisp);
+    }
+
     virtual wstring jsonString(LispE* lisp) {
         return stringInList(lisp);
     }
@@ -474,6 +501,10 @@ public:
         return false;
     }
 
+    virtual bool isLambda() {
+        return false;
+    }
+    
     virtual bool isValueList() {
         return false;
     }
@@ -497,7 +528,7 @@ public:
     
     virtual Element* charge(LispE*,string chemin);
     
-    virtual Element* join_in_list(LispE* lisp, wstring& sep);
+    virtual Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     virtual Element* dictionary(LispE* lisp) {
         return this;
@@ -521,10 +552,10 @@ public:
         return false;
     }
     
-    virtual bool equalvalue(wstring& v) {
+    virtual bool equalvalue(u_ustring& v) {
         return false;
     }
-    
+
     virtual Element* equal(LispE* lisp, Element* e);
     virtual Element* less(LispE* lisp, Element* e);
     virtual Element* lessorequal(LispE* lisp, Element* e);
@@ -565,6 +596,7 @@ public:
     virtual Element* value_on_index(LispE*, Element* idx);
     virtual Element* value_on_index(LispE*, long i);
     virtual Element* value_on_index(wstring& k, LispE* l);
+    virtual Element* value_on_index(u_ustring& k, LispE* l);
     virtual Element* value_on_index(double k, LispE* l);
     
     virtual Element* index(long i) {
@@ -574,13 +606,13 @@ public:
     virtual Element* protected_index(LispE*, Element* k);
     virtual Element* protected_index(LispE*, double k);
     virtual Element* protected_index(LispE*, long i);
-    virtual Element* protected_index(LispE*, wstring&);
+    virtual Element* protected_index(LispE*, u_ustring&);
 
 
     virtual Element* checkkey(LispE*, Element* e);
     
     virtual void recording(string&, Element*) {}
-    virtual void recording(wstring&, Element*) {}
+    virtual void recording(u_ustring&, Element*) {}
     virtual void recording(double, Element*) {}
     
     virtual bool remove(LispE*, Element*) {
@@ -633,7 +665,15 @@ public:
     Error(wstring m) : message(m), Element(t_error) {}
     
     Error(wstring m, uchar s) : message(m), Element(t_error,s) {}
-        
+
+    Error(u_ustring m) : Element(t_error) {
+        message = _u_to_w(m);
+    }
+    
+    Error(u_ustring m, uchar s) : Element(t_error,s) {
+        message = _u_to_w(m);
+    }
+
     wstring asString(LispE* lisp);
     
     bool Boolean() {
@@ -648,16 +688,20 @@ public:
 class Maybe : public Element {
 public:
     
-    wstring message;
+    u_ustring message;
     
-    Maybe(LispE* lisp, Element* e) : message(e->asString(lisp)), Element(t_maybe) {}
+    Maybe(LispE* lisp, Element* e) : message(e->asUString(lisp)), Element(t_maybe) {}
     
     bool unify(LispE* lisp, Element* value, bool record) {
         return (value->label() == t_maybe);
     }
+
+    u_ustring asUString(LispE* lisp) {
+        return message;
+    }
     
     wstring asString(LispE* lisp) {
-        return message;
+        return _u_to_w(message);
     }
     
     Element* equal(LispE* lisp, Element* e);
@@ -665,14 +709,18 @@ public:
 
 class Atome : public Element {
 public:
-    wstring name;
+    u_ustring name;
     short atome;
     
-    Atome(short a, wstring w) : name(w), atome(a), Element(t_atom) {}
-    Atome(short a, uchar s, wstring w) : name(w), atome(a), Element(t_atom, s) {}
-    
-    wstring asString(LispE* lisp) {
+    Atome(short a, u_ustring w) : name(w), atome(a), Element(t_atom) {}
+    Atome(short a, uchar s, u_ustring w) : name(w), atome(a), Element(t_atom, s) {}
+
+    u_ustring asUString(LispE* lisp) {
         return name;
+    }
+
+    wstring asString(LispE* lisp) {
+        return _u_to_w(name);
     }
     
     wstring jsonString(LispE* lisp) {
@@ -700,9 +748,7 @@ public:
     }
     
     virtual char check_match(LispE* lisp, Element* value) {
-        if (atome == value->label())
-            return check_ok;
-        return false;
+        return check_ok*(atome == value->label());
     }
     
     bool unify(LispE* lisp, Element* value, bool record);
@@ -714,13 +760,11 @@ public:
 class Atomtype : public Atome {
 public:
 
-    Atomtype(short a, wstring w) : Atome(a, w) {}
-    Atomtype(short a, uchar s, wstring w) : Atome(a, s, w) {}
+    Atomtype(short a, u_ustring w) : Atome(a, w) {}
+    Atomtype(short a, uchar s, u_ustring w) : Atome(a, s, w) {}
 
     char check_match(LispE* lisp, Element* value) {
-        if (atome == value->type_element())
-            return check_ok;
-        return false;
+        return check_ok*(atome == value->type_element());
     }
 
 };
@@ -728,8 +772,8 @@ public:
 class Atomnotlabel : public Atome {
 public:
     
-    Atomnotlabel(short a, wstring w) : Atome(a, w) {}
-    Atomnotlabel(short a, uchar s, wstring w) : Atome(a, s, w) {}
+    Atomnotlabel(short a, u_ustring w) : Atome(a, w) {}
+    Atomnotlabel(short a, uchar s, u_ustring w) : Atome(a, s, w) {}
     
     short label() {
         return v_null;
@@ -737,13 +781,36 @@ public:
     
 };
 
+class Atomfunction : public Element {
+public:
+    Element* body;
+    short function_label;
+    
+    Atomfunction(Element* b, short a) : body(b), Element(a) {
+        function_label = b->index(1)->label();
+    }
+
+    Element* eval(LispE* lisp) {
+        return body;
+    }
+    
+    short label() {
+        return function_label;
+    }
+};
+
 class Operator : public Element {
 public:
-    wstring name;
+    u_ustring name;
     
-    Operator(short c, wstring w) : name(w), Element(c) {}
-    wstring asString(LispE* lisp) {
+    Operator(short c, u_ustring w) : name(w), Element(c) {}
+
+    u_ustring asUString(LispE* lisp) {
         return name;
+    }
+
+    wstring asString(LispE* lisp) {
+        return _u_to_w(name);
     }
 
     wstring jsonString(LispE* lisp) {
@@ -782,12 +849,16 @@ public:
 
 class Instruction : public Element {
 public:
-    wstring name;
+    u_ustring name;
     
-    Instruction(short c, wstring w) : name(w), Element(c) {}
+    Instruction(short c, u_ustring w) : name(w), Element(c) {}
     
-    wstring asString(LispE* lisp) {
+    u_ustring asUString(LispE* lisp) {
         return name;
+    }
+
+    wstring asString(LispE* lisp) {
+        return _u_to_w(name);
     }
 
     wstring jsonString(LispE* lisp) {
@@ -824,7 +895,11 @@ public:
     Return(Element* e) : Element(l_return) {
         value = e ;
     }
-    
+
+    u_ustring asUString(LispE* lisp) {
+        return value->asUString(lisp);
+    }
+
     wstring asString(LispE* lisp) {
         return value->asString(lisp);
     }
@@ -858,7 +933,7 @@ public:
 class Cadr : public Element {
 public:
     
-    wstring action;
+    u_ustring action;
     
     Cadr(string c) : Element(l_cadr) {
         c = c.substr(1, c.size()-2);
@@ -866,12 +941,16 @@ public:
             action += (wchar_t)c[i];
     }
     
-    Cadr(wstring c) : Element(l_cadr) {
+    Cadr(u_ustring c) : Element(l_cadr) {
         action = c.substr(1, c.size()-2);
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        return(U"c" + action + U"r");
     }
     
     wstring asString(LispE* lisp) {
-        return(L"c" + action + L"r");
+        return(L"c" + _u_to_w(action) + L"r");
     }
     
     Element* cadr(LispE*, Element*);
@@ -911,6 +990,7 @@ public:
         return this;
     }
 
+    Element* inversion(LispE* lisp);
     Element* reverse(LispE*, bool duplique = true);
     
     Element* equal(LispE* lisp, Element* e);
@@ -920,9 +1000,7 @@ public:
     Element* moreorequal(LispE* lisp, Element* e);
     
     char check_match(LispE* lisp, Element* value) {
-        if (number == value->asNumber())
-            return check_ok;
-        return false;
+        return check_ok*(number == value->asNumber());
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
@@ -1025,6 +1103,7 @@ public:
         return this;
     }
 
+    Element* inversion(LispE* lisp);
     Element* equal(LispE* lisp, Element* e);
     Element* less(LispE* lisp, Element* e);
     Element* lessorequal(LispE* lisp, Element* e);
@@ -1032,9 +1111,7 @@ public:
     Element* moreorequal(LispE* lisp, Element* e);
     
     char check_match(LispE* lisp, Element* value) {
-        if (integer == value->asInteger())
-            return check_ok;
-        return false;
+        return check_ok*(integer == value->asInteger());
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
@@ -1046,6 +1123,10 @@ public:
     // Numbers cannot be present in the garbage
     void protecting(bool protection) {}
     
+    u_ustring asUString(LispE* lisp) {
+        return convertToUString(integer);
+    }
+
     wstring asString(LispE* lisp) {
         return convertToWString(integer);
     }
@@ -1130,17 +1211,27 @@ public:
 class String : public Element {
 public:
   
-    wstring content;
+    u_ustring content;
     
     String(wchar_t c) : Element(t_string) {
-        content = c;
+        content = (u_uchar)c;
     }
     String(string c) : Element(t_string) {
         s_utf8_to_unicode(content, USTR(c), c.size());
     }
-    String(wstring c) : content(c), Element(t_string) {}
-    String(wstring c, uchar s) :content(c), Element(t_string, s) {}
-    
+    String(wstring c) : Element(t_string) {
+        content = _w_to_u(c);
+    }
+    String(wstring c, uchar s) : Element(t_string, s) {
+        content = _w_to_u(c);
+    }
+    String(u_ustring c) : Element(t_string) {
+        content = c;
+    }
+    String(u_ustring c, uchar s) : Element(t_string, s) {
+        content = c;
+    }
+
     bool isString() {
         return true;
     }
@@ -1151,14 +1242,16 @@ public:
     
     Element* rotate(bool left);
     
+    bool compare_string(LispE*, u_ustring& u) {
+        return (content == u);
+    }
+        
     char check_match(LispE* lisp, Element* value) {
-        if (content == value->asString(lisp))
-            return check_ok;
-        return false;
+        return check_ok*value->compare_string(lisp, content);
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
-        return (value == this || value->asString(lisp) == content);
+        return (value == this || value->compare_string(lisp, content));
     }
     
     Element* loop(LispE* lisp, short label,  List* code);
@@ -1168,7 +1261,8 @@ public:
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     Element* insert(LispE* lisp, Element* e, long idx);
-    bool equalvalue(wstring& v) {
+
+    bool equalvalue(u_ustring& v) {
         return (v == content);
     }
 
@@ -1206,6 +1300,10 @@ public:
         return wjsonstring(content);
     }
     
+    virtual u_ustring stringInUList(LispE* lisp) {
+        return ujsonstring(content);
+    }
+    
     virtual Element* copyatom(uchar s) {
         if (status < s)
             return this;
@@ -1226,9 +1324,13 @@ public:
     }
     
     virtual wstring asString(LispE* lisp) {
+        return _u_to_w(content);
+    }
+
+    virtual u_ustring asUString(LispE* lisp) {
         return content;
     }
-    
+
     Element* charge(LispE* lisp, string chemin) {
         std::ifstream f(chemin.c_str(),std::ios::in|std::ios::binary);
         if (f.fail()) {
@@ -1244,13 +1346,13 @@ public:
             ch += ln + "\n";
         }
         
-        content = L"";
+        content = U"";
         s_utf8_to_unicode(content, USTR(ch), ch.size());
         return this;
     }
     
     bool Boolean() {
-        return (content != L"");
+        return (content != U"");
     }
     
     double asNumber() {
@@ -1273,7 +1375,8 @@ class Conststring : public String {
 public:
     
     Conststring(wstring w) : String(w, s_constant) {}
-    
+    Conststring(u_ustring w) : String(w, s_constant) {}
+
     void decrementstatus(uchar nb, bool top) {}
     void release() {}
 
@@ -1308,7 +1411,7 @@ public:
     bool isList() {
         return true;
     }
-    
+
     wstring asString(LispE* lisp);
     
     Element* loop(LispE* lisp, short label,  List* code);
@@ -1369,6 +1472,7 @@ public:
         return true;
     }
     
+    u_ustring asUString(LispE* lisp);
     wstring asString(LispE* lisp);
 
     void append(Element* e) {
@@ -1400,6 +1504,7 @@ public:
         value = e;
     }
     
+    u_ustring asUString(LispE* lisp);
     wstring asString(LispE* lisp);
 
     Element* loop(LispE* lisp, short label,  List* code);
@@ -1409,7 +1514,7 @@ public:
 class Dictionary : public Element {
 public:
     
-    map<wstring, Element*> dictionary;
+    map<u_ustring, Element*> dictionary;
     Element* object;
     bool marking;
     bool usermarking;
@@ -1519,7 +1624,7 @@ public:
         return this;
     }
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     void release() {
         if (!status) {
@@ -1606,7 +1711,7 @@ public:
                     return false;
                 }
             }
-            catch(const std::out_of_range& oor) {
+            catch(...) {
                 marking = false;
                 return false;
             }
@@ -1690,19 +1795,49 @@ public:
         marking = false;
         return tampon;
     }
+
+    u_ustring asUString(LispE* lisp) {
+        long taille = dictionary.size();
+        if (!taille)
+            return U"{}";
+
+        if (marking)
+            return U"...";
+        
+        marking = true;
+
+        u_ustring tampon(U"{");
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += U" ";
+            }
+            else
+                premier = false;
+            tampon += ujsonstring(a.first);
+            tampon += U":";
+            tampon += a.second->stringInUList(lisp);
+        }
+        tampon += U"}";
+        marking = false;
+        return tampon;
+    }
     
+
     bool Boolean() {
         return (dictionary.size());
     }
     
-    Element* protected_index(LispE*, wstring&);
-
+    Element* protected_index(LispE*, u_ustring&);
+    
     Element* value_on_index(wstring& k, LispE* l);
+    Element* value_on_index(u_ustring& k, LispE* l);
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     
     void recording(string& c, Element* e) {
-        wstring k;
+        u_ustring k;
         s_utf8_to_unicode(k, USTR(c), c.size());
         try {
             Element* a = dictionary.at(k);
@@ -1715,7 +1850,7 @@ public:
         e->incrementstatus(status+1,false);
     }
     
-    void recording(wstring& k, Element* e) {
+    void recording(u_ustring& k, Element* e) {
         try {
             Element* a = dictionary.at(k);
             a->decrementstatus(status+1, false);
@@ -1726,9 +1861,9 @@ public:
         }
         e->incrementstatus(status+1,false);
     }
-    
+
     Element* replace(LispE* lisp, Element* i, Element* e) {
-        wstring k = i->asString(lisp);
+        u_ustring k = i->asUString(lisp);
         recording(k, e);
         return this;
     }
@@ -1742,7 +1877,8 @@ public:
         return remove(d);
     }
 
-    bool remove(wstring& k) {
+    bool remove(wstring& w) {
+        u_pstring k = _w_to_u(w);
         try {
             Element* e = dictionary.at(k);
             dictionary.erase(k);
@@ -1753,6 +1889,19 @@ public:
             return false;
         }
     }
+
+    bool remove(u_ustring& k) {
+        try {
+            Element* e = dictionary.at(k);
+            dictionary.erase(k);
+            e->decrementstatus(status+1,false);
+            return true;
+        }
+        catch (const std::out_of_range& oor) {
+            return false;
+        }
+    }
+
 };
 
 //This version of the dictionary is indexed on a number
@@ -1871,7 +2020,7 @@ public:
         return this;
     }
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     void release() {
         if (!status) {
@@ -1957,7 +2106,7 @@ public:
                     return false;
                 }
             }
-            catch(const std::out_of_range& oor) {
+            catch(...) {
                 marking = false;
                 return false;
             }
@@ -2046,7 +2195,37 @@ public:
         marking = false;
         return tampon;
     }
+
+    u_ustring asUString(LispE* lisp) {
+        long taille = dictionary.size();
+        if (!taille)
+            return U"{}";
+
+        if (marking)
+            return U"...";
+        
+        marking = true;
+
+        u_ustring tampon;
+        tampon += U"{";
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += U" ";
+            }
+            else
+                premier = false;
+            tampon += convertToUString(a.first);
+            tampon += U":";
+            tampon += a.second->stringInUList(lisp);
+        }
+        tampon += U"}";
+        marking = false;
+        return tampon;
+    }
     
+
     bool Boolean() {
         return (dictionary.size());
     }
@@ -2123,6 +2302,22 @@ public:
         return t_dictionary;
     }
 
+    u_ustring asUString(LispE* lisp) {
+        u_ustring s = U"{";
+        for (long i = 0; i < keyvalues.size(); i++) {
+            if (i)
+                s += U" ";
+            if (keyvalues[i]->label() == v_null)
+                s += U"_";
+            else
+                s += keyvalues[i]->asUString(lisp);
+            s += U":";
+            s += valuevalues[i]->stringInUList(lisp);
+        }
+        s += U"}";
+        return s;
+    }
+
     wstring asString(LispE* lisp) {
         wstring s = L"{";
         for (long i = 0; i < keyvalues.size(); i++) {
@@ -2138,8 +2333,8 @@ public:
         s += L"}";
         return s;
     }
-    
-    void append(LispE* lisp, wstring& k);
+
+    void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
 
@@ -2202,7 +2397,7 @@ public:
     }
     
     bool unify(LispE* lisp, Element* e, bool record);
-    bool traverse(LispE*, Dictionary*, vector<wstring>& keys, vector<long>& consummed, long di, long i, bool record);
+    bool traverse(LispE*, Dictionary*, vector<u_ustring>& keys, vector<long>& consummed, long di, long i, bool record);
     bool traverse(LispE*, Dictionary_n*, vector<double>& keys, vector<long>& consummed, long di, long i, bool record);
 
     void release() {
@@ -2220,7 +2415,7 @@ public:
 class Dictionary_as_buffer : public Element {
 public:
     Dictionary* dico;
-    wstring key;
+    u_ustring key;
     bool choice;
     
     Dictionary_as_buffer() : Element(t_dictionary) {
@@ -2240,7 +2435,7 @@ public:
         return choice;
     }
     
-    void append(LispE* lisp, wstring& k);
+    void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
 
@@ -2249,19 +2444,19 @@ public:
             if (!e->isNumber() && !e->isString())
                 throw new Error("Error: a key should be a string or a number");
             else
-                if (key != L"") {
-                    wstring msg = L"Error: missing value for key:'";
+                if (key != U"") {
+                    u_ustring msg = U"Error: missing value for key:'";
                     msg += key;
-                    msg += L"'";
+                    msg += U"'";
                     throw new Error(msg);
                 }
-            key = e->asString(NULL);
+            key = e->asUString(NULL);
             e->release();
         }
         else {
             dico->dictionary[key] = e;
             e->incrementstatus(1, false);
-            key = L"";
+            key = U"";
             reversechoice();
         }
     }
@@ -2283,23 +2478,29 @@ public:
 class Set : public Element {
 public:
     
-    std::set<wstring> ensemble;
+    std::set<u_ustring> ensemble;
     Conststring exchange_value;
 
-    Set() : exchange_value(L""), Element(t_set) {}
+    Set() : exchange_value(U""), Element(t_set) {}
     
-    Set(std::set<wstring>& e) : exchange_value(L""), ensemble(e), Element(t_set) {}
+    Set(std::set<u_ustring>& e) : exchange_value(U""), ensemble(e), Element(t_set) {}
     
-    Set(uchar s) : exchange_value(L""), Element(t_set, s) {}
+    Set(uchar s) : exchange_value(U""), Element(t_set, s) {}
     
     bool isContainer() {
         return true;
     }
     
-    bool isList() {
-        return true;
+    void* begin_iter() {
+        return new std::set<u_ustring>::iterator(ensemble.begin());
     }
-        
+    
+    Element* next_iter(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (std::set<u_ustring>::iterator*)it;
+    }
+    
     Element* loop(LispE* lisp, short label,  List* code);
     
     Element* minimum(LispE*);
@@ -2331,7 +2532,7 @@ public:
         return this;
     }
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     bool unify(LispE* lisp, Element* e, bool record) {
         if (e == this)
@@ -2370,9 +2571,9 @@ public:
     
     wstring asString(LispE* lisp) {
         if (ensemble.empty())
-            return L"()";
+            return L"{}";
                 
-        wstring tampon(L"(");
+        wstring tampon(L"{");
         
         bool premier = true;
         for (auto& a: ensemble) {
@@ -2383,16 +2584,36 @@ public:
                 premier = false;
             tampon += wjsonstring(a);
         }
-        tampon += L")";
+        tampon += L"}";
+        return tampon;
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        if (ensemble.empty())
+            return U"{}";
+                
+        u_ustring tampon(U"{");
+        
+        bool premier = true;
+        for (auto& a: ensemble) {
+            if (!premier) {
+                tampon += U" ";
+            }
+            else
+                premier = false;
+            tampon += ujsonstring(a);
+        }
+        tampon += U"}";
         return tampon;
     }
     
+
     bool Boolean() {
         return ensemble.empty();
     }
     
-    Element* protected_index(LispE*, wstring&);
-
+    Element* protected_index(LispE*, u_ustring&);
+    
     Element* index(long i) {
         for (auto& a: ensemble) {
             if (i <= 0) {
@@ -2401,7 +2622,7 @@ public:
             }
             i--;
         }
-        exchange_value.content = L"";
+        exchange_value.content = U"";
         return &exchange_value;
     }
 
@@ -2409,26 +2630,36 @@ public:
     Element* protected_index(LispE*,long i);
 
     Element* value_on_index(wstring& k, LispE* l);
+    Element* value_on_index(u_ustring& k, LispE* l);
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
-    void storevalue(LispE*, wstring& k) {
-        ensemble.insert(k);
-    }
 
-    void append(LispE* lisp, wstring& k) {
+    void append(LispE* lisp, u_ustring& k) {
         ensemble.insert(k);
     }
     
-    void add(wstring k) {
+    void add(u_ustring k) {
         ensemble.insert(k);
+    }
+
+    void append(u_ustring& k) {
+        ensemble.insert(k);
+    }
+
+    void storevalue(LispE*, u_ustring& k) {
+        ensemble.insert(k);
+    }
+
+    void add(wstring k) {
+        ensemble.insert(_w_to_u(k));
     }
 
     void append(wstring& k) {
-        ensemble.insert(k);
+        ensemble.insert(_w_to_u(k));
     }
     
     void append(string& k) {
-        wstring w;
+        u_ustring w;
         s_utf8_to_unicode(w, USTR(k), k.size());
         ensemble.insert(w);
     }
@@ -2437,24 +2668,24 @@ public:
     void append(LispE* lisp, long v);
 
     void append(Element* e) {
-        ensemble.insert(e->asString(NULL));
+        ensemble.insert(e->asUString(NULL));
     }
     
     void appendraw(Element* e) {
-        ensemble.insert(e->asString(NULL));
+        ensemble.insert(e->asUString(NULL));
     }
 
     Element* insert(LispE* lisp, Element* e, long idx) {
-        ensemble.insert(e->asString(lisp));
+        ensemble.insert(e->asUString(lisp));
         return this;
     }
     
     Element* replace(LispE* lisp, Element* i, Element* e) {
-        wstring k = i->asString(lisp);
+        u_ustring k = i->asUString(lisp);
         if (ensemble.find(k) != ensemble.end()) {
             ensemble.erase(k);
         }
-        ensemble.insert(e->asString(lisp));
+        ensemble.insert(e->asUString(lisp));
         return this;
     }
 
@@ -2462,7 +2693,7 @@ public:
     Element* thevalues(LispE* lisp);
 
     bool remove(LispE* lisp, Element* e) {
-        wstring k =  e->asString(lisp);
+        u_ustring k =  e->asUString(lisp);
         if (ensemble.find(k) == ensemble.end()) {
             return false;
         }
@@ -2472,7 +2703,18 @@ public:
         }
     }
 
-    bool remove(wstring& k) {
+    bool remove(wstring& w) {
+        u_pstring k = _w_to_u(w);
+        if (ensemble.find(k) == ensemble.end()) {
+            return false;
+        }
+        else {
+            ensemble.erase(k);
+            return true;
+        }
+    }
+
+    bool remove(u_ustring& k) {
         if (ensemble.find(k) == ensemble.end()) {
             return false;
         }
@@ -2482,6 +2724,7 @@ public:
         }
     }
     
+
     Element* plus(LispE* l, Element* e);
 };
 
@@ -2501,6 +2744,16 @@ public:
         return true;
     }
         
+    void* begin_iter() {
+        return new std::set<double>::iterator(ensemble.begin());
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (std::set<double>::iterator*)it;
+    }
+
     Element* loop(LispE* lisp, short label,  List* code);
     
     Element* minimum(LispE*);
@@ -2532,7 +2785,7 @@ public:
         return this;
     }
     
-    Element* join_in_list(LispE* lisp, wstring& sep);
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     bool unify(LispE* lisp, Element* e, bool record) {
         if (e == this)
@@ -2567,11 +2820,28 @@ public:
         return buffer;
     }
     
+    u_ustring asUString(LispE* lisp) {
+        if (ensemble.empty())
+            return U"{}";
+        
+        u_ustring buffer(U"{");
+        bool first = true;
+        for (auto& a: ensemble) {
+            if (first)
+                first = false;
+            else
+                buffer += U" ";
+            buffer += convertToUString(a);
+        }
+        buffer += U"}";
+        return buffer;
+    }
+    
     wstring asString(LispE* lisp) {
         if (ensemble.empty())
-            return L"()";
+            return L"{}";
         
-        wstring buffer(L"(");
+        wstring buffer(L"{");
         bool first = true;
         for (auto& a: ensemble) {
             if (first)
@@ -2580,7 +2850,7 @@ public:
                 buffer += L" ";
             buffer += convertToWString(a);
         }
-        buffer += L")";
+        buffer += L"}";
         return buffer;
     }
     

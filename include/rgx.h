@@ -202,7 +202,7 @@ public:
     
     bool checkfinalepsilon();
 
-    bool find(wstring& w, wstring& sep, long i, vector<long>& res);
+    bool find(u_ustring& w, u_ustring& sep, long i, vector<long>& res);
 
 };
 
@@ -245,17 +245,17 @@ public:
         return false;
     }
     
-    bool match(wstring& w, long i);
-    bool find(wstring& w, wstring& sep, long i, vector<long>& res);
+    bool match(u_ustring& w, long i);
+    bool find(u_ustring& w, u_ustring& sep, long i, vector<long>& res);
 
-    long loop(wstring& w, long i);
+    long loop(u_ustring& w, long i);
     
     void removeepsilon();
     void addrule(Au_arc*);
     void merge(Au_state*);
     
-    Au_arc* build(Au_automatons* g, wstring& token, uchar type, Au_state* common, bool nega);
-    Au_state* build(Au_automatons* g, long i,vector<wstring>& tokens, vector<aut_actions>& types, Au_state* common);
+    Au_arc* build(Au_automatons* g, u_ustring& token, uchar type, Au_state* common, bool nega);
+    Au_state* build(Au_automatons* g, long i,vector<u_ustring>& tokens, vector<aut_actions>& types, Au_state* common);
 };
 
 class Au_state_final : public Au_state {
@@ -281,24 +281,64 @@ public:
         first=NULL;
     }
 
-    Au_automaton(wstring rgx);
+    Au_automaton(u_ustring rgx);
     
-    bool match(wstring& w);
-    bool search(wstring& w);
-    long find(wstring& w);
-    long find(wstring& w, long i);
+    bool match(u_ustring& w);
+    bool search(u_ustring& w);
+
+#ifdef WIN32
+	bool match(wstring& w) {
+		u_ustring u = _w_to_u(w);
+		return match(u);
+	}
+
+	bool search(wstring& w) {
+		u_ustring u = _w_to_u(w);
+		return search(u);
+	}
+
+	bool search(wstring& w, long& first, long& last, long init = 0) {
+		u_ustring u = _w_to_u(w);
+		return search(u, first, last, init);
+	}
+
+	void searchall(wstring& w, vector<long>& res, long init = 0) {
+		u_ustring u = _w_to_u(w);
+		searchall(u, res, init);
+	}
+
+#else
+    bool match(wstring& w) {
+        return match(_w_to_u(w));
+    }
+    
+    bool search(wstring& w) {
+        return search(_w_to_u(w));
+    }
+
+	bool search(wstring& w, long& first, long& last, long init = 0) {
+		return search(_w_to_u(w), first, last, init);
+	}
+
+	void searchall(wstring& w, vector<long>& res, long init = 0) {
+		searchall(_w_to_u(w), res, init);
+	}
+#endif
+    long find(u_ustring& w);
+    long find(u_ustring& w, long i);
 
 
-    bool search(wstring& w, long& first, long& last, long init = 0);
+    bool search(u_ustring& w, long& first, long& last, long init = 0);
 
-    bool searchlast(wstring& w, long& first, long& last, long init = 0);
+    bool searchlast(u_ustring& w, long& first, long& last, long init = 0);
 
-    bool bytesearch(wstring& w, long& first, long& last);
-    void bytesearchall(wstring& w, vector<long>& res);
+    bool bytesearch(u_ustring& w, long& first, long& last);
+    void bytesearchall(u_ustring& w, vector<long>& res);
 
-    void searchall(wstring& w, vector<long>& res, long init = 0);
-    void find(wstring& w, wstring& sep, vector<long>& res);
-    virtual bool parse(wstring& rgx, Au_automatons* automatons=NULL);
+    void searchall(u_ustring& w, vector<long>& res, long init = 0);
+
+    void find(u_ustring& w, u_ustring& sep, vector<long>& res);
+    virtual bool parse(u_ustring& rgx, Au_automatons* automatons=NULL);
     
 };
 
@@ -429,12 +469,14 @@ public:
     }
 
     Au_automate(wstring& rgx);
+    
+    Au_automate(u_ustring& rgx);
 
-    bool compile(wstring& rgx) {
+    bool compile(u_ustring& rgx) {
         return parse(rgx, &garbage);
     }
 
-    bool compiling(wstring& rgx,long feature);
+    bool compiling(u_ustring& rgx,long feature);
 };
 
 

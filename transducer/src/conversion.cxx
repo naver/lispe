@@ -2960,7 +2960,7 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
 	}
 #endif
 
-	wchar_t code;
+	u_uchar code;
 	uchar nb;
 
 	while (sz--) {
@@ -3077,7 +3077,7 @@ Exporting void sc_utf8_to_unicode(wstring& w, unsigned char* str, long sz) {
         return;
     }
 #endif
-    wchar_t c;
+    u_uchar c;
 
     uchar nb;
     while (sz--) {

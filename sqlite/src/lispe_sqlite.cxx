@@ -133,7 +133,7 @@ static int callback(void *asql, int argc, char **argv, char **azColName){
     LispE* lisp = cpl->lisp;
     
     Dictionary* kmap = new Dictionary;
-    wstring wkey;
+    u_ustring wkey;
     string key;
     string value;
     for (i = 0; i < argc; i++) {
@@ -145,7 +145,7 @@ static int callback(void *asql, int argc, char **argv, char **azColName){
             value = argv[i];
             kmap->dictionary[wkey] = lisp->provideString(value);
         }
-        wkey = L"";
+        wkey = U"";
     }
     vresults->append(kmap);
     return 0;
@@ -227,7 +227,7 @@ void LispE_sqlite_iteration::Storevalue() {
     currentrow->incrementstatus(1, true);
     Element* k;
     string txt;
-    wstring wkey;
+    u_ustring wkey;
     string key;
 
     for (int i = 0; i < columnCount; i++) {
@@ -251,7 +251,7 @@ void LispE_sqlite_iteration::Storevalue() {
         default:
             currentrow->recording(wkey, null_);
         }
-        wkey = L"";
+        wkey = U"";
     }
     nb++;
 }
@@ -260,7 +260,7 @@ Element* Lispe_sqlite::sqliteOpen(LispE* lisp) {
     if (db != NULL)
         throw new Error("SQLite(800): A database has already been opened with this object");
     //the first parameter is the dbname
-    Element* kelement = lisp->get("dbname");
+    Element* kelement = lisp->get(U"dbname");
     dbname = kelement->toString(lisp);
     int rc = sqlite3_open(STR(dbname), &db);
     if (rc) {
@@ -288,10 +288,10 @@ Element* Lispe_sqlite::sqliteCreate(LispE* lisp) {
     // mydb.create("table1","name TEXT","age INTEGER",12);
     command = "create table ";
     //The first parameter is the table name
-    Element* table = lisp->get("table");
+    Element* table = lisp->get(U"table");
     command += table->toString(lisp);
     command += " (";
-    Element* callargs = lisp->get("args");
+    Element* callargs = lisp->get(U"args");
     //The next parameters are the rest of the table description
     for (int i = 0; i < callargs->size(); i++) {
         table = callargs->index(i);
@@ -320,10 +320,10 @@ Element* Lispe_sqlite::sqliteInsert(LispE* lisp) {
     //A typical call would be:
     // mydb.insert("table1","name","toto","age",12);
     //The first parameter is the table name
-    Element* table = lisp->get("table");
+    Element* table = lisp->get(U"table");
     lacommande += table->toString(lisp);
     lacommande += " (";
-    Element* callfunc = lisp->get("columns");
+    Element* callfunc = lisp->get(U"columns");
     //One parameter our of two is column name
     for (int i = 0; i < callfunc->size(); i += 2) {
         table = callfunc->index(i);
@@ -359,7 +359,7 @@ Element* Lispe_sqlite::sqliteInsert(LispE* lisp) {
 Element* Lispe_sqlite::sqliteProcess(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    Element* kcommand = lisp->get("command");
+    Element* kcommand = lisp->get(U"command");
     sqlcommand = kcommand->toString(lisp);
     return true_;
 }
@@ -367,7 +367,7 @@ Element* Lispe_sqlite::sqliteProcess(LispE* lisp) {
 Element* Lispe_sqlite::sqliteRun(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    Element* kcommand = lisp->get("command");
+    Element* kcommand = lisp->get(U"command");
     sqlcommand = kcommand->toString(lisp);
 
     Couple_LispE cpl(lisp);
@@ -385,7 +385,7 @@ Element* Lispe_sqlite::sqliteRun(LispE* lisp) {
 Element* Lispe_sqlite::sqliteExecute(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    Element* kcommand = lisp->get("command");
+    Element* kcommand = lisp->get(U"command");
     sqlcommand = kcommand->toString(lisp);
     char* errmsg;
     int rc = sqlite3_exec(db, STR(sqlcommand), NULL, 0, &errmsg);
@@ -400,7 +400,7 @@ Element* Lispe_sqlite::sqliteExecute(LispE* lisp) {
 Element* Lispe_sqlite::sqliteBegin(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    string mode = lisp->get("mode")->toString(lisp);
+    string mode = lisp->get(U"mode")->toString(lisp);
     s_trim(mode);
     //A typical call would be:
     // mydb.create("table1","name TEXT","age INTEGER",12);

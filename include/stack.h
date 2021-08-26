@@ -12,12 +12,15 @@
 #define stack_h
 
 class LispE;
+#include "vecte.h"
+#include "mapbin.h"
 
 class Stackelement {
 public:
     
     Element* function;
-    unordered_map<short, Element*> variables;
+    VECTE<short> names;
+    binHash<Element*> variables;
     
     Stackelement(Element* f) {
         function = f;
@@ -32,74 +35,104 @@ public:
     }
     
     bool recordargument(LispE* lisp, Element* e, short label) {
-        try {
+        if (variables.check(label))
             return variables.at(label)->unify(lisp,e, false);
-        }
-        catch(const std::out_of_range& oor) {
-            variables[label] = e;
+        
+        variables[label] = e;
+        if (!e->status) {
             e->incrementstatus(1, true);
+            names.push_back(label);
         }
         return true;
     }
     
     bool recordingunique(Element* e, short label) {
-        try {
-            variables.at(label);
+        if (variables.check(label))
             return false;
-        }
-        catch(const std::out_of_range& oor) {
-            variables[label] = e;
+        variables[label] = e;
+        if (!e->status) {
             e->incrementstatus(1, true);
+            names.push_back(label);
         }
         return true;
     }
     
     Element* recording(Element* e, short label) {
-        Element* previous = variables[label];
-        if (previous != NULL) {
+        if (variables.check(label)) {
+            Element* previous = variables.at(label);
             if (previous == e)
                 return e;
-            previous->decrementstatus(1, true);
+            if (names.checkanderase(label))
+                previous->decrementstatus(1, true);
+        }
+        
+        e = e->duplicate_constant_container();
+        variables[label] = e;
+        if (!e->status) {
+            e->incrementstatus(1, true);
+            names.push_back(label);
+        }
+        return e;
+    }
+
+    Element* recordingvalue(Element* e, short label) {
+        if (variables.check(label)) {
+            Element* previous = variables.at(label);
+            if (previous == e)
+                return e;
+            if (names.checkanderase(label))
+                previous->decrementstatus(1, true);
         }
         
         e = e->duplicate_constant_container();
         variables[label] = e;
         e->incrementstatus(1, true);
+        names.push_back(label);
         return e;
     }
 
     Element* get(short label) {
-        try {
-            return variables.at(label);
-        }
-        catch(const std::out_of_range& oor) {
-            return NULL;
-        }
+        return variables.search(label);
     }
     
     void remove(short label) {
-        try {
+        if (names.checkanderase(label)) {
             variables.at(label)->decrementstatus(1,true);
-            variables.erase(label);
         }
-        catch(const std::out_of_range& oor) {}
+        variables.erase(label);
     }
     
+    u_ustring asUString(LispE*);
     wstring asString(LispE*);
     List* atomes(LispE*);
     
     void copy(Stackelement* stack) {
         //We only copy constant values...
-        for (auto& a: stack->variables) {
-            if (a.second->status == s_constant && a.second->type <= t_error)
-                variables[a.first] = a.second;
+        binHash<Element*>::iterator a;
+        for (a = stack->variables.begin(); a != stack->variables.end(); a++) {
+            if (a->second->status == s_constant && a->second->type <= t_error)
+                variables[a->first] = a.second;
         }
     }
     
     void clear() {
-        for (auto& a: variables)
-            a.second->decrementstatus(1, true);
+        for (short i = 0; i < names.last; i++) {
+            variables.at(names.vecteur[i])->decrementstatus(1, true);
+        }
         variables.clear();
+        names.clear();
+        function = NULL;
+    }
+
+    void clear(Element* keep) {
+        Element* e;
+        for (short i = 0; i < names.last; i++) {
+            e = variables.at(names.vecteur[i]);
+            if (e != keep)
+                e->decrementstatus(1, true);
+        }
+        variables.clear();
+        names.clear();
         function = NULL;
     }
 
@@ -111,22 +144,24 @@ public:
     //We only copy unknown values
     //used for lambdas to keep track of values from the previous stack
     void setElements(Stackelement* stack) {
-        for (auto& a: stack->variables) {
-            if (variables.find(a.first) == variables.end()) {
-                variables[a.first] = a.second;
-                a.second->incrementstatus(1, true);
+        binHash<Element*>::iterator a;
+        for (a = stack->variables.begin(); a != stack->variables.end(); a++) {
+            if (!variables.check(a->first)) {
+                variables[a->first] = a.second;
             }
         }
     }
     
     void atoms(vector<short>& v_atoms) {
-        for (auto& a: variables)
-            v_atoms.push_back(a.first);
+        binHash<Element*>::iterator a;
+        for (a = variables.begin(); a != variables.end(); a++) {
+            v_atoms.push_back(a->first);
+        }
     }
     
     ~Stackelement() {
-        for (auto& a: variables)
-            a.second->decrementstatus(1, true);
+        for (short i = 0; i < names.last; i++)
+            variables.at(names.vecteur[i])->decrementstatus(1, true);
     }
 };
 

@@ -48,11 +48,7 @@
 #define USTR(x) (uchar*)x.c_str()
 #define WSTR(x) (wchar_t*)x.c_str()
 
-#ifdef WSTRING_IS_UTF16
-#define TRANSCHAR uint32_t
-#else
-#define TRANSCHAR wchar_t
-#endif
+#define TRANSCHAR u_uchar
 
 #ifndef Exporting
 #if defined(WIN32)

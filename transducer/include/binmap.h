@@ -870,7 +870,6 @@ template <class Z> class basebin_hash {
                 indexes[i] = 0;
             }
         }
-        base = -1;
     }
 
     //We insert some new boxes before the position 0

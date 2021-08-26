@@ -452,7 +452,7 @@ Concept::Concept(Concept* c) : concept(c->concept), Element(c->ontologie->local_
     ontologie = c->ontologie;
 }
 
-Concept::Concept(Ontology* h, Concept* c, wstring& s, long i) :
+Concept::Concept(Ontology* h, Concept* c, u_ustring& s, long i) :
 concept(c->concept), Element(h->local_concept) {
     semme = s;
     index = i;
@@ -469,7 +469,7 @@ concept(c->concept), Element(h->local_concept) {
     }
 }
 
-Concept::Concept(Ontology* h, wstring& s, long i) : Element(h->local_concept) {
+Concept::Concept(Ontology* h, u_ustring& s, long i) : Element(h->local_concept) {
     semme = s;
     ontologie = h;
     semme = s;
@@ -622,14 +622,19 @@ Element* Concept::contain(LispE* lisp, Concept* c) {
 }
 
 wstring Concept::asString(LispE*) {
+    return _u_to_w(semme);
+}
+
+u_ustring Concept::asUString(LispE*) {
     return semme;
 }
+
 
 Element* Concept::asList() {
     VECTE<long> table;
     concept.table(table);
     List* l = new List;
-    wstring w;
+    u_ustring w;
     for (long i = 0; i < table.last; i++) {
         w = ontologie->concepts[table[i]];
         l->append(ontologie->indexes[w]);
@@ -640,7 +645,7 @@ Element* Concept::asList() {
 Element* Ontology::find(LispE* lisp, Concept* c) {
     if (c->ontologie != this)
         throw new Error("Error: this concept does not belong to this ontology");
-    wstring w;
+    u_ustring w;
     for (auto& a: indexes) {
         if (c->equal(a.second)) {
             w = a.first;
@@ -650,11 +655,11 @@ Element* Ontology::find(LispE* lisp, Concept* c) {
     return emptystring_;
 }
 
-Element* Ontology::find(LispE* lisp, wstring& w) {
+Element* Ontology::find(LispE* lisp, u_ustring& w) {
     try {
         return indexes.at(w);
     }
-    catch(const std::out_of_range& oor) {
+    catch(...) {
         throw new Error("Error: unknown concept");
     }
 }
@@ -662,12 +667,12 @@ Element* Ontology::find(LispE* lisp, wstring& w) {
 Element* Ontology::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
-    lisp->recording(null_, label);
+    lisp->recordingvalue(null_, label);
     Element* element;
     long sz = code->liste.size();
     for (auto& a : indexes) {
         element = a.second;
-        lisp->recording(element, label);
+        lisp->recordingvalue(element, label);
         e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -698,34 +703,34 @@ public:
     
     
     Ontologyaction(LispE* lisp, onto r) : reg(r), Element(l_lib, s_constant) {
-        wstring w = L"ontology_";
+        u_ustring w = U"ontology_";
         l_ontology = lisp->encode(w);
-        w = L"concept_";
+        w = U"concept_";
         l_concept = lisp->encode(w);
     }
     
     Element* eval(LispE* lisp) {
         switch (reg) {
             case ontology_creation: {
-                wstring name = lisp->get("name")->asString(lisp);
+                u_ustring name = lisp->get(U"name")->asUString(lisp);
                 return new Ontology(name, l_ontology, l_concept);
             }
             case ontology_concept: {
-                Element* e = lisp->get(L"h");
+                Element* e = lisp->get(U"h");
                 if (e->type != l_ontology)
                     throw new Error("Error: the first argument should be an ontology");
                 Ontology* h = (Ontology*)e;
-                wstring name = lisp->get("name")->asString(lisp);
+                u_ustring name = lisp->get(U"name")->asUString(lisp);
                 return h->find(lisp, name);
             }
             case ontology_create: {
                 //Creating a concept from nil or from other
-                Element* e = lisp->get(L"h");
+                Element* e = lisp->get(U"h");
                 if (e->type != l_ontology)
                     throw new Error("Error: the first argument should be an ontology");
                 Ontology* h = (Ontology*)e;
-                wstring name = lisp->get("name")->asString(lisp);
-                Element* conc = lisp->get("conc");
+                u_ustring name = lisp->get(U"name")->asUString(lisp);
+                Element* conc = lisp->get(U"conc");
                 if (conc != null_) {
                     if (conc->type != l_concept)
                         throw new Error("Error: the last element should be a 'concept'");
@@ -734,37 +739,37 @@ public:
                 return h->create(name);
             }
             case ontology_contain: {
-                Element* conc = lisp->get("conc");
-                Element* large_conc = lisp->get("large_conc");
+                Element* conc = lisp->get(U"conc");
+                Element* large_conc = lisp->get(U"large_conc");
                 if (conc->type != l_concept || large_conc->type != l_concept)
                     throw new Error("Error: We can only compare concepts");
                 return ((Concept*)large_conc)->contain(lisp, (Concept*)conc);
             }
             case ontology_intersect: {
-                Element* conc = lisp->get("conc");
-                Element* a = lisp->get("a");
+                Element* conc = lisp->get(U"conc");
+                Element* a = lisp->get(U"a");
                 if (conc->type != l_concept || a->type != l_concept)
                     throw new Error("Error: We can only compare concepts");
                 return ((Concept*)conc)->intersect(lisp, (Concept*)a);
             }
             case ontology_list: {
-                Element* conc = lisp->get("conc");
+                Element* conc = lisp->get(U"conc");
                 if (conc->type != l_concept)
                     throw new Error("Error: the last element should be a 'concept'");
                 return ((Concept*)conc)->asList();
             }
             case ontology_find: {
-                Element* e = lisp->get(L"h");
+                Element* e = lisp->get(U"h");
                 if (e->type != l_ontology)
                     throw new Error("Error: the first argument should be an ontology");
                 Ontology* h = (Ontology*)e;
-                Element* conc = lisp->get("conc");
+                Element* conc = lisp->get(U"conc");
                 if (conc->type != l_concept)
                     throw new Error("Error: the last element should be a 'concept'");
                 return h->find(lisp, (Concept*)conc);
             }
             case ontology_all: {
-                Element* e = lisp->get(L"h");
+                Element* e = lisp->get(U"h");
                 if (e->type != l_ontology)
                     throw new Error("Error: the first argument should be an ontology");
                 Ontology* h = (Ontology*)e;
@@ -775,8 +780,8 @@ public:
                 return l;
             }
             case ontology_add: {
-                Element* conc = lisp->get("conc");
-                Element* add = lisp->get("a");
+                Element* conc = lisp->get(U"conc");
+                Element* add = lisp->get(U"a");
                 if (conc->type != l_concept)
                     throw new Error("Error: We can only enrich with concepts");
                 if (add->type == l_concept)
@@ -795,8 +800,8 @@ public:
                 throw new Error("Error: We can only enrich with concepts");
             }
             case ontology_remove: {
-                Element* conc = lisp->get("conc");
-                Element* add = lisp->get("a");
+                Element* conc = lisp->get(U"conc");
+                Element* add = lisp->get(U"a");
                 if (conc->type != l_concept)
                     throw new Error("Error: We can only remove a concept from another concept");
                 if (add->type == l_concept)
@@ -815,19 +820,19 @@ public:
                 throw new Error("Error: We can only remove a concept from another concept");
             }
             case ontology_absurd: {
-                Element* e = lisp->get(L"h");
+                Element* e = lisp->get(U"h");
                 if (e->type != l_ontology)
                     throw new Error("Error: the first argument should be an ontology");
                 return ((Ontology*)e)->absurd;
             }
             case ontology_absurdp: {
-                Element* conc = lisp->get("conc");
+                Element* conc = lisp->get(U"conc");
                 if (conc->type != l_concept)
                     throw new Error("Error: the first argument should be a concept");
                 return booleans_[(((Concept*)conc)->ontologie->absurd == conc)];
             }
             case ontology_ontology: {
-                Element* conc = lisp->get("conc");
+                Element* conc = lisp->get(U"conc");
                 if (conc->type != l_concept)
                     throw new Error("Error: the first argument should be a concept");
                 return ((Concept*)conc)->ontologie;

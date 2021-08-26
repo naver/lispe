@@ -560,6 +560,7 @@ extern "C" {
         Element* res = lispe->execute(current_code, current_path_name);
         displaybuffer = "\n";
         displaybuffer += res->toString(lispe);
+        displaybuffer += "\n";
         res->release();
         Rappel(0, displaybuffer.c_str());
         return true;

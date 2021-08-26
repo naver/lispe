@@ -32,8 +32,11 @@ public:
     vector<lisp_code> types;
     vector<long> lines;
     vector<long> positions;
+    
+    long current;
 
     void clear() {
+        current = -1;
         tokens.clear();
         numbers.clear();
         types.clear();

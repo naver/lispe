@@ -83,7 +83,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
             std::cerr << e->toString(&lisp);
             exit(-1);
         }
-        if (!lisp.checkencoding(L"runpipe")) {
+        if (!lisp.checkencoding(U"runpipe")) {
             std::cerr << "Error: function '(defun runpipe() ...)' is not defined" << endl;
             exit(-1);
         }

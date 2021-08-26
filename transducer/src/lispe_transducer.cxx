@@ -55,7 +55,7 @@ public:
 
     Element* methodInitial(LispE* lisp) {
         
-        Element* filename = lisp->get(L"filename");
+        Element* filename = lisp->get(U"filename");
         if (filename == null_)
             return this;
         
@@ -74,7 +74,7 @@ public:
 
     Element* methodLoad(LispE* lisp) {
         
-        Element* filename = lisp->get(L"filename");
+        Element* filename = lisp->get(U"filename");
         if (automaton != NULL)
             delete automaton;
         automaton = new DoubleSideAutomaton;
@@ -95,9 +95,9 @@ public:
         if (automaton == NULL)
             return null_;
 
-        string name = lisp->get(L"filename")->toString(lisp);
-        automaton->normalize = lisp->get("normalize")->Boolean();
-        automaton->encoding_table = lisp->get("latintable")->asInteger();
+        string name = lisp->get(U"filename")->toString(lisp);
+        automaton->normalize = lisp->get(U"normalize")->Boolean();
+        automaton->encoding_table = lisp->get(U"latintable")->asInteger();
 
         if (automaton->store(name))
             return true_;
@@ -110,15 +110,15 @@ public:
         if (automaton == NULL)
             automaton = new DoubleSideAutomaton;
 
-        Element* ke = lisp->get("value");
-        automaton->normalize = lisp->get("normalize")->Boolean();
-        automaton->encoding_table = lisp->get("latintable")->asInteger();
+        Element* ke = lisp->get(U"value");
+        automaton->normalize = lisp->get(U"normalize")->Boolean();
+        automaton->encoding_table = lisp->get(U"latintable")->asInteger();
 
         if (ke->type == t_dictionary) {
             hmap<string,string> values;
             Dictionary* d = (Dictionary*)ke;
             string key;
-            wstring wkey;
+            u_ustring wkey;
             for (auto& a: d->dictionary) {
                 wkey = a.first;
                 s_unicode_to_utf8(key, wkey);
@@ -132,10 +132,10 @@ public:
     }
 
     Element* methodBuild(LispE* lisp) {
-        string input = lisp->get("inputfile")->toString(lisp);
-        string output = lisp->get("outputfile")->toString(lisp);
-        bool norm  = lisp->get("normalize")->Boolean();
-        long latinencoding = lisp->get("latintable")->asInteger();
+        string input = lisp->get(U"inputfile")->toString(lisp);
+        string output = lisp->get(U"outputfile")->toString(lisp);
+        bool norm  = lisp->get(U"normalize")->Boolean();
+        long latinencoding = lisp->get(U"latintable")->asInteger();
         
         if (automaton != NULL)
             delete automaton;
@@ -156,12 +156,12 @@ public:
     Element* methodParse(LispE* lisp) {
         if (automaton == NULL)
             return null_;
-        string words = lisp->get("sentence")->toString(lisp);
+        string words = lisp->get(U"sentence")->toString(lisp);
         words+=" ";
         
-        long option = lisp->get("option")->asInteger();
-        long threshold = lisp->get("threshold")->asInteger();
-        short flags = lisp->get("flags")->asInteger();
+        long option = lisp->get(U"option")->asInteger();
+        long threshold = lisp->get(U"threshold")->asInteger();
+        short flags = lisp->get(U"flags")->asInteger();
 
         charReadString currentreader(words);
         if ((option&1)==1)
@@ -172,7 +172,7 @@ public:
         currentreader.begin();
         vector<string> kvs;
         List* result = new List;
-        List* inter;
+        Strings* inter;
         Element* e;
         std::stringstream str;
         while (!currentreader.end()) {
@@ -189,10 +189,9 @@ public:
                     str.str("");
                 }
                 
-                inter = new List;
+                inter = new Strings;
                 for (long i = 0; i < kvs.size(); i++) {
-                    e = lisp->provideString(kvs[i]);
-                    inter->append(e);
+                    inter->append(kvs[i]);
                 }
                 result->append(inter);
                 kvs.clear();
@@ -205,20 +204,18 @@ public:
         if (automaton == NULL)
             return null_;
 
-        wstring word = lisp->get("word")->asString(lisp);
+        wstring word = lisp->get(U"word")->asString(lisp);
 
-        long threshold = lisp->get("threshold")->asInteger();
-        short flags = lisp->get("flags")->asInteger();
+        long threshold = lisp->get(U"threshold")->asInteger();
+        short flags = lisp->get(U"flags")->asInteger();
 
         vector<string> kvs;
         automaton->up(word, kvs, threshold, flags);
         if (kvs.size() == 0)
             return emptylist_;
-        List* inter = new List;
-        Element* e;
+        Strings* inter = new Strings;
         for (long i = 0; i < kvs.size(); i++) {
-            e = lisp->provideString(kvs[i]);
-            inter->append(e);
+            inter->append(kvs[i]);
         }
 
         return inter;
@@ -229,16 +226,14 @@ public:
         if (automaton == NULL)
             return null_;
         
-        wstring word = lisp->get("word")->asString(lisp);
-        char lemma = lisp->get("lemma")->asInteger();
+        wstring word = lisp->get(U"word")->asString(lisp);
+        char lemma = lisp->get(U"lemma")->asInteger();
         
         vector<string> kvs;
         automaton->down(word, kvs, lemma);
-        List* inter = new List;
-        Element* e;
+        Strings* inter = new Strings;
         for (long i = 0; i < kvs.size(); i++) {
-            e = lisp->provideString(kvs[i]);
-            inter->append(e);
+            inter->append(kvs[i]);
         }
         
         return inter;
@@ -248,7 +243,7 @@ public:
         if (automaton == NULL)
             automaton = new DoubleSideAutomaton();
         
-        Element* regular = lisp->get("regular");
+        Element* regular = lisp->get(U"regular");
         
         if (regular == null_) {
             automaton->regulars();
@@ -258,11 +253,11 @@ public:
         string expression = regular->toString(lisp);
         
         agnostring rgx(expression);
-        Element* kfeat = lisp->get("vector");
+        Element* kfeat = lisp->get(U"vector");
         if (!kfeat->isList())
             throw new Error("Error: We expect the second argument to be a list.");
 
-        string name = lisp->get("name")->toString(lisp);
+        string name = lisp->get(U"name")->toString(lisp);
         
         //we first transform each of our features into indexes...
         vector<uint32_t> indexes;
@@ -296,7 +291,7 @@ public:
     Element* eval(LispE* lisp) {
         Automaton* automaton = NULL;
         if (action != trans_trans && action != trans_flags) {
-            Element* trans = lisp->get("trans");
+            Element* trans = lisp->get(U"trans");
             if (trans->type != type)
                 throw new Error("Error: missing transducer");
             automaton = (Automaton*)trans;

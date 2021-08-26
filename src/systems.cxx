@@ -282,7 +282,14 @@ public:
         s_utf8_to_unicode(res, USTR(pathname), pathname.size());
         return res;
     }
+
+    u_ustring asUString(LispE* lisp) {
+        u_ustring res;
+        s_utf8_to_unicode(res, USTR(pathname), pathname.size());
+        return res;
+    }
     
+
 };
 
 class Streamoperation : public Element {
@@ -293,13 +300,13 @@ public:
     Element* a;
     
     Streamoperation(LispE* lisp, file_command fc, short l_file) : fcommand(fc), Element(l_file) {
-        r = lisp->provideAtom(L"r");
-        w = lisp->provideAtom(L"w");
-        a = lisp->provideAtom(L"a");
+        r = lisp->provideAtom(U"r");
+        w = lisp->provideAtom(U"w");
+        a = lisp->provideAtom(U"a");
     }
 
     Element* getstream(LispE* lisp) {
-        Element* a_stream = lisp->get("stream");
+        Element* a_stream = lisp->get(U"stream");
         if (a_stream->type != type)
             throw new Error("Erreur: missing 'file' stream");
         return a_stream;
@@ -310,8 +317,8 @@ public:
         switch (fcommand) {
             case file_open: {
                 //two parameters: pathname and mode
-                string pathname = lisp->get("path")->toString(lisp);
-                Element* mode = lisp->get("mode");
+                string pathname = lisp->get(U"path")->toString(lisp);
+                Element* mode = lisp->get(U"mode");
                 Stream* str = new Stream(type);
                 if (mode == r)
                     return str->open_read(lisp, pathname);
@@ -332,7 +339,7 @@ public:
             }
             case file_read: {
                 Element* a_stream = getstream(lisp);
-                long nb = lisp->get("nb")->asInteger();
+                long nb = lisp->get(U"nb")->asInteger();
                 return ((Stream*)a_stream)->read(lisp, nb);
             }
             case file_readline: {
@@ -349,11 +356,11 @@ public:
             }
             case file_write:{
                 Element* a_stream = getstream(lisp);
-                return ((Stream*)a_stream)->write(lisp, lisp->get("str"));
+                return ((Stream*)a_stream)->write(lisp, lisp->get(U"str"));
             }
             case file_writeln:{
                 Element* a_stream = getstream(lisp);
-                return ((Stream*)a_stream)->writeln(lisp, lisp->get("str"));
+                return ((Stream*)a_stream)->writeln(lisp, lisp->get(U"str"));
             }
         }
 		return null_;
@@ -397,7 +404,7 @@ public:
     
     Dateitem(LispE* lisp, time_t t) : Element(l_lib) {
         the_time = t;
-        wstring d(L"date");
+        u_ustring d(U"date");
         type = lisp->encode(d);
     }
     
@@ -414,7 +421,7 @@ public:
         }
         
         vl = temps->tm_year + 1900;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* month(LispE* lisp, int vl) {
@@ -426,7 +433,7 @@ public:
         }
         
         vl = temps->tm_mon + 1;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* day(LispE* lisp, int vl) {
@@ -438,7 +445,7 @@ public:
         }
         
         vl = temps->tm_mday;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* hour(LispE* lisp, int vl) {
@@ -450,7 +457,7 @@ public:
         }
         
         vl = temps->tm_hour;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* minute(LispE* lisp, int vl) {
@@ -462,7 +469,7 @@ public:
         }
         
         vl = temps->tm_min;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* second(LispE* lisp, int vl) {
@@ -474,21 +481,21 @@ public:
         }
         
         vl = temps->tm_sec;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* weekday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_wday;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* yearday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_yday;
-        return lisp->provideInteger((long)vl);
+        return new Integer((long)vl);
     }
 
     Element* setdate(int y, int m, int d, int H, int M, int S) {
@@ -547,7 +554,18 @@ public:
             s+= (wchar_t)buffer[i];
         return s;
     }
-    
+
+    u_ustring asUString(LispE* l) {
+        u_ustring s;
+        char buffer[100];
+        long sz;
+        struct tm* ladate = localtime(&the_time);
+        sz = strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ladate);
+        for (long i = 0; i < sz; i++)
+            s+= (u_uchar)buffer[i];
+        return s;
+    }
+
     wstring stringInList(LispE* lisp) {
         wstring s;
         char buffer[100];
@@ -556,6 +574,17 @@ public:
         sz = strftime(buffer, 100, "\"%Y/%m/%d %H:%M:%S\"", ladate);
         for (long i = 0; i < sz; i++)
             s+= (wchar_t)buffer[i];
+        return s;
+    }
+
+    u_ustring stringInUList(LispE* lisp) {
+        u_ustring s;
+        char buffer[100];
+        long sz;
+        struct tm* ladate = localtime(&the_time);
+        sz = strftime(buffer, 100, "\"%Y/%m/%d %H:%M:%S\"", ladate);
+        for (long i = 0; i < sz; i++)
+            s+= (u_uchar)buffer[i];
         return s;
     }
 
@@ -569,9 +598,9 @@ public:
     short v_date;
     
     Date(LispE* lisp, short l_date, tempus t) : tmp(t),  Element(l_date) {
-        wstring s(L"d");
+        u_ustring s(U"d");
         v_d = lisp->encode(s);
-        s = L"adate";
+        s = U"adate";
         v_date = lisp->encode(s);
     }
 
@@ -583,7 +612,7 @@ public:
 
     // We recover the default values described as a list
     //in the parameters of the deflib functions (see below)
-    int valeur(LispE* lisp, wstring identifier) {
+    int valeur(LispE* lisp, u_ustring identifier) {
         return (int)lisp->get(identifier)->asInteger();
     }
     
@@ -661,12 +690,12 @@ public:
     Element* setdate(LispE* lisp) {
         Dateitem* dt = new Dateitem(type);
 
-        int y = valeur(lisp, L"y");
-        int m = valeur(lisp, L"m");
+        int y = valeur(lisp, U"y");
+        int m = valeur(lisp, U"m");
         int d = extract_value(lisp, v_d);
-        int H = valeur(lisp, L"H");
-        int M = valeur(lisp, L"M");
-        int S = valeur(lisp, L"S");
+        int H = valeur(lisp, U"H");
+        int M = valeur(lisp, U"M");
+        int S = valeur(lisp, U"S");
         return dt->setdate(y,m,d,H,M,S);
     }
 
@@ -778,13 +807,17 @@ public:
 
     Element* minus(LispE* lisp, Element* temps) {
         if (temps->label() == type) {
-            return lisp->provideNumber(std::chrono::duration_cast<std::chrono::milliseconds>( chrono_value - ((Chrono*)temps)->chrono_value).count());
+            return new Number(std::chrono::duration_cast<std::chrono::milliseconds>( chrono_value - ((Chrono*)temps)->chrono_value).count());
         }
         return zero_;
     }
     
     wstring asString(LispE* lisp) {
         return convertToWString((long)chrono_value.time_since_epoch().count());
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        return convertToUString((long)chrono_value.time_since_epoch().count());
     }
 
     string toString(LispE* lisp) {
@@ -802,17 +835,17 @@ public:
     short v_value;
     
     Command(LispE* lisp, systeme s) : sys(s), Element(l_lib) {
-        wstring nom = L"name";
+        u_ustring nom = U"name";
         v_name = lisp->encode(nom);
-        nom = L"value";
+        nom = U"value";
         v_value = lisp->encode(nom);
-        nom = L"cmd";
+        nom = U"cmd";
         v_cmd = lisp->encode(nom);
-        nom = L"path";
+        nom = U"path";
         v_path = lisp->encode(nom);
     }
     
-    void recording(Dictionary* mp, wstring k, Element* e) {
+    void recording(Dictionary* mp, u_ustring k, Element* e) {
         mp->recording(k,e);
     }
     
@@ -836,22 +869,22 @@ public:
         struct stat scible;
         int stcible = stat(STR(filename), &scible);
         if (stcible >= 0) {
-            Element* size = lisp->provideInteger((long)scible.st_size);
+            Element* size = new Integer((long)scible.st_size);
             Element* change = new Dateitem(lisp, scible.st_mtime);
             Element* adate = new Dateitem(lisp, scible.st_atime);
             Element* cdate = new Dateitem(lisp, scible.st_ctime);
             Dictionary* mp = new Dictionary;
             
-            recording(mp, L"size", size);
-            recording(mp, L"date", change);
-            recording(mp, L"access", adate);
-            recording(mp, L"change", cdate);
-            recording(mp, L"pathname", chemin->copying());
+            recording(mp, U"size", size);
+            recording(mp, U"date", change);
+            recording(mp, U"access", adate);
+            recording(mp, U"change", cdate);
+            recording(mp, U"pathname", chemin->copying());
             
             if ((scible.st_mode & S_IFMT) == S_IFDIR)
-                recording(mp, L"directory", true_);
+                recording(mp, U"directory", true_);
             else
-                recording(mp, L"directory", false_);
+                recording(mp, U"directory", false_);
             return mp;
         }
         
@@ -1017,13 +1050,13 @@ void moduleSysteme(LispE* lisp) {
 
     //------------------------------------------
 
-    wstring w = L"chrono";
+    u_ustring w = U"chrono";
     short identifier = lisp->encode(w);
     lisp->extension("deflib chrono ()", new Chrono(lisp, identifier));
     
     //------------------------------------------
 
-    w = L"date";
+    w = U"date";
     identifier =  lisp->encode(w);
     lisp->extension("deflib date ()", new Date(lisp, identifier,  date_raw));
     
@@ -1041,7 +1074,7 @@ void moduleSysteme(LispE* lisp) {
     lisp->extension("deflib setdate (y (m -1) (d -1) (H -1) (M -1) (S -1))", new Date(lisp, identifier,  date_setdate));
     //------------------------------------------
 
-    w = L"file";
+    w = U"file";
     identifier = lisp->encode(w);
     lisp->extension("deflib file (path (mode 'r))", new Streamoperation(lisp, file_open, identifier));
     lisp->extension("deflib file_close (stream)", new Streamoperation(lisp, file_close, identifier));

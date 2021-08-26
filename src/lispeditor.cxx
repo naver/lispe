@@ -16,10 +16,10 @@ using std::stringstream;
 
 //--------------------------------------
 //This is a stub definition to give jag a value
-string coloring_line(string& line, vector<string>& colors, bool, bool) {
+string coloring_line(editor_lines& lines, long currentline, string& line, vector<string>& colors, file_types) {
     return "";
 }
-
+bool evaluate_quotes(wstring& l);
 //--------------------------------------
 string Normalizefilename(string path) {
     char localpath[4096];
@@ -193,10 +193,34 @@ void lispe_editor::initlisp(bool reinitialize, bool setpath) {
 }
 
 
-string lispe_editor::coloringline(string line, bool thread) {
+string lispe_editor::coloringline(string line, long current_pos, bool thread) {
     if (line == "")
         return line;
     
+    
+    string root;
+    if (current_pos > 0 && lines.Status(current_pos) == concat_line) {
+        bool q = false;
+        if (lines[current_pos].find(L'"') != -1) {
+            q = true;
+            if (evaluate_quotes(lines[current_pos-1])) {
+                long nb = line.find("\"");
+                if (nb != -1) {
+                    nb++;
+                    root = colors[0] + line.substr(0, nb);
+                    root += m_current;
+                    line = line.substr(nb,line.size());
+                }
+            }
+        }
+        current_pos--;
+        while (current_pos > 0 && lines.Status(current_pos) == concat_line) current_pos--;
+        if (current_pos && (lines[current_pos][0] == '#' || lines[current_pos][0] == ';')) {
+            line = colors[4] + line + m_current;
+            return line;
+        }
+    }
+
     Tokenizer* segments = &parse;
     if (thread)
         segments = new Tokenizer;
@@ -257,6 +281,9 @@ string lispe_editor::coloringline(string line, bool thread) {
     
     if (thread)
         delete segments;
+    
+    if (root != "")
+        line = root + line;
     
     return line;
 }
@@ -1164,7 +1191,7 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
         }
         else {
             if (linematch != -1) {
-                printline(linematch+1, lines[linematch]);
+                printline(linematch+1, lines[linematch], -1);
                 movetoposition();
             }
         }
@@ -1348,9 +1375,9 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
         }
         else {
             if (lisp->delegation->check_breakpoints(current_file, it->first))
-                cout << "(^^" << it->first << ") " << editor->coloringline(it->second, is_thread) << m_current;
+                cout << "(^^" << it->first << ") " << editor->coloringline(it->second, it->first, is_thread) << m_current;
             else
-                cout << "(" << it->first << ") " << editor->coloringline(it->second, is_thread) << m_current;
+                cout << "(" << it->first << ") " << editor->coloringline(it->second, it->first, is_thread) << m_current;
         }
     }
     cout << endl;

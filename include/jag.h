@@ -450,6 +450,9 @@ public:
 
 
 typedef enum { x_none, x_goto, x_find, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_copyingselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
+
+typedef enum {java_type, lisp_type, python_type, tamgu_type} file_types;
+
 class Jag_automaton;
 
 class jag_editor : public jag_get {
@@ -467,11 +470,11 @@ public:
     editor_keep undos;
     editor_keep redos;
 
-
+    file_types filetype;
+    
     std::stringstream localhelp;
     std::wstringstream st;
-
-
+    
     string thecurrentfilename;
     string prefix;
 
@@ -509,9 +512,6 @@ public:
     bool taskel;
     bool moveup;
     
-    bool pythonfile;
-    bool lispfile;
-    
     Au_automate* rgx;
 
 #ifdef POSIXREGEX
@@ -527,7 +527,7 @@ public:
 	string getch();
 #endif
 
-    virtual string coloringline(wstring& l);
+    virtual string coloringline(wstring& l, long i);
 
     virtual void displaythehelp(long noclear = 0);
     
@@ -542,10 +542,16 @@ public:
     void setpathname(string path) {
         thecurrentfilename =  path;
         if (thecurrentfilename.find(".lisp") != -1)
-            lispfile = true;
+            filetype = lisp_type;
         else {
             if (thecurrentfilename.find(".py") != -1)
-                pythonfile = true;
+                filetype = python_type;
+            else {
+                if (thecurrentfilename.find(".tmg") != -1)
+                    filetype = tamgu_type;
+                else
+                    filetype = java_type;
+            }
         }
     }
 
@@ -583,6 +589,9 @@ public:
             return true;
         return false;
     }
+    
+    bool checkpath(bool checkcmd = true);
+    void ls(string cmd, string path, vector<wstring>& paths);
 
     //The actual size of the displayed string, the problem here is that multibyte characters are sometimes displayed with an extra-space...
     //Especially for CJK characters.... (Chinese, Japanese, Korean)... We need to integrate this extra-space into our calculus...
@@ -674,7 +683,7 @@ public:
         resetscreen();
     }
 
-    virtual string coloringline(string line, bool thread);
+    virtual string coloringline(string line, long i, bool thread);
     void undo(wstring& l, long p, char a) {
         if (!emode() || p >= lines.size())
             return;
@@ -693,7 +702,7 @@ public:
 
         string codeindente;
         string cd = convert(code);
-        IndentCode(cd, codeindente, GetBlankSize(), lispfile, pythonfile);
+        IndentCode(cd, codeindente, GetBlankSize(), (filetype == lisp_type), (filetype == python_type));
         lines.clear();
         code = wconvert(codeindente);
         code += L"\n\n";
@@ -888,11 +897,11 @@ public:
             cout << back << m_dore << prefixstring(n) << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current;
     }
 
-    virtual void printline(long n, wstring& l, long i = -1) {
+    virtual void printline(long n, wstring& l, long i) {
         if (noprefix)
-            cout << back << coloringline(l);
+            cout << back << coloringline(l, i);
         else
-            cout << back << m_dore << prefixstring(n) << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l);
+            cout << back << m_dore << prefixstring(n) << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l, i);
     }
 
         //------------------------------------------------------------------------------------------------

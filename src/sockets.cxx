@@ -201,7 +201,7 @@ public:
             }
             
             socketclients[socketclient] = true;
-            return lisp->provideInteger(socketclient);
+            return new Integer(socketclient);
         }
         return minusone_;
     }
@@ -332,7 +332,7 @@ public:
         }
         if (!nb)
             return null_;
-        return lisp->provideInteger(rd[0]);
+        return new Integer(rd[0]);
     }
     
     Element* methodWriteRaw(LispE* lisp, SOCKET currentsock, string& strc) {
@@ -434,7 +434,7 @@ public:
     }
     
     Element* methodPort(LispE* lisp) {
-        return lisp->provideInteger(port);
+        return new Integer(port);
     }
     
     Element* methodGetpeername(LispE* lisp, int socketclient) {
@@ -451,9 +451,9 @@ public:
             struct sockaddr_in* client = (struct sockaddr_in*)&cliAddr;
             char* nm = inet_ntoa(client->sin_addr);
             Dictionary* kmap = new Dictionary;
-            wstring key1 = L"port";
-            kmap->recording(key1, lisp->provideInteger(client->sin_port));
-            wstring key2 = L"address";
+            u_ustring key1 = U"port";
+            kmap->recording(key1, new Integer(client->sin_port));
+            u_ustring key2 = U"address";
             string nms = nm;
             kmap->recording(key2, lisp->provideString(nms));
             return kmap;
@@ -621,16 +621,16 @@ public:
     short id_port;
 
     Socket(LispE* lisp, socket_action a, short ty) : action(a), Element(ty) {
-        wstring w = L"socket";
+        u_ustring w = U"socket";
         type_socket_element = lisp->encode(w);
         
-        w = L"socketClientId";
+        w = U"socketClientId";
         id_socketClientId = lisp->encode(w);
 
-        w = L"sock";
+        w = U"sock";
         id_sock = lisp->encode(w);
         
-        w = L"port";
+        w = U"port";
         id_port = lisp->encode(w);
     }
 
@@ -658,8 +658,8 @@ public:
                 initialisation();
                 Socketelement* socket = new Socketelement(type_socket_element);
                 int port = (int)lisp->get(id_port)->asInteger();
-                int nbclients = (int)lisp->get("nbclients")->asInteger();
-                string hostname = lisp->get("hostname")->toString(lisp);
+                int nbclients = (int)lisp->get(U"nbclients")->asInteger();
+                string hostname = lisp->get(U"hostname")->toString(lisp);
                 try {
                     return socket->methodCreateServer(lisp, nbclients,port, hostname);
                 }
@@ -672,7 +672,7 @@ public:
                 initialisation();
                 Socketelement* socket = new Socketelement(type_socket_element);
                 int port = (int)lisp->get(id_port)->asInteger();
-                string hostname = lisp->get("hostname")->toString(lisp);
+                string hostname = lisp->get(U"hostname")->toString(lisp);
                 try {
                     return socket->methodCreateClient(lisp, hostname, port);
                 }
@@ -702,7 +702,7 @@ public:
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                string s = lisp->get("str")->toString(lisp);
+                string s = lisp->get(U"str")->toString(lisp);
                 SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodWrite(lisp, socketClientId, s);
             }
@@ -712,7 +712,7 @@ public:
                     throw new Error("Error: expecting a 'socket' object");
                 
                 SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
-                int nb = (int)lisp->get("nb")->asInteger();
+                int nb = (int)lisp->get(U"nb")->asInteger();
                 return ((Socketelement*)sock)->methodReadRaw(lisp, socketClientId, nb);
             }
             case sock_get: {
@@ -729,7 +729,7 @@ public:
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                string s = lisp->get("str")->toString(lisp);
+                string s = lisp->get(U"str")->toString(lisp);
                 SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodWriteRaw(lisp, socketClientId, s);
             }
@@ -746,7 +746,7 @@ public:
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                bool flag = lisp->get("flag")->Boolean();
+                bool flag = lisp->get(U"flag")->Boolean();
                 return ((Socketelement*)sock)->methodBlocking(lisp, flag);
             }
             case sock_timeout: {
@@ -754,7 +754,7 @@ public:
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                int timeout = (int)lisp->get("tm")->asInteger();
+                int timeout = (int)lisp->get(U"tm")->asInteger();
                 return ((Socketelement*)sock)->methodTimeout(lisp, timeout);
             }
             case sock_gethostname: {
@@ -823,7 +823,7 @@ bool Socket::rootsocket = false;
 
 
 void moduleSocket(LispE* lisp) {
-    wstring w = L"socketmethods";
+    u_ustring w = U"socketmethods";
     short idsocket = lisp->encode(w);
         
     lisp->extension("deflib socket_create(port nbclients (hostname))", new Socket(lisp, sock_create, idsocket));
