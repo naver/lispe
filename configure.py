@@ -13,12 +13,37 @@ ostype=ostype.strip()
 if ostype == "Darwin":
     print("This is a Mac OS platform\n")
     f=open("Makefile.in", "w")
+    f.write("COPTION = -Ofast\n")
     f.write("CURLLIB = -lcurl\n")
     f.write("SQLITELIB = -lsqlite3\n")
     f.write("REGEX = -DPOSIXREGEX\n")
     f.write("LIBBOOST = -L/usr/lib/\n")
-    f.write("INCLUDEPYTHON = -I/Library/Frameworks/Python.framework/Versions/3.8/Headers\n")
-    f.write("PYTHONLIB = /Library/Frameworks/Python.framework/Versions/3.8/Python\n")
+    lb = "/Library/Frameworks/Python.framework/Versions/"
+    versionpython = ""
+    for (dirpath, dirnames, filename) in walk(lb):
+        s = "3."
+        for i in range(10):
+            x = s + chr(i+48)
+            if x in dirnames:
+                versionpython = x
+                break
+        if versionpython != "":
+            break
+
+    if versionpython != "":
+        print("Python:", versionpython)
+        f.write("INCLUDEPYTHON = -I/Library/Frameworks/Python.framework/Versions/"+versionpython+"/Headers\n")
+        f.write("PYTHONLIB = /Library/Frameworks/Python.framework/Versions/"+versionpython+"/Python\n")
+    else:
+        print("No Python 3.x version found")
+
+    ostype = subprocess.Popen(["uname", "-a"], stdout=subprocess.PIPE).stdout.read()
+    if "arm64" in ostype:
+       f.write("PLATFORM = macarm\n")
+       f.write("FLTKVERSION=-DFLTK14\n")
+    else:
+       f.write("PLATFORM = macos\n")
+    f.write("LIBFLTK = -Llibs/$(PLATFORM) -lfltk -lfltk_images -framework Cocoa")
     exit(-1)
 
 libpaths = ["/usr/", "/usr/lib/x86_64-linux-gnu/","/usr/lib64/","/usr/lib/"]
@@ -27,7 +52,7 @@ libincludes = ["/usr/include/", "/usr/include/x86_64-linux-gnu/", "/usr/include/
 pathboost = ""
 nameboost = ""
 
-# On recherche le chemin ou boost regex peut-etre
+# We are looking for library pathnames
 def cherchelib(lalib):
     biblios = []
     boost = False
@@ -69,9 +94,9 @@ def cherchelib(lalib):
                         libpath += "/"
                     if lalib[:3] == "lib":
                         lalib = lalib[3:]
-                    # Si le nom est de la forme so.x.y
-                    # et qu'on a pas trouve une forme .so
-                    # On cree un lien symbolique
+                    # If the name is of type ... so.x.y
+                    # and we could not find a .so file
+                    # We create a symbolic name
                     if name[-3:] != ".so" and name[-6:] != ".dylib":
                         os.system("cd check; ln -s "+libpath+name+" lib"+lalib+".so")
                         pathlib = "-Lcheck -L../check"
@@ -85,6 +110,10 @@ def cherchelib(lalib):
 def selectionBoost():
     os.system("cd check; rm -f lib*.so")
     f=open("Makefile.in", "w")
+    f.write("COPTION = -O3\n")
+    f.write("PLATFORM=linux\n")
+    f.write("# If mouse does not work, decomment next line and recompile")
+    f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100")
     [pathlib, includepath, namelib, vide] = cherchelib("libcurl")
     f.write("REGEX = -DPOSIXREGEX -DBOOSTPOSIXREGEX -I"+includepath+"\n")
     f.write("LIBBOOST = "+pathboost+" "+nameboost+"\n")
@@ -95,11 +124,18 @@ def selectionBoost():
     [pathlibpython, includepath, namelibpython, pythonversion] = cherchelib("python3")
     f.write("INCLUDEPYTHON = -I/usr/include/python"+pythonversion+"\n")
     f.write("PYTHONLIB = "+pathlibpython+" " + namelibpython+"\n")
+    [pathlib, includepath, namelib, vide] = cherchelib("fltk")
+    [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
+    f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
     f.close()
 
 def selectionNoRegex():
     os.system("cd check; rm -f lib*.so")
     f=open("Makefile.in", "w")
+    f.write("COPTION = -O3\n")
+    f.write("PLATFORM=linux\n")
+    f.write("# If mouse does not work, decomment next line and recompile")
+    f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100")
     [pathlib, includepath, namelib, vide] = cherchelib("libcurl")
     f.write("CURLLIB = "+pathlib+" "+namelib+"\n")
     [pathlib, includepath, namelib, vide] = cherchelib("xml2")
@@ -110,13 +146,20 @@ def selectionNoRegex():
     f.write("LIBBOOST = "+pathlib+"\n")
     f.write("INCLUDEPYTHON = -I/usr/include/python"+pythonversion+"\n")
     f.write("PYTHONLIB = "+pathlibpython+" " + namelibpython+"\n")
+    [pathlib, includepath, namelib, vide] = cherchelib("fltk")
+    [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
+    f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
     f.close()
 
 
-# On remet a zero le Makefile, en utilisant la version dans template
+# We reset the Makefile, with all the available information
 def reinitialisation():
     os.system("cd check; rm -f lib*.so")
     f=open("Makefile.in", "w")
+    f.write("COPTION = -O3\n")
+    f.write("PLATFORM=linux\n")
+    f.write("# If mouse does not work, decomment next line and recompile")
+    f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100")
     [pathlib, includepath, namelib, vide] = cherchelib("libcurl")
     f.write("CURLLIB = "+pathlib+" "+namelib+"\n")
     [pathlib, includepath, namelib, vide] = cherchelib("xml2")
@@ -127,6 +170,9 @@ def reinitialisation():
     f.write("LIBBOOST = "+pathlib+"\n")
     f.write("INCLUDEPYTHON = -I/usr/include/python"+pythonversion+"\n")
     f.write("PYTHONLIB = "+pathlibpython+" " + namelibpython+"\n")
+    [pathlib, includepath, namelib, vide] = cherchelib("fltk")
+    [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
+    f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
     f.close()
 
 regex = 0

@@ -151,7 +151,7 @@ public:
         if (mode != file_read)
             throw new Error ("Error: expecting 'stream' to be in 'open' mode");
         
-        Strings* l = new Strings();
+        Strings* l = lisp->provideStrings();
         string ch = "";
         string ln;
         while (!myfile.eof()) {
@@ -421,7 +421,7 @@ public:
         }
         
         vl = temps->tm_year + 1900;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* month(LispE* lisp, int vl) {
@@ -433,7 +433,7 @@ public:
         }
         
         vl = temps->tm_mon + 1;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* day(LispE* lisp, int vl) {
@@ -445,7 +445,7 @@ public:
         }
         
         vl = temps->tm_mday;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* hour(LispE* lisp, int vl) {
@@ -457,7 +457,7 @@ public:
         }
         
         vl = temps->tm_hour;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* minute(LispE* lisp, int vl) {
@@ -469,7 +469,7 @@ public:
         }
         
         vl = temps->tm_min;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* second(LispE* lisp, int vl) {
@@ -481,21 +481,21 @@ public:
         }
         
         vl = temps->tm_sec;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* weekday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_wday;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* yearday(LispE* lisp) {
         //First parameter is a string
         struct tm* temps = localtime(&the_time);
         long vl = temps->tm_yday;
-        return new Integer((long)vl);
+        return lisp->provideInteger((long)vl);
     }
 
     Element* setdate(int y, int m, int d, int H, int M, int S) {
@@ -807,7 +807,7 @@ public:
 
     Element* minus(LispE* lisp, Element* temps) {
         if (temps->label() == type) {
-            return new Number(std::chrono::duration_cast<std::chrono::milliseconds>( chrono_value - ((Chrono*)temps)->chrono_value).count());
+            return lisp->provideNumber(std::chrono::duration_cast<std::chrono::milliseconds>( chrono_value - ((Chrono*)temps)->chrono_value).count());
         }
         return zero_;
     }
@@ -869,7 +869,7 @@ public:
         struct stat scible;
         int stcible = stat(STR(filename), &scible);
         if (stcible >= 0) {
-            Element* size = new Integer((long)scible.st_size);
+            Element* size = lisp->provideInteger((long)scible.st_size);
             Element* change = new Dateitem(lisp, scible.st_mtime);
             Element* adate = new Dateitem(lisp, scible.st_atime);
             Element* cdate = new Dateitem(lisp, scible.st_ctime);
@@ -917,7 +917,7 @@ public:
         if (!go)
             return emptylist_;
         
-        Strings* kvect = new Strings();
+        Strings* kvect = lisp->provideStrings();
         string name;
         if (path.back() != '/')
             path += "/";
@@ -957,7 +957,7 @@ public:
                 if (fp == NULL)
                     throw new Error("Error: the pipe did not open properly");
                 
-                Strings* resultat = new Strings();
+                Strings* resultat = lisp->provideStrings();
                 while (fgets(res, PATH_MAX, fp) != NULL) {
                     cmd  = res;
                     resultat->append(cmd);

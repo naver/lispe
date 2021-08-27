@@ -773,7 +773,7 @@ public:
                 if (e->type != l_ontology)
                     throw new Error("Error: the first argument should be an ontology");
                 Ontology* h = (Ontology*)e;
-                List* l = new List;
+                List* l = lisp->provideList();
                 for(auto& a: h->indexes) {
                     l->append(a.second);
                 }

@@ -376,7 +376,7 @@ public:
                 long j;
                 long mx = s.size() - nb + 1;
                 u_ustring u;
-                Strings* ke = new Strings;
+                Strings* ke = lisp->provideStrings();
                 for (long i = 0; i < mx; i++) {
                     u = U"";
                     for (j = i; j < i + nb; j++) {
@@ -422,7 +422,7 @@ public:
             case str_split_empty: {
                 u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
                 u_ustring search_string =  lisp->get(v_fnd)->asUString(lisp);
-                Strings* result = new Strings;
+                Strings* result = lisp->provideStrings();
                 u_ustring localvalue;
                 long pos = 0;
                 if (search_string == U"") {
@@ -458,7 +458,7 @@ public:
                 u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
                 u_ustring search_string =  lisp->get(v_fnd)->asUString(lisp);
                 
-                Strings* result = new Strings;
+                Strings* result = lisp->provideStrings();
                 u_ustring localvalue;
                 long pos = 0;
                 if (search_string == U"") {
@@ -497,7 +497,7 @@ public:
                 if (strvalue.size() == 0)
                     return emptylist_;
                 
-                Integers* liste =  new Integers;
+                Integers* liste =  lisp->provideIntegers();
                 for (long i = 0; i < strvalue.size(); i++) {
                     liste->liste.push_back(strvalue[i]);
                 }
@@ -546,12 +546,12 @@ public:
                     throw new Error("Error: the first element should be a string_rule object");
                 Element* types = lisp->get(U"types");
                 u_ustring s =  lisp->get(v_str)->asUString(lisp);
-                Strings* vstr = new Strings;
+                Strings* vstr = lisp->provideStrings();
                 ((Rulemethod*)tok)->tok.tokenize(s, &vstr->liste);
                 if (types != null_) {
-                    List* l = new List;
+                    List* l = lisp->provideList();
                     l->append(vstr);
-                    Integers* t_ypes = new Integers;
+                    Integers* t_ypes = lisp->provideIntegers();
                     t_ypes->liste = ((Rulemethod*)tok)->tok.stacktype;
                     l->append(t_ypes);
                     return l;
@@ -562,7 +562,7 @@ public:
                 Element* tok = lisp->get(U"rules");
                 if (tok->type != l_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
-                Strings* vstr = new Strings;
+                Strings* vstr = lisp->provideStrings();
                 ((Rulemethod*)tok)->tok.getrules(vstr->liste);
                 return vstr;
             }

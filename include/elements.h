@@ -1079,6 +1079,15 @@ public:
     
 };
 
+class Numberpool : public Number {
+public:
+    LispE* lisp;
+    Numberpool(LispE* l, double d) : lisp(l), Number(d) {}
+
+    void decrementstatus(uchar nb, bool top);
+    void release();
+};
+
 class Constnumber : public Number {
 public:
     
@@ -1196,6 +1205,15 @@ public:
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
     
+};
+
+class Integerpool : public Integer {
+public:
+    LispE* lisp;
+    Integerpool(LispE* l, long d) : lisp(l), Integer(d) {}
+
+    void decrementstatus(uchar nb, bool top);
+    void release();
 };
 
 class Constinteger : public Integer {
@@ -1370,6 +1388,16 @@ public:
     Element* plus(LispE* l, Element* e);
     Element* thekeys(LispE* lisp);
 };
+
+class Stringpool : public String {
+public:
+    LispE* lisp;
+    Stringpool(LispE* l, u_ustring& d) : lisp(l), String(d) {}
+
+    void decrementstatus(uchar nb, bool top);
+    void release();
+};
+
 
 class Conststring : public String {
 public:

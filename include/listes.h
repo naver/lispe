@@ -1173,6 +1173,16 @@ public:
 
 };
 
+class Listpool : public List {
+public:
+    LispE* lisp;
+    Listpool(LispE* l) : lisp(l) {}
+
+    void decrementstatus(uchar nb, bool top);
+    void release();
+    Element* newInstance();
+};
+
 class Listargumentquote : public List {
 public:
     
@@ -1381,7 +1391,7 @@ public:
     Numbers(uchar s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
 
-    Element* newInstance() {
+    virtual Element* newInstance() {
         return new Numbers;
     }
 
@@ -1751,6 +1761,17 @@ public:
     void sorting(LispE* lisp, List* comparison);
 };
 
+class Numberspool : public Numbers {
+public:
+    LispE* lisp;
+    Numberspool(LispE* l) : lisp(l) {}
+
+    Element* newInstance();
+    
+    void decrementstatus(uchar nb, bool top);
+    void release();
+};
+
 class Integers : public Element {
 public:
     
@@ -1762,7 +1783,7 @@ public:
     Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i) : liste(i->liste), Element(t_integers), exchange_value(0) {}
 
-    Element* newInstance() {
+    virtual Element* newInstance() {
         return new Integers;
     }
 
@@ -2131,6 +2152,17 @@ public:
     void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
 };
+
+class Integerspool : public Integers {
+public:
+    LispE* lisp;
+    Integerspool(LispE* l) : lisp(l) {}
+
+    Element* newInstance();
+    void decrementstatus(uchar nb, bool top);
+    void release();
+};
+
 
 class Matrice : public List {
 public:
@@ -2650,7 +2682,7 @@ public:
 
     Strings(Strings* s) : liste(s->liste), exchange_value(U""), Element(t_strings) {}
     
-    Element* newInstance() {
+    virtual Element* newInstance() {
         return new Strings;
     }
 
@@ -3005,4 +3037,18 @@ public:
     void sorting(LispE* lisp, List* comparison);
 
 };
+
+class Stringspool : public Strings {
+public:
+    LispE* lisp;
+    Stringspool(LispE* l) : lisp(l) {}
+    Stringspool(long nb, u_ustring v) : Strings(nb, v) {}
+
+    Element* newInstance();
+
+    void decrementstatus(uchar nb, bool top);
+    void release();
+};
+
+
 #endif

@@ -127,7 +127,7 @@ public:
         
         long v;
         if (valuevect->type == t_integers) {
-            Integers* liste = new Integers;
+            Integers* liste = lisp->provideIntegers();
             long vlispe;
             for (i = 0; i < nb; i++) {
                 v = d(gen);
@@ -137,7 +137,7 @@ public:
             return liste;
         }
         if (valuevect->type == t_numbers) {
-            Numbers* liste = new Numbers;
+            Numbers* liste = lisp->provideNumbers();
             double vlispe;
             for (i = 0; i < nb; i++) {
                 v = d(gen);
@@ -147,7 +147,7 @@ public:
             return liste;
         }
 
-        List* liste = new List;
+        List* liste = lisp->provideList();
         
         Element* vlispe;
         for (i = 0; i < nb; i++) {
@@ -169,9 +169,9 @@ public:
         
         std::uniform_real_distribution<double> d(alpha, beta);
         if (nb == 1)
-            return new Number((double)d(gen));
+            return lisp->provideNumber((double)d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -193,14 +193,14 @@ public:
             return booleans_[v];
         }
         if (booleans_[0] == zero_) {
-            Integers* iv = new Integers;
+            Integers* iv = lisp->provideIntegers();
             for (long i = 0; i < nb; i++) {
                 iv->liste.push_back(d(gen));
             }
             return iv;
         }
         
-        List* iv = new List;
+        List* iv = lisp->provideList();
                 
         for (long i = 0; i < nb; i++) {
             v = d(gen);
@@ -219,10 +219,10 @@ public:
         
         std::binomial_distribution<long> dis(alpha, beta);
         if (nb == 1)
-            return new Integer((long)dis(gen));
+            return lisp->provideInteger((long)dis(gen));
 
         
-        Integers* iv = new Integers;
+        Integers* iv = lisp->provideIntegers();
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(dis(gen));
@@ -241,9 +241,9 @@ public:
         
         std::negative_binomial_distribution<long> d(alpha, beta);
         if (nb == 1)
-            return new Integer(d(gen));
+            return lisp->provideInteger(d(gen));
         
-        Integers* iv = new Integers;
+        Integers* iv = lisp->provideIntegers();
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(d(gen));
@@ -262,9 +262,9 @@ public:
         
         std::normal_distribution<double> d(alpha, beta);
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -299,9 +299,9 @@ public:
         }
         Element* iv;
         if (tvect->type == t_integers)
-            iv = new Integers;
+            iv = lisp->provideIntegers();
         else
-            iv = new Numbers;
+            iv = lisp->provideNumbers();
         
         long idx;
         for (long i = 0; i < nb; i++) {
@@ -332,9 +332,9 @@ public:
         
         std::piecewise_constant_distribution<double> d(vect.begin(), vect.end(), inter.begin());
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -363,9 +363,9 @@ public:
         std::piecewise_linear_distribution<double> d(vect.begin(), vect.end(), inter.begin());
        
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -385,9 +385,9 @@ public:
         std::lognormal_distribution<double> d(alpha, beta);
         
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -404,9 +404,9 @@ public:
         
         std::geometric_distribution<long> d(alpha);
         if (nb == 1)
-            return new Integer(d(gen));
+            return lisp->provideInteger(d(gen));
         
-        Integers* iv = new Integers;
+        Integers* iv = lisp->provideIntegers();
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(d(gen));
@@ -425,9 +425,9 @@ public:
         std::cauchy_distribution<double> d(alpha, beta);
         
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -445,9 +445,9 @@ public:
         
         std::fisher_f_distribution<double> d(alpha, beta);
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -464,9 +464,9 @@ public:
         
         std::student_t_distribution<double> d(alpha);
         if (nb == 1)
-            return new Number((double)d(gen));
+            return lisp->provideNumber((double)d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -484,9 +484,9 @@ public:
         
         std::extreme_value_distribution<double> d(alpha, beta);
         if (nb == 1)
-            return new Number((double)d(gen));
+            return lisp->provideNumber((double)d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -505,9 +505,9 @@ public:
         
         std::poisson_distribution<long> d(alpha);
         if (nb == 1)
-            return new Integer(d(gen));
+            return lisp->provideInteger(d(gen));
         
-        Integers* iv = new Integers;
+        Integers* iv = lisp->provideIntegers();
         
         for (long i = 0; i < nb; i++) {
             iv->liste.push_back(d(gen));
@@ -524,9 +524,9 @@ public:
         
         std::exponential_distribution<double> d(alpha);
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -544,9 +544,9 @@ public:
         
         std::gamma_distribution<double> d(alpha, beta);
         if (nb == 1)
-            return new Number(d(gen));
+            return lisp->provideNumber(d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -564,9 +564,9 @@ public:
         
         std::weibull_distribution<double> d(alpha, beta);
         if (nb == 1)
-            return new Number((double)d(gen));
+            return lisp->provideNumber((double)d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -584,9 +584,9 @@ public:
         
         std::chi_squared_distribution<double> d(alpha);
         if (nb == 1)
-            return new Number((double)d(gen));
+            return lisp->provideNumber((double)d(gen));
         
-        Numbers* fv = new Numbers;
+        Numbers* fv = lisp->provideNumbers();
         
         for (long i = 0; i < nb; i++) {
             fv->liste.push_back(d(gen));
@@ -633,7 +633,7 @@ public:
         switch (rnd) {
             case rnd_random: {
                 long nb = lisp->get(v_nb)->asInteger();
-                return new Number(localrandom(nb));
+                return lisp->provideNumber(localrandom(nb));
             }
             case rnd_shuffle:
                 return Proc_shuffle(lisp);

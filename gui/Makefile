@@ -9,7 +9,7 @@ LOBJPATH = ../objs
 #------------------------------------------------------------
 objectgui = $(sourcegui:%.cxx=$(LOBJPATH)/gui/%.o)
 #------------------------------------------------------------
-C++11Flag = -std=c++11 -fPIC -w -c -O3 -DUNIX -DFL_INTERNALS $(FLTKVERSION)
+C++11Flag = -std=c++11 -fPIC -w -c $(COPTION) -DUNIX -DFL_INTERNALS $(FLTKVERSION)
 LIBPATH = ../bin
 #------------------------------------------------------------
 INCLUDEPATH = -I../include -Iinclude -Iinclude/$(PLATFORM)/fltk
@@ -25,3 +25,4 @@ install:
 
 clean:
 	rm -f $(LOBJPATH)/gui/*.o
+

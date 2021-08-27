@@ -71,172 +71,172 @@ public:
             case math_fabs: {
                 v = lisp->get(v_val)->asNumber();
                 v = fabs(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_acos: {
                 v = lisp->get(v_val)->asNumber();
                 v = acos(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_acosh: {
                 v = lisp->get(v_val)->asNumber();
                 v = acosh(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_asin: {
                 v = lisp->get(v_val)->asNumber();
                 v = asin(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_asinh: {
                 v = lisp->get(v_val)->asNumber();
                 v = asinh(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_atan: {
                 v = lisp->get(v_val)->asNumber();
                 v = atan(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_atanh: {
                 v = lisp->get(v_val)->asNumber();
                 v = atanh(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_cbrt: {
                 v = lisp->get(v_val)->asNumber();
                 v = cbrt(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_cos: {
                 v = lisp->get(v_val)->asNumber();
                 v = cos(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_cosh: {
                 v = lisp->get(v_val)->asNumber();
                 v = cosh(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_erf: {
                 v = lisp->get(v_val)->asNumber();
                 v = erf(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_erfc: {
                 v = lisp->get(v_val)->asNumber();
                 v = erfc(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_exp: {
                 v = lisp->get(v_val)->asNumber();
                 v = exp(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_exp2: {
                 v = lisp->get(v_val)->asNumber();
                 v = exp2(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_expm1: {
                 v = lisp->get(v_val)->asNumber();
                 v = expm1(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_floor: {
                 v = lisp->get(v_val)->asNumber();
                 v = floor(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_lgamma: {
                 v = lisp->get(v_val)->asNumber();
                 v = lgamma(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_log: {
                 v = lisp->get(v_val)->asNumber();
                 v = log(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_log10: {
                 v = lisp->get(v_val)->asNumber();
                 v = log10(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_log1p: {
                 v = lisp->get(v_val)->asNumber();
                 v = log1p(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_log2: {
                 v = lisp->get(v_val)->asNumber();
                 v = log2(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_logb: {
                 v = lisp->get(v_val)->asNumber();
                 v = logb(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_nearbyint: {
                 v = lisp->get(v_val)->asNumber();
                 v = nearbyint(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_rint: {
                 v = lisp->get(v_val)->asNumber();
                 v = rint(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_round: {
                 v = lisp->get(v_val)->asNumber();
                 v = round(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_sin: {
                 v = lisp->get(v_val)->asNumber();
                 v = sin(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_sinh: {
                 v = lisp->get(v_val)->asNumber();
                 v = sinh(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_sqrt: {
                 v = lisp->get(v_val)->asNumber();
                 v = sqrt(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_tan: {
                 v = lisp->get(v_val)->asNumber();
                 v = tan(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_tanh: {
                 v = lisp->get(v_val)->asNumber();
                 v = tanh(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_tgamma: {
                 v = lisp->get(v_val)->asNumber();
                 v = tgamma(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_trunc: {
                 v = lisp->get(v_val)->asNumber();
                 v = trunc(v);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_radian: {
                 v = lisp->get(v_val)->asNumber();
                 v = M_PI*(v / 180);
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
             case math_degree: {
                 v = lisp->get(v_val)->asNumber();
                 v = (v * 180) / M_PI;
-                return new Number(v);
+                return lisp->provideNumber(v);
             }
         }
 		return zero_;
@@ -395,25 +395,25 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib degree (val)", new Math(lisp, math_degree));
 
     u_ustring nom = U"_pi";
-    Element* value = new Number(M_PI);
+    Element* value = lisp->provideNumber(M_PI);
     lisp->recordingunique(value, lisp->encode(nom));
     nom = U"π";
     lisp->recordingunique(value, lisp->encode(nom));
     
     nom = U"_tau";
-    value = new Number(2 * M_PI);
+    value = lisp->provideNumber(2 * M_PI);
     lisp->recordingunique(value, lisp->encode(nom));
     nom = U"τ";
     lisp->recordingunique(value, lisp->encode(nom));
     
     nom = U"_e";
-    value = new Number(M_E);
+    value = lisp->provideNumber(M_E);
     lisp->recordingunique(value, lisp->encode(nom));
     nom = U"ℯ";
     lisp->recordingunique(value, lisp->encode(nom));
     
     nom = U"_phi";
-    value = new Number(M_GOLDEN);
+    value = lisp->provideNumber(M_GOLDEN);
     lisp->recordingunique(value, lisp->encode(nom));
 
 }
@@ -640,7 +640,7 @@ Element* Matrice::ludcmp(LispE* lisp) {
     if (rc == 1) {
         return emptylist_;
     }
-    Integers* lst = new Integers;
+    Integers* lst = lisp->provideIntegers();
     for (long i = 0; i < size_x; i++) {
         lst->liste.push_back(indexes.vecteur[i]);
     }

@@ -343,7 +343,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
     else {
         _id_var = new List;
         lisp->garbaging(_id_var);
-        _id_var->append(new Integer(idx_var++));
+        _id_var->append(lisp->provideInteger(idx_var++));
         _id_var->append(zero_);
         //We only create a certain number of variables
         //we expect encapsulation to be less than 16...
@@ -887,7 +887,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
             if (first_element->isList()) {
                 long sz = first_element->size();
                 if (sz == 2) {
-                    action = new List;
+                    action = lisp->provideList();
                     // (map '(- 1) '(1 2 3 4))
                     if (first_element->index(0)->isInstruction()) {
                         action->append(first_element->index(0));
@@ -940,14 +940,14 @@ Element* List::composing(LispE* lisp, bool docompose) {
                     switch (fold_ordering) {
                         case 0:
                             if (labeltype == l_map) {
-                                action = new List;
+                                action = lisp->provideList();
                                 action->append(first_element);
                                 action->append(iterator_variable);
                                 action->append(iterator_variable);
                             }
                             break;
                         case 1: {
-                            action = new List;
+                            action = lisp->provideList();
                             //We push our value first then the iterator variable
                             action->append(first_element);
                             action->append(_value);
@@ -955,7 +955,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
                             break;
                         }
                         case 2: {
-                            action = new List;
+                            action = lisp->provideList();
                             //We push our iterator variable first
                             action->append(first_element);
                             action->append(iterator_variable);
@@ -967,7 +967,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
                     if (first_element->isAtom()) {
                         //then it has to be a function name or an instruction
                         //otherwise it will fail
-                        action = new List;
+                        action = lisp->provideList();
                         //if it is not a quoted expression, we add a l_mapping
                         if (liste[1] == first_element)
                             action->append(P(l_mapping));

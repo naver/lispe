@@ -9,7 +9,7 @@ LOBJPATH = ../objs
 #------------------------------------------------------------
 object%1 = $(source%1:%.cxx=$(LOBJPATH)/%1/%.o)
 #------------------------------------------------------------
-C++11Flag = -std=c++11 -fPIC -w -c -O3 -DUNIX
+C++11Flag = -std=c++11 -fPIC -w -c $(COPTION) -DUNIX
 LIBPATH = ../bin
 #------------------------------------------------------------
 INCLUDEPATH = -I../include -Iinclude

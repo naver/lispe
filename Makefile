@@ -13,10 +13,10 @@ OBJECTJAG = $(SOURCEJAG:%.cxx=objs/jag/%.o)
 #------------------------------------------------------------
 INCLUDES = -Iinclude
 # Selon les compilateurs, il faudra peut-être choisir l'un des flags suivants
-#C++11Flag = -std=c++0x -w -c -fPIC -O3 -DUNIX
-#C++11Flag = -std=gnu++0x -w -c -fPIC -O3 -DUNIX
+#C++11Flag = -std=c++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
+#C++11Flag = -std=gnu++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
 
-C++11Flag = -fPIC -std=c++11 -w -c -O3 $(REGEX) -DUNIX
+C++11Flag = -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
 #------------------------------------------------------------
 objs/%.o: src/%.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@

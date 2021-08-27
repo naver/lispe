@@ -4392,7 +4392,7 @@ bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s) {
     if (s[0] == '{')
         compiled_result = new Dictionary_as_buffer;
     else
-        compiled_result = new List;
+        compiled_result = lisp->provideList();
 
     pos.clear();
     src = (u_uchar*)s.c_str();
@@ -4545,7 +4545,7 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
             case '[': {
                 if (checknext)
                     return false;
-                List* local = new List;
+                List* local = lisp->provideList();
                 if (src[i] == ']') {
                     r++;
                     i++;

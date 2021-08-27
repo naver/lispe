@@ -49,6 +49,12 @@ public:
         }
     }
 
+    void cleaning() {
+        while (last>0) {
+            delete vecteur[--last];
+        }
+    }
+    
     void clean() {
 		if (vecteur == NULL)
 			return;
@@ -211,7 +217,6 @@ public:
 		vecteur[last++] = val;
 	}
 
-
 	inline Z operator [](long pos) {
 		return vecteur[pos];
 	}
@@ -290,7 +295,7 @@ public:
             last = pos+1;
     }
 
-
+    
 	void operator =(VECTE<Z>& z) {
 		last = z.last;
 		if (last >= sz) {

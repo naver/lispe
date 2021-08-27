@@ -201,7 +201,7 @@ public:
             }
             
             socketclients[socketclient] = true;
-            return new Integer(socketclient);
+            return lisp->provideInteger(socketclient);
         }
         return minusone_;
     }
@@ -332,7 +332,7 @@ public:
         }
         if (!nb)
             return null_;
-        return new Integer(rd[0]);
+        return lisp->provideInteger(rd[0]);
     }
     
     Element* methodWriteRaw(LispE* lisp, SOCKET currentsock, string& strc) {
@@ -434,7 +434,7 @@ public:
     }
     
     Element* methodPort(LispE* lisp) {
-        return new Integer(port);
+        return lisp->provideInteger(port);
     }
     
     Element* methodGetpeername(LispE* lisp, int socketclient) {
@@ -452,7 +452,7 @@ public:
             char* nm = inet_ntoa(client->sin_addr);
             Dictionary* kmap = new Dictionary;
             u_ustring key1 = U"port";
-            kmap->recording(key1, new Integer(client->sin_port));
+            kmap->recording(key1, lisp->provideInteger(client->sin_port));
             u_ustring key2 = U"address";
             string nms = nm;
             kmap->recording(key2, lisp->provideString(nms));

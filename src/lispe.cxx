@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.8.25.16.20";
+static std::string version = "1.2021.8.26.22.15";
 string LispVersion() {
     return version;
 }
@@ -41,7 +41,7 @@ wstring Stackelement::asString(LispE* lisp) {
 }
 
 List* Stackelement::atomes(LispE* lisp) {
-    List* liste = new List;
+    List* liste = lisp->provideList();
     binHash<Element*>::iterator a;
     for (a = variables.begin(); a != variables.end(); a++)
         liste->append(lisp->provideAtom(a->first));
@@ -691,15 +691,19 @@ void LispE::cleaning() {
         stop();
     }
 
+    list_pool.cleaning();
+    number_pool.cleaning();
+    integer_pool.cleaning();
+    string_pool.cleaning();
+    numbers_pool.cleaning();
+    integers_pool.cleaning();
+    strings_pool.cleaning();
+
     //Then if some of them are still running
     //we wait for their termination
     while (nbjoined) {}
 
     clearStack();
-
-    //We then clean all our pools...
-    for (auto& a: string_pool)
-        delete a.second;
 
     for (long i = 0; i < garbages.size(); i++)
         delete garbages[i];
@@ -1161,7 +1165,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
 
 
 Element* LispE::tokenize(wstring& code, bool keepblanks) {
-    List* res = new List;
+    List* res = provideList();
     long idx;
     long sz = code.size();
     long i;
@@ -1306,6 +1310,10 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             case l_link:
                                 e->eval(this);
                                 removefromgarbage(e);
+                                continue;
+                            case l_dethread:
+                            case l_defun:
+                                e->eval(this);
                                 continue;
                             case l_defpat: {
                                 Element* arguments = e->index(2);
@@ -1500,7 +1508,7 @@ List* LispE::create_instruction(short label,
                                 Element* e5,
                                 Element* e6,
                                 Element* e7) {
-    List* l = new List;
+    List* l = provideList();
 
     garbaging(l);
     l->append(provideAtom(label));
@@ -1529,7 +1537,7 @@ List* LispE::create_local_instruction(short label,
                                 Element* e5,
                                 Element* e6,
                                 Element* e7) {
-    List* l = new List;
+    List* l = provideList();
 
     l->append(provideAtom(label));
     if (!l->append_not_null(e1))
@@ -1857,60 +1865,31 @@ bool Element::replaceVariableNames(LispE* lisp) {
 Element* LispE::provideString(string& str) {
     u_ustring s;
     s_utf8_to_unicode(s, USTR(str), str.size());
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
+    return provideString(s);
 }
 
 Element* LispE::provideString(wchar_t ch) {
     u_ustring s;
     s = (u_uchar)ch;
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
+    return provideString(s);
 }
 
 Element* LispE::provideString(u_uchar ch) {
     u_ustring s;
     s = ch;
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
+    return provideString(s);
 }
 
 Element* LispE::provideString(wstring& w) {
     u_pstring s = _w_to_u(w);
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
-}
-
-Element* LispE::provideString(u_ustring& s) {
-    String* c = string_pool[s];
-    if (c == NULL) {
-        c = new String(s, s_constant);
-        string_pool[s] = c;
-    }
-    return c;
+    return provideString(s);
 }
 
 /*
  Saving arguments in a list: _args
  */
 void LispE::arguments(std::vector<string>& args) {
-    List* l = new List;
+    List* l = provideList();
     for (auto& a: args) {
         l->append(provideString(a));
     }

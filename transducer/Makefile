@@ -9,7 +9,7 @@ LOBJPATH = ../objs
 #------------------------------------------------------------
 objecttransducer = $(sourcetransducer:%.cxx=$(LOBJPATH)/transducer/%.o)
 #------------------------------------------------------------
-C++11Flag = -std=c++11 -fPIC -w -c -O3 -DUNIX
+C++11Flag = -std=c++11 -fPIC -w -c $(COPTION) -DUNIX
 LIBPATH = ../bin
 #------------------------------------------------------------
 INCLUDEPATH = -I../include -Iinclude
@@ -25,5 +25,4 @@ install:
 
 clean:
 	rm -f $(LOBJPATH)/transducer/*.o
-
 

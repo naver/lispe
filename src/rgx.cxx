@@ -991,7 +991,7 @@ public:
 
     Element* find_i(LispE* lisp, u_ustring& w, long pos) {
         long debut, fin;
-        Integers* positions = new Integers;
+        Integers* positions = lisp->provideIntegers();
         if (au.search(w, debut, fin, pos)) {
             positions->liste.push_back(debut);
             positions->liste.push_back(fin);
@@ -1007,7 +1007,7 @@ public:
         if (resultats.size() == 0)
             return emptylist_;
 
-        Strings* liste = new Strings;
+        Strings* liste = lisp->provideStrings();
         u_ustring sub;
         for (pos = 0; pos < resultats.size(); pos+=2) {
             sub = w.substr(resultats[pos], resultats[pos+1]-resultats[pos]);
@@ -1017,7 +1017,7 @@ public:
     }
 
     Element* findall_i(LispE* lisp, u_ustring& w, long pos) {
-        Integers* liste = new Integers;
+        Integers* liste = lisp->provideIntegers();
         au.searchall(w, liste->liste, pos);
         return liste;
     }
@@ -1045,7 +1045,7 @@ public:
         if (values.size() == 0)
             return emptylist_;
         
-        Strings* result = new Strings;
+        Strings* result = lisp->provideStrings();
         long pos = 0;
         u_ustring sub;
         for (long i = 0; i < values.size(); i += 2) {
@@ -1140,7 +1140,7 @@ public:
         if (resultats.size() == 0)
             return emptylist_;
 
-        Strings* liste = new Strings;
+        Strings* liste = lisp->provideStrings();
         wstring sub;
         for (pos = 0; pos < resultats.size(); pos+=2) {
             sub = val.substr(resultats[pos], resultats[pos+1]-resultats[pos]);
@@ -1154,7 +1154,7 @@ public:
         long b = 0;
         long e;
         
-        Integers* results = new Integers;
+        Integers* results = lisp->provideIntegers();
 
         if (init) {
             if (init >= w.size())
@@ -1182,7 +1182,7 @@ public:
     }
 
     Element* findall_i(LispE* lisp, wstring& val, long pos) {
-        Integers* results = new Integers;
+        Integers* results = lisp->provideIntegers();
 
         const wsregex_iterator end;
         for (wsregex_iterator i(val.begin(), val.end(), *au); i != end; ++i) {
@@ -1204,7 +1204,7 @@ public:
     }
 
     Element* split(LispE* lisp, wstring& w) {
-        Strings* result = new Strings;
+        Strings* result = lisp->provideStrings();
         long pos = 0;
         wstring sub;
 

@@ -41,11 +41,17 @@ class LispE {
 public:
     Element* _BOOLEANS[2];
     
+    VECTE<Listpool*> list_pool;
+    VECTE<Integerpool*> integer_pool;
+    VECTE<Numberpool*> number_pool;
+    VECTE<Stringpool*> string_pool;
+
+    VECTE<Integerspool*> integers_pool;
+    VECTE<Numberspool*> numbers_pool;
+    VECTE<Stringspool*> strings_pool;
+
     unordered_map<wstring, Element*> pools;
     vector<Element*> vpools;
-
-    unordered_map<u_ustring, String*> string_pool;
-    
     
     //Delegation is a class that records any data
     //related to compilation
@@ -841,17 +847,48 @@ public:
     Element* provideCADR(string& c) {
         return delegation->provideCADR(c);
     }
-    
-    Element* provideNumber(double d) {
-        return new Number(d);
+
+    List* provideList() {
+        return list_pool.last?list_pool.backpop(): new Listpool(this);
+    }
+
+    Numbers* provideNumbers() {
+        return numbers_pool.last?numbers_pool.backpop():new Numberspool(this);
     }
     
-    Element* provideInteger(long d) {
-        return new Integer(d);
+    Integers* provideIntegers() {
+        return integers_pool.last?integers_pool.backpop():new Integerspool(this);
     }
     
+    Strings* provideStrings() {
+        return strings_pool.last?strings_pool.backpop():new Stringspool(this);
+    }
+
+    Number* provideNumber(double d) {
+        if (!number_pool.last)
+            return new Numberpool(this, d);
+        Numberpool* n = number_pool.backpop();
+        n->number = d;
+        return n;
+    }
+    
+    Integer* provideInteger(long d) {
+        if (!integer_pool.last)
+            return new Integerpool(this, d);
+        Integerpool* n = integer_pool.backpop();
+        n->integer = d;
+        return n;
+    }
+
+    String* provideString(u_ustring& c) {
+        if (!string_pool.last)
+            return new Stringpool(this, c);
+        Stringpool* n = string_pool.backpop();
+        n->content = c;
+        return n;
+    }
+
     Element* provideString(wstring& c);
-    Element* provideString(u_ustring& c);
     Element* provideString(string& c);
     Element* provideString(wchar_t c);
     Element* provideString(u_uchar c);

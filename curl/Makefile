@@ -9,7 +9,7 @@ LOBJPATH = ../objs
 #------------------------------------------------------------
 objectcurl = $(sourcecurl:%.cxx=$(LOBJPATH)/curl/%.o)
 #------------------------------------------------------------
-C++11Flag = -std=c++11 -fPIC -w -c -O3 -DUNIX
+C++11Flag = -std=c++11 -fPIC -w -c $(COPTION) -DUNIX
 LIBPATH = ../bin
 #------------------------------------------------------------
 INCLUDEPATH = -I../include -Iinclude -Iinclude/linux
