@@ -5955,7 +5955,8 @@ Element* List::evall_loop(LispE* lisp) {
         if (liste[1]->isList()) {
             if ( (size() - liste[1]->size()) <= 0)
                 throw new Error("Error: mismatch between variable list size and value size list");
-            liste[0] = lisp->provideAtom(l_multiloop);
+            if (!lisp->checkforLock())
+                liste[0] = lisp->provideAtom(l_multiloop);
             return multiloop(lisp);
         }
         

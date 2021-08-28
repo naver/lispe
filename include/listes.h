@@ -587,6 +587,14 @@ public:
         }
     }
     
+    void rawrelease() {
+        if (!status) {
+            for (long i = 0; i < liste.size(); i++)
+                liste[i]->release();
+            liste.clear();
+        }
+    }
+    
     Element* equal(LispE* lisp, Element* e);
     
     virtual long size() {

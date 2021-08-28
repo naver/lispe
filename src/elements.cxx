@@ -2046,8 +2046,8 @@ Element* Dictionary_n::loop(LispE* lisp, short label, List* code) {
  (loop [x y z] '(1 3 4) '(5 6 7) '(9 10 13) (println (+ x y z)))
 */
 Element* List::multiloop(LispE* lisp) {
-    List values;
-    List indexes;
+    List* values = lisp->provideList();
+    List* indexes = lisp->provideList();
     Element* e = null_;
     Element* idx;
     long sz = size();
@@ -2059,67 +2059,71 @@ Element* List::multiloop(LispE* lisp) {
     short label;
     bool looping = true;
     
-    for (var = 0; var < liste[1]->size(); var++) {
-        label = liste[1]->index(var)->label();
-        if (label == v_null)
-            throw new Error("Missing variable in 'loop'");
-        lisp->recordingvalue(null_, label);
-    }
+    try {
+        for (var = 0; var < liste[1]->size(); var++) {
+            label = liste[1]->index(var)->label();
+            if (label == v_null)
+                throw new Error("Missing variable in 'loop'");
+            lisp->recordingvalue(null_, label);
+        }
         
-    //The next elements are the one we want to loop on...
-    //We should have as many lists as variables
-    //The actual code will start at b_loop...
-    bool multiloop = false;
-    for (var = 2; var < b_loop ; var++) {
-        e = index(var)->eval(lisp);
-        if (!e->isList())
-            multiloop = true;
-        values.appendraw(e);
-        indexes.appendraw(e->thekeys(lisp));
+        //The next elements are the one we want to loop on...
+        //We should have as many lists as variables
+        //The actual code will start at b_loop...
+        bool multiloop = false;
+        for (var = 2; var < b_loop ; var++) {
+            e = index(var)->eval(lisp);
+            if (!e->isList())
+                multiloop = true;
+            values->appendraw(e);
+            indexes->appendraw(e->thekeys(lisp));
+        }
+        
+        if (!multiloop && !lisp->checkforLock())
+            liste[0] = lisp->provideAtom(l_polyloop);
+        
+        while (looping) {
+            for (var = 0; var < liste[1]->size(); var++) {
+                idx = indexes->liste[var]->value_on_index(lisp, indexe);
+                if (idx == null_) {
+                    looping = false;
+                    break;
+                }
+                e = values->liste[var]->value_on_index(lisp, idx);
+                label = liste[1]->index(var)->label();
+                lisp->recordingvalue(e, label);
+            }
+            if (!looping)
+                break;
+            e = null_;
+            //We then execute our instructions
+            for (i_loop = b_loop; i_loop < sz && e->type != l_return; i_loop++) {
+                e->release();
+                e = liste[i_loop]->eval(lisp);
+            }
+            if (e->type == l_return) {
+                values->rawrelease();
+                indexes->rawrelease();
+                if (e->isBreak())
+                    return null_;
+                return e;
+            }
+            indexe++;
+        }
+    }
+    catch(Error* err) {
+        values->rawrelease();
+        indexes->rawrelease();
+        throw err;
     }
     
-    if (!multiloop)
-        liste[0] = lisp->provideAtom(l_polyloop);
-        
-    while (looping) {
-        for (var = 0; var < liste[1]->size(); var++) {
-            idx = indexes.liste[var]->value_on_index(lisp, indexe);
-            if (idx == null_) {
-                looping = false;
-                break;
-            }
-            e = values.liste[var]->value_on_index(lisp, idx);
-            label = liste[1]->index(var)->label();
-            lisp->recordingvalue(e, label);
-        }
-        if (!looping)
-            break;
-        e = null_;
-        //We then execute our instructions
-        for (i_loop = b_loop; i_loop < sz && e->type != l_return; i_loop++) {
-            e->release();
-            e = liste[i_loop]->eval(lisp);
-        }
-        if (e->type == l_return) {
-            if (e->isBreak())
-                return null_;
-            for (var = 0; var < liste[2]->size(); var++) {
-                values.liste[var]->release();
-                indexes.liste[var]->release();
-            }
-            return e;
-        }
-        indexe++;
-    }
-    for (var = 0; var < liste[2]->size(); var++) {
-        values.liste[var]->release();
-        indexes.liste[var]->release();
-    }
+    values->rawrelease();
+    indexes->rawrelease();
     return e;
 }
 
 Element* List::polyloop(LispE* lisp) {
-    List values;
+    List* values = lisp->provideList();
     Element* e = null_;
     long sz = size();
     long var;
@@ -2130,52 +2134,55 @@ Element* List::polyloop(LispE* lisp) {
     short label;
     bool looping = true;
     
-    for (var = 0; var < liste[1]->size(); var++) {
-        label = liste[1]->index(var)->label();
-        if (label == v_null)
-            throw new Error("Missing variable in 'loop'");
-        lisp->recordingvalue(null_, label);
-    }
-        
-    //The next elements are the one we want to loop on...
-    //We should have as many lists as variables
-    //The actual code will start at b_loop...
-    for (var = 2; var < b_loop ; var++) {
-        e = index(var)->eval(lisp);
-        values.appendraw(e);
-    }
-        
-    while (looping) {
+    try {
         for (var = 0; var < liste[1]->size(); var++) {
-            e = values.liste[var]->value_on_index(lisp, indexe);
-            if (e == null_) {
-                looping = false;
-                break;
-            }
             label = liste[1]->index(var)->label();
-            lisp->recordingvalue(e, label);
+            if (label == v_null)
+                throw new Error("Missing variable in 'loop'");
+            lisp->recordingvalue(null_, label);
         }
-        if (!looping)
-            break;
-        e = null_;
-        //We then execute our instructions
-        for (i_loop = b_loop; i_loop < sz && e->type != l_return; i_loop++) {
-            e->release();
-            e = liste[i_loop]->eval(lisp);
+        
+        //The next elements are the one we want to loop on...
+        //We should have as many lists as variables
+        //The actual code will start at b_loop...
+        for (var = 2; var < b_loop ; var++) {
+            e = index(var)->eval(lisp);
+            values->appendraw(e);
         }
-        if (e->type == l_return) {
-            if (e->isBreak())
-                return null_;
-            for (var = 0; var < liste[2]->size(); var++) {
-                values.liste[var]->release();
+        
+        while (looping) {
+            for (var = 0; var < liste[1]->size(); var++) {
+                e = values->liste[var]->value_on_index(lisp, indexe);
+                if (e == null_) {
+                    looping = false;
+                    break;
+                }
+                label = liste[1]->index(var)->label();
+                lisp->recordingvalue(e, label);
             }
-            return e;
+            if (!looping)
+                break;
+            e = null_;
+            //We then execute our instructions
+            for (i_loop = b_loop; i_loop < sz && e->type != l_return; i_loop++) {
+                e->release();
+                e = liste[i_loop]->eval(lisp);
+            }
+            if (e->type == l_return) {
+                values->rawrelease();
+                if (e->isBreak())
+                    return null_;
+                return e;
+            }
+            indexe++;
         }
-        indexe++;
     }
-    for (var = 0; var < liste[2]->size(); var++) {
-        values.liste[var]->release();
+    catch(Error* err) {
+        values->rawrelease();
+        throw err;
     }
+    
+    values->rawrelease();
     return e;
 }
 
