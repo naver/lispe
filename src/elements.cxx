@@ -61,6 +61,17 @@ void Listpool::release() {
     }
 }
 
+void Listpool::rawrelease() {
+    if (!status) {
+        for (long i = 0; i < liste.size(); i++)
+            liste[i]->release();
+        liste.clear();
+        liste.decrement();
+        lisp->list_pool.push_back(this);
+    }
+}
+
+
 void Numberpool::decrementstatus(uchar nb, bool top) {
     if (status > s_destructible && status < s_protect)
         status -= nb;

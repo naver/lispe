@@ -587,11 +587,13 @@ public:
         }
     }
     
-    void rawrelease() {
+    virtual void rawrelease() {
         if (!status) {
             for (long i = 0; i < liste.size(); i++)
                 liste[i]->release();
             liste.clear();
+            liste.decrement();
+            delete this;
         }
     }
     
@@ -1190,6 +1192,7 @@ public:
 
     void decrementstatus(uchar nb, bool top);
     void release();
+    void rawrelease();
     Element* newInstance();
     Element* fullcopy();
     Element* copyatom(uchar s);
