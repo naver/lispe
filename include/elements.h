@@ -1083,23 +1083,30 @@ class Numberpool : public Number {
 public:
     LispE* lisp;
     Numberpool(LispE* l, double d) : lisp(l), Number(d) {}
+    Numberpool(double d) : lisp(NULL), Number(d, s_constant) {}
+    
+    virtual void decrementstatus(uchar nb, bool top);
+    virtual void release();
+    
+    virtual Element* fullcopy();
+    virtual Element* copyatom(uchar s);
+    virtual Element* copying(bool duplicate = true);
+};
 
-    void decrementstatus(uchar nb, bool top);
-    void release();
+class Constnumber : public Numberpool {
+public:
+    
+	Constnumber(double d) : Numberpool(d) {}
+	Constnumber(LispE* lisp, double d) : Numberpool(lisp, d) {
+		status = s_constant;
+	}
+
+    void decrementstatus(uchar nb, bool top) {}
+    void release() {}
     
     Element* fullcopy();
     Element* copyatom(uchar s);
     Element* copying(bool duplicate = true);
-};
-
-class Constnumber : public Number {
-public:
-    
-    Constnumber(double d) : Number(d, s_constant) {}
-    
-    void decrementstatus(uchar nb, bool top) {}
-    void release() {}
-
 };
 
 class Integer : public Element {
@@ -1215,22 +1222,26 @@ class Integerpool : public Integer {
 public:
     LispE* lisp;
     Integerpool(LispE* l, long d) : lisp(l), Integer(d) {}
-
-    void decrementstatus(uchar nb, bool top);
-    void release();
-    Element* fullcopy();
-    Element* copyatom(uchar s);
-    Element* copying(bool duplicate = true);
+    Integerpool(long d) : lisp(NULL), Integer(d, s_constant) {}
+    
+    virtual void decrementstatus(uchar nb, bool top);
+    virtual void release();
+    virtual Element* fullcopy();
+    virtual Element* copyatom(uchar s);
+    virtual Element* copying(bool duplicate = true);
 
 };
 
-class Constinteger : public Integer {
+class Constinteger : public Integerpool {
 public:
     
-    Constinteger(long d) : Integer(d, s_constant) {}
+    Constinteger(long d) : Integerpool(d) {}
     
     void decrementstatus(uchar nb, bool top) {}
     void release() {}
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
 
 };
 
@@ -1401,24 +1412,30 @@ class Stringpool : public String {
 public:
     LispE* lisp;
     Stringpool(LispE* l, u_ustring& d) : lisp(l), String(d) {}
+    Stringpool(u_ustring& d) : lisp(NULL), String(d, s_constant) {}
 
     void decrementstatus(uchar nb, bool top);
     void release();
-    Element* fullcopy();
-    Element* copyatom(uchar s);
-    Element* copying(bool duplicate = true);
+    virtual Element* fullcopy();
+    virtual Element* copyatom(uchar s);
+    virtual Element* copying(bool duplicate = true);
 
 };
 
 
-class Conststring : public String {
+class Conststring : public Stringpool {
 public:
     
-    Conststring(wstring w) : String(w, s_constant) {}
-    Conststring(u_ustring w) : String(w, s_constant) {}
+    Conststring(u_ustring w) : Stringpool(w) {}
+	Conststring(LispE* l, u_ustring w) : Stringpool(l, w) {
+		status = s_constant;
+	}
 
     void decrementstatus(uchar nb, bool top) {}
     void release() {}
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
 
 };
 
@@ -2521,11 +2538,11 @@ public:
     std::set<u_ustring> ensemble;
     Conststring exchange_value;
 
-    Set() : exchange_value(U""), Element(t_set) {}
+    Set(LispE* lisp) : exchange_value(lisp, U""), Element(t_set) {}
     
-    Set(std::set<u_ustring>& e) : exchange_value(U""), ensemble(e), Element(t_set) {}
+    Set(LispE* lisp, std::set<u_ustring>& e) : exchange_value(lisp, U""), ensemble(e), Element(t_set) {}
     
-    Set(uchar s) : exchange_value(U""), Element(t_set, s) {}
+    Set(LispE* lisp, uchar s) : exchange_value(lisp, U""), Element(t_set, s) {}
     
     bool isContainer() {
         return true;
@@ -2552,22 +2569,14 @@ public:
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
 
-    Element* fullcopy() {
-        return new Set(ensemble);
-    }
-
-    Element* copying(bool duplicate = true) {
-        if (status < s_protect && !duplicate)
-            return this;
-        
-        return new Set(ensemble);
-    }
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
     Element* duplicate_constant_container(bool pair = false) {
         if (status == s_constant) {
-            return new Set(ensemble);
+            return new Set(exchange_value.lisp, ensemble);
         }
         return this;
     }
@@ -2774,11 +2783,11 @@ public:
     std::set<double> ensemble;
     Constnumber exchange_value;
     
-    Set_n() : exchange_value(0), Element(t_setn) {}
+    Set_n(LispE* lisp) : exchange_value(lisp, 0), Element(t_setn) {}
     
-    Set_n(std::set<double>& e) : exchange_value(0), ensemble(e), Element(t_setn) {}
+    Set_n(LispE* lisp, std::set<double>& e) : exchange_value(lisp, 0), ensemble(e), Element(t_setn) {}
     
-    Set_n(uchar s) : exchange_value(0), Element(t_setn, s) {}
+    Set_n(LispE* lisp, uchar s) : exchange_value(lisp, 0), Element(t_setn, s) {}
     
     bool isContainer() {
         return true;
@@ -2805,22 +2814,14 @@ public:
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
 
-    Element* fullcopy() {
-        return new Set_n(ensemble);
-    }
-
-    Element* copying(bool duplicate = true) {
-        if (status < s_protect && !duplicate)
-            return this;
-        
-        return new Set_n(ensemble);
-    }
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
     Element* duplicate_constant_container(bool pair = false) {
         if (status == s_constant) {
-            return new Set_n(ensemble);
+            return new Set_n(exchange_value.lisp, ensemble);
         }
         return this;
     }

@@ -467,9 +467,9 @@ bool Listargumentset::unify(LispE* lisp, Element* value, bool record) {
             //we need to build a sublist out of value...
             Element* sublist;
             if (value->type == t_set)
-                sublist = new Set;
+                sublist = new Set(lisp);
             else
-                sublist = new Set_n;
+                sublist = new Set_n(lisp);
             while (next_value != emptyatom_) {
                 if (flat.find_element(lisp, next_value, 0) == -1)
                     sublist->append(next_value);
@@ -6845,9 +6845,9 @@ Element* List::evall_integers(LispE* lisp) {
 Element* List::evall_set(LispE* lisp) {
     long listsz = size();
     if (listsz == 1)
-        return new Set();
+        return new Set(lisp);
 
-    Set* n = new Set;
+    Set* n = new Set(lisp);
     Element* values = null_;
 
     lisp->display_trace(this);
@@ -6883,9 +6883,9 @@ Element* List::evall_set(LispE* lisp) {
 Element* List::evall_setn(LispE* lisp) {
     long listsz = size();
     if (listsz == 1)
-        return new Set();
+        return new Set_n(lisp);
 
-    Set_n* n = new Set_n;
+    Set_n* n = new Set_n(lisp);
     Element* values = null_;
 
     lisp->display_trace(this);

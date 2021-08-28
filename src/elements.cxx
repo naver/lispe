@@ -186,10 +186,15 @@ Element* Numberpool::copyatom(uchar s) {
 }
 
 Element* Numberpool::copying(bool duplicate) {
-    if (status < s_protect || !duplicate)
-        return this;
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
     if (lisp->preparingthread)
         return new Number(number);
+    
+    if (status < s_protect || !duplicate)
+        return this;
     return lisp->provideNumber(number);
 }
 
@@ -206,13 +211,65 @@ Element* Integerpool::copyatom(uchar s) {
 }
 
 Element* Integerpool::copying(bool duplicate) {
-    if (status < s_protect || !duplicate)
-        return this;
-    
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
     if (lisp->preparingthread)
         return new Integer(integer);
 
+    if (status < s_protect || !duplicate)
+        return this;
+    
     return lisp->provideInteger(integer);
+}
+
+Element* Constnumber::copying(bool duplicate) {
+    if (lisp == NULL || lisp->preparingthread)
+        return new Number(number);
+    return lisp->provideNumber(number);
+}
+
+Element* Constnumber::fullcopy() {
+    if (lisp == NULL || lisp->preparingthread)
+        return new Number(number);
+    return lisp->provideNumber(number);
+}
+
+Element* Constnumber::copyatom(uchar s) {
+    return (lisp == NULL)?new Number(number):lisp->provideNumber(number);
+}
+
+Element* Constinteger::fullcopy() {
+    if (lisp == NULL || lisp->preparingthread)
+        return new Integer(integer);
+    return lisp->provideInteger(integer);
+}
+
+Element* Constinteger::copyatom(uchar s) {
+    return (lisp == NULL)?new Integer(integer):lisp->provideInteger(integer);
+}
+
+Element* Constinteger::copying(bool duplicate) {
+    if (lisp ==  NULL || lisp->preparingthread)
+        return new Integer(integer);
+    return lisp->provideInteger(integer);
+}
+
+Element* Conststring::copying(bool duplicate) {
+    if (lisp == NULL || lisp->preparingthread)
+        return new String(content);
+    return lisp->provideString(content);
+}
+
+Element* Conststring::fullcopy() {
+    if (lisp == NULL || lisp->preparingthread)
+        return new String(content);
+    return lisp->provideString(content);
+}
+
+Element* Conststring::copyatom(uchar s) {
+    return (lisp == NULL)?new String(content):lisp->provideString(content);
 }
 
 Element* Stringpool::fullcopy() {
@@ -228,12 +285,16 @@ Element* Stringpool::copyatom(uchar s) {
 }
 
 Element* Stringpool::copying(bool duplicate) {
-    if (status < s_protect || !duplicate)
-        return this;
-    
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
     if (lisp->preparingthread)
         return new String(content);
 
+    if (status < s_protect || !duplicate)
+        return this;
+    
     return lisp->provideString(content);
 }
 
@@ -264,15 +325,19 @@ Element* Listpool::copyatom(uchar s) {
 }
 
 Element* Listpool::copying(bool duplicate) {
-    //If it is a CDR, we need to copy it...
-    if (status < s_protect && liste.nocdr() && !duplicate)
-        return this;
-    
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
     List* l;
     if (lisp->preparingthread)
         l = new List;
-    else
+    else {
+        if (status < s_protect && liste.nocdr() && !duplicate)
+            return this;
+
         l = lisp->provideList();
+    }
     for (long i = 0; i < liste.size(); i++) {
         l->append(liste[i]->copying(false));
     }
@@ -289,13 +354,16 @@ Element* Numberspool::fullcopy() {
 }
 
 Element* Numberspool::copying(bool duplicate) {
-    //If it is a CDR, we need to copy it...
-    if (status < s_protect && !duplicate)
-        return this;
-
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
     if (lisp->preparingthread)
         return new Numbers(this);
     
+    if (status < s_protect && !duplicate)
+        return this;
+
     Numbers* e = lisp->provideNumbers();
     e->liste = liste;
     return e;
@@ -320,12 +388,16 @@ Element* Integerspool::fullcopy() {
 }
 
 Element* Integerspool::copying(bool duplicate) {
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
+    if (lisp->preparingthread)
+        return new Integers(this);
+
     //If it is a CDR, we need to copy it...
     if (status < s_protect && !duplicate)
         return this;
-
-    if (lisp->preparingthread)
-        return new Integers(this);
 
     Integers* e = lisp->provideIntegers();
     e->liste = liste;
@@ -351,12 +423,16 @@ Element* Stringspool::fullcopy() {
 }
 
 Element* Stringspool::copying(bool duplicate) {
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
+    if (lisp->preparingthread)
+        return new Strings(this);
+
     //If it is a CDR, we need to copy it...
     if (status < s_protect && !duplicate)
         return this;
-
-    if (lisp->preparingthread)
-        return new Strings(this);
 
     Strings* e = lisp->provideStrings();
     e->liste = liste;
@@ -370,6 +446,38 @@ Element* Stringspool::copyatom(uchar s) {
     Strings* e = lisp->provideStrings();
     e->liste = liste;
     return e;
+}
+
+Element* Set::fullcopy() {
+    if (exchange_value.lisp != NULL && exchange_value.lisp->preparingthread)
+        return new Set(NULL, ensemble);
+    return new Set(exchange_value.lisp, ensemble);
+}
+
+Element* Set::copying(bool duplicate) {
+    if (exchange_value.lisp != NULL && exchange_value.lisp->preparingthread)
+        return new Set(NULL, ensemble);
+
+    if (status < s_protect && !duplicate)
+        return this;
+    
+    return new Set(exchange_value.lisp, ensemble);
+}
+
+Element* Set_n::fullcopy() {
+    if (exchange_value.lisp != NULL && exchange_value.lisp->preparingthread)
+        return new Set_n(NULL, ensemble);
+    return new Set_n(exchange_value.lisp, ensemble);
+}
+
+Element* Set_n::copying(bool duplicate) {
+    if (exchange_value.lisp != NULL && exchange_value.lisp->preparingthread)
+        return new Set_n(NULL, ensemble);
+
+    if (status < s_protect && !duplicate)
+        return this;
+    
+    return new Set_n(exchange_value.lisp, ensemble);
 }
 
 //------------------------------------------------------------------------------------------
@@ -789,8 +897,8 @@ void Strings::sorting(LispE* lisp, List* comparison) {
     if (sz <= 1)
         return;
     
-    Conststring n1(L"");
-    Conststring n2(L"");
+    Conststring n1(U"");
+    Conststring n2(U"");
     comparison->liste[1] = &n1;
     comparison->liste[2] = &n2;
     n1.content = liste[0];
@@ -4572,7 +4680,7 @@ Element* Set::plus(LispE* lisp, Element* e) {
         }
         return lisp->provideString(d);
     }
-    Set* res = new Set;
+    Set* res = new Set(lisp);
     if (e->type == t_set) {
         auto nxt = ((Set*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5179,7 +5287,7 @@ Element* Set_n::plus(LispE* lisp, Element* e) {
         return lisp->provideNumber(d);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5233,7 +5341,7 @@ Element* Set_n::minus(LispE* lisp, Element* e) {
         return lisp->provideNumber(d);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5281,7 +5389,7 @@ Element* Set_n::multiply(LispE* lisp, Element* e) {
         return lisp->provideNumber(d);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5338,7 +5446,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
         return lisp->provideNumber(d);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5414,7 +5522,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
 
     double d;
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5485,7 +5593,7 @@ Element* Set_n::power(LispE* lisp, Element* e) {
         return lisp->provideNumber(d);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5549,7 +5657,7 @@ Element* Set_n::bit_and_not(LispE* lisp, Element* e) {
         return lisp->provideNumber(d.v);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5612,7 +5720,7 @@ Element* Set_n::bit_and(LispE* lisp, Element* e) {
         return lisp->provideNumber(d.v);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5675,7 +5783,7 @@ Element* Set_n::bit_or(LispE* lisp, Element* e) {
         return lisp->provideNumber(d.v);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5738,7 +5846,7 @@ Element* Set_n::bit_xor(LispE* lisp, Element* e) {
         return lisp->provideNumber(d.v);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5785,7 +5893,7 @@ Element* Set_n::bit_xor(LispE* lisp, Element* e) {
 Element* Set_n::bit_not(LispE* l) {
     //Two cases either e is a number or it is a list...
     double64 d(0);
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(l);
 
     for (auto& a: ensemble) {
         d.v = a;
@@ -5812,7 +5920,7 @@ Element* Set_n::leftshift(LispE* lisp, Element* e) {
         return lisp->provideNumber(d.v);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {
@@ -5871,7 +5979,7 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
         return lisp->provideNumber(d.v);
     }
 
-    Set_n* res = new Set_n;
+    Set_n* res = new Set_n(lisp);
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
         for (auto& a : ensemble) {

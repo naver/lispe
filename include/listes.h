@@ -1766,7 +1766,9 @@ public:
 class Numberspool : public Numbers {
 public:
     LispE* lisp;
-    Numberspool(LispE* l) : lisp(l) {}
+    Numberspool(LispE* l) : lisp(l) {
+        exchange_value.lisp = l;
+    }
 
     Element* newInstance();
     
@@ -2141,7 +2143,9 @@ public:
 class Integerspool : public Integers {
 public:
     LispE* lisp;
-    Integerspool(LispE* l) : lisp(l) {}
+    Integerspool(LispE* l) : lisp(l) {
+        exchange_value.lisp = l;
+    }
 
     Element* newInstance();
     void decrementstatus(uchar nb, bool top);
@@ -3030,8 +3034,9 @@ public:
 class Stringspool : public Strings {
 public:
     LispE* lisp;
-    Stringspool(LispE* l) : lisp(l) {}
-    Stringspool(long nb, u_ustring v) : Strings(nb, v) {}
+    Stringspool(LispE* l) : lisp(l) {
+        exchange_value.lisp = l;
+    }
 
     Element* newInstance();
 
