@@ -494,13 +494,17 @@ public:
         return liste.object;
     }
     
-    Element* quoted(LispE*);
-    Element* unique(LispE* lisp);
-    Element* rotate(bool left);
+    virtual Element* copyatom(uchar s) {
+        if (status < s)
+            return this;
 
-    void flatten(LispE*, List* l);
-    void flatten(LispE*, Numbers* l);
-    
+        List* l = new List;
+        for (long i = 0; i < liste.size(); i++) {
+            l->append(liste[i]->copyatom(s));
+        }
+        return l;
+    }
+
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (status < s_protect && liste.nocdr() && !duplicate)
@@ -512,6 +516,14 @@ public:
         }
         return l;
     }
+    
+
+    Element* quoted(LispE*);
+    Element* unique(LispE* lisp);
+    Element* rotate(bool left);
+
+    void flatten(LispE*, List* l);
+    void flatten(LispE*, Numbers* l);
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
@@ -1151,16 +1163,6 @@ public:
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
     
-    Element* copyatom(uchar s) {
-        if (status < s)
-            return this;
-
-        List* l = new List;
-        for (long i = 0; i < liste.size(); i++) {
-            l->append(liste[i]->copyatom(s));
-        }
-        return l;
-    }
 
     virtual Element* newInstance() {
         return new List;
@@ -1181,6 +1183,10 @@ public:
     void decrementstatus(uchar nb, bool top);
     void release();
     Element* newInstance();
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
+
 };
 
 class Listargumentquote : public List {
@@ -1484,23 +1490,31 @@ public:
     
     bool unify(LispE* lisp, Element* value, bool record);
     
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         Numbers* e = new Numbers;
         e->liste = liste;
         return e;
     }
-    
-    Element* unique(LispE* lisp);
-    Element* rotate(bool left);
 
-    
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (status < s_protect && !duplicate)
             return this;
 
         return new Numbers(this);
     }
+    
+    virtual Element* copyatom(uchar s) {
+        if (status < s)
+            return this;
+
+        return new Numbers(this);
+    }
+
+
+    Element* unique(LispE* lisp);
+    Element* rotate(bool left);
+
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
@@ -1734,13 +1748,6 @@ public:
             liste.clear();
     }
     
-    Element* copyatom(uchar s) {
-        if (status < s)
-            return this;
-
-        return new Numbers(this);
-    }
-
     Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
     Element* bit_and_not(LispE* l, Element* e);
@@ -1770,6 +1777,10 @@ public:
     
     void decrementstatus(uchar nb, bool top);
     void release();
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
+
 };
 
 class Integers : public Element {
@@ -1865,7 +1876,7 @@ public:
     
     bool unify(LispE* lisp, Element* value, bool record);
     
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         Integers* e = new Integers;
         e->liste = liste;
         return e;
@@ -1875,7 +1886,7 @@ public:
     Element* rotate(bool left);
 
     
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (status < s_protect && !duplicate)
             return this;
@@ -2127,7 +2138,7 @@ public:
             liste.clear();
     }
     
-    Element* copyatom(uchar s) {
+    virtual Element* copyatom(uchar s) {
         if (status < s)
             return this;
 
@@ -2161,6 +2172,10 @@ public:
     Element* newInstance();
     void decrementstatus(uchar nb, bool top);
     void release();
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
+
 };
 
 
@@ -2767,7 +2782,7 @@ public:
     
     bool unify(LispE* lisp, Element* value, bool record);
     
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         Strings* e = new Strings();
         e->liste = liste;
         return e;
@@ -2777,7 +2792,7 @@ public:
     Element* rotate(bool left);
 
     
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (status < s_protect && !duplicate)
             return this;
@@ -3023,7 +3038,7 @@ public:
             liste.clear();
     }
     
-    Element* copyatom(uchar s) {
+    virtual Element* copyatom(uchar s) {
         if (status < s)
             return this;
 
@@ -3048,6 +3063,10 @@ public:
 
     void decrementstatus(uchar nb, bool top);
     void release();
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
+
 };
 
 

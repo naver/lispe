@@ -165,6 +165,167 @@ Element* Listpool::newInstance() {
     return lisp->provideList();
 }
 
+Element* Numberpool::fullcopy() {
+    return lisp->provideNumber(number);
+}
+
+Element* Numberpool::copyatom(uchar s) {
+    if (status < s)
+        return this;
+    return lisp->provideNumber(number);
+}
+
+Element* Numberpool::copying(bool duplicate) {
+    if (status < s_protect || !duplicate)
+        return this;
+    
+    return lisp->provideNumber(number);
+}
+
+Element* Integerpool::fullcopy() {
+    return lisp->provideInteger(integer);
+}
+
+Element* Integerpool::copyatom(uchar s) {
+    if (status < s)
+        return this;
+    return lisp->provideInteger(integer);
+}
+
+Element* Integerpool::copying(bool duplicate) {
+    if (status < s_protect || !duplicate)
+        return this;
+    
+    return lisp->provideInteger(integer);
+}
+
+Element* Stringpool::fullcopy() {
+    return lisp->provideString(content);
+}
+
+Element* Stringpool::copyatom(uchar s) {
+    if (status < s)
+        return this;
+    return lisp->provideString(content);
+}
+
+Element* Stringpool::copying(bool duplicate) {
+    if (status < s_protect || !duplicate)
+        return this;
+    
+    return lisp->provideString(content);
+}
+
+Element* Listpool::fullcopy() {
+    if (liste.marking)
+        return liste.object;
+    liste.marking = true;
+    liste.object = lisp->provideList();
+    for (long i = 0; i < liste.size(); i++) {
+        liste.object->append(liste[i]->fullcopy());
+    }
+    liste.marking = false;
+    return liste.object;
+}
+
+Element* Listpool::copyatom(uchar s) {
+    if (status < s)
+        return this;
+
+    List* l = lisp->provideList();
+    for (long i = 0; i < liste.size(); i++) {
+        l->append(liste[i]->copyatom(s));
+    }
+    return l;
+}
+
+Element* Listpool::copying(bool duplicate) {
+    //If it is a CDR, we need to copy it...
+    if (status < s_protect && liste.nocdr() && !duplicate)
+        return this;
+    
+    List* l = lisp->provideList();
+    for (long i = 0; i < liste.size(); i++) {
+        l->append(liste[i]->copying(false));
+    }
+    return l;
+}
+
+Element* Numberspool::fullcopy() {
+    Numbers* e = lisp->provideNumbers();
+    e->liste = liste;
+    return e;
+}
+
+Element* Numberspool::copying(bool duplicate) {
+    //If it is a CDR, we need to copy it...
+    if (status < s_protect && !duplicate)
+        return this;
+
+    Numbers* e = lisp->provideNumbers();
+    e->liste = liste;
+    return e;
+}
+
+Element* Numberspool::copyatom(uchar s) {
+    if (status < s)
+        return this;
+
+    Numbers* e = lisp->provideNumbers();
+    e->liste = liste;
+    return e;
+}
+
+Element* Integerspool::fullcopy() {
+    Integers* e = lisp->provideIntegers();
+    e->liste = liste;
+    return e;
+}
+
+Element* Integerspool::copying(bool duplicate) {
+    //If it is a CDR, we need to copy it...
+    if (status < s_protect && !duplicate)
+        return this;
+
+    Integers* e = lisp->provideIntegers();
+    e->liste = liste;
+    return e;
+}
+
+Element* Integerspool::copyatom(uchar s) {
+    if (status < s)
+        return this;
+
+    Integers* e = lisp->provideIntegers();
+    e->liste = liste;
+    return e;
+}
+
+Element* Stringspool::fullcopy() {
+    Strings* e = lisp->provideStrings();
+    e->liste = liste;
+    return e;
+}
+
+Element* Stringspool::copying(bool duplicate) {
+    //If it is a CDR, we need to copy it...
+    if (status < s_protect && !duplicate)
+        return this;
+
+    Strings* e = lisp->provideStrings();
+    e->liste = liste;
+    return e;
+}
+
+Element* Stringspool::copyatom(uchar s) {
+    if (status < s)
+        return this;
+
+    Strings* e = lisp->provideStrings();
+    e->liste = liste;
+    return e;
+}
+
 //------------------------------------------------------------------------------------------
 Infinitelist::Infinitelist(LispE* lisp) : Element(t_list) {
     value = null_;
@@ -1194,14 +1355,16 @@ Element* Integer::inversion(LispE* lisp) {
 }
 
 Element* Numbers::inversion(LispE* lisp) {
-    Numbers* n =  new Numbers(this);
+    Numbers* n = lisp->provideNumbers();
+    n->liste = liste;
     for (long i = 0; i < n->liste.size(); i++)
         n->liste[i] *= -1;
     return n;
 }
 
 Element* Integers::inversion(LispE* lisp) {
-    Integers* n =  new Integers(this);
+    Integers* n =  lisp->provideIntegers();
+    n->liste = liste;
     for (long i = 0; i < n->liste.size(); i++)
         n->liste[i] *= -1;
     return n;

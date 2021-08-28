@@ -1046,17 +1046,17 @@ public:
     // Numbers cannot be present in the garbage
     void protecting(bool protection) {}
     
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         return new Number(number);
     }
     
-    Element* copyatom(uchar s) {
+    virtual Element* copyatom(uchar s) {
         if (status < s)
             return this;
         return new Number(number);
     }
 
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         if (status < s_protect || !duplicate)
             return this;
         
@@ -1086,6 +1086,10 @@ public:
 
     void decrementstatus(uchar nb, bool top);
     void release();
+    
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
 };
 
 class Constnumber : public Number {
@@ -1172,11 +1176,11 @@ public:
         return (integer);
     }
     
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         return new Integer(integer);
     }
 
-    Element* copyatom(uchar s) {
+    virtual Element* copyatom(uchar s) {
         if (status < s)
             return this;
         return new Integer(integer);
@@ -1184,7 +1188,7 @@ public:
 
     // There is a difference between the two copies
     //The first one makes a final copy
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         if (status < s_protect || !duplicate)
             return this;
         
@@ -1214,6 +1218,10 @@ public:
 
     void decrementstatus(uchar nb, bool top);
     void release();
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
+
 };
 
 class Constinteger : public Integer {
@@ -1396,6 +1404,10 @@ public:
 
     void decrementstatus(uchar nb, bool top);
     void release();
+    Element* fullcopy();
+    Element* copyatom(uchar s);
+    Element* copying(bool duplicate = true);
+
 };
 
 
