@@ -856,6 +856,7 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
     //Note that if it is a new thread creation, the body is pushed onto the stack
     //of this new thread environment...
     thread_lisp->push(data);
+    lisp->preparingthread = true;
     // For each of the parameters we record in the stack
     short label;
     try {
@@ -873,9 +874,11 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
         }
     }
     catch (Error* err) {
+        lisp->preparingthread = false;
         thread_lisp->pop();
         throw err;
     }
+    lisp->preparingthread = false;
 }
 
 void List::sameSizeTerminalArguments(LispE* lisp, Element* parameters) {
@@ -985,6 +988,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
     
     //We create a new stage in the local stack for the new thread
     thread_lisp->push(data);
+    lisp->preparingthread = true;
     long i;
     List* l = NULL;
     try {
@@ -1058,11 +1062,13 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
         }
     }
     catch (Error* err) {
+        lisp->preparingthread = false;
         if (l != NULL)
             l->release();
         thread_lisp->pop();
         throw err;
     }
+    lisp->preparingthread = false;
 }
 
 //In this case, we record in the current stack

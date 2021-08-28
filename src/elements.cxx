@@ -178,7 +178,8 @@ Element* Numberpool::copyatom(uchar s) {
 Element* Numberpool::copying(bool duplicate) {
     if (status < s_protect || !duplicate)
         return this;
-    
+    if (lisp->preparingthread)
+        return new Number(number);
     return lisp->provideNumber(number);
 }
 
@@ -196,6 +197,9 @@ Element* Integerpool::copying(bool duplicate) {
     if (status < s_protect || !duplicate)
         return this;
     
+    if (lisp->preparingthread)
+        return new Integer(integer);
+
     return lisp->provideInteger(integer);
 }
 
@@ -213,6 +217,9 @@ Element* Stringpool::copying(bool duplicate) {
     if (status < s_protect || !duplicate)
         return this;
     
+    if (lisp->preparingthread)
+        return new String(content);
+
     return lisp->provideString(content);
 }
 
@@ -244,7 +251,11 @@ Element* Listpool::copying(bool duplicate) {
     if (status < s_protect && liste.nocdr() && !duplicate)
         return this;
     
-    List* l = lisp->provideList();
+    List* l;
+    if (lisp->preparingthread)
+        l = new List;
+    else
+        l = lisp->provideList();
     for (long i = 0; i < liste.size(); i++) {
         l->append(liste[i]->copying(false));
     }
@@ -262,6 +273,9 @@ Element* Numberspool::copying(bool duplicate) {
     if (status < s_protect && !duplicate)
         return this;
 
+    if (lisp->preparingthread)
+        return new Numbers(this);
+    
     Numbers* e = lisp->provideNumbers();
     e->liste = liste;
     return e;
@@ -287,6 +301,9 @@ Element* Integerspool::copying(bool duplicate) {
     if (status < s_protect && !duplicate)
         return this;
 
+    if (lisp->preparingthread)
+        return new Integers(this);
+
     Integers* e = lisp->provideIntegers();
     e->liste = liste;
     return e;
@@ -311,6 +328,9 @@ Element* Stringspool::copying(bool duplicate) {
     //If it is a CDR, we need to copy it...
     if (status < s_protect && !duplicate)
         return this;
+
+    if (lisp->preparingthread)
+        return new Strings(this);
 
     Strings* e = lisp->provideStrings();
     e->liste = liste;

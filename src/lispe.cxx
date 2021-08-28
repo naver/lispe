@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.8.27.9.15";
+static std::string version = "1.2021.8.27.10.15";
 string LispVersion() {
     return version;
 }
@@ -727,6 +727,7 @@ std::atomic<long> id_pool(1);
 
 LispE::LispE(LispE* lisp, List* function, Element* body) {
 
+    preparingthread = false;
     evaluating = false;
     delegation = lisp->delegation;
 

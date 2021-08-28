@@ -69,9 +69,11 @@ public:
     bool isThread;
     bool hasThread;
     bool evaluating;
+    bool preparingthread;
     char trace;
 
     LispE() {
+        preparingthread = false;
         evaluating = false;
         id_thread = 0;
         max_stack_size = 10000;
