@@ -166,6 +166,8 @@ Element* Listpool::newInstance() {
 }
 
 Element* Numberpool::fullcopy() {
+    if (lisp->preparingthread)
+        return new Number(number);
     return lisp->provideNumber(number);
 }
 
@@ -184,6 +186,8 @@ Element* Numberpool::copying(bool duplicate) {
 }
 
 Element* Integerpool::fullcopy() {
+    if (lisp->preparingthread)
+        return new Integer(integer);
     return lisp->provideInteger(integer);
 }
 
@@ -204,6 +208,8 @@ Element* Integerpool::copying(bool duplicate) {
 }
 
 Element* Stringpool::fullcopy() {
+    if (lisp->preparingthread)
+        return new String(content);
     return lisp->provideString(content);
 }
 
@@ -227,7 +233,10 @@ Element* Listpool::fullcopy() {
     if (liste.marking)
         return liste.object;
     liste.marking = true;
-    liste.object = lisp->provideList();
+    if (lisp->preparingthread)
+        liste.object = new List;
+    else
+        liste.object = lisp->provideList();
     for (long i = 0; i < liste.size(); i++) {
         liste.object->append(liste[i]->fullcopy());
     }
@@ -263,6 +272,9 @@ Element* Listpool::copying(bool duplicate) {
 }
 
 Element* Numberspool::fullcopy() {
+    if (lisp->preparingthread)
+        return new Numbers(this);
+
     Numbers* e = lisp->provideNumbers();
     e->liste = liste;
     return e;
@@ -291,6 +303,9 @@ Element* Numberspool::copyatom(uchar s) {
 }
 
 Element* Integerspool::fullcopy() {
+    if (lisp->preparingthread)
+        return new Integers(this);
+
     Integers* e = lisp->provideIntegers();
     e->liste = liste;
     return e;
@@ -319,6 +334,9 @@ Element* Integerspool::copyatom(uchar s) {
 }
 
 Element* Stringspool::fullcopy() {
+    if (lisp->preparingthread)
+        return new Strings(this);
+
     Strings* e = lisp->provideStrings();
     e->liste = liste;
     return e;

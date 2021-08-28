@@ -7877,16 +7877,18 @@ Element* List::evall_threadstore(LispE* lisp) {
     Element* first_element = liste[0];
 
     lisp->display_trace(this);
-
+    lisp->preparingthread = true;
     try {
         u_ustring key;
         evalAsUString(1, lisp, key);
         first_element = liste[2]->eval(lisp);
         lisp->delegation->thread_store(key, first_element);
         first_element->release();
+        lisp->preparingthread = false;
         return true_;
     }
     catch (Error* err) {
+        lisp->preparingthread = false;
         first_element->release();
         throw err;
     }
