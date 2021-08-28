@@ -1306,12 +1306,6 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                         //for defmacro and link, we evaluate these expressions on the fly
                             case l_defmacro:
                             case l_data:
-                                e->eval(this);
-                                continue;
-                            case l_link:
-                                e->eval(this);
-                                removefromgarbage(e);
-                                continue;
                             case l_dethread:
                             case l_defun:
                                 e->eval(this);
@@ -1328,8 +1322,13 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                         removefromgarbage(idx);
                                     }
                                 }
-                                break;
+                                e->eval(this);
+                                continue;
                             }
+                            case l_link:
+                                e->eval(this);
+                                removefromgarbage(e);
+                                continue;
                             case l_infix: {
                                 Element* inter = ((Listincode*)e)->evall_infix(this);
                                 if (inter != e) {
