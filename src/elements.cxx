@@ -61,16 +61,13 @@ void Listpool::release() {
     }
 }
 
-void Listpool::rawrelease() {
+void Listpool::release(Element* e) {
     if (!status) {
-        for (long i = 0; i < liste.size(); i++)
-            liste[i]->release();
+        liste.decrement(e);
         liste.clear();
-        liste.decrement();
         lisp->list_pool.push_back(this);
     }
 }
-
 
 void Numberpool::decrementstatus(uchar nb, bool top) {
     if (status > s_destructible && status < s_protect)
@@ -2086,8 +2083,8 @@ Element* List::multiloop(LispE* lisp) {
             e = index(var)->eval(lisp);
             if (!e->isList())
                 multiloop = true;
-            values->appendraw(e);
-            indexes->appendraw(e->thekeys(lisp));
+            values->append(e);
+            indexes->append(e->thekeys(lisp));
         }
         
         if (!multiloop && !lisp->checkforLock())
@@ -2113,23 +2110,25 @@ Element* List::multiloop(LispE* lisp) {
                 e = liste[i_loop]->eval(lisp);
             }
             if (e->type == l_return) {
-                values->rawrelease();
-                indexes->rawrelease();
-                if (e->isBreak())
+                indexes->release();
+                if (e->isBreak()) {
+                    values->release();
                     return null_;
+                }
+                values->release(e->eval(lisp));
                 return e;
             }
             indexe++;
         }
     }
     catch(Error* err) {
-        values->rawrelease();
-        indexes->rawrelease();
+        values->release();
+        indexes->release();
         throw err;
     }
     
-    values->rawrelease();
-    indexes->rawrelease();
+    values->release(e);
+    indexes->release();
     return e;
 }
 
@@ -2158,7 +2157,7 @@ Element* List::polyloop(LispE* lisp) {
         //The actual code will start at b_loop...
         for (var = 2; var < b_loop ; var++) {
             e = index(var)->eval(lisp);
-            values->appendraw(e);
+            values->append(e);
         }
         
         while (looping) {
@@ -2180,20 +2179,22 @@ Element* List::polyloop(LispE* lisp) {
                 e = liste[i_loop]->eval(lisp);
             }
             if (e->type == l_return) {
-                values->rawrelease();
-                if (e->isBreak())
+                if (e->isBreak()) {
+                    values->release();
                     return null_;
+                }
+                values->release(e->eval(lisp));
                 return e;
             }
             indexe++;
         }
     }
     catch(Error* err) {
-        values->rawrelease();
+        values->release();
         throw err;
     }
     
-    values->rawrelease();
+    values->release(e);
     return e;
 }
 

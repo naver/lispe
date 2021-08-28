@@ -333,7 +333,15 @@ public:
         item->decrement();
         marking = false;
     }
-    
+
+    inline void decrement(Element* e) {
+        if (marking)
+            return;
+        marking = true;
+        item->decrement(e);
+        marking = false;
+    }
+
     inline void decrement_and_clear() {
         //If there is some kind of sharing
         //we re-create a new item, and release the grip
@@ -546,7 +554,7 @@ public:
             status += nb;
     }
     
-    void decrementstatus(uchar nb, bool top) {
+    virtual void decrementstatus(uchar nb, bool top) {
         if (status > s_destructible && status < s_protect) {
             status -= nb;
         }
@@ -580,23 +588,20 @@ public:
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     
-    void release() {
+    virtual void release() {
         if (!status) {
             liste.decrement();
             delete this;
         }
     }
-    
-    virtual void rawrelease() {
+
+    virtual void release(Element* e) {
         if (!status) {
-            for (long i = 0; i < liste.size(); i++)
-                liste[i]->release();
-            liste.clear();
-            liste.decrement();
+            liste.decrement(e);
             delete this;
         }
     }
-    
+
     Element* equal(LispE* lisp, Element* e);
     
     virtual long size() {
@@ -1192,7 +1197,7 @@ public:
 
     void decrementstatus(uchar nb, bool top);
     void release();
-    void rawrelease();
+    void release(Element* e);
     Element* newInstance();
     Element* fullcopy();
     Element* copyatom(uchar s);
@@ -1538,28 +1543,7 @@ public:
     bool isNotEmptyList() {
         return (liste.size());
     }
-    
-    void incrementstatus(uchar nb, bool top) {
-        if (status < s_protect)
-            status += nb;
-    }
-    
-    void decrementstatus(uchar nb, bool top) {
-        if (status > s_destructible && status < s_protect) {
-            status -= nb;
-        }
         
-        if (!status) {
-            delete this;
-        }
-    }
-    
-    //The status is decremented without destroying the element.
-    void decrementSansDelete(uchar nb) {
-        if (status > s_destructible && status < s_protect)
-            status -= nb;
-    }
-    
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -1917,27 +1901,6 @@ public:
     
     bool isNotEmptyList() {
         return (liste.size());
-    }
-    
-    void incrementstatus(uchar nb, bool top) {
-        if (status < s_protect)
-            status += nb;
-    }
-    
-    void decrementstatus(uchar nb, bool top) {
-        if (status > s_destructible && status < s_protect) {
-            status -= nb;
-        }
-        
-        if (!status) {
-            delete this;
-        }
-    }
-    
-    //The status is decremented without destroying the element.
-    void decrementSansDelete(uchar nb) {
-        if (status > s_destructible && status < s_protect)
-            status -= nb;
     }
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
