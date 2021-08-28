@@ -8442,6 +8442,9 @@ Element* List::eval_call_function(LispE* lisp) {
             lisp->stop_at_next_line(tr);
         return body;
     }
+
+    if (lisp->checkforLock())
+        return evalfunction(lisp, body);
     
     switch(body->index(0)->type) {
         case l_defpat:
@@ -8449,8 +8452,6 @@ Element* List::eval_call_function(LispE* lisp) {
             lisp->garbaging(liste[0]);
             return eval_pattern(lisp, body->index(1)->label());
         case l_dethread:
-            liste[0] = new Atomfunction(body, t_thread);
-            lisp->garbaging(liste[0]);
             return eval_thread(lisp, body);
         case l_deflib:
         case l_defun:
