@@ -336,14 +336,6 @@ public:
         }
     }
 
-    inline void increment(uint16_t nb) {
-        if (!marking) {
-            marking = true;
-            item->increment(nb);
-            marking = false;
-        }
-    }
-
     inline void decrement() {
         if (!marking) {
             marking = true;
@@ -352,10 +344,18 @@ public:
         }
     }
 
+    inline void increment(uint16_t nb) {
+        if (!marking) {
+            marking = true;
+            item->increment(home, nb);
+            marking = false;
+        }
+    }
+
     inline void decrement(uint16_t nb) {
         if (!marking) {
             marking = true;
-            item->decrement(nb);
+            item->decrement(home, nb);
             marking = false;
         }
     }
