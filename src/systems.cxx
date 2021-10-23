@@ -306,7 +306,7 @@ public:
     }
 
     Element* getstream(LispE* lisp) {
-        Element* a_stream = lisp->get(U"stream");
+        Element* a_stream = lisp->get_variable(U"stream");
         if (a_stream->type != type)
             throw new Error("Erreur: missing 'file' stream");
         return a_stream;
@@ -317,8 +317,8 @@ public:
         switch (fcommand) {
             case file_open: {
                 //two parameters: pathname and mode
-                string pathname = lisp->get(U"path")->toString(lisp);
-                Element* mode = lisp->get(U"mode");
+                string pathname = lisp->get_variable(U"path")->toString(lisp);
+                Element* mode = lisp->get_variable(U"mode");
                 Stream* str = new Stream(type);
                 if (mode == r)
                     return str->open_read(lisp, pathname);
@@ -339,7 +339,7 @@ public:
             }
             case file_read: {
                 Element* a_stream = getstream(lisp);
-                long nb = lisp->get(U"nb")->asInteger();
+                long nb = lisp->get_variable(U"nb")->asInteger();
                 return ((Stream*)a_stream)->read(lisp, nb);
             }
             case file_readline: {
@@ -356,11 +356,11 @@ public:
             }
             case file_write:{
                 Element* a_stream = getstream(lisp);
-                return ((Stream*)a_stream)->write(lisp, lisp->get(U"str"));
+                return ((Stream*)a_stream)->write(lisp, lisp->get_variable(U"str"));
             }
             case file_writeln:{
                 Element* a_stream = getstream(lisp);
-                return ((Stream*)a_stream)->writeln(lisp, lisp->get(U"str"));
+                return ((Stream*)a_stream)->writeln(lisp, lisp->get_variable(U"str"));
             }
         }
 		return null_;
@@ -539,7 +539,11 @@ public:
     double asNumber() {
         return the_time;
     }
-    
+
+    float asFloat() {
+        return the_time;
+    }
+
     long asInteger() {
         return the_time;
     }
@@ -607,18 +611,18 @@ public:
     // We recover the default values described as a list
     //in the parameters of the deflib functions (see below)
     int extract_value(LispE* lisp, short identifier) {
-        return (int)lisp->get(identifier)->asInteger();
+        return (int)lisp->get_variable(identifier)->asInteger();
     }
 
     // We recover the default values described as a list
     //in the parameters of the deflib functions (see below)
     int valeur(LispE* lisp, u_ustring identifier) {
-        return (int)lisp->get(identifier)->asInteger();
+        return (int)lisp->get_variable(identifier)->asInteger();
     }
     
 
     Element* year(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: wrong type for 'year'");
         Dateitem* dt = (Dateitem*)e;
@@ -627,7 +631,7 @@ public:
     }
 
     Element* month(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: wrong type for 'month'");
         Dateitem* dt = (Dateitem*)e;
@@ -636,7 +640,7 @@ public:
     }
 
     Element* day(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: wrong type for 'day'");
         Dateitem* dt = (Dateitem*)e;
@@ -645,7 +649,7 @@ public:
     }
 
     Element* hour(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: wrong type for 'hour'");
         Dateitem* dt = (Dateitem*)e;
@@ -654,7 +658,7 @@ public:
     }
 
     Element* minute(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: Wrong type for 'minute'");
         Dateitem* dt = (Dateitem*)e;
@@ -663,7 +667,7 @@ public:
     }
 
     Element* second(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: wrong type for 'second'");
         Dateitem* dt = (Dateitem*)e;
@@ -672,7 +676,7 @@ public:
     }
 
     Element* weekday(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: wrong type for 'weekday'");
         Dateitem* dt = (Dateitem*)e;
@@ -680,7 +684,7 @@ public:
     }
 
     Element* yearday(LispE* lisp) {
-        Element* e = lisp->get(v_date);
+        Element* e = lisp->get_variable(v_date);
         if (e->type != type)
             throw new Error("Error: wrong type for 'yearday'");
         Dateitem* dt = (Dateitem*)e;
@@ -801,6 +805,10 @@ public:
         return chrono_value.time_since_epoch().count();
     }
 
+    float asFloat() {
+        return chrono_value.time_since_epoch().count();
+    }
+
     long asInteger() {
         return chrono_value.time_since_epoch().count();
     }
@@ -851,7 +859,7 @@ public:
     
     Element* fullPath(LispE* lisp) {
         char localpath[4096];
-        Element* chemin = lisp->get(v_path);
+        Element* chemin = lisp->get_variable(v_path);
         string path = chemin->toString(lisp);
 #ifdef WIN32
 		_fullpath(localpath, STR(path), 4096);
@@ -863,7 +871,7 @@ public:
     }
     
     Element* fileinfo(LispE* lisp) {
-        Element* chemin = lisp->get(v_path);
+        Element* chemin = lisp->get_variable(v_path);
         string filename = chemin->toString(lisp);
         
         struct stat scible;
@@ -873,7 +881,7 @@ public:
             Element* change = new Dateitem(lisp, scible.st_mtime);
             Element* adate = new Dateitem(lisp, scible.st_atime);
             Element* cdate = new Dateitem(lisp, scible.st_ctime);
-            Dictionary* mp = new Dictionary;
+            Dictionary* mp = lisp->provideDictionary();
             
             recording(mp, U"size", size);
             recording(mp, U"date", change);
@@ -892,7 +900,7 @@ public:
     }
     
     Element* isDirectory(LispE* lisp) {
-        string dirName_in = lisp->get(v_path)->toString(lisp);
+        string dirName_in = lisp->get_variable(v_path)->toString(lisp);
     #ifdef WIN32
         DWORD ftyp = GetFileAttributesA(dirName_in.c_str());
         if (ftyp == INVALID_FILE_ATTRIBUTES)
@@ -909,7 +917,7 @@ public:
     }
 
     Element* listeDirectory(LispE* lisp) {
-        Element* kpath = lisp->get(v_path);
+        Element* kpath = lisp->get_variable(v_path);
         string path = kpath->toString(lisp);
         directorylisting dir(path);
         bool go = dir.initial();
@@ -941,7 +949,7 @@ public:
                 return isDirectory(lisp);
             case sys_command: {
                 //Important we called our variable "cmd" (see below)
-                Element* lisp_cmd = lisp->get(v_cmd);
+                Element* lisp_cmd = lisp->get_variable(v_cmd);
                 // We recover the corresponding value
                 string cmd = lisp_cmd->toString(lisp);
                 FILE *fp;
@@ -977,8 +985,8 @@ public:
             }
             case sys_setenv: {
                 // Here we have two arguments
-                Element* lisp_nom = lisp->get(v_name);
-                Element* lisp_valeur = lisp->get(v_value);
+                Element* lisp_nom = lisp->get_variable(v_name);
+                Element* lisp_valeur = lisp->get_variable(v_value);
                 
                 string nom = lisp_nom->toString(lisp);
                 string valeur = lisp_valeur->toString(lisp);
@@ -993,7 +1001,7 @@ public:
                 return true_;
             }
             case sys_getenv: {
-                Element* lisp_nom = lisp->get(v_name);
+                Element* lisp_nom = lisp->get_variable(v_name);
                 string nom = lisp_nom->toString(lisp);
                 char* n = getenv(nom.c_str());
                 if (n == NULL)

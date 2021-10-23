@@ -246,7 +246,7 @@ void x_tokens::apply(u_ustring& toparse, vector<u_ustring>* vstack) {
     delete[] token;
 }
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_read_json, str_parse_json, str_string_json, str_trim0, str_ngrams,
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_format, str_read_json, str_parse_json, str_string_json, str_trim0, str_ngrams,
     str_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
 
 /*
@@ -311,68 +311,111 @@ public:
         return parse_json(lisp, ch.content);
     }
     
+    Element* methodFormat(LispE* lisp) {
+        u_ustring sformat =  lisp->get_variable(v_str)->asUString(lisp);
+
+        //In this case, we might have more than two parameters...
+        u_ustring v(U"n%");
+        Element* e;
+        for (long i = 57; i >= 49; i--) {
+            v[1] = (u_uchar)i;
+            e = lisp->get_variable(v);
+            if (e == null_)
+                continue;
+            v[0] = U'%';
+            sformat = s_ureplacestring(sformat, v, e->asUString(lisp));
+            v[0] = U'n';
+        }
+        return lisp->provideString(sformat);
+    }
+
     
     Element* eval(LispE* lisp) {
         //eval is either: command, setenv or getenv...
         switch (met) {
             case str_remplace: {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
-                u_ustring cherche = lisp->get(v_fnd)->asUString(lisp);
-                u_ustring remplacement = lisp->get(v_rep)->asUString(lisp);
-                strvalue = s_ureplacestring(strvalue,cherche, remplacement);
-                return lisp->provideString(strvalue);
+                u_ustring cherche;
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* end = lisp->get_variable(U"index");
+                if (end == null_) {
+                    cherche = lisp->get_variable(v_fnd)->asUString(lisp);
+                    u_ustring remplacement = lisp->get_variable(v_rep)->asUString(lisp);
+                    strvalue = s_ureplacestring(strvalue,cherche, remplacement);
+                    return lisp->provideString(strvalue);
+                }
+                //In this case, we have indexes...
+                u_ustring remplacement = lisp->get_variable(v_fnd)->asUString(lisp);
+                long i_beg = lisp->get_variable(v_rep)->asInteger();
+                long i_end = end->asInteger();
+                long sz = strvalue.size();
+                if (i_beg < 0)
+                    i_beg = sz + i_beg;
+                if (i_beg >= sz)
+                    throw new Error("Error: out of range");
+                if (i_beg < 0)
+                    i_beg = 0;
+                if (i_end < 0)
+                    i_end = sz + i_end;
+                if (i_end < i_beg)
+                    throw new Error("Error: out of range");
+                if (i_end > sz)
+                    i_end = sz;
+                cherche = strvalue.substr(0, i_beg);
+                cherche += remplacement;
+                cherche += strvalue.substr(i_end, sz);
+                return lisp->provideString(cherche);
             }
             case str_lowercase: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 s = lisp->handlingutf8->u_to_lower(s);
                 return lisp->provideString(s);
             }
             case str_uppercase: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 s = lisp->handlingutf8->u_to_upper(s);
                 return lisp->provideString(s);
             }
             case str_is_emoji: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->u_is_emoji(s)];
             }
             case str_is_lowercase: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->u_is_lower(s)];
             }
             case str_is_uppercase: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->u_is_upper(s)];
             }
             case str_is_alpha: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->u_is_alpha(s)];
             }
             case str_left: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
-                long n = lisp->get(v_nb)->asInteger();
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                long n = lisp->get_variable(v_nb)->asInteger();
                 s = s_uleft(s,n);
                 return lisp->provideString(s);
             }
             case str_right: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
-                long n = lisp->get(v_nb)->asInteger();
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                long n = lisp->get_variable(v_nb)->asInteger();
                 s = s_uright(s, n);
                 return lisp->provideString(s);
             }
             case str_middle: {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
-                long p = lisp->get(v_pos)->asInteger();
-                long n = lisp->get(v_nb)->asInteger();
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                long p = lisp->get_variable(v_pos)->asInteger();
+                long n = lisp->get_variable(v_nb)->asInteger();
                 strvalue = s_umiddle(strvalue,p,n);
                 return lisp->provideString(strvalue);
             }
             case str_ngrams: {
-                long nb = lisp->get(v_nb)->asNumber();
+                long nb = lisp->get_variable(v_nb)->asNumber();
                 if (nb <= 0)
                     throw new Error("Error: nb should be a positive value");
                 
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 long j;
                 long mx = s.size() - nb + 1;
                 u_ustring u;
@@ -387,41 +430,41 @@ public:
                 return ke;
             }
             case str_trim0: {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 strvalue = u_trim0(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trim:  {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 strvalue = u_trim(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimleft:  {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 strvalue = u_trimleft(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimright:  {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 strvalue = u_trimright(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_emoji_description: {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 string res = lisp->handlingutf8->emoji_description(strvalue);
                 return lisp->provideString(res);
             }
             case str_tokenize_lispe: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
+                wstring strvalue =  lisp->get_variable(v_str)->asString(lisp);
                 return lisp->tokenize(strvalue, false);
             }
             case str_tokenize_empty: {
-                wstring strvalue =  lisp->get(v_str)->asString(lisp);
+                wstring strvalue =  lisp->get_variable(v_str)->asString(lisp);
                 return lisp->tokenize(strvalue, true);
             }
             case str_split_empty: {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
-                u_ustring search_string =  lisp->get(v_fnd)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                u_ustring search_string =  lisp->get_variable(v_fnd)->asUString(lisp);
                 Strings* result = lisp->provideStrings();
                 u_ustring localvalue;
                 long pos = 0;
@@ -455,8 +498,8 @@ public:
                 return result;
             }
             case str_split: {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
-                u_ustring search_string =  lisp->get(v_fnd)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                u_ustring search_string =  lisp->get_variable(v_fnd)->asUString(lisp);
                 
                 Strings* result = lisp->provideStrings();
                 u_ustring localvalue;
@@ -493,7 +536,7 @@ public:
                 return result;
             }
             case str_ord: {
-                u_ustring strvalue =  lisp->get(v_str)->asUString(lisp);
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 if (strvalue.size() == 0)
                     return emptylist_;
                 
@@ -504,36 +547,36 @@ public:
                 return liste;
             }
             case str_chr: {
-                u_uchar c = (u_uchar)lisp->get(v_nb)->asInteger();
+                u_uchar c = (u_uchar)lisp->get_variable(v_nb)->asInteger();
                 return lisp->provideString(c);
             }
             case str_is_punctuation: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->u_is_punctuation(s)];
             }
             case str_read_json: {
-                string filename = lisp->get(U"filename")->toString(lisp);
+                string filename = lisp->get_variable(U"filename")->toString(lisp);
                 return read_json(lisp, filename);
             }
             case str_parse_json: {
-                u_ustring str = lisp->get(U"str")->asUString(lisp);
+                u_ustring str = lisp->get_variable(U"str")->asUString(lisp);
                 return parse_json(lisp, str);
             }
             case str_string_json: {
-                Element* e = lisp->get(U"element");
+                Element* e = lisp->get_variable(U"element");
                 wstring w = e->jsonString(lisp);
                 return lisp->provideString(w);
             }
             case str_is_vowel: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->s_is_vowel(s)];
             }
             case str_is_consonant: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->s_is_consonant(s)];
             }
             case str_deaccentuate: {
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 s = lisp->handlingutf8->s_deaccentuate(s);
                 return lisp->provideString(s);
             }
@@ -541,11 +584,11 @@ public:
                 return new Rulemethod(lisp, l_tokenize);
             }
             case str_tokenize_rules: {
-                Element* tok = lisp->get(U"rules");
+                Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != l_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
-                Element* types = lisp->get(U"types");
-                u_ustring s =  lisp->get(v_str)->asUString(lisp);
+                Element* types = lisp->get_variable(U"types");
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 Strings* vstr = lisp->provideStrings();
                 ((Rulemethod*)tok)->tok.tokenize(s, &vstr->liste);
                 if (types != null_) {
@@ -559,7 +602,7 @@ public:
                 return vstr;
             }
             case str_getrules: {
-                Element* tok = lisp->get(U"rules");
+                Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != l_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
                 Strings* vstr = lisp->provideStrings();
@@ -567,10 +610,10 @@ public:
                 return vstr;
             }
             case str_setrules: {
-                Element* tok = lisp->get(U"rules");
+                Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != l_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
-                Element* lst = lisp->get(U"lst");
+                Element* lst = lisp->get_variable(U"lst");
                 if (!lst->isList())
                     throw new Error("Error: This function expects a list");
                 vector<u_ustring> wlst;
@@ -579,6 +622,9 @@ public:
                 }
                 ((Rulemethod*)tok)->tok.setrules(wlst);
                 return true_;
+            }
+            case str_format: {
+                return methodFormat(lisp);
             }
         }
 		return null_;
@@ -672,6 +718,8 @@ public:
                 return L"Set the internal tokenization rules";
             case str_rules:
                 return L"Return a rule object";
+            case str_format:
+                return L"Takes as input a format and a list of variables. Variables in the format of the form: %n, where 1<=n<=9 are replaced with their corresponding arguments";
         }
 		return L"";
     }
@@ -686,6 +734,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib trimleft (str)", new Stringmethod(lisp, str_trimleft));
     lisp->extension("deflib trimright (str)", new Stringmethod(lisp, str_trimright));
     lisp->extension("deflib lower (str)", new Stringmethod(lisp, str_lowercase));
+    lisp->extension("deflib format (str n1 (n2) (n3) (n4) (n5) (n6) (n7) (n8) (n9))", new Stringmethod(lisp, str_format));
     lisp->extension("deflib upper (str)", new Stringmethod(lisp, str_uppercase));
     lisp->extension("deflib lowerp (str)", new Stringmethod(lisp, str_is_lowercase));
     lisp->extension("deflib upperp (str)", new Stringmethod(lisp, str_is_uppercase));
@@ -693,7 +742,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib emojip (str)", new Stringmethod(lisp, str_is_emoji));
     lisp->extension("deflib punctuationp (str)", new Stringmethod(lisp, str_is_punctuation));
     lisp->extension("deflib emoji (str)", new Stringmethod(lisp, str_emoji_description));
-    lisp->extension("deflib replace (str fnd rep)", new Stringmethod(lisp, str_remplace));
+    lisp->extension("deflib replace (str fnd rep (index))", new Stringmethod(lisp, str_remplace));
     lisp->extension("deflib left (str nb)", new Stringmethod(lisp, str_left));
     lisp->extension("deflib ngrams (str nb)", new Stringmethod(lisp, str_ngrams));
     lisp->extension("deflib right (str nb)", new Stringmethod(lisp, str_right));

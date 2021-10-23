@@ -27,7 +27,7 @@ using std::vector;
 
 class Tokenizer {
 public:
-    vector<string> tokens;
+    vector<u_ustring> tokens;
     vector<double> numbers;
     vector<lisp_code> types;
     vector<long> lines;
@@ -44,18 +44,11 @@ public:
         positions.clear();
     }
     
-    void append(uchar segment, lisp_code t, long l, long posbeg, long posend) {
-        string str;
-        str = segment;
-        tokens.push_back(str);
-        numbers.push_back(0);
-        types.push_back(t);
-        lines.push_back(l);
-        positions.push_back(posbeg);
-        positions.push_back(posend);
-    }
-
-    void append(string segment, lisp_code t, long l, long posbeg, long posend) {
+    void append(uchar car, lisp_code t, long l, long posbeg, long posend) {
+        string token;
+        token = car;
+        u_ustring segment;
+        s_utf8_to_unicode(segment, USTR(token), token.size());
         tokens.push_back(segment);
         numbers.push_back(0);
         types.push_back(t);
@@ -64,7 +57,20 @@ public:
         positions.push_back(posend);
     }
 
-    void append(double valeur, string segment, lisp_code t, long l, long posbeg, long posend) {
+    void append(string& token, lisp_code t, long l, long posbeg, long posend) {
+        u_ustring segment;
+        s_utf8_to_unicode(segment, USTR(token), token.size());
+        tokens.push_back(segment);
+        numbers.push_back(0);
+        types.push_back(t);
+        lines.push_back(l);
+        positions.push_back(posbeg);
+        positions.push_back(posend);
+    }
+
+    void append(double valeur, string& token, lisp_code t, long l, long posbeg, long posend) {
+        u_ustring segment;
+        s_utf8_to_unicode(segment, USTR(token), token.size());
         tokens.push_back(segment);
         numbers.push_back(valeur);
         types.push_back(t);

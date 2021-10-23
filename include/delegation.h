@@ -96,26 +96,33 @@ public:
     BlockThread trace_lock;
     ThreadLock lock;
 
-    unordered_map<u_ustring, short> string_to_code;
-    binHashe<u_ustring> code_to_string;
+    methodEval evals[l_final];
 
+
+    binHashe<u_ustring> code_to_string;
     binHashe<string> instructions;
+    
     binHash<short> data_ancestor;
-    unordered_map<short, vector<short> > data_descendant;
     binHash<Element*> function_pool;
     binHash<Element*> data_pool;
+    
+    binSet assignors;
+    binSet operators;
+    binSet math_operators;
+    binSet comparators;
+    binSet logicals;
 
-    binHash<bool> operators;
-    binHash<bool> math_operators;
     binHash<Element*> operator_pool;
     binHash<Element*> atom_pool;
-    unordered_map<short, unordered_map<short, vector<Element*> > > method_pool;
+    binSet atom_basic_pool;
     binHash<unsigned long> arities;
     binHash<Element*> macros;
 
-    methodEval evals[l_final];
     
-    unordered_map<List*, long> in_file;
+    unordered_map<u_ustring, short> string_to_code;
+    unordered_map<short, vector<short> > data_descendant;
+    unordered_map<short, unordered_map<short, vector<Element*> > > method_pool;
+
     unordered_map<string, bool> libraries;
     unordered_map<string, long> allfiles;
     unordered_map<long, Element*> entrypoints;
@@ -125,6 +132,25 @@ public:
     
     unordered_map<u_ustring, List> thread_pool;
 
+    char checkComparator(short type, short root) {
+        if (root == type) {
+            if (operators.check(type))
+                return -1;
+            return 0;
+        }
+        
+        if (assignors.check(root))
+            return 0;
+        
+        if (logicals.check(root))
+            return logicals.check(type);
+        
+        if (comparators.check(root)) {
+            return (comparators.check(type) || logicals.check(type));
+        }
+        
+        return (type == l_plus || type == l_minus || comparators.check(type) || logicals.check(type));
+    }
 
     //this is an all-purpose pool for internal usage
 
@@ -132,6 +158,8 @@ public:
     unordered_map<long, unordered_map<long, bool> > breakpoints;
     map<long, map<long, string> > listing;
     vector<Element*> force_clean;
+
+    std::atomic<long> id_pool;
 
     Error* error_message;
     
@@ -249,7 +277,7 @@ public:
         try {
             i_current_file = allfiles.at(pathname);
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             i_current_file = allfiles.size();
             allfiles[pathname] = i_current_file;
             allfiles_names[i_current_file] = pathname;
@@ -260,7 +288,7 @@ public:
         try {
             listing.at(i_current_file).at(l);
         }
-        catch(...) {
+        catch (...) {
             listing[i_current_file][l] = e;
         }
     }
@@ -275,7 +303,7 @@ public:
         try {
             return string_to_code.at(s);
         }
-        catch(...) {
+        catch (...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -288,7 +316,7 @@ public:
         try {
             return string_to_code.at(s);
         }
-        catch(...) {
+        catch (...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -300,7 +328,7 @@ public:
         try {
             return string_to_code.at(s);
         }
-        catch(...) {
+        catch (...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -314,7 +342,7 @@ public:
         try {
             return string_to_code.at(s);
         }
-        catch(...) {
+        catch (...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -328,7 +356,7 @@ public:
         try {
             return string_to_code.at(s);
         }
-        catch(...) {
+        catch (...) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
@@ -351,7 +379,7 @@ public:
             if (atom_pool.check(code))
                 return (lisp_code)code;
         }
-        catch(...) {
+        catch (...) {
         }
         return l_final;
     }
@@ -364,7 +392,7 @@ public:
             if (atom_pool.check(code))
                 return code;
         }
-        catch(...) {
+        catch (...) {
         }
         return -1;
     }
@@ -375,7 +403,7 @@ public:
             if (atom_pool.check(code))
                 return code;
         }
-        catch(...) {
+        catch (...) {
         }
         return -1;
     }
@@ -386,7 +414,18 @@ public:
             if (atom_pool.check(code))
                 return code;
         }
-        catch(...) {
+        catch (...) {
+        }
+        return -1;
+    }
+
+    short is_basic_atom(wstring& w) {
+        try {
+            short code = string_to_code.at(_w_to_u(w));
+            if (atom_basic_pool.check(code))
+                return code;
+        }
+        catch (...) {
         }
         return -1;
     }
@@ -400,7 +439,7 @@ public:
         try {
             return (s == U"true" || s == U"nil" || instructions.check(string_to_code.at(s)));
         }
-        catch(...) {
+        catch (...) {
             return false;
         }
     }
@@ -409,7 +448,7 @@ public:
         try {
             return (s == L"true" || s == L"nil" || instructions.check(string_to_code.at(_w_to_u(s))));
         }
-        catch(...) {
+        catch (...) {
             return false;
         }
     }
@@ -431,7 +470,7 @@ public:
         try {
             return allfiles.at(pathname);
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             return -1;
         }
     }
@@ -444,7 +483,7 @@ public:
         try {
             return (arities.at(instruction_code) == arity);
         }
-        catch(...) {
+        catch (...) {
             return false;
         }
         return false;
@@ -488,7 +527,7 @@ public:
                 }
             }
         }
-        catch(...) {
+        catch (...) {
             return false;
         }
         return false;
@@ -498,7 +537,7 @@ public:
         try {
             return breakpoints.at(i_file).at(i_line);
         }
-        catch(...) {
+        catch (...) {
             return false;
         }
     }
@@ -508,7 +547,6 @@ public:
             return false;
         
         function_pool[label] = e;
-        e->status = s_constant;
         return true;
     }
     
@@ -519,7 +557,7 @@ public:
         try {
             method_pool.at(label);
         }
-        catch(...) {
+        catch (...) {
             //We record the first instance of a defpat declaration
             if (stack == NULL)
                 recordingFunction(e, label);
@@ -527,14 +565,13 @@ public:
                 stack->recording(e, label);
         }
         
-        e->status = s_constant;
         method_pool[label][sublabel].push_back(e);
         
         try {
             for (auto& a: data_descendant.at(sublabel))
                 method_pool[label][a].push_back(e);
         }
-        catch(...) {}
+        catch (...) {}
         
         return e;
     }
@@ -544,7 +581,6 @@ public:
             throw new Error("Error: data structure has already been recorded");
         
         data_pool[label] = e;
-        e->status = s_constant;
         e->type = t_data;
         if (ancestor != v_null) {
             data_ancestor[label] = ancestor;
@@ -562,7 +598,7 @@ public:
         try {
             return method_pool.at(label).at(sublabel).at(i);
         }
-        catch(...) {
+        catch (...) {
             return _NULL;
         }
     }
@@ -661,7 +697,7 @@ public:
             b->released();
             return true;
         }
-        catch(...) {
+        catch (...) {
             lock.unlocking();
         }
         return false;
@@ -694,7 +730,7 @@ public:
         try {
             v = thread_pool.at(key).copying(true);
         }
-        catch(...) {}
+        catch (...) {}
         lock.unlocking();
         return v;
     }
@@ -715,7 +751,7 @@ public:
             lock.unlocking();
             return true;
         }
-        catch(...) {}
+        catch (...) {}
         lock.unlocking();
         return false;
     }
@@ -766,11 +802,15 @@ public:
     Element* provideAtomOrInstruction(short code) {
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
-            if (instructions.check(code))
-                e = new Instruction(code, code_to_string.at(code));
-            else
-                e = new Atome(code, code_to_string.at(code));
-            e->status = s_constant;
+            if (operator_pool.check(code))
+                e = operator_pool[code];
+            else {
+                if (instructions.check(code))
+                    e = new Instruction(code, code_to_string.at(code));
+                else
+                    e = new Atome(code, code_to_string.at(code));
+                e->status = s_constant;
+            }
             atom_pool[code] = e;
         }
         return e;
@@ -780,11 +820,15 @@ public:
         short code = encode(identifier);
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
-            if (instructions.check(code))
-                e = new Instruction(code, code_to_string.at(code));
-            else
-                e = new Atome(code, code_to_string.at(code));
-            e->status = s_constant;
+            if (operator_pool.check(code))
+                e = operator_pool[code];
+            else {
+                if (instructions.check(code))
+                    e = new Instruction(code, code_to_string.at(code));
+                else
+                    e = new Atome(code, code_to_string.at(code));
+                e->status = s_constant;
+            }
             atom_pool[code] = e;
         }
         return e;
@@ -801,7 +845,7 @@ public:
         return e;
     }
 
-    Element* provideCADR(string& strvalue) {
+    Element* provideCADR(u_ustring& strvalue) {
         short code = encode(strvalue);
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
@@ -810,6 +854,14 @@ public:
             atom_pool[code] = e;
         }
         return e;
+    }
+    
+    inline void set_context(long l, long f) {
+        if (stop_execution)
+            throw _THEEND;
+        
+        i_current_line = l;
+        i_current_file = f;
     }
     
     ~Delegation();

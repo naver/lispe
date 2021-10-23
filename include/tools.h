@@ -117,10 +117,13 @@ inline u_ustring w_to_u(wstring w) {
 
 wstring convertToWString(long d);
 string convertToString(long d);
+u_ustring convertToUString(long d);
 wstring convertToWString(double d);
 string convertToString(double d);
-u_ustring convertToUString(long d);
 u_ustring convertToUString(double d);
+wstring convertToWString(float d);
+string convertToString(float d);
+u_ustring convertToUString(float d);
 
 string s_replacingstring(string& s, string reg, string rep);
 wstring s_wreplacestring(wstring& s, wstring reg, wstring rep);
@@ -180,7 +183,7 @@ class Chaine_UTF8 {
 public:
     binHash<u_uchar> utf8codemin;
     binHash<u_uchar> utf8codemaj;
-    binHash<bool> punctuations;
+    binSet punctuations;
     binHash<u_uchar> wvowels;
     binHash<u_uchar> wconsonants;
     

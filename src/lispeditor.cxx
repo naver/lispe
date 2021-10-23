@@ -1093,7 +1093,7 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             if (buff == left) {
                 //Adding or removing breakpoints
                 //You cannot modify the breakpoints in multi-threading
-                if (lispe->checkforLock())
+                if (lispe->threaded())
                     continue;
                 
                 string file_name = lispe->name_file(current_file_debugger);
@@ -1354,7 +1354,7 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
     string file_name = lisp->name_file(current_file);
     cout << m_red << "File: " << file_name << m_current << " thread: " << lisp->threadId() << endl;
     
-    bool is_thread = lisp->checkforLock();
+    bool is_thread = lisp->threaded();
     
     long line =  current_line - 15;
     if (line < 1)
@@ -1429,7 +1429,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         return;
     }
 
-    bool is_thread = lisp->checkforLock();
+    bool is_thread = lisp->threaded();
     editor->lock.locking(is_thread);
     //We have been waiting for the previous thread to yield
     //However a stop was issued, we return
@@ -1470,7 +1470,7 @@ void local_readfromkeyboard(string& code, void* o) {
         editor->output_string = "";
     }
     
-    bool is_thread = editor->lispe->checkforLock();
+    bool is_thread = editor->lispe->threaded();
     editor->printlock.locking(is_thread);
     editor->input_string = code;
     //there is a section in launchterminal, which tests reading
@@ -1488,7 +1488,7 @@ void local_readfromkeyboard(string& code, void* o) {
 
 void local_display(string& code, void* o) {
     lispe_editor* editor = (lispe_editor*)o;
-    bool is_thread = editor->lispe->checkforLock();
+    bool is_thread = editor->lispe->threaded();
     editor->printlock.locking(is_thread);
     editor->output_string += code;
     editor->printlock.unlocking(is_thread);

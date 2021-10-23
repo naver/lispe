@@ -33,6 +33,8 @@
 #include "jag.h"
 #include "rgx.h"
 
+#include <algorithm>
+
 /*
  Some utility functions to manipulate strings
  Essentially:

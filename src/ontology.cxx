@@ -364,7 +364,7 @@ Concept_element::~Concept_element() {
     elements.clean();
 }
 
-void Concept_element::table(VECTE<long>& liste) {
+void Concept_element::table(vecte<long>& liste) {
     
     //We build in reverse order
     for (long i=elements.last-1;i>=0;i--) {
@@ -607,6 +607,10 @@ Element* Concept::equal(LispE* lisp, Element* e) {
     return booleans_[equal((Concept*)e)];
 }
 
+bool Concept::egal(Element* e) {
+    return (e->type == type && equal((Concept*)e));
+}
+
 Element* Concept::intersect(LispE* lisp, Concept* c) {
     if (c->ontologie != ontologie)
         throw new Error("Error: these concepts do not belong to the same ontology");
@@ -631,7 +635,7 @@ u_ustring Concept::asUString(LispE*) {
 
 
 Element* Concept::asList() {
-    VECTE<long> table;
+    vecte<long> table;
     concept.table(table);
     List* l = new List;
     u_ustring w;
@@ -659,7 +663,7 @@ Element* Ontology::find(LispE* lisp, u_ustring& w) {
     try {
         return indexes.at(w);
     }
-    catch(...) {
+    catch (...) {
         throw new Error("Error: unknown concept");
     }
 }
@@ -667,12 +671,12 @@ Element* Ontology::find(LispE* lisp, u_ustring& w) {
 Element* Ontology::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
-    lisp->recordingvalue(null_, label);
+    lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
     for (auto& a : indexes) {
         element = a.second;
-        lisp->recordingvalue(element, label);
+        lisp->replacingvalue(element, label);
         e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {

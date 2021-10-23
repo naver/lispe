@@ -157,7 +157,7 @@ public:
     
     void push(Fltk_widget* w) {
         items.push_back(w);
-        w->incrementstatus(1,true);
+        w->increment();
     }
     
     void run();

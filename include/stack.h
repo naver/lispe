@@ -18,14 +18,18 @@ class LispE;
 class Stackelement {
 public:
     
-    Element* function;
-    VECTE<short> names;
     binHash<Element*> variables;
-    
+    vecte<short> names;
+    Element* function;
+
+    Stackelement() {
+        function = NULL;
+    }
+
     Stackelement(Element* f) {
         function = f;
     }
-    
+
     Element* called() {
         return function;
     }
@@ -38,9 +42,10 @@ public:
         if (variables.check(label))
             return variables.at(label)->unify(lisp,e, false);
         
+        e = e->duplicate_constant();
         variables[label] = e;
-        if (!e->status) {
-            e->incrementstatus(1, true);
+        if (e->status != s_constant) {
+            e->increment();
             names.push_back(label);
         }
         return true;
@@ -50,45 +55,156 @@ public:
         if (variables.check(label))
             return false;
         variables[label] = e;
-        if (!e->status) {
-            e->incrementstatus(1, true);
+        if (e->status != s_constant) {
+            e->increment();
             names.push_back(label);
         }
         return true;
     }
-    
-    Element* recording(Element* e, short label) {
+
+    void savelocal(Element* e, List* l) {
+        short label = e->label();
         if (variables.check(label)) {
-            Element* previous = variables.at(label);
-            if (previous == e)
-                return e;
-            if (names.checkanderase(label))
-                previous->decrementstatus(1, true);
+            l->append(e);
+            l->append(variables.at(label));
+        }
+    }
+
+    bool localsave(Element* e, List* l) {
+        short label = e->label();
+        if (variables.check(label)) {
+            l->append(e);
+            l->append(variables.at(label));
+            return true;
+        }
+        return false;
+    }
+
+
+    //record a function argument in the stack
+    void record_argument(Element* e, short label) {
+        e = e->duplicate_constant();
+        variables[label] = e;
+        if (e->status != s_constant) {
+            e->increment();
+            names.push_back(label);
+        }
+    }
+    
+    void recording(Element* e, short label) {
+        if (variables.check(label)) {
+            if (variables.at(label) == e)
+                return;
+            
+            e = e->duplicate_constant();
+
+            if (names.check(label)) {
+                if (e->status != s_constant)
+                    e->increment();
+                else
+                    names.erase(label);
+                variables.at(label)->decrement();
+                variables.put(label, e);
+                return;
+            }
+            
+            variables.put(label, e);
+        }
+        else {
+            e = e->duplicate_constant();
+            variables[label] = e;
         }
         
-        e = e->duplicate_constant_container();
-        variables[label] = e;
-        if (!e->status) {
-            e->incrementstatus(1, true);
+        if (e->status != s_constant) {
+            e->increment();
+            names.push_back(label);
+        }
+    }
+
+    Element* recording_variable(Element* e, short label) {
+        if (variables.check(label)) {
+            if (variables.at(label) == e)
+                return e;
+            
+            e = e->duplicate_constant();
+
+            if (names.check(label)) {
+                if (e->status != s_constant)
+                    e->increment();
+                else
+                    names.erase(label);
+                variables.at(label)->decrement();
+                variables.put(label, e);
+                return e;
+            }
+
+            variables.put(label, e);
+        }
+        else {
+            e = e->duplicate_constant();
+            variables[label] = e;
+        }
+        
+        if (e->status != s_constant) {
+            e->increment();
             names.push_back(label);
         }
         return e;
     }
 
-    Element* recordingvalue(Element* e, short label) {
+    void storing_variable(Element* e, short label) {
         if (variables.check(label)) {
-            Element* previous = variables.at(label);
-            if (previous == e)
-                return e;
-            if (names.checkanderase(label))
-                previous->decrementstatus(1, true);
+            if (variables.at(label) == e)
+                return;
+            
+            e = e->duplicate_constant();
+
+            if (names.check(label)) {
+                if (e->status != s_constant)
+                    e->increment();
+                else
+                    names.erase(label);
+                variables.at(label)->decrement();
+                variables.put(label, e);
+                return;
+            }
+
+            variables.put(label, e);
+        }
+        else {
+            e = e->duplicate_constant();
+            variables[label] = e;
         }
         
-        e = e->duplicate_constant_container();
-        variables[label] = e;
-        e->incrementstatus(1, true);
-        names.push_back(label);
-        return e;
+        if (e->status != s_constant) {
+            e->increment();
+            names.push_back(label);
+        }
+    }
+
+
+    void replacingvalue(Element* e, short label) {
+        if (variables.at(label) == e)
+            return;
+        
+        e = e->duplicate_constant();
+        
+        if (names.check(label)) {
+            if (e->status != s_constant)
+                e->increment();
+            else
+                names.erase(label);
+            variables.at(label)->decrement();
+            variables.put(label, e);
+            return;
+        }
+
+        variables.put(label, e);
+        
+        if (e->status != s_constant) {
+            e->increment();
+            names.push_back(label);
+        }
     }
 
     Element* get(short label) {
@@ -97,11 +213,22 @@ public:
     
     void remove(short label) {
         if (names.checkanderase(label)) {
-            variables.at(label)->decrementstatus(1,true);
+            variables.at(label)->decrement();
         }
         variables.erase(label);
     }
-    
+
+    void remove(short label, Element* keep) {
+        if (names.checkanderase(label)) {
+            Element* local = variables.at(label);
+            if (local == keep)
+                local->decrementkeep();
+            else
+                local->decrement();
+        }
+        variables.erase(label);
+    }
+
     u_ustring asUString(LispE*);
     wstring asString(LispE*);
     List* atomes(LispE*);
@@ -117,7 +244,7 @@ public:
     
     void clear() {
         for (short i = 0; i < names.last; i++) {
-            variables.at(names.vecteur[i])->decrementstatus(1, true);
+            variables.at(names.vecteur[i])->decrement();
         }
         variables.clear();
         names.clear();
@@ -129,13 +256,19 @@ public:
         for (short i = 0; i < names.last; i++) {
             e = variables.at(names.vecteur[i]);
             if (e != keep)
-                e->decrementstatus(1, true);
+                e->decrement();
         }
         variables.clear();
         names.clear();
         function = NULL;
     }
 
+    Element* exchange(Element* f) {
+        Element* e = function;
+        function = f;
+        return e;
+    }
+    
     Stackelement* setFunction(Element* f) {
         function = f;
         return this;
@@ -143,13 +276,8 @@ public:
     
     //We only copy unknown values
     //used for lambdas to keep track of values from the previous stack
-    void setElements(Stackelement* stack) {
-        binHash<Element*>::iterator a;
-        for (a = stack->variables.begin(); a != stack->variables.end(); a++) {
-            if (!variables.check(a->first)) {
-                variables[a->first] = a.second;
-            }
-        }
+    void shareElements(Stackelement* stack) {
+        stack->variables.andnot(variables);
     }
     
     void atoms(vector<short>& v_atoms) {
@@ -161,7 +289,7 @@ public:
     
     ~Stackelement() {
         for (short i = 0; i < names.last; i++)
-            variables.at(names.vecteur[i])->decrementstatus(1, true);
+            variables.at(names.vecteur[i])->decrement();
     }
 };
 

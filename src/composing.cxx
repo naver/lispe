@@ -1093,13 +1093,27 @@ Element* List::composing(LispE* lisp, bool docompose) {
 }
 
 //--------------------------------------------------------------------------------
+bool List::check_quote(LispE* lisp) {
+    if (liste[0]->type == t_list && liste[0]->size()) {
+        if (liste[0]->index(0)->type == l_quote) {
+            liste[0] = new Listargumentquote((List*)liste[0]);
+            lisp->garbaging(liste[0]);
+            return true;
+        }
+    }
+    return false;
+}
+//--------------------------------------------------------------------------------
+
 //This method is used to promote some arguments from a defpat function into
 //more efficient objects.
 //Each of these objects implement its own unify method.
 //Note that the way LIST is implemented allows for "list borrowing"...
 //Which we do here...
 Element* List::transformargument(LispE* lisp) {
-    if (!liste.size())
+    long sz = liste.size();
+
+    if (!sz)
         throw new Error("Error: Wrong argument in defpat function");
     
     List* fin = this;
@@ -1112,26 +1126,36 @@ Element* List::transformargument(LispE* lisp) {
         else {
             short ilabel = ilabel = lisp->extractlabel(this);
             if (ilabel == v_null) {
-                if (isExecutable(lisp)) {
+                if (!check_quote(lisp) && isExecutable(lisp)) {
                     Element* arg = liste.back();
                     while (arg->isExecutable(lisp))
                         arg = arg->last();
                     if (arg == null_)
                         throw new Error("Error: Missing argument in defpat function");
-                    return new Listargumentfunction(this, arg);
+                    fin = new Listargumentfunction(this, arg);
+                    lisp->garbaging(fin);
+                    return fin;
                 }
-                long sz = liste.size();
-                if (sz > 1 && liste[sz-2] == separator_)
-                    return new Listargumentseparator(this);
+                if (sz > 1 && liste[sz-2] == separator_) {
+                    fin = new Listargumentseparator(this);
+                    lisp->garbaging(fin);
+                    return fin;
+                }
                 return this;
             }
             
             if (ilabel >= t_atom && ilabel <= t_maybe) {
+                if (sz > 1 && liste[sz-2] == separator_) {
+                    fin = new Listargumentseparator(this);
+                    lisp->garbaging(fin);
+                    return fin;
+                }
                 if (liste.back() != null_)
                     fin = new Listargumentlabel(this, ilabel);
             }
             else {
                 fin = new Listargumentdata(this);
+                lisp->garbaging(fin);
                 Element* exec;
                 for (long i = 1; i < fin->size(); i++) {
                     exec = fin->liste[i]->transformargument(lisp);
@@ -1143,10 +1167,14 @@ Element* List::transformargument(LispE* lisp) {
             }
         }
     }
-    if (fin != this && liste.size() > 1) {
-        Element* exec = fin->liste.back()->transformargument(lisp);
-        if (exec != fin->liste.back()) {
-            lisp->removefromgarbage(fin->liste.exchangelast(exec));
+    if (fin != this) {
+        if (!fin->status)
+            lisp->garbaging(fin);
+        if (liste.size() > 1) {
+            Element* exec = fin->liste.back()->transformargument(lisp);
+            if (exec != fin->liste.back()) {
+                lisp->removefromgarbage(fin->liste.exchangelast(exec));
+            }
         }
     }
     return fin;

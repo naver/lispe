@@ -186,7 +186,7 @@ bool Au_arc::checkfinalepsilon() {
 void Au_state::removeepsilon() {
     if (mark)
         return;
-    
+
     mark=true;
     vector<long> removals;
     long i;
@@ -198,7 +198,7 @@ void Au_state::removeepsilon() {
         else
             arcs[i]->state->removeepsilon();
     }
-    
+
     for (i = removals.size()-1; i>=0; i--) {
         status|=an_end;
         arcs.erase(removals[i]);
@@ -209,15 +209,15 @@ void Au_state::removeepsilon() {
 void Au_state::addrule(Au_arc* r) {
     if (mark)
         return;
-    
+
     mark=true;
     //This is a terminal node...
     if (isend())
         arcs.push_back(r);
-    
+
     for (long i=0;i<arcs.size();i++)
         arcs[i]->state->addrule(r);
-    
+
     return;
 }
 
@@ -247,7 +247,7 @@ bool Au_state::match(u_ustring& w, long i) {
                     return true;
         }
     }
-    
+
     return false;
 }
 
@@ -260,10 +260,10 @@ bool Au_automaton::match(u_ustring& w) {
 void Au_state::storerulearcs(std::unordered_map<long,bool>& rules) {
     if (mark)
         return;
-    
+
     if (isrule())
         rules[idx()]=true;
-    
+
     mark=true;
     for (long j=0;j<arcs.last;j++)
         arcs[j]->state->storerulearcs(rules);
@@ -275,7 +275,7 @@ void Au_state::storerulearcs(std::unordered_map<long,bool>& rules) {
 long Au_state::loop(u_ustring& w, long i) {
     if ((status & an_error) == an_error)
         return au_stop;
-    
+
     if (i==w.size()) {
         if (isend())
             return i;
@@ -286,7 +286,7 @@ long Au_state::loop(u_ustring& w, long i) {
         if (i)
             return au_error;
     }
-    
+
     long l = au_error;
     long j;
 
@@ -309,7 +309,7 @@ long Au_state::loop(u_ustring& w, long i) {
             return l;
         }
     }
-    
+
     if (isend()) {
         if (status & an_ending) {
             if (i != w.size())
@@ -317,7 +317,7 @@ long Au_state::loop(u_ustring& w, long i) {
         }
         return i;
     }
-    
+
     return au_error;
 }
 
@@ -374,7 +374,7 @@ bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
             d=f-1;
         }
     }
-    
+
     if (b!=au_error)
         return true;
     return false;
@@ -383,10 +383,10 @@ bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
 
 
 //----------------------------------------------------------------
-void Au_automaton::searchall(u_ustring& w, vector<long>& res, long init) {
+void Au_automaton::searchall(u_ustring& w, vecte<long>& res, long init) {
     long f;
     long sz = w.size();
-    
+
     for (long d=init;d<sz;d++) {
         f=first->loop(w,d);
         if (f!=au_error) {
@@ -401,7 +401,7 @@ void Au_automaton::searchall(u_ustring& w, vector<long>& res, long init) {
 bool Au_arc::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
     if (i==w.size())
         return false;
-    
+
     UWCHAR c = Au_meta::met->getachar(w,i);
 
     switch(action->compare(c)) {
@@ -420,12 +420,12 @@ bool Au_arc::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
 bool Au_state::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
     long ps=res.size();
     long j;
-    
+
     if (status & an_beginning) {
         if (i)
             return au_error;
     }
-    
+
     for (j=0;j<arcs.last;j++) {
         if (!arcs[j]->find(w, wsep, i, res)) {
             while (ps != res.size()) {
@@ -435,18 +435,18 @@ bool Au_state::find(u_ustring& w, u_ustring& wsep, long i, vector<long>& res) {
         else
             return true;
     }
-    
+
     if (isend()) {
         if (status & an_ending) {
             if (i != w.size())
                 return false;
         }
-        
+
         if (res[res.size()-1]!=i+1)
             res.push_back(i+1);
         return true;
     }
-    
+
     return false;
 }
 
@@ -465,7 +465,7 @@ bool Au_automaton::bytesearch(u_ustring& w, long& b, long& e) {
 }
 
 
-void Au_automaton::bytesearchall(u_ustring& w, vector<long>& res) {
+void Au_automaton::bytesearchall(u_ustring& w, vecte<long>& res) {
     long f;
     long sz = w.size();
     for (long d=0; d<sz; d++) {
@@ -484,16 +484,16 @@ void Au_state::merge(Au_state* a) {
     if (a->mark)
         return;
     a->mark=true;
-    
+
     status |= a->status;
-    
+
     long sz=arcs.size();
     for (long i=0;i<a->arcs.size();i++) {
         if (a->arcs[i]->state->isrule()) {
             arcs.push_back(a->arcs[i]);
             continue;
         }
-        
+
         long found=au_error;
         for (long j=0;j<sz;j++) {
             if (a->arcs[i]->same(arcs[j])) {
@@ -542,32 +542,32 @@ Au_automaton::Au_automaton(u_ustring wrgx) {
 bool Au_automaton::parse(u_ustring& w, Au_automatons* aus) {
     //static x_wautomaton xtok;
     //first we tokenize
-    
+
     //First we detect the potential %X, where X is a macro
-    
+
     vector<u_ustring> toks;
     vector<aut_actions> types;
     if (!tokenize(w,toks, types))
         return false;
-    
+
     if (aus==NULL)
         aus=new Au_automatons;
 
     if (first==NULL)
         first=aus->state();
-    
+
     Au_state base;
     long ab,sb;
     aus->boundaries(sb,ab);
-    
+
     if (base.build(aus, 0, toks,types,NULL)==NULL)
         return false;
-    
+
     base.removeepsilon();
     base.mark=false;
     aus->clear(sb,ab);
     first->merge(&base);
-    
+
     //we delete the elements that have been marked for deletion...
     aus->clean(sb,ab);
     return true;
@@ -576,7 +576,7 @@ bool Au_automaton::parse(u_ustring& w, Au_automatons* aus) {
 bool Au_automate::compiling(u_ustring& w,long r) {
     //static x_wautomaton xtok;
     //first we tokenize
-    
+
     vector<u_ustring> toks;
     vector<aut_actions> types;
     if (!tokenize(w,toks, types))
@@ -584,22 +584,22 @@ bool Au_automate::compiling(u_ustring& w,long r) {
 
     if (first==NULL)
         first=garbage.state();
-    
+
     Au_state base;
     long ab,sb;
     garbage.boundaries(sb,ab);
-    
+
     if (base.build(&garbage, 0, toks,types,NULL)==NULL)
         return false;
-    
+
     Au_state* af=garbage.statefinal(r);
     Au_arc* fin=garbage.arc(new Au_epsilon(),af);
     base.addrule(fin);
-    
+
     base.mark=false;
     garbage.clear(sb,ab);
     first->merge(&base);
-    
+
     garbage.clean(sb,ab);
     return true;
 }
@@ -618,15 +618,15 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
             ar=aus->arc(new Au_epsilon(), common);
             arcs.push_back(ar);
         }
-        
+
         return this;
     }
-    
+
     if (types[i] == aut_negation) {
         ++i;
         nega = true;
     }
-    
+
     long j;
     bool stop;
     short count;
@@ -634,12 +634,12 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
     vector<aut_actions> ltypes;
     Au_state* ret = NULL;
     uchar localtype = types[i];
-    
+
     switch(localtype) {
         case aut_ocrl_brk: { //{..}
             i++;
             Au_state* commonend=aus->state();
-            VECTE<Au_arc*> locals;
+            vecte<Au_arc*> locals;
             stop=false;
             while (i<toks.size() && !stop) {
                 switch(types[i]) {
@@ -675,19 +675,19 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
                         }
                         if (i==toks.size() || !ltoks.size()) //We could not find the closing character, this is an error...
                             return NULL;
-                        
+
                         Au_state s;
                         ret=s.build(aus, 0,ltoks,ltypes,commonend);
                         if (ret==NULL)
                             return NULL;
-                        
+
                         //It cannot be an end state, commonend will be...
                         ret->removeend();
-                        
+
                         for (j=0;j<s.arcs.last;j++) {
                             if (s.arcs[j]->state == commonend)
                                 continue;
-                            
+
                             locals.push_back(s.arcs[j]);
                             arcs.push_back(s.arcs[j]);
                         }
@@ -701,7 +701,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
                         i++;
                 }
             }
-            
+
             if (i==toks.size())
                 return NULL;
 
@@ -731,7 +731,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
             }
             else
                 commonend->status |= an_mandatory;
-            
+
             ret = commonend->build(aus, i+1,toks,types,common);
             if (ret != NULL && ret->isend() && !(ret->status&an_mandatory))
                 status |= an_end;
@@ -762,7 +762,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
             ret=build(aus, 0,ltoks,ltypes,NULL);
             if (ret==NULL)
                 return NULL;
-            
+
             ret->removeend();
             //We jump...
             ar=aus->arc(new Au_epsilon(), ret);
@@ -796,12 +796,12 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
             }
             if (i==toks.size() || !ltoks.size())
                 return NULL;
-            
+
             Au_state s;
             ret=s.build(aus, 0,ltoks,ltypes,NULL);
             if (ret==NULL)
                 return NULL;
-            
+
             ret->removeend();
             ret->status |= an_mandatory; //if it is a +, we expect at least one value, cannot be a potential end
 
@@ -811,7 +811,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
                     arcs.push_back(s.arcs[j]);
                     ret->arcs.push_back(s.arcs[j]);
                 } //we need to jump back to our position...
-                
+
                 if (types[i]==aut_cbrk_star) {//this is a star, we need an epsilon to escape it...
                     ar=aus->arc(new Au_epsilon(), ret);
                     arcs.push_back(ar);
@@ -822,7 +822,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
                 for (j=0;j<s.arcs.last;j++)
                     arcs.push_back(s.arcs[j]);
             }
-            
+
             //These are the cases, when we have a x* at the end of an expression...
             //The current node can be an end too
             ret = ret->build(aus, i+1,toks,types,common);
@@ -831,18 +831,18 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
             return ret;
         }
     }
-    
+
     Au_state* next;
     if ((i+1)==toks.size())
         next=common;
     else
         next=NULL;
-    
+
     if (toks[i] == U"^") {
         status |= an_beginning;
         return build(aus, i+1,toks,types,common);
     }
-    
+
     if (toks[i] == U"$") {
         ret = build(aus, i+1,toks,types,common);
         ret->status |= an_ending;
@@ -854,7 +854,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
         return NULL;
 
     next = retarc->state->build(aus, i+1,toks,types,common);
-        
+
     if (next != NULL && next->isend() && !(next->status&an_mandatory)) {
         //If the current element is a *, then it can be skipped up to the end...
         switch(localtype) {
@@ -867,7 +867,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
                 next->status |= an_mandatory;
         }
     }
-    
+
     return next;
 }
 
@@ -894,7 +894,7 @@ bool checkmeta(u_ustring& tok) {
 Au_arc* Au_state::build(Au_automatons* aus, u_ustring& token, uchar type, Au_state* common, bool nega) {
     //First we scan the arcs, in case, it was already created...
     Au_any* a=NULL;
-    
+
     //value arc: meta or character...
     switch(type) {
         case aut_any: //?
@@ -918,9 +918,9 @@ Au_arc* Au_state::build(Au_automatons* aus, u_ustring& token, uchar type, Au_sta
         default:
             return NULL;
     }
-    
+
     a->setvero(nega);
-    
+
     //we check if we already have such an arc...
     for (long j=0;j<arcs.size();j++) {
         if (arcs[j]->action->same(a)) {
@@ -929,7 +929,7 @@ Au_arc* Au_state::build(Au_automatons* aus, u_ustring& token, uchar type, Au_sta
             return arcs[j];
         }
     }
-    
+
     //Different case...
     //first if a is not NULL and a is a loop
     Au_arc* current=aus->arc(a, common);

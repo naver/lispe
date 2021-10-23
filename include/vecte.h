@@ -11,7 +11,8 @@
 #ifndef vecte_h
 #define vecte_h
 
-template <class Z> class VECTE {
+
+template <class Z> class vecte {
 public:
 
 	Z* vecteur;
@@ -20,27 +21,45 @@ public:
 	//last element appended... 
 	long last;
 
-	VECTE(long t = 3) {
-		vecteur = NULL;
-		if (t > 0)
-            vecteur = (Z*)malloc(sizeof(Z)*t);
-
-		sz = t;
-        for (long i = 0; i< sz; i++)
-            vecteur[i] = NULL;
-
-		last = 0;
+	vecte(long t = 3) {
+        last = 0;
+		sz = t + 1;
+        vecteur = (Z*)malloc(sizeof(Z)*sz);
+        memset(vecteur, NULL, sizeof(Z)*sz);
 	}
 
-	~VECTE() {
+    vecte(long nb, Z val) {
+        sz = nb;
+        vecteur = (Z*)malloc(sizeof(Z)*sz);
+        for (last = 0; last < nb; last++)
+            vecteur[last] = val;
+    }
+    
+    vecte(vecte<Z>& v) {
+        sz = v.sz;
+        last = v.last;
+        vecteur = (Z*)malloc(sizeof(Z)*sz);
+        memcpy(vecteur, v.vecteur, sizeof(Z)*sz);
+    }
+    
+	~vecte() {
 		free(vecteur);
 	}
 
-	long size() {
+    
+    inline double get_(long pos) {
+        return vecteur[pos];
+    }
+    
+    inline void set_(long pos, double v) {
+        vecteur[pos] = v;
+    }
+
+	inline long size() {
 		return last;
 	}
 
-    void wipe() {
+    inline void wipe() {
         while (last>0) {
             if (vecteur[--last] != NULL) {
                 delete vecteur[last];
@@ -49,15 +68,13 @@ public:
         }
     }
 
-    void cleaning() {
+    inline void cleaning() {
         while (last>0) {
             delete vecteur[--last];
         }
     }
     
-    void clean() {
-		if (vecteur == NULL)
-			return;
+    inline void clean() {
         for (last = 0; last < sz; last++) {
             if (vecteur[last] != NULL) {
                 delete vecteur[last];
@@ -71,82 +88,22 @@ public:
 		last = 0;
 	}
 
-	void reserve(long t) {
-		if (t <= sz)
-			return;
-
-		Z* tfs;
-
-		//on realloue par bloc de t
-		tfs = (Z*)malloc(sizeof(Z)*t);
-
-        for (long i = 0; i< t; i++) {
-            if (i < last)
-                tfs[i] = vecteur[i];
-            else
-                tfs[i] = NULL;
+	inline void reserve(long t) {
+        if (t > sz) {
+            sz = t;
+            //We reallocate our vecteur
+            vecteur = (Z*)realloc(vecteur, sizeof(Z)*sz);
+            memset(vecteur+last, NULL, sizeof(Z)*(sz-last));
         }
-
-        free(vecteur);
-		vecteur = tfs;
-		sz = t;
 	}
 
-    void taillor(long t) {
-        Z* tfs;
-
-        if (t <= sz)
-            return;
-        //on realloue par bloc de t
-        tfs = (Z*)malloc(sizeof(Z)*t);
-        for (long i = 0; i< t; i++) {
-            if (i < last)
-                tfs[i] = vecteur[i];
-            else
-                tfs[i] = NULL;
+    inline void resize(long i) {
+        if (i >= sz) {
+            sz = i << 1;
+            //We reallocate our vecteur
+            vecteur = (Z*)realloc(vecteur, sizeof(Z)*sz);
+            memset(vecteur+last, NULL, sizeof(Z)*(sz-last));
         }
-
-        free(vecteur);
-        vecteur = tfs;
-        sz = t;
-    }
-
-    void resize(long t) {
-        Z* tfs;
-
-        if (t <= sz)
-            return;
-        //on realloue par bloc de t
-        tfs = (Z*)malloc(sizeof(Z)*t);
-        for (long i = 0; i< t; i++) {
-            if (i < last)
-                tfs[i] = vecteur[i];
-            else
-                tfs[i] = NULL;
-        }
-
-        free(vecteur);
-        vecteur = tfs;
-        sz = t;
-    }
-
-    void resize(long t, Z init) {
-        Z* tfs;
-
-        if (t <= sz)
-        return;
-        //on realloue par bloc de t
-        tfs = (Z*)malloc(sizeof(Z)*t);
-        for (long i = 0; i< t; i++) {
-            if (i < last)
-            tfs[i] = vecteur[i];
-            else
-            tfs[i] = init;
-        }
-
-        free(vecteur);
-        vecteur = tfs;
-        sz = t;
     }
 
 	inline Z remove(long pos = -1) {
@@ -172,6 +129,12 @@ public:
 		return v;
 	}
 
+    inline void swap(long i, long j) {
+        Z e = vecteur[i];
+        vecteur[i] = vecteur[j];
+        vecteur[j] = e;
+    }
+    
     inline Z backpop() {
         return vecteur[--last];
     }
@@ -181,10 +144,9 @@ public:
 	}
 
 	inline void insert(long pos, Z val) {
-        if (last >= sz)
-			taillor(sz<<1);
+        resize(last);
 
-		//Dans ce cas, c'est un simple push
+        //In this case, this is a simple push
 		if (pos >= last) {
 			vecteur[last++] = val;
 			return;
@@ -193,57 +155,114 @@ public:
         // the element is then added in its place
         // if the box is empty we place it at this place
         //If not, all elements are moved to the right.
-		if (vecteur[pos] != NULL) {
-			//sinon, on deplace tous les elements d'une case vers la droite
-			for (long i = last - 1; i >= pos; i--)
-				vecteur[i + 1] = vecteur[i];
-			vecteur[pos] = val;
-			last++;
-		}
-		else
-			vecteur[pos] = val;
+        //sinon, on deplace tous les elements d'une case vers la droite
+        for (long i = last - 1; i >= pos; i--)
+            vecteur[i + 1] = vecteur[i];
+        vecteur[pos] = val;
+        last++;
 	}
 
 	inline Z back() {
 		return vecteur[last - 1];
 	}
 
+    inline Z preback() {
+        return vecteur[last - 2];
+    }
+
 	inline void push_back(Z val) {
-
-		if (last >= sz)
-			taillor(sz<<1);
-
+        resize(last);
 		//sinon on ajoute l'element en queue...
 		vecteur[last++] = val;
 	}
 
+    void padding(long nb) {
+        if (sz < (nb + last)) {
+            sz = (nb + last) << 1;
+            //We reallocate our vecteur
+            vecteur = (Z*)realloc(vecteur, sizeof(Z)*sz);
+            memset(vecteur+last, NULL, sizeof(Z)*(sz-last));
+        }
+    }
+
+    void padding(long nb, Z v) {
+        if (sz < (nb + last)) {
+            sz = (nb + last) << 1;
+            //We reallocate our vecteur
+            vecteur = (Z*)realloc(vecteur, sizeof(Z)*sz);
+            for (nb = last; nb < sz; nb++)
+                vecteur[nb] = v;
+        }
+    }
+
 	inline Z operator [](long pos) {
 		return vecteur[pos];
 	}
+    
+    inline bool operator ==(vecte<Z>& v) {
+        if (sz != v.sz)
+            return false;
+        for (long i = 0; i < sz; i++) {
+            if (vecteur[i] != v.vecteur[i])
+                return false;
+        }
+        return true;
+    }
 
+    void operator =(vecte<Z>& t) {
+        if (sz < t.sz) {
+            sz = t.sz;
+            vecteur = (Z*)realloc(vecteur, sizeof(Z)*sz);
+        }
+        last = t.last;
+        memcpy(vecteur, t.vecteur, sizeof(Z)*last);
+    }
+    
+    inline bool empty() {
+        return (last == 0);
+    }
+    
+    inline Z get(long pos) {
+        return (pos >= last)?NULL:vecteur[pos];
+    }
+    
+    void reverse() {
+        Z e;
+        long stop = last >> 1;
+        for (long i = 0; i < stop; i++) {
+            e = vecteur[i];
+            vecteur[i] = vecteur[last-i];
+            vecteur[last-i] = e;
+        }
+    }
+    
 	void erase(long i) {
-		if (i < 0 || i >= last)
-			return;
-
-		if (last == sz) {
-			last--;
-			while (i < last) {
-				vecteur[i] = vecteur[i+1];
+        if (i == last) {
+            vecteur[last--] = NULL;
+            return;
+        }
+        
+        if (i >= 0 && i < last) {
+            if (last == sz) {
+                last--;
+                while (i < last) {
+                    vecteur[i] = vecteur[i+1];
+                    i++;
+                }
+                vecteur[last] = NULL;
+                return;
+            }
+            
+            while (i < last) {
+                vecteur[i] = vecteur[i+1];
                 i++;
-			}
-			vecteur[last] = NULL;
-			return;
-		}
-
-		while (i < last) {
-			vecteur[i] = vecteur[i+1];
-            i++;
-		}
-		last--;
+            }
+            last--;
+        }
 	}
 
 	inline Z removeElement(long i = -1) {
-		if (last == 0)
+		if (!last)
 			return NULL;
 
 		long pos = i;
@@ -267,45 +286,24 @@ public:
 		return v;
 	}
 
-	void shaveoff() {
-		if (last == sz)
-			return;
-		Z* tfs;
-
-		//on realloue par bloc de t
-		tfs = (Z*)malloc(sizeof(Z)*last);
-
-        for (long i = 0; i < last; i++)
-            tfs[i] =  vecteur[i];
-
-		free(vecteur);
-		vecteur = tfs;
-		sz = last;
-	}
-
-	void at(long pos, Z val) {
-		if (pos >= sz)
-            taillor(pos<<1);
-		vecteur[pos] = val;
-	}
-
-    void pushat(long pos, Z val) {
-        vecteur[pos] = val;
-        if (pos >= last)
-            last = pos+1;
+    inline void atlast(Z val) {
+        vecteur[last-1] = val;
     }
-
     
-	void operator =(VECTE<Z>& z) {
-		last = z.last;
-		if (last >= sz) {
-			free(vecteur);
-            sz = last<<1;
-			vecteur = (Z*)malloc(sizeof(Z)*sz);
-		}
-
-        for (long i = 0; i < last; i++)
-            vecteur[i] =  z.vecteur[i];
+    inline void beforelast(Z val) {
+        if (last) {
+            reserve(last);
+            vecteur[last] = vecteur[last-1];
+            vecteur[last-1] = val;
+            last++;
+        }
+        else
+            vecteur[last++] = val;
+    }
+    
+	inline void at(long pos, Z val) {
+        reserve(pos + 1);
+		vecteur[pos] = val;
 	}
 
 	inline long search(Z v) {
@@ -328,9 +326,10 @@ public:
         for (long i = 0; i < last; i++) {
             if (vecteur[i] == v) {
                 last--;
-                for (long k = i; k < last; k++)
-                    vecteur[k] = vecteur[k + 1];
-                vecteur[last] = NULL;
+                while (i < last) {
+                    vecteur[i] = vecteur[i + 1];
+                    i++;
+                }
                 return true;
             }
         }

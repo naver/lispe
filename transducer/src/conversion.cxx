@@ -10,13 +10,6 @@
 #include "conversion.h"
 #include "x_tokenize.h"
 
-#ifdef INTELINTRINSICS
-#ifdef WIN32
-#include <intrin.h>
-#else
-#include <x86intrin.h>
-#endif
-#endif
 
 #ifdef WSTRING_IS_UTF16
 void concat_char_convert_utf16(wstring& res, TRANSCHAR code);
@@ -2108,12 +2101,6 @@ Exporting long c_chartobyteposition(unsigned char* contenu, long sz, long charpo
         return sz;
 
     long i = 0;
-#ifdef INTELINTRINSICS
-    if (check_ascii(contenu, charpos, i))
-        return charpos;
-    charpos-=i;
-#endif
-
     long nb;
     while (charpos > 0 && i<sz) {
         nb = c_test_utf8(contenu + i);
@@ -2204,14 +2191,6 @@ Exporting long c_chartobytepositionidx(unsigned char* contenu, long charpos, lon
 
 //---------------------------------------------------------------------------
 Exporting long size_utf16(unsigned char* str, long sz, long& charsize) {
-
-#ifdef INTELINTRINSICS
-    long i;
-    if (check_ascii(str, sz, i)) {
-        charsize = sz;
-        return sz;
-    }
-#endif
 
     charsize = 0;
     long sizeutf16 = 0;
@@ -2334,13 +2313,6 @@ size_t size_w(wstring& w) {
 	long sz = 0;
 	long i = 0;
 
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-    if (!check_large_char(WSTR(w), lg, sz))
-        return lg;
-	i = sz;
-#endif
-
 	TRANSCHAR c;
 	long j;
 	for (; i < lg; i++) {
@@ -2366,13 +2338,6 @@ size_t size_w(wstring& w, long& first) {
     long sz = 0;
     long lg = w.size();
     long i = 0;
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-    if (!check_large_char(WSTR(w), lg, sz))
-        return lg;
-    i = sz;
-#endif
-
 	TRANSCHAR c;
 	long j;
 	for (; i < lg; i++) {
@@ -2441,12 +2406,6 @@ long convertpostocharutf16(wstring& w, long first, long spos) {
 }
 
 Exporting long convertpostochar(wstring& w, long first, long spos) {
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-	if (!check_large_char(WSTR(w), w.size(), first))
-        return spos;
-#endif
-
     if (spos <= first)
         return spos;
 
@@ -2472,12 +2431,6 @@ Exporting long convertpostochar(wstring& w, long first, long spos) {
 }
 
 Exporting long convertchartopos(wstring& w, long first, long cpos) {
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-	if (!check_large_char(WSTR(w), w.size(), first))
-        return cpos;
-#endif
-
     if (cpos <= first)
         return cpos;
 
@@ -2549,12 +2502,6 @@ long convertchartoposraw(wstring& w, long first, long cpos) {
 
 void convertpostochar(wstring& w, vector<long>& vspos) {
     long first = 0;
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-    if (!check_large_char(WSTR(w), w.size(), first))
-        return;
-#endif
-
     vector<long> vcpos;
     long realpos = first;
     long charpos = first;
@@ -2632,17 +2579,6 @@ Exporting void sc_utf8_to_unicode(wstring& w, unsigned char* str, long sz) {
     wchar_t* neo = new wchar_t[sz + 1];
     neo[0] = 0;
 
-#ifdef INTELINTRINSICS
-	long i;
-	if (check_ascii(str, sz, i)) {
-		for (i = 0; i < sz; i++)
-			neo[ineo++] = (wchar_t)str[i];
-        neo[ineo] = 0;
-        w = neo;
-        delete[] neo;
-		return;
-	}
-#endif
 	TRANSCHAR c, c16;
 
 	uchar nb;
@@ -2679,18 +2615,6 @@ Exporting void s_latin_to_unicode(wstring& res, unsigned char* contenu, long sz)
     wchar_t* neo = new wchar_t[sz+1];
     neo[0] = 0;
 
-#ifdef INTELINTRINSICS
-    long i;
-    if (check_ascii(contenu, sz, i)) {
-        for (i = 0; i< sz; i++)
-            neo[ineo++]= (wchar_t)contenu[i];
-        neo[ineo] = 0;
-        res += neo;
-        delete[] neo;
-        return;
-    }
-#endif
-
     TRANSCHAR code, c16;
     uchar nb;
 
@@ -2708,16 +2632,6 @@ Exporting void s_latin_to_unicode(wstring& res, unsigned char* contenu, long sz)
             if (nb) {
                 contenu += nb + 1;
                 sz -= nb;
-#ifdef INTELINTRINSICS
-                if (check_ascii(contenu, sz, i)) {
-                    for (i = 0; i< sz; i++)
-                        neo[ineo++] = (wchar_t)contenu[i];
-                    neo[ineo] = 0;
-                    res += neo;
-                    delete[] neo;
-                    return;
-                }
-#endif
             }
 
             continue;
@@ -2742,18 +2656,6 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
     wchar_t* neo = new wchar_t[sz+1];
     neo[0] = 0;
 
-#ifdef INTELINTRINSICS
-	long i;
-	if (check_ascii(contenu, sz, i)) {
-		for (i = 0; i< sz; i++)
-			neo[ineo++] = (wchar_t)contenu[i];
-        neo[ineo] = 0;
-        res= neo;
-        delete[] neo;
-		return;
-	}
-#endif
-
 	TRANSCHAR code, c16;
 	uchar nb;
 
@@ -2771,16 +2673,6 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
 			if (nb) {
 				contenu += nb + 1;
 				sz -= nb;
-#ifdef INTELINTRINSICS
-				if (check_ascii(contenu, sz, i)) {
-					for (i = 0; i< sz; i++)
-						neo[ineo++] = (wchar_t)contenu[i];
-                    neo[ineo] = 0;
-                    res= neo;
-                    delete[] neo;
-					return;
-				}
-#endif
 			}
 
 			continue;
@@ -2798,12 +2690,6 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
 #else
 
 Exporting long convertchartopos(wstring& w, long first, long cpos) {
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-    if (!check_large_char(WSTR(w), w.size(), first))
-        return cpos;
-#endif
-
     if (cpos <= first)
         return cpos;
 
@@ -2823,12 +2709,6 @@ Exporting long convertchartopos(wstring& w, long first, long cpos) {
 }
 
 Exporting long convertpostochar(wstring& w, long first, long spos) {
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-    if (!check_large_char(WSTR(w), w.size(), first))
-        return spos;
-#endif
-
     if (spos <= first)
         return spos;
 
@@ -2882,12 +2762,6 @@ Exporting long convertpostocharraw(wstring& w, long first, long spos) {
 
 void convertpostochar(wstring& w, vector<long>& vspos) {
     long first = 0;
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-    if (!check_large_char(WSTR(w), w.size(), first))
-        return;
-#endif
-
     vector<long> vcpos;
     long realpos = first;
     long charpos = first;
@@ -2917,12 +2791,6 @@ void convertpostochar(wstring& w, vector<long>& vspos) {
 //We transform a character position into a position within w
 Exporting long c_char_to_pos_emoji(wstring& w, long charpos) {
     long i = 0;
-#ifdef INTELINTRINSICS
-        //we check if we have any large characters between 0 and ipos
-    if (!check_large_char(WSTR(w), charpos, i))
-        return charpos;
-#endif
-
         //there is one in the block starting at i...
     charpos -= i;
     while (charpos > 0) {
@@ -2948,18 +2816,6 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
     wchar_t* neo = new wchar_t[sz+1];
     neo[0] = 0;
 
-#ifdef INTELINTRINSICS
-	long i;
-	if (check_ascii(contenu,sz,i)) {
-		for (i=0; i< sz; i++)
-			neo[ineo++]=(wchar_t)contenu[i];
-        neo[ineo] = 0;
-        res = neo;
-        delete[] neo;
-		return;
-	}
-#endif
-
 	u_uchar code;
 	uchar nb;
 
@@ -2971,16 +2827,6 @@ Exporting void sc_latin_to_unicode(wstring& res, unsigned char* contenu, long sz
 			if (nb) {
 				contenu += nb+1;
 				sz-=nb;
-#ifdef INTELINTRINSICS
-				if (check_ascii(contenu,sz,i)) {
-					for (i=0; i< sz; i++)
-						neo[ineo++]=(wchar_t)contenu[i];
-                    neo[ineo] = 0;
-                    res = neo;
-                    delete[] neo;
-					return;
-				}
-#endif
 			}
 
 			continue;
@@ -3066,17 +2912,6 @@ Exporting void sc_utf8_to_unicode(wstring& w, unsigned char* str, long sz) {
     wchar_t* neo = new wchar_t[sz+1];
     neo[0] = 0;
 
-#ifdef INTELINTRINSICS
-    long i;
-    if (check_ascii(str,sz,i)) {
-        for (i=0; i < sz; i++)
-            neo[ineo++] = (wchar_t)str[i];
-        neo[ineo] = 0;
-        w = neo;
-        delete[] neo;
-        return;
-    }
-#endif
     u_uchar c;
 
     uchar nb;
@@ -3145,22 +2980,6 @@ Exporting void conversion_utf8_to_fatOne(string contenu, string& s) {
 Exporting string s_utf8_to_latin(unsigned char* contenu, long sz) {
     string res;
 
-#ifdef INTELINTRINSICS
-    long i;
-    if (check_ascii(contenu,sz,i))
-        return (char*)contenu;
-    //otherwise, it is in ASCII up to i
-    uchar c;
-    if (i) {
-        c=contenu[i];
-        contenu[i]=0;
-        res=(char*)contenu;
-        contenu[i]=c;
-        contenu+=i;
-        sz -= i;
-    }
-#endif
-
     uchar nb;
     TRANSCHAR code;
 
@@ -3184,20 +3003,6 @@ Exporting string s_utf8_to_latin(unsigned char* contenu, long sz) {
 
             contenu += nb+1;
             sz -= nb;
-#ifdef INTELINTRINSICS
-            if (check_ascii(contenu,sz,i)) {
-                res+=(char*)contenu;
-                return res;
-            }
-            if (i) {
-                c=contenu[i];
-                contenu[i]=0;
-                res += (char*)contenu;
-                contenu[i]=c;
-                contenu+=i;
-                sz -= i;
-            }
-#endif
             continue;
         }
 
@@ -3251,12 +3056,6 @@ Exporting string conversion_latin_table_to_utf8(short tableindex, unsigned char*
     if (!alllatincodes.check(tableindex))
         return "";
 
-#ifdef INTELINTRINSICS
-    long i;
-    if (check_ascii(contenu,sz,i))
-        return (char*)contenu;
-#endif
-
     uchar ch[5];
     uchar nb;
 
@@ -3299,15 +3098,6 @@ Exporting wstring conversion_latin_table_to_unicode(short tableindex, unsigned c
 	basebin_hash<TRANSCHAR>& thetable = *alllatincodes[tableindex];
     uchar nb;
 
-#ifdef INTELINTRINSICS
-    long i;
-    if (check_ascii(contenu,sz,i)) {
-        for (i = 0; i < sz; i++)
-            res += (wchar_t)contenu[i];
-        return res;
-    }
-#endif
-
     while (sz--) {
         if (*contenu & 0x80) {
             if (thetable.check(*contenu)) {
@@ -3331,24 +3121,6 @@ Exporting wstring conversion_latin_table_to_unicode(short tableindex, unsigned c
 
 Exporting void s_latin_to_utf8(string& res, unsigned char* contenu, long sz) {
     res = "";
-#ifdef INTELINTRINSICS
-    long i;
-    if (check_ascii(contenu,sz,i)) {
-        res = (char*)contenu;
-        return;
-    }
-
-    //otherwise, it is in ASCII up to i
-    uchar c;
-    if (i) {
-        c=contenu[i];
-        contenu[i]=0;
-        res=(char*)contenu;
-        contenu[i]=c;
-        contenu+=i;
-        sz -= i;
-    }
-#endif
     uchar ch[5];
     uchar nb;
 
@@ -3360,21 +3132,6 @@ Exporting void s_latin_to_utf8(string& res, unsigned char* contenu, long sz) {
             contenu += nb--;
             sz-=nb;
 
-#ifdef INTELINTRINSICS
-            if (check_ascii(contenu,sz,i)) {
-                res += (char*)contenu;
-                return;
-            }
-
-            if (i) {
-                c=contenu[i];
-                contenu[i]=0;
-                res += (char*)contenu;
-                contenu[i]=c;
-                contenu+=i;
-                sz -= i;
-            }
-#endif
             continue;
         }
         res += *contenu;
@@ -3393,10 +3150,6 @@ Exporting string conversion_latin_to_utf8(string contenu) {
 Exporting string s_replacestring(string& s, string& reg, string& rep) {
     string neo;
 
-#ifdef INTELINTRINSICS
-    if (!replace_intel_all(neo, s, reg, rep))
-        return s;
-#else
     long gsz = reg.size();
     if (!gsz)
         return s;
@@ -3413,17 +3166,12 @@ Exporting string s_replacestring(string& s, string& reg, string& rep) {
     }
     if (from < rsz)
         neo += s.substr(from, rsz - from);
-#endif
     return neo;
 }
 
 Exporting string s_replacestrings(string& s, string reg, string rep) {
     string neo;
 
-#ifdef INTELINTRINSICS
-    if (!replace_intel_all(neo, s, reg, rep))
-        return s;
-#else
     long gsz = reg.size();
     if (!gsz)
         return s;
@@ -3440,17 +3188,12 @@ Exporting string s_replacestrings(string& s, string reg, string rep) {
     }
     if (from < rsz)
         neo += s.substr(from, rsz - from);
-#endif
     return neo;
 }
 
 Exporting wstring s_replacestring(wstring& s, wstring reg, wstring rep) {
     wstring neo;
 
-#ifdef INTELINTRINSICS
-    if (!replace_intel_all(neo, s, reg, rep))
-        return s;
-#else
     long gsz = reg.size();
     if (!gsz)
         return s;
@@ -3467,7 +3210,6 @@ Exporting wstring s_replacestring(wstring& s, wstring reg, wstring rep) {
     }
     if (from < rsz)
         neo += s.substr(from, rsz - from);
-#endif
     return neo;
 }
 

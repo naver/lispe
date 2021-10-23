@@ -207,7 +207,7 @@ public:
 
 class Au_state {
 public:
-    VECTE<Au_arc*> arcs;
+    vecte<Au_arc*> arcs;
     uchar status;
     unsigned char mark;
     
@@ -304,8 +304,8 @@ public:
 
 class Au_automatons {
 public:
-    VECTE<Au_state*> states;
-    VECTE<Au_arc*> arcs;
+    vecte<Au_state*> states;
+    vecte<Au_arc*> arcs;
 
     Au_state* state() {
         Au_state* s=new Au_state;

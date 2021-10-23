@@ -98,10 +98,10 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        long initial = lisp->get(v_initial)->asInteger();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        long initial = lisp->get_variable(v_initial)->asInteger();
         
-        Element* valuevect = lisp->get(v_liste);
+        Element* valuevect = lisp->get_variable(v_liste);
         
         if (!valuevect->isList())
             throw new Error("Error: The second parameter must be a list");
@@ -162,9 +162,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         
         std::uniform_real_distribution<double> d(alpha, beta);
@@ -183,8 +183,8 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
         
         std::bernoulli_distribution d(alpha);
         bool v;
@@ -213,9 +213,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        long alpha = lisp->get(v_alpha)->asInteger();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        long alpha = lisp->get_variable(v_alpha)->asInteger();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::binomial_distribution<long> dis(alpha, beta);
         if (nb == 1)
@@ -234,10 +234,10 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
+        long nb = lisp->get_variable(v_nb)->asInteger();
         
-        long alpha = lisp->get(v_alpha)->asInteger();
-        double beta = lisp->get(v_beta)->asNumber();
+        long alpha = lisp->get_variable(v_alpha)->asInteger();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::negative_binomial_distribution<long> d(alpha, beta);
         if (nb == 1)
@@ -256,9 +256,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::normal_distribution<double> d(alpha, beta);
         if (nb == 1)
@@ -276,8 +276,8 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        Element* tvect = lisp->get(v_liste);
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        Element* tvect = lisp->get_variable(v_liste);
         
         vector<double> vect;
         
@@ -316,9 +316,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        Element* tvect = lisp->get(v_liste);
-        Element* tinter = lisp->get(v_inter);
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        Element* tvect = lisp->get_variable(v_liste);
+        Element* tinter = lisp->get_variable(v_inter);
         
         vector<double> vect;
         vector<double> inter;
@@ -346,9 +346,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        Element* tvect = lisp->get(v_liste);
-        Element* tinter = lisp->get(v_inter);
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        Element* tvect = lisp->get_variable(v_liste);
+        Element* tinter = lisp->get_variable(v_inter);
         
         vector<double> vect;
         vector<double> inter;
@@ -378,9 +378,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::lognormal_distribution<double> d(alpha, beta);
         
@@ -399,8 +399,8 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
         
         std::geometric_distribution<long> d(alpha);
         if (nb == 1)
@@ -418,9 +418,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::cauchy_distribution<double> d(alpha, beta);
         
@@ -439,9 +439,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::fisher_f_distribution<double> d(alpha, beta);
         if (nb == 1)
@@ -459,8 +459,8 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
         
         std::student_t_distribution<double> d(alpha);
         if (nb == 1)
@@ -478,9 +478,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::extreme_value_distribution<double> d(alpha, beta);
         if (nb == 1)
@@ -499,8 +499,8 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
         
         
         std::poisson_distribution<long> d(alpha);
@@ -519,8 +519,8 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
         
         std::exponential_distribution<double> d(alpha);
         if (nb == 1)
@@ -538,9 +538,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::gamma_distribution<double> d(alpha, beta);
         if (nb == 1)
@@ -558,9 +558,9 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
-        double beta = lisp->get(v_beta)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
+        double beta = lisp->get_variable(v_beta)->asNumber();
         
         std::weibull_distribution<double> d(alpha, beta);
         if (nb == 1)
@@ -579,8 +579,8 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
         
-        long nb = lisp->get(v_nb)->asInteger();
-        double alpha = lisp->get(v_alpha)->asNumber();
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        double alpha = lisp->get_variable(v_alpha)->asNumber();
         
         std::chi_squared_distribution<double> d(alpha);
         if (nb == 1)
@@ -598,7 +598,7 @@ public:
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
 
-        Element* l = lisp->get(v_liste);
+        Element* l = lisp->get_variable(v_liste);
         if (!l->isList())
             throw new Error("Error: the 'shuffle' argument must be a list");
         
@@ -632,7 +632,7 @@ public:
         //eval is either: command, setenv or getenv...
         switch (rnd) {
             case rnd_random: {
-                long nb = lisp->get(v_nb)->asInteger();
+                long nb = lisp->get_variable(v_nb)->asInteger();
                 return lisp->provideNumber(localrandom(nb));
             }
             case rnd_shuffle:

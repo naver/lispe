@@ -28,7 +28,7 @@ class Concept_element {
     
 public:
         
-    VECTE<Granule*> elements;
+    vecte<Granule*> elements;
 
     Concept_element() {}
     Concept_element(Concept_element& v);
@@ -56,7 +56,7 @@ public:
 
     long count();
     void remove(long b);
-    void table(VECTE<long>&);
+    void table(vecte<long>&);
 
     bool intersect(Concept_element&);
     bool contain(Concept_element&);
@@ -105,6 +105,7 @@ public:
     Element* bit_or(LispE* l, Element* e);
     Element* bit_xor(LispE* l, Element* e);
     Element* equal(LispE* lisp, Element* e);
+    bool egal(Element* e);
 
     long size() {
         return concept.count();
@@ -136,7 +137,7 @@ public:
     
     ~Ontology() {
         for (auto& a : indexes)
-            a.second->decrementstatus(1, false);
+            a.second->decrement();
     }
     
     wstring asString(LispE*) {
@@ -156,7 +157,7 @@ public:
         try {
             return indexes.at(w);
         }
-        catch(...) {
+        catch (...) {
             Concept* c = new Concept(this, w, concepts.size());
             c->status = 1;
             concepts.push_back(w);
@@ -172,7 +173,7 @@ public:
         try {
             return indexes.at(w);
         }
-        catch(...) {
+        catch (...) {
             Concept* c = new Concept(this, conc, w, concepts.size());
             c->status = 1;
             concepts.push_back(w);

@@ -10,10 +10,9 @@ ostype = subprocess.Popen("uname", stdout=subprocess.PIPE).stdout.read()
 ostype=ostype.strip()
 ############################
 # if Mac OS
-if ostype == "Darwin":
+if ostype == b"Darwin":
     print("This is a Mac OS platform\n")
     f=open("Makefile.in", "w")
-    f.write("COPTION = -Ofast\n")
     f.write("CURLLIB = -lcurl\n")
     f.write("SQLITELIB = -lsqlite3\n")
     f.write("REGEX = -DPOSIXREGEX\n")
@@ -38,11 +37,13 @@ if ostype == "Darwin":
         print("No Python 3.x version found")
 
     ostype = subprocess.Popen(["uname", "-a"], stdout=subprocess.PIPE).stdout.read()
-    if "arm64" in ostype:
+    if b"arm64" in ostype:
        f.write("PLATFORM = macarm\n")
        f.write("FLTKVERSION=-DFLTK14\n")
+       f.write("COPTION = -Ofast\n")
     else:
        f.write("PLATFORM = macos\n")
+       f.write("COPTION = -Ofast -DINTELINTRINSICS -mavx2\n")
     f.write("LIBFLTK = -Llibs/$(PLATFORM) -lfltk -lfltk_images -framework Cocoa")
     exit(-1)
 

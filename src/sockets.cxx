@@ -450,7 +450,7 @@ public:
             getpeername(socketclient, &cliAddr, &len);
             struct sockaddr_in* client = (struct sockaddr_in*)&cliAddr;
             char* nm = inet_ntoa(client->sin_addr);
-            Dictionary* kmap = new Dictionary;
+            Dictionary* kmap = lisp->provideDictionary();
             u_ustring key1 = U"port";
             kmap->recording(key1, lisp->provideInteger(client->sin_port));
             u_ustring key2 = U"address";
@@ -657,9 +657,9 @@ public:
             case sock_create: {
                 initialisation();
                 Socketelement* socket = new Socketelement(type_socket_element);
-                int port = (int)lisp->get(id_port)->asInteger();
-                int nbclients = (int)lisp->get(U"nbclients")->asInteger();
-                string hostname = lisp->get(U"hostname")->toString(lisp);
+                int port = (int)lisp->get_variable(id_port)->asInteger();
+                int nbclients = (int)lisp->get_variable(U"nbclients")->asInteger();
+                string hostname = lisp->get_variable(U"hostname")->toString(lisp);
                 try {
                     return socket->methodCreateServer(lisp, nbclients,port, hostname);
                 }
@@ -671,8 +671,8 @@ public:
             case sock_connect: {
                 initialisation();
                 Socketelement* socket = new Socketelement(type_socket_element);
-                int port = (int)lisp->get(id_port)->asInteger();
-                string hostname = lisp->get(U"hostname")->toString(lisp);
+                int port = (int)lisp->get_variable(id_port)->asInteger();
+                string hostname = lisp->get_variable(U"hostname")->toString(lisp);
                 try {
                     return socket->methodCreateClient(lisp, hostname, port);
                 }
@@ -682,99 +682,99 @@ public:
                 }
             }
             case sock_wait: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
                 return ((Socketelement*)sock)->methodWait(lisp);
             }
             case sock_read: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
+                SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodRead(lisp, socketClientId);
             }
             case sock_write: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
 
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                string s = lisp->get(U"str")->toString(lisp);
-                SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
+                string s = lisp->get_variable(U"str")->toString(lisp);
+                SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodWrite(lisp, socketClientId, s);
             }
             case sock_receive: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
-                int nb = (int)lisp->get(U"nb")->asInteger();
+                SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
+                int nb = (int)lisp->get_variable(U"nb")->asInteger();
                 return ((Socketelement*)sock)->methodReadRaw(lisp, socketClientId, nb);
             }
             case sock_get: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
+                SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodGet(lisp, socketClientId);
             }
             case sock_send: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
 
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                string s = lisp->get(U"str")->toString(lisp);
-                SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
+                string s = lisp->get_variable(U"str")->toString(lisp);
+                SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodWriteRaw(lisp, socketClientId, s);
             }
             case sock_close: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
+                SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodClose(lisp, socketClientId);
             }
             case sock_blocking: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                bool flag = lisp->get(U"flag")->Boolean();
+                bool flag = lisp->get_variable(U"flag")->Boolean();
                 return ((Socketelement*)sock)->methodBlocking(lisp, flag);
             }
             case sock_timeout: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 
-                int timeout = (int)lisp->get(U"tm")->asInteger();
+                int timeout = (int)lisp->get_variable(U"tm")->asInteger();
                 return ((Socketelement*)sock)->methodTimeout(lisp, timeout);
             }
             case sock_gethostname: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 return ((Socketelement*)sock)->methodGethostname(lisp);
             }
             case sock_port: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
                 return ((Socketelement*)sock)->methodPort(lisp);
             }
             case sock_getpeername: {
-                Element* sock = lisp->get(id_sock);
+                Element* sock = lisp->get_variable(id_sock);
 
                 if (sock->type != type_socket_element)
                     throw new Error("Error: expecting a 'socket' object");
-                SOCKET socketClientId = (int)lisp->get(id_socketClientId)->asInteger();
+                SOCKET socketClientId = (int)lisp->get_variable(id_socketClientId)->asInteger();
                 return ((Socketelement*)sock)->methodGetpeername(lisp, socketClientId);
             }
         }

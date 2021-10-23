@@ -177,7 +177,7 @@ public:
                 if (editor_breakpoints.at(thecurrentfilename).at(n))
                     return "^^";
             }
-            catch(...) {}
+            catch (...) {}
         }
         return prefix;
     }

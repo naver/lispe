@@ -285,13 +285,13 @@ wstring Lispe_curl::asString(LispE* lisp) {
 Element* Lispe_curl_function::MethodProxy(LispE* lisp) {
     //In our example, we have only two parameters
     //0 is the first parameter and so on...
-    Element* crl = lisp->get("crl");
+    Element* crl = lisp->get_variable("crl");
     if (crl->type != idcurl)
         throw new Error("Error: first argument is not a 'curl' objet");
 
     Lispe_curl* lcurl = (Lispe_curl*)crl;
 
-    string sproxy = lisp->get("str")->toString(lisp);
+    string sproxy = lisp->get_variable("str")->toString(lisp);
     strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(sproxy));
     CURLcode res = curl_easy_setopt(lcurl->curl, CURLOPT_PROXY, lcurl->urlbuffer);
     if (res == 0)
@@ -302,14 +302,14 @@ Element* Lispe_curl_function::MethodProxy(LispE* lisp) {
 Element* Lispe_curl_function::MethodPWD(LispE* lisp) {
     //In our example, we have only two parameters
     //0 is the first parameter and so on...
-    Element* crl = lisp->get("crl");
+    Element* crl = lisp->get_variable("crl");
     if (crl->type != idcurl)
         throw new Error("Error: first argument is not a 'curl' objet");
 
     Lispe_curl* lcurl = (Lispe_curl*)crl;
 
-    string user = lisp->get("user")->toString(lisp);
-    string pwd = lisp->get("pswd")->toString(lisp);
+    string user = lisp->get_variable("user")->toString(lisp);
+    string pwd = lisp->get_variable("pswd")->toString(lisp);
     user += ":";
     user += pwd;
     strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(user));
@@ -324,13 +324,13 @@ Element* Lispe_curl_function::MethodURL(LispE* lisp) {
     //0 is the first parameter and so on...
     FILE* tmp = NULL;
 
-    Element* crl = lisp->get("crl");
+    Element* crl = lisp->get_variable("crl");
     if (crl->type != idcurl)
         throw new Error("Error: first argument is not a 'curl' objet");
 
     Lispe_curl* lcurl = (Lispe_curl*)crl;
 
-    string urlstr = lisp->get("str")->toString(lisp);
+    string urlstr = lisp->get_variable("str")->toString(lisp);
     if (urlstr != "") {
         if (urlstr.size() >= lcurl->urlsize) {
             free(lcurl->urlbuffer);
@@ -340,7 +340,7 @@ Element* Lispe_curl_function::MethodURL(LispE* lisp) {
         strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(urlstr));
         curl_easy_setopt(lcurl->curl, CURLOPT_URL, lcurl->urlbuffer);
     }
-    Element* lfilename = lisp->get("filename");
+    Element* lfilename = lisp->get_variable("filename");
 
     if (lfilename == null_) {
         lcurl->clear();
@@ -364,13 +364,13 @@ Element* Lispe_curl_function::MethodURL(LispE* lisp) {
 }
 
 Element* Lispe_curl_function::MethodExecute(LispE* lisp) {
-    Element* crl = lisp->get("crl");
+    Element* crl = lisp->get_variable("crl");
     if (crl->type != idcurl)
         throw new Error("Error: first argument is not a 'curl' objet");
 
     Lispe_curl* lcurl = (Lispe_curl*)crl;
 
-    Element* lfilename = lisp->get("filename");
+    Element* lfilename = lisp->get_variable("filename");
 
     //In our example, we have only two parameters
     //0 is the first parameter and so on...
@@ -396,14 +396,14 @@ Element* Lispe_curl_function::MethodExecute(LispE* lisp) {
 }
 
 Element* Lispe_curl_function::MethodOptions(LispE* lisp) {
-    Element* crl = lisp->get("crl");
+    Element* crl = lisp->get_variable("crl");
     if (crl->type != idcurl)
         throw new Error("Error: first argument is not a 'curl' objet");
 
     Lispe_curl* lcurl = (Lispe_curl*)crl;
 
 
-    string option = lisp->get("str")->toString(lisp);
+    string option = lisp->get_variable("str")->toString(lisp);
     if (curloptions.find(option) == curloptions.end()) {
         std::stringstream err;
         err << "Error: URL(031): Unknown option: " << option;
@@ -412,7 +412,7 @@ Element* Lispe_curl_function::MethodOptions(LispE* lisp) {
 
     CURLcode res;
     CURLoption noption = curloptions[option];
-    Element*  kdata = lisp->get("data");
+    Element*  kdata = lisp->get_variable("data");
     if (kdata->isString()) {
         string data = kdata->toString(lisp);
         if (data.size() >= lcurl->urlsize) {

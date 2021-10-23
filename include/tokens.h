@@ -50,7 +50,7 @@ public:
     vector<short> action;
 
     vector<long> stackln;
-    vector<long> stacktype;
+    vecte<long> stacktype;
     //vector<long> cpos;
     
     Chaine_UTF8* access;
@@ -259,7 +259,6 @@ public:
         //Fast tracks for recurrent punctations
         rules.push_back(U";=0");                         //4     ;
         rules.push_back(U",=0");                         //5     ,
-        rules.push_back(U"==0");                         //6     =
         rules.push_back(U"~=0");                         //7     ~
         rules.push_back(U"!=0");                         //8     !
         rules.push_back(U"(=0");                         //9     (
@@ -270,20 +269,38 @@ public:
         rules.push_back(U"}=0");                         //14    }
         rules.push_back(U"..=0");                        //15    ..
         rules.push_back(U".=0");                         //16    .
-        rules.push_back(U"^=0");                         //17    ^
-        rules.push_back(U"+=0");                         //18    +
-        rules.push_back(U"-=0");                         //19    -
-        rules.push_back(U"*=0");                         //20    *
-        rules.push_back(U"%=0");                         //21    %
-        rules.push_back(U"<=0");                         //22    <
-        rules.push_back(U">=0");                         //23    >
-        rules.push_back(U"|=0");                         //24    |
-        rules.push_back(U"&=0");                         //25    &
         rules.push_back(U":=0");                         //26    :
         rules.push_back(U"$=0");                         //27    $
         rules.push_back(U"#=0");                         //28    #
         rules.push_back(U"?=0");                         //29    ?
         rules.push_back(U"\\=0");                        //29    ?
+
+        //operation + "="
+        rules.push_back(U"===0");                         //6     ==
+        rules.push_back(U"==0");                         //6     =
+        rules.push_back(U"^^==0");                         //17    ^^=
+        rules.push_back(U"^^=0");                         //17    ^^
+        rules.push_back(U"^=0");                         //17    ^
+        rules.push_back(U"**==0");                         //20    **=
+        rules.push_back(U"**=0");                         //20    **
+        rules.push_back(U"*==0");                         //20    *=
+        rules.push_back(U"*=0");                         //20    *
+        rules.push_back(U"+==0");                         //18    +=
+        rules.push_back(U"+=0");                         //18    +
+        rules.push_back(U"-==0");                         //19    -=
+        rules.push_back(U"-=0");                         //19    -
+        rules.push_back(U"%==0");                         //21    %=
+        rules.push_back(U"%=0");                         //21    %
+        rules.push_back(U"|==0");                         //24    |=
+        rules.push_back(U"|=0");                         //24    |
+        rules.push_back(U"&==0");                         //25    &=
+        rules.push_back(U"&=0");                         //25    &
+
+        //comparators <= >=
+        rules.push_back(U"<==0");                        //22    <=
+        rules.push_back(U"<=0");                         //22    <
+        rules.push_back(U">==0");                        //23    >=
+        rules.push_back(U">=0");                         //23    >
 
         //Comments
         rules.push_back(U"//%.~%r+=#");                  //30    comments starting with // with no carriage return (CR) inside (not kept)

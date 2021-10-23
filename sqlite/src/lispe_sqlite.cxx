@@ -176,7 +176,7 @@ bool LispE_sqlite_iteration::End() {
     if (returncode != SQLITE_ROW) {
         sqlite3_finalize(stmt);
         if (currentrow != NULL)
-            currentrow->decrementstatus(1, true);
+            currentrow->decrement();
         return true;
     }
     return false;
@@ -216,7 +216,7 @@ void LispE_sqlite_iteration::Storevalue() {
     //We can then relieve the previous element
     returncode = sqlite3_step(stmt);
     if (currentrow != NULL) {
-        currentrow->decrementstatus(1, true);
+        currentrow->decrement();
         currentrow = NULL;
     }
 
@@ -224,7 +224,7 @@ void LispE_sqlite_iteration::Storevalue() {
         return;
 
     currentrow = new Dictionary;
-    currentrow->incrementstatus(1, true);
+    currentrow->increment();
     Element* k;
     string txt;
     u_ustring wkey;
@@ -260,7 +260,7 @@ Element* Lispe_sqlite::sqliteOpen(LispE* lisp) {
     if (db != NULL)
         throw new Error("SQLite(800): A database has already been opened with this object");
     //the first parameter is the dbname
-    Element* kelement = lisp->get(U"dbname");
+    Element* kelement = lisp->get_variable(U"dbname");
     dbname = kelement->toString(lisp);
     int rc = sqlite3_open(STR(dbname), &db);
     if (rc) {
@@ -288,10 +288,10 @@ Element* Lispe_sqlite::sqliteCreate(LispE* lisp) {
     // mydb.create("table1","name TEXT","age INTEGER",12);
     command = "create table ";
     //The first parameter is the table name
-    Element* table = lisp->get(U"table");
+    Element* table = lisp->get_variable(U"table");
     command += table->toString(lisp);
     command += " (";
-    Element* callargs = lisp->get(U"args");
+    Element* callargs = lisp->get_variable(U"args");
     //The next parameters are the rest of the table description
     for (int i = 0; i < callargs->size(); i++) {
         table = callargs->index(i);
@@ -320,10 +320,10 @@ Element* Lispe_sqlite::sqliteInsert(LispE* lisp) {
     //A typical call would be:
     // mydb.insert("table1","name","toto","age",12);
     //The first parameter is the table name
-    Element* table = lisp->get(U"table");
+    Element* table = lisp->get_variable(U"table");
     lacommande += table->toString(lisp);
     lacommande += " (";
-    Element* callfunc = lisp->get(U"columns");
+    Element* callfunc = lisp->get_variable(U"columns");
     //One parameter our of two is column name
     for (int i = 0; i < callfunc->size(); i += 2) {
         table = callfunc->index(i);
@@ -359,7 +359,7 @@ Element* Lispe_sqlite::sqliteInsert(LispE* lisp) {
 Element* Lispe_sqlite::sqliteProcess(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    Element* kcommand = lisp->get(U"command");
+    Element* kcommand = lisp->get_variable(U"command");
     sqlcommand = kcommand->toString(lisp);
     return true_;
 }
@@ -367,7 +367,7 @@ Element* Lispe_sqlite::sqliteProcess(LispE* lisp) {
 Element* Lispe_sqlite::sqliteRun(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    Element* kcommand = lisp->get(U"command");
+    Element* kcommand = lisp->get_variable(U"command");
     sqlcommand = kcommand->toString(lisp);
 
     Couple_LispE cpl(lisp);
@@ -385,7 +385,7 @@ Element* Lispe_sqlite::sqliteRun(LispE* lisp) {
 Element* Lispe_sqlite::sqliteExecute(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    Element* kcommand = lisp->get(U"command");
+    Element* kcommand = lisp->get_variable(U"command");
     sqlcommand = kcommand->toString(lisp);
     char* errmsg;
     int rc = sqlite3_exec(db, STR(sqlcommand), NULL, 0, &errmsg);
@@ -400,7 +400,7 @@ Element* Lispe_sqlite::sqliteExecute(LispE* lisp) {
 Element* Lispe_sqlite::sqliteBegin(LispE* lisp) {
     if (db == NULL)
         throw new Error("SQLite(803): Cannot use this database");
-    string mode = lisp->get(U"mode")->toString(lisp);
+    string mode = lisp->get_variable(U"mode")->toString(lisp);
     s_trim(mode);
     //A typical call would be:
     // mydb.create("table1","name TEXT","age INTEGER",12);
@@ -492,55 +492,55 @@ public:
             case lsql_sql:
                 return new Lispe_sqlite(type);
             case lsql_open: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteOpen(lisp);
             }
             case lsql_close: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteClose(lisp);
             }
             case lsql_create: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteCreate(lisp);
             }
             case lsql_insert: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteInsert(lisp);
             }
             case lsql_run: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteRun(lisp);
             }
             case lsql_process: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteProcess(lisp);
             }
             case lsql_execute: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteExecute(lisp);
             }
             case lsql_begin: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteBegin(lisp);
             }
             case lsql_commit: {
-                Element* sql = lisp->get(sqlite_var);
+                Element* sql = lisp->get_variable(sqlite_var);
                 if (sql->type != type)
                     throw new Error("Error: wrong type for the first argument. Expect a 'sqlite' object");
                 return ((Lispe_sqlite*)sql)->sqliteCommit(lisp);

@@ -37,7 +37,7 @@ PyObject* ConvertToPythonString(string s) {
 
 string PyAsString(PyObject* po) {
     string s;
-    Py_ssize_t sz = PyUnicode_GetSize(po);
+    Py_ssize_t sz = PyUnicode_GET_LENGTH(po);
     Py_UNICODE* ibuff = PyUnicode_AsUnicode(po);
     for (int i = 0; i < sz; i++)
         s += cs_unicode_to_utf8(ibuff[i]);
@@ -152,7 +152,7 @@ static Element* toLispE(LispE* lisp, PyObject* po) {
     }
     #else
     if (PyUnicode_Check(po)) {
-        Py_ssize_t sz = PyUnicode_GetSize(po);
+        Py_ssize_t sz = PyUnicode_GET_LENGTH(po);
         Py_UNICODE* ibuff = PyUnicode_AsUnicode(po);
         string s;
         for (int i = 0; i < sz; i++)
@@ -722,7 +722,7 @@ public:
     Element* eval(LispE* lisp) {
         Pythoninterpreter* py = NULL;
         if (action != python_new) {
-            Element* e = lisp->get(py_var);
+            Element* e = lisp->get_variable(py_var);
             if (e->type != python_type)
                 throw new Error("Error: first argument should be a 'python' object");
             py = (Pythoninterpreter*)e;
@@ -731,30 +731,30 @@ public:
             case python_new:
                 return new Pythoninterpreter(python_type);
             case python_run: {
-                string code = lisp->get(U"code")->toString(lisp);
+                string code = lisp->get_variable(U"code")->toString(lisp);
                 return py->methodRun(lisp, code);
             }
             case python_runfile: {
-                string path = lisp->get(U"path")->toString(lisp);
+                string path = lisp->get_variable(U"path")->toString(lisp);
                 return py->methodRunFile(lisp, path);
             }
             case python_setpath:{
-                string path = lisp->get(U"path")->toString(lisp);
+                string path = lisp->get_variable(U"path")->toString(lisp);
                 return py->methodSetpath(lisp, path);
             }
             case python_import:{
-                string path = lisp->get(U"path")->toString(lisp);
+                string path = lisp->get_variable(U"path")->toString(lisp);
                 return py->methodImport(lisp, path);
             }
             case python_execute:{
-                Element* args = lisp->get(U"arguments");
+                Element* args = lisp->get_variable(U"arguments");
                 if (!args->isList())
                     throw new Error("Error: arguments should be a list");
-                string funcname = lisp->get(U"name")->toString(lisp);
+                string funcname = lisp->get_variable(U"name")->toString(lisp);
                 return py->methodExecute(lisp, funcname, args);
             }
             case python_simplestring: {
-                string code = lisp->get(U"code")->toString(lisp);
+                string code = lisp->get_variable(U"code")->toString(lisp);
                 return py->methodSimpleString(lisp, code);
             }
             case python_close:{

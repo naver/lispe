@@ -125,6 +125,10 @@ string convertToString(long d) {
     return buff;
 }
 
+u_ustring convertToUString(long d) {
+    return w_to_u(convertToWString(d));
+}
+
 wstring convertToWString(double d) {
     wchar_t buff[20];
     swprintf_s(buff, 20, L"%g", d);
@@ -137,11 +141,23 @@ string convertToString(double d) {
     return buff;
 }
 
-u_ustring convertToUString(long d) {
+u_ustring convertToUString(double d) {
     return w_to_u(convertToWString(d));
 }
 
-u_ustring convertToUString(double d) {
+wstring convertToWString(float d) {
+    wchar_t buff[20];
+    swprintf_s(buff, 20, L"%g", d);
+    return buff;
+}
+
+string convertToString(float d) {
+    char buff[20];
+    sprintf_s(buff, 20, "%g", d);
+    return buff;
+}
+
+u_ustring convertToUString(float d) {
     return w_to_u(convertToWString(d));
 }
 
@@ -614,7 +630,7 @@ UWCHAR Chaine_UTF8::getachar(u_ustring& s, long& i) {
         while (i < s.size() && c_is_emojicomp(s[i])) {++i;}
         --i;
     }
-    catch(...) {
+    catch (...) {
         res = s[i];
     }
     return res;
@@ -3422,7 +3438,7 @@ Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
         if (*str & 0x80) {
             nb = c_utf8_to_unicode(str, c);
             str += nb + 1;
-            sz -= nb;
+            sz = (sz >= nb)?sz-nb:0;
             if (!(c & 0xFFFF0000)) {
                 neo[ineo++] = (wchar_t)c;
                 continue;
@@ -3441,7 +3457,7 @@ Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
         if (*str & 0x80) {
             nb = c_utf8_to_unicode(str, c);
             str += nb+1;
-            sz-=nb;
+            sz = (sz >= nb)?sz-nb:0;
             neo[ineo++] = c;
             continue;
         }
@@ -3471,7 +3487,7 @@ Exporting void s_utf8_to_unicode(u_ustring& w, unsigned char* str , long sz) {
         if (*str & 0x80) {
             nb = c_utf8_to_unicode(str, c);
             str += nb+1;
-            sz-=nb;
+            sz = (sz >= nb)?sz-nb:0;
             neo[ineo++] = c;
             continue;
         }
@@ -4092,7 +4108,7 @@ Element* LispE::load_library(string nom_bib) {
 		delegation->libraries.at(name);
 		return delegation->_TRUE;
 	}
-	catch (const std::out_of_range& oor) {}
+	catch (...) {}
 
 	if (name == "")
 		return false;
@@ -4172,7 +4188,7 @@ Element* LispE::load_library(string nom_bib) {
         delegation->libraries.at(name);
         return delegation->_TRUE;
     }
-    catch(...) {}
+    catch (...) {}
     
     void* LoadMe;
     
@@ -4242,10 +4258,10 @@ Element* LispE::load_library(string nom_bib) {
 
     nom_bib = lname;
 
-    LoadMe = dlopen(lname, RTLD_LAZY);
+    LoadMe = dlopen(lname, RTLD_LAZY | RTLD_GLOBAL);
     if (LoadMe == NULL) {
         nom_bib = rawlname;
-        LoadMe = dlopen(rawlname, RTLD_LAZY);
+        LoadMe = dlopen(rawlname, RTLD_LAZY | RTLD_GLOBAL);
     }
     
     string baselib;
@@ -4299,13 +4315,13 @@ Element* LispE::load_library(string nom_bib) {
         atanlib += basename;
         atanlib = NormalizePathname(atanlib);
         nom_bib = atanlib;
-        LoadMe = dlopen(STR(atanlib), RTLD_LAZY);
+        LoadMe = dlopen(STR(atanlib), RTLD_LAZY | RTLD_GLOBAL);
         if (LoadMe == NULL) {
             atanlib = baselib;
             atanlib += rawbasename;
             atanlib = NormalizePathname(atanlib);
             nom_bib = atanlib;
-            LoadMe = dlopen(STR(atanlib), RTLD_LAZY);
+            LoadMe = dlopen(STR(atanlib), RTLD_LAZY | RTLD_GLOBAL);
         }
     }
     
@@ -4315,7 +4331,7 @@ Element* LispE::load_library(string nom_bib) {
         error = dlerror();
         std::cerr << error << std::endl;
         baselib += nom_bib;
-        LoadMe = dlopen(STR(baselib), RTLD_LAZY);
+        LoadMe = dlopen(STR(baselib), RTLD_LAZY | RTLD_GLOBAL);
     }
     
     if (LoadMe == NULL) {
@@ -4390,7 +4406,7 @@ void replacemetas(u_ustring& sub) {
 bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s) {
     s = u_trim(s);    
     if (s[0] == '{')
-        compiled_result = new Dictionary_as_buffer;
+        compiled_result = lisp->provideDictionary();
     else
         compiled_result = lisp->provideList();
 
@@ -4405,13 +4421,6 @@ bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s) {
     if (!buildexpression(lisp, compiled_result) || r != pos.size()) {
         compiled_result->release();
         return false;
-    }
-    if (s[0] == '{') {
-        Element* e = compiled_result->dictionary(lisp);
-        if (e != compiled_result) {
-            delete compiled_result;
-            compiled_result = e;
-        }
     }
     return true;
 }
@@ -4526,7 +4535,7 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
             case '{': {
                 if (checknext)
                     return false;
-                Dictionary_as_buffer* local = new Dictionary_as_buffer;
+                Dictionary* local = lisp->provideDictionary();
                 if (src[i] == '}') {
                     r++;
                     i++;
@@ -4537,8 +4546,7 @@ char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
                         return false;
                     }
                 }
-                container->append(local->dico);
-                delete local;
+                container->append(local);
                 checknext = container->verify();
                 break;
             }

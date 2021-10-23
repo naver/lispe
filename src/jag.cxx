@@ -2634,7 +2634,7 @@ void jag_editor::cleanheaders(wstring& w) {
             //we might try to copy stuff from the editor itself...
             //We will remove anything which is: "작%d+> " from our string
         Au_automate rgx(pattern);
-        vector<long> values;
+        vecte<long> values;
         rgx.searchall(w,values);
         for (long i=values.size()-2; i>=0; i-=2) {
             w.erase(values[i], values[i+1]-values[i]);

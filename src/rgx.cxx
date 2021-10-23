@@ -385,7 +385,7 @@ bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
 
 
 //----------------------------------------------------------------
-void Au_automaton::searchall(u_ustring& w, vector<long>& res, long init) {
+void Au_automaton::searchall(u_ustring& w, vecte<long>& res, long init) {
     long f;
     long sz = w.size();
     
@@ -467,7 +467,7 @@ bool Au_automaton::bytesearch(u_ustring& w, long& b, long& e) {
 }
 
 
-void Au_automaton::bytesearchall(u_ustring& w, vector<long>& res) {
+void Au_automaton::bytesearchall(u_ustring& w, vecte<long>& res) {
     long f;
     long sz = w.size();
     for (long d=0; d<sz; d++) {
@@ -644,7 +644,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
         case aut_ocrl_brk: { //{..}
             i++;
             Au_state* commonend=aus->state();
-            VECTE<Au_arc*> locals;
+            vecte<Au_arc*> locals;
             stop=false;
             while (i<toks.size() && !stop) {
                 switch(types[i]) {
@@ -1001,7 +1001,7 @@ public:
 
 
     Element* findall(LispE* lisp, u_ustring& w, long pos) {
-        vector<long> resultats;
+        vecte<long> resultats;
         au.searchall(w, resultats, pos);
         
         if (resultats.size() == 0)
@@ -1029,7 +1029,7 @@ public:
     }
 
     Element* replace(LispE* lisp, u_ustring& w, u_ustring& rep) {
-        vector<long> resultats;
+        vecte<long> resultats;
         au.searchall(w, resultats, 0);
         if (resultats.size() == 0)
             return emptystring_;
@@ -1040,7 +1040,7 @@ public:
     }
 
     Element* split(LispE* lisp, u_ustring& w) {
-        vector<long> values;
+        vecte<long> values;
         au.searchall(w, values, 0);
         if (values.size() == 0)
             return emptylist_;
@@ -1259,7 +1259,7 @@ public:
         
         switch (reg) {
             case rgx_rgx: {
-                u_ustring expression = lisp->get(U"exp")->asUString(lisp);
+                u_ustring expression = lisp->get_variable(U"exp")->asUString(lisp);
                 LispERegularExpressions* e = new LispERegularExpressions(expression, l_rgx);
                 if (!e->verify()) {
                     delete e;
@@ -1268,62 +1268,62 @@ public:
                 return e;
             }
             case rgx_find: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                u_ustring value = lisp->get(U"str")->asUString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                u_ustring value = lisp->get_variable(U"str")->asUString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->find(lisp,value, pos);
             }
             case rgx_findall: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                u_ustring value = lisp->get(U"str")->asUString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                u_ustring value = lisp->get_variable(U"str")->asUString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->findall(lisp, value, pos);
             }
             case rgx_find_i: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                u_ustring value = lisp->get(U"str")->asUString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                u_ustring value = lisp->get_variable(U"str")->asUString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->find_i(lisp,value, pos);
             }
             case rgx_findall_i: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                u_ustring value = lisp->get(U"str")->asUString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                u_ustring value = lisp->get_variable(U"str")->asUString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispERegularExpressions*)e)->findall_i(lisp, value, pos);
             }
             case rgx_match: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                u_ustring value = lisp->get(U"str")->asUString(lisp);
+                u_ustring value = lisp->get_variable(U"str")->asUString(lisp);
                 return ((LispERegularExpressions*)e)->match(lisp, value);
             }
             case rgx_replace: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                u_ustring value = lisp->get(U"str")->asUString(lisp);
-                u_ustring rep = lisp->get(U"rep")->asUString(lisp);
+                u_ustring value = lisp->get_variable(U"str")->asUString(lisp);
+                u_ustring rep = lisp->get_variable(U"rep")->asUString(lisp);
                 return ((LispERegularExpressions*)e)->replace(lisp, value, rep);
             }
             case rgx_split: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                u_ustring value = lisp->get(U"str")->asUString(lisp);
+                u_ustring value = lisp->get_variable(U"str")->asUString(lisp);
                 return ((LispERegularExpressions*)e)->split(lisp, value);
             }
 #ifdef POSIXREGEX
             case prgx_rgx: {
-                wstring expression = lisp->get(U"exp")->asString(lisp);
+                wstring expression = lisp->get_variable(U"exp")->asString(lisp);
                 LispEPosixRegularExpression* e = new LispEPosixRegularExpression(expression, l_rgx);
                 if (!e->verifie()) {
                     delete e;
@@ -1332,57 +1332,57 @@ public:
                 return e;
             }
             case prgx_find: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(U"str")->asString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                wstring value = lisp->get_variable(U"str")->asString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->find(lisp,value, pos);
             }
             case prgx_findall: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(U"str")->asString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                wstring value = lisp->get_variable(U"str")->asString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->findall(lisp, value, pos);
             }
             case prgx_find_i: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(U"str")->asString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                wstring value = lisp->get_variable(U"str")->asString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->find_i(lisp,value, pos);
             }
             case prgx_findall_i: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(U"str")->asString(lisp);
-                long pos = lisp->get(U"pos")->asNumber();
+                wstring value = lisp->get_variable(U"str")->asString(lisp);
+                long pos = lisp->get_variable(U"pos")->asNumber();
                 return ((LispEPosixRegularExpression*)e)->findall_i(lisp, value, pos);
             }
             case prgx_split: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(U"str")->asString(lisp);
+                wstring value = lisp->get_variable(U"str")->asString(lisp);
                 return ((LispEPosixRegularExpression*)e)->split(lisp, value);
             }
             case prgx_match: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(U"str")->asString(lisp);
+                wstring value = lisp->get_variable(U"str")->asString(lisp);
                 return ((LispEPosixRegularExpression*)e)->match(lisp, value);
             }
             case prgx_replace: {
-                Element* e = lisp->get(U"exp");
+                Element* e = lisp->get_variable(U"exp");
                 if (e->type != l_rgx)
                     throw new Error("Error: the first element must be a regular expression");
-                wstring value = lisp->get(U"str")->asString(lisp);
-                wstring rep = lisp->get(U"rep")->asString(lisp);
+                wstring value = lisp->get_variable(U"str")->asString(lisp);
+                wstring rep = lisp->get_variable(U"rep")->asString(lisp);
                 return ((LispEPosixRegularExpression*)e)->replace(lisp, value, rep);
             }
 #endif
@@ -1458,9 +1458,9 @@ public:
     Element* eval(LispE* lisp) {
         Au_meta::met = lisp->handlingutf8;
         
-        wstring expression = lisp->get(U"exp")->asString(lisp);
+        wstring expression = lisp->get_variable(U"exp")->asString(lisp);
         // As the construction of an rgx is expensive, they are kept in a pool .
-        Element* value = lisp->get(U"str");
+        Element* value = lisp->get_variable(U"str");
         //We use our internal pool to factor out regular expressions and protect their storage in multi-threading
         
         Element* rgx = lisp->pool_out(expression);

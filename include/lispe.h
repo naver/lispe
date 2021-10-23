@@ -21,9 +21,9 @@
 
 //------------------------------------------------------------
 #define debug_none 0
-#define debug_next 1
-#define debug_inside_function 2
-#define debug_goto 3
+#define debug_goto 1
+#define debug_next 2
+#define debug_inside_function 3
 //------------------------------------------------------------
 
 string LispVersion();
@@ -33,25 +33,40 @@ string LispVersion();
 
 class LispE {
     vector<Element*> garbages;
-    vector<Stackelement*> stack_pool;
+    vecte<Stackelement*> stack_pool;
 
-    std::stack<Stackelement*> execution_stack;
+    vecte<Stackelement*> execution_stack;
     long max_stack_size;
 
 public:
     Element* _BOOLEANS[2];
-    
-    VECTE<Listpool*> list_pool;
-    VECTE<Integerpool*> integer_pool;
-    VECTE<Numberpool*> number_pool;
-    VECTE<Stringpool*> string_pool;
 
-    VECTE<Integerspool*> integers_pool;
-    VECTE<Numberspool*> numbers_pool;
-    VECTE<Stringspool*> strings_pool;
+    vecte<Floatpool*> float_pool;
+    vecte<Numberpool*> number_pool;
+    vecte<Integerpool*> integer_pool;
+    vecte<Stringpool*> string_pool;
+
+    vecte<Floatspool*> floats_pool;
+    vecte<Numberspool*> numbers_pool;
+    vecte<Integerspool*> integers_pool;
+    vecte<Stringspool*> strings_pool;
+
+    vecte<Setpool*> set_pool;
+    vecte<Set_npool*> setn_pool;
+
+    vecte<Dictionarypool*> dictionary_pool;
+    vecte<Dictionary_npool*> dictionaryn_pool;
+
+    vecte<Listpool*> list_pool;
+    
+    vecte<Returnpool*> return_pool;
 
     unordered_map<wstring, Element*> pools;
     vector<Element*> vpools;
+    
+    unordered_map<u_ustring, String*> const_string_pool;
+    unordered_map<long, Integer*> const_integer_pool;
+    unordered_map<double, Number*> const_number_pool;
     
     //Delegation is a class that records any data
     //related to compilation
@@ -59,20 +74,27 @@ public:
     Chaine_UTF8* handlingutf8;
 
     List* current_thread;
-    Element* current_body;
+    List* current_body;
     LispE* thread_ancestor;
-
+    
+    Element* n_null;
+    Element* n_true;
+    Element* n_zero;
+    Element* n_one;
+    
+    
     std::atomic<short> nbjoined;
 
     long id_thread;
     
+    char trace;
     bool isThread;
     bool hasThread;
     bool evaluating;
     bool preparingthread;
-    char trace;
-
+    
     LispE() {
+        initpools(this);
         preparingthread = false;
         evaluating = false;
         id_thread = 0;
@@ -87,64 +109,87 @@ public:
         current_body = NULL;
         handlingutf8 = new Chaine_UTF8;
         delegation->initialisation(this);
+        n_null = delegation->_NULL;
+        n_true = delegation->_TRUE;
+        n_zero = delegation->_ZERO;
+        n_one = delegation->_ONE;
     }
     
+    inline void initpools(LispE* lisp) {
+        for (long i = 0; i < 50; i++) {
+            number_pool.push_back(new Numberpool(lisp, 0));
+            integer_pool.push_back(new Integerpool(lisp, 0));
+            numbers_pool.push_back(new Numberspool(lisp));
+        }
+    }
     inline bool checkArity(List* l) {
         return (!evaluating || delegation->checkArity(l->liste[0]->type, l->size()));
     }
     
-    LispE(LispE*, List* function, Element* body);
+    LispE(LispE*, List* function, List* body);
     
     ~LispE() {
         cleaning();
     }
     
     void set_true_as_true() {
-        _BOOLEANS[0] = delegation->_NULL;
-        _BOOLEANS[1] = delegation->_TRUE;
+        _BOOLEANS[0] = n_null;
+        _BOOLEANS[1] = n_true;
     }
 
     void set_true_as_one() {
-        _BOOLEANS[0] = delegation->_ZERO;
-        _BOOLEANS[1] = delegation->_ONE;
+        _BOOLEANS[0] = n_zero;
+        _BOOLEANS[1] = n_one;
     }
 
-    Stackelement* provideStackElement(Element* function) {
-        try {
-            return stack_pool.at(execution_stack.size())->setFunction(function);
-        }
-        catch(...) {
-            for (long i = 0; i < 32; i++) {
-                stack_pool.push_back(new Stackelement(NULL));
-            }
-            return stack_pool[execution_stack.size()]->setFunction(function);
-        }
+    inline void push(Element* fonction) {
+        execution_stack.push_back(provideStackElement(fonction));
     }
     
+    inline void clear_top_stack() {
+        execution_stack.back()->clear();
+    }
+
+    inline Stackelement* provideStackElement(Element* function) {
+        if (execution_stack.last == max_stack_size)
+            sendError(U"stack overflow");
+
+        return stack_pool.last?stack_pool.backpop()->setFunction(function):new Stackelement(function);
+    }
+    
+    inline Stackelement* providingStack(Element* function) {
+        if (execution_stack.last == max_stack_size)
+            sendError(U"stack overflow");
+
+        return stack_pool.last?stack_pool.backpop()->setFunction(function):new Stackelement(function);
+    }
+
     void removeStackElement() {
-        execution_stack.pop();
-        stack_pool[execution_stack.size()]->clear();
+        Stackelement* s = execution_stack.backpop();
+        s->clear();
+        stack_pool.push_back(s);
     }
 
     void removeStackElement(Element* keep) {
-        execution_stack.pop();
-        stack_pool[execution_stack.size()]->clear(keep);
+        Stackelement* s = execution_stack.backpop();
+        s->clear(keep);
+        stack_pool.push_back(s);
     }
-
+    
     inline long threadId() {
         return id_thread;
     }
     
-    inline bool checkforLock() {
-        return (hasThread || isThread);
+    inline bool threaded() {
+        return (hasThread | isThread);
     }
     
     void lock() {
-        delegation->lock.locking(checkforLock());
+        delegation->lock.locking(threaded());
     }
     
     void unlock() {
-        delegation->lock.unlocking(checkforLock());
+        delegation->lock.unlocking(threaded());
     }
     
     void stop_trace() {
@@ -204,17 +249,17 @@ public:
         try {
             return pools.at(key);
         }
-        catch(...) {
-            return delegation->_NULL;
+        catch (...) {
+            return n_null;
         }
     }
     
     inline long vpool_slot() {
         for (long i = 0; i < vpools.size(); i++) {
-            if (vpools[i] == delegation->_NULL)
+            if (vpools[i] == n_null)
                 return i;
         }
-        vpools.push_back(delegation->_NULL);
+        vpools.push_back(n_null);
         return (vpools.size() - 1);
     }
     
@@ -229,7 +274,7 @@ public:
     }
     
     inline bool vpool_check(long idx) {
-        return (idx >= 0 && idx < vpools.size() && vpools[idx] != delegation->_NULL);
+        return (idx >= 0 && idx < vpools.size() && vpools[idx] != n_null);
     }
 
     inline bool vpool_check(Element* e, long idx) {
@@ -238,7 +283,7 @@ public:
 
     inline Element* vpool_out(long idx) {
         if (idx < 0 || idx >= vpools.size())
-            return delegation->_NULL;
+            return n_null;
         return vpools[idx];
     }
     
@@ -246,14 +291,15 @@ public:
         if (idx < 0 || idx >= vpools.size())
             return false;
         Element* e = vpools[idx];
-        if (e == delegation->_NULL)
+        if (e == n_null)
             return false;
-        vpools[idx] = delegation->_NULL;
+        vpools[idx] = n_null;
         return true;
     }
   
     inline void set_current_line(long l, long f) {
-        (!delegation->stop_execution || sendError());
+        if (delegation->stop_execution)
+            sendError();
         delegation->i_current_line = l;
         delegation->i_current_file = f;
     }
@@ -270,7 +316,7 @@ public:
         try {
             return delegation->allfiles_names.at(i);
         }
-        catch(...) {
+        catch (...) {
             return "";
         }
     }
@@ -279,7 +325,7 @@ public:
         try {
             return delegation->allfiles_names.at(delegation->i_current_file);
         }
-        catch(...) {
+        catch (...) {
             return "";
         }
     }
@@ -299,7 +345,7 @@ public:
         return delegation->is_instruction(s);
     }
     
-    inline bool is_instruction(wstring s) {
+    inline bool is_instruction(u_ustring s) {
         return delegation->is_instruction(s);
     }
     
@@ -385,7 +431,7 @@ public:
     }
     
     inline bool hasOverFlown() {
-        return (execution_stack.size() >= max_stack_size);
+        return (execution_stack.last >= max_stack_size);
     }
     
     inline void clearStop() {
@@ -393,7 +439,7 @@ public:
     }
     
     inline short checkLispState() {
-        return (execution_stack.size() >= max_stack_size?0x200:delegation->stop_execution);
+        return (execution_stack.last >= max_stack_size?0x200:delegation->stop_execution);
     }
         
     inline bool sendError() {
@@ -407,7 +453,6 @@ public:
     inline short checkState(List* l) {
         (
          (
-          !delegation->stop_execution &&
           l->size() &&
           (
            !evaluating ||
@@ -420,7 +465,19 @@ public:
         return l->liste.get0();
     }
 
-    void display_trace(List*);
+    inline void trace_and_context(List* e) {
+        //in the case of a goto, we only take into account breakpoints
+        if (trace == debug_goto)
+            delegation->next_stop = false;
+        
+        if (!activate_on_breakpoints(e)) {
+            if (delegation->debugfunction == NULL) {
+                long nb = stackSize();
+                string space(nb, ' ');
+                std::cout << "(" << delegation->i_current_line << ") " << nb << ":" << space << e->toString(this) << std::endl;
+            }
+        }
+    }
 
     inline string toString(short c) {
         return delegation->toString(c);
@@ -435,12 +492,12 @@ public:
     }
 
     inline long nbvariables() {
-        return execution_stack.top()->size();
+        return execution_stack.back()->size();
     }
     
     inline void atomsOnStack(vector<Element*>& v_atoms) {
         vector<short> labels;
-        execution_stack.top()->atoms(labels);
+        execution_stack.back()->atoms(labels);
         for (short i = 0; i < labels.size(); i++) {
             if (delegation->is_atom_code(labels[i]))
                 v_atoms.push_back(delegation->provideAtom(labels[i]));
@@ -449,90 +506,89 @@ public:
     
     string stackImage() {
         string the_stack;
-        for (long i = execution_stack.size()-1; i >= 0; i--) {
-            if (stack_pool[i]->function == NULL || stack_pool[i]->function == delegation->_NULL)
+        long sz;
+        for (long i = execution_stack.last-1; i >= 0; i--) {
+            if (execution_stack[i]->function == NULL || execution_stack[i]->function == n_null)
                 continue;
-            the_stack += stack_pool[i]->function->index(1)->toString(this);
-            the_stack += "(";
-            the_stack += stack_pool[i]->function->index(2)->toString(this);
-            the_stack += ")";
-            the_stack += "\n";
+            sz = execution_stack[i]->function->size();
+            if (sz > 1) {
+                the_stack += execution_stack[i]->function->index(1)->toString(this);
+                the_stack += "(";
+                if (sz > 2)
+                    the_stack += execution_stack[i]->function->index(2)->toString(this);
+                the_stack += ")";
+                the_stack += "\n";
+            }
         }
         return the_stack;
     }
     
     inline long stackSize() {
-        return execution_stack.size();
+        return execution_stack.last;
     }
     
     bool globalDeclaration() {
-        if (execution_stack.size() == 1 && !id_thread)
+        if (execution_stack.last == 1 && !id_thread)
             return true;
         return false;
     }
     
     wstring stackAsString() {
-        return execution_stack.top()->asString(this);
+        return execution_stack.back()->asString(this);
     }
     
     inline Element* called() {
-        return execution_stack.top()->called();
+        return execution_stack.back()->called();
     }
     
-    inline void push(Element* fonction) {
-        (
-         execution_stack.size() < max_stack_size ||
-         sendError(U"stack overflow")
-         );
-        execution_stack.push(provideStackElement(fonction));
-    }
-
-    inline Stackelement* providingStack(Element* fonction) {
-        (
-         execution_stack.size() < max_stack_size ||
-         sendError(U"stack overflow")
-         );
-        return provideStackElement(fonction);
-    }
-
     inline void popping() {
-        execution_stack.pop();
+        execution_stack.pop_back();
     }
     
     inline void pushing(Stackelement* s) {
-        execution_stack.push(s);
+        execution_stack.push_back(s);
     }
     
     inline List* atomes() {
-        return execution_stack.top()->atomes(this);
+        return execution_stack.back()->atomes(this);
     }
     
+    inline void pop(Stackelement* s) {
+        s->clear();
+        stack_pool.push_back(s);
+    }
+
     inline void pop() {
         removeStackElement();
     }
     
     inline Element* pop(Element* e) {
-        removeStackElement(e);
+        e->increment();
+        removeStackElement();
+        e->decrementkeep();
         return e;
     }
 
     //We clear the stack up to upto
     inline Element* pop(Element* e, long upto) {
-        e->incrementstatus(1, true);
-        while (execution_stack.size() != upto) {
+        e->increment();
+        while (execution_stack.last != upto) {
             removeStackElement();
         }
-        e->decrementSansDelete(1);
+        e->decrementkeep();
         return e;
     }
     
     inline void clearStack() {
-        for (auto& a: stack_pool)
-            delete a;
+        stack_pool.cleaning();
+        for (long i = 0; i < execution_stack.last; i++) {
+            execution_stack[i]->clear();
+            delete execution_stack[i];
+        }
     }
     
     inline void cleanTopStack() {
-        while (execution_stack.size() > 1) {
+        while (execution_stack.last > 1) {
             removeStackElement();
         }
     }
@@ -589,7 +645,7 @@ public:
         short sublabel = extractlabel(e->index(2));
         if (globalDeclaration())
             return delegation->recordingMethod(NULL, e, label, sublabel);
-        return delegation->recordingMethod(execution_stack.top(), e, label, sublabel);
+        return delegation->recordingMethod(execution_stack.back(), e, label, sublabel);
     }
     
     inline Element* recordingData(Element* e, short label, short ancestor) {
@@ -640,14 +696,13 @@ public:
     }
     
     inline Element* getDataStructure(short label) {
-        Element* e = delegation->data_pool.at(label);
-        if (e == NULL) {
+        if (!delegation->data_pool.check(label)) {
             u_ustring msg = U"Error: Unbounded atom: '";
             msg += delegation->code_to_string[label];
             msg += U"'";
             throw new Error(msg);
         }
-        return e;
+        return delegation->data_pool.at(label);
     }
     
     Element* generate_macro(Element* code);
@@ -657,11 +712,11 @@ public:
     }
     
     inline bool recordargument(Element* e, short label) {
-        return execution_stack.top()->recordargument(this, e, label);
+        return execution_stack.back()->recordargument(this, e, label);
     }
     
     inline Element* recordingunique(Element* e, short label) {
-        if (!execution_stack.top()->recordingunique(e, label)) {
+        if (!execution_stack.back()->recordingunique(e, label)) {
             std::wstringstream w;
             w << "Error: '" << u_to_w(delegation->code_to_string[label]) << "' has been recorded already";
             throw new Error(w.str());
@@ -669,46 +724,61 @@ public:
         return e;
     }
     
-    inline Element* recording(Element* e, short label) {
-        return execution_stack.top()->recording(e, label);
+    inline void recording(Element* e, short label) {
+        execution_stack.back()->recording(e, label);
     }
 
-    inline Element* recordingvalue(Element* e, short label) {
-        return execution_stack.top()->recordingvalue(e, label);
+    inline void record_argument(Element* e, short label) {
+        execution_stack.back()->record_argument(e, label);
     }
 
-    inline Element* recordingglobal(Element* e, short label) {
-        return stack_pool[0]->recordingvalue(e, label);
+    inline void replacingvalue(Element* e, short label) {
+        execution_stack.back()->replacingvalue(e, label);
     }
 
-    inline Element* recordingglobal(wstring label, Element* e) {
-        return stack_pool[0]->recordingvalue(e, delegation->encode(label));
+    inline Element* recording_variable(Element* e, short label) {
+        return execution_stack.back()->recording_variable(e, label);
+    }
+
+    inline void storing_variable(Element* e, short label) {
+        execution_stack.back()->storing_variable(e, label);
+    }
+
+    inline void storing_global(Element* e, short label) {
+        execution_stack[0]->storing_variable(e, label);
+    }
+
+    inline void storing_global(wstring label, Element* e) {
+        execution_stack[0]->storing_variable(e, delegation->encode(label));
+    }
+
+    inline void storing_global(u_ustring label, Element* e) {
+        execution_stack[0]->storing_variable(e, delegation->encode(label));
     }
 
     inline void removefromstack(short label) {
-        execution_stack.top()->remove(label);
+        execution_stack.back()->remove(label);
+    }
+
+    inline void removefromstack(short label, Element* keep) {
+        execution_stack.back()->remove(label, keep);
+    }
+
+    inline void shareStackElements(Stackelement* s) {
+        if (execution_stack.last != 1)
+            s->shareElements(execution_stack.back());
+        execution_stack.push_back(s);
     }
     
-    inline Stackelement* topStack() {
-        if (execution_stack.size() == 1)
-            return NULL;
-        return execution_stack.top();
-    }
-    
-    inline void setElementStack(Stackelement* stack) {
-        execution_stack.top()->setElements(stack);
-    }
-    
-    inline Element* getElementFromStack(short label) {
-        Element* e = execution_stack.top()->get(label);
-        if (e == NULL && execution_stack.size() != 1)
-            return stack_pool[0]->get(label);
-        return e;
+    inline Element* getElementFromStack(Stackelement* current, short label) {
+        if (current->variables.check(label))
+            return current->variables.at(label);
+        return execution_stack.vecteur[0]->variables.search(label);
     }
     
     inline Element* get(u_ustring name) {
         short label = encode(name);
-        Element* e = getElementFromStack(label);
+        Element* e = getElementFromStack(execution_stack.back(), label);
         if (e == NULL) {
             if (delegation->function_pool.check(label))
                 return delegation->function_pool.at(label);
@@ -723,7 +793,7 @@ public:
 
     inline Element* get(string name) {
         short label = encode(name);
-        Element* e = getElementFromStack(label);
+        Element* e = getElementFromStack(execution_stack.back(), label);
         if (e == NULL) {
             if (delegation->function_pool.check(label))
                 return delegation->function_pool.at(label);
@@ -736,34 +806,68 @@ public:
         return e;
     }
 
+    inline Element* exchangestackfunction(Element* f) {
+        return execution_stack.back()->exchange(f);
+    }
+
+    inline void setstackfunction(Element* f) {
+        execution_stack.back()->function = f;
+    }
+
+    inline void savelocal(Element* e, List* l) {
+        execution_stack.back()->savelocal(e, l);
+    }
+
+    inline bool localsave(Element* e, List* l) {
+        return execution_stack.back()->localsave(e, l);
+    }
+
+    inline Element* get_variable(string name) {
+        return execution_stack.back()->variables.at(encode(name));
+    }
+
+    inline Element* get_variable(wstring name) {
+        return execution_stack.back()->variables.at(encode(name));
+    }
+
+    inline Element* get_variable(u_ustring name) {
+        return execution_stack.back()->variables.at(encode(name));
+    }
+
+    inline Element* get_variable(short label) {
+        return execution_stack.back()->variables.at(label);
+    }
+
     inline Element* get(short label) {
-        Element* e = getElementFromStack(label);
-        if (e == NULL) {
-            if (delegation->function_pool.check(label))
-                return delegation->function_pool.at(label);
-            
-            if (delegation->data_pool.check(label))
-                return delegation->data_pool.at(label);
-            
-            u_ustring name = delegation->code_to_string[label];
-            u_ustring err = U"Error: unknown label: '";
-            err += name;
-            err += U"'";
-            throw new Error(err);
-        }
-        return e;
+        if (execution_stack.back()->variables.check(label))
+            return execution_stack.back()->variables.at(label);
+        
+        if (execution_stack.vecteur[0]->variables.check(label))
+            return execution_stack.vecteur[0]->variables.at(label);
+        
+        if (delegation->function_pool.check(label))
+            return delegation->function_pool.at(label);
+        
+        if (delegation->data_pool.check(label))
+            return delegation->data_pool.at(label);
+        
+        u_ustring name = delegation->code_to_string[label];
+        u_ustring err = U"Error: unknown label: '";
+        err += name;
+        err += U"'";
+        throw new Error(err);
     }
 
     
     inline Element* getvalue(short label) {
-        Element* e = getElementFromStack(label);
+        Element* e = getElementFromStack(execution_stack.back(), label);
         if (e == NULL)
-            return delegation->_NULL;
+            return n_null;
         return e;
     }
 
     inline Element* checkLabel(short label) {
-        return execution_stack.top()->get(label);
+        return execution_stack.back()->get(label);
     }
 
     inline bool checkFunctionLabel(short label) {
@@ -779,21 +883,14 @@ public:
         garbages.push_back(e);
     }
 
-    inline Element* regarbaging(Element* e, Element* v) {
-        if (v == e)
-            return v;
-        //This status is used to avoid the destruction of the objects out of the garbage .
-        v->status = s_constant;
-        for (long i = garbages.size()-1; i >= 0; i--) {
-            if (garbages[i] == e) {
-                garbages[i] = v;
-                delete e;
-                return v;
-            }
+    inline void control_garbaging(Element* e) {
+        //In this case, we set the garbage to a value, which is neither s_protect nor s_constant
+        if (!e->is_protected() && e->garbageable()) {
+            e->status = s_constant;
+            garbages.push_back(e);
         }
-        garbages.push_back(v);
-        return v;
     }
+
 
     inline void removefromgarbage(Element* e) {
         if (e == garbages.back()) {
@@ -829,11 +926,11 @@ public:
     }
 
     Element* provideAtomProtected(u_ustring& identifier)  {
-           return delegation->provideAtom(identifier, checkforLock());
+           return delegation->provideAtom(identifier, threaded());
     }
     
     void replaceAtom(u_ustring& identifier, short code) {
-        delegation->replaceAtom(identifier, code, checkforLock());
+        delegation->replaceAtom(identifier, code, threaded());
     }
     
     Element* provideAtomOrInstruction(short identifier) {
@@ -846,48 +943,144 @@ public:
     Element* provideNonLabelAtom(short identifier) {
         return delegation->provideNonLabelAtom(identifier);
     }
-    Element* provideCADR(string& c) {
+    Element* provideCADR(u_ustring& c) {
         return delegation->provideCADR(c);
     }
 
-    List* provideList() {
+    inline String* provideConststring(u_ustring& u) {
+        try {
+            return const_string_pool.at(u);
+        }
+        catch(...) {
+            Conststring* c = new Conststring(u);
+            const_string_pool[u] = c;
+            return c;
+        }
+    }
+
+    inline Integer* provideConstinteger(long u) {
+        try {
+            return const_integer_pool.at(u);
+        }
+        catch(...) {
+            Constinteger* c = new Constinteger(u);
+            const_integer_pool[u] = c;
+            return c;
+        }
+    }
+
+    inline Number* provideConstnumber(double u) {
+        try {
+            return const_number_pool.at(u);
+        }
+        catch(...) {
+            Constnumber* c = new Constnumber(u);
+            const_number_pool[u] = c;
+            return c;
+        }
+    }
+
+    inline List* provideList() {
         return list_pool.last?list_pool.backpop(): new Listpool(this);
     }
 
-    Numbers* provideNumbers() {
+    inline List* provideQuoted(Element* e) {
+        List* l = list_pool.last?list_pool.backpop(): new Listpool(this);
+        l->append(delegation->_QUOTE);
+        l->append(e);
+        return l;
+    }
+
+    inline Dictionary* provideDictionary() {
+        return dictionary_pool.last?dictionary_pool.backpop(): new Dictionarypool(this);
+    }
+
+    inline Dictionary_n* provideDictionary_n() {
+        return dictionaryn_pool.last?dictionaryn_pool.backpop(): new Dictionary_npool(this);
+    }
+
+    inline Set* provideSet() {
+        return set_pool.last?set_pool.backpop(): new Setpool(this);
+    }
+
+    inline Set* provideSet(Set* e) {
+        return set_pool.last?set_pool.backpop()->set(e): new Setpool(this, e);
+    }
+
+    inline Set_n* provideSet_n() {
+        return setn_pool.last?setn_pool.backpop(): new Set_npool(this);
+    }
+
+    inline Set_n* provideSet_n(Set_n* e) {
+        return setn_pool.last?setn_pool.backpop()->set(e): new Set_npool(this, e);
+    }
+
+    inline Floats* provideFloats() {
+        return floats_pool.last?floats_pool.backpop():new Floatspool(this);
+    }
+
+    inline Floats* provideFloats(long nb, float v) {
+        return floats_pool.last?floats_pool.backpop()->set(nb, v):new Floatspool(this, nb, v);
+    }
+
+    inline Floats* provideFloats(Floats* n) {
+        return floats_pool.last?floats_pool.backpop()->set(n):new Floatspool(this, n);
+    }
+
+    inline Numbers* provideNumbers() {
         return numbers_pool.last?numbers_pool.backpop():new Numberspool(this);
     }
+
+    inline Numbers* provideNumbers(long nb, double v) {
+        return numbers_pool.last?numbers_pool.backpop()->set(nb, v):new Numberspool(this, nb, v);
+    }
+
+    inline Integers* provideIntegers(long nb, long v) {
+        return integers_pool.last?integers_pool.backpop()->set(nb, v):new Integerspool(this, nb, v);
+    }
+
+    inline Returnpool* provideReturn(Element* e) {
+        return return_pool.last?return_pool.backpop()->set(e):new Returnpool(this, e);
+    }
     
-    Integers* provideIntegers() {
+    inline Numbers* provideNumbers(Numbers* n) {
+        return numbers_pool.last?numbers_pool.backpop()->set(n):new Numberspool(this, n);
+    }
+
+    inline Integers* provideIntegers(Integers* n) {
+        return integers_pool.last?integers_pool.backpop()->set(n):new Integerspool(this, n);
+    }
+
+    inline Integers* provideIntegers() {
         return integers_pool.last?integers_pool.backpop():new Integerspool(this);
     }
     
-    Strings* provideStrings() {
+    inline Strings* provideStrings() {
         return strings_pool.last?strings_pool.backpop():new Stringspool(this);
     }
 
-    Number* provideNumber(double d) {
-        if (!number_pool.last)
-            return new Numberpool(this, d);
-        Numberpool* n = number_pool.backpop();
-        n->number = d;
-        return n;
-    }
-    
-    Integer* provideInteger(long d) {
-        if (!integer_pool.last)
-            return new Integerpool(this, d);
-        Integerpool* n = integer_pool.backpop();
-        n->integer = d;
-        return n;
+    inline Strings* provideStrings(Strings* n) {
+        return strings_pool.last?strings_pool.backpop()->set(n):new Stringspool(this, n);
     }
 
-    String* provideString(u_ustring& c) {
-        if (!string_pool.last)
-            return new Stringpool(this, c);
-        Stringpool* n = string_pool.backpop();
-        n->content = c;
-        return n;
+    inline Number* provideNumber(double d) {
+        return number_pool.last?number_pool.backpop()->set(d):new Numberpool(this, d);
+    }
+
+    inline Float* provideFloat(float d) {
+        return float_pool.last?float_pool.backpop()->set(d):new Floatpool(this, d);
+    }
+
+    inline Integer* provideInteger(long d) {
+        return integer_pool.last?integer_pool.backpop()->set(d):new Integerpool(this, d);
+    }
+
+    inline String* provideString(u_ustring& c) {
+        return string_pool.last?string_pool.backpop()->set(c):new Stringpool(this, c);
+    }
+
+    inline String* provideString() {
+        return string_pool.last?string_pool.backpop():new Stringpool(this);
     }
 
     Element* provideString(wstring& c);
@@ -900,7 +1093,7 @@ public:
             delegation->string_to_code.at(str);
             return true;
         }
-        catch(...) {
+        catch (...) {
             return false;
         }
     }

@@ -38,14 +38,14 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
     private:
     uint64_t* indexes;
     uint64_t filter;
-    long tsize;
+    int16_t tsize;
 
     public:
     binIter<S, Z>() {
         table = NULL;
     }
 
-    binIter<S, Z>(Z** n, uint64_t* idx, long sz, short b = 0) {
+    binIter<S, Z>(Z** n, uint64_t* idx, int16_t sz, short b = 0) {
         first = 0;
         base = b;
         tsize = sz;
@@ -58,7 +58,7 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
             next();
     }
 
-    binIter<S, Z>(Z** n, uint64_t* idx, long sz, uint16_t ix, uint16_t jx, short b = 0) {
+    binIter<S, Z>(Z** n, uint64_t* idx, int16_t sz, uint16_t ix, uint16_t jx, short b = 0) {
         base = b;
         indexes = idx;
         table = n;
@@ -143,23 +143,274 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
     }
 
     friend bool operator!=(binIter<S, Z> a, binIter<S, Z> b) {
-        if (a.table == b.table)
-            return false;
-        return true;
+        return (a.table != b.table);
     }
 
     friend bool operator==(binIter<S, Z> a, binIter<S, Z> b) {
-        if (a.table == b.table)
+        return (a.table == b.table);
+    }
+};
+
+class binSet;
+
+class binSetIter {
+public:
+    uint64_t* indexes;
+    int16_t tsize;
+    int16_t base;
+    uint64_t filter;
+    
+    short first;
+    short idx;
+    short nb;
+
+    binSetIter() {
+        indexes = NULL;
+        tsize = 0;
+        base = -1;
+        filter = 0;
+    }
+    
+    binSetIter(binSet& b);
+    
+    void set(binSet& b);
+    
+    bool next() {
+        while (idx < tsize && !filter) {
+            filter = indexes[++idx];
+            nb = 0;
+        }
+
+        if (idx >= tsize)
+            return false;
+
+        while (filter) {
+            while (!(filter & 65535)) {
+                filter >>= 16;
+                nb += 16;
+            }
+            while (!(filter & 255)) {
+                filter >>= 8;
+                nb += 8;
+            }
+            while (!(filter & 15)) {
+                filter >>= 4;
+                nb += 4;
+            }
+            while (!(filter & 1)) {
+                filter >>= 1;
+                nb++;
+            }
+
+            first = (((idx + base) << binBits) + nb);
+            nb++;
+            filter >>= 1;
             return true;
+        }
+        
         return false;
     }
+};
+
+class binSet {
+public:
+    uint64_t* indexes;
+    int16_t tsize;
+    int16_t base;
+    
+    bool table;
+
+    binSet()  {
+        table = true;
+        base = -1;
+        tsize = 1;
+        indexes = (uint64_t*)malloc(sizeof(uint64_t)*tsize);
+        indexes[0] = 0;
+    }
+
+    binSet(binSet& t) {
+        table = true;
+        tsize = t.tsize;
+        base = t.base;
+        indexes = (uint64_t*)malloc(sizeof(uint64_t)*tsize);
+
+        for (int16_t i = 0; i < t.tsize; i++) {
+            if (t.indexes[i]) {
+                indexes[i] = t.indexes[i];
+            }
+            else {
+                indexes[i] = 0;
+            }
+        }
+    }
+
+    ~binSet() {
+        free(indexes);
+    }
+
+    inline bool check(uint16_t r) {
+        int16_t i = (r >> binBits) - base;
+        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r & binMin]));
+    }
+
+    inline bool checkanderase(uint16_t r) {
+        int16_t i = (r >> binBits) - base;
+        r &= binMin;
+        if (i >= 0 && i < tsize && (indexes[i] & binVal64[r])) {
+            indexes[i] &= ~binVal64[r];
+            return true;
+        }
+        return false;
+    }
+
+    bool empty() {
+        for (int16_t i = 0; i < tsize; i++) {
+            if (indexes[i])
+                return false;
+        }
+        return true;
+    }
+
+    void erase(uint16_t r) {
+        int16_t i = (r >> binBits) - base;
+        r &= binMin;
+        if (i >= 0 && i < tsize && indexes[i])
+            indexes[i] &= ~binVal64[r];
+    }
+    
+    size_t size() {
+        size_t nb = 0;
+        uint64_t filter;
+        
+        for (int16_t i = 0; i < tsize; i++) {
+            filter = indexes[i];
+            if (filter) {
+                while (filter) {
+                    if (!(filter & 1)) {
+                        while (!(filter & 65535))
+                            filter >>= 16;
+                        while (!(filter & 255))
+                            filter >>= 8;
+                        while (!(filter & 15))
+                            filter >>= 4;
+                        while (!(filter & 1))
+                            filter >>= 1;
+                    }
+                    nb++;
+                    filter >>= 1;
+                }
+            }
+        }
+        
+        return nb;
+    }
+
+    //nettoyage
+    void clear() {
+        memset(indexes, 0, sizeof(uint64_t)*tsize);
+    }
+    
+    void resize(int16_t sz) {
+        indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*sz);
+        for (int16_t i = tsize; i < sz; i++) {
+            indexes[i] = 0;
+        }
+        tsize = sz;
+    }
+
+    //We insert some new boxes before the position 0
+    void insert(uint16_t p) {
+        uint16_t inc = base - p;
+        uint16_t sz = inc + tsize;
+        indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*sz);
+
+        int16_t i;
+        for (i = sz - 1; i >= inc; i--)  {
+            indexes[i] = indexes[i - inc];
+        }
+        
+        for (;i >=0; i--) {
+            indexes[i] = 0;
+        }
+        tsize = sz;
+        base = p; //this the new zero position
+    }
+
+
+    bool& operator [](uint16_t r) {
+        if (base == -1) {
+            base = r >> binBits;
+            r &= binMin;
+            indexes[0] |= binVal64[r];
+            return table;
+        }
+        
+        uint16_t i = r >> binBits;
+        r &= binMin;
+        if (i < base) {
+            insert(i);
+            indexes[0] |= binVal64[r];
+            return table;
+        }
+
+        i -= base;
+        if (i >= tsize) {
+            resize(i + (i >> 1) + 1);
+            indexes[i] |= binVal64[r];
+            return table;
+        }
+        indexes[i] |= binVal64[r];
+        return table;
+    }
+
+
+    //affectation
+    void operator =(binSet& t) {
+        int16_t i;
+        for (i = 0; i < tsize; i++) {
+            if (indexes[i]) {
+                indexes[i] = 0;
+            }
+        }
+
+        if (tsize != t.tsize) {
+            tsize = t.tsize;
+            indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*tsize);
+        }
+
+        base = t.base;
+
+        for (i = 0; i < t.tsize; i++) {
+            if (t.indexes[i]) {
+                indexes[i] = t.indexes[i];
+            }
+            else {
+                indexes[i] = 0;
+            }
+        }
+    }
+    
+    void set(int16_t b, int16_t sz, uint64_t* index) {
+        tsize = sz;
+        base = b;
+        indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*tsize);
+        for (long i = 0; i < sz; i++) {
+            if (index[i]) {
+                indexes[i] = index[i];
+            }
+            else {
+                indexes[i] = 0;
+            }
+        }
+    }
+    
 };
 
 template <class Z> class binHash {
     public:
     Z** table;
     uint64_t* indexes;
-    long tsize;
+    int16_t tsize;
     int16_t base;
 
     typedef binIter<short, Z> iterator;
@@ -172,8 +423,8 @@ template <class Z> class binHash {
     binHash()  {
         base = -1;
         tsize = 1;
-        table = new Z*[tsize];
-        indexes = new uint64_t[tsize];
+        table = (Z**)malloc(sizeof(Z*)*tsize);
+        indexes = (uint64_t*)malloc(sizeof(uint64_t)*tsize);
 
         table[0] = NULL;
         indexes[0] = 0;
@@ -183,8 +434,8 @@ template <class Z> class binHash {
         static int32_t sz = sizeof(Z) << binBits;
         tsize = t.tsize;
         base = t.base;
-        table = new Z*[tsize];
-        indexes = new uint64_t[tsize];
+        table = (Z**)malloc(sizeof(Z*)*tsize);
+        indexes = (uint64_t*)malloc(sizeof(uint64_t)*tsize);
 
         for (int16_t i = 0; i < t.tsize; i++) {
             if (t.indexes[i]) {
@@ -204,8 +455,8 @@ template <class Z> class binHash {
             if (table[i] != NULL)
                 delete[] table[i];
         }
-        delete[] table;
-        delete[] indexes;
+        free(table);
+        free(indexes);
     }
 
     inline bool check(uint16_t r) {
@@ -214,17 +465,21 @@ template <class Z> class binHash {
     }
 
     void put(uint16_t r, Z a) {
-        int16_t i = r >> binBits;
-        table[i-base][r & binMin] = a;
+        table[(r >> binBits)-base][r & binMin] = a;
     }
     
     //Only if you are sure that the element exists...
     inline Z&  at(uint16_t r) {
         return table[(r >> binBits)-base][r & binMin];
     }
-    
-    inline bool check(short i, short r) {
-        i -= base;
+
+    inline Z  at(int16_t i, int16_t r) {
+        return table[i][r];
+    }
+
+    inline bool check(uint16_t label, int16_t& i, int16_t& r) {
+        i = (label >> binBits) - base;
+        r = label & binMin;
         return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]));
     }
 
@@ -304,94 +559,143 @@ template <class Z> class binHash {
             }
             base = -1;
             tsize = 1;
-            delete[] table;
-            delete[] indexes;
-            table = new Z*[tsize];
-            indexes = new uint64_t[tsize];
+            table = (Z**)realloc(table, sizeof(Z*)*tsize);
+            indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*tsize);
             table[0] = NULL;
             indexes[0] = 0;
         }
         else {
-            for (int16_t i = 0; i < tsize; i++) {
-                indexes[i] = 0;
-            }
+            memset(indexes, 0, sizeof(uint64_t)*tsize);
         }
+    }
+    
+    void resize(int16_t sz) {
+        table = (Z**)realloc(table, sizeof(Z*)*sz);
+        indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*sz);
+        for (int16_t i = tsize; i < sz; i++) {
+            table[i] = NULL;
+            indexes[i] = 0;
+        }
+        tsize = sz;
     }
 
     //We insert some new boxes before the position 0
     void insert(uint16_t p) {
         uint16_t inc = base - p;
-        int32_t sz = inc + tsize;
-        Z** ntable = new Z*[sz];
-        uint64_t* nindexes = new uint64_t[sz];
+        uint16_t sz = inc + tsize;
+        table = (Z**)realloc(table, sizeof(Z*)*sz);
+        indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*sz);
 
-        tsize = sz;
-        for (int16_t i = 0; i < tsize; i++)  {
-            if (i >= inc) {
-                ntable[i] = table[i - inc];
-                nindexes[i] = indexes[i - inc];
-            }
-            else {
-                ntable[i] = NULL;
-                nindexes[i] = 0;
-            }
+        int16_t i;
+        for (i = sz - 1; i >= inc; i--)  {
+            table[i] = table[i - inc];
+            indexes[i] = indexes[i - inc];
         }
-
-        delete[] table;
-        delete[] indexes;
-        table = ntable;
-        indexes = nindexes;
-
+        
+        for (;i >=0; i--) {
+            table[i] = NULL;
+            indexes[i] = 0;
+        }
+        tsize = sz;
         base = p; //this the new zero position
     }
 
-    void resize(long sz) {
-        Z** ntable = new Z*[sz];
-        uint64_t* nindexes = new uint64_t[sz];
 
-        int16_t i;
-        for (i = 0; i < tsize; i++) {
-            ntable[i] = table[i];
-            nindexes[i] = indexes[i];
-        }
-
-        tsize = sz;
-        for (; i < tsize; i++)  {
-            ntable[i] = NULL;
-            nindexes[i] = 0;
-        }
-        delete[] table;
-        delete[] indexes;
-        table = ntable;
-        indexes = nindexes;
-    }
-
-
-    Z& operator [](uint16_t r) {
-        uint16_t i = r >> binBits;
-        r &= binMin;
-        if (base == -1) {
-            base = i;
-            i = 0;
+    void setBase(int16_t i) {
+        if (i < base) {
+            insert(i);
+            table[0] = new Z[binSize];
         }
         else {
-            if (i < base){
-                insert(i);
-                i = 0;
-            }
-            else
-                i -= base;
-        }
-        if (i >= tsize)
-            resize(i + 2);
-        if (table[i] == NULL) {
+            i -= base;
+            resize(i + 3);
             table[i] = new Z[binSize];
-            memset(table[i], NULL, sizeof(Z) << binBits);
         }
+    }
+
+    Z& operator [](uint16_t r) {
+        if (base == -1) {
+            base = r >> binBits;
+            r &= binMin;
+            table[0] = new Z[binSize];
+            indexes[0] |= binVal64[r];
+            return table[0][r];
+        }
+        
+        uint16_t i = r >> binBits;
+        r &= binMin;
+        if (i < base) {
+            insert(i);
+            table[0] = new Z[binSize];
+            indexes[0] |= binVal64[r];
+            return table[0][r];
+        }
+
+        i -= base;
+        if (i >= tsize) {
+            resize(i + (i >> 1) + 1);
+            table[i] = new Z[binSize];
+            indexes[i] |= binVal64[r];
+            return table[i][r];
+        }
+        if (table[i] == NULL)
+            table[i] = new Z[binSize];
         indexes[i] |= binVal64[r];
         return table[i][r];
     }
 
+    //intersection
+    //We only copy elements that are not in t
+    void andnot(binHash<Z>& t) {
+        int16_t j, t_i;
+        uint64_t filter;
+
+        for (int16_t i = 0; i < tsize; i++) {
+            filter = indexes[i];
+            if (!filter)
+                continue;
+            
+            t_i = i + base - t.base;
+            if (t_i >= 0 && t_i < t.tsize) {
+                filter &= ~t.indexes[t_i];
+                if (!t.table[t_i])
+                    t.table[t_i] = new Z[binSize];
+                t.indexes[t_i] |= filter;
+            }
+            else {
+                t_i = i + base;
+                t.setBase(t_i);
+                t_i -= t.base;
+                t.indexes[t_i] = filter;
+            }
+            
+            j = 0;
+            while (filter) {
+                if (!(filter & 1)) {
+                    while (!(filter & 65535)) {
+                        filter >>= 16;
+                        j += 16;
+                    }
+                    while (!(filter & 255)) {
+                        filter >>= 8;
+                        j += 8;
+                    }
+                    while (!(filter & 15)) {
+                        filter >>= 4;
+                        j += 4;
+                    }
+                    while (!(filter & 1)) {
+                        filter >>= 1;
+                        j++;
+                    }
+                }
+                t.table[t_i][j] = table[i][j];
+                filter >>= 1;
+                j++;
+            }
+        }
+    }
+    
     //affectation
     void operator =(binHash<Z>& t) {
         static int32_t sz = sizeof(Z) << binBits;
@@ -406,12 +710,9 @@ template <class Z> class binHash {
         }
 
         if (tsize != t.tsize) {
-            delete[] table;
-            delete[] indexes;
-
             tsize = t.tsize;
-            table = new Z*[tsize];
-            indexes = new uint64_t[tsize];
+            table = (Z**)realloc(table, sizeof(Z*)*tsize);
+            indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*tsize);
         }
 
         base = t.base;
@@ -434,7 +735,7 @@ template <class Z> class binHashe {
 public:
     Z** table;
     uint64_t* indexes;
-    long tsize;
+    int16_t tsize;
     int16_t base;
 
     typedef binIter<short, Z> iterator;
@@ -611,7 +912,7 @@ public:
         base = p; //this the new zero position
     }
     
-    void resize(long sz) {
+    inline void resize(int16_t sz) {
         Z** ntable = new Z*[sz];
         uint64_t* nindexes = new uint64_t[sz];
         
@@ -649,11 +950,12 @@ public:
                 insert(i);
                 i = 0;
             }
-            else
+            else {
                 i -= base;
+                if (i >= tsize)
+                    resize(i + 2);
+            }
         }
-        if (i >= tsize)
-            resize(i + 2);
         if (table[i] == NULL) {
             table[i] = new Z[binSize];
         }

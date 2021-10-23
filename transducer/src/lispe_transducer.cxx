@@ -55,7 +55,7 @@ public:
 
     Element* methodInitial(LispE* lisp) {
         
-        Element* filename = lisp->get(U"filename");
+        Element* filename = lisp->get_variable(U"filename");
         if (filename == null_)
             return this;
         
@@ -74,7 +74,7 @@ public:
 
     Element* methodLoad(LispE* lisp) {
         
-        Element* filename = lisp->get(U"filename");
+        Element* filename = lisp->get_variable(U"filename");
         if (automaton != NULL)
             delete automaton;
         automaton = new DoubleSideAutomaton;
@@ -95,9 +95,9 @@ public:
         if (automaton == NULL)
             return null_;
 
-        string name = lisp->get(U"filename")->toString(lisp);
-        automaton->normalize = lisp->get(U"normalize")->Boolean();
-        automaton->encoding_table = lisp->get(U"latintable")->asInteger();
+        string name = lisp->get_variable(U"filename")->toString(lisp);
+        automaton->normalize = lisp->get_variable(U"normalize")->Boolean();
+        automaton->encoding_table = lisp->get_variable(U"latintable")->asInteger();
 
         if (automaton->store(name))
             return true_;
@@ -110,9 +110,9 @@ public:
         if (automaton == NULL)
             automaton = new DoubleSideAutomaton;
 
-        Element* ke = lisp->get(U"value");
-        automaton->normalize = lisp->get(U"normalize")->Boolean();
-        automaton->encoding_table = lisp->get(U"latintable")->asInteger();
+        Element* ke = lisp->get_variable(U"value");
+        automaton->normalize = lisp->get_variable(U"normalize")->Boolean();
+        automaton->encoding_table = lisp->get_variable(U"latintable")->asInteger();
 
         if (ke->type == t_dictionary) {
             hmap<string,string> values;
@@ -132,10 +132,10 @@ public:
     }
 
     Element* methodBuild(LispE* lisp) {
-        string input = lisp->get(U"inputfile")->toString(lisp);
-        string output = lisp->get(U"outputfile")->toString(lisp);
-        bool norm  = lisp->get(U"normalize")->Boolean();
-        long latinencoding = lisp->get(U"latintable")->asInteger();
+        string input = lisp->get_variable(U"inputfile")->toString(lisp);
+        string output = lisp->get_variable(U"outputfile")->toString(lisp);
+        bool norm  = lisp->get_variable(U"normalize")->Boolean();
+        long latinencoding = lisp->get_variable(U"latintable")->asInteger();
         
         if (automaton != NULL)
             delete automaton;
@@ -156,12 +156,12 @@ public:
     Element* methodParse(LispE* lisp) {
         if (automaton == NULL)
             return null_;
-        string words = lisp->get(U"sentence")->toString(lisp);
+        string words = lisp->get_variable(U"sentence")->toString(lisp);
         words+=" ";
         
-        long option = lisp->get(U"option")->asInteger();
-        long threshold = lisp->get(U"threshold")->asInteger();
-        short flags = lisp->get(U"flags")->asInteger();
+        long option = lisp->get_variable(U"option")->asInteger();
+        long threshold = lisp->get_variable(U"threshold")->asInteger();
+        short flags = lisp->get_variable(U"flags")->asInteger();
 
         charReadString currentreader(words);
         if ((option&1)==1)
@@ -204,10 +204,10 @@ public:
         if (automaton == NULL)
             return null_;
 
-        wstring word = lisp->get(U"word")->asString(lisp);
+        wstring word = lisp->get_variable(U"word")->asString(lisp);
 
-        long threshold = lisp->get(U"threshold")->asInteger();
-        short flags = lisp->get(U"flags")->asInteger();
+        long threshold = lisp->get_variable(U"threshold")->asInteger();
+        short flags = lisp->get_variable(U"flags")->asInteger();
 
         vector<string> kvs;
         automaton->up(word, kvs, threshold, flags);
@@ -226,8 +226,8 @@ public:
         if (automaton == NULL)
             return null_;
         
-        wstring word = lisp->get(U"word")->asString(lisp);
-        char lemma = lisp->get(U"lemma")->asInteger();
+        wstring word = lisp->get_variable(U"word")->asString(lisp);
+        char lemma = lisp->get_variable(U"lemma")->asInteger();
         
         vector<string> kvs;
         automaton->down(word, kvs, lemma);
@@ -243,7 +243,7 @@ public:
         if (automaton == NULL)
             automaton = new DoubleSideAutomaton();
         
-        Element* regular = lisp->get(U"regular");
+        Element* regular = lisp->get_variable(U"regular");
         
         if (regular == null_) {
             automaton->regulars();
@@ -253,11 +253,11 @@ public:
         string expression = regular->toString(lisp);
         
         agnostring rgx(expression);
-        Element* kfeat = lisp->get(U"vector");
+        Element* kfeat = lisp->get_variable(U"vector");
         if (!kfeat->isList())
             throw new Error("Error: We expect the second argument to be a list.");
 
-        string name = lisp->get(U"name")->toString(lisp);
+        string name = lisp->get_variable(U"name")->toString(lisp);
         
         //we first transform each of our features into indexes...
         vector<uint32_t> indexes;
@@ -291,7 +291,7 @@ public:
     Element* eval(LispE* lisp) {
         Automaton* automaton = NULL;
         if (action != trans_trans && action != trans_flags) {
-            Element* trans = lisp->get(U"trans");
+            Element* trans = lisp->get_variable(U"trans");
             if (trans->type != type)
                 throw new Error("Error: missing transducer");
             automaton = (Automaton*)trans;

@@ -12,32 +12,43 @@
 #define elements_h
 
 #include "tools.h"
+#include "vecte.h"
 #include <set>
 
+#ifdef MACDEBUG
+extern vector<Element*> indexes;
+#endif
+
 //The status to be able to manage the life cycle of an object
-const unsigned char s_destructible =  0;
-const unsigned char s_protect = 254;
-const unsigned char s_constant = 255;
+const uint16_t s_destructible =  0;
+//The 14th bit is set to 1 in protect mode (see LispE::eval)
+const uint16_t s_protect = 0x4000;
+//The 14th and the 15th bits are set to 1 in constant mode
+const uint16_t s_constant = 0xC000;
 
 class LispE;
 class Listincode;
 class Numbers;
+class Integers;
+class Floats;
+class Strings;
 
 typedef enum {
     //Default values
     v_null, v_emptylist, v_emptyatom, v_true,
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_number, t_integer,
+    t_emptystring, t_operator, t_atom, t_number, t_integer, t_float,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
-    t_numbers, t_set, t_setn, t_integers, t_strings, t_list, t_matrix, t_tensor,
+    t_numbers, t_floats, t_set, t_setn, t_integers, t_strings,
+    t_list, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryn, t_data, t_maybe,
-    t_pair, t_error, t_function, t_pattern, t_lambda, t_thread, 
+    t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
     
-    l_set_max_stack_size,
+    l_set_max_stack_size, l_addr_, l_stringf,
     
     //Default Lisp instructions
-    l_converttonumber, l_converttostring, l_converttointeger, l_converttoatom, 
+    l_number, l_float, l_string, l_integer, l_atom, 
     
     l_quote,
     
@@ -55,30 +66,33 @@ typedef enum {
     l_atomp, l_numberp, l_consp, l_zerop, l_nullp, l_stringp, l_trace, l_flip, l_select,
     
     //Numerical operations
-    l_sign, l_minus_plus, l_plus, l_minus, l_multiply, l_power,
+    l_sign, l_signp, l_minus_plus,
+    l_plus, l_minus, l_multiply, l_power,
     l_leftshift, l_rightshift, l_bitand, l_bitor, l_bitxor, l_bitandnot,
-    //+11 = l_opequal
+    l_bitnot, l_divide, l_mod,
+    
     l_plusequal, l_minusequal, l_multiplyequal,  l_powerequal,
     l_leftshiftequal, l_rightshiftequal,
-    l_bitnot, l_bitandequal, l_bitandnotequal, l_bitorequal, l_bitxorequal,
-    l_divide, l_mod, l_divideequal,l_modequal, l_concatenate,
-    l_sum, l_product,
-    l_innerproduct, l_matrix, l_tensor, l_outerproduct, l_factorial, l_iota, l_iota0,
-    l_reduce, l_scan, l_backreduce, l_backscan, l_equalonezero, l_rho, l_rank,
+    l_bitandequal, l_bitandnotequal, l_bitorequal, l_bitxorequal,
+    l_divideequal,l_modequal,
+    
+    l_concatenate, l_sum, l_product,
+    l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
+    l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank,
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     
     //Comparisons
-    l_equal , l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
-    l_size, l_use, l_index, l_at_index, l_set_at, l_extract,
+    l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
+    l_size, l_use, l_index, l_at_index, l_set_at, l_extract, l_set_range,
     l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last,
     l_fread, l_fwrite, l_fappend,
     l_and, l_or, l_xor, l_not, l_eq, l_neq,
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop,
-    l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_extend,
+    l_to_list, l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
-    l_numbers, l_integers, l_strings, l_set, l_setn,
+    l_numbers, l_floats, l_integers, l_strings, l_set, l_setn,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
@@ -87,7 +101,7 @@ typedef enum {
     l_loop, l_loopcount, l_range, l_irange, l_multiloop, l_polyloop,
     l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
-    l_apply, l_maplist, l_filterlist, l_mapping, l_checking, l_folding,
+    l_apply, l_maplist, l_filterlist, l_droplist, l_takelist, l_mapping, l_checking, l_folding,
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
@@ -97,6 +111,7 @@ typedef enum {
     t_comment, l_final
 } lisp_code;
 
+//------------------------------------------------------------------------------------------
 
 const unsigned long P_NONE = 1 << 0;
 const unsigned long P_ONE = 1 << 1;
@@ -131,10 +146,13 @@ const unsigned long P_ATLEASTTHIRTEEN = P_ATLEASTTWELVE^P_TWELVE;
 const unsigned long P_ATLEASTFOURTEEN = P_ATLEASTTHIRTEEN^P_THIRTEEN;
 const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 
+//------------------------------------------------------------------------------------------
 //false_ is actually a bit misleading as it is an alias to null_
-#define false_ lisp->delegation->_NULL
-#define true_ lisp->delegation->_TRUE
-#define null_ lisp->delegation->_NULL
+#define false_ lisp->n_null
+#define true_ lisp->n_true
+#define null_ lisp->n_null
+
+#define quote_ lisp->delegation->_QUOTE
 
 #define emptyatom_ lisp->delegation->_EMPTYATOM
 #define emptystring_ lisp->delegation->_EMPTYSTRING
@@ -142,13 +160,14 @@ const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 #define emptydictionary_ lisp->delegation->_EMPTYDICTIONARY
 
 #define minusone_ lisp->delegation->_MINUSONE
-#define zero_ lisp->delegation->_ZERO
-#define one_ lisp->delegation->_ONE
+#define zero_ lisp->n_zero
+#define one_ lisp->n_one
 #define two_ lisp->delegation->_TWO
 
 #define booleans_ lisp->_BOOLEANS
 #define numbools_ lisp->delegation->_NUMERICAL_BOOLEANS
 
+#define terminal_ lisp->delegation->_TERMINAL
 
 #define separator_ lisp->delegation->_LISTSEPARATOR
 
@@ -158,6 +177,9 @@ const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 #define check_mismatch -2
 #define check_ok -1
 
+//------------------------------------------------------------------------------------------
+#define _releasing(f) f->release();f=null_
+//------------------------------------------------------------------------------------------
 class List;
 
 class Element {
@@ -165,55 +187,94 @@ public:
     
     short type;
 #ifdef MACDEBUG
+    long idx;
     lisp_code lc;
 #endif
-    uchar status;
+    uint16_t status;
     
     Element(short ty) {
         type = ty;
 #ifdef MACDEBUG
         lc = (lisp_code)type;
+        idx = indexes.size();
+        indexes.push_back(this);
 #endif
         status = s_destructible;
     }
     
-    Element(short ty, uchar s) {
+    Element(short ty, uint16_t s) {
         type = ty;
 #ifdef MACDEBUG
         lc = (lisp_code)type;
+        idx = indexes.size();
+        indexes.push_back(this);
 #endif 
         status = s;
     }
     
-    virtual ~Element() {}
+    virtual ~Element() {
+#ifdef MACDEBUG
+        indexes[idx] = NULL;
+#endif
+    }
     
     virtual void clean() {}
+    virtual bool garbageable() {
+        return true;
+    }
     
     void generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<short,Element*>& dico_variables);
     void replaceVariableNames(LispE* lisp, unordered_map<short, Element*>& names);
     bool replaceVariableNames(LispE* lisp);
     
+    virtual bool check_quote(LispE*) {
+        return false;
+    }
+    
     virtual Element* transformargument(LispE* lisp) {
         return this;
     }
-    
-    virtual void incrementstatus(uchar nb, bool top) {
-        if (status < s_protect)
+
+    inline bool is_protected() {
+        return (status & s_protect);
+    }
+
+    virtual void increment() {
+        if (!is_protected())
+            status++;
+    }
+
+    virtual void decrement() {
+        if (is_protected())
+            return;
+        
+        status--;
+        if (!status)
+            delete this;
+    }
+
+    virtual void incrementstatus(uint16_t nb) {
+        if (!is_protected())
             status += nb;
     }
     
-    virtual void decrementstatus(uchar nb, bool top) {
-        if (status > s_destructible && status < s_protect)
-            status -= nb;
+    virtual void decrementstatus(uint16_t nb) {
+        if (is_protected())
+            return;
+        
+        status -= nb;
         if (!status)
             delete this;
     }
     
     //The status is decremented without destroying the element.
-    virtual void decrementSansDelete(uchar nb) {
-        if (status > s_destructible && status < s_protect)
-            status-=nb;
+    virtual void decrementkeep() {
+        if (is_protected())
+            return;
+        status--;
     }
+
+    virtual void garbaging_values(LispE*) {}
     
     virtual char isPureList() {
         return 0;
@@ -223,18 +284,20 @@ public:
         return 0;
     }
     
-    virtual void getShape(vector<long>& sz) {}
+    virtual void getShape(vecte<long>& sz) {}
     
     virtual Element* transposed(LispE* lisp) {
         return this;
     }
 
-    virtual Element* inversion(LispE* lisp);
+    virtual Element* invert_sign(LispE* lisp);
     
     virtual Element* rotate(LispE* lisp, long axis) {
         return reverse(lisp, true);
     }
 
+    virtual Element* asList(LispE* lisp);
+    
     virtual void concatenate(LispE* lisp, Element* e) {}
 
     virtual Element* last_element(LispE* lisp);
@@ -250,10 +313,6 @@ public:
         return this;
     }
 
-    virtual bool tobegarbaged() {
-        return true;
-    }
-    
     virtual void append(LispE* lisp, u_ustring& k) {}
     virtual void append(LispE* lisp, double v) {}
     virtual void append(LispE* lisp, long v) {}
@@ -301,7 +360,7 @@ public:
         return copying(true);
     }
 
-    virtual Element* copyatom(uchar s) {
+    virtual Element* copyatom(uint16_t s) {
         return this;
     }
 
@@ -313,7 +372,7 @@ public:
         return this;
     }
 
-    virtual bool checkShape(long depth, vector<long>& sz) {
+    virtual bool checkShape(long depth, vecte<long>& sz) {
         return false;
     }
 
@@ -321,17 +380,18 @@ public:
         return this;
     }
     
-    virtual Element* rank(LispE* lisp, vector<long>&) {
+    virtual Element* rank(LispE* lisp, vecte<long>&) {
         return NULL;
     }
     
     //We only duplicate constant containers...
-    virtual Element* duplicate_constant_container(bool pair = false) {
+    virtual Element* duplicate_constant(bool pair = false) {
         return this;
     }
     
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
+    virtual void flatten(LispE*, Floats* l);
     
     virtual void* begin_iter() {
         return NULL;
@@ -366,7 +426,7 @@ public:
         return this;
     }
     
-    virtual void setterminal(bool v = true) {}
+    virtual void setterminal(char v = 1) {}
     /*
      This copy version has two purposes:
      
@@ -377,12 +437,8 @@ public:
      This is a case that appears mainly for instructions such as push, key and keys that can locally modify an object (side effect).
      but must not modify a value stored in the garbage collector from the compilation.
      */
-    
-    virtual Element* quoted(LispE*) {
-        return this;
-    }
-    
-    virtual Element* quoting(Element*);
+        
+    virtual Element* quoting(LispE*);
     
     void prettyfying(LispE* lisp, string& code);
     string prettify(LispE* lisp);
@@ -418,7 +474,11 @@ public:
     virtual double asNumber() {
         return 0;
     }
-    
+
+    virtual float asFloat() {
+        return 0;
+    }
+
     virtual long asInteger() {
         return 0;
     }
@@ -446,6 +506,11 @@ public:
     }
     
     virtual void replacing(long i, Element* e) {}
+    
+    virtual Element* release_but_last() {
+        return this;
+    }
+    
     virtual void change(long i, Element* e) {}
     virtual void changelast(Element* e) {}
     
@@ -481,6 +546,10 @@ public:
         return false;
     }
 
+    virtual bool isNonOperatorAtom() {
+        return false;
+    }
+    
     virtual bool isBreak() {
         return false;
     }
@@ -519,12 +588,14 @@ public:
     
     virtual double checkNumber(LispE* lisp);
     virtual long checkInteger(LispE* lisp);
-    
+    virtual float checkFloat(LispE* lisp);
+
     virtual bool isDictionary() {
         return false;
     }
     
     virtual Element* extraction(LispE* lisp, List*);
+    virtual Element* replace_in(LispE* lisp, List*);
     
     virtual Element* charge(LispE*,string chemin);
     
@@ -540,12 +611,24 @@ public:
         return true;
     }
     
-    //Atoms cannot be present in the garbage
-    virtual void protecting(bool protection) {}
+    virtual void protecting(bool protection, LispE* lisp) {
+        if (protection) {
+            if (status == s_constant)
+                status = s_protect;
+        }
+        else {
+            if (status == s_protect)
+                status = s_destructible;
+        }
+    }
     
     virtual void release() {
-        if (status == s_destructible)
+        if (!status)
             delete this;
+    }
+    
+    virtual bool equalvalue(long n) {
+        return false;
     }
     
     virtual bool equalvalue(double v) {
@@ -556,6 +639,7 @@ public:
         return false;
     }
 
+    virtual bool egal(Element* e);
     virtual Element* equal(LispE* lisp, Element* e);
     virtual Element* less(LispE* lisp, Element* e);
     virtual Element* lessorequal(LispE* lisp, Element* e);
@@ -565,6 +649,7 @@ public:
     virtual Element* cadr(LispE*,Element*);
     virtual Element* car(LispE*);
     virtual Element* cdr(LispE*);
+    virtual Element* cadr(LispE*, u_ustring& actions);
     
     virtual long argumentsize(LispE*, long sz) {
         return -1;
@@ -577,6 +662,8 @@ public:
     virtual long shapesize() {
         return 0;
     }
+    
+    virtual short function_label();
     
     virtual short label() {
         return type;
@@ -593,6 +680,8 @@ public:
 
     virtual Element* maximum(LispE*);
 
+    virtual Element* value_from_index(LispE*, long i);
+    
     virtual Element* value_on_index(LispE*, Element* idx);
     virtual Element* value_on_index(LispE*, long i);
     virtual Element* value_on_index(wstring& k, LispE* l);
@@ -651,6 +740,20 @@ public:
     virtual Element* leftshift(LispE* l, Element* e);
     virtual Element* rightshift(LispE* l, Element* e);
     
+    virtual Element* plus_direct(LispE* lisp, Element* e) {
+        return plus(lisp, e);
+    }
+    virtual Element* minus_direct(LispE* lisp, Element* e) {
+        return minus(lisp, e);
+    }
+    virtual Element* multiply_direct(LispE* lisp, Element* e) {
+        return multiply(lisp, e);
+    }
+    
+    virtual Element* divide_direct(LispE* lisp, Element* e) {
+        return divide(lisp, e);
+    }
+
 };
 
 class Error : public Element {
@@ -664,13 +767,13 @@ public:
     
     Error(wstring m) : message(m), Element(t_error) {}
     
-    Error(wstring m, uchar s) : message(m), Element(t_error,s) {}
+    Error(wstring m, uint16_t s) : message(m), Element(t_error,s) {}
 
     Error(u_ustring m) : Element(t_error) {
         message = _u_to_w(m);
     }
     
-    Error(u_ustring m, uchar s) : Element(t_error,s) {
+    Error(u_ustring m, uint16_t s) : Element(t_error,s) {
         message = _u_to_w(m);
     }
 
@@ -705,6 +808,7 @@ public:
     }
     
     Element* equal(LispE* lisp, Element* e);
+    bool egal(Element* e);
 };
 
 class Atome : public Element {
@@ -713,11 +817,22 @@ public:
     short atome;
     
     Atome(short a, u_ustring w) : name(w), atome(a), Element(t_atom) {}
-    Atome(short a, uchar s, u_ustring w) : name(w), atome(a), Element(t_atom, s) {}
+    Atome(short a, uint16_t s, u_ustring w) : name(w), atome(a), Element(t_atom, s) {}
 
+    bool garbageable() {
+        return false;
+    }
+    
     u_ustring asUString(LispE* lisp) {
         return name;
     }
+
+    short function_label() {
+        return atome;
+    }
+    
+    //Atoms cannot be present in the garbage
+    void protecting(bool protection, LispE* lisp) {}
 
     wstring asString(LispE* lisp) {
         return _u_to_w(name);
@@ -737,11 +852,16 @@ public:
         return true;
     }
     
+    bool isNonOperatorAtom() {
+        return true;
+    }
+    
     bool isAtom() {
         return true;
     }
     
     Element* equal(LispE* lisp, Element* e);
+    bool egal(Element* e);
     
     bool Boolean() {
         return atome;
@@ -751,6 +871,13 @@ public:
         return check_ok*(atome == value->label());
     }
     
+    void release() {}
+    void decrementstatus(uint16_t nb) {}
+    void decrementkeep() {}
+    void incrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+
     bool unify(LispE* lisp, Element* value, bool record);
     bool isExecutable(LispE* lisp);
     
@@ -761,7 +888,7 @@ class Atomtype : public Atome {
 public:
 
     Atomtype(short a, u_ustring w) : Atome(a, w) {}
-    Atomtype(short a, uchar s, u_ustring w) : Atome(a, s, w) {}
+    Atomtype(short a, uint16_t s, u_ustring w) : Atome(a, s, w) {}
 
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(atome == value->type_element());
@@ -773,30 +900,12 @@ class Atomnotlabel : public Atome {
 public:
     
     Atomnotlabel(short a, u_ustring w) : Atome(a, w) {}
-    Atomnotlabel(short a, uchar s, u_ustring w) : Atome(a, s, w) {}
+    Atomnotlabel(short a, uint16_t s, u_ustring w) : Atome(a, s, w) {}
     
     short label() {
         return v_null;
     }
     
-};
-
-class Atomfunction : public Element {
-public:
-    Element* body;
-    short function_label;
-    
-    Atomfunction(Element* b, short a) : body(b), Element(a) {
-        function_label = b->index(1)->label();
-    }
-
-    Element* eval(LispE* lisp) {
-        return body;
-    }
-    
-    short label() {
-        return function_label;
-    }
 };
 
 class Operator : public Element {
@@ -808,6 +917,13 @@ public:
     u_ustring asUString(LispE* lisp) {
         return name;
     }
+
+    bool garbageable() {
+        return false;
+    }
+    
+    //Atoms cannot be present in the garbage
+    void protecting(bool protection, LispE* lisp) {}
 
     wstring asString(LispE* lisp) {
         return _u_to_w(name);
@@ -844,6 +960,13 @@ public:
         return true;
     }
 
+    void release() {}
+    void decrementstatus(uint16_t nb) {}
+    void decrementkeep() {}
+    void incrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+
 };
 
 
@@ -857,6 +980,13 @@ public:
         return name;
     }
 
+    bool garbageable() {
+        return false;
+    }
+    
+   //Atoms cannot be present in the garbage
+    void protecting(bool protection, LispE* lisp) {}
+
     wstring asString(LispE* lisp) {
         return _u_to_w(name);
     }
@@ -866,6 +996,10 @@ public:
     }
 
     bool isInstruction() {
+        return true;
+    }
+    
+    bool isNonOperatorAtom() {
         return true;
     }
     
@@ -886,20 +1020,42 @@ public:
     }
     
     Element* eval(LispE*);
+    
+    void release() {}
+    void decrementstatus(uint16_t nb) {}
+    void decrementkeep() {}
+    void incrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+
 };
 
-class Return : public Element {
+class Returnpool : public Element {
 public:
     Element* value;
+    LispE* lisp;
     
-    Return(Element* e) : Element(l_return) {
+    Returnpool(LispE* l, Element* e) : lisp(l), Element(l_return) {
         value = e ;
     }
+
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
 
     u_ustring asUString(LispE* lisp) {
         return value->asUString(lisp);
     }
 
+    //Atoms cannot be present in the garbage
+    void protecting(bool protection, LispE* lisp) {}
+
+    Returnpool* set(Element* e) {
+        value = e;
+        return this;
+    }
+    
     wstring asString(LispE* lisp) {
         return value->asString(lisp);
     }
@@ -908,6 +1064,10 @@ public:
         return value->asNumber();
     }
     
+    float asFloat() {
+        return value->asFloat();
+    }
+
     long asInteger() {
         return value->asInteger();
     }
@@ -945,6 +1105,9 @@ public:
         action = c.substr(1, c.size()-2);
     }
 
+    //Atoms cannot be present in the garbage
+    void protecting(bool protection, LispE* lisp) {}
+
     u_ustring asUString(LispE* lisp) {
         return(U"c" + action + U"r");
     }
@@ -953,7 +1116,9 @@ public:
         return(L"c" + _u_to_w(action) + L"r");
     }
     
-    Element* cadr(LispE*, Element*);
+    Element* cadr(LispE* lisp, Element* e) {
+        return e->cadr(lisp, action);
+    }
     
     bool isAtom() {
         return true;
@@ -972,6 +1137,143 @@ public:
     }
 };
 
+class Float : public Element {
+public:
+  
+    float number;
+    Float(float d) : Element(t_float) {
+        number = d;
+    }
+    
+    Float(float d, uint16_t s) : number(d), Element(t_float, s) {}
+    
+    bool equalvalue(float v) {
+        return (v == number);
+    }
+
+    Element* quoting(LispE*) {
+        return this;
+    }
+
+    Element* invert_sign(LispE* lisp);
+    Element* reverse(LispE*, bool duplique = true);
+    
+    bool egal(Element* e);
+    Element* equal(LispE* lisp, Element* e);
+    Element* less(LispE* lisp, Element* e);
+    Element* lessorequal(LispE* lisp, Element* e);
+    Element* more(LispE* lisp, Element* e);
+    Element* moreorequal(LispE* lisp, Element* e);
+    
+    char check_match(LispE* lisp, Element* value) {
+        return check_ok*(number == value->asFloat());
+    }
+    
+    bool unify(LispE* lisp, Element* value, bool record) {
+        return (value == this || value->asFloat() == number);
+    }
+    
+    bool isNumber() {
+        return true;
+    }
+    
+    double checkNumber(LispE* lisp) {
+        return number;
+    }
+    
+    long checkInteger(LispE* lisp) {
+        return number;
+    }
+    
+    float checkFloat(LispE* lisp) {
+        return number;
+    }
+    
+    wstring asString(LispE* lisp) {
+        return convertToWString(number);
+    }
+
+    string toString(LispE* lisp) {
+        return convertToString(number);
+    }
+
+    double asNumber() {
+        return number;
+    }
+
+    float asFloat() {
+        return number;
+    }
+
+    long asInteger() {
+        return (long)number;
+    }
+    
+    int asInt() {
+        return (int)number;
+    }
+
+    bool Boolean() {
+        return (number);
+    }
+    
+    virtual Element* fullcopy() {
+        return new Float(number);
+    }
+    
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+        return new Float(number);
+    }
+
+    virtual Element* copying(bool duplicate = true) {
+        if (!is_protected() || !duplicate)
+            return this;
+        
+        return new Float(number);
+    }
+    
+    Element* bit_not(LispE* l);
+    Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
+    Element* bit_or(LispE* l, Element* e);
+    Element* bit_xor(LispE* l, Element* e);
+    Element* plus(LispE* l, Element* e);
+    Element* minus(LispE* l, Element* e);
+    Element* multiply(LispE* l, Element* e);
+    Element* divide(LispE* l, Element* e);
+    Element* mod(LispE* l, Element* e);
+    Element* power(LispE* l, Element* e);
+    Element* leftshift(LispE* l, Element* e);
+    Element* rightshift(LispE* l, Element* e);
+    
+    Element* plus_direct(LispE* lisp, Element* e);
+    Element* minus_direct(LispE* lisp, Element* e);
+    Element* multiply_direct(LispE* lisp, Element* e);
+    Element* divide_direct(LispE* lisp, Element* e);
+};
+
+class Floatpool : public Float {
+public:
+    LispE* lisp;
+    Floatpool(LispE* l, double d) : lisp(l), Float(d) {}
+    Floatpool(float d) : lisp(NULL), Float(d, s_constant) {}
+    
+    inline Floatpool* set(float d) {
+        number = d;
+        return this;
+    }
+    
+    virtual void decrementstatus(uint16_t nb);
+    virtual void decrement();
+    virtual void release();
+    
+    virtual Element* fullcopy();
+    virtual Element* copyatom(uint16_t s);
+    virtual Element* copying(bool duplicate = true);
+};
+
 class Number : public Element {
 public:
   
@@ -980,19 +1282,20 @@ public:
         number = d;
     }
     
-    Number(double d, uchar s) : number(d), Element(t_number, s) {}
+    Number(double d, uint16_t s) : number(d), Element(t_number, s) {}
     
     bool equalvalue(double v) {
         return (v == number);
     }
 
-    Element* quoting(Element*) {
+    Element* quoting(LispE*) {
         return this;
     }
 
-    Element* inversion(LispE* lisp);
+    Element* invert_sign(LispE* lisp);
     Element* reverse(LispE*, bool duplique = true);
     
+    bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     Element* less(LispE* lisp, Element* e);
     Element* lessorequal(LispE* lisp, Element* e);
@@ -1030,7 +1333,11 @@ public:
     double asNumber() {
         return number;
     }
-    
+
+    float asFloat() {
+        return number;
+    }
+
     long asInteger() {
         return (long)number;
     }
@@ -1043,21 +1350,18 @@ public:
         return (number);
     }
     
-    // Numbers cannot be present in the garbage
-    void protecting(bool protection) {}
-    
     virtual Element* fullcopy() {
         return new Number(number);
     }
     
-    virtual Element* copyatom(uchar s) {
+    virtual Element* copyatom(uint16_t s) {
         if (status < s)
             return this;
         return new Number(number);
     }
 
     virtual Element* copying(bool duplicate = true) {
-        if (status < s_protect || !duplicate)
+        if (!is_protected() || !duplicate)
             return this;
         
         return new Number(number);
@@ -1077,6 +1381,10 @@ public:
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
     
+    Element* plus_direct(LispE* lisp, Element* e);
+    Element* minus_direct(LispE* lisp, Element* e);
+    Element* multiply_direct(LispE* lisp, Element* e);
+    Element* divide_direct(LispE* lisp, Element* e);
 };
 
 class Numberpool : public Number {
@@ -1085,28 +1393,80 @@ public:
     Numberpool(LispE* l, double d) : lisp(l), Number(d) {}
     Numberpool(double d) : lisp(NULL), Number(d, s_constant) {}
     
-    virtual void decrementstatus(uchar nb, bool top);
+    inline Numberpool* set(double d) {
+        number = d;
+        return this;
+    }
+    
+    virtual void decrementstatus(uint16_t nb);
+    virtual void decrement();
     virtual void release();
     
     virtual Element* fullcopy();
-    virtual Element* copyatom(uchar s);
+    virtual Element* copyatom(uint16_t s);
     virtual Element* copying(bool duplicate = true);
+};
+
+class Constfloat : public Floatpool {
+public:
+    bool provide;
+    
+    Constfloat(double d) : Floatpool(d) {
+        status = s_constant;
+        provide = false;
+    }
+    
+    Constfloat(LispE* lisp, double d) : Floatpool(lisp, d) {
+		status = s_constant;
+        provide = false;
+	}
+
+    bool garbageable() {
+        return false;
+    }
+    
+    void incrementstatus(uint16_t nb) {}
+    void decrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+
+    void release() {}
+    
+    Element* fullcopy();
+    Element* copyatom(uint16_t s);
+    Element* copying(bool duplicate = true);
+    Element* duplicate_constant(bool pair = false);
 };
 
 class Constnumber : public Numberpool {
 public:
+    bool provide;
     
-	Constnumber(double d) : Numberpool(d) {}
-	Constnumber(LispE* lisp, double d) : Numberpool(lisp, d) {
-		status = s_constant;
-	}
+    Constnumber(double d) : Numberpool(d) {
+        status = s_constant;
+        provide = false;
+    }
+    
+    Constnumber(LispE* lisp, double d) : Numberpool(lisp, d) {
+        status = s_constant;
+        provide = false;
+    }
 
-    void decrementstatus(uchar nb, bool top) {}
+    bool garbageable() {
+        return false;
+    }
+    
+    void incrementstatus(uint16_t nb) {}
+    void decrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+
     void release() {}
     
     Element* fullcopy();
-    Element* copyatom(uchar s);
+    Element* copyatom(uint16_t s);
     Element* copying(bool duplicate = true);
+    Element* duplicate_constant(bool pair = false);
 };
 
 class Integer : public Element {
@@ -1117,13 +1477,18 @@ public:
         integer = d;
     }
     
-    Integer(long d, uchar s) : integer(d), Element(t_integer, s) {}
+    Integer(long d, uint16_t s) : integer(d), Element(t_integer, s) {}
 
-    Element* quoting(Element*) {
+    Element* quoting(LispE*) {
         return this;
     }
 
-    Element* inversion(LispE* lisp);
+    bool equalvalue(long n) {
+        return (integer == n);
+    }
+    
+    Element* invert_sign(LispE* lisp);
+    bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     Element* less(LispE* lisp, Element* e);
     Element* lessorequal(LispE* lisp, Element* e);
@@ -1139,9 +1504,6 @@ public:
     }
     
     Element* reverse(LispE*, bool duplique = true);
-    
-    // Numbers cannot be present in the garbage
-    void protecting(bool protection) {}
     
     u_ustring asUString(LispE* lisp) {
         return convertToUString(integer);
@@ -1171,6 +1533,10 @@ public:
         return integer;
     }
     
+    float asFloat() {
+        return integer;
+    }
+
     long asInteger() {
         return integer;
     }
@@ -1187,7 +1553,7 @@ public:
         return new Integer(integer);
     }
 
-    virtual Element* copyatom(uchar s) {
+    virtual Element* copyatom(uint16_t s) {
         if (status < s)
             return this;
         return new Integer(integer);
@@ -1196,7 +1562,7 @@ public:
     // There is a difference between the two copies
     //The first one makes a final copy
     virtual Element* copying(bool duplicate = true) {
-        if (status < s_protect || !duplicate)
+        if (!is_protected() || !duplicate)
             return this;
         
         return new Integer(integer);
@@ -1215,7 +1581,33 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
+
+    Element* plus_direct(LispE* lisp, Element* e) {
+        if (e->type == t_integer) {
+            integer += ((Integer*)e)->integer;
+            return this;
+        }
+        return plus(lisp, e);
+    }
     
+    Element* minus_direct(LispE* lisp, Element* e) {
+        if (e->type == t_integer) {
+            integer -= ((Integer*)e)->integer;
+            return this;
+        }
+        return minus(lisp, e);
+    }
+    
+    Element* multiply_direct(LispE* lisp, Element* e) {
+        if (e->type == t_integer) {
+            integer *= ((Integer*)e)->integer;
+            return this;
+        }
+        return multiply(lisp, e);
+    }
+    
+    Element* divide_direct(LispE* lisp, Element* e);
+
 };
 
 class Integerpool : public Integer {
@@ -1223,32 +1615,59 @@ public:
     LispE* lisp;
     Integerpool(LispE* l, long d) : lisp(l), Integer(d) {}
     Integerpool(long d) : lisp(NULL), Integer(d, s_constant) {}
+
+    inline Integerpool* set(long d) {
+        integer = d;
+        return this;
+    }
+
+    virtual void decrementstatus(uint16_t nb);
+    virtual void decrement();
     
-    virtual void decrementstatus(uchar nb, bool top);
     virtual void release();
     virtual Element* fullcopy();
-    virtual Element* copyatom(uchar s);
+    virtual Element* copyatom(uint16_t s);
     virtual Element* copying(bool duplicate = true);
 
 };
 
 class Constinteger : public Integerpool {
 public:
+    bool provide;
     
-    Constinteger(long d) : Integerpool(d) {}
+    Constinteger(long d) : Integerpool(d) {
+        provide = false;
+        status = s_constant;
+    }
     
-    void decrementstatus(uchar nb, bool top) {}
+    Constinteger(LispE* l, double d) : Integerpool(l, d) {
+        status = s_constant;
+        provide = false;
+    }
+
+    bool garbageable() {
+        return false;
+    }
+    
+    void incrementstatus(uint16_t nb) {}
+    void decrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+
+    
     void release() {}
     Element* fullcopy();
-    Element* copyatom(uchar s);
+    Element* copyatom(uint16_t s);
     Element* copying(bool duplicate = true);
-
+    Element* duplicate_constant(bool pair = false);
 };
 
 class String : public Element {
 public:
   
     u_ustring content;
+    
+    String() : Element(t_string) {}
     
     String(wchar_t c) : Element(t_string) {
         content = (u_uchar)c;
@@ -1259,13 +1678,13 @@ public:
     String(wstring c) : Element(t_string) {
         content = _w_to_u(c);
     }
-    String(wstring c, uchar s) : Element(t_string, s) {
+    String(wstring c, uint16_t s) : Element(t_string, s) {
         content = _w_to_u(c);
     }
     String(u_ustring c) : Element(t_string) {
         content = c;
     }
-    String(u_ustring c, uchar s) : Element(t_string, s) {
+    String(u_ustring c, uint16_t s) : Element(t_string, s) {
         content = c;
     }
 
@@ -1273,10 +1692,11 @@ public:
         return true;
     }
     
-    Element* quoting(Element*) {
+    Element* quoting(LispE*) {
         return this;
     }
     
+    Element* cadr(LispE*, u_ustring& actions);
     Element* rotate(bool left);
     
     bool compare_string(LispE*, u_ustring& u) {
@@ -1305,6 +1725,7 @@ public:
 
     Element* replace(LispE* lisp, long i, Element* e);
     
+    bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     Element* less(LispE* lisp, Element* e);
     Element* lessorequal(LispE* lisp, Element* e);
@@ -1313,6 +1734,8 @@ public:
     
     Element* protected_index(LispE*,long i);
     
+    Element* value_from_index(LispE*, long i);
+    
     Element* value_on_index(LispE*, long i);
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
@@ -1320,14 +1743,12 @@ public:
 
     Element* last_element(LispE* lisp);
     
-    //The strings cannot be present in the garbage
-    void protecting(bool protection) {}
-    
     long size() {
         return content.size();
     }
     
     Element* extraction(LispE* lisp, List*);
+    Element* replace_in(LispE* lisp, List*);
     
     Element* car(LispE*);
     Element* cdr(LispE*);
@@ -1341,7 +1762,7 @@ public:
         return ujsonstring(content);
     }
     
-    virtual Element* copyatom(uchar s) {
+    virtual Element* copyatom(uint16_t s) {
         if (status < s)
             return this;
         return new String(content);
@@ -1354,7 +1775,7 @@ public:
     // There is a difference between the two copies
     //The first one makes a final copy
     virtual Element* copying(bool duplicate = true) {
-        if (status < s_protect || !duplicate)
+        if (!is_protected() || !duplicate)
             return this;
         
         return new String(content);
@@ -1398,6 +1819,12 @@ public:
         return convertingfloathexa(code.c_str());
     }
     
+    float asFloat() {
+        string code;
+        s_unicode_to_utf8(code, content);
+        return convertingfloathexa(code.c_str());
+    }
+
     long asInteger() {
         string code;
         s_unicode_to_utf8(code, content);
@@ -1411,13 +1838,22 @@ public:
 class Stringpool : public String {
 public:
     LispE* lisp;
+
+    Stringpool(LispE* l) : lisp(l) {}
     Stringpool(LispE* l, u_ustring& d) : lisp(l), String(d) {}
     Stringpool(u_ustring& d) : lisp(NULL), String(d, s_constant) {}
-
-    void decrementstatus(uchar nb, bool top);
+    
+    inline Stringpool* set(u_ustring& d) {
+        content = d;
+        return this;
+    }
+    
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
     void release();
     virtual Element* fullcopy();
-    virtual Element* copyatom(uchar s);
+    virtual Element* copyatom(uint16_t s);
     virtual Element* copying(bool duplicate = true);
 
 };
@@ -1425,18 +1861,32 @@ public:
 
 class Conststring : public Stringpool {
 public:
+    bool provide;
     
-    Conststring(u_ustring w) : Stringpool(w) {}
+    Conststring(u_ustring w) : Stringpool(w) {
+        provide = false;
+        status = s_constant;
+    }
+    
 	Conststring(LispE* l, u_ustring w) : Stringpool(l, w) {
 		status = s_constant;
+        provide = false;
 	}
 
-    void decrementstatus(uchar nb, bool top) {}
+    bool garbageable() {
+        return false;
+    }
+    
+    void incrementstatus(uint16_t nb) {}
+    void decrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
     void release() {}
-    Element* fullcopy();
-    Element* copyatom(uchar s);
-    Element* copying(bool duplicate = true);
 
+    Element* fullcopy();
+    Element* copyatom(uint16_t s);
+    Element* copying(bool duplicate = true);
+    Element* duplicate_constant(bool pair = false);
 };
 
 
@@ -1533,8 +1983,8 @@ public:
     wstring asString(LispE* lisp);
 
     void append(Element* e) {
-        e->incrementstatus(status + 1, false);
-        value->decrementstatus(status + 1, false);
+        e->increment();
+        value->decrement();
         value = e;
     }
     
@@ -1556,8 +2006,8 @@ public:
     }
     
     void append(Element* e) {
-        e->incrementstatus(status + 1, false);
-        value->decrementstatus(status + 1, false);
+        e->increment();
+        value->decrement();
         value = e;
     }
     
@@ -1582,10 +2032,16 @@ public:
         usermarking =  false;
     }
     
-    Dictionary(uchar s) : Element(t_dictionary, s) {
+    Dictionary(uint16_t s) : Element(t_dictionary, s) {
         object = NULL;
         marking = false;
         usermarking =  false;
+    }
+    
+    ~Dictionary() {
+        //There might be some left over
+        for (auto& a : dictionary)
+            a.second->decrement();
     }
     
     bool isDictionary() {
@@ -1602,6 +2058,10 @@ public:
     
     bool mark() {
         return marking;
+    }
+
+    virtual Element* newInstance() {
+        return new Dictionary;
     }
 
     void setusermark(bool v) {
@@ -1623,6 +2083,7 @@ public:
         marking = false;
     }
 
+    void garbaging_values(LispE*);
     
     Element* loop(LispE* lisp, short label,  List* code);
     
@@ -1635,7 +2096,7 @@ public:
     Element* search_reverse(LispE*, Element* element_value, long idx);    
     Element* checkkey(LispE* lisp, Element* e);
 
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         if (marking)
             return object;
         
@@ -1646,14 +2107,14 @@ public:
         for (auto& a: dictionary) {
             e = a.second->fullcopy();
             d->dictionary[a.first] = e;
-            e->incrementstatus(1, false);
+            e->increment();
         }
         marking = false;
         return d;
     }
 
-    Element* copying(bool duplicate = true) {
-        if (status < s_protect && !duplicate)
+    virtual Element* copying(bool duplicate = true) {
+        if (!is_protected() && !duplicate)
             return this;
         
         Dictionary* d = new Dictionary;
@@ -1661,91 +2122,73 @@ public:
         for (auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
-            e->incrementstatus(1, false);
+            e->increment();
         }
         return d;
     }
     
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+
+        Dictionary* d = new Dictionary;
+        Element* e;
+        for (auto& a: dictionary) {
+            e = a.second->copying(false);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant_container(bool pair = false) {
-        if (status == s_constant) {
-            Dictionary* d = new Dictionary;
-            Element* e;
-            for (auto& a: dictionary) {
-                e = a.second->copying(false);
-                d->dictionary[a.first] = e;
-                e->incrementstatus(1, false);
-            }
-        }
-        return this;
-    }
+    Element* duplicate_constant(bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
-    void release() {
-        if (!status) {
-            if (marking)
-                return;
+    virtual void release() {
+        if (!status && !marking) {
             marking = true;
             for (auto& a: dictionary)
-                a.second->decrementstatus(1, false);
+                a.second->decrement();
             marking = false;
             delete this;
         }
     }
     
-    void incrementstatus(uchar nb, bool top) {
-        if (status < s_protect) {
-            if (marking)
-                return;
-            marking = true;
-            status+=nb;
-            if (top) {
-                for (auto& a : dictionary) {
-                    a.second->incrementstatus(nb, false);
-                }
-            }
-            marking = false;
-        }
-    }
-    
-    void decrementstatus(uchar nb, bool top) {
-        if (marking)
+    virtual void decrement() {
+        if (is_protected() || marking)
             return;
-        marking = true;
-
-        if (status > s_destructible && status < s_protect) {
-            status-=nb;
-            if (top) {
-                for (auto& a : dictionary)
-                    a.second->decrementstatus(nb, false);
-            }
-        }
         
+        marking = true;
+        
+        status--;
         if (!status) {
             for (auto& a : dictionary)
-                a.second->decrementstatus(1, false);
+                a.second->decrement();
             delete this;
         }
         else
             marking = false;
     }
     
-    //The status is decremented without destroying the element.
-    void decrementSansDelete(uchar nb) {
-        if (status > s_destructible && status < s_protect) {
-            if (marking)
-                return;
-            marking = true;
 
-            status-=nb;
+    virtual void decrementstatus(uint16_t nb) {
+        if (is_protected() || marking)
+            return;
+        
+        marking = true;
+        
+        status-=nb;
+        if (!status) {
             for (auto& a : dictionary)
-                a.second->decrementstatus(nb, false);
-            marking = false;
+                a.second->decrement();
+            delete this;
         }
+        else
+            marking = false;
     }
-    
     
     bool unify(LispE* lisp, Element* e, bool record) {
         if (marking)
@@ -1768,7 +2211,7 @@ public:
                     return false;
                 }
             }
-            catch(...) {
+            catch (...) {
                 marking = false;
                 return false;
             }
@@ -1777,6 +2220,7 @@ public:
         return true;
     }
      
+    bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
     long size() {
@@ -1785,7 +2229,7 @@ public:
     
     Element* reverse(LispE*, bool duplique = true);
     
-    void protecting(bool protection) {
+    void protecting(bool protection, LispE* lisp) {
         if (protection) {
             if (status == s_constant)
                 status = s_protect;
@@ -1796,7 +2240,7 @@ public:
         }
         
         for (auto& a: dictionary)
-            a.second->protecting(protection);
+            a.second->protecting(protection, lisp);
     }
     
     wstring jsonString(LispE* lisp) {
@@ -1898,25 +2342,25 @@ public:
         s_utf8_to_unicode(k, USTR(c), c.size());
         try {
             Element* a = dictionary.at(k);
-            a->decrementstatus(status+1,false);
+            a->decrement();
             dictionary[k] = e;
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             dictionary[k] = e;
         }
-        e->incrementstatus(status+1,false);
+        e->increment();
     }
     
     void recording(u_ustring& k, Element* e) {
         try {
             Element* a = dictionary.at(k);
-            a->decrementstatus(status+1, false);
+            a->decrement();
             dictionary[k] = e;
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             dictionary[k] = e;
         }
-        e->incrementstatus(status+1,false);
+        e->increment();
     }
 
     Element* replace(LispE* lisp, Element* i, Element* e) {
@@ -1939,10 +2383,10 @@ public:
         try {
             Element* e = dictionary.at(k);
             dictionary.erase(k);
-            e->decrementstatus(status+1,false);
+            e->decrement();
             return true;
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             return false;
         }
     }
@@ -1951,15 +2395,70 @@ public:
         try {
             Element* e = dictionary.at(k);
             dictionary.erase(k);
-            e->decrementstatus(status+1,false);
+            e->decrement();
             return true;
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             return false;
         }
     }
 
 };
+
+class Dictionarypool : public Dictionary {
+public:
+    u_ustring u_key;
+    LispE* lisp;
+    bool choice;
+    
+    Dictionarypool(LispE* l) : choice(true), lisp(l) {}
+
+    void reversechoice() {
+        choice = 1 - choice;
+    }
+
+    bool verify() {
+        return choice;
+    }
+
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
+    Element* newInstance();
+    Element* copyatom(uint16_t s);
+    
+    void append(LispE* lisp, u_ustring& k);
+    void append(LispE* lisp, double v);
+    void append(LispE* lisp, long v);
+    
+    void append(Element* e) {
+        if (choice) {
+            if (!e->isNumber() && !e->isString())
+                throw new Error("Error: a key should be a string or a number");
+            else
+                if (u_key != U"") {
+                    u_ustring msg = U"Error: missing value for key:'";
+                    msg += u_key;
+                    msg += U"'";
+                    throw new Error(msg);
+                }
+            u_key = e->asUString(lisp);
+            e->release();
+        }
+        else {
+            dictionary[u_key] = e;
+            e->increment();
+            u_key = U"";
+            reversechoice();
+        }
+    }
+
+
+};
+
 
 //This version of the dictionary is indexed on a number
 class Dictionary_n : public Element {
@@ -1977,16 +2476,26 @@ public:
         usermarking = false;
     }
     
-    Dictionary_n(uchar s) : Element(t_dictionaryn, s) {
+    Dictionary_n(uint16_t s) : Element(t_dictionaryn, s) {
         object = NULL;
         marking = false;
         usermarking = false;
     }
     
+    ~Dictionary_n() {
+        //There might be some left over
+        for (auto& a : dictionary)
+            a.second->decrement();
+    }
+
     bool isDictionary() {
         return true;
     }
     
+    virtual Element* newInstance() {
+        return new Dictionary_n;
+    }
+
     bool isContainer() {
         return true;
     }
@@ -2018,6 +2527,8 @@ public:
         marking = false;
     }
 
+    void garbaging_values(LispE*);
+    
     Element* minimum(LispE*);
     Element* maximum(LispE*);
 
@@ -2030,7 +2541,7 @@ public:
     Element* checkkey(LispE* lisp, Element* e);
     Element* reverse(LispE*, bool duplique = true);
 
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         if (marking)
             return object;
         
@@ -2041,15 +2552,15 @@ public:
         for (auto& a: dictionary) {
             e = a.second->fullcopy();
             d->dictionary[a.first] = e;
-            e->incrementstatus(1,false);
+            e->increment();
         }
         marking = false;
         return d;
     }
     
 
-    Element* copying(bool duplicate = true) {
-        if (status < s_protect && !duplicate)
+    virtual Element* copying(bool duplicate = true) {
+        if (!is_protected() && !duplicate)
             return this;
         
         Dictionary_n* d = new Dictionary_n;
@@ -2057,22 +2568,37 @@ public:
         for (auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
-            e->incrementstatus(1,false);
+            e->increment();
         }
         return d;
     }
     
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+
+        Dictionary_n* d = new Dictionary_n;
+        Element* e;
+        for (auto& a: dictionary) {
+            e = a.second->copying(false);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant_container(bool pair = false) {
+    Element* duplicate_constant(bool pair = false) {
         if (status == s_constant) {
             Dictionary_n* d = new Dictionary_n;
             Element* e;
             for (auto& a: dictionary) {
                 e = a.second->copying(false);
                 d->dictionary[a.first] = e;
-                e->incrementstatus(1,false);
+                e->increment();
             }
+            return d;
         }
         return this;
     }
@@ -2080,66 +2606,46 @@ public:
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     void release() {
-        if (!status) {
-            if (marking)
-                return;
+        if (!status && !marking) {
             marking = true;
             for (auto& a: dictionary)
-                a.second->decrementstatus(1, false);
+                a.second->decrement();
             marking = false;
             delete this;
         }
     }
     
-    void incrementstatus(uchar nb, bool top) {
-        if (status < s_protect) {
-            if (marking)
-                return;
-            marking = true;
-            status+=nb;
-            if (top) {
-                for (auto& a : dictionary) {
-                    a.second->incrementstatus(nb, false);
-                }
-            }
-            marking = false;
-        }
-    }
-    
-    void decrementstatus(uchar nb, bool top) {
-        if (marking)
+    void decrement() {
+        if (is_protected() || marking)
             return;
-        marking = true;
-
-        if (status > s_destructible && status < s_protect) {
-            status-=nb;
-            if (top) {
-                for (auto& a : dictionary)
-                    a.second->decrementstatus(nb, false);
-            }
-        }
         
+        marking = true;
+        
+        status--;
         if (!status) {
             for (auto& a : dictionary)
-                a.second->decrementstatus(1, false);
+                a.second->decrement();
             delete this;
         }
         else
             marking = false;
     }
     
-    //The status is decremented without destroying the element.
-    void decrementSansDelete(uchar nb) {
-        if (status > s_destructible && status < s_protect) {
-            if (marking)
-                return;
-            marking = true;
 
-            status-=nb;
+    void decrementstatus(uint16_t nb) {
+        if (is_protected() || marking)
+            return;
+        
+        marking = true;
+        
+        status-=nb;
+        if (!status) {
             for (auto& a : dictionary)
-                a.second->decrementstatus(nb, false);
-            marking = false;
+                a.second->decrement();
+            delete this;
         }
+        else
+            marking = false;
     }
     
     bool unify(LispE* lisp, Element* e, bool record) {
@@ -2163,7 +2669,7 @@ public:
                     return false;
                 }
             }
-            catch(...) {
+            catch (...) {
                 marking = false;
                 return false;
             }
@@ -2173,13 +2679,14 @@ public:
         return true;
     }
     
+    bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
     long size() {
         return dictionary.size();
     }
     
-    void protecting(bool protection) {
+    void protecting(bool protection, LispE* lisp) {
         if (protection) {
             if (status == s_constant)
                 status = s_protect;
@@ -2190,7 +2697,7 @@ public:
         }
         
         for (auto& a: dictionary)
-            a.second->protecting(protection);
+            a.second->protecting(protection, lisp);
     }
     
     
@@ -2296,13 +2803,13 @@ public:
     void recording(double  k, Element* e) {
         try {
             Element* a = dictionary.at(k);
-            a->decrementstatus(status+1, false);
+            a->decrement();
             dictionary[k] = e;
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             dictionary[k] = e;
         }
-        e->incrementstatus(status+1,false);
+        e->increment();
     }
     
     Element* replace(LispE* lisp, Element* i, Element* e) {
@@ -2323,16 +2830,33 @@ public:
         try {
             Element* e = dictionary.at(d);
             dictionary.erase(d);
-            e->decrementstatus(status+1,false);
+            e->decrement();
             return true;
         }
-        catch (const std::out_of_range& oor) {
+        catch (...) {
             return false;
         }
     }
     
     //bool traverse(LispE*, Dictionary_as_list*);
 };
+
+class Dictionary_npool : public Dictionary_n {
+public:
+    LispE* lisp;
+    
+    Dictionary_npool(LispE* l) : lisp(l) {}
+
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
+    Element* fullcopy();
+    Element* copyatom(uint16_t s);
+    Element* copying(bool duplicate = true);
+    Element* newInstance();
+};
+
 
 // A temporary structure to read a dictionary
 class Dictionary_as_list : public Element {
@@ -2454,8 +2978,8 @@ public:
     }
     
     bool unify(LispE* lisp, Element* e, bool record);
-    bool traverse(LispE*, Dictionary*, vector<u_ustring>& keys, vector<long>& consummed, long di, long i, bool record);
-    bool traverse(LispE*, Dictionary_n*, vector<double>& keys, vector<long>& consummed, long di, long i, bool record);
+    bool traverse(LispE*, Dictionary*, Strings* keys, Integers* consummed, long di, long i, bool record);
+    bool traverse(LispE*, Dictionary_n*, Numbers* keys, Integers* consummed, long di, long i, bool record);
 
     void release() {
         if (!status) {
@@ -2475,14 +2999,7 @@ public:
     u_ustring key;
     bool choice;
     
-    Dictionary_as_buffer() : Element(t_dictionary) {
-        dico = new Dictionary;
-        choice = true;
-    }
-    
-    bool tobegarbaged() {
-        return !choice;
-    }
+    Dictionary_as_buffer(LispE* lisp);
     
     void reversechoice() {
         choice = 1 - choice;
@@ -2512,7 +3029,7 @@ public:
         }
         else {
             dico->dictionary[key] = e;
-            e->incrementstatus(1, false);
+            e->increment();
             key = U"";
             reversechoice();
         }
@@ -2538,16 +3055,20 @@ public:
     std::set<u_ustring> ensemble;
     Conststring exchange_value;
 
-    Set(LispE* lisp) : exchange_value(lisp, U""), Element(t_set) {}
+    Set() : exchange_value(U""), Element(t_set) {}
     
-    Set(LispE* lisp, std::set<u_ustring>& e) : exchange_value(lisp, U""), ensemble(e), Element(t_set) {}
+    Set(std::set<u_ustring>& e) : exchange_value(U""), ensemble(e), Element(t_set) {}
     
-    Set(LispE* lisp, uchar s) : exchange_value(lisp, U""), Element(t_set, s) {}
+    Set(uint16_t s) : exchange_value(U""), Element(t_set, s) {}
     
     bool isContainer() {
         return true;
     }
     
+    virtual Element* newInstance() {
+        return new Set();
+    }
+
     void* begin_iter() {
         return new std::set<u_ustring>::iterator(ensemble.begin());
     }
@@ -2569,14 +3090,14 @@ public:
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
 
-    Element* fullcopy();
-    Element* copying(bool duplicate = true);
+    virtual Element* fullcopy();
+    virtual Element* copying(bool duplicate = true);
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant_container(bool pair = false) {
+    Element* duplicate_constant(bool pair = false) {
         if (status == s_constant) {
-            return new Set(exchange_value.lisp, ensemble);
+            return new Set(ensemble);
         }
         return this;
     }
@@ -2593,6 +3114,7 @@ public:
         return ensemble == ((Set*)e)->ensemble;
     }
      
+    bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
     long size() {
@@ -2675,6 +3197,8 @@ public:
         return &exchange_value;
     }
 
+    Element* value_from_index(LispE*, long i);
+    
     Element* value_on_index(LispE*, long i);
     Element* protected_index(LispE*,long i);
 
@@ -2773,8 +3297,44 @@ public:
         }
     }
     
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+
+        return new Set(ensemble);
+    }
 
     Element* plus(LispE* l, Element* e);
+};
+
+class Setpool : public Set {
+public:
+    LispE* lisp;
+    
+    Setpool(LispE* l) : lisp(l) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+
+    Setpool(LispE* l, Set* e) : lisp(l), Set(e->ensemble) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+
+    Setpool* set(Set* s) {
+        ensemble = s->ensemble;
+        return this;
+    }
+    
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
+    Element* copyatom(uint16_t s);
+    Element* newInstance();
+
 };
 
 class Set_n : public Element {
@@ -2783,20 +3343,31 @@ public:
     std::set<double> ensemble;
     Constnumber exchange_value;
     
-    Set_n(LispE* lisp) : exchange_value(lisp, 0), Element(t_setn) {}
+    Set_n() : exchange_value(0), Element(t_setn) {}
     
-    Set_n(LispE* lisp, std::set<double>& e) : exchange_value(lisp, 0), ensemble(e), Element(t_setn) {}
+    Set_n(std::set<double>& e) : exchange_value(0), ensemble(e), Element(t_setn) {}
     
-    Set_n(LispE* lisp, uchar s) : exchange_value(lisp, 0), Element(t_setn, s) {}
+    Set_n(uint16_t s) : exchange_value(0), Element(t_setn, s) {}
     
     bool isContainer() {
         return true;
     }
         
+    Element* newInstance() {
+        return new Set_n();
+    }
+
     void* begin_iter() {
         return new std::set<double>::iterator(ensemble.begin());
     }
     
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+
+        return new Set_n(ensemble);
+    }
+
     Element* next_iter(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
@@ -2819,9 +3390,9 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant_container(bool pair = false) {
+    Element* duplicate_constant(bool pair = false) {
         if (status == s_constant) {
-            return new Set_n(exchange_value.lisp, ensemble);
+            return new Set_n(ensemble);
         }
         return this;
     }
@@ -2838,6 +3409,7 @@ public:
         return ensemble == ((Set_n*)e)->ensemble;
     }
      
+    bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
     long size() {
@@ -2911,6 +3483,8 @@ public:
         return &exchange_value;
     }
 
+    Element* value_from_index(LispE*, long i);
+    
     Element* value_on_index(LispE*, long i);
     Element* protected_index(LispE*,long i);
     
@@ -2992,6 +3566,36 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
+
+};
+
+class Set_npool : public Set_n {
+public:
+    LispE* lisp;
+    
+    Set_npool(LispE* l) : lisp(l) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+
+    Set_npool(LispE* l, Set_n* e) : lisp(l), Set_n(e->ensemble) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+
+    Set_npool* set(Set_n* s) {
+        ensemble = s->ensemble;
+        return this;
+    }
+    
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
+    Element* copyatom(uint16_t s);
+    Element* newInstance();
 
 };
 
