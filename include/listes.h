@@ -128,32 +128,32 @@ public:
         buffer[last++] = val;
     }
     
-    inline void increment() {
-        for (long i = 0; i < last; i++) {
+    inline void increment(long home) {
+        for (long i = home; i < last; i++) {
             buffer[i]->increment();
         }
     }
 
-    inline void increment(uint16_t nb) {
-        for (long i = 0; i < last; i++) {
+    inline void increment(long home, uint16_t nb) {
+        for (long i = home; i < last; i++) {
             buffer[i]->incrementstatus(nb);
         }
     }
 
-    inline void decrement() {
-        for (long i = 0; i < last; i++) {
+    inline void decrement(long home) {
+        for (long i = home; i < last; i++) {
             buffer[i]->decrement();
         }
     }
 
-    inline void decrement(uint16_t nb) {
-        for (long i = 0; i < last; i++) {
+    inline void decrement(long home, uint16_t nb) {
+        for (long i = home; i < last; i++) {
             buffer[i]->decrementstatus(nb);
         }
     }
 
-    inline void decrement(Element* e) {
-        for (long i = 0; i < last; i++) {
+    inline void decrement(long home, Element* e) {
+        for (long i = home; i < last; i++) {
             if (e == buffer[i])
                 e->decrementkeep();
             else
@@ -185,7 +185,7 @@ public:
         item = l.item;
         //We modify the common reference counter
         item->status++;
-        item->increment();
+        item->increment(home);
     }
     
     LIST(long t) {
@@ -257,7 +257,7 @@ public:
     }
 
     void clean() {
-        item->decrement();
+        item->decrement(home);
         item->last = home;
     }
     
@@ -331,7 +331,7 @@ public:
     inline void increment() {
         if (!marking) {
             marking = true;
-            item->increment();
+            item->increment(home);
             marking = false;
         }
     }
@@ -347,7 +347,7 @@ public:
     inline void decrement() {
         if (!marking) {
             marking = true;
-            item->decrement();
+            item->decrement(home);
             marking = false;
         }
     }
@@ -363,7 +363,7 @@ public:
     inline void decrement(Element* e) {
         if (!marking) {
             marking = true;
-            item->decrement(e);
+            item->decrement(home, e);
             marking = false;
         }
     }
@@ -382,7 +382,7 @@ public:
         else {
             //We clean the whole structure
             //and reset last to its first element
-            item->decrement();
+            item->decrement(home);
             item->last = home;
         }
     }
@@ -401,7 +401,7 @@ public:
         else {
             //We clean the whole structure
             //and reset last to its first element
-            item->decrement(e);
+            item->decrement(home, e);
             item->last = home;
         }
     }
