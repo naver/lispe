@@ -343,7 +343,9 @@ Element* List::composing(LispE* lisp, bool docompose) {
     else {
         _id_var = new List;
         lisp->garbaging(_id_var);
-        _id_var->append(lisp->provideInteger(idx_var++));
+        _value = new Integer(idx_var++);
+        lisp->garbaging(_value);
+        _id_var->append(_value);
         _id_var->append(zero_);
         //We only create a certain number of variables
         //we expect encapsulation to be less than 16...
@@ -1150,7 +1152,7 @@ Element* List::transformargument(LispE* lisp) {
                     lisp->garbaging(fin);
                     return fin;
                 }
-                if (liste.back() != null_)
+                if (liste.back() != null_ && sz == 2)
                     fin = new Listargumentlabel(this, ilabel);
             }
             else {

@@ -4444,8 +4444,8 @@ Element* List::evall_checking(LispE* lisp) {
 
 
 Element* List::evall_compose(LispE* lisp) {
+    Element* values = null_;
     List* loop = (List*)liste.back();
-
     short i = 4;
     short listsize = liste.size()-1;
     short label;
@@ -4470,7 +4470,8 @@ Element* List::evall_compose(LispE* lisp) {
             liste[i]->eval(lisp);
         }
         
-        loop->liste[2]->eval(lisp)->loop(lisp, loop->liste[1]->label(), loop);
+        values = loop->liste[2]->eval(lisp);
+        values->loop(lisp, loop->liste[1]->label(), loop);
     }
     catch (Error* err) {
         lisp->set_true_as_true();
@@ -4479,6 +4480,7 @@ Element* List::evall_compose(LispE* lisp) {
 
     lisp->set_true_as_true();
 	lisp->delegation->next_stop = nxt;
+    values->release();
     return lisp->get(label);
 }
 
