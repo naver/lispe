@@ -16,7 +16,7 @@
 #include <set>
 
 #ifdef MACDEBUG
-extern vector<Element*> indexes;
+extern vector<Element*> __indexes;
 #endif
 
 //The status to be able to manage the life cycle of an object
@@ -45,7 +45,8 @@ typedef enum {
     t_dictionary, t_dictionaryn, t_data, t_maybe,
     t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
     
-    l_set_max_stack_size, l_addr_, l_stringf,
+    //System instructions
+    l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link,
     
     //Default Lisp instructions
     l_number, l_float, l_string, l_integer, l_atom, 
@@ -57,13 +58,14 @@ typedef enum {
     
     //Recording in the stack or in memory
     l_sleep, l_wait,
-    l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib,
-    l_label, l_setq, l_setg, l_block, l_elapse,
-    l_if, l_ife,  l_ncheck, l_check, l_cond, 
-    l_catch, l_throw, l_maybe, l_terminal,
+    l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib, l_self,l_label,
+    l_setq, l_setg, l_index, l_at_index, l_set_at, l_extract, l_set_range,
+    l_block, l_elapse,
+    l_if, l_ife,  l_ncheck, l_check, l_cond, l_select,
+    l_catch, l_throw, l_maybe,
     
     //Check values
-    l_atomp, l_numberp, l_consp, l_zerop, l_nullp, l_stringp, l_trace, l_flip, l_select,
+    l_atomp, l_numberp, l_consp, l_zerop, l_nullp, l_stringp,
     
     //Numerical operations
     l_sign, l_signp, l_minus_plus,
@@ -75,18 +77,18 @@ typedef enum {
     l_leftshiftequal, l_rightshiftequal,
     l_bitandequal, l_bitandnotequal, l_bitorequal, l_bitxorequal,
     l_divideequal,l_modequal,
+    l_concatenate, l_sum, l_product, l_stringf, l_size,
+    l_and, l_or, l_xor, l_not, l_eq, l_neq,
+    l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_min, l_max,
     
-    l_concatenate, l_sum, l_product,
     l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank,
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     
     //Comparisons
-    l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_max, l_min,
-    l_size, l_use, l_index, l_at_index, l_set_at, l_extract, l_set_range,
-    l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last,
+        
+    l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last, l_flip,
     l_fread, l_fwrite, l_fappend,
-    l_and, l_or, l_xor, l_not, l_eq, l_neq,
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop,
@@ -97,15 +99,14 @@ typedef enum {
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
     
-    l_self, l_while, l_eval, l_mark, l_resetmark,
-    l_loop, l_loopcount, l_range, l_irange, l_multiloop, l_polyloop,
+    l_mark, l_resetmark,
+    l_while, l_loop, l_loopcount, l_range, l_irange, l_multiloop, l_polyloop,
     l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
     l_apply, l_maplist, l_filterlist, l_droplist, l_takelist, l_mapping, l_checking, l_folding,
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
-    l_link,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
     t_comment, l_final
@@ -187,17 +188,17 @@ public:
     
     short type;
 #ifdef MACDEBUG
-    long idx;
-    lisp_code lc;
+    long __idx;
+    lisp_code __lc;
 #endif
     uint16_t status;
     
     Element(short ty) {
         type = ty;
 #ifdef MACDEBUG
-        lc = (lisp_code)type;
-        idx = indexes.size();
-        indexes.push_back(this);
+        __lc = (lisp_code)type;
+        __idx = __indexes.size();
+        __indexes.push_back(this);
 #endif
         status = s_destructible;
     }
@@ -205,16 +206,16 @@ public:
     Element(short ty, uint16_t s) {
         type = ty;
 #ifdef MACDEBUG
-        lc = (lisp_code)type;
-        idx = indexes.size();
-        indexes.push_back(this);
+        __lc = (lisp_code)type;
+        __idx = __indexes.size();
+        __indexes.push_back(this);
 #endif 
         status = s;
     }
     
     virtual ~Element() {
 #ifdef MACDEBUG
-        indexes[idx] = NULL;
+        __indexes[__idx] = NULL;
 #endif
     }
     
@@ -227,7 +228,7 @@ public:
     void replaceVariableNames(LispE* lisp, unordered_map<short, Element*>& names);
     bool replaceVariableNames(LispE* lisp);
     
-    virtual bool check_quote(LispE*) {
+    virtual bool check_quote(LispE*, long i) {
         return false;
     }
     

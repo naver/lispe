@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.10.24.10.26";
+static std::string version = "1.2021.10.26.15.58";
 string LispVersion() {
     return version;
 }
@@ -33,7 +33,7 @@ extern "C" {
 
 //------------------------------------------------------------------------------------------
 #ifdef MACDEBUG
-    vector<Element*> indexes;
+    vector<Element*> __indexes;
 #endif
 //------------------------------------------------------------
 wstring Stackelement::asString(LispE* lisp) {
@@ -807,7 +807,7 @@ void LispE::cleaning() {
         delete handlingutf8;
 #ifdef MACDEBUG
         vector<Element*> errors;
-        for (auto& a: indexes) {
+        for (auto& a: __indexes) {
             if (a != NULL) {
                 errors.push_back(a);
             }
@@ -1367,7 +1367,7 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
  build a sub-list...
  */
 
-Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& index) {
+Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& index, bool quoting) {
     Element* e = NULL;
     Element* quoted = courant;
     double value;
@@ -1388,233 +1388,130 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 else {
                     e = new Listincode(parse.lines[index], delegation->i_current_file);
                     garbaging(e);
-                    abstractSyntaxTree(e, parse, index);
-                    if (e->size() >= 1) {
-                        lab = e->index(0)->label();
-                        bool docompose = true;
-                        if (lab == l_composenot) {
-                            ((List*)e)->liste.erase(0);
-                            if (e->size()) {
-                                lab = e->index(0)->label();
-                                docompose = false;
-                            }
-                        }
-
-                        switch(lab) {
-                        //for defmacro and link, we evaluate these expressions on the fly
-                            case l_lambda:
-                                e->eval(this);
-                                break;
-                            case l_defmacro:
-                            case l_data:
-                            case l_dethread:
-                            case l_defun:
-                                e->eval(this);
-                                continue;
-                            case l_defpat: {
-                                Element* arguments = e->index(2);
-                                Element* a;
-                                Element* idx;
-                                for (long i = 0; i < arguments->size(); i++) {
-                                    idx = arguments->index(i);
-                                    a = idx->transformargument(this);
-                                    if (a != idx) {
-                                        ((List*)arguments)->liste.put(i, a);
-                                        removefromgarbage(idx);
-                                    }
-                                }
-                                e->eval(this);
-                                continue;
-                            }
-                            case l_link:
-                                e->eval(this);
-                                removefromgarbage(e);
-                                continue;
-                            case l_infix: {
-                                Element* inter = ((Listincode*)e)->eval_infix(this);
-                                if (inter != e) {
-                                    removefromgarbage(e);
-                                    e = inter;
+                    abstractSyntaxTree(e, parse, index, quoting);
+                    if (!quoting) {
+                        if (e->size() >= 1) {
+                            lab = e->index(0)->label();
+                            bool docompose = true;
+                            if (lab == l_composenot) {
+                                ((List*)e)->liste.erase(0);
+                                if (e->size()) {
                                     lab = e->index(0)->label();
+                                    docompose = false;
                                 }
-                                else
-                                    break;
                             }
-                            default: {
-                                if (lab >= l_map && lab <= l_scanr1) {
-                                    Element* inter = e->composing(this, docompose);
+                            
+                            switch(lab) {
+                                    //for defmacro and link, we evaluate these expressions on the fly
+                                case l_lambda:
+                                    e->eval(this);
+                                    break;
+                                case l_defmacro:
+                                case l_data:
+                                case l_dethread:
+                                case l_defun:
+                                    e->eval(this);
+                                    continue;
+                                case l_defpat: {
+                                    Element* arguments = e->index(2);
+                                    Element* a;
+                                    Element* idx;
+                                    for (long i = 0; i < arguments->size(); i++) {
+                                        idx = arguments->index(i);
+                                        a = idx->transformargument(this);
+                                        if (a != idx) {
+                                            ((List*)arguments)->liste.put(i, a);
+                                            removefromgarbage(idx);
+                                        }
+                                    }
+                                    e->eval(this);
+                                    continue;
+                                }
+                                case l_link:
+                                    e->eval(this);
+                                    removefromgarbage(e);
+                                    continue;
+                                case l_infix: {
+                                    Element* inter = ((Listincode*)e)->eval_infix(this);
                                     if (inter != e) {
                                         removefromgarbage(e);
                                         e = inter;
+                                        lab = e->index(0)->label();
+                                    }
+                                    else
+                                        break;
+                                }
+                                default: {
+                                    if (lab >= l_map && lab <= l_scanr1) {
+                                        Element* inter = e->composing(this, docompose);
+                                        if (inter != e) {
+                                            removefromgarbage(e);
+                                            e = inter;
+                                        }
+                                    }
+                                    else {
+                                        if (topfunction && topfunction <= courant->size()) {
+                                            //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
+                                            e->setterminal();
+                                        }
                                     }
                                 }
-                                else {
-                                    if (topfunction && topfunction <= courant->size()) {
-                                        //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
-                                        e->setterminal();
-                                    }
+                            }
+                        }
+
+                        e = generate_macro(e);
+
+                        /*
+                        We detect if it is an instruction beforehand, in order
+                        to limit the call to lisp->delegation->evals during the execution (see Listincode::eval)
+                        - List_basic_instruction is used for instructions that do not fail, which means that we do not need to record
+                        their position and even trace them back.
+                        - List_instruction on the other hand will set the position of the current instruction.
+                        */
+                        if (delegation->instructions.check(lab)) {
+                            Element* lm = NULL;
+                            switch (lab) {
+                                case l_break:
+                                    if (e->size() != 1)
+                                        throw new Error("Error: break does not take any arguments");
+                                    removefromgarbage(e);
+                                    e = &delegation->_BREAKEVAL;
+                                    break;
+                                case l_power:
+                                    if (e->size() == 3 && e->index(2)->equalvalue((long)2))
+                                        lm = new List_power2((List*)e);
+                                    else
+                                        lm = new List_basic_execute((Listincode*)e, delegation->evals[lab]);
+                                    break;
+                                case l_mod:
+                                case l_modequal:
+                                case l_divide:
+                                case l_divideequal:
+                                    lm = new List_execute((Listincode*)e, delegation->evals[lab]);
+                                    break;
+                                default:
+                                    if (lab >= l_atomp && lab <= l_max)
+                                        lm = new List_basic_execute((Listincode*)e, delegation->evals[lab]);
+                                    else
+                                        lm = new List_execute((Listincode*)e, delegation->evals[lab]);
+                            }
+                            
+                            if (lm != NULL) {
+                                garbaging(lm);
+                                if (!delegation->checkArity(lab, e->size())) {
+                                    wstring err = L"Error: Wrong number of argument for: '";
+                                    err += delegation->asString(lab);
+                                    throw new Error(err);
                                 }
+                                removefromgarbage(e);
+                                e = lm;
                             }
                         }
                     }
                 }
                 
-                Element* lm = NULL;
-                switch(lab) {
-                    case l_sum:
-                        lm = new List_sum((List*)e);
-                        break;
-                    case l_plus:
-                        lm = new List_plus((List*)e);
-                        break;
-                    case l_minus:
-                        lm = new List_minus((List*)e);
-                        break;
-                    case l_multiply:
-                        lm = new List_multiply((List*)e);
-                        break;
-                    case l_leftshift:
-                        lm = new List_leftshift((List*)e);
-                        break;
-                    case l_rightshift:
-                        lm = new List_rightshift((List*)e);
-                        break;
-                    case l_bitand:
-                        lm = new List_bitand((List*)e);
-                        break;
-                    case l_bitor:
-                        lm = new List_bitor((List*)e);
-                        break;
-                    case l_bitxor:
-                        lm = new List_bitxor((List*)e);
-                        break;
-                    case l_bitandnot:
-                        lm = new List_bitandnot((List*)e);
-                        break;
-                    case l_bitnot:
-                        lm = new List_bitnot((List*)e);
-                        break;
-                    case l_divide:
-                        lm = new List_divide((List*)e);
-                        break;
-                    case l_mod:
-                        lm = new List_mod((List*)e);
-                        break;
-                    case l_power: {
-                        if (e->size() == 3 && e->index(2)->equalvalue((long)2))
-                            lm = new List_power2((List*)e);
-                        else
-                            lm = new List_power((List*)e);
-                        break;
-                    }
-                    case l_plusequal:
-                        lm = new List_plusequal((List*)e);
-                        break;
-                    case l_minusequal:
-                        lm = new List_minusequal((List*)e);
-                        break;
-                    case l_multiplyequal:
-                        lm = new List_multiplyequal((List*)e);
-                        break;
-                    case l_powerequal:
-                        lm = new List_powerequal((List*)e);
-                        break;
-                    case l_leftshiftequal:
-                        lm = new List_leftshiftequal((List*)e);
-                        break;
-                    case l_rightshiftequal:
-                        lm = new List_rightshiftequal((List*)e);
-                        break;
-                    case l_bitandequal:
-                        lm = new List_bitandequal((List*)e);
-                        break;
-                    case l_bitorequal:
-                        lm = new List_bitorequal((List*)e);
-                        break;
-                    case l_bitxorequal:
-                        lm = new List_bitxorequal((List*)e);
-                        break;
-                    case l_bitandnotequal:
-                        lm = new List_bitandnotequal((List*)e);
-                        break;
-                    case l_divideequal:
-                        lm = new List_divideequal((List*)e);
-                        break;
-                    case l_modequal:
-                        lm = new List_modequal((List*)e);
-                        break;
-                    case l_lower:
-                        lm = new List_lower((List*)e);
-                        break;
-                    case l_greater:
-                        lm = new List_greater((List*)e);
-                        break;
-                    case l_lowerorequal:
-                        lm = new List_lowerorequal((List*)e);
-                        break;
-                    case l_greaterorequal:
-                        lm = new List_greaterorequal((List*)e);
-                        break;
-                    case l_equalonezero:
-                        lm = new List_equalonezero((List*)e);
-                        break;
-                    case l_eq:
-                        lm = new List_eq((List*)e);
-                        break;
-                    case l_equal:
-                        lm = new List_equal((List*)e);
-                        break;
-                    case l_zipwith:
-                        lm = new List_zipwith((List*)e);
-                        break;
-                    case l_maplist:
-                        lm = new List_maplist((List*)e);
-                        break;
-                    case l_filterlist:
-                        lm = new List_filterlist((List*)e);
-                        break;
-                    case l_droplist:
-                        lm = new List_droplist((List*)e);
-                        break;
-                    case l_takelist:
-                        lm = new List_takelist((List*)e);
-                        break;
-                    case l_setq:
-                        lm = new List_setq((Listincode*)e);
-                        break;
-                    case l_at_index:
-                        lm = new List_at_index((Listincode*)e);
-                        break;
-                    case l_index:
-                        lm = new List_index((Listincode*)e);
-                        break;
-                }
-        
-                if (lm != NULL) {
-                    removefromgarbage(e);
-                    garbaging(lm);
-                    e = lm;
-                }
-                
-                e = generate_macro(e);
-                if (e->size() >= 1) {
-                    //these are specialized calls, for which we do not need to go through List::eval
-                    short lab = e->index(0)->type;
-                    if (lab == l_break) {
-                        if (e->size() != 1)
-                            throw new Error("Error: break does not take any arguments");
-                        removefromgarbage(e);
-                        e = &delegation->_BREAKEVAL;
-                    }
-                }
-                
-                if (courant == quoted && !delegation->checkArity(lab, e->size())) {
-                    wstring err = L"Error: Wrong number of argument for: '";
-                    err += delegation->asString(lab);
-                    throw new Error(err);
-                }
-                
                 courant->append(e);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
                 break;
             }
@@ -1631,13 +1528,13 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 else {
                     Dictionary_as_list dico;
-                    abstractSyntaxTree(&dico, parse, index);
+                    abstractSyntaxTree(&dico, parse, index, quoting);
                     e = dico.dictionary(this);
                     garbaging(e);
                 }
                 courant->append(e);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
-
                 break;
             }
             case c_opening_data_brace: {
@@ -1648,11 +1545,12 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 else {
                     Dictionary_as_buffer dico(this);
-                    abstractSyntaxTree(&dico, parse, index);
+                    abstractSyntaxTree(&dico, parse, index, quoting);
                     e = dico.dictionary(this);
                     garbaging(e);
                 }
                 courant->append(e);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
                 break;
             }
@@ -1661,12 +1559,14 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 return delegation->_TRUE;
             case t_emptystring:
                 courant->append(delegation->_EMPTYSTRING);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
                 index++;
                 break;
             case t_string:
                 e = provideConststring(parse.tokens[index]);
                 courant->append(e);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
                 index++;
                 break;
@@ -1677,18 +1577,21 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 else
                     e = provideConstnumber(value);                
                 courant->append(e);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
                 index++;
                 break;
             case t_operator:
                 e = provideOperator(encode(parse.tokens[index]));
                 courant->append(e);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
                 index++;
                 break;
             case l_cadr:
                 e =  provideCADR(parse.tokens[index]);
                 courant->append(e);
+                quoting = quoting && courant == quoted;
                 courant = quoted;
                 index++;
                 break;
@@ -1713,6 +1616,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
                 else {
                     courant->append(e);
+                    quoting = quoting && courant == quoted;
                     courant = quoted;
                 }
                 index++;
@@ -1723,6 +1627,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 e->append(provideAtom(l_quote));
                 courant->append(e);
                 courant = e;
+                quoting = true;
                 index++;
                 break;
             default:
@@ -1860,7 +1765,7 @@ Element* LispE::compile(string& code) {
     }
 
     try {
-        abstractSyntaxTree(&courant, parse, index);
+        abstractSyntaxTree(&courant, parse, index, false);
     }
     catch(Error* err) {
         delegation->i_current_line = 1;
@@ -1918,7 +1823,7 @@ Element* LispE::extension(string code, Element* etendre) {
 
     try {
         long index = 0;
-        abstractSyntaxTree(current_list, parse, index);
+        abstractSyntaxTree(current_list, parse, index, false);
         Element* body = current_list->eval(this);
         if (etendre != NULL) {
             body->append(etendre);
@@ -2162,6 +2067,13 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
+
+
 
 
 

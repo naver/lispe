@@ -557,7 +557,7 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
  */
 bool Atome::unify(LispE* lisp, Element* value, bool record) {
     //This is a case, when we record our value into the stack
-    return (value == this || lisp->checkAncestor(this, value) || (record && (this == null_ || lisp->recordargument(value, atome))));
+    return ((record && (this == null_ || lisp->recordargument(value, atome))) || value == this || lisp->checkAncestor(this, value));
 }
 
 bool Floats::unify(LispE* lisp, Element* value, bool record) {
@@ -1643,12 +1643,54 @@ Element* Listincode::eval(LispE* lisp) {
     }
 }
 
-Element* List_setq::eval(LispE* lisp) {
-    lisp->delegation->set_context(line, fileidx);
-    if (lisp->trace)
-        lisp->trace_and_context(this);
-    return evall_setq(lisp);
+Element* List_basic_execute::eval(LispE* lisp) {
+    try {
+        return (this->*method)(lisp);
+    }
+    catch(Error* err) {
+        if (err != lisp->delegation->_THEEND)
+            throw err;
+
+        if (lisp->checkLispState()) {
+            if (lisp->isthreadError()) {
+                if (!lisp->isThread)
+                    lisp->delegation->throwError();
+                return null_;
+            }
+            if (lisp->hasStopped())
+                throw lisp->delegation->_THEEND;
+            return null_;
+        }
+        return eval_error(lisp);
+    }
 }
+
+
+Element* List_execute::eval(LispE* lisp) {
+    try {
+        lisp->delegation->set_context(line, fileidx);
+        if (lisp->trace)
+            lisp->trace_and_context(this);
+        return (this->*method)(lisp);
+    }
+    catch(Error* err) {
+        if (err != lisp->delegation->_THEEND)
+            throw err;
+
+        if (lisp->checkLispState()) {
+            if (lisp->isthreadError()) {
+                if (!lisp->isThread)
+                    lisp->delegation->throwError();
+                return null_;
+            }
+            if (lisp->hasStopped())
+                throw lisp->delegation->_THEEND;
+            return null_;
+        }
+        return eval_error(lisp);
+    }
+}
+//--------------------------------------------------------------------------------
 
 Element* List::evall_break(LispE* lisp) {
     return break_;
@@ -5476,10 +5518,10 @@ Element* List::evall_in(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        long idx = 0;
+        long ix = 0;
         if (liste.size() == 4)
-            evalAsInteger(3,lisp, idx);
-        third_element = first_element->search_element(lisp, second_element, idx);
+            evalAsInteger(3,lisp, ix);
+        third_element = first_element->search_element(lisp, second_element, ix);
         first_element->release();
         second_element->release();
         if (third_element != null_) {
@@ -5502,7 +5544,7 @@ Element* List::evall_at_index(LispE* lisp) {
     short listsize = liste.size();
     Element* container = liste[1];
     Element* value = null_;
-    Element* idx = null_;
+    Element* ix = null_;
     Element* result = null_;
 
 
@@ -5646,10 +5688,10 @@ Element* List::evall_at_index(LispE* lisp) {
         }
         
         if (listsize == 4) {
-            idx = liste[2]->eval(lisp);
+            ix = liste[2]->eval(lisp);
             value = liste[3]->eval(lisp);
-            result = container->replace(lisp, idx, value);
-            idx->release();
+            result = container->replace(lisp, ix, value);
+            ix->release();
             value->release();
             return result;
         }
@@ -5665,7 +5707,7 @@ Element* List::evall_at_index(LispE* lisp) {
         container->release();
         value->release();
         result->release();
-        idx->release();
+        ix->release();
         throw err;
     }
 
@@ -5706,7 +5748,7 @@ Element* List::evall_index(LispE* lisp) {
 Element* List::evall_set_at(LispE* lisp) {
     short listsize = liste.size();
     Element* container = liste[1];
-    Element* idx = null_;
+    Element* ix = null_;
     Element* value = null_;
     Element* result = null_;
 
@@ -5715,14 +5757,14 @@ Element* List::evall_set_at(LispE* lisp) {
         container = container->eval(lisp);
         result = container;
         for (long i = 2; i < listsize - 2; i++) {
-            idx = liste[i]->eval(lisp);
-            result = result->protected_index(lisp, idx);
-            idx->release();
+            ix = liste[i]->eval(lisp);
+            result = result->protected_index(lisp, ix);
+            ix->release();
         }
-        idx = liste[listsize-2]->eval(lisp);
+        ix = liste[listsize-2]->eval(lisp);
         value = liste[listsize-1]->eval(lisp);
-        result->replace(lisp, idx, value);
-        idx->release();
+        result->replace(lisp, ix, value);
+        ix->release();
         result->increment();
         container->release();
         result->decrementkeep();
@@ -5730,7 +5772,7 @@ Element* List::evall_set_at(LispE* lisp) {
     catch (Error* err) {
         container->release();
         value->release();
-        idx->release();
+        ix->release();
         result->release();
         throw err;
     }
@@ -5989,12 +6031,12 @@ Element* List::evall_insert(LispE* lisp) {
         //We insert a value in a list
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        long idx;
+        long ix;
         if (lstsize == 3)
-            idx = first_element->size();
+            ix = first_element->size();
         else
-            evalAsInteger(3, lisp, idx);
-        third_element = first_element->insert(lisp, second_element, idx);
+            evalAsInteger(3, lisp, ix);
+        third_element = first_element->insert(lisp, second_element, ix);
         second_element->release();
         if (third_element != first_element) {
             first_element->release();
@@ -7506,11 +7548,11 @@ Element* List::evall_revertsearch(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        long idx = 0;
+        long ix = 0;
         if (liste.size() == 4) {
-            evalAsInteger(3,lisp, idx);
+            evalAsInteger(3,lisp, ix);
         }
-        third_element = first_element->search_reverse(lisp, second_element, idx);
+        third_element = first_element->search_reverse(lisp, second_element, ix);
         first_element->release();
         second_element->release();
     }
@@ -7533,10 +7575,10 @@ Element* List::evall_search(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        long idx = 0;
+        long ix = 0;
         if (liste.size() == 4)
-            evalAsInteger(3,lisp, idx);
-        third_element = first_element->search_element(lisp, second_element, idx);
+            evalAsInteger(3,lisp, ix);
+        third_element = first_element->search_element(lisp, second_element, ix);
         _releasing(first_element);
         _releasing(second_element);
     }
@@ -7560,11 +7602,11 @@ Element* List::evall_searchall(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        long idx = 0;
+        long ix = 0;
         if (liste.size() == 4) {
-            evalAsInteger(3,lisp, idx);
+            evalAsInteger(3,lisp, ix);
         }
-        third_element = first_element->search_all_elements(lisp, second_element, idx);
+        third_element = first_element->search_all_elements(lisp, second_element, ix);
         first_element->release();
         second_element->release();
     }

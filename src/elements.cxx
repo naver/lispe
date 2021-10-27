@@ -3369,7 +3369,7 @@ Element* List::multiloop(LispE* lisp) {
     List* values = lisp->provideList();
     List* indexes = lisp->provideList();
     Element* e = null_;
-    Element* idx;
+    Element* ix;
     long sz = size();
     long var;
     long indexe = 0;
@@ -3390,8 +3390,8 @@ Element* List::multiloop(LispE* lisp) {
         
         while (indexe < nb) {
             for (var = 0; var < nbvars; var++) {
-                idx = indexes->liste[var]->index(indexe);
-                e = values->liste[var]->value_on_index(lisp, idx);
+                ix = indexes->liste[var]->index(indexe);
+                e = values->liste[var]->value_on_index(lisp, ix);
                 label = liste[1]->index(var)->label();
                 lisp->replacingvalue(e, label);
             }
@@ -3510,32 +3510,32 @@ Element* s_findall(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
 
 
 //------------------------------------------------------------------------------------------
-Element* Element::insert(LispE* lisp, Element* e, long idx) {
+Element* Element::insert(LispE* lisp, Element* e, long ix) {
     return null_;
 }
 
-Element* String::insert(LispE* lisp, Element* e, long idx) {
+Element* String::insert(LispE* lisp, Element* e, long ix) {
     u_ustring res;
-    if (idx < 0)
+    if (ix < 0)
         res = lisp->handlingutf8->u_insert_sep(content, e->asUString(lisp));
     else {
-        if (idx >= content.size())
+        if (ix >= content.size())
             res = content + e->asUString(lisp);
         else {
             res = content;
-            res.insert(idx, e->asUString(lisp));
+            res.insert(ix, e->asUString(lisp));
         }
     }
     return lisp->provideString(res);
 }
 
-Element* List::insert(LispE* lisp, Element* e, long idx) {
-    if (idx < 0)
+Element* List::insert(LispE* lisp, Element* e, long ix) {
+    if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
     e = e->copying(false);
     List* l = (List*)duplicate_constant();
-    l->liste.insert(idx, e);
+    l->liste.insert(ix, e);
     return l;
 }
 
@@ -3579,12 +3579,12 @@ Element* List::unique(LispE* lisp) {
     return list;
 }
 
-Element* Floats::insert(LispE* lisp, Element* e, long idx) {
-    if (idx < 0)
+Element* Floats::insert(LispE* lisp, Element* e, long ix) {
+    if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
     Floats* l = (Floats*)duplicate_constant();
-    l->liste.insert(idx, e->asFloat());
+    l->liste.insert(ix, e->asFloat());
     return l;
 }
 
@@ -3628,12 +3628,12 @@ Element* Floats::unique(LispE* lisp) {
     return nb;
 }
 
-Element* Numbers::insert(LispE* lisp, Element* e, long idx) {
-    if (idx < 0)
+Element* Numbers::insert(LispE* lisp, Element* e, long ix) {
+    if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
     Numbers* l = (Numbers*)duplicate_constant();
-    l->liste.insert(idx, e->asNumber());
+    l->liste.insert(ix, e->asNumber());
     return l;
 }
 
@@ -3677,12 +3677,12 @@ Element* Numbers::unique(LispE* lisp) {
     return nb;
 }
 
-Element* Integers::insert(LispE* lisp, Element* e, long idx) {
-    if (idx < 0)
+Element* Integers::insert(LispE* lisp, Element* e, long ix) {
+    if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
     Integers* l = (Integers*)duplicate_constant();
-    l->liste.insert(idx, e->asInteger());
+    l->liste.insert(ix, e->asInteger());
     return l;
 }
 
@@ -3726,12 +3726,12 @@ Element* Integers::unique(LispE* lisp) {
     return nb;
 }
 
-Element* Strings::insert(LispE* lisp, Element* e, long idx) {
-    if (idx < 0)
+Element* Strings::insert(LispE* lisp, Element* e, long ix) {
+    if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
     Strings* l = (Strings*)duplicate_constant();
-    l->liste.insert(l->liste.begin()+idx, e->asUString(lisp));
+    l->liste.insert(l->liste.begin()+ix, e->asUString(lisp));
     return l;
 }
 
@@ -3954,85 +3954,85 @@ Element* Set_n::next_iter(LispE* lisp, void* it) {
 }
 
 //------------------------------------------------------------------------------------------
-long List::find_element(LispE* lisp, Element* valeur, long idx) {
-    for (long i = idx; i < liste.size(); i++) {
+long List::find_element(LispE* lisp, Element* valeur, long ix) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i]->equal(lisp, valeur) == true_)
             return i;
     }
     return -1;
 }
 //------------------------------------------------------------------------------------------
-Element* Element::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Element::search_element(LispE* lisp, Element* valeur, long ix) {
     return null_;
 }
 
-Element* String::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* String::search_element(LispE* lisp, Element* valeur, long ix) {
     u_ustring val = valeur->asUString(lisp);
-    idx =  content.find(val, idx);
-    if (idx == -1)
+    ix =  content.find(val, ix);
+    if (ix == -1)
         return null_;
-    return lisp->provideInteger(idx);
+    return lisp->provideInteger(ix);
 }
 
-Element* List::search_element(LispE* lisp, Element* valeur, long idx) {
-    for (long i = idx; i < liste.size(); i++) {
+Element* List::search_element(LispE* lisp, Element* valeur, long ix) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i]->equal(lisp, valeur) == true_)
             return lisp->provideInteger(i);
     }
     return null_;
 }
 
-Element* Floats::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Floats::search_element(LispE* lisp, Element* valeur, long ix) {
     float v = valeur->asFloat();
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return null_;
 }
 
-Element* Numbers::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Numbers::search_element(LispE* lisp, Element* valeur, long ix) {
     double v = valeur->asNumber();
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return null_;
 }
 
-Element* Integers::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Integers::search_element(LispE* lisp, Element* valeur, long ix) {
     long v = valeur->asInteger();
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return null_;
 }
 
-Element* Strings::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Strings::search_element(LispE* lisp, Element* valeur, long ix) {
     u_ustring v = valeur->asUString(lisp);
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return null_;
 }
 
-Element* Set::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Set::search_element(LispE* lisp, Element* valeur, long ix) {
     u_ustring k = valeur->asUString(lisp);
     if (ensemble.find(k) == ensemble.end())
         return null_;
     return true_;
 }
 
-Element* Set_n::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Set_n::search_element(LispE* lisp, Element* valeur, long ix) {
     double k = valeur->asNumber();
     if (ensemble.find(k) == ensemble.end())
         return null_;
     return true_;
 }
 
-Element* Dictionary::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Dictionary::search_element(LispE* lisp, Element* valeur, long ix) {
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             u_ustring keyvalue = a.first;
@@ -4043,7 +4043,7 @@ Element* Dictionary::search_element(LispE* lisp, Element* valeur, long idx) {
 }
 
 
-Element* Dictionary_n::search_element(LispE* lisp, Element* valeur, long idx) {
+Element* Dictionary_n::search_element(LispE* lisp, Element* valeur, long ix) {
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
@@ -4089,19 +4089,19 @@ Element* Dictionary_n::checkkey(LispE* lisp, Element* e) {
 
 
 //------------------------------------------------------------------------------------------
-Element* Element::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Element::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     return emptylist_;
 }
 
-Element* String::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* String::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     u_ustring val = valeur->asUString(lisp);
-    idx =  content.find(val, idx);
-    return s_findall(lisp,content, val, idx);
+    ix =  content.find(val, ix);
+    return s_findall(lisp,content, val, ix);
 }
 
-Element* List::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* List::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i]->equal(lisp, valeur) == true_) {
             l->liste.push_back(i);
         }
@@ -4113,10 +4113,10 @@ Element* List::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Floats::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Floats::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     float v = valeur->asFloat();
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
@@ -4127,10 +4127,10 @@ Element* Floats::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Numbers::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Numbers::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     double v = valeur->asNumber();
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
@@ -4141,10 +4141,10 @@ Element* Numbers::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Integers::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Integers::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     long v = valeur->asInteger();
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
@@ -4155,10 +4155,10 @@ Element* Integers::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Strings::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Strings::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     u_ustring v = valeur->asUString(lisp);
-    for (long i = idx; i < liste.size(); i++) {
+    for (long i = ix; i < liste.size(); i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
@@ -4169,7 +4169,7 @@ Element* Strings::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Set::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Set::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Strings* l = lisp->provideStrings();
     u_ustring keyvalue = valeur->asUString(lisp);
     if (ensemble.find(keyvalue) == ensemble.end())
@@ -4178,7 +4178,7 @@ Element* Set::search_all_elements(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Set_n::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Set_n::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Numbers* l = lisp->provideNumbers();
     double keyvalue = valeur->asNumber();
     if (ensemble.find(keyvalue) == ensemble.end())
@@ -4188,7 +4188,7 @@ Element* Set_n::search_all_elements(LispE* lisp, Element* valeur, long idx) {
 }
 
 
-Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Strings* l = lisp->provideStrings();
     u_ustring keyvalue;
     for (auto& a : dictionary) {
@@ -4204,7 +4204,7 @@ Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long idx)
     return l;
 }
 
-Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long idx) {
+Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Numbers* l = lisp->provideNumbers();
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
@@ -4218,61 +4218,61 @@ Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long id
 }
 
 //------------------------------------------------------------------------------------------
-Element* Element::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Element::search_reverse(LispE* lisp, Element* valeur, long ix) {
     return minusone_;
 }
 
-Element* String::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* String::search_reverse(LispE* lisp, Element* valeur, long ix) {
     u_ustring val = valeur->asUString(lisp);
-    idx =  content.rfind(val, content.size() - idx);
-    return lisp->provideInteger(idx);
+    ix =  content.rfind(val, content.size() - ix);
+    return lisp->provideInteger(ix);
 }
 
-Element* List::search_reverse(LispE* lisp, Element* valeur, long idx) {
-    for (long i = liste.size() - 1; i >= idx; i--) {
+Element* List::search_reverse(LispE* lisp, Element* valeur, long ix) {
+    for (long i = liste.size() - 1; i >= ix; i--) {
         if (liste[i]->equal(lisp, valeur) == true_)
             return lisp->provideInteger(i);
     }
     return minusone_;
 }
 
-Element* Floats::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Floats::search_reverse(LispE* lisp, Element* valeur, long ix) {
     float v = valeur->asFloat();
-    for (long i = liste.size() - 1; i >= idx; i--) {
+    for (long i = liste.size() - 1; i >= ix; i--) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return minusone_;
 }
 
-Element* Numbers::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Numbers::search_reverse(LispE* lisp, Element* valeur, long ix) {
     double v = valeur->asNumber();
-    for (long i = liste.size() - 1; i >= idx; i--) {
+    for (long i = liste.size() - 1; i >= ix; i--) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return minusone_;
 }
 
-Element* Integers::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Integers::search_reverse(LispE* lisp, Element* valeur, long ix) {
     long v = valeur->asInteger();
-    for (long i = liste.size() - 1; i >= idx; i--) {
+    for (long i = liste.size() - 1; i >= ix; i--) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return minusone_;
 }
 
-Element* Strings::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Strings::search_reverse(LispE* lisp, Element* valeur, long ix) {
     u_ustring v = valeur->asUString(lisp);
-    for (long i = liste.size() - 1; i >= idx; i--) {
+    for (long i = liste.size() - 1; i >= ix; i--) {
         if (liste[i] == v)
             return lisp->provideInteger(i);
     }
     return minusone_;
 }
 
-Element* Set::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Set::search_reverse(LispE* lisp, Element* valeur, long ix) {
     Strings* l = lisp->provideStrings();
     u_ustring keyvalue = valeur->asUString(lisp);
     if (ensemble.find(keyvalue) == ensemble.end())
@@ -4281,7 +4281,7 @@ Element* Set::search_reverse(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Set_n::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Set_n::search_reverse(LispE* lisp, Element* valeur, long ix) {
     Numbers* l = lisp->provideNumbers();
     double keyvalue = valeur->asNumber();
     if (ensemble.find(keyvalue) == ensemble.end())
@@ -4290,7 +4290,7 @@ Element* Set_n::search_reverse(LispE* lisp, Element* valeur, long idx) {
     return l;
 }
 
-Element* Dictionary::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Dictionary::search_reverse(LispE* lisp, Element* valeur, long ix) {
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             u_ustring keyvalue = a.first;
@@ -4300,7 +4300,7 @@ Element* Dictionary::search_reverse(LispE* lisp, Element* valeur, long idx) {
     return emptystring_;
 }
 
-Element* Dictionary_n::search_reverse(LispE* lisp, Element* valeur, long idx) {
+Element* Dictionary_n::search_reverse(LispE* lisp, Element* valeur, long ix) {
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
@@ -4878,8 +4878,8 @@ Element* Element::value_on_index(LispE* lisp, Element* i) {
     return null_;
 }
 
-Element* List::value_on_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* List::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -4889,8 +4889,8 @@ Element* List::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
-Element* Floats::value_on_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Floats::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -4900,8 +4900,8 @@ Element* Floats::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
-Element* Numbers::value_on_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Numbers::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -4911,8 +4911,8 @@ Element* Numbers::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
-Element* Integers::value_on_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Integers::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -4922,8 +4922,8 @@ Element* Integers::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
-Element* Strings::value_on_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Strings::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -4933,8 +4933,8 @@ Element* Strings::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
-Element* String::value_on_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* String::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = content.size() + i;
     
@@ -4943,23 +4943,23 @@ Element* String::value_on_index(LispE* lisp, Element* idx) {
     return null_;
 }
 
-Element* Set::value_on_index(LispE* lisp, Element* idx) {
-    u_ustring k = idx->asUString(lisp);
+Element* Set::value_on_index(LispE* lisp, Element* ix) {
+    u_ustring k = ix->asUString(lisp);
     if (ensemble.find(k) == ensemble.end())
         return null_;
     return lisp->provideString(k);
 }
 
-Element* Set_n::value_on_index(LispE* lisp, Element* idx) {
-    double k = idx->asNumber();
+Element* Set_n::value_on_index(LispE* lisp, Element* ix) {
+    double k = ix->asNumber();
     if (ensemble.find(k) == ensemble.end())
         return null_;
     return lisp->provideNumber(k);
 }
 
 
-Element* Dictionary::value_on_index(LispE* lisp, Element* idx) {
-    u_ustring k = idx->asUString(lisp);
+Element* Dictionary::value_on_index(LispE* lisp, Element* ix) {
+    u_ustring k = ix->asUString(lisp);
     try {
         return dictionary.at(k)->copying(false);
     }
@@ -4968,9 +4968,9 @@ Element* Dictionary::value_on_index(LispE* lisp, Element* idx) {
     }
 }
 
-Element* Dictionary_n::value_on_index(LispE* lisp, Element* idx) {
+Element* Dictionary_n::value_on_index(LispE* lisp, Element* ix) {
     try {
-        return dictionary.at(idx->checkNumber(lisp))->copying(false);
+        return dictionary.at(ix->checkNumber(lisp))->copying(false);
     }
     catch (...) {
         return null_;
@@ -4981,8 +4981,8 @@ Element* Element::protected_index(LispE* lisp,Element*) {
     throw new Error("Error: value cannot be access through index");
 }
 
-Element* String::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* String::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     
     if (i < 0)
         i = content.size() + i;
@@ -4992,8 +4992,8 @@ Element* String::protected_index(LispE* lisp, Element* idx) {
     throw new Error("Error: index out of bounds");
 }
 
-Element* List::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* List::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -5003,8 +5003,8 @@ Element* List::protected_index(LispE* lisp, Element* idx) {
     throw new Error("Error: index out of bounds");
 }
 
-Element* Floats::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Floats::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -5014,8 +5014,8 @@ Element* Floats::protected_index(LispE* lisp, Element* idx) {
     throw new Error("Error: index out of bounds");
 }
 
-Element* Numbers::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Numbers::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -5025,8 +5025,8 @@ Element* Numbers::protected_index(LispE* lisp, Element* idx) {
     throw new Error("Error: index out of bounds");
 }
 
-Element* Integers::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Integers::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -5036,8 +5036,8 @@ Element* Integers::protected_index(LispE* lisp, Element* idx) {
     throw new Error("Error: index out of bounds");
 }
 
-Element* Strings::protected_index(LispE* lisp, Element* idx) {
-    long i = idx->checkInteger(lisp);
+Element* Strings::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
     if (i < 0)
         i = liste.size() + i;
     
@@ -5047,23 +5047,23 @@ Element* Strings::protected_index(LispE* lisp, Element* idx) {
     throw new Error("Error: index out of bounds");
 }
 
-Element* Set::protected_index(LispE* lisp, Element* idx) {
-    u_ustring k = idx->asUString(lisp);
+Element* Set::protected_index(LispE* lisp, Element* ix) {
+    u_ustring k = ix->asUString(lisp);
     if (ensemble.find(k) == ensemble.end())
         return null_;
     return lisp->provideString(k);
 }
 
-Element* Set_n::protected_index(LispE* lisp, Element* idx) {
-    double k = idx->asNumber();
+Element* Set_n::protected_index(LispE* lisp, Element* ix) {
+    double k = ix->asNumber();
     if (ensemble.find(k) == ensemble.end())
         return null_;
     return lisp->provideNumber(k);
 }
 
 
-Element* Dictionary::protected_index(LispE* lisp, Element* idx) {
-    u_ustring k = idx->asUString(lisp);
+Element* Dictionary::protected_index(LispE* lisp, Element* ix) {
+    u_ustring k = ix->asUString(lisp);
     try {
         return dictionary.at(k);
     }
@@ -5072,9 +5072,9 @@ Element* Dictionary::protected_index(LispE* lisp, Element* idx) {
     }
 }
 
-Element* Dictionary_n::protected_index(LispE* lisp, Element* idx) {
+Element* Dictionary_n::protected_index(LispE* lisp, Element* ix) {
     try {
-        return dictionary.at(idx->checkNumber(lisp));
+        return dictionary.at(ix->checkNumber(lisp));
     }
     catch (...) {
         throw new Error("Error: index out of bounds");
@@ -5700,6 +5700,7 @@ Element* List::extraction(LispE* lisp, List* l) {
             ty = e_from->type;
     }
     
+    e = null_;
     switch (ty) {
         case t_string: {
             e = search_element(lisp, e_from, 0);
@@ -5740,10 +5741,12 @@ Element* List::extraction(LispE* lisp, List* l) {
                 from = size() + from;
             break;
         default:
+            e->release();
             e_from->release();
             throw new Error("Error: cannot use the first position in 'extract'");
     }
     
+    e->release();
     e_from->release();
     
     if (from < 0 || from >= size())
@@ -5786,9 +5789,10 @@ Element* List::extraction(LispE* lisp, List* l) {
     }
     
     long upto;
-    
+    e = null_;
     switch (ty) {
         case t_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -5796,6 +5800,7 @@ Element* List::extraction(LispE* lisp, List* l) {
             break;
         }
         case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -5833,10 +5838,12 @@ Element* List::extraction(LispE* lisp, List* l) {
             }
             break;
         default:
+            e->release();
             e_upto->release();
             throw new Error("Error: cannot use the second position in 'extract'");
     }
     
+    e->release();
     e_upto->release();
     if (upto <= from)
         return emptylist_;
@@ -6011,6 +6018,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
             ty = e_from->type;
     }
     
+    e = null_;
     switch (ty) {
         case t_string: {
             e = search_element(lisp, e_from, 0);
@@ -6051,10 +6059,12 @@ Element* Strings::extraction(LispE* lisp, List* l) {
                 from = size() + from;
             break;
         default:
+            e->release();
             e_from->release();
             throw new Error("Error: cannot use the first position in 'extract'");
     }
     
+    e->release();
     e_from->release();
     
     if (from < 0 || from >= size())
@@ -6097,9 +6107,10 @@ Element* Strings::extraction(LispE* lisp, List* l) {
     }
     
     long upto;
-    
+    e = null_;
     switch (ty) {
         case t_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -6107,6 +6118,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
             break;
         }
         case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -6144,10 +6156,12 @@ Element* Strings::extraction(LispE* lisp, List* l) {
             }
             break;
         default:
+            e->release();
             e_upto->release();
             throw new Error("Error: cannot use the second position in 'extract'");
     }
     
+    e->release();
     e_upto->release();
     if (upto <= from)
         return emptylist_;
@@ -6294,6 +6308,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_string: {
+            if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
@@ -6301,6 +6316,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
             break;
         }
         case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
@@ -6401,6 +6417,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
             ty = e_from->type;
     }
     
+    e = null_;
     switch (ty) {
         case t_string: {
             e = search_element(lisp, e_from, 0);
@@ -6441,10 +6458,12 @@ Element* List::replace_in(LispE* lisp, List* l) {
                 from = size() + from;
             break;
         default:
+            e->release();
             e_from->release();
-            throw new Error("Error: cannot use the first position in 'extract'");
+            throw new Error("Error: cannot use the first position in 'setrange'");
     }
     
+    e->release();
     e_from->release();
     
     if (from < 0 || from >= size())
@@ -6488,9 +6507,10 @@ Element* List::replace_in(LispE* lisp, List* l) {
     }
     
     long upto;
-    
+    e = null_;
     switch (ty) {
         case t_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -6498,6 +6518,7 @@ Element* List::replace_in(LispE* lisp, List* l) {
             break;
         }
         case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -6535,10 +6556,12 @@ Element* List::replace_in(LispE* lisp, List* l) {
             }
             break;
         default:
+            e->release();
             e_upto->release();
-            throw new Error("Error: cannot use the second position in 'extract'");
+            throw new Error("Error: cannot use the second position in 'setrange'");
     }
     
+    e->release();
     e_upto->release();
     if (upto <= from)
         return this;
@@ -6737,6 +6760,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
             ty = e_from->type;
     }
     
+    e = null_;
     switch (ty) {
         case t_string: {
             e = search_element(lisp, e_from, 0);
@@ -6777,10 +6801,12 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
                 from = size() + from;
             break;
         default:
+            e->release();
             e_from->release();
-            throw new Error("Error: cannot use the first position in 'extract'");
+            throw new Error("Error: cannot use the first position in 'setrange'");
     }
     
+    e->release();
     e_from->release();
     
     if (from < 0 || from >= size())
@@ -6826,9 +6852,10 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
     }
     
     long upto;
-    
+    e = null_;
     switch (ty) {
         case t_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -6836,6 +6863,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
             break;
         }
         case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
             e = search_element(lisp, e_upto, from + firstisString);
             if (e == null_)
                 return emptylist_;
@@ -6873,10 +6901,12 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
             }
             break;
         default:
+            e->release();
             e_upto->release();
-            throw new Error("Error: cannot use the second position in 'extract'");
+            throw new Error("Error: cannot use the second position in 'setrange'");
     }
     
+    e->release();
     e_upto->release();
     if (upto <= from)
         return emptylist_;
@@ -6979,7 +7009,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             break;
         default:
             e_from->release();
-            throw new Error("Error: cannot use the first position in 'extract'");
+            throw new Error("Error: cannot use the first position in 'setrange'");
     }
     
     e_from->release();
@@ -7030,6 +7060,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     
     switch (ty) {
         case t_string: {
+            if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
@@ -7037,6 +7068,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             break;
         }
         case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
             upto = content.find(ch, from + firstisString);
             if (upto == -1)
@@ -7078,7 +7110,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
             break;
         default:
             e_upto->release();
-            throw new Error("Error: cannot use the second position in 'extract'");
+            throw new Error("Error: cannot use the second position in 'setrange'");
     }
     
     e_upto->release();

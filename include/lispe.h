@@ -386,7 +386,7 @@ public:
     Element* load(string chemin);
     lisp_code segmenting(string& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
-    Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index);
+    Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index, bool quoting);
     void arguments(std::vector<string>& args);
     void current_path();
     

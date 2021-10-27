@@ -1095,11 +1095,12 @@ Element* List::composing(LispE* lisp, bool docompose) {
 }
 
 //--------------------------------------------------------------------------------
-bool List::check_quote(LispE* lisp) {
-    if (liste[0]->type == t_list && liste[0]->size()) {
-        if (liste[0]->index(0)->type == l_quote) {
-            liste[0] = new Listargumentquote((List*)liste[0]);
-            lisp->garbaging(liste[0]);
+//we transform the tests against an atom via a quoted expression is a specific method call
+bool List::check_quote(LispE* lisp, long i) {
+    if (liste[i]->type == t_list && liste[i]->size()) {
+        if (liste[i]->index(0)->type == l_quote) {
+            liste[i] = new Listargumentquote((List*)liste[i]);
+            lisp->garbaging(liste[i]);
             return true;
         }
     }
@@ -1114,6 +1115,7 @@ bool List::check_quote(LispE* lisp) {
 //Which we do here...
 Element* List::transformargument(LispE* lisp) {
     long sz = liste.size();
+    long i;
 
     if (!sz)
         throw new Error("Error: Wrong argument in defpat function");
@@ -1128,7 +1130,14 @@ Element* List::transformargument(LispE* lisp) {
         else {
             short ilabel = ilabel = lisp->extractlabel(this);
             if (ilabel == v_null) {
-                if (!check_quote(lisp) && isExecutable(lisp)) {
+                if (check_quote(lisp, 0) || (sz > 1 && liste[sz-2] == separator_)) {
+                    for (i = 1; i < sz - 2; i++)
+                        check_quote(lisp, i);
+                    fin = new Listargumentseparator(this);
+                    lisp->garbaging(fin);
+                    return fin;
+                }
+                if (isExecutable(lisp)) {
                     Element* arg = liste.back();
                     while (arg->isExecutable(lisp))
                         arg = arg->last();
@@ -1138,16 +1147,15 @@ Element* List::transformargument(LispE* lisp) {
                     lisp->garbaging(fin);
                     return fin;
                 }
-                if (sz > 1 && liste[sz-2] == separator_) {
-                    fin = new Listargumentseparator(this);
-                    lisp->garbaging(fin);
-                    return fin;
-                }
+                for (i = 1; i < sz; i++)
+                    check_quote(lisp, i);
                 return this;
             }
             
             if (ilabel >= t_atom && ilabel <= t_maybe) {
                 if (sz > 1 && liste[sz-2] == separator_) {
+                    for (i = 1; i < sz - 2; i++)
+                        check_quote(lisp, i);
                     fin = new Listargumentseparator(this);
                     lisp->garbaging(fin);
                     return fin;
@@ -1159,7 +1167,7 @@ Element* List::transformargument(LispE* lisp) {
                 fin = new Listargumentdata(this);
                 lisp->garbaging(fin);
                 Element* exec;
-                for (long i = 1; i < fin->size(); i++) {
+                for (i = 1; i < fin->size(); i++) {
                     exec = fin->liste[i]->transformargument(lisp);
                     if (exec != fin->liste[i]) {
                         lisp->removefromgarbage(fin->liste.exchange(i, exec));
