@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.10.26.15.58";
+static std::string version = "1.2021.10.27.12.1";
 string LispVersion() {
     return version;
 }
@@ -1605,29 +1605,39 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 }
             case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
-                if (quoted == courant && courant->size() == 0) {
-                    if (e->type >= l_lambda && e->type <= l_defpat) {
-                        if (e->type == l_lambda)
-                            topfunction = 2;
-                        else
-                            topfunction = 3;
-                    }
+                if (!quoting && e->label() == l_quote) {
                     courant->append(e);
+                    quoting = true;
                 }
                 else {
-                    courant->append(e);
-                    quoting = quoting && courant == quoted;
-                    courant = quoted;
+                    if (!quoting && courant->size() == 0) {
+                        if (e->type >= l_lambda && e->type <= l_defpat) {
+                            if (e->type == l_lambda)
+                                topfunction = 2;
+                            else
+                                topfunction = 3;
+                        }
+                        courant->append(e);
+                    }
+                    else {
+                        courant->append(e);
+                        quoting = quoting && courant == quoted;
+                        courant = quoted;
+                    }
                 }
                 index++;
                 break;
             case l_quote:
-                e = new Listincode(parse.lines[index], delegation->i_current_file);
-                garbaging(e);
-                e->append(provideAtom(l_quote));
-                courant->append(e);
-                courant = e;
-                quoting = true;
+                if (quoting)
+                    courant->append(provideAtom(l_quote));
+                else {
+                    e = new Listincode(parse.lines[index], delegation->i_current_file);
+                    garbaging(e);
+                    e->append(provideAtom(l_quote));
+                    courant->append(e);
+                    courant = e;
+                    quoting = true;
+                }
                 index++;
                 break;
             default:
@@ -2067,6 +2077,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

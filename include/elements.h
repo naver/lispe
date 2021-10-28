@@ -50,9 +50,7 @@ typedef enum {
     
     //Default Lisp instructions
     l_number, l_float, l_string, l_integer, l_atom, 
-    
-    l_quote,
-    
+        
     //threads
     l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear,
     
@@ -66,7 +64,7 @@ typedef enum {
     
     //Check values
     l_atomp, l_numberp, l_consp, l_zerop, l_nullp, l_stringp,
-    
+    l_quote,
     //Numerical operations
     l_sign, l_signp, l_minus_plus,
     l_plus, l_minus, l_multiply, l_power,
