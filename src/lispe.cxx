@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.10.29.10.6";
+static std::string version = "1.2021.10.29.10.22";
 string LispVersion() {
     return version;
 }
@@ -1628,16 +1628,12 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 index++;
                 break;
             case l_quote:
-                if (quoting)
-                    courant->append(provideAtom(l_quote));
-                else {
-                    e = new Listincode(parse.lines[index], delegation->i_current_file);
-                    garbaging(e);
-                    e->append(provideAtom(l_quote));
-                    courant->append(e);
-                    courant = e;
-                    quoting = true;
-                }
+                e = new Listincode(parse.lines[index], delegation->i_current_file);
+                garbaging(e);
+                e->append(provideAtom(l_quote));
+                courant->append(e);
+                courant = e;
+                quoting = true;
                 index++;
                 break;
             default:
@@ -2077,6 +2073,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

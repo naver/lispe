@@ -171,6 +171,7 @@
          (loop r root
             (ncheck (consp r)
                (check (size (trim r))
+                  (println (formule r))
                   (push instructions (update (eval (formule r))))
                )
                (traverse r (@ instructions -1))
@@ -182,11 +183,12 @@
 
 (setq root ())
 (build code root 0)
-;(println root)
+(println (prettify root))
 (setq ins '(block))
 (traverse root ins)
-(println (prettify ins))
-(println (eval ins))
+;(println (prettify ins))
+;(println (eval ins))
+
 
 
 
