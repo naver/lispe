@@ -260,6 +260,8 @@ public:
             item->status--;
             item = new ITEM(8);
         }
+        else
+            item->last = 0;
     }
 
     void clean() {
