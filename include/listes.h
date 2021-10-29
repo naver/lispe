@@ -62,8 +62,7 @@ public:
             buffer = (Element**)realloc(buffer, sizeof(Element*)*(sz + 1));
         }
     }
-
-
+    
     inline void swap(long left, long right) {
         //We use the fact that the last element exists
         //but cannot be accessed...
@@ -253,7 +252,14 @@ public:
     }
 
     void clear() {
-        item->last = home;
+        home = 0;
+        if (item->status) {
+            //In this case it is a shared buffer
+            //We have no right to it anymore
+            //We need to provide a new one
+            item->status--;
+            item = new ITEM(8);
+        }
     }
 
     void clean() {
