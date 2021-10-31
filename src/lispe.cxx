@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.10.29.10.22";
+static std::string version = "1.2021.10.31.11.27";
 string LispVersion() {
     return version;
 }
@@ -359,23 +359,23 @@ void Delegation::initialisation(LispE* lisp) {
 
     set_instruction(l_cycle, "cycle", P_TWO, &List::evall_compose);
     set_instruction(l_repeat, "repeat", P_TWO, &List::evall_compose);
-    set_instruction(l_replicate, "replicate", P_TWO, &List::evall_compose);
+    set_instruction(l_replicate, "replicate", P_THREE, &List::evall_compose);
 
-    set_instruction(l_drop, "drop", P_FULL, &List::evall_compose);
-    set_instruction(l_dropwhile, "dropwhile", P_FULL, &List::evall_compose);
-    set_instruction(l_filter, "filter", P_FULL, &List::evall_compose);
-    set_instruction(l_foldl, "foldl", P_FULL, &List::evall_compose);
-    set_instruction(l_foldl1, "foldl1", P_FULL, &List::evall_compose);
-    set_instruction(l_foldr, "foldr", P_FULL, &List::evall_compose);
-    set_instruction(l_foldr1, "foldr1", P_FULL, &List::evall_compose);
-    set_instruction(l_map, "map", P_FULL, &List::evall_compose);
-    set_instruction(l_scanl, "scanl", P_FULL, &List::evall_compose);
-    set_instruction(l_scanl1, "scanl1", P_FULL, &List::evall_compose);
-    set_instruction(l_scanr, "scanr", P_FULL, &List::evall_compose);
-    set_instruction(l_scanr1, "scanr1", P_FULL, &List::evall_compose);
-    set_instruction(l_take, "take", P_FULL, &List::evall_compose);
-    set_instruction(l_takewhile, "takewhile", P_FULL, &List::evall_compose);
-    set_instruction(l_for, "for", P_FULL, &List::evall_compose);
+    set_instruction(l_drop, "drop", P_THREE, &List::evall_compose);
+    set_instruction(l_dropwhile, "dropwhile", P_THREE, &List::evall_compose);
+    set_instruction(l_filter, "filter", P_THREE, &List::evall_compose);
+    set_instruction(l_foldl, "foldl", P_FOUR, &List::evall_compose);
+    set_instruction(l_foldl1, "foldl1", P_THREE, &List::evall_compose);
+    set_instruction(l_foldr, "foldr", P_FOUR, &List::evall_compose);
+    set_instruction(l_foldr1, "foldr1", P_THREE, &List::evall_compose);
+    set_instruction(l_map, "map", P_THREE, &List::evall_compose);
+    set_instruction(l_scanl, "scanl", P_FOUR, &List::evall_compose);
+    set_instruction(l_scanl1, "scanl1", P_THREE, &List::evall_compose);
+    set_instruction(l_scanr, "scanr", P_FOUR, &List::evall_compose);
+    set_instruction(l_scanr1, "scanr1", P_THREE, &List::evall_compose);
+    set_instruction(l_take, "take", P_THREE, &List::evall_compose);
+    set_instruction(l_takewhile, "takewhile", P_THREE, &List::evall_compose);
+    set_instruction(l_for, "for", P_FOUR|P_FIVE, &List::evall_compose);
 
     
     //APL-like
@@ -1447,6 +1447,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                         if (inter != e) {
                                             removefromgarbage(e);
                                             e = inter;
+                                            lab = 0;
                                         }
                                     }
                                     else {
@@ -2073,6 +2074,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

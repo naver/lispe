@@ -273,12 +273,17 @@ Element* List::composing(LispE* lisp, bool docompose) {
     
     //Then we can compose our elements...
     short labeltype = first_element->type;
+    if (!lisp->delegation->checkArity(labeltype, listsize)) {
+        u_ustring err(U"Error: wrong number of arguments for: '");
+        err += lisp->asUString(labeltype);
+        err += U"'";
+        throw new Error(err);
+    }
+    
     first_element = liste[1];
     
     element = null_;
     if (labeltype == l_for) {
-        if (listsize != 4 && listsize != 5)
-            throw new Error("Error: Wrong number of arguments");
         element = liste[2];
         _iterator = liste[1];
         if (docompose && element->index(0)->label() == l_compose) {
@@ -306,9 +311,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
     }
     else {
         if (labeltype == l_repeat || labeltype == l_cycle) {
-            if (listsize != 2)
-                throw new Error("Error: Wrong number of arguments");
-            
             if (labeltype == l_cycle)
                 element = new Cyclelist(lisp);
             else
@@ -323,11 +325,8 @@ Element* List::composing(LispE* lisp, bool docompose) {
             }
             if (listsize == 3)
                 element = liste[2];
-            else {
-                if (labeltype < l_foldl)
-                    throw new Error("Error: Wrong number of arguments");
+            else
                 element = liste[3];
-            }
         }
     }
     wchar_t buffer[20];
@@ -364,7 +363,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
     swprintf_s(buffer,20, L"#accu%d", idx);
     _value = P(buffer);
 
-    char fold_ordering = 0;
+    short fold_ordering = 0;
     if (creation) {
         //We need to create our structure from scratch
         iterator_variable = _iterator;
@@ -399,8 +398,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
             case l_foldl:
                 //First we need to initialize out value
                 //(foldl op init list)
-                if (liste.size() != 4)
-                    throw new Error("Error: Wrong number of arguments in a foldl intruction");
                 //In this case, the initialisation value is provided as the third parameter
                 action = lisp->create_instruction(l_setq, _value, liste[2]);
                 operation = lisp->create_instruction(l_setq, _value, _iterator);
@@ -414,8 +411,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 //First we need to initialize out value
                 //(scanl op init list)
                 //(setq value init)...(setq recipient (cons value ())
-                if (liste.size() != 4)
-                    throw new Error("Error: Wrong number of arguments in a scanl intruction");
                 //In this case, the initialisation value is provided as the third parameter
                 action = lisp->create_instruction(l_setq, _value, liste[2]);
                 operation = lisp->create_instruction(l_setq, _value, _iterator);
@@ -427,8 +422,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 fold_ordering = 1;
                 break;
             case l_foldr:
-                if (liste.size() != 4)
-                    throw new Error("Error: Wrong number of arguments in a foldr intruction");
                 //In this case, the initialisation value is provided as the third parameter
                 action = lisp->create_instruction(l_setq, _value, liste[2]);
                 operation = lisp->create_instruction(l_setq, _value, _iterator);
@@ -440,8 +433,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 fold_ordering = 2;
                 break;
             case l_scanr:
-                if (liste.size() != 4)
-                    throw new Error("Error: Wrong number of arguments in a scanr intruction");
                 //In this case, the initialisation value is provided as the third parameter
                 action = lisp->create_instruction(l_setq, _value, liste[2]);
                 operation = lisp->create_instruction(l_setq, _value, _iterator);
@@ -455,8 +446,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 break;
             case l_foldl1:
                 //First we need to initialize out value
-                if (liste.size() != 3)
-                    throw new Error("Error: Wrong number of arguments in a foldl1 intruction");
                 //In this case, the initialisation value is provided as the first element from the list
                 //(foldl1 op list)
                 //The fourth parameter is the list to loop on
@@ -482,9 +471,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 break;
             case l_scanl1:
                 //First we need to initialize out value
-                if (liste.size() != 3)
-                    throw new Error("Error: Wrong number of arguments in a scanl1 intruction");
-
                 swprintf_s(buffer,20, L"#first%d", idx);
                 _first = P(buffer);
                 
@@ -510,9 +496,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 break;
             case l_foldr1:
                 //First we need to initialize out value
-                if (liste.size() != 3)
-                    throw new Error("Error: Wrong number of arguments in a foldr1 intruction");
-                
                 swprintf_s(buffer,20, L"#first%d", idx);
                 _first = P(buffer);
                 
@@ -539,9 +522,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 break;
             case l_scanr1:
                 //First we need to initialize out value
-                if (liste.size() != 3)
-                    throw new Error("Error: Wrong number of arguments in a scanr1 intruction");
-                
                 swprintf_s(buffer,20, L"#first%d", idx);
                 _first = P(buffer);
                 
@@ -723,7 +703,8 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 compose->liste[4] = _recipient;
                 action = lisp->create_instruction(l_setq, _value, liste[2]);
                 compose->beforelast(action);
-                if (final_section->index(0)->label() == l_block)
+                fold_ordering = final_section->index(0)->label();
+                if (fold_ordering == l_block || fold_ordering == l_check || fold_ordering == l_ncheck)
                     final_section->last()->change(0, P(l_setq));
                 else
                     final_section->change(0, P(l_setq));
@@ -741,7 +722,8 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 compose->liste[4] = _recipient;
                 action = lisp->create_instruction(l_setq, _value, liste[2]);
                 compose->beforelast(action);
-                if (final_section->index(0)->label() == l_block)
+                fold_ordering = final_section->index(0)->label();
+                if (fold_ordering == l_block || fold_ordering == l_check || fold_ordering == l_ncheck)
                     final_section->last()->change(0, P(l_setq));
                 else
                     final_section->change(0, P(l_setq));
@@ -755,7 +737,8 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 compose->beforelast(action);
                 compose->liste[4] = lisp->create_instruction(l_setq, _recipient, lisp->create_instruction(l_cons, liste[2], emptylist_));
                 loop->change(2, lisp->create_instruction(l_reverse, loop->index(2)));
-                if (final_section->index(0)->label() == l_block) {
+                fold_ordering = final_section->index(0)->label();
+                if (fold_ordering == l_block || fold_ordering == l_check || fold_ordering == l_ncheck) {
                     final_section->last()->change(0, P(l_insert));
                     final_section->last()->append(zero_);
                 }
