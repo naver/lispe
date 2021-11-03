@@ -1065,7 +1065,6 @@ public:
         liste.clean();
     }
     
-    bool check_quote(LispE*, long i);
     Element* transformargument(LispE*);
     
 #ifdef MAX_STACK_SIZE_ENABLED
@@ -1406,6 +1405,13 @@ public:
     
     Listargumentfunction(List* l, Element* e) : argument(e), List(l, 0) {}
     bool unify(LispE* lisp, Element* value, bool record);
+    bool isArgumentFunction() {
+        return true;
+    }
+    
+    Element* argumentvalue() {
+        return argument;
+    }
 };
 
 

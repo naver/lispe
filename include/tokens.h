@@ -149,6 +149,7 @@ public:
         reset();
         rules=r;
         parserules();
+        loaded = true;
     }
     
     void getrules(vector<u_ustring>& r) {

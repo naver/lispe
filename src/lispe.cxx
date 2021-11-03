@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.10.31.11.27";
+static std::string version = "1.2021.11.2.18.47";
 string LispVersion() {
     return version;
 }
@@ -1419,10 +1419,8 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     for (long i = 0; i < arguments->size(); i++) {
                                         idx = arguments->index(i);
                                         a = idx->transformargument(this);
-                                        if (a != idx) {
+                                        if (a != idx)
                                             ((List*)arguments)->liste.put(i, a);
-                                            removefromgarbage(idx);
-                                        }
                                     }
                                     e->eval(this);
                                     continue;
@@ -1532,6 +1530,12 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     abstractSyntaxTree(&dico, parse, index, quoting);
                     e = dico.dictionary(this);
                     garbaging(e);
+                    if (e->isList()) {
+                        //Then in that case, we need to provide a protection
+                        //for each of its elements...
+                        for (long i = 0; i < e->size(); i++)
+                            control_garbaging(e->index(i));
+                    }
                 }
                 courant->append(e);
                 quoting = quoting && courant == quoted;
@@ -2074,6 +2078,11 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
 
 
 

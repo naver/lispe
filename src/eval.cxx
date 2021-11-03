@@ -159,6 +159,7 @@ bool Dictionary_as_list::traverse(LispE* lisp, Dictionary* d, Strings* keys, Int
             dico->release();
             return false;
         }
+        dico->release();
         return true;
     }
     
@@ -172,13 +173,16 @@ bool Dictionary_as_list::traverse(LispE* lisp, Dictionary* d, Strings* keys, Int
         removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
         removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
     }
-    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp,lisp->provideString(keys->liste[di]), record)) {
+    Element* e = lisp->provideString(keys->liste[di]);
+    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp,e, record)) {
         consummed->liste.push_back(di);
+        e->release();
         if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
             return true;
         consummed->liste.pop_back();
     }
-    
+    else
+        e->release();
     if (removekey)
         lisp->removefromstack(k->label());
     if (removevalue)
@@ -229,13 +233,16 @@ bool Dictionary_as_list::traverse(LispE* lisp, Dictionary_n* d, Numbers* keys, I
         removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
         removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
     }
-    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp,lisp->provideNumber(keys->liste[di]) , record)) {
+    Element* e = lisp->provideNumber(keys->liste[di]);
+    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp, e, record)) {
         consummed->liste.push_back(di);
+        e->release();
         if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
             return true;
         consummed->liste.pop_back();
     }
-    
+    else
+        e->release();
     if (removekey)
         lisp->removefromstack(k->label());
     if (removevalue)
@@ -419,6 +426,7 @@ bool Listargumentset::unify(LispE* lisp, Element* value, bool record) {
         }
         next_value = value->next_iter(lisp, iter);
         while (next_value != emptyatom_ && flat.find_element(lisp, next_value, 0) != -1) {
+            next_value->release();
             next_value = value->next_iter(lisp, iter);
         }
         
@@ -444,6 +452,7 @@ bool Listargumentset::unify(LispE* lisp, Element* value, bool record) {
             while (next_value != emptyatom_) {
                 if (flat.find_element(lisp, next_value, 0) == -1)
                     sublist->append(next_value);
+                next_value->release();
                 next_value = value->next_iter(lisp, iter);
             }
             value->clean_iter(iter);
@@ -2020,13 +2029,14 @@ Element* List::evall_maplist(LispE* lisp) {
                 default:
                     container = lisp->provideList();
             }
-
-            container->append(e->copying(false));
+            e = e->copying(false);
+            container->append(e);
             e->release();
             for (long i = 1; i < listsz; i++) {
                 lisp->replacingvalue(element->index(i), label);
                 e = eval_lambda_min(lisp, (List*)op);
-                container->append(e->copying(false));
+                e = e->copying(false);
+                container->append(e);
                 e->release();
             }
             if (call->size())
@@ -2058,14 +2068,15 @@ Element* List::evall_maplist(LispE* lisp) {
                 default:
                     container = lisp->provideList();
             }
-            container->append(e->copying(false));
+            e = e->copying(false);
+            container->append(e);
             if (e != call->liste[1])
                 call->liste[1]->release();
             e->release();
             for (long i = 1; i < listsz; i++) {
                 call->liste[1] = element->index(i)->quoting(lisp);
-                e = (call->*met)(lisp);
-                container->append(e->copying(false));
+                e = (call->*met)(lisp)->copying(false);
+                container->append(e);
                 if (e != call->liste[1])
                     call->liste[1]->release();
                 e->release();
@@ -7466,8 +7477,10 @@ Element* List::evall_extend(LispE* lisp) {
                 e->release();
             }
         }
-        else
-            first_element->append(second_element->copying(false));
+        else {
+            second_element = second_element->copying(false);
+            first_element->append(second_element);
+        }
         second_element->release();
     }
     catch (Error* err) {
@@ -7491,7 +7504,8 @@ Element* List::evall_push(LispE* lisp) {
             throw new Error(L"Error: missing list in 'push'");
         first_element = first_element->duplicate_constant();
         second_element = liste[2]->eval(lisp);
-        first_element->append(second_element->copying(false));
+        second_element = second_element->copying(false);
+        first_element->append(second_element);
         second_element->release();
     }
     catch (Error* err) {

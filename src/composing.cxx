@@ -1078,98 +1078,91 @@ Element* List::composing(LispE* lisp, bool docompose) {
 }
 
 //--------------------------------------------------------------------------------
-//we transform the tests against an atom via a quoted expression is a specific method call
-bool List::check_quote(LispE* lisp, long i) {
-    if (liste[i]->type == t_list && liste[i]->size()) {
-        if (liste[i]->index(0)->type == l_quote) {
-            liste[i] = new Listargumentquote((List*)liste[i]);
-            lisp->garbaging(liste[i]);
-            return true;
-        }
-    }
-    return false;
-}
-//--------------------------------------------------------------------------------
-
-//This method is used to promote some arguments from a defpat function into
-//more efficient objects.
-//Each of these objects implement its own unify method.
-//Note that the way LIST is implemented allows for "list borrowing"...
-//Which we do here...
 Element* List::transformargument(LispE* lisp) {
     long sz = liste.size();
-    long i;
 
     if (!sz)
-        throw new Error("Error: Wrong argument in defpat function");
+        return this;
+
+    Element* element;
+    short label = liste[0]->label();
+
+    if (label == l_quote) {
+        element = new Listargumentquote(this);
+        lisp->removefromgarbage(this);
+        return lisp->push_in_garbage(element);
+    }
+
+    //We first evaluate all the next elements in the list
+    for (long i = 1; i < sz; i++)
+        liste[i] = liste[i]->transformargument(lisp);
     
-    List* fin = this;
-    short lab = liste[0]->label();
-    if (lab == l_set || lab == l_setn)
-        fin = new Listargumentset(this);
-    else {
-        if (lab == l_quote)
-            fin = new Listargumentquote(this);
-        else {
-            short ilabel = ilabel = lisp->extractlabel(this);
-            if (ilabel == v_null) {
-                if (check_quote(lisp, 0) || (sz > 1 && liste[sz-2] == separator_)) {
-                    for (i = 1; i < sz - 2; i++)
-                        check_quote(lisp, i);
-                    fin = new Listargumentseparator(this);
-                    lisp->garbaging(fin);
-                    return fin;
-                }
-                if (isExecutable(lisp)) {
-                    Element* arg = liste.back();
-                    while (arg->isExecutable(lisp))
-                        arg = arg->last();
-                    if (arg == null_)
+    //Then we evaluate the initial label
+    //This is a set description
+    if (label == l_set || label == l_setn) {
+        element = new Listargumentset(this);
+        lisp->removefromgarbage(this);
+        return lisp->push_in_garbage(element);
+    }
+
+
+    bool sep = false;
+    if (sz > 1 && liste[sz-2] == separator_) {
+        sep = true;
+    }
+
+
+    //If it is a list, then we need to evaluate this element
+    //We do not test; label == t_list, because in this case it could
+    //be a constraint on the object type...
+    if (liste[0]->isAtom()) {
+        //This is either a data structure or a type constraint
+        //It has to be integrated into a list... [string_ xxx]
+        if (lisp->checkDataStructure(label)) {
+            if (label >= t_atom && label <= t_maybe)
+                element = new Listargumentlabel(this, label);
+            else
+                element = new Listargumentdata(this);
+            
+            lisp->removefromgarbage(this);
+            return lisp->push_in_garbage(element);
+        }
+        
+        //This is an executable...
+        //In this case, it could be an embedded list of calls...
+        if (liste[0]->isExecutable(lisp)) {
+            element = liste.back();
+
+            //If the last element is also an argument function, then eval returns its argument
+            if (element->isArgumentFunction())
+                element = new Listargumentfunction(this, element->argumentvalue());
+            else {
+                //We find the last atom in the sequence
+                if (!element->isAtom()) {
+                    for (long i = sz - 2; i > 0; i--) {
+                        if (liste[i]->isAtom()) {
+                            element = liste[i];
+                            break;
+                        }
+                    }
+                    if (!element->isAtom())
                         throw new Error("Error: Missing argument in defpat function");
-                    fin = new Listargumentfunction(this, arg);
-                    lisp->garbaging(fin);
-                    return fin;
                 }
-                for (i = 1; i < sz; i++)
-                    check_quote(lisp, i);
-                return this;
+                element = new Listargumentfunction(this, element);
             }
             
-            if (ilabel >= t_atom && ilabel <= t_maybe) {
-                if (sz > 1 && liste[sz-2] == separator_) {
-                    for (i = 1; i < sz - 2; i++)
-                        check_quote(lisp, i);
-                    fin = new Listargumentseparator(this);
-                    lisp->garbaging(fin);
-                    return fin;
-                }
-                if (liste.back() != null_ && sz == 2)
-                    fin = new Listargumentlabel(this, ilabel);
-            }
-            else {
-                fin = new Listargumentdata(this);
-                lisp->garbaging(fin);
-                Element* exec;
-                for (i = 1; i < fin->size(); i++) {
-                    exec = fin->liste[i]->transformargument(lisp);
-                    if (exec != fin->liste[i]) {
-                        lisp->removefromgarbage(fin->liste.exchange(i, exec));
-                    }
-                }
-                return fin;
-            }
+            lisp->removefromgarbage(this);
+            return lisp->push_in_garbage(element);
         }
     }
-    if (fin != this) {
-        if (!fin->status)
-            lisp->garbaging(fin);
-        if (liste.size() > 1) {
-            Element* exec = fin->liste.back()->transformargument(lisp);
-            if (exec != fin->liste.back()) {
-                lisp->removefromgarbage(fin->liste.exchangelast(exec));
-            }
-        }
+    
+    //When liste[0] is also a liste, we need to evaluate it as well
+    liste[0] = liste[0]->transformargument(lisp);
+    
+    if (sep) {
+        element = new Listargumentseparator(this);
+        lisp->removefromgarbage(this);
+        return lisp->push_in_garbage(element);
     }
-    return fin;
+    return this;
 }
-

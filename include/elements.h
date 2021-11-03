@@ -225,8 +225,8 @@ public:
     void generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<short,Element*>& dico_variables);
     void replaceVariableNames(LispE* lisp, unordered_map<short, Element*>& names);
     bool replaceVariableNames(LispE* lisp);
-    
-    virtual bool check_quote(LispE*, long i) {
+
+    virtual bool isArgumentFunction() {
         return false;
     }
     
@@ -753,6 +753,9 @@ public:
         return divide(lisp, e);
     }
 
+    virtual Element* argumentvalue() {
+        return NULL;
+    }
 };
 
 class Error : public Element {

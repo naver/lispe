@@ -834,8 +834,7 @@ void Dictionarypool::decrement() {
         dictionary.clear();
         lisp->dictionary_pool.push_back(this);
     }
-    else
-        marking = false;
+    marking = false;
 }
 
 
@@ -852,8 +851,7 @@ void Dictionarypool::decrementstatus(uint16_t nb) {
         dictionary.clear();
         lisp->dictionary_pool.push_back(this);
     }
-    else
-        marking = false;
+    marking = false;
 }
 
 void Dictionarypool::release() {
@@ -2301,16 +2299,16 @@ void Element::prettyfying(LispE* lisp, string& code) {
             code += "(";
             code += lisp->toString(type);
             code += " ";
-            code += protected_index(lisp, (long)1)->toString(lisp);
+            code += index(1)->toString(lisp);
             code += " ";
-            params = protected_index(lisp, (long)2);
+            params = index(2);
             if (type == l_defpat) {
                 code += "(";
                 string local;
                 for (long i = 0; i < params->size(); i++) {
                     if (i)
                         code += " ";
-                    local = params->protected_index(lisp, i)->toString(lisp);
+                    local = index(i)->toString(lisp);
                     if (local[0] == '(') {
                         local[0] = '[';
                         local.back() = ']';
@@ -2323,7 +2321,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
                 code += params->toString(lisp);
             code += "\n";
             for (long i = 3; i < size(); i++) {
-                protected_index(lisp, i)->prettyfying(lisp, code);
+                index(i)->prettyfying(lisp, code);
             }
             code += ")\n";
             return;
@@ -2334,12 +2332,12 @@ void Element::prettyfying(LispE* lisp, string& code) {
         
         if (type == l_if || type == l_check || type == l_ncheck || type == l_ife) {
             code += "(";
-            code += protected_index(lisp, i++)->toString(lisp);
+            code += index(i++)->toString(lisp);
             code += " ";
-            code += protected_index(lisp, i++)->toString(lisp);
+            code += index(i++)->toString(lisp);
             code += "\n";
             for (; i < size(); i++) {
-                protected_index(lisp, i)->prettyfying(lisp, code);
+                index(i)->prettyfying(lisp, code);
             }
             code += ")\n";
             return;
@@ -2355,22 +2353,21 @@ void Element::prettyfying(LispE* lisp, string& code) {
         code += "(";
         
         if (type == l_while || type == l_setq || type == l_setg || type == l_loopcount || type == l_key || type == l_keyn) {
-            code += protected_index(lisp, i++)->toString(lisp);
+            code += index(i++)->toString(lisp);
             code += " ";
-            code += protected_index(lisp, i++)->toString(lisp);
+            code += index(i++)->toString(lisp);
             code += "\n";
         }
         else {
             if (type > t_error && type < l_final) {
-                code += protected_index(lisp, i++)->toString(lisp);
+                code += index(i++)->toString(lisp);
                 i = 1;
             }
             code += "\n";
         }
         
         for (; i < size(); i++) {
-            params = protected_index(lisp, i);
-            params->prettyfying(lisp, code);
+            index(i)->prettyfying(lisp, code);
             if (code.back() != '\n')
                 code += "\n";
         }
@@ -2520,7 +2517,7 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
         
         //We generate: (key (key) k v k' v' k" v"...)
         last_element->append(keycmd);
-        last_element->append(new List);
+        last_element->append(lisp->provideList());
         last_element->liste[1]->append(keycmd);
         for (long i = 0; i < keyvalues.size(); i++) {
             last_element->append(keyvalues[i]);

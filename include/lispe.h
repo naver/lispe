@@ -883,6 +883,13 @@ public:
         garbages.push_back(e);
     }
 
+    inline Element* push_in_garbage(Element* e) {
+        //This status is used to avoid the destruction of the objects out of the garbage .
+        e->status = s_constant;
+        garbages.push_back(e);
+        return e;
+    }
+
     inline void control_garbaging(Element* e) {
         //In this case, we set the garbage to a value, which is neither s_protect nor s_constant
         if (!e->is_protected() && e->garbageable()) {
