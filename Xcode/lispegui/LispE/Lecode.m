@@ -274,6 +274,8 @@ BOOL dark = false;
         [self setTextColor: [NSColor whiteColor] range:suivant];
     else
         [self setTextColor: [NSColor blackColor] range:suivant];
+    
+    limite = [letexte lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     long* tobecolored=colorparser([letexte UTF8String], suivant.location, limite);
 
     for (long i=0; tobecolored[i]!=-1;i+=3) {

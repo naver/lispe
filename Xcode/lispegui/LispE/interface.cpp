@@ -27,6 +27,7 @@
 static string displaybuffer;
 static string current_code;
 static bool windowmode = false;
+static bool running = false;
 
 //The following functions are called from within the GUI to handle debugging
 static LispE* lispe = NULL;
@@ -102,7 +103,8 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
         stops['='] = true;
 }
 
-    
+    wstring tampon;
+
     long sz = code.size();
     long i, current_i;
     //The first line of the code is 1
@@ -110,7 +112,6 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
     UWCHAR c, nxt;
     uchar lc;
     bool quote = false;
-    wstring tampon;
     bool point = false;
     
     for (i = 0; i < sz; i++) {
@@ -207,7 +208,7 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                 }
                 else
                     tampon = code.substr(current_i, i - current_i);
-                
+                                
                 lc = tampon[0];
 
                 if (quote)
@@ -216,7 +217,7 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                     if (point)
                         infos.append(l_defun, current_i, i);
                     else {
-                        if (lispe != NULL && lispe->delegation->is_atom(tampon) != -1)
+                        if (lispe != NULL && lispe->delegation->is_basic_atom(tampon) != -1)
                             infos.append(t_atom, current_i, i);
                         else
                             if (current_i > 0 && code[current_i-1] == '(')
@@ -322,7 +323,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
 extern "C" {
 
     char IsRunning(void) {
-        return false;
+        return running;
     }
     
     void CleanGlobal() {
@@ -343,7 +344,6 @@ extern "C" {
             windowmode = false;
         }
         current_path_name = filename;
-        lispe->set_pathname(current_path_name);
         current_code = cde;
         if (current_code.find("fltk_") != -1)
             windowmode = true;
@@ -528,6 +528,11 @@ extern "C" {
     }
     
     char Run(short idcode) {
+        if (running)
+            return false;
+        
+        running = true;
+
         if (lispe == NULL) {
             lispe = new LispE;
             lispe->delegation->display_string_function = sendresult;
@@ -563,6 +568,7 @@ extern "C" {
         displaybuffer += "\n";
         res->release();
         Rappel(0, displaybuffer.c_str());
+        running = false;
         return true;
     }
     
@@ -574,6 +580,7 @@ extern "C" {
         debugmode = false;
         lispe = NULL;
         windowmode = false;
+        running = false;
     }
 
     long indentationVirtuel(char* cr, char* acc) {
