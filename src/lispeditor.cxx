@@ -1417,7 +1417,7 @@ void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor,
     }
 }
 
-void debug_function_lispe(LispE* lisp, List* instructions, void* o) {        
+bool debug_function_lispe(LispE* lisp, List* instructions, void* o) {
 
     lispe_editor* editor = (lispe_editor*)o;
     long current_line = lisp->delegation->i_current_line;
@@ -1426,7 +1426,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
         editor->current_file_debugger == lisp->delegation->i_current_file &&
         editor->current_thread_id == lisp->threadId()) {
         lisp->delegation->next_stop = true;
-        return;
+        return false;
     }
 
     bool is_thread = lisp->threaded();
@@ -1436,7 +1436,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     if (lisp->isEndTrace()) {
         editor->lispe = editor->master_lisp;
         editor->lock.unlocking(is_thread);
-        return;
+        return false;
     }
     
     editor->lispe = lisp;
@@ -1455,6 +1455,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     lisp->blocking_trace_lock();
     editor->lispe = editor->master_lisp;
     editor->lock.unlocking(is_thread);
+    return true;
 }
 
 //We use this version for input to deport input to main thread...

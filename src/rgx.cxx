@@ -385,7 +385,7 @@ bool Au_automaton::searchlast(u_ustring& w, long& b, long& e, long init) {
 
 
 //----------------------------------------------------------------
-void Au_automaton::searchall(u_ustring& w, vecte<long>& res, long init) {
+void Au_automaton::searchall(u_ustring& w, vecte_a<long>& res, long init) {
     long f;
     long sz = w.size();
     
@@ -467,7 +467,7 @@ bool Au_automaton::bytesearch(u_ustring& w, long& b, long& e) {
 }
 
 
-void Au_automaton::bytesearchall(u_ustring& w, vecte<long>& res) {
+void Au_automaton::bytesearchall(u_ustring& w, vecte_a<long>& res) {
     long f;
     long sz = w.size();
     for (long d=0; d<sz; d++) {
@@ -1001,7 +1001,7 @@ public:
 
 
     Element* findall(LispE* lisp, u_ustring& w, long pos) {
-        vecte<long> resultats;
+        vecte_a<long> resultats;
         au.searchall(w, resultats, pos);
         
         if (resultats.size() == 0)
@@ -1029,7 +1029,7 @@ public:
     }
 
     Element* replace(LispE* lisp, u_ustring& w, u_ustring& rep) {
-        vecte<long> resultats;
+        vecte_a<long> resultats;
         au.searchall(w, resultats, 0);
         if (resultats.size() == 0)
             return emptystring_;
@@ -1040,7 +1040,7 @@ public:
     }
 
     Element* split(LispE* lisp, u_ustring& w) {
-        vecte<long> values;
+        vecte_a<long> values;
         au.searchall(w, values, 0);
         if (values.size() == 0)
             return emptylist_;

@@ -18,7 +18,7 @@
 //------------------------------------------------------------
 class LispE;
 class jag_get;
-typedef void (*lispe_debug_function)(LispE*, List* e, void*);
+typedef bool (*lispe_debug_function)(LispE*, List* e, void*);
 //------------------------------------------------------------
 class BlockThread {
 public:
@@ -512,7 +512,6 @@ public:
 
     inline bool activate_on_breakpoints(LispE* lisp, List* e) {
         if (next_stop) {
-            next_stop = false;
             if (debugfunction != NULL) {
                 (*debugfunction)(lisp, e, debugobject);
                 return true;

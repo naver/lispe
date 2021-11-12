@@ -140,7 +140,7 @@ char x_tokens::loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, l
     return true;
 }
 
-void x_tokens::apply(u_ustring& toparse, vector<u_ustring>* vstack) {
+void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
     u_uchar chr[] = {0,0,0};
     u_uchar currentchr[] = {0,0,0};
 
@@ -246,7 +246,10 @@ void x_tokens::apply(u_ustring& toparse, vector<u_ustring>* vstack) {
     delete[] token;
 }
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trimleft, str_trimright, str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation, str_format, str_read_json, str_parse_json, str_string_json, str_trim0, str_ngrams,
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright,
+    str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
+    str_format, str_padding, str_fill,
+    str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
     str_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
 
 /*
@@ -327,6 +330,72 @@ public:
             v[0] = U'n';
         }
         return lisp->provideString(sformat);
+    }
+
+    Element* methodPadding(LispE* lisp) {
+        u_ustring value =  lisp->get_variable(v_str)->asUString(lisp);
+        u_ustring sval = lisp->get_variable(U"c")->asUString(lisp);
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        long sz = nb - value.size();
+        if (sval.size() == 1) {
+            while (sz) {
+                value += sval;
+                sz--;
+            }
+        }
+        else {
+            long i = 0;
+            nb = sval.size();
+            while (sz) {
+                value += sval[i++];
+                sz--;
+                if (i == nb)
+                    i = 0;
+            }
+        }
+        
+        return lisp->provideString(value);
+    }
+
+    Element* methodFill(LispE* lisp) {
+        long nb = lisp->get_variable(v_nb)->asInteger();
+        u_ustring sval;
+        if (nb <= 0)
+            return lisp->provideString(sval);
+        
+        sval = lisp->get_variable(v_str)->asUString(lisp);
+        u_ustring val;
+        while (nb > 0) {
+            val += sval;
+            nb--;
+        }
+        
+        return lisp->provideString(val);
+    }
+    
+    #define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
+
+    Element* methodEditDistance(LispE* lisp) {
+        u_ustring s1 = lisp->get_variable(v_str)->asUString(lisp);
+        u_ustring s2 = lisp->get_variable("strbis")->asUString(lisp);
+        
+        unsigned long s1len, s2len, x, y, lastdiag, olddiag;
+        s1len = s1.size();
+        s2len = s2.size();
+        size_t* column = new size_t[s1len + 1];
+        for (y = 1; y <= s1len; y++)
+            column[y] = y;
+        for (x = 1; x <= s2len; x++) {
+            column[0] = x;
+            for (y = 1, lastdiag = x - 1; y <= s1len; y++) {
+                olddiag = column[y];
+                column[y] = MIN3(column[y] + 1, column[y - 1] + 1, lastdiag + (s1[y - 1] == s2[x - 1] ? 0 : 1));
+                lastdiag = olddiag;
+            }
+        }
+        s2len = column[s1len];
+        delete[] column;
+        return lisp->provideInteger(s2len);
     }
 
     
@@ -616,7 +685,7 @@ public:
                 Element* lst = lisp->get_variable(U"lst");
                 if (!lst->isList())
                     throw new Error("Error: This function expects a list");
-                vector<u_ustring> wlst;
+                vecte_n<u_ustring> wlst;
                 for (long i = 0; i < lst->size(); i++) {
                     wlst.push_back(lst->index(i)->asUString(lisp));
                 }
@@ -625,6 +694,15 @@ public:
             }
             case str_format: {
                 return methodFormat(lisp);
+            }
+            case str_fill: {
+                return methodFill(lisp);
+            }
+            case str_padding: {
+                return methodPadding(lisp);
+            }
+            case str_edit_distance: {
+                return methodEditDistance(lisp);
             }
         }
 		return null_;
@@ -720,6 +798,14 @@ public:
                 return L"Return a rule object";
             case str_format:
                 return L"Takes as input a format and a list of variables. Variables in the format of the form: %n, where 1<=n<=9 are replaced with their corresponding arguments";
+            case str_padding:
+                return L"(padding str c nb): padds the string str with c up to 'nb' characters";
+            case str_fill:
+                return L"(fill c nb): creates a string made of nb 'c' characters";
+                break;
+            case str_edit_distance:
+                return L"(editdistance str strbis): compute the Levenshtein distance between str and strbis";
+                break;
         }
 		return L"";
     }
@@ -753,6 +839,9 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib splite (str fnd)", new Stringmethod(lisp, str_split_empty));
     lisp->extension("deflib ord (str)", new Stringmethod(lisp, str_ord));
     lisp->extension("deflib chr (nb)", new Stringmethod(lisp, str_chr));
+    lisp->extension("deflib padding (str c nb)", new Stringmethod(lisp, str_padding));
+    lisp->extension("deflib fill (str nb)", new Stringmethod(lisp, str_fill));
+    lisp->extension("deflib editdistance (str strbis)", new Stringmethod(lisp, str_edit_distance));
     lisp->extension("deflib vowelp (str)", new Stringmethod(lisp, str_is_vowel));
     lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));

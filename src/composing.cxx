@@ -1078,6 +1078,17 @@ Element* List::composing(LispE* lisp, bool docompose) {
 }
 
 //--------------------------------------------------------------------------------
+Element* Atome::transformargument(LispE* lisp) {
+    if (name.back() == '+' || name.back() == '*' || name.back() == '%') {
+        char a = name.back();
+        u_ustring bare_name = name.substr(0, name.size()-1);
+        short l_name = lisp->encode(bare_name);
+        Element* e = new Atomekleene(l_name, bare_name, a);
+        return lisp->push_in_garbage(e);
+    }
+    return this;
+}
+//--------------------------------------------------------------------------------
 Element* List::transformargument(LispE* lisp) {
     long sz = liste.size();
 
@@ -1093,9 +1104,28 @@ Element* List::transformargument(LispE* lisp) {
         return lisp->push_in_garbage(element);
     }
 
+    bool kleene = false;
     //We first evaluate all the next elements in the list
-    for (long i = 1; i < sz; i++)
-        liste[i] = liste[i]->transformargument(lisp);
+    for (long i = 1; i < sz; i++) {
+        element = liste[i]->transformargument(lisp);
+        if (element->label() == l_plus || element->label() == l_multiply || element->label() == l_mod) {
+            if (liste[i-1]->argumentvalue() != NULL) {
+                sz--;
+                element = new Listkleene(liste[i-1], liste[i-1]->argumentvalue(), element->label());
+                lisp->garbaging(element);
+                liste[i-1] = element;
+                liste.erase(i--);
+            }
+            else {
+                if (i > 1)
+                    throw new Error("Error: The Kleene operators (*+%) can only apply to a function call");
+                else //In this case, the first element was not yet evaluated...
+                    kleene = true;
+            }
+        }
+        else
+            liste[i] = element;
+    }
     
     //Then we evaluate the initial label
     //This is a set description
@@ -1157,10 +1187,21 @@ Element* List::transformargument(LispE* lisp) {
     }
     
     //When liste[0] is also a liste, we need to evaluate it as well
-    liste[0] = liste[0]->transformargument(lisp);
-    
+    if (kleene) {
+        element = liste[0]->transformargument(lisp);
+        if (element->argumentvalue() == NULL)
+            throw new Error("Error: The Kleene operators (*+%) can only apply to a function call");
+        sz--;
+        element = new Listkleene(element, element->argumentvalue(), element->label());
+        lisp->garbaging(element);
+        liste[0] = element;
+        liste.erase(1);
+    }
+    else
+        liste[0] = liste[0]->transformargument(lisp);
+
     if (sep) {
-        element = new Listargumentseparator(this);
+        element = new Listseparator(this);
         lisp->removefromgarbage(this);
         return lisp->push_in_garbage(element);
     }

@@ -19,15 +19,17 @@ typedef Element* (List::*methodEval)(LispE*);
 
 class Matrice;
 
-class Atomfunction : public Element {
+class Atomefonction : public Element {
 public:
     Element* body;
     short function_label;
     
-    Atomfunction(Element* b, short a) : body(b), Element(a) {
+    Atomefonction(Element* b, short a) : body(b), Element(a) {
         function_label = b->index(1)->label();
     }
 
+    u_ustring asUString(LispE* lisp);
+    
     Element* eval(LispE* lisp) {
         return body;
     }
@@ -42,7 +44,7 @@ public:
     Element** buffer;
     long last;
     long sz;
-    short status;
+    long status;
 
     ITEM(long t) {
         status = 0; //this is the reference counter
@@ -225,6 +227,10 @@ public:
     //if this a list, which is not duplicated through CDR calls
     bool nocdr() {
         return !item->status;
+    }
+    
+    short shared(long status) {
+        return status + (item->status != 0);
     }
     
     inline void setmark(bool v) {
@@ -546,13 +552,14 @@ public:
     }
     
     virtual Element* copyatom(uint16_t s) {
-        if (status < s)
+        if (liste.shared(status) < s)
             return this;
 
         List* l = new List;
         for (long i = 0; i < liste.size(); i++) {
             l->append(liste[i]->copyatom(s));
         }
+        release();
         return l;
     }
 
@@ -1071,9 +1078,7 @@ public:
     Element* evall_set_max_stack_size(LispE* lisp);
 #endif
 
-    virtual Element* eval_call_function(LispE* lisp) {
-        return evalfunction(lisp, liste[0]->eval(lisp));
-    }
+    virtual Element* eval_call_function(LispE* lisp);
     
     virtual Element* eval_call_self(LispE* lisp);
     
@@ -1290,32 +1295,32 @@ public:
 
     inline Element* evalt_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
-        return eval_function(lisp, (List*)((Atomfunction*)liste[0])->body);
+        return eval_function(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
 
     inline Element* evalt_library_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
-        return eval_library_function(lisp, (List*)((Atomfunction*)liste[0])->body);
+        return eval_library_function(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
 
     inline Element* evalt_pattern(LispE* lisp) {
         //In this case, it must be a pattern function call (t_pattern)
-        return eval_pattern(lisp, ((Atomfunction*)liste[0])->function_label);
+        return eval_pattern(lisp, ((Atomefonction*)liste[0])->function_label);
     }
 
     inline Element* evalt_lambda(LispE* lisp) {
         //In this case, it must be a self call (t_self)
-        return eval_lambda(lisp, (List*)((Atomfunction*)liste[0])->body);
+        return eval_lambda(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
 
     inline Element* evalt_thread(LispE* lisp) {
         //In this case, it must be a self call (t_self)
-        return eval_thread(lisp, (List*)((Atomfunction*)liste[0])->body);
+        return eval_thread(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
 
     inline Element* evalt_data(LispE* lisp) {
         //In this case, it must be a self call (t_self)
-        return eval_data(lisp, ((Atomfunction*)liste[0])->body);
+        return eval_data(lisp, ((Atomefonction*)liste[0])->body);
     }
     
 
@@ -1333,7 +1338,9 @@ public:
 class Listpool : public List {
 public:
     LispE* lisp;
+    
     Listpool(LispE* l) : lisp(l) {}
+    Listpool(LispE* lsp, List* l, long p) : lisp(lsp), List(l, p) {}
 
     void decrementstatus(uint16_t nb);
     void decrement();
@@ -1355,6 +1362,17 @@ public:
     bool unify(LispE* lisp, Element* value, bool record);
 };
 
+class Listkleene : public List {
+public:
+    Element* argument;
+    Element* variable;
+    short action;
+    
+    Listkleene(Element* l, Element* v, short a) : action(a), argument(l), variable(v) {}
+    
+    bool unify_kleene(LispE* lisp, Element* value, Element* current, long& i, long& r, bool record);
+};
+
 class Listargumentdata : public List {
 public:
     
@@ -1363,10 +1381,10 @@ public:
     bool unify(LispE* lisp, Element* value, bool record);
 };
 
-class Listargumentseparator : public List {
+class Listseparator : public List {
 public:
     
-    Listargumentseparator(List* l) : List(l, 0) {}
+    Listseparator(List* l) : List(l, 0) {}
     
     bool unify(LispE* lisp, Element* value, bool record);
 };
@@ -1421,6 +1439,7 @@ public:
     long fileidx;
     
     Listincode(Listincode* l) : List(l, 0) {
+        terminal = l->terminal;
         status = s_constant;
         line = l->line;
         fileidx = l->fileidx;
@@ -1600,12 +1619,13 @@ class Floats : public Element {
 public:
     
     Constfloat exchange_value;
-    vecte<float> liste;
+    vecte_a<float> liste;
     
     Floats() : Element(t_floats), exchange_value(0) {}
     Floats(Floats* n) : liste(n->liste), Element(t_floats), exchange_value(0) {}
     Floats(uint16_t s) : Element(t_floats, s), exchange_value(0) {}
-    Floats(long nb, float v) : liste(nb,v), Element(t_floats), exchange_value(0) {}
+    Floats(long nb, float v) : liste(nb, v), Element(t_floats), exchange_value(0) {}
+    Floats(Floats* f, long pos) : liste(f->liste, pos), Element(t_floats), exchange_value(0) {}
 
     virtual Element* newInstance() {
         return new Floats;
@@ -1695,10 +1715,12 @@ public:
     }
     
     virtual Element* copyatom(uint16_t s) {
-        if (status < s)
+        if (liste.shared(status) < s)
             return this;
-
-        return new Floats(this);
+        
+        Floats* f = new Floats(this);
+        release();
+        return f;
     }
 
 
@@ -2005,10 +2027,11 @@ class Numbers : public Element {
 public:
     
     Constnumber exchange_value;
-    vecte<double> liste;
+    vecte_a<double> liste;
     
     Numbers() : Element(t_numbers), exchange_value(0) {}
     Numbers(Numbers* n) : liste(n->liste), Element(t_numbers), exchange_value(0) {}
+    Numbers(Numbers* n, long pos) : liste(n->liste, pos), Element(t_numbers), exchange_value(0) {}
     Numbers(uint16_t s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
 
@@ -2100,10 +2123,12 @@ public:
     }
     
     virtual Element* copyatom(uint16_t s) {
-        if (status < s)
+        if (liste.shared(status) < s)
             return this;
 
-        return new Numbers(this);
+        Numbers* n = new Numbers(this);
+        release();
+        return n;
     }
 
 
@@ -2408,12 +2433,13 @@ class Integers : public Element {
 public:
     
     Constinteger exchange_value;
-    vecte<long> liste;
+    vecte_a<long> liste;
     
     Integers() : Element(t_integers), exchange_value(0) {}
     Integers(uint16_t s) : Element(t_integers, s), exchange_value(0) {}
     Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i) : liste(i->liste), Element(t_integers), exchange_value(0) {}
+    Integers(Integers* i, long pos) : liste(i->liste, pos), Element(t_integers), exchange_value(0) {}
 
     virtual Element* newInstance() {
         return new Integers;
@@ -2728,10 +2754,12 @@ public:
     }
     
     virtual Element* copyatom(uint16_t s) {
-        if (status < s)
+        if (liste.shared(status) < s)
             return this;
 
-        return new Integers(this);
+        Integers* i = new Integers(this);
+        release();
+        return i;
     }
 
     Element* bit_not(LispE* l);
@@ -2876,7 +2904,7 @@ public:
     }
     
     inline void mult(long i, long j, float v) {
-        ((Floats*)liste[i])->liste.vecteur[j] *= v;
+        ((Floats*)liste[i])->liste[j] *= v;
     }
 
     char isPureList(long& x, long& y) {
@@ -3055,7 +3083,7 @@ public:
     }
     
     inline void mult(long i, long j, double v) {
-        ((Numbers*)liste[i])->liste.vecteur[j] *= v;
+        ((Numbers*)liste[i])->liste[j] *= v;
     }
 
     char isPureList(long& x, long& y) {
@@ -3777,24 +3805,15 @@ public:
 class Strings : public Element {
 public:
     
-    vector<u_ustring> liste;
+    vecte_n<u_ustring> liste;
     Conststring exchange_value;
     
     Strings() : exchange_value(U""), Element(t_strings) {}
-    Strings(long nb, wstring w) : exchange_value(U""), Element(t_strings) {
-        u_pstring u = _w_to_u(w);
-        while (nb) {
-            liste.push_back(u);
-            nb--;
-        }
-    }
-    Strings(long nb, u_ustring v) : exchange_value(U""), Element(t_strings) {
-        while (nb) {
-            liste.push_back(v);
-            nb--;
-        }
-    }
-
+    Strings(Strings* n, long pos) : exchange_value(U""), liste(n->liste, pos), Element(t_strings) {}
+    
+    Strings(long nb, wstring w) : exchange_value(U""), liste(nb, _w_to_u(w)), Element(t_strings) {}
+    Strings(long nb, u_ustring w) : exchange_value(U""), liste(nb, w), Element(t_strings) {}
+    
     Strings(Strings* s) : liste(s->liste), exchange_value(U""), Element(t_strings) {}
     
     Element* asList(LispE* lisp);
@@ -3839,25 +3858,19 @@ public:
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
-        liste.insert(liste.begin()+idx, e->asUString(NULL));
+        liste.insert(idx, e->asUString(NULL));
     }
     
     void swap(long i, long j) {
-        u_ustring v = liste[i];
-        liste[i] = liste[j];
-        liste[j] = v;
+        liste.swap(i,j);
     }
     
     void front(Element* e) {
-        liste.insert(liste.begin(), e->asUString(NULL));
+        liste.insert(0, e->asUString(NULL));
     }
     
     void beforelast(Element* e) {
-        long sz = liste.size();
-        if (!sz)
-            liste.push_back(e->asUString(NULL));
-        else
-            liste.insert(liste.begin()+sz-1, e->asUString(NULL));
+        liste.beforelast(e->asUString(NULL));
     }
 
     Element* thekeys(LispE* lisp);
@@ -4104,7 +4117,7 @@ public:
         }
         if (d < 0 || d > liste.size())
             return false;
-        liste.erase(liste.begin()+d);
+        liste.erase(d);
         return true;
     }
     
@@ -4133,7 +4146,7 @@ public:
     }
     
     virtual Element* copyatom(uint16_t s) {
-        if (status < s)
+        if (liste.shared(status) < s)
             return this;
 
         return new Strings(this);

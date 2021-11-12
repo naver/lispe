@@ -639,7 +639,7 @@ Element* Concept::asList() {
     concept.table(table);
     List* l = new List;
     u_ustring w;
-    for (long i = 0; i < table.last; i++) {
+    for (long i = 0; i < table.size(); i++) {
         w = ontologie->concepts[table[i]];
         l->append(ontologie->indexes[w]);
     }

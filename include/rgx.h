@@ -302,7 +302,7 @@ public:
 		return search(u, first, last, init);
 	}
 
-	void searchall(wstring& w, vecte<long>& res, long init = 0) {
+	void searchall(wstring& w, vecte_a<long>& res, long init = 0) {
 		u_ustring u = _w_to_u(w);
 		searchall(u, res, init);
 	}
@@ -320,7 +320,7 @@ public:
 		return search(_w_to_u(w), first, last, init);
 	}
 
-	void searchall(wstring& w, vecte<long>& res, long init = 0) {
+	void searchall(wstring& w, vecte_a<long>& res, long init = 0) {
 		searchall(_w_to_u(w), res, init);
 	}
 #endif
@@ -333,9 +333,9 @@ public:
     bool searchlast(u_ustring& w, long& first, long& last, long init = 0);
 
     bool bytesearch(u_ustring& w, long& first, long& last);
-    void bytesearchall(u_ustring& w, vecte<long>& res);
+    void bytesearchall(u_ustring& w, vecte_a<long>& res);
 
-    void searchall(u_ustring& w, vecte<long>& res, long init = 0);
+    void searchall(u_ustring& w, vecte_a<long>& res, long init = 0);
 
     void find(u_ustring& w, u_ustring& sep, vector<long>& res);
     virtual bool parse(u_ustring& rgx, Au_automatons* automatons=NULL);

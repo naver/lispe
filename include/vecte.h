@@ -337,6 +337,601 @@ public:
     }
 };
 
+
+//--------------------------------------------------------------------------------
+//We use the alloc method in this case...
+template <class Z> class item_a {
+public:
+    Z* buffer;
+    long last;
+    long sz;
+    long status;
+
+    item_a(long t) {
+        status = 0; //this is the reference counter
+        last = 0; //this is the last element
+        sz = t; //this is the size
+        //We always create one more element
+        //to handle some room for exchange
+        buffer = (Z*)malloc(sizeof(Z)*(sz + 1));
+        //hence buffer[sz] does exist even though
+        //it cannot be accessed through normal means
+    }
+    
+    inline void reserve(long t) {
+        if (t > sz) {
+            sz = t;
+            //We reallocate our vecteur
+            buffer = (Z*)realloc(buffer, sizeof(Z)*(sz + 1));
+        }
+    }
+
+    inline void resize(long t) {
+        if (t >= sz) {
+            sz <<= 1;
+            //We reallocate our vecteur
+            buffer = (Z*)realloc(buffer, sizeof(Z)*(sz + 1));
+        }
+    }
+    
+    inline void swap(long left, long right) {
+        //We use the fact that the last element exists
+        //but cannot be accessed...
+        buffer[sz] = buffer[left];
+        buffer[left] = buffer[right];
+        buffer[right] = buffer[sz];
+    }
+
+    inline bool reverse(long left, long right) {
+        if (left >= right)
+            return false;
+        buffer[sz] = buffer[left];
+        buffer[left] = buffer[right];
+        buffer[right] = buffer[sz];
+        return true;
+    }
+    
+    inline void erase(long i) {
+        if (i >= 0 && i < last) {
+            last--;
+            for (;i < last; i++)
+                buffer[i] = buffer[i+1];
+        }
+    }
+
+    inline void at(long pos, Z val) {
+        resize(pos + 1);
+        buffer[pos] = val;
+    }
+
+    inline void beforelast(Z val) {
+        if (last) {
+            resize(last);
+            buffer[last] = buffer[last-1];
+            buffer[last-1] = val;
+            last++;
+        }
+        else
+            buffer[last++] = val;
+    }
+
+    inline void padding(long nb) {
+        if (sz < (nb + last)) {
+            sz = (nb + last) << 1;
+            //We reallocate our vecteur
+            buffer = (Z*)realloc(buffer, sizeof(Z)*sz + 1);
+            memset(buffer+last, NULL, sizeof(Z)*(sz-last));
+        }
+    }
+
+    inline void padding(long nb, Z v) {
+        if (sz < (nb + last)) {
+            sz = (nb + last) << 1;
+            //We reallocate our vecteur
+            buffer = (Z*)realloc(buffer, sizeof(Z)*sz + 1);
+            for (nb = last; nb < sz; nb++)
+                buffer[nb] = v;
+        }
+    }
+
+    inline void atlast(Z val) {
+        buffer[last-1] = val;
+    }
+
+    inline void insert(long pos, Z val) {
+        resize(last);
+
+        if (pos >= last) {
+            buffer[last++] = val;
+            return;
+        }
+
+        //All elements are moved to the right.
+        for (long i = last; i > pos; i--)
+            buffer[i] = buffer[i - 1];
+        buffer[pos] = val;
+        last++;
+    }
+
+    inline void extend(item_a* val, long val_home) {
+        resize(last+val->last);
+        for (long i = val_home; i < val->last; i++) {
+            buffer[last++] = val->buffer[i];
+        }
+    }
+
+    inline void push_back(Z val) {
+        resize(last);
+        //sinon on ajoute l'element en queue...
+        buffer[last++] = val;
+    }
+
+    ~item_a() {
+        free(buffer);
+    }
+    
+};
+
+template <class Z> class vecte_a {
+public:
+
+    //It is always the same
+    item_a<Z>* items;
+    long home;
+
+    vecte_a(vecte_a<Z>& l) {
+        home = 0;
+        items = new item_a<Z>(l.size());
+        while (items->last < l.items->last - l.home) {
+            items->buffer[items->last] = l[items->last];
+            items->last++;
+        }
+    }
+
+    vecte_a(vecte_a<Z>& l, long pos) {
+        home  = pos + l.home;
+        items = l.items;
+        //We modify the common reference counter
+        items->status++;
+    }
+
+    vecte_a(long nb, Z v) {
+        home = 0;
+        items = new item_a<Z>(nb);
+        while (nb > 0) {
+            items->push_back(v);
+            nb--;
+        }
+    }
+
+    vecte_a(long t = 8) {
+        home = 0;
+        items = new item_a<Z>(t);
+    }
+
+    ~vecte_a() {
+        if (!items->status)
+            delete items;
+        else
+            items->status--;
+    }
+
+    inline void reserve(long t) {
+        items->reserve(t);
+    }
+    
+    inline void put(long pos, Z val) {
+        items->buffer[pos + home] = val;
+    }
+
+    short shared(long status) {
+        return status + (items->status != 0);
+    }
+
+    inline Z exchange(long pos, Z val) {
+        Z e = items->buffer[pos + home];
+        items->buffer[pos + home] = val;
+        return e;
+    }
+
+    inline Z exchangelast(Z val) {
+        Z e = items->buffer[items->last - 1];
+        items->buffer[items->last - 1] = val;
+        return e;
+    }
+
+    long size() {
+        return items->last - home;
+    }
+
+    void clear() {
+        home = 0;
+        if (items->status) {
+            //In this case it is a shared buffer
+            //We have no right to it anymore
+            //We need to provide a new one
+            items->status--;
+            items = new item_a<Z>(8);
+        }
+        else
+            items->last = 0;
+    }
+
+    void clean() {
+        items->last = home;
+    }
+    
+    inline void pop_back() {
+        items->last--;
+    }
+
+    inline void swap(long i, long j) {
+        items->swap(i, j);
+    }
+    
+    inline void beforelast(Z val) {
+        items->beforelast(val);
+    }
+
+    inline void insert(long pos, Z val) {
+        items->insert(pos + home, val);
+    }
+
+    inline Z back() {
+        return items->buffer[items->last - 1];
+    }
+
+    inline void push_back(Z val) {
+        items->push_back(val);
+    }
+
+    inline void extend(vecte_a<Z>* val) {
+        items->extend(val->item, val->home);
+    }
+
+    inline Z& operator[](long pos) {
+        return items->buffer[pos+home];
+    }
+    
+    void erase(long pos) {
+        items->erase(pos +home);
+    }
+
+    void reverse() {
+        long sz = items->last - 1;
+        for (long i = home; i < sz && items->reverse(i,sz); i++) {
+            sz--;
+        }
+    }
+        
+    void operator =(vecte_a<Z>& z) {
+        items->last = home;
+        for (long i = 0; i < z.size(); i++)
+            push_back(z[i]);
+    }
+
+    void operator =(vecte<Z>& z) {
+        items->last = home;
+        for (long i = 0; i < z.size(); i++)
+            push_back(z[i]);
+    }
+
+    inline bool empty() {
+        return (home == items->last);
+    }
+
+    inline void at(long pos, Z val) {
+        items->at(pos + home, val);
+    }
+
+    inline void atlast(Z val) {
+        items->atlast(val);
+    }
+
+    inline void padding(long nb) {
+        items->padding(nb + home);
+    }
+
+    inline void padding(long nb, Z v) {
+        items->padding(nb + home, v);
+    }
+    
+
+    inline bool check(Z v) {
+        for (long i = home; i< items->last; i++) {
+            if (items->buffer[i] == v)
+                return true;
+        }
+        return false;
+    }
+
+    inline bool operator ==(vecte_a<Z>& v) {
+        if (size() != v.size())
+            return false;
+        for (long i = home; i < size(); i++) {
+            if (items->buffer[home+i] != v[i])
+                return false;
+        }
+        return true;
+    }
+
+};
+
+//We use the new method here. The alloc cannot work for strings...
+template <class Z> class item_n {
+public:
+    Z* buffer;
+    long last;
+    long sz;
+    long status;
+
+    item_n(long t) {
+        status = 0; //this is the reference counter
+        last = 0; //this is the last element
+        sz = t; //this is the size
+        //We always create one more element
+        //to handle some room for exchange
+        buffer = new Z[sz + 1];
+        //hence buffer[sz] does exist even though
+        //it cannot be accessed through normal means
+    }
+    
+    inline void resize(long t) {
+        if (t >= sz) {
+            sz <<= 1;
+            //We reallocate our vecteur
+            Z* b = new Z[sz + 1];
+            for (long i = 0; i < last; i++)
+                b[i] = buffer[i];
+            delete[] buffer;
+            buffer = b;
+        }
+    }
+    
+    inline void swap(long left, long right) {
+        //We use the fact that the last element exists
+        //but cannot be accessed...
+        buffer[sz] = buffer[left];
+        buffer[left] = buffer[right];
+        buffer[right] = buffer[sz];
+    }
+
+    inline bool reverse(long left, long right) {
+        if (left >= right)
+            return false;
+        buffer[sz] = buffer[left];
+        buffer[left] = buffer[right];
+        buffer[right] = buffer[sz];
+        return true;
+    }
+    
+    inline void erase(long i) {
+        if (i >= 0 && i < last) {
+            last--;
+            for (;i < last; i++)
+                buffer[i] = buffer[i+1];
+        }
+    }
+
+    inline void at(long pos, Z& val) {
+        resize(pos + 1);
+        buffer[pos] = val;
+    }
+
+    inline void beforelast(Z& val) {
+        if (last) {
+            resize(last);
+            buffer[last] = buffer[last-1];
+            buffer[last-1] = val;
+            last++;
+        }
+        else
+            buffer[last++] = val;
+    }
+
+    inline void atlast(Z& val) {
+        buffer[last-1] = val;
+    }
+
+    inline void insert(long pos, Z& val) {
+        resize(last);
+
+        if (pos >= last) {
+            buffer[last++] = val;
+            return;
+        }
+
+        //All elements are moved to the right.
+        for (long i = last; i > pos; i--)
+            buffer[i] = buffer[i - 1];
+        buffer[pos] = val;
+        last++;
+    }
+
+    inline void extend(item_n<Z>* val, long val_home) {
+        resize(last+val->last);
+        for (long i = val_home; i < val->last; i++) {
+            buffer[last++] = val->buffer[i];
+        }
+    }
+
+    inline void push_back(Z& val) {
+        resize(last);
+        //sinon on ajoute l'element en queue...
+        buffer[last++] = val;
+    }
+
+    ~item_n() {
+        delete[] buffer;
+    }
+    
+};
+
+template <class Z> class vecte_n {
+public:
+
+    //It is always the same
+    item_n<Z>* items;
+    long home;
+
+    vecte_n(vecte_n<Z>& l) {
+        home = 0;
+        items = new item_n<Z>(l.size());
+        while (items->last < l.items->last - l.home) {
+            items->buffer[items->last] = l[items->last];
+            items->last++;
+        }
+    }
+
+    vecte_n(vecte_n<Z>& l, long pos) {
+        home  = pos + l.home;
+        items = l.items;
+        //We modify the common reference counter
+        items->status++;
+    }
+
+    vecte_n(long nb, Z v) {
+        home = 0;
+        items = new item_n<Z>(nb);
+        while (nb > 0) {
+            items->push_back(v);
+            nb--;
+        }
+    }
+
+    vecte_n(long t = 8) {
+        home = 0;
+        items = new item_n<Z>(t);
+    }
+
+    ~vecte_n() {
+        if (!items->status)
+            delete items;
+        else
+            items->status--;
+    }
+
+    inline void put(long pos, Z val) {
+        items->buffer[pos + home] = val;
+    }
+
+    short shared(long status) {
+        return status + (items->status != 0);
+    }
+
+    inline Z exchange(long pos, Z val) {
+        Z e = items->buffer[pos + home];
+        items->buffer[pos + home] = val;
+        return e;
+    }
+
+    inline Z exchangelast(Z val) {
+        Z e = items->buffer[items->last - 1];
+        items->buffer[items->last - 1] = val;
+        return e;
+    }
+
+    long size() {
+        return items->last - home;
+    }
+
+    void clear() {
+        home = 0;
+        if (items->status) {
+            //In this case it is a shared buffer
+            //We have no right to it anymore
+            //We need to provide a new one
+            items->status--;
+            items = new item_n<Z>(8);
+        }
+        else
+            items->last = 0;
+    }
+
+    void clean() {
+        items->last = home;
+    }
+    
+    inline void pop_back() {
+        items->last--;
+    }
+
+    inline void swap(long i, long j) {
+        items->swap(i, j);
+    }
+    
+    inline void beforelast(Z val) {
+        items->beforelast(val);
+    }
+
+    inline void insert(long pos, Z val) {
+        items->insert(pos + home, val);
+    }
+
+    inline Z& back() {
+        return items->buffer[items->last - 1];
+    }
+
+    inline void push_back(Z val) {
+        items->push_back(val);
+    }
+
+    inline void extend(vecte_n<Z>* val) {
+        items->extend(val->item, val->home);
+    }
+
+    inline Z& operator[](long pos) {
+        return items->buffer[pos+home];
+    }
+    
+    void erase(long pos) {
+        items->erase(pos +home);
+    }
+
+    void reverse() {
+        long sz = items->last - 1;
+        for (long i = home; i < sz && items->reverse(i,sz); i++) {
+            sz--;
+        }
+    }
+        
+    void operator =(vecte_n<Z>& z) {
+        items->last = home;
+        for (long i = 0; i < z.size(); i++)
+            push_back(z[i]);
+    }
+
+    inline bool empty() {
+        return (home == items->last);
+    }
+
+    inline void at(long pos, Z val) {
+        items->at(pos + home, val);
+    }
+
+    inline void atlast(Z val) {
+        items->atlast(val);
+    }
+
+    inline bool check(Z v) {
+        for (long i = home; i< items->last; i++) {
+            if (items->buffer[i] == v)
+                return true;
+        }
+        return false;
+    }
+
+    inline bool operator ==(vecte_n<Z>& v) {
+        if (size() != v.size())
+            return false;
+        for (long i = home; i < size(); i++) {
+            if (items->buffer[home+i] != v[i])
+                return false;
+        }
+        return true;
+    }
+
+};
 #endif
 
 

@@ -185,6 +185,41 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                 i = idx;
                 break;
             }
+            case '`': {
+                point = false;
+                quote = false;
+                idx = i + 1;
+                tampon = L"";
+                while (idx < sz && code[idx] != '`') {
+                    c = code[idx];
+                    infos.drift += c_utf16(c);
+                    if (c == '\\') {
+                        idx++;
+                        switch (code[idx]) {
+                            case 'n':
+                                tampon += '\n';
+                                idx++;
+                                continue;
+                            case 'r':
+                                tampon += '\r';
+                                idx++;
+                                continue;
+                            case 't':
+                                tampon += '\t';
+                                idx++;
+                                continue;
+                        }
+                    }
+                    tampon += c;
+                    idx++;
+                }
+                if (tampon == L"")
+                    infos.append(t_emptystring, i, idx + 1);
+                else
+                    infos.append(t_string, i, idx + 1);
+                i = idx;
+                break;
+            }
             default: {
                 //If the character is a multi-byte character, we need
                 //to position on the beginning of the character again
@@ -299,14 +334,14 @@ string display_variables(LispE* lisp, Element* instructions, bool full) {
     return localvariables;
 }
 
-void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
+bool debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     static string locals;
     static string globals;
     static string name;
     static string stack;
     
     if (last_line == lisp->delegation->i_current_line && last_file == lisp->delegation->i_current_file)
-        return;
+        return false;
     
     last_line = lisp->delegation->i_current_line;
     last_file = lisp->delegation->i_current_file;
@@ -318,6 +353,7 @@ void debug_function_lispe(LispE* lisp, List* instructions, void* o) {
     
     displaydebug(locals.c_str(), globals.c_str(), stack.c_str(), name.c_str(), last_line);
     lisp->blocking_trace_lock();
+    return true;
 }
 
 extern "C" {
@@ -344,6 +380,7 @@ extern "C" {
             windowmode = false;
         }
         current_path_name = filename;
+        lispe->set_pathname(current_path_name);
         current_code = cde;
         if (current_code.find("fltk_") != -1)
             windowmode = true;
@@ -607,9 +644,8 @@ extern "C" {
         codeindente += "\n";
         return codeindente.c_str();
     }
-    
-    
-    
+
+
     long* colorparser(const char* txt, long from, long upto) {
         static vector<long> limits;
         static Segmentingtype infos;
@@ -623,15 +659,30 @@ extern "C" {
             lispe->delegation->reading_string_function = &ProcMacEditor;
             windowmode = false;
         }
-        wstring line;
-        s_utf8_to_unicode(line, (unsigned char*)txt+from, upto - from);
+
         long drift = 0;
         if (from) {
             char c = txt[from];
             ((char*)txt)[from] = 0;
-            drift = size_raw_c((unsigned char*)txt, from);
-            ((char*)txt)[from] = c;
+            string s = txt;
+            drift = s.rfind("\n(", from);
+
+            if (drift != -1) {
+                ((char*)txt)[from] = c;
+                from = drift;
+                c = txt[from];
+                ((char*)txt)[from] = 0;
+                drift = size_raw_c((unsigned char*)txt, from);
+                ((char*)txt)[from] = c;
+            }
+            else {
+                drift = size_raw_c((unsigned char*)txt, from);
+                ((char*)txt)[from] = c;
+            }
         }
+
+        wstring line;
+        s_utf8_to_unicode(line, (unsigned char*)txt+from, upto - from);
         tokenize_line(line, infos);
         
         long left = 0, right = 0;

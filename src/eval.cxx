@@ -469,7 +469,112 @@ bool Listargumentset::unify(LispE* lisp, Element* value, bool record) {
     return test;
 }
 
-bool Listargumentseparator::unify(LispE* lisp, Element* value, bool record) {
+bool Atomekleene::unify_kleene(LispE* lisp, Element* value, Element* current, long& i, long& r, bool record) {
+    if (r >= current->size())
+        return false;
+
+    Element* next = null_;
+    bool not_the_end = true;
+    if (r == current->size() -1)
+        not_the_end =  false;
+    else
+        next = current->index(++r);
+    
+    long first = i;
+    long sz = value->size();
+    Element* l;
+    if (action == '%') {
+        //We do not accept the last element of a rule to be optional
+        if (!not_the_end)
+            return false;
+        
+        if (next->unify(lisp, value->index(i), false))
+            return unify(lisp, null_, record);
+        
+        if (i < sz - 1 && next->unify(lisp, value->index(i+1), false)) {
+            if (unify(lisp, value->index(i++), record))
+                return true;
+        }
+        i = first;
+        return false;
+    }
+
+    l = lisp->provideList();
+    if (action == '+') {
+        if (i >=  sz) {
+            l->release();
+            return false;
+        }
+        l->append(value->index(i++)->copying(false));
+    }
+    
+    for (; i < sz; i++) {
+        if (not_the_end && next->unify(lisp, value->index(i), false)) {
+            if (!unify(lisp, l, record)) {
+                i = first;
+                l->release();
+                return false;
+            }
+            return true;
+        }
+        l->append(value->index(i)->copying(false));
+    }
+    
+    if (!not_the_end) {
+        if (!unify(lisp, l, record)) {
+            i = first;
+            l->release();
+            return false;
+        }
+        return true;
+    }
+    
+    i = first;
+    l->release();
+    return false;
+}
+
+bool Listkleene::unify_kleene(LispE* lisp, Element* value, Element* current, long& i, long& r, bool record) {
+    if (action == l_mod) {
+        if (argument->unify(lisp, value->index(i), record))
+            return true;
+        lisp->storing_variable(null_, variable->label());
+        i--;
+        return true;
+    }
+
+    long sz = value->size();
+    List* l = lisp->provideList();
+    
+    if (action == l_plus) {
+        if (i >=  sz) {
+            l->release();
+            return false;
+        }
+        
+        if (!argument->unify(lisp, value->index(i++), true)) {
+            l->release();
+            return false;
+        }
+        
+        l->append(variable->eval(lisp));
+        lisp->removefromstack(variable->label());
+    }
+    
+    for (; i < sz; i++) {
+        if (!argument->unify(lisp, value->index(i), true))
+            break;
+        
+        l->append(variable->eval(lisp));
+        lisp->removefromstack(variable->label());
+    }
+    i--;
+    lisp->storing_variable(l, variable->label());
+    return true;
+}
+
+
+bool Listseparator::unify(LispE* lisp, Element* value, bool record) {
     if (!value->isList()) {
         return false;
     }
@@ -477,47 +582,65 @@ bool Listargumentseparator::unify(LispE* lisp, Element* value, bool record) {
     liste.object = value;
     long sz = liste.size();
     long szvalue = value->size();
+    long ivalue = 0;
     
-    if (szvalue < sz-2) {
-        return false;
-    }
-
+    Element* e;
+    
     bool test = true;
-    for (long i = 0; i < sz && test; i++) {
+    long i;
+    for (i = 0; i < sz && test; i++, ivalue++) {
+        e = liste[i];
         //In this case, we skip it, no constraints...
         //This is a case of a match with list division
-        if (liste[i] == separator_) {
-            //The parameter list should only contain one last element:
-            if (i != sz - 2) {
-                return false;
-            }
+        if (e == separator_) {
             //We do not care about the rest of the list
-            if (liste[i+1] == null_) {
+            if (liste[i+1] == null_)
                 return true;
-            }
-            //we need to build a sublist out of value...
-            List* sublist;
-            if (i == szvalue)
+            
+            Element* sublist;
+            if (ivalue >= szvalue)
                 sublist = emptylist_;
             else {
-                sublist = lisp->provideList();
-                for (sz = i; sz < szvalue; sz++)
-                    sublist->append(value->index(sz)->copying(false));
+                //We store the remainder of the list in a variable
+                switch (value->type) {
+                    case t_list:
+                        sublist = new List((List*)value, ivalue);
+                        break;
+                    case t_floats:
+                        sublist = new Floats((Floats*)value, ivalue);
+                        break;
+                    case t_numbers:
+                        sublist = new Numbers((Numbers*)value, ivalue);
+                        break;
+                    case t_integers:
+                        sublist = new Integers((Integers*)value, ivalue);
+                        break;
+                    case t_strings:
+                        sublist = new Strings((Strings*)value, ivalue);
+                        break;
+                    default:
+                        sublist = value->newInstance();
+                        for (; ivalue < szvalue; ivalue++)
+                            sublist->append(value->index(ivalue)->copying(false));
+                        
+                }
             }
+            
             if (!liste[i+1]->unify(lisp, sublist, record)) {
                 sublist->release();
                 return false;
             }
             return true;
         }
-        test = (liste[i] == null_ || liste[i]->unify(lisp, value->index(i), record));
+        test = (e == null_ || e->unify_kleene(lisp, value, this, ivalue, i, record));
     }
-    return test;
+    
+    return false;
 }
 
 bool List::unify(LispE* lisp, Element* value, bool record) {
-    long sz = liste.size();
-    if (!sz)
+    long szrules = liste.size();
+    if (!szrules)
         return (value->size() == 0);
 
     if (mark())
@@ -542,21 +665,21 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
     }
     
     long szvalue = value->size();
-    if (szvalue != sz) {
-        setmark(false);
-        return false;
-    }
+    long ivalue = 0;
     
     //this contains a data structure definition
     //This method is used to check if value matches the data structure in 'this'
     //rec==false, if the first element is a data structure name...
     bool test = true;
-    for (long i = 0; i < sz && test; i++) {
-        test = (liste[i] == null_ || liste[i]->unify(lisp, value->index(i), rec));
+    Element* e;
+    long irule = 0;
+    for (; irule < szrules && test; irule++, ivalue++) {
+        e = liste[irule];
+        test = (e == null_ || e->unify_kleene(lisp, value, this, ivalue, irule, rec));
         rec = record;
     }
     setmark(false);
-    return test;
+    return (test && (irule == szrules) && (ivalue >= szvalue));
 }
 
 /*
@@ -1654,6 +1777,10 @@ Element* Listincode::eval(LispE* lisp) {
 
 Element* List_basic_execute::eval(LispE* lisp) {
     try {
+        if (lisp->trace) {
+            lisp->delegation->set_context(line, fileidx);
+            lisp->trace_and_context(this);
+        }
         return (this->*method)(lisp);
     }
     catch(Error* err) {
@@ -3002,8 +3129,7 @@ Element* List::evall_outerproduct(LispE* lisp) {
         call->append(null_);
         call->append(null_);
         
-        Integers* i_sz = lisp->provideIntegers();
-        vecte<long>& size = i_sz->liste;
+        vecte<long> size;
         l1->getShape(size);
         l2->getShape(size);
         if (size.size() == 2) {
@@ -3028,7 +3154,6 @@ Element* List::evall_outerproduct(LispE* lisp) {
         }
         
         call->rawrelease();
-        i_sz->release();
         l1->release();
         l2->release();
         op->release();
@@ -4667,9 +4792,21 @@ Element* List::evall_duplicate(LispE* lisp) {
 
 Element* List::evall_converttoatom(LispE* lisp) {
 
-    u_ustring a;
-    evalAsUString(1,lisp,a);
-    return lisp->provideAtomProtected(a);
+    u_ustring tampon;
+    evalAsUString(1,lisp,tampon);
+    long sz = tampon.size();
+    if (tampon[0] == 'c' && tampon.back() == 'r' && sz > 3) {
+        // we check if we don't have a variation on car/cdr/cadr/caar etc...
+        sz-=2;
+        while (sz != 1) {
+            if (tampon[sz] != 'a' && tampon[sz] != 'd')
+                return lisp->provideAtomProtected(tampon);
+            sz--;
+        }
+        return  lisp->provideCADR(tampon);
+    }
+
+    return lisp->provideAtomProtected(tampon);
 }
 
 
@@ -5053,6 +5190,7 @@ Element* List::evall_extract(LispE* lisp) {
 Element* List::evall_set_range(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
+    short label = liste[1]->label();
 
 
     try {
@@ -5066,6 +5204,8 @@ Element* List::evall_set_range(LispE* lisp) {
         throw err;
     }
 
+    if (label > l_final)
+        return lisp->recording_variable(first_element, label);
     return first_element;
 }
 
@@ -5165,8 +5305,8 @@ Element* List::evall_flip(LispE* lisp) {
                     return first_element;
                 second_element = lisp->provideFloats();
                 ((Floats*)second_element)->liste = ((Floats*)first_element)->liste;
-                ((Floats*)second_element)->liste.vecteur[0] = ((Floats*)first_element)->liste[1];
-                ((Floats*)second_element)->liste.vecteur[1] = ((Floats*)first_element)->liste[0];
+                ((Floats*)second_element)->liste[0] = ((Floats*)first_element)->liste[1];
+                ((Floats*)second_element)->liste[1] = ((Floats*)first_element)->liste[0];
                 first_element->release();
                 return second_element;
             }
@@ -5176,8 +5316,8 @@ Element* List::evall_flip(LispE* lisp) {
                     return first_element;
                 second_element = lisp->provideNumbers();
                 ((Numbers*)second_element)->liste = ((Numbers*)first_element)->liste;
-                ((Numbers*)second_element)->liste.vecteur[0] = ((Numbers*)first_element)->liste[1];
-                ((Numbers*)second_element)->liste.vecteur[1] = ((Numbers*)first_element)->liste[0];
+                ((Numbers*)second_element)->liste[0] = ((Numbers*)first_element)->liste[1];
+                ((Numbers*)second_element)->liste[1] = ((Numbers*)first_element)->liste[0];
                 first_element->release();
                 return second_element;
             }
@@ -5187,8 +5327,8 @@ Element* List::evall_flip(LispE* lisp) {
                     return first_element;
                 second_element = lisp->provideIntegers();
                 ((Integers*)second_element)->liste = ((Integers*)first_element)->liste;
-                ((Integers*)second_element)->liste.vecteur[0] = ((Integers*)first_element)->liste[1];
-                ((Integers*)second_element)->liste.vecteur[1] = ((Integers*)first_element)->liste[0];
+                ((Integers*)second_element)->liste[0] = ((Integers*)first_element)->liste[1];
+                ((Integers*)second_element)->liste[1] = ((Integers*)first_element)->liste[0];
                 first_element->release();
                 return second_element;
             }
@@ -8443,6 +8583,33 @@ Element* List::evall_zipwith(LispE* lisp) {
     return container;
 }
 
+Element* List::eval_call_function(LispE* lisp) {
+    if (lisp->trace) {
+        Element* body = liste[0]->eval(lisp);
+
+        //We also retrieve its label (which is l_defun or l_defpat or...)
+        short label = body->index(0)->label();
+        char tr = debug_next;
+        if (label == l_defun || label == l_defpat || label == l_lambda) {
+                    if (lisp->trace == debug_inside_function)
+                lisp->stop_at_next_line(debug_next);
+            else {
+                if (lisp->trace == debug_next) {
+                    lisp->trace = debug_none;
+                }
+            }
+        }
+        
+        body = evalfunction(lisp, body);
+        
+        if (lisp->trace != debug_goto)
+            lisp->stop_at_next_line(tr);
+        return body;
+    }
+    return evalfunction(lisp, liste[0]->eval(lisp));
+}
+
+
 //eval_call_function is usually called once, except in the case of a trace
 //In other cases, we promote the call to a specific: t_pattern, t_self or t_function call
 //which do not check anything else anymore...
@@ -8476,26 +8643,26 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     short label = body->function_label();
     switch(label) {
         case l_defpat:
-            liste[0] = new Atomfunction(body, t_pattern);
+            liste[0] = new Atomefonction(body, t_pattern);
             lisp->garbaging(liste[0]);
             return eval_pattern(lisp, body->index(1)->label());
         case l_dethread:
             return eval_thread(lisp, (List*)body);
         case l_deflib:
-            liste[0] = new Atomfunction(body, t_library_function);
+            liste[0] = new Atomefonction(body, t_library_function);
             lisp->garbaging(liste[0]);
             return eval_library_function(lisp, (List*)body);
         case l_defun:
-            liste[0] = new Atomfunction(body, t_function);
+            liste[0] = new Atomefonction(body, t_function);
             lisp->garbaging(liste[0]);
             return eval_function(lisp, (List*)body);
         case l_lambda:
-            liste[0] = new Atomfunction(body, t_lambda);
+            liste[0] = new Atomefonction(body, t_lambda);
             lisp->garbaging(liste[0]);
             return eval_lambda(lisp, (List*)body);
         default:
             body = lisp->getDataStructure(label);
-            liste[0] = new Atomfunction(body, t_data);
+            liste[0] = new Atomefonction(body, t_data);
             lisp->garbaging(liste[0]);
             return eval_data(lisp, body);
     }
@@ -8531,26 +8698,26 @@ Element* Listincode::eval_call_self(LispE* lisp) {
     short label = body->function_label();
     switch(label) {
         case l_defpat:
-            liste[0] = new Atomfunction(body, t_pattern);
+            liste[0] = new Atomefonction(body, t_pattern);
             lisp->garbaging(liste[0]);
             return eval_pattern(lisp, body->index(1)->label());
         case l_dethread:
             return eval_thread(lisp, (List*)body);
         case l_deflib:
-            liste[0] = new Atomfunction(body, t_library_function);
+            liste[0] = new Atomefonction(body, t_library_function);
             lisp->garbaging(liste[0]);
             return eval_library_function(lisp, (List*)body);
         case l_defun:
-            liste[0] = new Atomfunction(body, t_function);
+            liste[0] = new Atomefonction(body, t_function);
             lisp->garbaging(liste[0]);
             return eval_function(lisp, (List*)body);
         case l_lambda:
-            liste[0] = new Atomfunction(body, t_lambda);
+            liste[0] = new Atomefonction(body, t_lambda);
             lisp->garbaging(liste[0]);
             return eval_lambda(lisp, (List*)body);
         default:
             body = lisp->getDataStructure(label);
-            liste[0] = new Atomfunction(body, t_data);
+            liste[0] = new Atomefonction(body, t_data);
             lisp->garbaging(liste[0]);
             return eval_data(lisp, body);
     }

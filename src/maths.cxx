@@ -2488,25 +2488,25 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7);
                 liste.padding((8 - (szl & 7)) & 7);
                 for (i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_add_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));
+                    _mm256_storeu_ps(&liste[i], _mm256_add_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
                 return this;
             }
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] += n->liste[i];
+                liste[i] += n->liste[i];
             }
             return this;
         }
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] += ((Integers*)e)->liste[i];
+                liste[i] += ((Integers*)e)->liste[i];
             }
             return this;
         case t_numbers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] += ((Numbers*)e)->liste[i];
+                liste[i] += ((Numbers*)e)->liste[i];
             }
             return this;
         case t_float:
@@ -2519,13 +2519,13 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7);
                 __m256 vb = {v, v, v, v, v, v, v, v};
                 for (long i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_add_ps(_mm256_loadu_ps(&liste.vecteur[i]), vb));
+                    _mm256_storeu_ps(&liste[i], _mm256_add_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] += v;
+                liste[i] += v;
             }
             return this;
         }
@@ -2535,7 +2535,7 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] += liste[i];
+                    n->liste[i] += liste[i];
                 }
             }
             release();
@@ -2555,13 +2555,13 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
                 n = (Floats*)result->index(m);
                 n->liste.padding(pade);
                 for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_add_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));                }
+                    _mm256_storeu_ps(&liste[i], _mm256_add_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));                }
             }
 #else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] += liste[i];
+                    n->liste[i] += liste[i];
                 }
             }
 #endif
@@ -2587,25 +2587,25 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7);
                 liste.padding((8 - (szl & 7)) & 7);
                 for (i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_sub_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));
+                    _mm256_storeu_ps(&liste[i], _mm256_sub_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
                 return this;
             }
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] -= n->liste.vecteur[i];
+                liste[i] -= n->liste[i];
             }
             return this;
         }
         case t_numbers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] -= ((Numbers*)e)->liste[i];
+                liste[i] -= ((Numbers*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] -= ((Integers*)e)->liste[i];
+                liste[i] -= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -2618,13 +2618,13 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7);
                 __m256 vb = {v, v, v, v, v, v, v, v};
                 for (long i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_sub_ps(_mm256_loadu_ps(&liste.vecteur[i]), vb));
+                    _mm256_storeu_ps(&liste[i], _mm256_sub_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] -= v;
+                liste[i] -= v;
             }
             return this;
         }
@@ -2634,7 +2634,7 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] = liste[i] - n->liste.vecteur[i];
+                    n->liste[i] = liste[i] - n->liste[i];
                 }
             }
             release();
@@ -2654,14 +2654,14 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
                 n = (Floats*)result->index(m);
                 n->liste.padding(pade);
                 for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_sub_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));
+                    _mm256_storeu_ps(&liste[i], _mm256_sub_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
             }
 #else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] = liste[i] - n->liste.vecteur[i];
+                    n->liste[i] = liste[i] - n->liste[i];
                 }
             }
 #endif
@@ -2686,7 +2686,7 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7);
                 liste.padding((8 - (szl & 7)) & 7);
                 for (i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_mul_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));
+                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
                 return this;
             }
@@ -2694,18 +2694,18 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
 
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] *= n->liste.vecteur[i];
+                liste[i] *= n->liste[i];
             }
             return this;
         }
         case t_numbers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] *= ((Numbers*)e)->liste[i];
+                liste[i] *= ((Numbers*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] *= ((Integers*)e)->liste[i];
+                liste[i] *= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -2718,13 +2718,13 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7);
                 __m256 vb = {v, v, v, v, v, v, v, v};
                 for (long i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_mul_ps(_mm256_loadu_ps(&liste.vecteur[i]), vb));
+                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] *= v;
+                liste[i] *= v;
             }
             return this;
         }
@@ -2734,7 +2734,7 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] *= liste[i];
+                    n->liste[i] *= liste[i];
                 }
             }
             release();
@@ -2754,14 +2754,14 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
                 n = (Floats*)result->index(m);
                 n->liste.padding(pade);
                 for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_mul_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));
+                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
             }
 #else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] *= liste[i];
+                    n->liste[i] *= liste[i];
                 }
             }
 #endif
@@ -2789,28 +2789,28 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7);
                 liste.padding((8 - (szl & 7)) & 7);
                 for (i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_div_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));
+                    _mm256_storeu_ps(&liste[i], _mm256_div_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
                 return this;
             }
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++)
-                liste.vecteur[i] /= n->liste.vecteur[i];
+                liste[i] /= n->liste[i];
             return this;
         }
         case t_numbers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Numbers*)e)->liste[i])
                     throw new Error("Error: division by zero");
-                liste.vecteur[i] /= ((Numbers*)e)->liste[i];
+                liste[i] /= ((Numbers*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
                     throw new Error("Error: division by zero");
-                liste.vecteur[i] /= ((Integers*)e)->liste[i];
+                liste[i] /= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -2825,13 +2825,13 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 liste.padding((8 - (szl & 7)) & 7, 1);
                 __m256 vb = {v, v, v, v, v, v, v, v};
                 for (long i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_mul_ps(_mm256_loadu_ps(&liste.vecteur[i]), vb));
+                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] /= v;
+                liste[i] /= v;
             }
             return this;
         }
@@ -2845,7 +2845,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                         result->release();
                         throw new Error("Error: division by zero");
                     }
-                    n->liste.vecteur[i] = liste.vecteur[i] / n->liste[i];
+                    n->liste[i] = liste[i] / n->liste[i];
                 }
             }
             release();
@@ -2869,7 +2869,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 }
                 n->liste.padding(pade, 1);
                 for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste.vecteur[i], _mm256_mul_ps(_mm256_loadu_ps(&liste.vecteur[i]), _mm256_loadu_ps(&n->liste.vecteur[i])));
+                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
             }
 #else
@@ -2880,7 +2880,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                     throw new Error("Error: division by zero");
                 }
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] = liste.vecteur[i] / n->liste[i];
+                    n->liste[i] = liste[i] / n->liste[i];
                 }
             }
 #endif
@@ -2920,12 +2920,12 @@ Element* Floats::plus(LispE* lisp, Element* e) {
         }
 
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] += e->index(i)->asNumber();
+            liste[i] += e->index(i)->asNumber();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] += e->asNumber();
+        liste[i] += e->asNumber();
     }
     return this;
 }
@@ -2956,12 +2956,12 @@ Element* Floats::minus(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] -= e->index(i)->asNumber();
+            liste[i] -= e->index(i)->asNumber();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] -= e->asNumber();
+        liste[i] -= e->asNumber();
     }
     return this;
 }
@@ -2992,12 +2992,12 @@ Element* Floats::multiply(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] *= e->index(i)->asNumber();
+            liste[i] *= e->index(i)->asNumber();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] *= e->asNumber();
+        liste[i] *= e->asNumber();
     }
     return this;
 }
@@ -3365,25 +3365,25 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 liste.padding((4 - (szl & 3)) & 3);
                 for (i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_add_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_add_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
                 return this;
             }
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] += n->liste[i];
+                liste[i] += n->liste[i];
             }
             return this;
         }
         case t_floats:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] += ((Floats*)e)->liste[i];
+                liste[i] += ((Floats*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] += ((Integers*)e)->liste[i];
+                liste[i] += ((Integers*)e)->liste[i];
             }
             return this;
         case t_float:
@@ -3396,13 +3396,13 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 __m256d vb = {v, v, v, v};
                 for (long i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_add_pd(_mm256_loadu_pd(&liste.vecteur[i]), vb));
+                    _mm256_storeu_pd(&liste[i], _mm256_add_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] += v;
+                liste[i] += v;
             }
             return this;
         }
@@ -3412,7 +3412,7 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] += liste[i];
+                    n->liste[i] += liste[i];
                 }
             }
             release();
@@ -3433,14 +3433,14 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
                 n = (Numbers*)result->index(m);
                 n->liste.padding(pade);
                 for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_add_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_add_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
             }
 #else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] += liste[i];
+                    n->liste[i] += liste[i];
                 }
             }
 #endif
@@ -3466,25 +3466,25 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 liste.padding((4 - (szl & 3)) & 3);
                 for (i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_sub_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_sub_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
                 return this;
             }
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] -= n->liste.vecteur[i];
+                liste[i] -= n->liste[i];
             }
             return this;
         }
         case t_floats:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] -= ((Floats*)e)->liste[i];
+                liste[i] -= ((Floats*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] -= ((Integers*)e)->liste[i];
+                liste[i] -= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -3497,13 +3497,13 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 __m256d vb = {v, v, v, v};
                 for (long i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_sub_pd(_mm256_loadu_pd(&liste.vecteur[i]), vb));
+                    _mm256_storeu_pd(&liste[i], _mm256_sub_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] -= v;
+                liste[i] -= v;
             }
             return this;
         }
@@ -3513,7 +3513,7 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] = liste[i] - n->liste.vecteur[i];
+                    n->liste[i] = liste[i] - n->liste[i];
                 }
             }
             release();
@@ -3534,14 +3534,14 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
                 n = (Numbers*)result->index(m);
                 n->liste.padding(pade);
                 for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_sub_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_sub_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
             }
 #else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] = liste[i] - n->liste.vecteur[i];
+                    n->liste[i] = liste[i] - n->liste[i];
                 }
             }
 #endif
@@ -3566,7 +3566,7 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 liste.padding((4 - (szl & 3)) & 3);
                 for (i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_mul_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_mul_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
                 return this;
             }
@@ -3574,18 +3574,18 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
 
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] *= n->liste.vecteur[i];
+                liste[i] *= n->liste[i];
             }
             return this;
         }
         case t_floats:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] *= ((Floats*)e)->liste[i];
+                liste[i] *= ((Floats*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] *= ((Integers*)e)->liste[i];
+                liste[i] *= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -3598,13 +3598,13 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 __m256d vb = {v, v, v, v};
                 for (long i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_mul_pd(_mm256_loadu_pd(&liste.vecteur[i]), vb));
+                    _mm256_storeu_pd(&liste[i], _mm256_mul_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] *= v;
+                liste[i] *= v;
             }
             return this;
         }
@@ -3614,7 +3614,7 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] *= liste[i];
+                    n->liste[i] *= liste[i];
                 }
             }
             release();
@@ -3635,14 +3635,14 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
                 n = (Numbers*)result->index(m);
                 n->liste.padding(pade);
                 for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_mul_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_mul_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
             }
 #else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] *= liste[i];
+                    n->liste[i] *= liste[i];
                 }
             }
 #endif
@@ -3670,28 +3670,28 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 liste.padding((4 - (szl & 3)) & 3);
                 for (i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_div_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_div_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
                 return this;
             }
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++)
-                liste.vecteur[i] /= n->liste.vecteur[i];
+                liste[i] /= n->liste[i];
             return this;
         }
         case t_floats:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Floats*)e)->liste[i])
                     throw new Error("Error: division by zero");
-                liste.vecteur[i] /= ((Floats*)e)->liste[i];
+                liste[i] /= ((Floats*)e)->liste[i];
             }
             return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
                     throw new Error("Error: division by zero");
-                liste.vecteur[i] /= ((Integers*)e)->liste[i];
+                liste[i] /= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -3706,13 +3706,13 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3, 1);
                 __m256d vb = {v, v, v, v};
                 for (long i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_div_pd(_mm256_loadu_pd(&liste.vecteur[i]), vb));
+                    _mm256_storeu_pd(&liste[i], _mm256_div_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
                 return this;
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] /= v;
+                liste[i] /= v;
             }
             return this;
         }
@@ -3726,7 +3726,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                         result->release();
                         throw new Error("Error: division by zero");
                     }
-                    n->liste.vecteur[i] = liste[i] / n->liste.vecteur[i];
+                    n->liste[i] = liste[i] / n->liste[i];
                 }
             }
             release();
@@ -3752,7 +3752,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 }
                 n->liste.padding(pade, 1);
                 for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste.vecteur[i], _mm256_div_pd(_mm256_loadu_pd(&liste.vecteur[i]), _mm256_loadu_pd(&n->liste.vecteur[i])));
+                    _mm256_storeu_pd(&liste[i], _mm256_div_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
             }
 #else
@@ -3763,7 +3763,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                     throw new Error("Error: division by zero");
                 }
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    n->liste.vecteur[i] = liste.vecteur[i] / n->liste[i];
+                    n->liste[i] = liste[i] / n->liste[i];
                 }
             }
 #endif
@@ -3803,12 +3803,12 @@ Element* Numbers::plus(LispE* lisp, Element* e) {
         }
 
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] += e->index(i)->asNumber();
+            liste[i] += e->index(i)->asNumber();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] += e->asNumber();
+        liste[i] += e->asNumber();
     }
     return this;
 }
@@ -3839,12 +3839,12 @@ Element* Numbers::minus(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] -= e->index(i)->asNumber();
+            liste[i] -= e->index(i)->asNumber();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] -= e->asNumber();
+        liste[i] -= e->asNumber();
     }
     return this;
 }
@@ -3875,12 +3875,12 @@ Element* Numbers::multiply(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] *= e->index(i)->asNumber();
+            liste[i] *= e->index(i)->asNumber();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] *= e->asNumber();
+        liste[i] *= e->asNumber();
     }
     return this;
 }
@@ -4069,13 +4069,13 @@ Element* Numbers::rightshift(LispE* lisp, Element* e) {
 Element* Integers::bit_not(LispE* l) {
     if (!status) {
         for (long i = 0; i < size(); i++) {
-            liste.vecteur[i] = ~liste.vecteur[i];
+            liste[i] = ~liste[i];
         }
         return this;
     }
     Integers* num = (Integers*)newInstance();
     for (long i = 0; i < size(); i++)
-        num->liste.push_back(~liste.vecteur[i]);
+        num->liste.push_back(~liste[i]);
     return num;
 }
 
@@ -4085,7 +4085,7 @@ Element* Integers::bit_and(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d &= liste.vecteur[i];
+            d &= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4106,12 +4106,12 @@ Element* Integers::bit_and(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] &= e->index(i)->asInteger();
+            liste[i] &= e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] &= e->asInteger();
+        liste[i] &= e->asInteger();
     }
     return this;
 }
@@ -4121,7 +4121,7 @@ Element* Integers::bit_and_not(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d &= ~liste.vecteur[i];
+            d &= ~liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4142,12 +4142,12 @@ Element* Integers::bit_and_not(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] &= ~e->index(i)->asInteger();
+            liste[i] &= ~e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] &= ~e->asInteger();
+        liste[i] &= ~e->asInteger();
     }
     return this;
 }
@@ -4158,7 +4158,7 @@ Element* Integers::bit_or(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d |= liste.vecteur[i];
+            d |= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4178,12 +4178,12 @@ Element* Integers::bit_or(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] |= e->index(i)->asInteger();
+            liste[i] |= e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] |= e->asInteger();
+        liste[i] |= e->asInteger();
     }
     return this;
 }
@@ -4193,7 +4193,7 @@ Element* Integers::bit_xor(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d ^= liste.vecteur[i];
+            d ^= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4213,12 +4213,12 @@ Element* Integers::bit_xor(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] ^= e->index(i)->asInteger();
+            liste[i] ^= e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] ^= e->asInteger();
+        liste[i] ^= e->asInteger();
     }
     return this;
 }
@@ -4227,13 +4227,13 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_numbers: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] += ((Numbers*)e)->liste.vecteur[i];
+                liste[i] += ((Numbers*)e)->liste[i];
             }
             return this;
         }
         case t_floats: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] += ((Floats*)e)->liste.vecteur[i];
+                liste[i] += ((Floats*)e)->liste[i];
             }
             return this;
         }
@@ -4250,10 +4250,10 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 n->liste.padding((4 - (szl & 3)) & 3);
                 for (i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_si256( (__m256i *)&liste.vecteur[i],
+                    _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_add_epi64(
-                                                         _mm256_loadu_si256((const __m256i *)&liste.vecteur[i]),
-                                                         _mm256_loadu_si256((const __m256i *)&n->liste.vecteur[i])
+                                                         _mm256_loadu_si256((const __m256i *)&liste[i]),
+                                                         _mm256_loadu_si256((const __m256i *)&n->liste[i])
                                                          )
                                         );
                 }
@@ -4262,7 +4262,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] -= n->liste.vecteur[i];
+                liste[i] -= n->liste[i];
             }
             return this;
         }
@@ -4276,9 +4276,9 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 __m256i vb = {v, v, v, v};
                 for (long i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_si256( (__m256i *)&liste.vecteur[i],
+                    _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_add_epi64(
-                                                         _mm256_loadu_si256((const __m256i *)&liste.vecteur[i]),
+                                                         _mm256_loadu_si256((const __m256i *)&liste[i]),
                                                          vb
                                                          )
                                         );
@@ -4287,7 +4287,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] += v;
+                liste[i] += v;
             }
             return this;
         }
@@ -4295,7 +4295,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    ((Floats*)result->index(m))->liste.vecteur[i] += liste.vecteur[i];
+                    ((Floats*)result->index(m))->liste[i] += liste[i];
                 }
             }
             release();
@@ -4305,7 +4305,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             Matrice* result = new Matrice(lisp, (Matrice*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    ((Numbers*)result->index(m))->liste.vecteur[i] += liste.vecteur[i];
+                    ((Numbers*)result->index(m))->liste[i] += liste[i];
                 }
             }
             release();
@@ -4321,13 +4321,13 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_numbers: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] -= ((Numbers*)e)->liste.vecteur[i];
+                liste[i] -= ((Numbers*)e)->liste[i];
             }
             return this;
         }
         case t_floats: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] -= ((Floats*)e)->liste.vecteur[i];
+                liste[i] -= ((Floats*)e)->liste[i];
             }
             return this;
         }
@@ -4344,10 +4344,10 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 n->liste.padding((4 - (szl & 3)) & 3);
                 for (i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_si256( (__m256i *)&liste.vecteur[i],
+                    _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_sub_epi64(
-                                                         _mm256_loadu_si256((const __m256i *)&liste.vecteur[i]),
-                                                         _mm256_loadu_si256((const __m256i *)&n->liste.vecteur[i])
+                                                         _mm256_loadu_si256((const __m256i *)&liste[i]),
+                                                         _mm256_loadu_si256((const __m256i *)&n->liste[i])
                                                          )
                                         );
                 }
@@ -4356,7 +4356,7 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste.vecteur[i] -= n->liste.vecteur[i];
+                liste[i] -= n->liste[i];
             }
             return this;
         }
@@ -4370,9 +4370,9 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
                 liste.padding((4 - (szl & 3)) & 3);
                 __m256i vb = {v, v, v, v};
                 for (long i = 0; i < szl; i+= 4) {
-                    _mm256_storeu_si256( (__m256i *)&liste.vecteur[i],
+                    _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_sub_epi64(
-                                                         _mm256_loadu_si256((const __m256i *)&liste.vecteur[i]),
+                                                         _mm256_loadu_si256((const __m256i *)&liste[i]),
                                                          vb
                                                          )
                                         );
@@ -4381,7 +4381,7 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             }
 #endif
             for (long i = 0; i < szl; i++) {
-                liste.vecteur[i] -= v;
+                liste[i] -= v;
             }
             return this;
         }
@@ -4390,8 +4390,8 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             float v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    v = ((Floats*)result->index(m))->liste.vecteur[i];
-                    ((Floats*)result->index(m))->liste.vecteur[i] = liste.vecteur[i] - v;
+                    v = ((Floats*)result->index(m))->liste[i];
+                    ((Floats*)result->index(m))->liste[i] = liste[i] - v;
                 }
             }
             release();
@@ -4402,8 +4402,8 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             double v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    v = ((Numbers*)result->index(m))->liste.vecteur[i];
-                    ((Numbers*)result->index(m))->liste.vecteur[i] = liste.vecteur[i] - v;
+                    v = ((Numbers*)result->index(m))->liste[i];
+                    ((Numbers*)result->index(m))->liste[i] = liste[i] - v;
                 }
             }
             release();
@@ -4418,19 +4418,19 @@ Element* Integers::multiply_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_numbers: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] *= ((Numbers*)e)->liste.vecteur[i];
+                liste[i] *= ((Numbers*)e)->liste[i];
             }
             return this;
         }
         case t_floats: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] *= ((Floats*)e)->liste.vecteur[i];
+                liste[i] *= ((Floats*)e)->liste[i];
             }
             return this;
         }
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste.vecteur[i] *= ((Integers*)e)->liste.vecteur[i];
+                liste[i] *= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -4438,7 +4438,7 @@ Element* Integers::multiply_direct(LispE* lisp, Element* e) {
         case t_integer: {
             long v = e->asInteger();
             for (long i = 0; i < liste.size(); i++) {
-                liste.vecteur[i] *= v;
+                liste[i] *= v;
             }
             return this;
         }
@@ -4446,7 +4446,7 @@ Element* Integers::multiply_direct(LispE* lisp, Element* e) {
             Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    ((Floats*)result->index(m))->liste.vecteur[i] *= liste.vecteur[i];
+                    ((Floats*)result->index(m))->liste[i] *= liste[i];
                 }
             }
             release();
@@ -4456,7 +4456,7 @@ Element* Integers::multiply_direct(LispE* lisp, Element* e) {
             Matrice* result = new Matrice(lisp, (Matrice*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    ((Numbers*)result->index(m))->liste.vecteur[i] *= liste.vecteur[i];
+                    ((Numbers*)result->index(m))->liste[i] *= liste[i];
                 }
             }
             release();
@@ -4471,25 +4471,25 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_numbers: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                if (!((Numbers*)e)->liste.vecteur[i])
+                if (!((Numbers*)e)->liste[i])
                     throw new Error("Error: division by zero");
-                liste.vecteur[i] /= ((Numbers*)e)->liste.vecteur[i];
+                liste[i] /= ((Numbers*)e)->liste[i];
             }
             return this;
         }
         case t_floats: {
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                if (!((Floats*)e)->liste.vecteur[i])
+                if (!((Floats*)e)->liste[i])
                     throw new Error("Error: division by zero");
-                liste.vecteur[i] /= ((Floats*)e)->liste.vecteur[i];
+                liste[i] /= ((Floats*)e)->liste[i];
             }
             return this;
         }
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                if (!((Integers*)e)->liste.vecteur[i])
+                if (!((Integers*)e)->liste[i])
                     throw new Error("Error: division by zero");
-                liste.vecteur[i] /= ((Integers*)e)->liste.vecteur[i];
+                liste[i] /= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
@@ -4498,7 +4498,7 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
             if (!v)
                 throw new Error("Error: division by zero");
             for (long i = 0; i < liste.size(); i++) {
-                liste.vecteur[i] /= v;
+                liste[i] /= v;
             }
             return this;
         }
@@ -4507,10 +4507,10 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
             float v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    v = ((Floats*)result->index(m))->liste.vecteur[i];
+                    v = ((Floats*)result->index(m))->liste[i];
                     if (!v)
                         throw new Error("Error: division by zero");
-                    ((Floats*)result->index(m))->liste.vecteur[i] = liste.vecteur[i] / v;
+                    ((Floats*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
             release();
@@ -4521,10 +4521,10 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
             double v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
-                    v = ((Numbers*)result->index(m))->liste.vecteur[i];
+                    v = ((Numbers*)result->index(m))->liste[i];
                     if (!v)
                         throw new Error("Error: division by zero");
-                    ((Numbers*)result->index(m))->liste.vecteur[i] = liste.vecteur[i] / v;
+                    ((Numbers*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
             release();
@@ -4540,7 +4540,7 @@ Element* Integers::plus(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d += liste.vecteur[i];
+            d += liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4561,12 +4561,12 @@ Element* Integers::plus(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] += e->index(i)->asInteger();
+            liste[i] += e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] += e->asInteger();
+        liste[i] += e->asInteger();
     }
     return this;
 }
@@ -4575,7 +4575,7 @@ Element* Integers::minus(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d -= liste.vecteur[i];
+            d -= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4597,12 +4597,12 @@ Element* Integers::minus(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] -= e->index(i)->asInteger();
+            liste[i] -= e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] -= e->asInteger();
+        liste[i] -= e->asInteger();
     }
     return this;
 }
@@ -4611,7 +4611,7 @@ Element* Integers::multiply(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d *= liste.vecteur[i];
+            d *= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4633,12 +4633,12 @@ Element* Integers::multiply(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] *= e->index(i)->asInteger();
+            liste[i] *= e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] *= e->asInteger();
+        liste[i] *= e->asInteger();
     }
     return this;
 }
@@ -4648,9 +4648,9 @@ Element* Integers::divide(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            if (!liste.vecteur[i])
+            if (!liste[i])
                 throw new Error("Error: division by zero");
-            d /= liste.vecteur[i];
+            d /= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4684,9 +4684,9 @@ Element* Integers::mod(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            if (!liste.vecteur[i])
+            if (!liste[i])
                 throw new Error("Error: division by zero");
-            d %= liste.vecteur[i];
+            d %= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4721,7 +4721,7 @@ Element* Integers::power(LispE* lisp, Element* e) {
     if (e == NULL) {
         double d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d = pow(d, (double)liste.vecteur[i]);
+            d = pow(d, (double)liste[i]);
         }
         return lisp->provideInteger(d);
     }
@@ -4756,7 +4756,7 @@ Element* Integers::leftshift(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d <<= liste.vecteur[i];
+            d <<= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4777,12 +4777,12 @@ Element* Integers::leftshift(LispE* lisp, Element* e) {
             return result;
         }
        for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] <<= e->index(i)->asInteger();
+            liste[i] <<= e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] <<= e->asInteger();
+        liste[i] <<= e->asInteger();
     }
     return this;
 }
@@ -4792,7 +4792,7 @@ Element* Integers::rightshift(LispE* lisp, Element* e) {
     if (e == NULL) {
         long d = liste[0];
         for (long i = 1; i < size(); i++) {
-            d >>= liste.vecteur[i];
+            d >>= liste[i];
         }
         return lisp->provideInteger(d);
     }
@@ -4812,12 +4812,12 @@ Element* Integers::rightshift(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            liste.vecteur[i] >>= e->index(i)->asInteger();
+            liste[i] >>= e->index(i)->asInteger();
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        liste.vecteur[i] >>= e->asInteger();
+        liste[i] >>= e->asInteger();
     }
     return this;
 }

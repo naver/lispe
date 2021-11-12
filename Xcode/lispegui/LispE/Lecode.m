@@ -344,7 +344,7 @@ BOOL dark = false;
 }
 
 -(BOOL)localcolor:(char)key {
-    static const char cc[]={'"','\'',';','=','/', 0};
+    static const char cc[]={'"','\'',';','=','/', ' ', 0};
     
     modified=YES;
     

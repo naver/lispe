@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.11.2.18.47";
+static std::string version = "1.2021.11.12.9.55";
 string LispVersion() {
     return version;
 }
@@ -655,10 +655,6 @@ void Delegation::initialisation(LispE* lisp) {
 	//( (λ(x) (+ x 10)) 20)
     w = U("λ");
     string_to_code[w] = l_lambda;
-
-    //For compliance with other Lisps
-    w = U"t";
-    string_to_code[w] = v_true;
     
     w = U"//";
     string_to_code[w] = l_reduce;
@@ -812,6 +808,7 @@ void LispE::cleaning() {
                 errors.push_back(a);
             }
         }
+        __indexes.clear();
         if (errors.size())
             cerr << errors.size() << endl;
 #endif
@@ -2078,6 +2075,20 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

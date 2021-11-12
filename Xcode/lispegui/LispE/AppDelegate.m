@@ -98,7 +98,7 @@ extern NSMutableDictionary* allfiles;
  }
 
 -(void)textDidChange:(NSNotification *)notification {
-    static const char cc[]={'}',']',')','"','\'',';','/','\r',0};
+    static const char cc[]={'}',']',')','"','\'',';','/','\r',' ', 0};
     
     NSWindow* wnd=[[NSApp orderedWindows] objectAtIndex:0];
     NSEvent* evenement=[wnd currentEvent];

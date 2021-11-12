@@ -38,8 +38,8 @@ using std::unordered_map;
 
 class x_tokens {
 public:
-    vector<u_ustring> rules;
-    vector<u_ustring> stack;
+    vecte_n<u_ustring> rules;
+    vecte_n<u_ustring> stack;
     vector<vector<u_ustring> > disjunctions;
 
     unordered_map<u_ustring, bool> operators;
@@ -145,14 +145,14 @@ public:
         }
     }
     
-    void setrules(vector<u_ustring>& r) {
+    void setrules(vecte_n<u_ustring>& r) {
         reset();
         rules=r;
         parserules();
         loaded = true;
     }
     
-    void getrules(vector<u_ustring>& r) {
+    void getrules(vecte_n<u_ustring>& r) {
         if (!rules.size()) {
             setrules();
             r=rules;
@@ -806,7 +806,7 @@ public:
         return false;
     }
     
-    void apply(u_ustring& toparse, vector<u_ustring>* vstack);
+    void apply(u_ustring& toparse, vecte_n<u_ustring>* vstack);
     char loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, long& itoken, short& r, long& line, long& posc);
 
     u_ustring next(u_ustring& w, long& pos, long& l) {
@@ -857,7 +857,7 @@ public:
     }
     
 
-    void tokenize(u_ustring& thestr, vector<u_ustring>* vstack) {
+    void tokenize(u_ustring& thestr, vecte_n<u_ustring>* vstack) {
         //only stack is necessary
         if (vstack==NULL)
             stack.clear();

@@ -284,7 +284,7 @@ public:
     }
     
     virtual void getShape(vecte<long>& sz) {}
-    
+
     virtual Element* transposed(LispE* lisp) {
         return this;
     }
@@ -419,6 +419,10 @@ public:
     virtual void setusermark(bool v) {}
     virtual bool usermark() {return false;}
     virtual void resetusermark() {}
+    
+    virtual bool unify_kleene(LispE* lisp, Element* value, Element* current, long& i, long& r, bool record) {
+        return (i < value->size() && unify(lisp, value->index(i), record));
+    }
     
     virtual bool unify(LispE* lisp, Element* value, bool record);
     virtual Element* check_member(LispE*, Element* s) {
@@ -821,6 +825,8 @@ public:
     Atome(short a, u_ustring w) : name(w), atome(a), Element(t_atom) {}
     Atome(short a, uint16_t s, u_ustring w) : name(w), atome(a), Element(t_atom, s) {}
 
+    Element* transformargument(LispE* lisp);
+    
     bool garbageable() {
         return false;
     }
@@ -909,6 +915,19 @@ public:
     }
     
 };
+
+class Atomekleene : public Atome {
+public:
+    char action;
+    
+    Atomekleene(short a, u_ustring w, char act) : Atome(a, w) {
+        action = act;
+    }
+    
+    bool unify_kleene(LispE* lisp, Element* value, Element* current, long& i, long& r, bool record);
+    
+};
+
 
 class Operator : public Element {
 public:
