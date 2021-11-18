@@ -1118,6 +1118,7 @@ public:
     Element* evall_consp(LispE* lisp);
     Element* evall_converttoatom(LispE* lisp);
     Element* evall_converttointeger(LispE* lisp);
+    Element* evall_converttoshort(LispE* lisp);
     Element* evall_converttonumber(LispE* lisp);
     Element* evall_converttofloat(LispE* lisp);
     Element* evall_converttostring(LispE* lisp);
@@ -1162,6 +1163,7 @@ public:
     Element* evall_input(LispE* lisp);
     Element* evall_insert(LispE* lisp);
     Element* evall_integers(LispE* lisp);
+    Element* evall_shorts(LispE* lisp);
     Element* evall_invert(LispE* lisp);
     Element* evall_iota(LispE* lisp);
     Element* evall_iota0(LispE* lisp);
@@ -2427,6 +2429,364 @@ public:
     Element* copyatom(uint16_t s);
     Element* copying(bool duplicate = true);
 
+};
+
+class Shorts : public Element {
+public:
+    
+    Constshort exchange_value;
+    vecte_a<short> liste;
+    
+    Shorts() : Element(t_shorts), exchange_value(0) {}
+    Shorts(uint16_t s) : Element(t_shorts, s), exchange_value(0) {}
+    Shorts(long nb, long v) : liste(nb, v), Element(t_shorts), exchange_value(0) {}
+    Shorts(Shorts* i) : liste(i->liste), Element(t_shorts), exchange_value(0) {}
+    Shorts(Shorts* i, long pos) : liste(i->liste, pos), Element(t_shorts), exchange_value(0) {}
+
+    virtual Element* newInstance() {
+        return new Shorts;
+    }
+
+    Element* asList(LispE* lisp);
+    Element* invert_sign(LispE* lisp);
+    Element* newInstance(Element* v) {
+        return new Shorts(liste.size(), v->asInteger());
+    }
+
+    void concatenate(LispE* lisp, Element* e) {
+        if (!e->isList())
+            liste.push_back(e->asInteger());
+        else {
+            for (long i = 0; i < e->size(); i++) {
+                liste.push_back(e->index(i)->asInteger());
+            }
+        }
+    }
+
+    Element* check_member(LispE* lisp, Element* the_set);
+    
+    bool isContainer() {
+        return true;
+    }
+    
+    bool isValueList() {
+        return true;
+    }
+
+    Element* loop(LispE* lisp, short label,  List* code);
+    
+    Element* search_element(LispE*, Element* element_value, long idx);
+    Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* search_reverse(LispE*, Element* element_value, long idx);
+    
+    Element* last_element(LispE* lisp);
+    
+    void insertion(Element* e, long idx) {
+        liste.insert(idx, e->asInteger());
+    }
+    
+    void swap(long i, long j) {
+        liste.swap(i,j);
+    }
+    
+    void front(Element* e) {
+        liste.insert(0, e->asInteger());
+    }
+    
+    void beforelast(Element* e) {
+        liste.beforelast(e->asInteger());
+    }
+
+    Element* thekeys(LispE* lisp);
+
+    char check_match(LispE* lisp, Element* value);
+    
+    bool unify(LispE* lisp, Element* value, bool record);
+    
+    virtual Element* fullcopy() {
+        Shorts* e = new Shorts;
+        e->liste = liste;
+        return e;
+    }
+    
+    Element* unique(LispE* lisp);
+    Element* rotate(bool left);
+
+    
+    virtual Element* copying(bool duplicate = true) {
+        //If it is a CDR, we need to copy it...
+        if (!is_protected() && !duplicate)
+            return this;
+
+        Shorts* e = new Shorts;
+        e->liste = liste;
+        return e;
+    }
+    
+    //In the case of a container for push, key and keyn
+    // We must force the copy when it is a constant
+    Element* duplicate_constant(bool pair = false);
+    
+    bool isList() {
+        return true;
+    }
+    
+    bool isNotEmptyList() {
+        return (liste.size());
+    }
+    
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
+    
+    Element* extraction(LispE* lisp, List*);
+    Element* replace_in(LispE* lisp, List*);
+    
+    Element* index(long i) {
+        exchange_value.integer = liste[i];
+        return &exchange_value;
+    }
+    
+    Element* last() {
+        exchange_value.integer = liste.back();
+        return &exchange_value;
+    }
+
+    Element* equal(LispE* lisp, Element* e);
+    bool egal(Element* e);
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+
+    void flatten(LispE*, List* l);
+    void flatten(LispE*, Numbers* l);
+    void flatten(LispE*, Floats* l);
+    
+    Element* protected_index(LispE*,long i);
+    
+    Element* value_from_index(LispE*, long i);
+    
+    Element* value_on_index(LispE*, long i);
+    Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
+    
+    void release() {
+        if (!status) {
+            delete this;
+        }
+    }
+
+    
+    long size() {
+        return liste.size();
+    }
+    
+    Element* car(LispE* lisp);
+    Element* cdr(LispE* lisp);
+    Element* cadr(LispE*, u_ustring& actions);
+    
+    void protecting(bool protection, LispE* lisp) {
+        if (protection) {
+            if (status == s_constant)
+                status = s_protect;
+        }
+        else {
+            if (status == s_protect)
+                status = s_destructible;
+        }
+    }
+    
+    wstring jsonString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return L"[]";
+
+        sz -= 1;
+        
+        wstring buffer(L"[");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += L",";
+            buffer += convertToWString((long)liste[i]);
+        }
+        buffer += L"]";
+        return buffer;
+    }
+    
+    wstring asString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return L"()";
+
+        sz -= 1;
+        
+        wstring buffer(L"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += L" ";
+            buffer += convertToWString((long)liste[i]);
+        }
+        buffer += L")";
+        return buffer;
+    }
+    
+    u_ustring asUString(LispE* lisp) {
+        long sz = liste.size();
+        if (!sz)
+            return U"()";
+
+        sz -= 1;
+        
+        u_ustring buffer(U"(");
+        
+        for (long i = 0; i <= sz; i++) {
+            if (i && i <= sz)
+                buffer += U" ";
+            buffer += convertToUString((long)liste[i]);
+        }
+        buffer += U")";
+        return buffer;
+    }
+
+    void append(LispE* lisp, u_ustring& k);
+    void append(LispE* lisp, double v);
+    void append(LispE* lisp, long v);
+
+    void append(Element* e) {
+        liste.push_back(e->asInteger());
+    }
+    void appendraw(Element* e) {
+        liste.push_back(e->asInteger());
+    }
+
+    void change(long i, Element* e) {
+        liste.at(i, e->asInteger());
+    }
+
+    void changelast(Element* e) {
+        liste.atlast( e->asInteger());
+    }
+    
+    void replacing(long i, Element* e) {
+        liste.at(i, e->asInteger());
+    }
+    
+    Element* replace(LispE* lisp, long i, Element* e) {
+        if (i < 0)
+            throw new Error("Error: position does not exist");
+        if (i >= liste.size())
+            liste.push_back(e->asInteger());
+        else {
+            liste.at(i, e->asInteger());
+        }
+        return this;
+    }
+    
+    bool Boolean() {
+        return (liste.size());
+    }
+        
+    //The label of _EMPTYLIST is v_null
+    //We can then compare with () as if it was nil
+    short label() {
+        return (liste.empty()?t_integers:v_null);
+    }
+
+    Element* reverse(LispE*, bool duplique = true);
+    
+    Element* rotate(LispE* lisp, long axis) {
+        Shorts* n = new Shorts;
+        for (long i = liste.size()-1; i >= 0; i--)
+            n->liste.push_back(liste[i]);
+        return n;
+    }
+
+    
+    void storevalue(LispE*, double v);
+    void storevalue(LispE*, long v);
+    void storevalue(LispE*, u_ustring& v);
+    
+    bool removelast() {
+        if (!liste.size())
+            return false;
+        liste.pop_back();
+        return true;
+    }
+    
+    bool remove(LispE*, Element* e) {
+        long d =  e->asInteger();
+        return remove(d);
+    }
+
+    bool remove(long d) {
+        if (!liste.size())
+            return false;
+        
+        if (d == liste.size() || d == -1) {
+            liste.pop_back();
+            return true;
+        }
+        if (d < 0 || d > liste.size())
+            return false;
+        liste.erase(d);
+        return true;
+    }
+    
+    void getShape(vecte<long>& sz) {
+        sz.push_back(liste.size());
+    }
+    
+    char isPureList() {
+        return 3;
+    }
+    
+    char isPureList(long& x, long& y) {
+        x = size();
+        y = 1;
+        return 3;
+    }
+
+    Element* insert(LispE* lisp, Element* e, long idx);
+
+    //There is a big difference between clean and clear
+    //clear assumes that elements have been appended to the
+    //list...
+    void clear() {
+        if (!is_protected())
+            liste.clear();
+    }
+    
+    virtual Element* copyatom(uint16_t s) {
+        if (liste.shared(status) < s)
+            return this;
+
+        Shorts* i = new Shorts(this);
+        release();
+        return i;
+    }
+
+    Element* bit_not(LispE* l);
+    Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
+    Element* bit_or(LispE* l, Element* e);
+    Element* bit_xor(LispE* l, Element* e);
+    Element* plus(LispE* l, Element* e);
+    Element* minus(LispE* l, Element* e);
+    Element* multiply(LispE* l, Element* e);
+    Element* divide(LispE* l, Element* e);
+    Element* mod(LispE* l, Element* e);
+    Element* power(LispE* l, Element* e);
+    Element* leftshift(LispE* l, Element* e);
+    Element* rightshift(LispE* l, Element* e);
+
+    
+    Element* plus_direct(LispE* lisp, Element* e);
+    Element* minus_direct(LispE* lisp, Element* e);
+    Element* multiply_direct(LispE* lisp, Element* e);
+    Element* divide_direct(LispE* lisp, Element* e);
+
+    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
+    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
+    void sorting(LispE* lisp, List* comparison);
 };
 
 class Integers : public Element {

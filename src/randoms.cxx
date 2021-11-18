@@ -126,36 +126,59 @@ public:
         }
         
         long v;
-        if (valuevect->type == t_integers) {
-            Integers* liste = lisp->provideIntegers();
-            long vlispe;
-            for (i = 0; i < nb; i++) {
-                v = d(gen);
-                vlispe = ((Integers*)valuevect)->liste[v];
-                liste->liste.push_back(vlispe);
+        switch (valuevect->type) {
+            case  t_shorts: {
+                Shorts* liste = new Shorts();
+                short vlispe;
+                for (i = 0; i < nb; i++) {
+                    v = d(gen);
+                    vlispe = ((Shorts*)valuevect)->liste[v];
+                    liste->liste.push_back(vlispe);
+                }
+                return liste;
             }
-            return liste;
-        }
-        if (valuevect->type == t_numbers) {
-            Numbers* liste = lisp->provideNumbers();
-            double vlispe;
-            for (i = 0; i < nb; i++) {
-                v = d(gen);
-                vlispe = ((Numbers*)valuevect)->liste[v];
-                liste->liste.push_back(vlispe);
+            case t_floats: {
+                Floats* liste = lisp->provideFloats();
+                float vlispe;
+                for (i = 0; i < nb; i++) {
+                    v = d(gen);
+                    vlispe = ((Floats*)valuevect)->liste[v];
+                    liste->liste.push_back(vlispe);
+                }
+                return liste;
             }
-            return liste;
+            case  t_integers: {
+                Integers* liste = lisp->provideIntegers();
+                long vlispe;
+                for (i = 0; i < nb; i++) {
+                    v = d(gen);
+                    vlispe = ((Integers*)valuevect)->liste[v];
+                    liste->liste.push_back(vlispe);
+                }
+                return liste;
+            }
+            case t_numbers: {
+                Numbers* liste = lisp->provideNumbers();
+                double vlispe;
+                for (i = 0; i < nb; i++) {
+                    v = d(gen);
+                    vlispe = ((Numbers*)valuevect)->liste[v];
+                    liste->liste.push_back(vlispe);
+                }
+                return liste;
+            }
+            default: {
+                List* liste = lisp->provideList();
+                
+                Element* vlispe;
+                for (i = 0; i < nb; i++) {
+                    v = d(gen);
+                    vlispe = valuevect->value_on_index(lisp, v);
+                    liste->append(vlispe);
+                }
+                return liste;
+            }
         }
-
-        List* liste = lisp->provideList();
-        
-        Element* vlispe;
-        for (i = 0; i < nb; i++) {
-            v = d(gen);
-            vlispe = valuevect->value_on_index(lisp, v);
-            liste->append(vlispe);
-        }
-        return liste;
     }
     
     Element* Proc_uniform(LispE* lisp) {
@@ -298,10 +321,19 @@ public:
             return tvect->value_on_index(lisp,i);
         }
         Element* iv;
-        if (tvect->type == t_integers)
-            iv = lisp->provideIntegers();
-        else
-            iv = lisp->provideNumbers();
+        switch(tvect->type) {
+            case t_shorts:
+                iv = new Shorts();
+                break;
+            case t_integers:
+                iv = lisp->provideIntegers();
+                break;
+            case t_floats:
+                iv = lisp->provideFloats();
+                break;
+            default:
+                iv = lisp->provideNumbers();
+        }
         
         long idx;
         for (long i = 0; i < nb; i++) {
@@ -597,35 +629,51 @@ public:
     Element* Proc_shuffle(LispE* lisp) {
         static std::random_device rd;  //Will be used to obtain a seed for the random number engine
         static std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
-
+        
         Element* l = lisp->get_variable(v_liste);
         if (!l->isList())
             throw new Error("Error: the 'shuffle' argument must be a list");
         
-        if (l->type == t_integers) {
-            Integers* li = (Integers*)l;
-            long sz = li->size();
-            for (long i = 0; i < sz; i++)
-                li->swap(i, (gen()%sz));
-            return l;
+        switch (l->type) {
+            case t_shorts: {
+                Shorts* li = (Shorts*)l;
+                long sz = li->size();
+                for (long i = 0; i < sz; i++)
+                    li->swap(i, (gen()%sz));
+                return l;
+            }
+            case t_integers: {
+                Integers* li = (Integers*)l;
+                long sz = li->size();
+                for (long i = 0; i < sz; i++)
+                    li->swap(i, (gen()%sz));
+                return l;
+            }
+            case t_floats: {
+                Floats* li = (Floats*)l;
+                long sz = li->size();
+                for (long i = 0; i < sz; i++)
+                    li->swap(i, (gen()%sz));
+                return l;
+            }
+            case t_numbers: {
+                Numbers* li = (Numbers*)l;
+                long sz = li->size();
+                for (long i = 0; i < sz; i++)
+                    li->swap(i, (gen()%sz));
+                return l;
+            }
+            default: {
+                List* ll = (List*)l;
+                
+                long sz = ll->liste.size();
+                long h = ll->liste.home;
+                for (long i = h; i < ll->liste.item->last; i++) {
+                    ll->liste.item->swap(i, (gen()%sz) + h);
+                }
+                return l;
+            }
         }
-        if (l->type == t_numbers) {
-            Numbers* li = (Numbers*)l;
-            long sz = li->size();
-            for (long i = 0; i < sz; i++)
-                li->swap(i, (gen()%sz));
-            return l;
-        }
-        
-
-        List* ll = (List*)l;
-
-        long sz = ll->liste.size();
-        long h = ll->liste.home;
-        for (long i = h; i < ll->liste.item->last; i++) {
-            ll->liste.item->swap(i, (gen()%sz) + h);
-        }
-        return l;
     }
     
     Element* eval(LispE* lisp) {
@@ -633,7 +681,7 @@ public:
         switch (rnd) {
             case rnd_random: {
                 long nb = lisp->get_variable(v_nb)->asInteger();
-                return lisp->provideNumber(localrandom(nb));
+                return lisp->provideInteger(localrandom(nb));
             }
             case rnd_shuffle:
                 return Proc_shuffle(lisp);

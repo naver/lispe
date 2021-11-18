@@ -544,6 +544,10 @@ public:
         return the_time;
     }
 
+    short asShort() {
+        return the_time;
+    }
+    
     long asInteger() {
         return the_time;
     }
@@ -810,6 +814,10 @@ public:
     }
 
     long asInteger() {
+        return chrono_value.time_since_epoch().count();
+    }
+
+    short asShort() {
         return chrono_value.time_since_epoch().count();
     }
 

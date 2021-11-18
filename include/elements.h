@@ -38,9 +38,9 @@ typedef enum {
     v_null, v_emptylist, v_emptyatom, v_true,
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_number, t_integer, t_float,
+    t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
-    t_numbers, t_floats, t_set, t_setn, t_integers, t_strings,
+    t_set, t_setn, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryn, t_data, t_maybe,
     t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
@@ -49,7 +49,7 @@ typedef enum {
     l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link,
     
     //Default Lisp instructions
-    l_number, l_float, l_string, l_integer, l_atom, 
+    l_number, l_float, l_string, l_short, l_integer, l_atom,
         
     //threads
     l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear,
@@ -92,7 +92,7 @@ typedef enum {
     l_key, l_keyn, l_keys, l_values, l_pop,
     l_to_list, l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
-    l_numbers, l_floats, l_integers, l_strings, l_set, l_setn,
+    l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
@@ -482,6 +482,10 @@ public:
         return 0;
     }
 
+    virtual short asShort() {
+        return 0;
+    }
+    
     virtual long asInteger() {
         return 0;
     }
@@ -591,6 +595,7 @@ public:
     
     virtual double checkNumber(LispE* lisp);
     virtual long checkInteger(LispE* lisp);
+    virtual short checkShort(LispE* lisp);
     virtual float checkFloat(LispE* lisp);
 
     virtual bool isDictionary() {
@@ -1093,6 +1098,10 @@ public:
         return value->asInteger();
     }
     
+    short asShort() {
+        return value->asShort();
+    }
+    
     int asInt() {
         return value->asInt();
     }
@@ -1206,6 +1215,10 @@ public:
         return number;
     }
     
+    short checkShort(LispE* lisp) {
+        return number;
+    }
+    
     float checkFloat(LispE* lisp) {
         return number;
     }
@@ -1226,10 +1239,14 @@ public:
         return number;
     }
 
+    short asShort() {
+        return (short)number;
+    }
+
     long asInteger() {
         return (long)number;
     }
-    
+
     int asInt() {
         return (int)number;
     }
@@ -1343,6 +1360,10 @@ public:
         return number;
     }
     
+    short checkShort(LispE* lisp) {
+        return number;
+    }
+    
     wstring asString(LispE* lisp) {
         return convertToWString(number);
     }
@@ -1357,6 +1378,10 @@ public:
 
     float asFloat() {
         return number;
+    }
+
+    short asShort() {
+        return (short)number;
     }
 
     long asInteger() {
@@ -1490,6 +1515,155 @@ public:
     Element* duplicate_constant(bool pair = false);
 };
 
+class Short : public Element {
+public:
+ 
+    short integer;
+    Short(short d) : Element(t_short) {
+        integer = d;
+    }
+    
+    Short(short d, uint16_t s) : integer(d), Element(t_short, s) {}
+
+    Element* quoting(LispE*) {
+        return this;
+    }
+
+    bool equalvalue(short n) {
+        return (integer == n);
+    }
+    
+    Element* invert_sign(LispE* lisp);
+    bool egal(Element* e);
+    Element* equal(LispE* lisp, Element* e);
+    Element* less(LispE* lisp, Element* e);
+    Element* lessorequal(LispE* lisp, Element* e);
+    Element* more(LispE* lisp, Element* e);
+    Element* moreorequal(LispE* lisp, Element* e);
+    
+    char check_match(LispE* lisp, Element* value) {
+        return check_ok*(integer == value->asInteger());
+    }
+    
+    bool unify(LispE* lisp, Element* value, bool record) {
+        return (value == this || value->asInteger() == integer);
+    }
+    
+    Element* reverse(LispE*, bool duplique = true);
+    
+    u_ustring asUString(LispE* lisp) {
+        return convertToUString((long)integer);
+    }
+
+    wstring asString(LispE* lisp) {
+        return convertToWString((long)integer);
+    }
+
+    string toString(LispE* lisp) {
+        return convertToString((long)integer);
+    }
+
+    bool isNumber() {
+        return true;
+    }
+    
+    double checkNumber(LispE* lisp) {
+        return integer;
+    }
+    
+    long checkInteger(LispE* lisp) {
+        return integer;
+    }
+    
+    short checkShort(LispE* lisp) {
+        return integer;
+    }
+
+    double asNumber() {
+        return integer;
+    }
+    
+    float asFloat() {
+        return integer;
+    }
+
+    short asShort() {
+        return integer;
+    }
+
+    long asInteger() {
+        return integer;
+    }
+    
+    int asInt() {
+        return (int)integer;
+    }
+
+    bool Boolean() {
+        return (integer);
+    }
+    
+    virtual Element* fullcopy() {
+        return new Short(integer);
+    }
+
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+        return new Short(integer);
+    }
+
+    // There is a difference between the two copies
+    //The first one makes a final copy
+    virtual Element* copying(bool duplicate = true) {
+        if (!is_protected() || !duplicate)
+            return this;
+        
+        return new Short(integer);
+    }
+    
+    Element* bit_not(LispE* l);
+    Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
+    Element* bit_or(LispE* l, Element* e);
+    Element* bit_xor(LispE* l, Element* e);
+    Element* plus(LispE* l, Element* e);
+    Element* minus(LispE* l, Element* e);
+    Element* multiply(LispE* l, Element* e);
+    Element* divide(LispE* l, Element* e);
+    Element* mod(LispE* l, Element* e);
+    Element* power(LispE* l, Element* e);
+    Element* leftshift(LispE* l, Element* e);
+    Element* rightshift(LispE* l, Element* e);
+
+    Element* plus_direct(LispE* lisp, Element* e) {
+        if (e->type == t_short) {
+            integer += ((Short*)e)->integer;
+            return this;
+        }
+        return plus(lisp, e);
+    }
+    
+    Element* minus_direct(LispE* lisp, Element* e) {
+        if (e->type == t_short) {
+            integer -= ((Short*)e)->integer;
+            return this;
+        }
+        return minus(lisp, e);
+    }
+    
+    Element* multiply_direct(LispE* lisp, Element* e) {
+        if (e->type == t_short) {
+            integer *= ((Short*)e)->integer;
+            return this;
+        }
+        return multiply(lisp, e);
+    }
+    
+    Element* divide_direct(LispE* lisp, Element* e);
+
+};
+
 class Integer : public Element {
 public:
  
@@ -1550,11 +1724,19 @@ public:
         return integer;
     }
 
+    short checkShort(LispE* lisp) {
+        return integer;
+    }
+
     double asNumber() {
         return integer;
     }
     
     float asFloat() {
+        return integer;
+    }
+
+    short asShort() {
         return integer;
     }
 
@@ -1666,6 +1848,30 @@ public:
         provide = false;
     }
 
+    bool garbageable() {
+        return false;
+    }
+    
+    void incrementstatus(uint16_t nb) {}
+    void decrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+
+    
+    void release() {}
+    Element* fullcopy();
+    Element* copyatom(uint16_t s);
+    Element* copying(bool duplicate = true);
+    Element* duplicate_constant(bool pair = false);
+};
+
+class Constshort : public Short {
+public:
+
+    Constshort(short d) : Short(d) {
+        status = s_constant;
+    }
+    
     bool garbageable() {
         return false;
     }
@@ -1846,6 +2052,12 @@ public:
         return convertingfloathexa(code.c_str());
     }
 
+    short asShort() {
+        string code;
+        s_unicode_to_utf8(code, content);
+        return (short)convertingfloathexa(code.c_str());
+    }
+    
     long asInteger() {
         string code;
         s_unicode_to_utf8(code, content);
@@ -2171,8 +2383,6 @@ public:
     virtual void release() {
         if (!status && !marking) {
             marking = true;
-            for (auto& a: dictionary)
-                a.second->decrement();
             marking = false;
             delete this;
         }
@@ -2185,11 +2395,8 @@ public:
         marking = true;
         
         status--;
-        if (!status) {
-            for (auto& a : dictionary)
-                a.second->decrement();
+        if (!status)
             delete this;
-        }
         else
             marking = false;
     }
@@ -2202,11 +2409,8 @@ public:
         marking = true;
         
         status-=nb;
-        if (!status) {
-            for (auto& a : dictionary)
-                a.second->decrement();
+        if (!status)
             delete this;
-        }
         else
             marking = false;
     }
@@ -2629,8 +2833,6 @@ public:
     void release() {
         if (!status && !marking) {
             marking = true;
-            for (auto& a: dictionary)
-                a.second->decrement();
             marking = false;
             delete this;
         }
@@ -2644,8 +2846,6 @@ public:
         
         status--;
         if (!status) {
-            for (auto& a : dictionary)
-                a.second->decrement();
             delete this;
         }
         else
@@ -2661,8 +2861,6 @@ public:
         
         status-=nb;
         if (!status) {
-            for (auto& a : dictionary)
-                a.second->decrement();
             delete this;
         }
         else

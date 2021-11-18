@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.11.12.9.55";
+static std::string version = "1.2021.11.17.10.11";
 string LispVersion() {
     return version;
 }
@@ -205,6 +205,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
     set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom);
+    set_instruction(l_short, "short", P_TWO, &List::evall_converttoshort);
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger);
     set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat);
     set_instruction(l_number, "number", P_TWO, &List::evall_converttonumber);
@@ -248,6 +249,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
     set_instruction(l_insert, "insert", P_THREE | P_FOUR, &List::evall_insert);
     set_instruction(l_addr_, "addr_", P_TWO, &List::evall_addr_);
+    set_instruction(l_shorts, "shorts", P_ATLEASTONE, &List::evall_shorts);
     set_instruction(l_integers, "integers", P_ATLEASTONE, &List::evall_integers);
     set_instruction(l_irange, "irange", P_THREE | P_FOUR, &List::evall_irange);
     set_instruction(l_join, "join", P_TWO | P_THREE, &List::evall_join);
@@ -305,7 +307,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_printerrln, "printerrln", P_ATLEASTONE, &List::evall_printerrln);
     set_instruction(l_println, "println", P_ATLEASTONE, &List::evall_println);
     set_instruction(l_product, "product", P_TWO, &List::evall_product);
-    set_instruction(l_push, "push", P_THREE, &List::evall_push);
+    set_instruction(l_push, "push", P_ATLEASTTHREE, &List::evall_push);
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
     set_instruction(l_range, "range", P_FOUR, &List::evall_range);
     set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark);
@@ -485,8 +487,10 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_floats] = U"floats_";
     code_to_string[t_numbers] = U"numbers_";
     code_to_string[t_integer] = U"integer_";
+    code_to_string[t_short] = U"short_";
     code_to_string[t_strings] = U"strings_";
     code_to_string[t_integers] = U"integers_";
+    code_to_string[t_shorts] = U"shorts_";
     code_to_string[t_list] = U"list_";
     code_to_string[t_matrix] = U"matrix_";
     code_to_string[t_matrix_float] = U"matrix_float";
@@ -590,6 +594,8 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_float);
     provideAtomType(t_floats);
     provideAtomType(t_integer);
+    provideAtomType(t_short);
+    provideAtomType(t_shorts);
     provideAtomType(t_strings);
     provideAtomType(t_numbers);
     provideAtomType(t_integers);
@@ -615,10 +621,12 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_float, _NULL), t_float, v_null);
     recordingData(lisp->create_instruction(t_floats, _NULL), t_floats, v_null);
     recordingData(lisp->create_instruction(t_number, _NULL), t_number, v_null);
+    recordingData(lisp->create_instruction(t_short, _NULL), t_short, v_null);
     recordingData(lisp->create_instruction(t_integer, _NULL), t_integer, v_null);
     recordingData(lisp->create_instruction(t_numbers, _NULL), t_numbers, v_null);
     recordingData(lisp->create_instruction(t_strings, _NULL), t_strings, v_null);
     recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, v_null);
+    recordingData(lisp->create_instruction(t_shorts, _NULL), t_shorts, v_null);
     recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
     recordingData(lisp->create_instruction(t_matrix, _NULL), t_matrix, v_null);
     recordingData(lisp->create_instruction(t_matrix_float, _NULL), t_matrix_float, v_null);
@@ -2075,6 +2083,10 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
 
 
 

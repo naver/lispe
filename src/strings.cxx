@@ -246,7 +246,7 @@ void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
     delete[] token;
 }
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright,
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base,
     str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
     str_format, str_padding, str_fill,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
@@ -371,6 +371,77 @@ public:
         }
         
         return lisp->provideString(val);
+    }
+    
+    Element* methodBase(LispE* lisp) {
+        static vector<u_ustring> caracs;
+        static std::unordered_map<u_uchar, long> mcaracs;
+        u_ustring w;
+        long n, b = -1;
+
+        bool toconvert = lisp->get_variable(U"convert")->Boolean();
+        b = lisp->get_variable(U"b")->asInteger();
+        
+        if (caracs.size() == 0) {
+            w = U"0";
+            for (n = 0; n < 10; n++) {
+                mcaracs[w[0]] = caracs.size();
+                caracs.push_back(w);
+                w[0]++;
+            }
+            w = U"A";
+            for (n = 10; n < 36; n++) {
+                mcaracs[w[0]] = caracs.size();
+                caracs.push_back(w);
+                w[0]++;
+            }
+            w = U"a";
+            for (n = 36; n < 62; n++) {
+                mcaracs[w[0]] = caracs.size();
+                caracs.push_back(w);
+                w[0]++;
+            }
+            w = U"#";
+            mcaracs[w[0]] = caracs.size();
+            caracs.push_back(w);
+            w = U"@";
+            mcaracs[w[0]] = caracs.size();
+            caracs.push_back(w);
+            w = U"";
+            if (!b)
+                return true_;
+        }
+        
+        if (b > caracs.size()) {
+            return new Error("Error: Base too large");
+        }
+
+        unsigned long v = 0;
+        if (!toconvert) {
+            //we convert a base 10 number into the local base
+            u_ustring res = lisp->get_variable(v_str)->asUString(lisp);
+            v = convertingfloathexa(res.c_str());
+            long rest;
+            res = U"";
+            while (v) {
+                rest = v%b;
+                v /=b;
+                res = caracs[rest]+res;
+            }
+            return lisp->provideString(res);
+        }
+
+        w = lisp->get_variable(v_str)->asUString(lisp);
+        wchar_t wc;
+        for (n = 0; n < w.size(); n++) {
+            wc = w[n];
+            if (mcaracs.find(wc) == mcaracs.end() || mcaracs[wc] >= b)
+                throw new Error(U"Error: Cannot analyze this string in this base.");
+
+            v *= b;
+            v += mcaracs[wc];
+        }
+        return lisp->provideInteger(v);
     }
     
     #define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
@@ -704,6 +775,9 @@ public:
             case str_edit_distance: {
                 return methodEditDistance(lisp);
             }
+            case str_base: {
+                return methodBase(lisp);
+            }
         }
 		return null_;
     }
@@ -802,10 +876,10 @@ public:
                 return L"(padding str c nb): padds the string str with c up to 'nb' characters";
             case str_fill:
                 return L"(fill c nb): creates a string made of nb 'c' characters";
-                break;
             case str_edit_distance:
                 return L"(editdistance str strbis): compute the Levenshtein distance between str and strbis";
-                break;
+            case str_base:
+                return L"(convert_in_base str b (convert_from): convert str into b or from base b according to convert_from";
         }
 		return L"";
     }
@@ -829,6 +903,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib punctuationp (str)", new Stringmethod(lisp, str_is_punctuation));
     lisp->extension("deflib emoji (str)", new Stringmethod(lisp, str_emoji_description));
     lisp->extension("deflib replace (str fnd rep (index))", new Stringmethod(lisp, str_remplace));
+    lisp->extension("deflib convert_in_base (str b (convert))", new Stringmethod(lisp, str_base));
     lisp->extension("deflib left (str nb)", new Stringmethod(lisp, str_left));
     lisp->extension("deflib ngrams (str nb)", new Stringmethod(lisp, str_ngrams));
     lisp->extension("deflib right (str nb)", new Stringmethod(lisp, str_right));

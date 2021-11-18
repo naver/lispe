@@ -1331,6 +1331,13 @@ long Element::checkInteger(LispE* lisp) {
     s += L"'";
     throw new Error(s);
 }
+
+short Element::checkShort(LispE* lisp) {
+    wstring s = L"Error: cannot use this element in an arithmetic expression: '";
+    s += asString(lisp);
+    s += L"'";
+    throw new Error(s);
+}
 //------------------------------------------------------------------------------------------
 Element* Float::plus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
@@ -1339,6 +1346,9 @@ Element* Float::plus_direct(LispE* lisp, Element* e) {
             return this;
         case t_number:
             number += ((Number*)e)->number;
+            return this;
+        case t_short:
+            number += ((Short*)e)->integer;
             return this;
         case t_integer:
             number += ((Integer*)e)->integer;
@@ -1359,6 +1369,9 @@ Element* Float::minus_direct(LispE* lisp, Element* e) {
         case t_integer:
             number -= ((Integer*)e)->integer;
             return this;
+        case t_short:
+            number -= ((Short*)e)->integer;
+            return this;
         default:
             return minus(lisp, e);
     }
@@ -1374,6 +1387,9 @@ Element* Float::multiply_direct(LispE* lisp, Element* e) {
             return this;
         case t_integer:
             number *= ((Integer*)e)->integer;
+            return this;
+        case t_short:
+            number *= ((Short*)e)->integer;
             return this;
         default:
             return multiply(lisp, e);
@@ -1398,6 +1414,13 @@ Element* Float::divide_direct(LispE* lisp, Element* e) {
         }
         case t_integer: {
             double v = ((Integer*)e)->integer;
+            if (!v)
+                throw new Error("Error: division by zero");
+            number /= v;
+            return this;
+        }
+        case t_short: {
+            double v = ((Short*)e)->integer;
             if (!v)
                 throw new Error("Error: division by zero");
             number /= v;
@@ -1619,6 +1642,9 @@ Element* Number::plus_direct(LispE* lisp, Element* e) {
         case t_integer:
             number += ((Integer*)e)->integer;
             return this;
+        case t_short:
+            number += ((Short*)e)->integer;
+            return this;
         default:
             return plus(lisp, e);
     }
@@ -1635,6 +1661,9 @@ Element* Number::minus_direct(LispE* lisp, Element* e) {
         case t_integer:
             number -= ((Integer*)e)->integer;
             return this;
+        case t_short:
+            number -= ((Short*)e)->integer;
+            return this;
         default:
             return minus(lisp, e);
     }
@@ -1650,6 +1679,9 @@ Element* Number::multiply_direct(LispE* lisp, Element* e) {
             return this;
         case t_integer:
             number *= ((Integer*)e)->integer;
+            return this;
+        case t_short:
+            number *= ((Short*)e)->integer;
             return this;
         default:
             return multiply(lisp, e);
@@ -1674,6 +1706,13 @@ Element* Number::divide_direct(LispE* lisp, Element* e) {
         }
         case t_integer: {
             double v = ((Integer*)e)->integer;
+            if (!v)
+                throw new Error("Error: division by zero");
+            number /= v;
+            return this;
+        }
+        case t_short: {
+            double v = ((Short*)e)->integer;
             if (!v)
                 throw new Error("Error: division by zero");
             number /= v;
@@ -1983,6 +2022,13 @@ Element* Integer::divide_direct(LispE* lisp, Element* e) {
             release();
             return lisp->provideNumber(((double)integer)/v);
         }
+        case t_short: {
+            double v =  ((Short*)e)->integer;
+            if (!v)
+                throw new Error("Error: division by zero");
+            release();
+            return lisp->provideNumber(((double)integer)/v);
+        }
         default:
             return divide(lisp, e);
     }
@@ -2120,6 +2166,251 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
     }
     return lisp->provideInteger(integer>>e->checkInteger(lisp));
 }
+
+Element* Short::plus(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->copyatom(1);
+        n = n->plus(lisp, this);
+        release();
+        return n;
+    }
+
+    if (e->type == t_float) {
+        float v = (float)integer + e->checkFloat(lisp);
+        release();
+        return lisp->provideFloat(v);
+    }
+
+    if (e->type == t_number) {
+        double v = (double)integer + e->checkNumber(lisp);
+        release();
+        return lisp->provideNumber(v);
+    }
+    if (status != s_constant) {
+        integer += e->checkShort(lisp);
+        return this;
+    }
+        
+    return new Short(integer+e->checkShort(lisp));
+}
+
+Element* Short::minus(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->minus(lisp, e);
+    }
+    if (e->type == t_float) {
+        float v = (float)integer - e->checkFloat(lisp);
+        release();
+        return lisp->provideFloat(v);
+    }
+
+    if (e->type == t_number) {
+        double v = (double)integer - e->checkNumber(lisp);
+        release();
+        return lisp->provideNumber(v);
+    }
+    if (status != s_constant) {
+        integer -= e->checkShort(lisp);
+        return this;
+    }
+    return new Short(integer-e->checkShort(lisp));
+}
+
+Element* Short::multiply(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->copyatom(1);
+        n = n->multiply(lisp, this);
+        release();
+        return n;
+    }
+    if (e->type == t_float) {
+        float v = (float)integer * e->checkFloat(lisp);
+        release();
+        return lisp->provideFloat(v);
+    }
+
+    if (e->type == t_number) {
+        double v = (double)integer * e->checkNumber(lisp);
+        release();
+        return lisp->provideNumber(v);
+    }
+    if (status != s_constant) {
+        integer *= e->asInteger();
+        return this;
+    }
+    return new Short(integer*e->asInteger());
+}
+
+Element* Short::divide_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float: {
+            float v =  ((Float*)e)->number;
+            if (!v)
+                throw new Error("Error: division by zero");
+            release();
+            return lisp->provideFloat(((float)integer)/v);
+        }
+        case t_number: {
+            double v =  ((Number*)e)->number;
+            if (!v)
+                throw new Error("Error: division by zero");
+            release();
+            return lisp->provideNumber(((double)integer)/v);
+        }
+        case t_integer: {
+            double v =  ((Integer*)e)->integer;
+            if (!v)
+                throw new Error("Error: division by zero");
+            release();
+            return lisp->provideNumber(((double)integer)/v);
+        }
+        case t_short: {
+            double v =  ((Short*)e)->integer;
+            if (!v)
+                throw new Error("Error: division by zero");
+            release();
+            return lisp->provideNumber(((double)integer)/v);
+        }
+        default:
+            return divide(lisp, e);
+    }
+}
+
+Element* Short::divide(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->divide(lisp, e);
+    }
+    double v =  e->checkNumber(lisp);
+    if (!v)
+        throw new Error("Error: division by zero");
+    release();
+    return lisp->provideNumber((double)integer/v);
+}
+
+
+Element* Short::mod(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->mod(lisp, e);
+    }
+    long v =  e->checkShort(lisp);
+    if (!v)
+        throw new Error("Error: division by zero");
+    
+    if (status != s_constant) {
+        integer %= v;
+        return this;
+    }
+    return new Short(integer%v);
+}
+
+Element* Short::power(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Numbers* n = new Numbers(e->size(), integer);
+        return n->power(lisp, e);
+    }
+    double v = pow((double)integer, e->checkNumber(lisp));
+    release();
+    return lisp->provideNumber(v);
+}
+
+Element* Short::bit_not(LispE* lisp)  {
+    if (status != s_constant) {
+        integer = ~integer;
+        return this;
+    }
+    return new Short(~integer);
+}
+
+
+Element* Short::bit_and(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->copyatom(1);
+        n = n->bit_and(lisp, this);
+        release();
+        return n;
+    }
+    if (status != s_constant) {
+        integer &= e->checkShort(lisp);
+        return this;
+    }
+    return new Short(integer&e->checkShort(lisp));
+}
+
+Element* Short::bit_and_not(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->bit_and_not(lisp, e);
+    }
+    if (status != s_constant) {
+        integer &= ~e->checkShort(lisp);
+        return this;
+    }
+    return new Short(integer&~e->checkShort(lisp));
+}
+
+Element* Short::bit_or(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->copyatom(1);
+        n = n->bit_or(lisp, this);
+        release();
+        return n;
+    }
+    if (status != s_constant) {
+        integer |= e->checkShort(lisp);
+        return this;
+    }
+    return new Short(integer|e->checkShort(lisp));
+}
+
+Element* Short::bit_xor(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->copyatom(1);
+        n = n->bit_xor(lisp, this);
+        release();
+        return n;
+    }
+    if (status != s_constant) {
+        integer ^= e->checkShort(lisp);
+        return this;
+    }
+    return new Short(integer^e->checkShort(lisp));
+}
+
+
+Element* Short::leftshift(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->leftshift(lisp, e);
+    }
+    if (status != s_constant) {
+        integer <<= e->checkShort(lisp);
+        return this;
+    }
+    return new Short(integer<<e->checkShort(lisp));
+}
+
+
+Element* Short::rightshift(LispE* lisp, Element* e)  {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->rightshift(lisp, e);
+    }
+    if (status != s_constant) {
+        integer >>= e->checkShort(lisp);
+        return this;
+    }
+    return new Short(integer>>e->checkShort(lisp));
+}
+
 
 Element* List::bit_not(LispE* l) {
     //Two cases either e is a number or it is a list...
@@ -2504,12 +2795,18 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
                 liste[i] += ((Integers*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] += ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_numbers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 liste[i] += ((Numbers*)e)->liste[i];
             }
             return this;
         case t_float:
+        case t_short:
         case t_number:
         case t_integer: {
             long szl = liste.size();
@@ -2603,12 +2900,18 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
                 liste[i] -= ((Numbers*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] -= ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 liste[i] -= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             long szl = liste.size();
@@ -2703,12 +3006,18 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
                 liste[i] *= ((Numbers*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] *= ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 liste[i] *= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             long szl = liste.size();
@@ -2806,6 +3115,13 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 liste[i] /= ((Numbers*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                if (!((Shorts*)e)->liste[i])
+                    throw new Error("Error: division by zero");
+                liste[i] /= ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
@@ -2814,6 +3130,7 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
             }
             return this;
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             float v = e->asFloat();
@@ -3381,6 +3698,11 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
                 liste[i] += ((Floats*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] += ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 liste[i] += ((Integers*)e)->liste[i];
@@ -3388,6 +3710,7 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
             return this;
         case t_float:
         case t_number:
+        case t_short:
         case t_integer: {
             long szl = liste.size();
             double v = e->asNumber();
@@ -3482,12 +3805,18 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
                 liste[i] -= ((Floats*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] -= ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 liste[i] -= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             long szl = liste.size();
@@ -3583,12 +3912,18 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
                 liste[i] *= ((Floats*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] *= ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 liste[i] *= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             long szl = liste.size();
@@ -3687,6 +4022,13 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 liste[i] /= ((Floats*)e)->liste[i];
             }
             return this;
+        case t_shorts:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                if (!((Shorts*)e)->liste[i])
+                    throw new Error("Error: division by zero");
+                liste[i] /= ((Shorts*)e)->liste[i];
+            }
+            return this;
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
@@ -3695,6 +4037,7 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
             }
             return this;
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             double v = e->asNumber();
@@ -4237,6 +4580,12 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             }
             return this;
         }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] += ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
         case t_integers: {
             Integers* n = (Integers*)e;
             long szl = liste.size();
@@ -4267,6 +4616,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             long szl = liste.size();
@@ -4331,6 +4681,12 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             }
             return this;
         }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] -= ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
         case t_integers: {
             Integers* n = (Integers*)e;
             long szl = liste.size();
@@ -4361,6 +4717,7 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             long szl = liste.size();
@@ -4428,12 +4785,19 @@ Element* Integers::multiply_direct(LispE* lisp, Element* e) {
             }
             return this;
         }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] *= ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 liste[i] *= ((Integers*)e)->liste[i];
             }
             return this;
         case t_number:
+        case t_short:
         case t_float:
         case t_integer: {
             long v = e->asInteger();
@@ -4485,6 +4849,14 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
             }
             return this;
         }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                if (!((Shorts*)e)->liste[i])
+                    throw new Error("Error: division by zero");
+                liste[i] /= ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
         case t_integers:
             for (long i = 0; i < liste.size() && i < e->size(); i++) {
                 if (!((Integers*)e)->liste[i])
@@ -4493,6 +4865,8 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
             }
             return this;
         case t_number:
+        case t_float:
+        case t_short:
         case t_integer: {
             long v = e->asInteger();
             if (!v)
@@ -4821,6 +5195,718 @@ Element* Integers::rightshift(LispE* lisp, Element* e) {
     }
     return this;
 }
+
+Element* Shorts::bit_not(LispE* l) {
+    if (!status) {
+        for (long i = 0; i < size(); i++) {
+            liste[i] = ~liste[i];
+        }
+        return this;
+    }
+    Shorts* num = (Shorts*)newInstance();
+    for (long i = 0; i < size(); i++)
+        num->liste.push_back(~liste[i]);
+    return num;
+}
+
+
+Element* Shorts::bit_and(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d &= liste[i];
+        }
+        return new Short(d);
+    }
+
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->bit_and(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] &= e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] &= e->asShort();
+    }
+    return this;
+}
+
+Element* Shorts::bit_and_not(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d &= ~liste[i];
+        }
+        return new Short(d);
+    }
+
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->bit_and_not(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] &= ~e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] &= ~e->asShort();
+    }
+    return this;
+}
+
+
+Element* Shorts::bit_or(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d |= liste[i];
+        }
+        return new Short(d);
+    }
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->bit_or(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] |= e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] |= e->asShort();
+    }
+    return this;
+}
+
+Element* Shorts::bit_xor(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d ^= liste[i];
+        }
+        return new Short(d);
+    }
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->bit_xor(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] ^= e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] ^= e->asShort();
+    }
+    return this;
+}
+
+Element* Shorts::plus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_numbers: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] += ((Numbers*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_floats: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] += ((Floats*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] += ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_integers: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] += ((Integers*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_number:
+        case t_short:
+        case t_float:
+        case t_integer: {
+            long szl = liste.size();
+            short v = e->asShort();
+            for (long i = 0; i < szl; i++) {
+                liste[i] += v;
+            }
+            return this;
+        }
+        case t_matrix_float: {
+            Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Floats*)result->index(m))->liste[i] += liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix: {
+            Matrice* result = new Matrice(lisp, (Matrice*)e);
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Numbers*)result->index(m))->liste[i] += liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        default:
+            return plus(lisp, e);
+    }
+}
+
+
+Element* Shorts::minus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_numbers: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] -= ((Numbers*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_floats: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] -= ((Floats*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] -= ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_integers: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] -= ((Integers*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_number:
+        case t_short:
+        case t_float:
+        case t_integer: {
+            long szl = liste.size();
+            short v = e->asShort();
+            for (long i = 0; i < szl; i++) {
+                liste[i] -= v;
+            }
+            return this;
+        }
+        case t_matrix_float: {
+            Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
+            float v;
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Floats*)result->index(m))->liste[i];
+                    ((Floats*)result->index(m))->liste[i] = liste[i] - v;
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix: {
+            Matrice* result = new Matrice(lisp, (Matrice*)e);
+            double v;
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Numbers*)result->index(m))->liste[i];
+                    ((Numbers*)result->index(m))->liste[i] = liste[i] - v;
+                }
+            }
+            release();
+            return result;
+        }
+        default:
+            return minus(lisp, e);
+    }
+}
+
+Element* Shorts::multiply_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_numbers: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] *= ((Numbers*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_floats: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] *= ((Floats*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] *= ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_integers:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                liste[i] *= ((Integers*)e)->liste[i];
+            }
+            return this;
+        case t_number:
+        case t_short:
+        case t_float:
+        case t_integer: {
+            short v = e->asShort();
+            for (long i = 0; i < liste.size(); i++) {
+                liste[i] *= v;
+            }
+            return this;
+        }
+        case t_matrix_float: {
+            Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Floats*)result->index(m))->liste[i] *= liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix: {
+            Matrice* result = new Matrice(lisp, (Matrice*)e);
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Numbers*)result->index(m))->liste[i] *= liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        default:
+            return multiply(lisp, e);
+    }
+}
+
+Element* Shorts::divide_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_numbers: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                if (!((Numbers*)e)->liste[i])
+                    throw new Error("Error: division by zero");
+                liste[i] /= ((Numbers*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_floats: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                if (!((Floats*)e)->liste[i])
+                    throw new Error("Error: division by zero");
+                liste[i] /= ((Floats*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_shorts: {
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                if (!((Shorts*)e)->liste[i])
+                    throw new Error("Error: division by zero");
+                liste[i] /= ((Shorts*)e)->liste[i];
+            }
+            return this;
+        }
+        case t_integers:
+            for (long i = 0; i < liste.size() && i < e->size(); i++) {
+                if (!((Integers*)e)->liste[i])
+                    throw new Error("Error: division by zero");
+                liste[i] /= ((Integers*)e)->liste[i];
+            }
+            return this;
+        case t_number:
+        case t_short:
+        case t_float:
+        case t_integer: {
+            short v = e->asShort();
+            if (!v)
+                throw new Error("Error: division by zero");
+            for (long i = 0; i < liste.size(); i++) {
+                liste[i] /= v;
+            }
+            return this;
+        }
+        case t_matrix_float: {
+            Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
+            float v;
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Floats*)result->index(m))->liste[i];
+                    if (!v)
+                        throw new Error("Error: division by zero");
+                    ((Floats*)result->index(m))->liste[i] = liste[i] / v;
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix: {
+            Matrice* result = new Matrice(lisp, (Matrice*)e);
+            double v;
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Numbers*)result->index(m))->liste[i];
+                    if (!v)
+                        throw new Error("Error: division by zero");
+                    ((Numbers*)result->index(m))->liste[i] = liste[i] / v;
+                }
+            }
+            release();
+            return result;
+        }
+        default:
+            return divide(lisp, e);
+    }
+}
+
+Element* Shorts::plus(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d += liste[i];
+        }
+        return new Short(d);
+    }
+    
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->plus(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] += e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] += e->asShort();
+    }
+    return this;
+}
+
+Element* Shorts::minus(LispE* lisp, Element* e) {
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d -= liste[i];
+        }
+        return new Short(d);
+    }
+    
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->minus(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] -= e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] -= e->asShort();
+    }
+    return this;
+}
+
+Element* Shorts::multiply(LispE* lisp, Element* e) {
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d *= liste[i];
+        }
+        return new Short(d);
+    }
+    
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->multiply(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] *= e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] *= e->asShort();
+    }
+    return this;
+}
+
+Element* Shorts::divide(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            if (!liste[i])
+                throw new Error("Error: division by zero");
+            d /= liste[i];
+        }
+        return new Short(d);
+    }
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->divide(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->divide(lisp, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->divide(lisp, e));
+    }
+    return this;
+}
+
+Element* Shorts::mod(LispE* lisp, Element* e) {
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            if (!liste[i])
+                throw new Error("Error: division by zero");
+            d %= liste[i];
+        }
+        return new Short(d);
+    }
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->mod(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->mod(lisp, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->mod(lisp, e));
+    }
+    return this;
+}
+
+Element* Shorts::power(LispE* lisp, Element* e) {
+    if (e == NULL) {
+        double d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d = pow(d, (double)liste[i]);
+        }
+        return new Short(d);
+    }
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->power(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            replacing(i, index(i)->power(lisp, e->index(i)));
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        replacing(i, index(i)->power(lisp, e));
+    }
+    return this;
+}
+
+Element* Shorts::leftshift(LispE* lisp, Element* e) {
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d <<= liste[i];
+        }
+        return new Short(d);
+    }
+   //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->leftshift(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+       for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] <<= e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] <<= e->asShort();
+    }
+    return this;
+}
+
+Element* Shorts::rightshift(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e == NULL) {
+        short d = liste[0];
+        for (long i = 1; i < size(); i++) {
+            d >>= liste[i];
+        }
+        return new Short(d);
+    }
+    if (e->isList()) {
+        if (e->size() && e->index(0)->isList()) {
+            Element* result = lisp->provideList();
+            try {
+                for (long i = 0; i < e->size() && i < size(); i++) {
+                    result->append(index(i)->rightshift(lisp, e->index(i)));
+                }
+            }
+            catch(Error* err) {
+                result->release();
+                throw err;
+            }
+            release();
+            return result;
+        }
+        for (long i = 0; i < e->size() && i < size(); i++) {
+            liste[i] >>= e->index(i)->asShort();
+        }
+        return this;
+    }
+    for (long i = 0; i < size(); i++) {
+        liste[i] >>= e->asShort();
+    }
+    return this;
+}
+
 
 Element* Set_n::plus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
@@ -7025,6 +8111,16 @@ Element* List::evall_sum(LispE* lisp) {
                 first_element->release();
                 return lisp->provideNumber(v);
             }
+            case t_shorts: {
+                short v = 0;
+                Shorts* nb = (Shorts*)first_element;
+                long listsize = nb->size();
+                for (long i = 0; i < listsize; i++) {
+                    v += nb->liste[i];
+                }
+                first_element->release();
+                return new Short(v);
+            }
             case t_integers: {
                 long v = 0;
                 Integers* nb = (Integers*)first_element;
@@ -7096,6 +8192,16 @@ Element* List::evall_product(LispE* lisp) {
                 }
                 first_element->release();
                 return lisp->provideNumber(v);
+            }
+            case t_shorts: {
+                double v = 1;
+                Shorts* nb = (Shorts*)first_element;
+                long listsize = nb->size();
+                for (long i = 0; i < listsize; i++) {
+                    v *= nb->liste[i];
+                }
+                first_element->release();
+                return lisp->provideInteger(v);
             }
             case t_integers: {
                 double v = 1;
