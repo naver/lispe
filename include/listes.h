@@ -14,6 +14,7 @@
 #define listes_h
 
 #include "vecte.h"
+#include <list>
 
 typedef Element* (List::*methodEval)(LispE*);
 
@@ -59,7 +60,7 @@ public:
     
     inline void resize(long t) {
         if (t >= sz) {
-            sz <<= 1;
+            sz = t << 1;
             //We reallocate our vecteur
             buffer = (Element**)realloc(buffer, sizeof(Element*)*(sz + 1));
         }
@@ -84,14 +85,20 @@ public:
     
     inline void erase(long i) {
         if (i >= 0 && i < last) {
-            buffer[i]->decrement();
-            
+            buffer[i]->decrement();            
             last--;
             for (;i < last; i++)
                 buffer[i] = buffer[i+1];
         }
     }
 
+    inline void pop_back() {
+        if (last) {
+            last--;
+            buffer[last]->decrement();
+        }
+    }
+    
     inline void insert(long pos, Element* val) {
         resize(last);
 
@@ -120,6 +127,7 @@ public:
         resize(last);
         //sinon on ajoute l'element en queue...
         buffer[last++] = val;
+        val->increment();
     }
 
     inline void push_raw(Element* val) {
@@ -129,36 +137,46 @@ public:
         buffer[last++] = val;
     }
     
-    inline void increment(long home) {
-        for (long i = home; i < last; i++) {
-            buffer[i]->increment();
+    inline void increment() {
+        if (!status) {
+            for (long i = 0; i < last; i++) {
+                buffer[i]->increment();
+            }
         }
     }
 
-    inline void increment(long home, uint16_t nb) {
-        for (long i = home; i < last; i++) {
-            buffer[i]->incrementstatus(nb);
+    inline void increment(uint16_t nb) {
+        if (!status) {
+            for (long i = 0; i < last; i++) {
+                buffer[i]->incrementstatus(nb);
+            }
         }
     }
 
-    inline void decrement(long home) {
-        for (long i = home; i < last; i++) {
-            buffer[i]->decrement();
-        }
-    }
-
-    inline void decrement(long home, uint16_t nb) {
-        for (long i = home; i < last; i++) {
-            buffer[i]->decrementstatus(nb);
-        }
-    }
-
-    inline void decrement(long home, Element* e) {
-        for (long i = home; i < last; i++) {
-            if (e == buffer[i])
-                e->decrementkeep();
-            else
+    inline void decrement() {
+        if (!status) {
+            for (long i = 0; i < last; i++) {
                 buffer[i]->decrement();
+            }
+        }
+    }
+
+    inline void decrement(uint16_t nb) {
+        if (!status) {
+            for (long i = 0; i < last; i++) {
+                buffer[i]->decrementstatus(nb);
+            }
+        }
+    }
+
+    inline void decrement(Element* e) {
+        if (!status) {
+            for (long i = 0; i < last; i++) {
+                if (e == buffer[i])
+                    e->decrementkeep();
+                else
+                    buffer[i]->decrement();
+            }
         }
     }
 
@@ -186,7 +204,6 @@ public:
         item = l.item;
         //We modify the common reference counter
         item->status++;
-        item->increment(home);
     }
     
     LIST(long t) {
@@ -271,12 +288,12 @@ public:
     }
 
     void clean() {
-        item->decrement(home);
+        item->decrement();
         item->last = home;
     }
     
     inline void pop_back() {
-        item->last--;
+        item->pop_back();
     }
 
     inline void insert(long pos, Element* val) {
@@ -353,7 +370,7 @@ public:
     inline void decrement() {
         if (!marking) {
             marking = true;
-            item->decrement(home);
+            item->decrement();
             marking = false;
         }
     }
@@ -361,7 +378,7 @@ public:
     inline void increment(uint16_t nb) {
         if (!marking) {
             marking = true;
-            item->increment(home, nb);
+            item->increment(nb);
             marking = false;
         }
     }
@@ -369,7 +386,7 @@ public:
     inline void decrement(uint16_t nb) {
         if (!marking) {
             marking = true;
-            item->decrement(home, nb);
+            item->decrement(nb);
             marking = false;
         }
     }
@@ -377,7 +394,7 @@ public:
     inline void decrement(Element* e) {
         if (!marking) {
             marking = true;
-            item->decrement(home, e);
+            item->decrement(e);
             marking = false;
         }
     }
@@ -396,7 +413,7 @@ public:
         else {
             //We clean the whole structure
             //and reset last to its first element
-            item->decrement(home);
+            item->decrement();
             item->last = home;
         }
     }
@@ -415,7 +432,7 @@ public:
         else {
             //We clean the whole structure
             //and reset last to its first element
-            item->decrement(home, e);
+            item->decrement(e);
             item->last = home;
         }
     }
@@ -507,7 +524,6 @@ public:
             liste.push_element(e);
         else
             liste.insert(sz-1, e);
-        e->increment();
     }
 
     short label(long i) {
@@ -600,6 +616,10 @@ public:
         return true;
     }
     
+    bool element_container() {
+        return true;
+    }
+
     bool isLambda() {
         return (liste.size() && liste.item->buffer[0]->type == l_lambda);
     }
@@ -659,6 +679,7 @@ public:
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
 
     Element* protected_index(LispE*,long i);
     
@@ -842,7 +863,6 @@ public:
 
     void append(Element* e) {
         liste.push_element(e);
-        e->increment();
     }
 
     void extend(List* l) {
@@ -852,7 +872,6 @@ public:
     bool append_not_null(Element* e) {
         if (e != NULL) {
             liste.push_element(e);
-            e->increment();
             return true;
         }
         return false;
@@ -890,8 +909,8 @@ public:
         else {
             liste[i]->decrement();
             liste[i] = e;
+            e->increment();
         }
-        e->increment();
         return this;
     }
     
@@ -934,18 +953,24 @@ public:
     void storevalue(LispE*, u_ustring& v);
     
     void pop() {
-        Element* e = liste.popback();
-        e->decrement();
+        liste.pop_back();
     }
     
+    bool removefirst() {
+        if (!liste.size())
+            return false;
+        liste.erase(0);
+        return true;
+    }
+
     bool removelast() {
         if (!liste.size())
             return false;
-        Element* e = liste.popback();
-        e->decrement();
+        liste.pop_back();
         return true;
     }
     
+
     bool remove(LispE*, Element* e) {
         long d =  e->asInteger();
         return remove(d);
@@ -956,16 +981,12 @@ public:
             return false;
         
         if (d == liste.size() || d == -1) {
-            Element* e = liste.back();
             liste.pop_back();
-            e->decrement();
             return true;
         }
         if (d < 0 || d > liste.size())
             return false;
-        Element* e = liste[d];
         liste.erase(d);
-        e->decrement();
         return true;
     }
     
@@ -1179,6 +1200,7 @@ public:
     Element* evall_leftshiftequal(LispE* lisp);
     Element* evall_link(LispE* lisp);
     Element* evall_list(LispE* lisp);
+    Element* evall_llist(LispE* lisp);
     Element* evall_to_list(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_lock(LispE* lisp);
@@ -1193,6 +1215,7 @@ public:
     Element* evall_mark(LispE* lisp);
     Element* evall_matrix(LispE* lisp);
     Element* evall_matrix_float(LispE* lisp);
+    Element* evall_minmax(LispE* lisp);
     Element* evall_max(LispE* lisp);
     Element* evall_maybe(LispE* lisp);
     Element* evall_member(LispE* lisp);
@@ -1217,6 +1240,8 @@ public:
     Element* evall_plus(LispE* lisp);
     Element* evall_plusequal(LispE* lisp);
     Element* evall_pop(LispE* lisp);
+    Element* evall_popfirst(LispE* lisp);
+    Element* evall_poplast(LispE* lisp);
     Element* evall_power(LispE* lisp);
     Element* evall_powerequal(LispE* lisp);
     Element* evall_powerequal2(LispE* lisp);
@@ -1227,6 +1252,8 @@ public:
     Element* evall_println(LispE* lisp);
     Element* evall_product(LispE* lisp);
     Element* evall_push(LispE* lisp);
+    Element* evall_pushfirst(LispE* lisp);
+    Element* evall_pushlast(LispE* lisp);
     Element* evall_quote(LispE* lisp);
     Element* evall_range(LispE* lisp);
     Element* evall_rank(LispE* lisp);
@@ -1279,6 +1306,7 @@ public:
     Element* evall_zip(LispE* lisp);
     Element* evall_zipwith(LispE* lisp);
     Element* evalt_list(LispE* lisp);
+    
     Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
     Element* bit_and_not(LispE* l, Element* e);
@@ -1292,6 +1320,10 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
+
+#ifdef MACDEBUG
+    Element* evall_debug_function(LispE* lisp);
+#endif
     
     bool eval_Boolean(LispE* lisp, short instruction);
 
@@ -1654,6 +1686,7 @@ public:
     bool egal(Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
 
     Element* rotate(LispE* lisp, long axis) {
         Floats* n = new Floats;
@@ -1902,6 +1935,13 @@ public:
     void storevalue(LispE*, long v);
     void storevalue(LispE*, u_ustring& v);
     
+    bool removefirst() {
+        if (!liste.size())
+            return false;
+        liste.erase(0);
+        return true;
+    }
+
     bool removelast() {
         if (!liste.size())
             return false;
@@ -2060,8 +2100,10 @@ public:
     Element* invert_sign(LispE* lisp);
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
+    
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
 
     Element* rotate(LispE* lisp, long axis) {
         Numbers* n = new Numbers;
@@ -2308,6 +2350,13 @@ public:
     void storevalue(LispE*, long v);
     void storevalue(LispE*, u_ustring& v);
     
+    bool removefirst() {
+        if (!liste.size())
+            return false;
+        liste.erase(0);
+        return true;
+    }
+
     bool removelast() {
         if (!liste.size())
             return false;
@@ -2554,6 +2603,7 @@ public:
     bool egal(Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
 
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
@@ -2705,6 +2755,13 @@ public:
     void storevalue(LispE*, long v);
     void storevalue(LispE*, u_ustring& v);
     
+    bool removefirst() {
+        if (!liste.size())
+            return false;
+        liste.erase(0);
+        return true;
+    }
+
     bool removelast() {
         if (!liste.size())
             return false;
@@ -2912,6 +2969,7 @@ public:
     bool egal(Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
 
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
@@ -3063,6 +3121,13 @@ public:
     void storevalue(LispE*, long v);
     void storevalue(LispE*, u_ustring& v);
     
+    bool removefirst() {
+        if (!liste.size())
+            return false;
+        liste.erase(0);
+        return true;
+    }
+
     bool removelast() {
         if (!liste.size())
             return false;
@@ -4289,6 +4354,7 @@ public:
 
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
 
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
@@ -4455,6 +4521,13 @@ public:
     void storevalue(LispE*, long v);
     void storevalue(LispE*, u_ustring& v);
     
+    bool removefirst() {
+        if (!liste.size())
+            return false;
+        liste.erase(0);
+        return true;
+    }
+
     bool removelast() {
         if (!liste.size())
             return false;

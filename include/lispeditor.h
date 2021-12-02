@@ -106,6 +106,7 @@ public:
     bool displaying_local_variables;
 
     lispe_editor() {
+        longcomment = false;
         selected_x = -1;
         selected_y = -1;
         selected_pos = -1;
@@ -350,6 +351,8 @@ public:
             scanforlonglines();
             modified = false;
         }
+
+        longcomment = false;
 
         if (emode()) {
             x_option g = option;

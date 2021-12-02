@@ -52,6 +52,24 @@ char List::check_match(LispE* lisp, Element* value) {
     return check_ok;
 }
 
+char LList::check_match(LispE* lisp, Element* value) {
+    if (!value->isList() || liste.size() != value->size())
+        return check_mismatch;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    char i = 0;
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        //In this case, we skip it, no constraints...
+        if (a->value == null_)
+            continue;
+        if (a->value->check_match(lisp, value->index(i)) != check_ok)
+            return i;
+        i++;
+    }
+    return check_ok;
+}
+
 char Floats::check_match(LispE* lisp, Element* value) {
     if (!value->isList() || liste.size() != value->size())
         return check_mismatch;
@@ -620,6 +638,9 @@ bool Listseparator::unify(LispE* lisp, Element* value, bool record) {
                     case t_list:
                         sublist = new List((List*)value, ivalue);
                         break;
+                    case t_llist:
+                        sublist = new LList((LList*)value, ivalue);
+                        break;
                     case t_floats:
                         sublist = new Floats((Floats*)value, ivalue);
                         break;
@@ -699,6 +720,41 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
     return (test && (irule == szrules) && (ivalue >= szvalue));
 }
 
+bool LList::unify(LispE* lisp, Element* value, bool record) {
+    long szrules = liste.size();
+    if (!szrules)
+        return (value->size() == 0);
+
+    bool rec = true;
+
+    if (!record) {
+        if (value == this) {
+            return true;
+        }
+        rec = (lisp->extractlabel(liste.front()) == v_null);
+    }
+    
+    if (!value->isList()) {
+        return false;
+    }
+    
+    long szvalue = value->size();
+    long ivalue = 0;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    bool test = true;
+    Element* e;
+    u_link* i_rule = liste.begin();
+    long irule = 0;
+    for (; i_rule != liste.end() && test; i_rule = i_rule->_next, irule++, ivalue++) {
+        e = i_rule->value;
+        test = (e == null_ || e->unify_kleene(lisp, value, this, ivalue, irule, rec));
+        rec = record;
+    }
+    return (test && (irule == szrules) && (ivalue >= szvalue));
+}
 /*
  This is the reason why we have a 'record' Boolean.
  When we use unify in the context of a pattern function, then record is true, as Atom is then a variable name
@@ -1133,7 +1189,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
             else
                 label = element->label();
             
-            if (label == v_null)
+            if (label == v_null || data == NULL)
                 throw new Error(L"Error: Wrong parameter description");
 
 
@@ -1220,7 +1276,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
             else
                 label = element->label();
             
-            if (label == v_null)
+            if (label == v_null || data == NULL)
                 throw new Error(L"Error: Wrong parameter description");
 
 
@@ -1298,8 +1354,9 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
             else
                 label = element->label();
             
-            if (label == v_null)
+            if (label == v_null || data == NULL)
                 throw new Error(L"Error: Wrong parameter description");
+            
             lisp->replacingvalue(data, label);
         }
     }
@@ -2108,7 +2165,13 @@ Element* List::evall_cadr(LispE* lisp) {
     try {
         second_element = liste[1]->eval(lisp);
         first_element = first_element->cadr(lisp, second_element);
-        second_element->release();
+        if (second_element->element_container()) {
+            first_element->increment();
+            second_element->release();
+            first_element->decrementkeep();
+        }
+        else
+            second_element->release();
     }
     catch (Error* err) {
         first_element->release();
@@ -2128,7 +2191,13 @@ Element* List::evall_car(LispE* lisp) {
     try {
         second_element = liste[1]->eval(lisp);
         first_element = second_element->car(lisp);
-        second_element->release();
+        if (second_element->element_container()) {
+            first_element->increment();
+            second_element->release();
+            first_element->decrementkeep();
+        }
+        else
+            second_element->release();
     }
     catch (Error* err) {
         first_element->release();
@@ -2311,6 +2380,9 @@ Element* List::evall_filterlist(LispE* lisp) {
             case t_list:
                 result = lisp->provideList();
                 break;
+            case t_llist:
+                result = new LList(&lisp->mark);
+                break;
             default:
                 throw new Error("Error: expecting a list as argument");
         }
@@ -2445,6 +2517,9 @@ Element* List::evall_takelist(LispE* lisp) {
                 break;
             case t_list:
                 result = lisp->provideList();
+                break;
+            case t_llist:
+                result = new LList(&lisp->mark);
                 break;
             default:
                 throw new Error("Error: expecting a list as argument");
@@ -2591,6 +2666,9 @@ Element* List::evall_droplist(LispE* lisp) {
                 break;
             case t_list:
                 result = lisp->provideList();
+                break;
+            case t_llist:
+                result = new LList(&lisp->mark);
                 break;
             default:
                 throw new Error("Error: expecting a list as argument");
@@ -4705,7 +4783,13 @@ Element* List::evall_cdr(LispE* lisp) {
     try {
         lst = liste[1]->eval(lisp);
         c = lst->cdr(lisp);
-        lst->release();
+        if (lst->element_container()) {
+            c->increment();
+            lst->release();
+            c->decrementkeep();
+        }
+        else
+            lst->release();
     }
     catch (Error* err) {
         lst->release();
@@ -4714,7 +4798,6 @@ Element* List::evall_cdr(LispE* lisp) {
     }
     return c;
 }
-
 
 Element* List::evall_check(LispE* lisp) {
     short listsize = liste.size();
@@ -4898,13 +4981,27 @@ Element* List::evall_cons(LispE* lisp) {
             return third_element;
         }
 
-        if (second_element->type == t_pair)
-            third_element = new Pair();
-        else
-            third_element = lisp->provideList();
-        third_element->append(first_element);
-        for (long i = 0; i < second_element->size(); i++) {
-            third_element->append(second_element->value_on_index(lisp, i));
+        switch (second_element->type) {
+            case t_pair: {
+                third_element = new Pair();
+                third_element->append(first_element);
+                for (long i = 0; i < second_element->size(); i++)
+                    third_element->append(second_element->value_on_index(lisp, i));
+                break;
+            }
+            case t_llist: {
+                third_element = new LList(&lisp->mark);
+                LList* lst = (LList*)second_element;
+                for (u_link* e = lst->liste.begin(); e != NULL; e = e->_next)
+                    third_element->append(e->value->copying(false));
+                break;
+            }
+            default: {
+                third_element = lisp->provideList();
+                third_element->append(first_element);
+                for (long i = 0; i < second_element->size(); i++)
+                    third_element->append(second_element->value_on_index(lisp, i));
+            }
         }
         second_element->release();
     }
@@ -5347,9 +5444,13 @@ Element* List::evall_eval(LispE* lisp) {
         first_element = second_element->eval(lisp);
         lisp->evaluating = false;
         if (first_element != second_element) {
-            first_element->increment();
-            second_element->release();
-            first_element->decrementkeep();
+            if (second_element->element_container()) {
+                first_element->increment();
+                second_element->release();
+                first_element->decrementkeep();
+            }
+            else
+                second_element->release();
         }
     }
     catch (Error* err) {
@@ -5561,6 +5662,16 @@ Element* List::evall_flip(LispE* lisp) {
                 }
                 first_element->release();
                 return second_element;
+            }
+            case t_llist: {
+                LList* elements = (LList*)first_element;
+                if (!elements->atleast2())
+                    return first_element;
+                LList* l = (LList*)elements->copying(false);
+                second_element = l->liste.first->value;
+                l->liste.first->value = l->liste.first->_next->value;
+                l->liste.first->_next->value = second_element;
+                return l;
             }
             case t_dictionary:
             case t_dictionaryn: {
@@ -6088,9 +6199,13 @@ Element* List::evall_index(LispE* lisp) {
             result = result->protected_index(lisp, value);
             value->release();
         }
-        result->increment();
-        container->release();
-        result->decrementkeep();
+        if (container->element_container()) {
+            result->increment();
+            container->release();
+            result->decrementkeep();
+        }
+        else
+            container->release();
     }
     catch (Error* err) {
         container->release();
@@ -6121,10 +6236,15 @@ Element* List::evall_set_at(LispE* lisp) {
         ix = liste[listsize-2]->eval(lisp);
         value = liste[listsize-1]->eval(lisp);
         result->replace(lisp, ix, value);
+        value->release();
         ix->release();
-        result->increment();
-        container->release();
-        result->decrementkeep();
+        if (container->element_container()) {
+            result->increment();
+            container->release();
+            result->decrementkeep();
+        }
+        else
+            container->release();
     }
     catch (Error* err) {
         container->release();
@@ -6389,8 +6509,9 @@ Element* List::evall_insert(LispE* lisp) {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
         long ix;
-        if (lstsize == 3)
-            ix = first_element->size();
+        if (lstsize == 3) {
+            ix = first_element->default_insertion();
+        }
         else
             evalAsInteger(3, lisp, ix);
         third_element = first_element->insert(lisp, second_element, ix);
@@ -6609,7 +6730,6 @@ Element* List::evall_last(LispE* lisp) {
     return liste[1]->eval(lisp)->last_element(lisp);
 }
 
-
 Element* List::evall_list(LispE* lisp) {
     short listsize = liste.size();
     if (listsize == 1)
@@ -6628,6 +6748,51 @@ Element* List::evall_list(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+
+Element* List::evall_llist(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize == 1)
+        return emptylist_;
+
+    LList* first_element = NULL;
+    Element* second_element = null_;
+
+    try {
+        if (listsize == 2) {
+            second_element = liste[1]->eval(lisp);
+            if (second_element->isList()) {
+                if (second_element->type == l_llist)
+                    return second_element;
+                
+                first_element = new LList(&lisp->mark);
+                for (long i = second_element->size() - 1; i >= 0; i--) {
+                    first_element->push_front(second_element->index(i)->copying(false));
+                }
+            }
+            else {
+                first_element = new LList(&lisp->mark);
+                first_element->push_front(second_element->copying(false));
+            }
+            second_element->release();
+        }
+        else {
+            first_element = new LList(&lisp->mark);
+            for (long i = listsize - 1; i > 0; i--) {
+                second_element = liste[i]->eval(lisp);
+                first_element->push_front(second_element->copying(false));
+            }
+        }
+    }
+    catch (Error* err) {
+        if (first_element != NULL)
+            first_element->release();
+        second_element->release();
         throw err;
     }
 
@@ -6968,6 +7133,59 @@ Element* List::evall_mapping(LispE* lisp) {
     return second_element;
 }
 
+
+Element* List::evall_minmax(LispE* lisp) {
+    short listsize = liste.size();
+    Element* first_element = liste[0];
+    Element* max_element = null_;
+    Element* min_element = null_;
+    Element* res = null_;
+
+    try {
+        if (listsize == 2) {
+            //In this case, the argument must be a list
+            first_element = liste[1]->eval(lisp);
+            res = first_element->minmax(lisp);
+            first_element->release();
+            return res;
+        }
+
+        max_element = liste[1]->eval(lisp);
+        min_element = max_element;
+        
+        for (long i = 2; i < listsize; i++) {
+            first_element = liste[i]->eval(lisp);
+            if (first_element->less(lisp, min_element)->Boolean()) {
+                if (max_element != min_element)
+                    min_element->release();
+                min_element = first_element;
+            }
+            else {
+                if (first_element->more(lisp, max_element)->Boolean()) {
+                    if (max_element != min_element)
+                        max_element->release();
+                    max_element = first_element;
+                }
+                else {
+                    _releasing(first_element);
+                }
+            }
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        max_element->release();
+        min_element->release();
+        throw err;
+    }
+    
+    res = lisp->provideList();
+    res->append(min_element);
+    res->append(max_element);
+    min_element->release();
+    max_element->release();
+    return res;
+}
 
 Element* List::evall_max(LispE* lisp) {
     short listsize = liste.size();
@@ -7692,10 +7910,76 @@ Element* List::evall_pop(LispE* lisp) {
                 return first_element;
         }
         else {
-            if (first_element->removelast())
-                return first_element;
+            if (first_element->type == t_llist) {
+                if (first_element->removefirst())
+                    return first_element;
+            }
+            else {
+                if (first_element->removelast())
+                    return first_element;
+            }
         }
         
+        first_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_popfirst(LispE* lisp) {
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        //If it is a string, we return a copy, we do not modify the string.
+        //itself
+        if (first_element->isString()) {
+            u_ustring strvalue = first_element->asUString(lisp);
+            if (!strvalue.size())
+                return emptystring_;
+            strvalue = strvalue.substr(1, strvalue.size());
+            return lisp->provideString(strvalue);
+        }
+
+        if (first_element->removefirst())
+            return first_element;
+        first_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
+Element* List::evall_poplast(LispE* lisp) {
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        //If it is a string, we return a copy, we do not modify the string.
+        //itself
+        if (first_element->isString()) {
+            u_ustring strvalue = first_element->asUString(lisp);
+            if (!strvalue.size())
+                return emptystring_;
+            strvalue.pop_back();
+            return lisp->provideString(strvalue);
+        }
+
+        if (first_element->removelast())
+            return first_element;
         first_element->release();
     }
     catch (Error* err) {
@@ -7849,10 +8133,15 @@ Element* List::evall_extend(LispE* lisp) {
         first_element = first_element->duplicate_constant();
         second_element = liste[2]->eval(lisp);
         if (second_element->isList()) {
-            for (long i = 0; i < second_element->size(); i++) {
-                e = second_element->index(i)->copying(false);
-                first_element->append(e);
-                e->release();
+            if (first_element->type == t_llist) {
+                first_element->concatenate(lisp, second_element);
+            }
+            else {
+                for (long i = 0; i < second_element->size(); i++) {
+                    e = second_element->index(i)->copying(false);
+                    first_element->append(e);
+                    e->release();
+                }
             }
         }
         else {
@@ -7880,9 +8169,80 @@ Element* List::evall_push(LispE* lisp) {
         if (!first_element->isList())
             throw new Error(L"Error: missing list in 'push'");
         first_element = first_element->duplicate_constant();
+        if (first_element->type == t_llist) {
+            for (long i = 2; i < size(); i++) {
+                second_element = liste[i]->eval(lisp);
+                ((LList*)first_element)->push_front(second_element->copying(false));
+                _releasing(second_element);
+            }
+        }
+        else {
+            Element* e;
+            for (long i = 2; i < size(); i++) {
+                second_element = liste[i]->eval(lisp);
+                e = second_element->copying(false);
+                _releasing(second_element);
+                first_element->append(e);
+            }
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+    return first_element;
+}
+
+Element* List::evall_pushfirst(LispE* lisp) {
+    Element* first_element = liste[1];
+    Element* second_element = null_;
+
+    try {
+        //We store a value in a list
+        first_element = first_element->eval(lisp);
+        if (!first_element->isList())
+            throw new Error(L"Error: missing list in 'push'");
+        first_element = first_element->duplicate_constant();
+        if (first_element->type == t_llist) {
+            for (long i = 2; i < size(); i++) {
+                second_element = liste[i]->eval(lisp);
+                ((LList*)first_element)->push_front(second_element->copying(false));
+                _releasing(second_element);
+            }
+        }
+        else {
+            for (long i = 2; i < size(); i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element->insert(lisp, second_element->copying(false), 0);
+                _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+Element* List::evall_pushlast(LispE* lisp) {
+    Element* first_element = liste[1];
+    Element* second_element = null_;
+
+    try {
+        //We store a value in a list
+        first_element = first_element->eval(lisp);
+        if (!first_element->isList())
+            throw new Error(L"Error: missing list in 'push'");
+        first_element = first_element->duplicate_constant();
+        
         for (long i = 2; i < size(); i++) {
             second_element = liste[i]->eval(lisp);
             first_element->append(second_element->copying(false));
+            _releasing(second_element);
         }
     }
     catch (Error* err) {
@@ -8204,6 +8564,34 @@ Element* List::evall_sort(LispE* lisp) {
                 throw err;
             }
         }
+        case t_llist: {
+            List* l = (List*)second_element->asList(lisp);
+            if (l->size() <= 1) {
+                l->release();
+                return second_element;
+            }
+            
+            List complist;
+            complist.append(first_element);
+            complist.append(null_);
+            complist.append(null_);
+            if (complist.eval(lisp)->Boolean()) {
+                first_element->release();
+                second_element->release();
+                throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
+            }
+            
+            l->liste.sorting(lisp, &complist);
+            first_element->release();
+            u_link* it = ((LList*)second_element)->liste.begin();
+            for (long i = 0; i < l->size(); i++) {
+                it->value = l->index(i);
+                it = it->next();
+            }
+            
+            l->release();
+            return second_element;
+        }
         default: {
             List* l = (List*)second_element;
             if (l->size() <= 1)
@@ -8211,14 +8599,13 @@ Element* List::evall_sort(LispE* lisp) {
             
             List complist;
             complist.append(first_element);
-            complist.append(l->liste[0]);
-            complist.append(l->liste[0]);
+            complist.append(null_);
+            complist.append(null_);
             if (complist.eval(lisp)->Boolean()) {
                 first_element->release();
                 second_element->release();
                 throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
             }
-            
             l->liste.sorting(lisp, &complist);
             first_element->release();
             return second_element;
@@ -9006,3 +9393,9 @@ Element* List::evalt_list(LispE* lisp) {
     return second_element;
 }
 
+#ifdef MACDEBUG
+//This is a stub function, which is used to focus on specific function debugging
+Element* List::evall_debug_function(LispE* lisp) {
+    return evall_set_at(lisp);
+}
+#endif

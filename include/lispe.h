@@ -14,6 +14,7 @@
 
 #include "segmentation.h"
 #include "listes.h"
+#include "llistes.h"
 #include "tools.h"
 #include "stack.h"
 #include "delegation.h"
@@ -82,6 +83,8 @@ public:
     Element* n_zero;
     Element* n_one;
     
+    uint16_t mark;
+    
     
     std::atomic<short> nbjoined;
 
@@ -94,6 +97,7 @@ public:
     bool preparingthread;
     
     LispE() {
+        mark = 0;
         initpools(this);
         preparingthread = false;
         evaluating = false;

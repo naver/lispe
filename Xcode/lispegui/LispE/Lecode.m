@@ -343,6 +343,39 @@ BOOL dark = false;
         [self setTextColor: [NSColor blackColor] range:r];
 }
 
+-(void)blinkMatchingParenthesis {
+    NSRange backrange = [self selectedRange];
+    if (backrange.location < 2)
+        return;
+    
+    backrange.location--;
+    backrange.length = 1;
+    const char* code = [[[self string] substringWithRange: backrange] UTF8String];
+    const char key = code[0];
+
+    long pos=[self findTopline: backrange];
+    if (pos==-1)
+        return;
+    
+    backrange=NSMakeRange(pos,backrange.location-pos);
+        
+    code = [[[self string] substringWithRange: backrange] UTF8String];
+    pos = computeparenthesis(code, key, backrange.length);
+    if (pos != -1) {
+        backrange.location += pos;
+        backrange.length = 1;
+        [self setTextColor: [NSColor redColor] range:backrange];
+        currentrange = backrange;
+        NSNumber* ni = [NSNumber numberWithLong:backrange.location];
+        [NSTimer
+         scheduledTimerWithTimeInterval:0.35
+         target:self
+         selector:@selector(resetCursor:)
+         userInfo:ni
+         repeats:NO];
+    }
+}
+
 -(BOOL)localcolor:(char)key {
     static const char cc[]={'"','\'',';','=','/', ' ', 0};
     

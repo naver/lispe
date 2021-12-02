@@ -1227,6 +1227,16 @@ Element* List::check_member(LispE* lisp, Element* the_set) {
     return r;
 }
 
+Element* LList::check_member(LispE* lisp, Element* the_set) {
+    LList* r = new LList(liste.mark);
+    Element* e;
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        e = a->value->check_member(lisp,the_set);
+        r->append(e);
+    }
+    return r;
+}
+
 Element* Matrice::check_member(LispE* lisp,Element* the_set) {
     Matrice* r = new Matrice;
     r->size_x = size_x;
@@ -1870,6 +1880,19 @@ Element* List::minimum(LispE* lisp) {
     return v->copying(false);
 }
 
+Element* LList::minimum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    Element* v = liste.front();
+    u_link* it = liste.begin();
+    it = it->next();
+    for (;it != liste.end(); it = it->next()) {
+        if (v->more(lisp, it->value) == true_)
+            v = it->value;
+    }
+    return v->copying(false);
+}
+
 Element* Floats::minimum(LispE* lisp) {
     if (!liste.size())
         return null_;
@@ -1931,8 +1954,10 @@ Element* Set::minimum(LispE* lisp) {
     u_ustring w;
     bool first = true;
     for (auto& a : ensemble) {
-        if (first)
+        if (first) {
             w = a;
+            first = false;
+        }
         else
             if (w < a)
                 w = a;
@@ -1947,8 +1972,10 @@ Element* Set_n::minimum(LispE* lisp) {
     double w = 0;
     bool first = true;
     for (auto& a : ensemble) {
-        if (first)
+        if (first) {
             w = a;
+            first = false;
+        }
         else
             if (w < a)
                 w = a;
@@ -2003,6 +2030,19 @@ Element* List::maximum(LispE* lisp) {
     for (long i = 1; i < liste.size(); i++) {
         if (v->less(lisp, liste[i]) == true_)
             v = liste[i];
+    }
+    return v->copying(false);
+}
+
+Element* LList::maximum(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    Element* v = liste.front();
+    u_link* it = liste.begin();
+    it = it->next();
+    for (;it != liste.end(); it = it->next()) {
+        if (v->less(lisp, it->value) == true_)
+            v = it->value;
     }
     return v->copying(false);
 }
@@ -2068,8 +2108,10 @@ Element* Set::maximum(LispE* lisp) {
     u_ustring w;
     bool first = true;
     for (auto& a : ensemble) {
-        if (first)
+        if (first) {
             w = a;
+            first = false;
+        }
         else
             if (w > a)
                 w = a;
@@ -2084,8 +2126,10 @@ Element* Set_n::maximum(LispE* lisp) {
     double w = 0;
     bool first = true;
     for (auto& a : ensemble) {
-        if (first)
+        if (first) {
             w = a;
+            first = false;
+        }
         else
             if (w > a)
                 w = a;
@@ -2127,6 +2171,250 @@ Element* Dictionary_n::maximum(LispE* lisp) {
     return e->copying(false);
 }
 //------------------------------------------------------------------------------------------
+
+Element* Element::minmax(LispE* lisp) {
+    throw new Error("Error: cannot find the minmax for this object");
+}
+
+Element* List::minmax(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    Element* v_min = index(0);
+    Element* v_max = v_min;
+    for (long i = 1; i < liste.size(); i++) {
+        if (v_min->more(lisp, liste[i]) == true_)
+            v_min = liste[i];
+        else {
+            if (v_max->less(lisp, liste[i]) == true_)
+                v_max = liste[i];
+        }
+    }
+    List* l = lisp->provideList();
+    l->append(v_min);
+    l->append(v_max);
+    return l;
+}
+
+Element* LList::minmax(LispE* lisp) {
+    if (liste.empty())
+        return null_;
+    Element* v_min = liste.front();
+    Element* v_max = v_min;
+    u_link* it = liste.begin();
+    it = it->next();
+    for (; it != liste.end(); it = it->next()) {
+        if (v_min->more(lisp, it->value) == true_)
+            v_min = it->value;
+        else {
+            if (v_max->less(lisp, it->value) == true_)
+                v_max = it->value;
+        }
+    }
+    List* l = lisp->provideList();
+    l->append(v_min);
+    l->append(v_max);
+    return l;
+}
+
+Element* Floats::minmax(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    float v_min = liste[0];
+    float v_max = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v_min > liste[i])
+            v_min = liste[i];
+        else {
+            if (v_max < liste[i])
+                v_max = liste[i];
+        }
+    }
+    Floats* f = lisp->provideFloats();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+Element* Numbers::minmax(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    double v_min = liste[0];
+    double v_max = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v_min > liste[i])
+            v_min = liste[i];
+        else {
+            if (v_max < liste[i])
+                v_max = liste[i];
+        }
+    }
+    Numbers* f = lisp->provideNumbers();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+Element* Shorts::minmax(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    short v_min = liste[0];
+    short v_max = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v_min > liste[i])
+            v_min = liste[i];
+        else {
+            if (v_max < liste[i])
+                v_max = liste[i];
+        }
+    }
+    Shorts* f = new Shorts();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+Element* Integers::minmax(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    long v_min = liste[0];
+    long v_max = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v_min > liste[i])
+            v_min = liste[i];
+        else {
+            if (v_max < liste[i])
+                v_max = liste[i];
+        }
+    }
+    Floats* f = lisp->provideFloats();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+Element* Strings::minmax(LispE* lisp) {
+    if (!liste.size())
+        return null_;
+    u_ustring v_min = liste[0];
+    u_ustring v_max = liste[0];
+    for (long i = 1; i < liste.size(); i++) {
+        if (v_min > liste[i])
+            v_min = liste[i];
+        else {
+            if (v_max < liste[i])
+                v_max = liste[i];
+        }
+    }
+    Strings* f = lisp->provideStrings();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+Element* Set::minmax(LispE* lisp) {
+    if (ensemble.empty())
+        return null_;
+    u_ustring v_min;
+    u_ustring v_max;
+    bool first = true;
+    for (auto& a : ensemble) {
+        if (first) {
+            v_min = a;
+            v_max = a;
+            first = false;
+        }
+        else {
+            if (v_max < a)
+                v_max = a;
+            else
+                if (v_min > a)
+                    v_min = a;
+        }
+    }
+    Strings* f = lisp->provideStrings();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+Element* Set_n::minmax(LispE* lisp) {
+    if (ensemble.empty())
+        return null_;
+    double v_min = 0;
+    double v_max = 0;
+    bool first = true;
+    
+    for (auto& a : ensemble) {
+        if (first) {
+            v_min = a;
+            v_max = a;
+            first = false;
+        }
+        else {
+            if (v_max < a)
+                v_max = a;
+            else
+                if (v_min > a)
+                    v_min = a;
+        }
+    }
+    Numbers* f = lisp->provideNumbers();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+Element* Dictionary::minmax(LispE* lisp) {
+    if (!dictionary.size())
+        return null_;
+    Element* v_min = NULL;
+    Element* v_max = NULL;
+    for (auto& a : dictionary) {
+        if (v_min == NULL) {
+            v_min = a.second;
+            v_max = a.second;
+        }
+        else {
+            if (v_max->less(lisp, a.second) == true_)
+                v_max = a.second;
+            else
+                if (v_min->more(lisp, a.second) == true_)
+                    v_min = a.second;
+        }
+    }
+    
+    List* l = lisp->provideList();
+    l->append(v_min);
+    l->append(v_max);
+    return l;
+}
+
+Element* Dictionary_n::minmax(LispE* lisp) {
+    if (!dictionary.size())
+        return null_;
+    
+    Element* v_min = NULL;
+    Element* v_max = NULL;
+    for (auto& a : dictionary) {
+        if (v_min == NULL) {
+            v_min = a.second;
+            v_max = a.second;
+        }
+        else {
+            if (v_max->less(lisp, a.second) == true_)
+                v_max = a.second;
+            else
+                if (v_min->more(lisp, a.second) == true_)
+                    v_min = a.second;
+        }
+    }
+    
+    List* l = lisp->provideList();
+    l->append(v_min);
+    l->append(v_max);
+    return l;
+}
+//------------------------------------------------------------------------------------------
 void Element::flatten(LispE* lisp, List* l) {
     l->append(this);
 }
@@ -2154,6 +2442,24 @@ void List::flatten(LispE* lisp, Numbers* l) {
 void List::flatten(LispE* lisp, Floats* l) {
     for (long i = 0; i < size(); i++) {
         liste[i]->flatten(lisp, l);
+    }
+}
+
+void LList::flatten(LispE* lisp, List* l) {
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        a->value->flatten(lisp, l);
+    }
+}
+
+void LList::flatten(LispE* lisp, Numbers* l) {
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        a->value->flatten(lisp, l);
+    }
+}
+
+void LList::flatten(LispE* lisp, Floats* l) {
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        a->value->flatten(lisp, l);
     }
 }
 
@@ -2810,8 +3116,20 @@ void List::garbaging_values(LispE* lisp) {
     }
     liste.marking = false;
 }
+
+void LList::garbaging_values(LispE* lisp) {
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        lisp->control_garbaging(a->value);
+        a->value->garbaging_values(lisp);
+    }
+}
+
 //------------------------------------------------------------------------------------------
 void List::append(LispE* lisp, u_ustring& k) {
+    append(lisp->provideString(k));
+}
+
+void LList::append(LispE* lisp, u_ustring& k) {
     append(lisp->provideString(k));
 }
 
@@ -2845,6 +3163,10 @@ void List::append(LispE* lisp, double v) {
     append(lisp->provideNumber(v));
 }
 
+void LList::append(LispE* lisp, double v) {
+    append(lisp->provideNumber(v));
+}
+
 void Floats::append(LispE* lisp, double v) {
     liste.push_back(v);
 }
@@ -2874,6 +3196,10 @@ void Set::append(LispE* lisp, double v) {
 }
 
 void List::append(LispE* lisp, long v) {
+    append(lisp->provideInteger(v));
+}
+
+void LList::append(LispE* lisp, long v) {
     append(lisp->provideInteger(v));
 }
 
@@ -3140,6 +3466,30 @@ Element* String::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
+Element* LList::loop(LispE* lisp, short label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    Element* element;
+    long sz = code->liste.size();
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        element = a->value->copying(false);
+        lisp->replacingvalue(element, label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
 Element* List::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
@@ -3168,23 +3518,19 @@ Element* Matrice::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Element* element;
     long sz = code->liste.size();
     for (long i = 0; i < size_x; i++) {
-        for (long j = 0; j < size_y; j++) {
-            element = lisp->provideNumber(liste[i]->index(j)->asNumber());
-            lisp->replacingvalue(element, label);
-            e = null_;
-            //We then execute our instructions
-            for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
-                e->release();
-                e = code->liste[i_loop]->eval(lisp);
-            }
-            if (e->type == l_return) {
-                if (e->isBreak())
-                    return null_;
-                return e;
-            }
+        lisp->replacingvalue(liste[i], label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
         }
     }
     return e;
@@ -3194,41 +3540,65 @@ Element* Matrice_float::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
-    Element* element;
     long sz = code->liste.size();
     for (long i = 0; i < size_x; i++) {
-        for (long j = 0; j < size_y; j++) {
-            element = lisp->provideFloat(liste[i]->index(j)->asFloat());
-            lisp->replacingvalue(element, label);
-            e = null_;
-            //We then execute our instructions
-            for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
-                e->release();
-                e = code->liste[i_loop]->eval(lisp);
-            }
-            if (e->type == l_return) {
-                if (e->isBreak())
-                    return null_;
-                return e;
-            }
+        lisp->replacingvalue(liste[i], label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
         }
     }
     return e;
 }
 
 Element* Tenseur::loop(LispE* lisp, short label, List* code) {
-    Numbers* n = lisp->provideNumbers();
-    flatten(lisp, n);
-    Element* e = n->loop(lisp, label, code);
-    delete n;
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    long sz = code->liste.size();
+    for (long i = 0; i < shape[0]; i++) {
+        lisp->replacingvalue(liste[i], label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
     return e;
 }
 
 Element* Tenseur_float::loop(LispE* lisp, short label, List* code) {
-    Floats* n = lisp->provideFloats();
-    flatten(lisp, n);
-    Element* e = n->loop(lisp, label, code);
-    delete n;
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    long sz = code->liste.size();
+    for (long i = 0; i < shape[0]; i++) {
+        lisp->replacingvalue(liste[i], label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
     return e;
 }
 
@@ -3803,6 +4173,16 @@ Element* List::insert(LispE* lisp, Element* e, long ix) {
     return l;
 }
 
+Element* LList::insert(LispE* lisp, Element* e, long ix) {
+    if (ix < 0)
+        throw new Error("Error: Wrong index in 'insert'");
+    
+    e = e->copying(false);
+    LList* l = (LList*)duplicate_constant();
+    l->insertion(e, ix);
+    return l;
+}
+
 Element* List::rotate(bool left) {
     if (liste.size() <= 1)
         return this;
@@ -3818,6 +4198,31 @@ Element* List::rotate(bool left) {
     l->append(liste.back()->copying(false));
     for (long i = 0; i < liste.size() - 1; i ++)
         l->append(liste[i]->copying(false));
+    return l;
+}
+
+Element* LList::rotate(bool left) {
+    if (liste.size() <= 1)
+        return this;
+    
+    LList* l = new LList(liste.mark);
+    u_link* it = liste.begin();
+    if (left) {
+        it = it->next();
+        for (;it != liste.end(); it = it->next())
+            l->append(it->value->copying(false));
+        l->append(liste.front()->copying(false));
+        return l;
+    }
+    
+    long i = liste.size() - 1;
+    l->append(liste.back()->copying(false));
+    for (;it != liste.end(); it = it->next()) {
+        if (!i)
+            break;
+        l->append(it->value->copying(false));
+        i--;
+    }
     return l;
 }
 
@@ -3839,6 +4244,29 @@ Element* List::unique(LispE* lisp) {
         }
         if (!found)
             list->append(liste[i]->copying(false));
+    }
+    return list;
+}
+
+Element* LList::unique(LispE* lisp) {
+    if (liste.empty())
+        return this;
+    
+    List* list = lisp->provideList();
+    bool found;
+    list->append(liste.front()->copying(false));
+    u_link* it = liste.begin();
+    it = it->next();
+    for (;it != liste.end(); it = it->next()) {
+        found = false;
+        for (long j = 0; j < list->liste.size(); j++) {
+            if (it->value->unify(lisp, list->liste[j], false)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            list->append(it->value->copying(false));
     }
     return list;
 }
@@ -4126,6 +4554,15 @@ Element* List::thekeys(LispE* lisp) {
     return keys;
 }
 
+Element* LList::thekeys(LispE* lisp) {
+    Integers* keys = lisp->provideIntegers();
+    long sz = size();
+    for (long i = 0; i < sz; i++) {
+        keys->liste.push_back(i);
+    }
+    return keys;
+}
+
 Element* Floats::thekeys(LispE* lisp) {
     Integers* keys = lisp->provideIntegers();
     for (long i = 0; i< size(); i++) {
@@ -4304,6 +4741,17 @@ Element* List::search_element(LispE* lisp, Element* valeur, long ix) {
     return null_;
 }
 
+Element* LList::search_element(LispE* lisp, Element* valeur, long ix) {
+    u_link*  it = at(ix);
+    long i = 0;
+    for (;it != liste.end(); it = it->next()) {
+        if (it->value->equal(lisp, valeur) == true_)
+            return lisp->provideInteger(i);
+        i++;
+    }
+    return null_;
+}
+
 Element* Floats::search_element(LispE* lisp, Element* valeur, long ix) {
     float v = valeur->asFloat();
     for (long i = ix; i < liste.size(); i++) {
@@ -4438,6 +4886,22 @@ Element* List::search_all_elements(LispE* lisp, Element* valeur, long ix) {
         }
     }
     if (l->liste.size() == 0) {
+        delete l;
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* LList::search_all_elements(LispE* lisp, Element* valeur, long ix) {
+    Integers* l = lisp->provideIntegers();
+    u_link* a = at(ix);
+    for (; a != liste.end(); a = a->next()) {
+        if (a->value->equal(lisp, valeur) == true_) {
+            l->liste.push_back(ix);
+        }
+        ix++;
+    }
+    if (l->liste.empty()) {
         delete l;
         return emptylist_;
     }
@@ -4581,6 +5045,20 @@ Element* List::search_reverse(LispE* lisp, Element* valeur, long ix) {
     return minusone_;
 }
 
+Element* LList::search_reverse(LispE* lisp, Element* valeur, long ix) {
+    u_link* it = liste.b_at(ix);
+    for (; it != liste.end(); it = it->previous()) {
+        if (it->value->equal(lisp, valeur) == true_)
+            return lisp->provideInteger(ix);
+        if (!ix)
+            break;
+        ix--;
+    }
+    
+    return minusone_;
+}
+
+
 Element* Floats::search_reverse(LispE* lisp, Element* valeur, long ix) {
     float v = valeur->asFloat();
     for (long i = liste.size() - 1; i >= ix; i--) {
@@ -4664,43 +5142,43 @@ Element* Dictionary_n::search_reverse(LispE* lisp, Element* valeur, long ix) {
 
 
 //------------------------------------------------------------------------------------------
-Element* Element::reverse(LispE* lisp, bool duplique) {
+Element* Element::reverse(LispE* lisp, bool duplicate) {
     return emptylist_;
 }
 
-Element* Float::reverse(LispE* lisp, bool duplique) {
+Element* Float::reverse(LispE* lisp, bool duplicate) {
     return lisp->provideFloat(number*-1);
 }
 
-Element* Number::reverse(LispE* lisp, bool duplique) {
+Element* Number::reverse(LispE* lisp, bool duplicate) {
     return lisp->provideNumber(number*-1);
 }
 
-Element* Short::reverse(LispE* lisp, bool duplique) {
+Element* Short::reverse(LispE* lisp, bool duplicate) {
     return new Short(integer*-1);
 }
 
-Element* Integer::reverse(LispE* lisp, bool duplique) {
+Element* Integer::reverse(LispE* lisp, bool duplicate) {
     return lisp->provideInteger(integer*-1);
 }
 
-Element* String::reverse(LispE* lisp, bool duplique) {
+Element* String::reverse(LispE* lisp, bool duplicate) {
     u_ustring resultat;
     for (long i = content.size()-1; i >= 0; i--)
         resultat += content[i];
     
-    if (duplique)
+    if (duplicate)
         return lisp->provideString(resultat);
     
     content = resultat;
     return this;
 }
 
-Element* List::reverse(LispE* lisp, bool duplique) {
+Element* List::reverse(LispE* lisp, bool duplicate) {
     if (liste.size() <= 1)
         return this;
     
-    if (duplique) {
+    if (duplicate) {
         List* l = lisp->provideList();
         for (long i = liste.size()-1; i >= 0; i--)
             l->append(liste[i]->copying(false));
@@ -4711,11 +5189,24 @@ Element* List::reverse(LispE* lisp, bool duplique) {
     return this;
 }
 
-Element* Floats::reverse(LispE* lisp, bool duplique) {
+// duplicate is not taking into account for LList
+// there are two many cases where it creates dangling structures...
+Element* LList::reverse(LispE* lisp, bool duplicate) {
     if (liste.size() <= 1)
         return this;
     
-    if (duplique) {
+    LList* l = new LList(liste.mark);
+    u_link*  it = liste.begin();
+    for (; it != liste.end(); it = it->next())
+        l->push_front(it->value->copying(false));
+    return l;
+}
+
+Element* Floats::reverse(LispE* lisp, bool duplicate) {
+    if (liste.size() <= 1)
+        return this;
+    
+    if (duplicate) {
         Floats* l = lisp->provideFloats();
         for (long i = liste.size()-1; i >= 0; i--) {
             l->liste.push_back(liste[i]);
@@ -4727,11 +5218,11 @@ Element* Floats::reverse(LispE* lisp, bool duplique) {
     return this;
 }
 
-Element* Numbers::reverse(LispE* lisp, bool duplique) {
+Element* Numbers::reverse(LispE* lisp, bool duplicate) {
     if (liste.size() <= 1)
         return this;
     
-    if (duplique) {
+    if (duplicate) {
         Numbers* l = lisp->provideNumbers();
         for (long i = liste.size()-1; i >= 0; i--) {
             l->liste.push_back(liste[i]);
@@ -4743,11 +5234,11 @@ Element* Numbers::reverse(LispE* lisp, bool duplique) {
     return this;
 }
 
-Element* Integers::reverse(LispE* lisp, bool duplique) {
+Element* Integers::reverse(LispE* lisp, bool duplicate) {
     if (liste.size() <= 1)
         return this;
     
-    if (duplique) {
+    if (duplicate) {
         Integers* l = lisp->provideIntegers();
         for (long i = liste.size()-1; i >= 0; i--) {
             l->liste.push_back(liste[i]);
@@ -4759,11 +5250,11 @@ Element* Integers::reverse(LispE* lisp, bool duplique) {
     return this;
 }
 
-Element* Shorts::reverse(LispE* lisp, bool duplique) {
+Element* Shorts::reverse(LispE* lisp, bool duplicate) {
     if (liste.size() <= 1)
         return this;
     
-    if (duplique) {
+    if (duplicate) {
         Shorts* l = new Shorts();
         for (long i = liste.size()-1; i >= 0; i--) {
             l->liste.push_back(liste[i]);
@@ -4775,11 +5266,11 @@ Element* Shorts::reverse(LispE* lisp, bool duplique) {
     return this;
 }
 
-Element* Strings::reverse(LispE* lisp, bool duplique) {
+Element* Strings::reverse(LispE* lisp, bool duplicate) {
     if (liste.size() <= 1)
         return this;
     
-    if (duplique) {
+    if (duplicate) {
         Strings* l = lisp->provideStrings();
         for (long i = liste.size()-1; i >= 0; i--) {
             l->liste.push_back(liste[i]);
@@ -4792,7 +5283,7 @@ Element* Strings::reverse(LispE* lisp, bool duplique) {
 }
 
 
-Element* Dictionary::reverse(LispE* lisp, bool duplique) {
+Element* Dictionary::reverse(LispE* lisp, bool duplicate) {
     Dictionary* dico = lisp->provideDictionary();
     
     u_ustring k;
@@ -4811,7 +5302,7 @@ Element* Dictionary::reverse(LispE* lisp, bool duplique) {
     return dico;
 }
 
-Element* Dictionary_n::reverse(LispE* lisp, bool duplique) {
+Element* Dictionary_n::reverse(LispE* lisp, bool duplicate) {
     Dictionary_n* dico = lisp->provideDictionary_n();
     
     double k;
@@ -4832,6 +5323,7 @@ Element* Dictionary_n::reverse(LispE* lisp, bool duplique) {
 Element* List::rotate(LispE* lisp, long axis) {
     return reverse(lisp, true);
 }
+
 
 Element* Matrice_float::rotate(LispE* lisp, long axis) {
     Matrice_float* revert_matrix = new Matrice_float;
@@ -4956,6 +5448,12 @@ Element* List::protected_index(LispE* lisp,long i) {
     return null_;
 }
 
+Element* LList::protected_index(LispE* lisp,long i) {
+    if (i >= 0 && i < liste.size())
+        return at_e(i);
+    return null_;
+}
+
 Element* Floats::protected_index(LispE* lisp,long i) {
     if (i >= 0 && i < liste.size())
         return lisp->provideFloat(liste[i]);
@@ -5030,6 +5528,12 @@ Element* List::last_element(LispE* lisp) {
     return liste.back();
 }
 
+Element* LList::last_element(LispE* lisp) {
+    if (liste.empty())
+        return null_;
+    return liste.back();
+}
+
 Element* Floats::last_element(LispE* lisp) {
     if (!liste.size())
         return null_;
@@ -5069,6 +5573,12 @@ Element* Element::value_on_index(LispE* lisp, long i) {
 Element* List::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < liste.size())
         return liste[i]->copying(false);
+    return null_;
+}
+
+Element* LList::value_on_index(LispE* lisp, long i) {
+    if (i >= 0 && i < liste.size())
+        return at_e(i)->copying(false);
     return null_;
 }
 
@@ -5139,6 +5649,10 @@ Element* Element::value_from_index(LispE* lisp, long i) {
 
 Element* List::value_from_index(LispE* lisp, long i) {
     return liste[i]->copying(false);
+}
+
+Element* LList::value_from_index(LispE* lisp, long i) {
+    return at_e(i)->copying(false);
 }
 
 Element* Floats::value_from_index(LispE* lisp, long i) {
@@ -5285,6 +5799,17 @@ Element* List::value_on_index(LispE* lisp, Element* ix) {
     return null_;
 }
 
+Element* LList::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return at_e(i)->copying(false);
+    
+    return null_;
+}
+
 Element* Floats::value_on_index(LispE* lisp, Element* ix) {
     long i = ix->checkInteger(lisp);
     if (i < 0)
@@ -5410,6 +5935,17 @@ Element* List::protected_index(LispE* lisp, Element* ix) {
     throw new Error("Error: index out of bounds");
 }
 
+Element* LList::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
+    if (i < 0)
+        i = liste.size() + i;
+    
+    if (i >= 0 && i < liste.size())
+        return at_e(i);
+    
+    throw new Error("Error: index out of bounds");
+}
+
 Element* Floats::protected_index(LispE* lisp, Element* ix) {
     long i = ix->checkInteger(lisp);
     if (i < 0)
@@ -5511,6 +6047,17 @@ Element* List::join_in_list(LispE* lisp, u_ustring& sep) {
         str += beg;
         beg = sep;
         str += liste[i]->asUString(lisp);
+    }
+    return lisp->provideString(str);
+}
+
+Element* LList::join_in_list(LispE* lisp, u_ustring& sep) {
+    u_ustring str;
+    u_ustring beg;
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        str += beg;
+        beg = sep;
+        str += a->value->asUString(lisp);
     }
     return lisp->provideString(str);
 }
@@ -5764,6 +6311,10 @@ Element* List::equal(LispE* lisp, Element* e) {
     return booleans_[e->isList() && liste.equal(((List*)e)->liste)];
 }
 
+Element* LList::equal(LispE* lisp, Element* e) {
+    return booleans_[((e->type == t_llist && e->size() == 0 && liste.empty()) || e == this)];
+}
+
 Element* Dictionary::equal(LispE* lisp, Element* e) {
     return booleans_[((e->type == t_dictionary && e->size() == 0 && dictionary.size() == 0) || e == this)];
 }
@@ -5834,6 +6385,10 @@ bool Maybe::egal(Element* e) {
 
 bool List::egal(Element* e) {
     return e->isList() && liste.equal(((List*)e)->liste);
+}
+
+bool LList::egal(Element* e) {
+    return ((e->type == t_llist && e->size() == 0 && liste.empty()) || e == this);
 }
 
 bool Dictionary::egal(Element* e) {
@@ -6324,6 +6879,207 @@ Element* List::extraction(LispE* lisp, List* l) {
     for (;from < upto; from++)
         l->append(liste[from]->copying(false));
     return l;
+}
+
+Element* LList::extraction(LispE* lisp, List* l) {
+    Element* e_from = l->liste[2];
+    Element* e;
+    
+    long from = 0;
+    long firstisString = -1;
+    short nxt = 3;
+    short ty;
+    switch (e_from->label()) {
+        case l_minus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-'");
+            break;
+        case l_plus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '+'");
+            break;
+        case l_minus_plus:
+            e_from = l->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-+'");
+            break;
+        default:
+            e_from = e_from->eval(lisp);
+            ty = e_from->type;
+    }
+    
+    e = null_;
+    switch (ty) {
+        case t_string: {
+            e = search_element(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            from = e->asInteger();
+            firstisString = 0;
+            break;
+        }
+        case t_plus_string: {
+            e = search_element(lisp, e_from, 0);
+            if (e == null_)
+                return emptylist_;
+            firstisString = e->asInteger();
+            break;
+        }
+        case t_minus_string: {
+            e = search_reverse(lisp, e_from, 0);
+            if (e == minusone_)
+                return emptylist_;
+            //We skip the first characters
+            from = e->asInteger() + 1;
+            firstisString = 0;
+            break;
+        }
+        case t_minus_plus_string: {
+            e = search_reverse(lisp, e_from, 0);
+            if (e == minusone_)
+                return emptylist_;
+            firstisString = e->asInteger();
+            break;
+        }
+        case t_float:
+        case t_short:
+        case t_integer:
+        case t_number:
+            from = e_from->asInteger();
+            if (from < 0)
+                from = size() + from;
+            break;
+        default:
+            e->release();
+            e_from->release();
+            throw new Error("Error: cannot use the first position in 'extract'");
+    }
+    
+    e->release();
+    e_from->release();
+    
+    if (from < 0 || from >= size())
+        return emptylist_;
+    
+    if (nxt == l->size()) {
+        //Only one element is returned
+        return at_e(from)->copying(false);
+    }
+    
+    Element* e_upto = l->liste[nxt];
+    switch (e_upto->label()) {
+        case l_minus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-'");
+            break;
+        case l_plus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '+'");
+            break;
+        case l_minus_plus:
+            e_upto = l->liste[nxt+1]->eval(lisp);
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-+'");
+            break;
+        default:
+            e_upto = e_upto->eval(lisp);
+            ty = e_upto->type;
+    }
+    
+    long upto;
+    e = null_;
+    switch (ty) {
+        case t_string: {
+            if (firstisString == -1) firstisString = 0;
+            e = search_element(lisp, e_upto, from + firstisString);
+            if (e == null_)
+                return emptylist_;
+            upto = e->asInteger();
+            break;
+        }
+        case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
+            e = search_element(lisp, e_upto, from + firstisString);
+            if (e == null_)
+                return emptylist_;
+            //All characters are integrated
+            upto = e->asInteger() + 1;
+            break;
+        }
+        case t_minus_string: {
+            e = search_reverse(lisp, e_upto, 0);
+            if (e == minusone_)
+                return emptylist_;
+            upto = e->asInteger();
+            break;
+        }
+        case t_minus_plus_string: {
+            e = search_reverse(lisp, e_upto, 0);
+            if (e == minusone_)
+                return emptylist_;
+            upto = e->asInteger() - 1;
+            break;
+        }
+        case t_float:
+        case t_short:
+        case t_integer:
+        case t_number:
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto > 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
+            else {
+                if (upto <= 0) {
+                    //We start from the end...
+                    upto = size() + upto;
+                }
+            }
+            break;
+        default:
+            e->release();
+            e_upto->release();
+            throw new Error("Error: cannot use the second position in 'extract'");
+    }
+    
+    e->release();
+    e_upto->release();
+    if (upto <= from)
+        return emptylist_;
+    
+    if (upto > size())
+        upto = size();
+    LList* ll = new LList(liste.mark);
+    u_link*  it = at(from);
+    for (;it != liste.end(); it = it->next(), from++) {
+        ll->append(it->value->copying(false));
+    }
+    return ll;
 }
 
 Element* Floats::extraction(LispE* lisp, List* l) {
@@ -7124,6 +7880,250 @@ Element* List::replace_in(LispE* lisp, List* l) {
     return l;
 }
 
+Element* LList::replace_in(LispE* lisp, List* l) {
+    Element* e_from = l->liste[2];
+    Element* e;
+    Element* last = l->liste.back();
+    last = last->eval(lisp);
+    Element* e_upto;
+    
+    long from = 0;
+    long upto;
+
+    long firstisString = -1;
+    short nxt = 3;
+    short ty;
+    try {
+        switch (e_from->label()) {
+            case l_minus:
+                e_from = l->liste[3]->eval(lisp);
+                nxt = 4;
+                ty = e_from->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after first operator: '-'");
+                break;
+            case l_plus:
+                e_from = l->liste[3]->eval(lisp);
+                nxt = 4;
+                ty = e_from->type;
+                if (ty == t_string)
+                    ty = t_plus_string;
+                else
+                    throw new Error("Error: Wrong value after first operator: '+'");
+                break;
+            case l_minus_plus:
+                e_from = l->liste[3]->eval(lisp);
+                nxt = 4;
+                ty = e_from->type;
+                if (ty == t_string)
+                    ty = t_minus_plus_string;
+                else
+                    throw new Error("Error: Wrong value after first operator: '-+'");
+                break;
+            default:
+                e_from = e_from->eval(lisp);
+                ty = e_from->type;
+        }
+        
+        e = null_;
+        switch (ty) {
+            case t_string: {
+                e = search_element(lisp, e_from, 0);
+                if (e == null_) {
+                    last->release();
+                    return emptylist_;
+                }
+                from = e->asInteger();
+                firstisString = 0;
+                break;
+            }
+            case t_plus_string: {
+                e = search_element(lisp, e_from, 0);
+                if (e == null_) {
+                    last->release();
+                    return emptylist_;
+                }
+                firstisString = e->asInteger();
+                break;
+            }
+            case t_minus_string: {
+                e = search_reverse(lisp, e_from, 0);
+                if (e == minusone_) {
+                    last->release();
+                    return emptylist_;
+                }
+                //We skip the first characters
+                from = e->asInteger() + 1;
+                firstisString = 0;
+                break;
+            }
+            case t_minus_plus_string: {
+                e = search_reverse(lisp, e_from, 0);
+                if (e == minusone_) {
+                    last->release();
+                    return emptylist_;
+                }
+                firstisString = e->asInteger();
+                break;
+            }
+            case t_float:
+            case t_short:
+            case t_integer:
+            case t_number:
+                from = e_from->asInteger();
+                if (from < 0)
+                    from = size() + from;
+                break;
+            default:
+                e->release();
+                e_from->release();
+                throw new Error("Error: cannot use the first position in 'setrange'");
+        }
+        
+        e->release();
+        e_from->release();
+        
+        if (from < 0 || from >= size()) {
+            last->release();
+            return this;
+        }
+        
+        if (nxt == l->size() - 1) {
+            //We replace our element in place at e_from
+            List* l = (List*)fullcopy();
+            return l->replace(lisp, from, last->copying(false));
+        }
+        
+        e_upto = l->liste[nxt];
+        switch (e_upto->label()) {
+            case l_minus:
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+                break;
+            case l_plus:
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_plus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '+'");
+                break;
+            case l_minus_plus:
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_from->type;
+                if (ty == t_string)
+                    ty = t_minus_plus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-+'");
+                break;
+            default:
+                e_upto = e_upto->eval(lisp);
+                ty = e_upto->type;
+        }
+        
+        e = null_;
+        switch (ty) {
+            case t_string: {
+                if (firstisString == -1) firstisString = 0;
+                e = search_element(lisp, e_upto, from + firstisString);
+                if (e == null_) {
+                    last->release();
+                    return emptylist_;
+                }
+                upto = e->asInteger();
+                break;
+            }
+            case t_plus_string: {
+                if (firstisString == -1) firstisString = 0;
+                e = search_element(lisp, e_upto, from + firstisString);
+                if (e == null_) {
+                    last->release();
+                    return emptylist_;
+                }
+                //All characters are integrated
+                upto = e->asInteger() + 1;
+                break;
+            }
+            case t_minus_string: {
+                e = search_reverse(lisp, e_upto, 0);
+                if (e == minusone_) {
+                    last->release();
+                    return emptylist_;
+                }
+                upto = e->asInteger();
+                break;
+            }
+            case t_minus_plus_string: {
+                e = search_reverse(lisp, e_upto, 0);
+                if (e == minusone_) {
+                    last->release();
+                    return emptylist_;
+                }
+                upto = e->asInteger() - 1;
+                break;
+            }
+            case t_float:
+            case t_short:
+            case t_integer:
+            case t_number:
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto > 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto <= 0) {
+                        //We start from the end...
+                        upto = size() + upto;
+                    }
+                }
+                break;
+            default:
+                e->release();
+                e_upto->release();
+                throw new Error("Error: cannot use the second position in 'setrange'");
+        }
+    }
+    catch (Error* err) {
+        last->release();
+        throw err;
+    }
+    
+    e->release();
+    e_upto->release();
+    
+    if (upto <= from) {
+        last->release();
+        return this;
+    }
+    
+    if (upto > size())
+        upto = size();
+    
+    LList* ll = new LList(liste.mark);
+    long i = 0;
+    u_link*  it = liste.begin();
+    for (; i < from && it != liste.end(); it = it->next(), i++) {
+        ll->append(it->value->copying(false));
+    }
+    ll->append(last->copying(false));
+
+    while (it != liste.end() && from < upto) {
+        it = it->next();
+        from++;
+    }
+    
+    for (; it != liste.end(); it = it->next())
+        ll->append(it->value->copying(false));
+    return ll;
+}
+
 Element* Floats::replace_in(LispE* lisp, List* l) {
     Element* e_last = l->liste.back()->eval(lisp);
     float last = e_last->asFloat();
@@ -7769,6 +8769,17 @@ Element* List::duplicate_constant(bool pair) {
     return this;
 }
 
+Element* LList::duplicate_constant(bool pair) {
+    if (status == s_constant) {
+        LList* l = new LList(liste.mark);
+        for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+            l->append(a->value->copying(false));
+        }
+        return l;
+    }
+    return this;
+}
+
 Element* Dictionary::duplicate_constant(bool pair) {
     if (status == s_constant) {
         Dictionary* d = (Dictionary*)newInstance();
@@ -7869,6 +8880,13 @@ Element* Strings::asList(LispE* lisp) {
     return l;
 }
 
+Element* LList::asList(LispE* lisp) {
+    List* l =  lisp->provideList();
+    for (u_link* a = liste.begin(); a != liste.end(); a = a->next())
+        l->append(a->value);
+    return l;
+}
+    
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
@@ -7933,9 +8951,36 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
             return new Pair((Pair*)e, pos);
         }
         else {
-            return new List((List*)e, pos);
+            return new Listpool(lisp, (List*)e, pos);
         }
     }
+    
+    return e;
+}
+
+Element* LList::cadr(LispE* lisp, u_ustring& action) {
+    u_link* it = liste.begin();
+    Element* e = this;
+    
+    for (long i = action.size() - 1; i>= 0; i--) {
+        if (action[i] == 'a') {
+            e = it->value;
+            if (e == null_)
+                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+            if (i == 0)
+                return e;
+            u_ustring act = action.substr(0, i);
+            return e->cadr(lisp, act);
+        }
+        else {
+            if (it == liste.end())
+                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+            it = it->next();
+        }
+    }
+    
+    if (it != liste.end())
+        return new LList(this, it);
     
     return e;
 }
@@ -8113,8 +9158,23 @@ Element* List::car(LispE* lisp) {
 Element* List::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
-    return new List(this, 1);
+    return new Listpool(lisp, this, 1);
 }
+
+Element* LList::car(LispE* lisp) {
+    if (liste.empty())
+        return null_;
+    return liste.front();
+}
+
+Element* LList::cdr(LispE* lisp) {
+    if (liste.size() <= 1)
+        return null_;
+    u_link* it = liste.begin();
+    it = it->next();
+    return new LList(this, it);
+}
+
 
 Element* Floats::car(LispE* lisp) {
     if (liste.size() == 0)

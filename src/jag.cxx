@@ -244,7 +244,8 @@ void resizewindow(int theSignal) {
 jag_editor::jag_editor() : lines(this), jag_get(true) {
 
 	insertaline = false;
-
+    longcomment = false;
+    
     moveup = false;
 
     selected_x = -1;
@@ -904,6 +905,7 @@ void jag_editor::displaylist(long beg) {
         }
     }
 
+    longcomment = false;
 	poslines.clear();
 
     stringstream blk;

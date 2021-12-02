@@ -100,6 +100,8 @@ static void close_callback(Fl_Widget *w, void *data) {
                 e->decrement();
             }
             lispwnd->widget = NULL;
+            if (lispwnd->main_window)
+                stopall = true;
             delete w;
         }
     }
@@ -119,22 +121,27 @@ static void timeout_callback(void *data) {
 
     LispE* lisp = doublewnd->lisp;
 
-    List call;
+    List* call = lisp->provideList();
 
-    call.append(wnd->function);
-    call.append(wnd);
-    call.append(wnd->object);
+    call->append(wnd->function);
+    call->append(wnd);
+    call->append(wnd->object);
 
     Element* res = null_;
     try {
-        res = call.eval(lisp);
+        res = call->eval(lisp);
     }
     catch (Error* err) {
-        cerr << err->toString(lisp) << endl;
+        string val = err->toString(lisp);
+        val += " (time_out)\n";
+        lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
         err->release();
+        call->release();
+        return;
     }
 
 
+    call->release();
     double i = res->asNumber();
     res->release();
     if (i <= 0 || stopall)
@@ -147,20 +154,25 @@ static void fltk_callback(Fl_Widget *w, void *data) {
     Fltk_widget* widget = (Fltk_widget*)data;
     Element* func = widget->function;
 
-    if (func != widget->lisp->delegation->_NULL) {
-        List call;
-        call.append(func);
-        call.append(widget);
-        call.append(widget->object);
-        Element* res = widget->lisp->delegation->_NULL;
+    LispE* lisp = widget->lisp;
+    
+    if (func != NULL) {
+        List* call = lisp->provideList();
+        call->append(func);
+        call->append(widget);
+        call->append(widget->object);
+        Element* res = lisp->delegation->_NULL;
         try {
-            res = call.eval(widget->lisp);
+            res = call->eval(lisp);
         }
         catch (Error* err) {
-            cerr << err->toString(widget->lisp) << endl;
+            string val = err->toString(lisp);
+            val += "(callback)\n";
+            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
             err->release();
         }
         res->release();
+        call->release();
     }
 }
 
@@ -170,21 +182,26 @@ static void fltk_close_callback(Fl_Widget *w, void *data) {
     
     bool closing = true;
     
-    if (func != widget->lisp->delegation->_NULL) {
-        List call;
-        call.append(func);
-        call.append(widget);
-        call.append(widget->object);
-        Element* res = widget->lisp->delegation->_NULL;
+    LispE* lisp = widget->lisp;
+    
+    if (func != NULL) {
+        List* call = lisp->provideList();
+        call->append(func);
+        call->append(widget);
+        call->append(widget->object);
+        Element* res = lisp->delegation->_NULL;
         try {
-            res = call.eval(widget->lisp);
+            res = call->eval(widget->lisp);
             closing = res->Boolean();
         }
         catch (Error* err) {
-            cerr << err->toString(widget->lisp) << endl;
+            string val = err->toString(lisp);
+            val += "(closing)\n";
+            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
             err->release();
         }
         res->release();
+        call->release();
     }
     
     if (closing)
@@ -308,7 +325,7 @@ Element* Fltk_widget::labelwindow(LispE* lisp) {
 }
 
 Element* Fltk_widget::labeltype(LispE* lisp) {
-    if (widget)
+    if (widget == NULL)
         throw new Error(L"WND(102): wdg not created");
 
     Element* labeltype = lisp->get_variable(U"thetype");
@@ -552,11 +569,11 @@ Element* Fltk_widget::coordinates(LispE* lisp) {
     Element* hh = lisp->get_variable(U"h");
 
     if (xx == null_) {
-        List* kvect = new List;
-        kvect->append(lisp->provideInteger((long)widget->x()));
-        kvect->append(lisp->provideInteger((long)widget->y()));
-        kvect->append(lisp->provideInteger((long)widget->w()));
-        kvect->append(lisp->provideInteger((long)widget->h()));
+        Integers* kvect = lisp->provideIntegers();
+        kvect->liste.push_back((long)widget->x());
+        kvect->liste.push_back((long)widget->y());
+        kvect->liste.push_back((long)widget->w());
+        kvect->liste.push_back((long)widget->h());
         return kvect;
     }
 
@@ -644,9 +661,9 @@ Element* Fltk_widget::linerotation(LispE* lisp) {
         fl_line((int)x, (int)y, (int)x1, (int)y1);
         unlocking(lisp);
     }
-    List* kvect = new List;
-    kvect->append(lisp->provideNumber(x1));
-    kvect->append(lisp->provideNumber(y1));
+    Numbers* kvect = lisp->provideNumbers();
+    kvect->liste.push_back(x1);
+    kvect->liste.push_back(y1);
     return kvect;
 }
 
@@ -785,9 +802,9 @@ Element* Fltk_widget::textsize(LispE* lisp) {
     int w;
     int h;
     fl_measure(buf.c_str(), w, h, 1);
-    List* iv = new List;
-    iv->append(lisp->provideInteger((long)w));
-    iv->append(lisp->provideInteger((long)h));
+    Integers* iv = lisp->provideIntegers();
+    iv->liste.push_back((long)w);
+    iv->liste.push_back((long)h);
     return iv;
 }
 
@@ -834,12 +851,12 @@ Element* Fltk_widget::plot(LispE* lisp) {
 
     Element* table = points;
     long sz = points->size();
-    List* kvect = new List;
+    Numbers* kvect = lisp->provideNumbers();
 
     long i;
 
     if (points->isList() && points->protected_index(lisp,(long)0)->isList()) {
-        List* fv = new List;
+        Numbers* fv = lisp->provideNumbers();
         Element* a;
         for (i = 0; i < sz; i++) {
             a = points->index(i);
@@ -851,8 +868,8 @@ Element* Fltk_widget::plot(LispE* lisp) {
             x = a->index(0)->asNumber();
             y = a->index(1)->asNumber();
 
-            fv->storevalue(lisp, x);
-            fv->storevalue(lisp, y);
+            fv->liste.push_back(x);
+            fv->liste.push_back(y);
             if (!action) {
                 if (!i) {
                     maxX = x;
@@ -903,10 +920,10 @@ Element* Fltk_widget::plot(LispE* lisp) {
         }
     }
 
-    kvect->storevalue(lisp, minx); //0
-    kvect->storevalue(lisp, miny); //1
-    kvect->storevalue(lisp, maxx); //2
-    kvect->storevalue(lisp, maxy); //3
+    kvect->liste.push_back(minx); //0
+    kvect->liste.push_back(miny); //1
+    kvect->liste.push_back(maxx); //2
+    kvect->liste.push_back(maxy); //3
     if (thickness > 1) {
         minx += thickness;
         miny += thickness >> 1;
@@ -943,13 +960,13 @@ Element* Fltk_widget::plot(LispE* lisp) {
         }
     }
 
-    kvect->storevalue(lisp, minX); //4
-    kvect->storevalue(lisp, minY); //5
-    kvect->storevalue(lisp, maxX); //6
-    kvect->storevalue(lisp, maxY); //7
-    kvect->storevalue(lisp, incx); //8
-    kvect->storevalue(lisp, incy); //9
-    kvect->storevalue(lisp, (double)thickness); //10
+    kvect->liste.push_back(minX); //4
+    kvect->liste.push_back(minY); //5
+    kvect->liste.push_back(maxX); //6
+    kvect->liste.push_back(maxY); //7
+    kvect->liste.push_back(incx); //8
+    kvect->liste.push_back(incy); //9
+    kvect->liste.push_back((double)thickness); //10
 
     if (table != points)
         table->release();
@@ -978,9 +995,9 @@ Element* Fltk_widget::plotcoords(LispE* lisp) {
     }
     x = minx + incx*x - incx*minX;
     y = miny + maxy - incy*y + incy*minY;
-    List* kres = new List;
-    kres->storevalue(lisp, x);
-    kres->storevalue(lisp, y);
+    Numbers* kres = lisp->provideNumbers();
+    kres->liste.push_back(x);
+    kres->liste.push_back(y);
     return kres;
 }
 
@@ -1058,15 +1075,17 @@ Element* Fltk_output::value(LispE* lisp) {
 
     Element* val = lisp->get_variable(U"val");
 
-    locking(lisp);
+    
     if (val == null_) {
-        buf = ((Fl_Output*)widget)->value();
         locking(lisp);
+        buf = ((Fl_Output*)widget)->value();
+        unlocking(lisp);
         return lisp->provideString(buf);
     }
     buf = val->toString(lisp);
-    ((Fl_Output*)widget)->value(buf.c_str());
     locking(lisp);
+    ((Fl_Output*)widget)->value(buf.c_str());
+    unlocking(lisp);
     return true_;
 }
 
@@ -1285,6 +1304,7 @@ Fltk_gif::Fltk_gif(LispE* lisp, short ty, string& name) : Element(ty) {
 //------------------------------------------------------------------------------------
 
 Fltk_window::Fltk_window(LispE* lsp, short t, int x, int y, int w, int h, string& l, Element* f, Element* o) : Fltk_widget(lsp, t, f, o) {
+    main_window = false;
     update = true;
     finalized = false;
     label = l;
@@ -1298,6 +1318,7 @@ Fltk_window::Fltk_window(LispE* lsp, short t, int x, int y, int w, int h, string
 }
 
 Fltk_window::Fltk_window(LispE* lsp, short t, int x, int y, string& l, Element* f, Element* o) : Fltk_widget(lsp, t, f, o) {
+    main_window = false;
     update = true;
     finalized = false;
     label = l;
@@ -1356,24 +1377,22 @@ void Fltk_window::close() {
     close_callback(window(), this);
 }
 
+#define FOREVER 1e20
+
 void Fltk_window::run() {
     if (lisp->threadId())
         throw new Error("Error: cannot execute 'run' from a thread");
     if (!finalized)
         throw new Error("Error: you need to call 'end' on the main window");
     fltk_reinit();
-
+    main_window = true;
+    Error* error = NULL;
+    
     if (widget != NULL) {
-        try {
-            Fl::run();
+        long tt = 1;
+        while (!stopall && tt && !lisp->hasStopped()) {
+            tt = Fl::wait(FOREVER);
         }
-        catch(Error* err) {
-            close_callback(window(), this);
-            Fl::wait(0);
-            Fl::unlock();
-            throw err;
-        }
-
         Fl::wait(0);
         Fl::unlock();
     }
@@ -1509,20 +1528,23 @@ void Doublewindow::draw() {
 
     if (fltk_window->check()) {
         fl_color(FL_BLACK); //we set FL_BLACK as the default color, it can be modified with drawcolor in the code...
-        List call;
-        call.append(fltk_window->function);
-        call.append(fltk_window);
-        call.append(fltk_window->object);
+        List* call = lisp->provideList();
+        call->append(fltk_window->function);
+        call->append(fltk_window);
+        call->append(fltk_window->object);
         Element* res = null_;
         try {
-            res = call.eval(lisp);
+            res = call->eval(lisp);
         }
         catch (Error* err) {
-            cerr << err->toString(lisp) << endl;
+            string val = err->toString(lisp);
+            val += "(draw)\n";
+            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
             err->release();
         }
 
         res->release();
+        call->release();
     }
 }
 
@@ -1791,9 +1813,10 @@ Element* Lispe_gui::eval(LispE* lisp) {
         }
     }
     catch(Error* err) {
-        if (wnd != NULL)
-            wnd->close();
-        throw err;
+        string val = err->toString(lisp);
+        val += "(eval)\n";
+        lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
+        err->release();
     }
 
     return true_;

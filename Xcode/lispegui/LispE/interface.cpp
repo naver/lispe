@@ -127,17 +127,31 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                 point = true;
                 break;
             case ';':
-            case '#': //comments (we accept both with ; and #)
-                point = false;
+			case '#':
+				point = false;
                 quote = false;
                 idx = i;
-                while (idx < sz && code[idx] != '\n') {
-                    idx++;
-                    infos.drift += c_utf16(code[idx]);
+                if (code[i+1] == ';') {
+                    idx += 2;
+                    while (idx < sz-1 && (code[idx] != ';' || code[idx+1] != ';')) {
+                        if (code[idx] == '\n') {
+                            line_number++;
+                            infos.append(t_comment, i, idx);
+                            i = idx;
+                        }
+                        idx++;
+                        infos.drift += c_utf16(code[idx]);
+                    }
                 }
-                infos.append(t_comment, i, idx);
+                else {
+                    while (idx < sz && code[idx] != '\n') {
+                        idx++;
+                        infos.drift += c_utf16(code[idx]);
+                    }
+                    infos.append(t_comment, i, idx);
+                    line_number++;
+                }
                 i = idx;
-                line_number++;
                 break;
             case '\n':
                 point = false;
@@ -599,11 +613,17 @@ extern "C" {
             lispe->set_debug_function(debug_function_lispe, NULL);
         }
         
-        Element* res = lispe->execute(current_code, current_path_name);
-        displaybuffer = "\n";
-        displaybuffer += res->toString(lispe);
-        displaybuffer += "\n";
-        res->release();
+        Element* res;
+        try {
+            res = lispe->execute(current_code, current_path_name);
+            displaybuffer = "\n";
+            displaybuffer += res->toString(lispe);
+            displaybuffer += "\n";
+            res->release();
+        }
+        catch (void* x) {
+            displaybuffer = "\nUnknown Error...\n";
+        }
         Rappel(0, displaybuffer.c_str());
         running = false;
         return true;

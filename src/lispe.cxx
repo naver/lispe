@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.11.17.10.11";
+static std::string version = "1.2021.12.2.11.16";
 string LispVersion() {
     return version;
 }
@@ -263,6 +263,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_leftshiftequal, "<<=", P_ATLEASTTWO, &List::evall_leftshiftequal);
     set_instruction(l_link, "link", P_THREE, &List::evall_link);
     set_instruction(l_list, "list", P_ATLEASTONE, &List::evall_list);
+    set_instruction(l_llist, "llist", P_ATLEASTONE, &List::evall_llist);
     set_instruction(l_to_list, "to_list", P_TWO, &List::evall_to_list);
     set_instruction(l_load, "load", P_TWO, &List::evall_load);
     set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock);
@@ -277,6 +278,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark);
     set_instruction(l_matrix, "matrix", P_TWO | P_THREE | P_FOUR, &List::evall_matrix);
     set_instruction(l_matrix_float, "matrix_float", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_float);
+    set_instruction(l_minmax, "minmax", P_ATLEASTTWO, &List::evall_minmax);
     set_instruction(l_max, "max", P_ATLEASTTWO, &List::evall_max);
     set_instruction(l_maybe, "maybe", P_ATLEASTTWO, &List::evall_maybe);
     set_instruction(l_min, "min", P_ATLEASTTWO, &List::evall_min);
@@ -299,6 +301,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_plus, "+", P_ATLEASTTWO, &List::evall_plus);
     set_instruction(l_plusequal, "+=", P_ATLEASTTWO, &List::evall_plusequal);
     set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop);
+    set_instruction(l_popfirst, "popfirst", P_TWO, &List::evall_popfirst);
+    set_instruction(l_poplast, "poplast", P_TWO, &List::evall_poplast);
     set_instruction(l_power, "^^", P_ATLEASTTHREE, &List::evall_power);
     set_instruction(l_powerequal, "^^=", P_ATLEASTTHREE, &List::evall_powerequal);
     set_instruction(l_prettify, "prettify", P_TWO, &List::evall_prettify);
@@ -308,6 +312,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_println, "println", P_ATLEASTONE, &List::evall_println);
     set_instruction(l_product, "product", P_TWO, &List::evall_product);
     set_instruction(l_push, "push", P_ATLEASTTHREE, &List::evall_push);
+    set_instruction(l_pushfirst, "pushfirst", P_ATLEASTTHREE, &List::evall_pushfirst);
+    set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE, &List::evall_pushlast);
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
     set_instruction(l_range, "range", P_FOUR, &List::evall_range);
     set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark);
@@ -356,6 +362,10 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_zip, "zip", P_ATLEASTTHREE, &List::evall_zip);
     set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith);
 
+#ifdef MACDEBUG
+    set_instruction(l_debug_function, "setb", P_FULL, &List::List::evall_debug_function);
+#endif
+    
     // High level functions
     set_instruction(l_composenot, "?", P_FULL, &List::evall_compose);
 
@@ -492,6 +502,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_integers] = U"integers_";
     code_to_string[t_shorts] = U"shorts_";
     code_to_string[t_list] = U"list_";
+    code_to_string[t_llist] = U"llist_";
     code_to_string[t_matrix] = U"matrix_";
     code_to_string[t_matrix_float] = U"matrix_float";
     code_to_string[t_tensor] = U"tensor_";
@@ -600,6 +611,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_numbers);
     provideAtomType(t_integers);
     provideAtomType(t_list);
+    provideAtomType(t_llist);
     provideAtomType(t_matrix);
     provideAtomType(t_matrix_float);
     provideAtomType(t_tensor);
@@ -628,6 +640,7 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, v_null);
     recordingData(lisp->create_instruction(t_shorts, _NULL), t_shorts, v_null);
     recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
+    recordingData(lisp->create_instruction(t_llist, _NULL), t_llist, v_null);
     recordingData(lisp->create_instruction(t_matrix, _NULL), t_matrix, v_null);
     recordingData(lisp->create_instruction(t_matrix_float, _NULL), t_matrix_float, v_null);
     recordingData(lisp->create_instruction(t_tensor, _NULL), t_tensor, v_null);
@@ -825,6 +838,7 @@ void LispE::cleaning() {
 
 LispE::LispE(LispE* lisp, List* function, List* body) {
 
+    mark = 0;
     preparingthread = false;
     evaluating = false;
     delegation = lisp->delegation;
@@ -920,21 +934,45 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         c = getonechar(USTR(code), i);
         switch (c) {
             case ';':
-            case '#': //comments (we accept both with ; and #)
+			case '#':
                 idx = i;
-                while (i < sz && code[i] != '\n') i++;
-                if (add == true) {
-                    current_line = code.substr(idx, i-idx+1);
-                    add_to_listing(line_number, current_line);
-                    current_line = "";
-                }
-                else {
-                    if (add == 2) {
-                        tampon = code.substr(idx, i-idx+1);
-                        infos.append(tampon, t_comment, line_number, idx, i);
+                if (code[i+1] == ';') {
+                    //we need to find the next line where it appears
+                    i+=2;
+                    while (i < sz-1 && (code[i] != ';' || code[i+1] != ';')) {
+                        if (code[i] == '\n') {
+                            if (add == true) {
+                                current_line = code.substr(idx, i-idx+1);
+                                add_to_listing(line_number, current_line);
+                                current_line = "";
+                            }
+                            else {
+                                if (add == 2) {
+                                    tampon = code.substr(idx, i-idx+1);
+                                    infos.append(tampon, t_comment, line_number, idx, i);
+                                }
+                            }
+                            line_number++;
+                            idx = i + 1;
+                        }
+                        i++;
                     }
                 }
-                line_number++;
+                else {
+                    while (i < sz && code[i] != '\n') i++;
+                    line_number++;
+                    if (add == true) {
+                        current_line = code.substr(idx, i-idx+1);
+                        add_to_listing(line_number, current_line);
+                        current_line = "";
+                    }
+                    else {
+                        if (add == 2) {
+                            tampon = code.substr(idx, i-idx+1);
+                            infos.append(tampon, t_comment, line_number, idx, i);
+                        }
+                    }
+                }
                 break;
             case '\n':
                 if (add == true) {
@@ -2083,6 +2121,20 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -26,10 +26,9 @@ public:
         lisp = lsp;
         widget = NULL;
         object = null_;
-        function = null_;
-        
+        function = NULL;
         if (o != null_ && o != NULL) {
-            object = new List;
+            object = lisp->provideList();
             object->append(lisp->provideAtom(l_quote));
             object->append(o);
             lisp->garbaging(object);
@@ -147,6 +146,7 @@ public:
     Element* on_close_function;
     string label;
     double time_value;
+    bool main_window;
     bool update;
     bool finalized;
     vector<Fltk_widget*> items;

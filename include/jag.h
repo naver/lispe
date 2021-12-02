@@ -512,6 +512,8 @@ public:
     bool taskel;
     bool moveup;
     
+    bool longcomment;
+    
     Au_automate* rgx;
 
 #ifdef POSIXREGEX

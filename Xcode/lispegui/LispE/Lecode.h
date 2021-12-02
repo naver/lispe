@@ -45,6 +45,7 @@
 -(void)colorie;
 -(void)indentation;
 -(BOOL)localcolor:(char)key;
+-(void)blinkMatchingParenthesis;
 -(void)selectLineInCode:(long)l;
 -(void)clearallbreakpoints;
 -(void)insere:(NSString*)car;

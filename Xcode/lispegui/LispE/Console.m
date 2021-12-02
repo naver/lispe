@@ -361,8 +361,9 @@ const char* Inputtext(const char* msg) {
 
 - (IBAction)matchingbracket:(id)sender {
     CodeViewController* cn = [self topview];
-    if (cn != nil)
-        [[cn Code] selectmatchingbracket];
+    if (cn != nil) {
+        [[cn Code] blinkMatchingParenthesis];
+    }
 }
 
 - (void)matchingparenthesis:(char)closingcharacter {

@@ -371,7 +371,8 @@ Element* List::composing(LispE* lisp, bool docompose) {
             case l_replicate:
                 final_section = lisp->create_instruction(l_push, _recipient, element);
                 loop = lisp->create_instruction(l_loopcount, _iterator, final_section);
-                compose = loop;
+                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
+                compose = lisp->create_instruction(l_block, element, loop);
                 break;
             case l_map:
                 operation = lisp->create_instruction(l_setq, _value, _iterator);

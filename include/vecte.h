@@ -368,7 +368,7 @@ public:
 
     inline void resize(long t) {
         if (t >= sz) {
-            sz <<= 1;
+            sz = t << 1;
             //We reallocate our vecteur
             buffer = (Z*)realloc(buffer, sizeof(Z)*(sz + 1));
         }
@@ -678,7 +678,7 @@ public:
     
     inline void resize(long t) {
         if (t >= sz) {
-            sz <<= 1;
+            sz = t << 1;
             //We reallocate our vecteur
             Z* b = new Z[sz + 1];
             for (long i = 0; i < last; i++)

@@ -41,12 +41,12 @@ typedef enum {
     t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_set, t_setn, t_floats, t_shorts, t_integers, t_numbers, t_strings,
-    t_list, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
+    t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryn, t_data, t_maybe,
     t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
     
     //System instructions
-    l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link,
+    l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function,
     
     //Default Lisp instructions
     l_number, l_float, l_string, l_short, l_integer, l_atom,
@@ -77,7 +77,7 @@ typedef enum {
     l_divideequal,l_modequal,
     l_concatenate, l_sum, l_product, l_stringf, l_size,
     l_and, l_or, l_xor, l_not, l_eq, l_neq,
-    l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_min, l_max,
+    l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max,
     
     l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank,
@@ -89,8 +89,8 @@ typedef enum {
     l_fread, l_fwrite, l_fappend,
     
     //mutable operations
-    l_key, l_keyn, l_keys, l_values, l_pop,
-    l_to_list, l_list, l_cons, l_flatten, l_nconc, l_push, l_insert, l_extend,
+    l_key, l_keyn, l_keys, l_values, l_pop, l_popfirst, l_poplast,
+    l_to_list, l_list, l_llist, l_cons, l_flatten, l_nconc, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn,
     
@@ -349,6 +349,10 @@ public:
      
      */
 
+    virtual bool element_container() {
+        return false;
+    }
+    
     Element* duplicate() {
         if (!status)
             return this;
@@ -663,6 +667,10 @@ public:
         return -1;
     }
     
+    virtual long default_insertion() {
+        return size();
+    }
+    
     virtual long size() {
         return 0;
     }
@@ -685,8 +693,8 @@ public:
     virtual Element* thevalues(LispE* lisp);
     
     virtual Element* minimum(LispE*);
-
     virtual Element* maximum(LispE*);
+    virtual Element* minmax(LispE*);
 
     virtual Element* value_from_index(LispE*, long i);
     
@@ -721,6 +729,10 @@ public:
     }
     
     virtual bool remove(long) {
+        return false;
+    }
+
+    virtual bool removefirst() {
         return false;
     }
 
@@ -2277,6 +2289,10 @@ public:
             a.second->decrement();
     }
     
+    bool element_container() {
+        return true;
+    }
+    
     bool isDictionary() {
         return true;
     }
@@ -2322,6 +2338,8 @@ public:
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
+    
     void flatten(LispE*, List* l);
     
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -2579,6 +2597,9 @@ public:
     void recording(u_ustring& k, Element* e) {
         try {
             Element* a = dictionary.at(k);
+            if (a == e)
+                return;
+
             a->decrement();
             dictionary[k] = e;
         }
@@ -2721,6 +2742,10 @@ public:
         return new Dictionary_n;
     }
 
+    bool element_container() {
+        return true;
+    }
+    
     bool isContainer() {
         return true;
     }
@@ -2756,6 +2781,7 @@ public:
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
 
     void flatten(LispE*, List* l);
     
@@ -3022,6 +3048,8 @@ public:
     void recording(double  k, Element* e) {
         try {
             Element* a = dictionary.at(k);
+            if (a == e)
+                return;
             a->decrement();
             dictionary[k] = e;
         }
@@ -3302,6 +3330,8 @@ public:
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
+    
     void flatten(LispE*, List* l);
     
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -3597,6 +3627,8 @@ public:
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
+    Element* minmax(LispE*);
+    
     void flatten(LispE*, List* l);
     
     Element* search_element(LispE*, Element* element_value, long idx);

@@ -1526,7 +1526,7 @@ Element* Float::bit_not(LispE* lisp)  {
         number = d.v;
         return this;
     }
-
+    release();
     return lisp->provideFloat(d.v);
 }
 
@@ -1818,7 +1818,7 @@ Element* Number::bit_not(LispE* lisp)  {
         number = d.v;
         return this;
     }
-
+    release();
     return lisp->provideNumber(d.v);
 }
 
@@ -2080,6 +2080,7 @@ Element* Integer::bit_not(LispE* lisp)  {
         integer = ~integer;
         return this;
     }
+    release();
     return lisp->provideInteger(~integer);
 }
 
@@ -2324,6 +2325,7 @@ Element* Short::bit_not(LispE* lisp)  {
         integer = ~integer;
         return this;
     }
+    release();
     return new Short(~integer);
 }
 
@@ -2411,6 +2413,191 @@ Element* Short::rightshift(LispE* lisp, Element* e)  {
     return new Short(integer>>e->checkShort(lisp));
 }
 
+Element* LList::bit_not(LispE* l) {
+    //Two cases either e is a number or it is a list...
+    if (!status) {
+        for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+            it->value = it->value->bit_not(l);
+        }
+        return this;
+    }
+    LList* lst = new LList(liste.mark);
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        lst->append(it->value->bit_not(l));
+    }
+    release();
+    return lst;
+}
+
+
+Element* LList::bit_and(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->bit_and(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->bit_and(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::bit_and_not(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->bit_and_not(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->bit_and_not(lisp, e);
+    }
+    return this;
+}
+
+
+Element* LList::bit_or(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->bit_or(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->bit_or(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::bit_xor(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->bit_xor(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->bit_xor(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::plus(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->plus(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->plus(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::minus(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->minus(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->minus(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::multiply(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->multiply(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->multiply(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::divide(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->divide(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->divide(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::mod(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->mod(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->mod(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::power(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->power(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->power(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::leftshift(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->leftshift(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->leftshift(lisp, e);
+    }
+    return this;
+}
+
+Element* LList::rightshift(LispE* lisp, Element* e) {
+    //Two cases either e is a number or it is a list...
+    if (e->isList()) {
+        long i = 0;
+        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+            it->value = it->value->rightshift(lisp, e->index(i));
+        }
+    }
+    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        it->value =  it->value->rightshift(lisp, e);
+    }
+    return this;
+}
 
 Element* List::bit_not(LispE* l) {
     //Two cases either e is a number or it is a list...
@@ -2420,10 +2607,11 @@ Element* List::bit_not(LispE* l) {
         }
         return this;
     }
-    List* lst = (List*)newInstance();
+    List* lst = l->provideList();
     for (long i = 0; i < size(); i++) {
         lst->append(liste[i]->bit_not(l));
     }
+    release();
     return lst;
 }
 
@@ -2606,12 +2794,13 @@ Element* Floats::bit_not(LispE* l) {
         return this;
     }
     double32 d(0);
-    Floats* num = (Floats*)newInstance();
+    Floats* num = l->provideFloats();
     for (long i = 0; i < size(); i++) {
         d.v = liste[i];
         d.bits = ~d.bits;
         num->liste.push_back(d.v);
     }
+    release();
     return num;
 }
 
@@ -3509,12 +3698,13 @@ Element* Numbers::bit_not(LispE* l) {
         return this;
     }
     double64 d(0);
-    Numbers* num = (Numbers*)newInstance();
+    Numbers* num = l->provideNumbers();
     for (long i = 0; i < size(); i++) {
         d.v = liste[i];
         d.bits = ~d.bits;
         num->liste.push_back(d.v);
     }
+    release();
     return num;
 }
 
@@ -4416,9 +4606,10 @@ Element* Integers::bit_not(LispE* l) {
         }
         return this;
     }
-    Integers* num = (Integers*)newInstance();
+    Integers* num = l->provideIntegers();
     for (long i = 0; i < size(); i++)
         num->liste.push_back(~liste[i]);
+    release();
     return num;
 }
 
@@ -5203,9 +5394,10 @@ Element* Shorts::bit_not(LispE* l) {
         }
         return this;
     }
-    Shorts* num = (Shorts*)newInstance();
+    Shorts* num = new Shorts();
     for (long i = 0; i < size(); i++)
         num->liste.push_back(~liste[i]);
+    release();
     return num;
 }
 
@@ -6690,7 +6882,8 @@ Element* List::evall_bitand(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_and(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
 
@@ -6700,14 +6893,16 @@ Element* List::evall_bitand(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_and(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -6746,7 +6941,8 @@ Element* List::evall_bitandnot(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_and_not(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -6755,14 +6951,16 @@ Element* List::evall_bitandnot(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_and_not(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -6801,7 +6999,8 @@ Element* List::evall_bitor(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_or(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -6810,14 +7009,16 @@ Element* List::evall_bitor(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_or(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
     return first_element;
@@ -6855,7 +7056,8 @@ Element* List::evall_bitxor(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_xor(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -6864,14 +7066,16 @@ Element* List::evall_bitxor(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_xor(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
     return first_element;
@@ -6909,7 +7113,8 @@ Element* List::evall_divide(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->divide_direct(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -6918,14 +7123,16 @@ Element* List::evall_divide(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->divide_direct(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
     return first_element;
@@ -6971,7 +7178,8 @@ Element* List::evall_minus(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->minus_direct(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -6980,14 +7188,16 @@ Element* List::evall_minus(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->minus_direct(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -7026,7 +7236,8 @@ Element* List::evall_mod(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->mod(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -7035,14 +7246,16 @@ Element* List::evall_mod(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->mod(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -7081,7 +7294,8 @@ Element* List::evall_multiply(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->multiply_direct(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
 
@@ -7091,14 +7305,16 @@ Element* List::evall_multiply(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->multiply_direct(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -7138,7 +7354,8 @@ Element* List::evall_plus(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->plus_direct(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -7147,14 +7364,16 @@ Element* List::evall_plus(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->plus_direct(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -7194,7 +7413,8 @@ Element* List::evall_leftshift(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->leftshift(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -7203,14 +7423,16 @@ Element* List::evall_leftshift(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->leftshift(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -7249,7 +7471,8 @@ Element* List::evall_rightshift(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->rightshift(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -7258,14 +7481,16 @@ Element* List::evall_rightshift(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->rightshift(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -7304,7 +7529,8 @@ Element* List::evall_power(LispE* lisp) {
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->power(lisp, second_element);
-                second_element->release();
+                if (first_element != second_element)
+                    second_element->release();
                 return first_element;
             }
             for (i = 2; i < listsize; i++) {
@@ -7313,14 +7539,16 @@ Element* List::evall_power(LispE* lisp) {
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->power(lisp, second_element);
             }
-            second_element->release();
+            if (first_element != second_element)
+                second_element->release();
         }
     }
     catch (Error* err) {
         if (lst != this)
             lst->release();
+        if (first_element != second_element)
+            second_element->release();
         first_element->release();
-        second_element->release();
         throw err;
     }
 
@@ -8151,6 +8379,14 @@ Element* List::evall_sum(LispE* lisp) {
                 first_element->release();
                 return lisp->provideNumber(v);
             }
+            case t_llist: {
+                double v = 0;
+                LList* lst = (LList*)first_element;
+                for (u_link* a = lst->liste.begin(); a != NULL; a = a->next())
+                    v += a->value->checkNumber(lisp);
+                first_element->release();
+                return lisp->provideNumber(v);
+            }
             case t_setn: {
                 double v = 0;
                 Set_n* lst = (Set_n*)first_element;
@@ -8219,6 +8455,14 @@ Element* List::evall_product(LispE* lisp) {
                 long listsize = lst->size();
                 for (long i = 0; i < listsize; i++)
                     v *= lst->liste[i]->checkNumber(lisp);
+                first_element->release();
+                return lisp->provideNumber(v);
+            }
+            case t_llist: {
+                double v = 1;
+                LList* lst = (LList*)first_element;
+                for (u_link* a = lst->liste.begin(); a != NULL; a = a->next())
+                    v *= a->value->checkNumber(lisp);
                 first_element->release();
                 return lisp->provideNumber(v);
             }
