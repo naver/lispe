@@ -534,11 +534,8 @@ public:
     Element* index(long idx) {
         if (!idx)
             return liste.front();
-        if (idx == liste.size() - 1)
-            return liste.back();
-        
         u_link*  it = liste.begin();
-        for (;it != NULL; it++) {
+        for (;it != NULL; it = it->next()) {
             if (!idx) {
                 return it->value;
             }

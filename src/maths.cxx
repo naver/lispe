@@ -6861,19 +6861,39 @@ Element* List::evall_bitand(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_and(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->bit_and(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_and(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_and(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_and(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -6920,19 +6940,39 @@ Element* List::evall_bitandnot(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_and_not(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->bit_and_not(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_and_not(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_and_not(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_and_not(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -6978,19 +7018,39 @@ Element* List::evall_bitor(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_or(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->bit_or(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_or(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_or(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_or(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7035,19 +7095,39 @@ Element* List::evall_bitxor(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_xor(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->bit_xor(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_xor(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_xor(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_xor(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7092,19 +7172,39 @@ Element* List::evall_divide(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->divide(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->divide_direct(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->divide(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->divide_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->divide_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7147,31 +7247,43 @@ Element* List::evall_minus(LispE* lisp) {
         
     try {
         first_element = first_element->eval(lisp);
-        if (listsize == 2 ) {
-            if (first_element->isList()) {
-                lst = first_element;
-                if (lst->type >= t_numbers && lst->type <= t_strings) {
+        if (listsize == 2 && first_element->isList()) {
+            lst = first_element;
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
                     lst = lst->minus(lisp, NULL);
                     first_element->release();
                     return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->minus_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
                 }
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
-                    return zero_;
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->minus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
-                first_element = lst->index(0)->copyatom(1);
-                for (i = 1; i < listsize; i++) {
-                    first_element = first_element->minus_direct(lisp, lst->index(i));
-                }
-                lst->release();
             }
-            else {
-                second_element = first_element->invert_sign(lisp);
-                if (first_element != second_element)
-                    first_element->release();
-                return second_element;
-            }
+            lst->release();
         }
         else {
             first_element = first_element->copyatom(1);
@@ -7215,19 +7327,39 @@ Element* List::evall_mod(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->mod(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->mod(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->mod(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->mod(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->mod(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7273,19 +7405,39 @@ Element* List::evall_multiply(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->multiply(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->multiply_direct(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->multiply(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->multiply_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->multiply_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7333,19 +7485,39 @@ Element* List::evall_plus(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->plus(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->plus_direct(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->plus_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->plus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7392,19 +7564,39 @@ Element* List::evall_leftshift(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->leftshift(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->leftshift(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->leftshift(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->leftshift(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->leftshift(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7450,19 +7642,39 @@ Element* List::evall_rightshift(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->rightshift(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->rightshift(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->rightshift(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->rightshift(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->rightshift(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7508,19 +7720,39 @@ Element* List::evall_power(LispE* lisp) {
         first_element = first_element->eval(lisp);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->power(lisp, NULL);
-                first_element->release();
-                return lst;
-            }
-            listsize = lst->size();
-            if (listsize == 0) {
-                lst->release();
-                return zero_;
-            }
-            first_element = lst->index(0)->copyatom(1);
-            for (i = 1; i < listsize; i++) {
-                first_element = first_element->power(lisp, lst->index(i));
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->power(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->power(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->power(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
             }
             lst->release();
         }
@@ -7586,28 +7818,43 @@ Element* List::evall_bitandequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_and(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_and(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->bit_and(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_and(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_and(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -7646,28 +7893,43 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_and_not(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_and_not(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->bit_and_not(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_and_not(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_and_not(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -7706,28 +7968,43 @@ Element* List::evall_bitorequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_or(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_or(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->bit_or(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_or(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_or(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -7768,28 +8045,43 @@ Element* List::evall_bitxorequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->bit_xor(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->bit_xor(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->bit_xor(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_xor(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_xor(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -7828,28 +8120,43 @@ Element* List::evall_divideequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->divide(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->divide(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->divide_direct(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->divide_direct(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->divide_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -7888,28 +8195,43 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->leftshift(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->leftshift(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->leftshift(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->leftshift(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->leftshift(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -7948,28 +8270,43 @@ Element* List::evall_minusequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->minus(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->minus(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->minus_direct(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->minus_direct(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->minus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -8008,28 +8345,43 @@ Element* List::evall_modequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->mod(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->mod(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->mod(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->mod(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->mod(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -8069,28 +8421,43 @@ Element* List::evall_multiplyequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->multiply(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->multiply(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->multiply_direct(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->multiply_direct(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->multiply_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -8128,28 +8495,43 @@ Element* List::evall_plusequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->plus(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->plus_direct(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->plus_direct(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->plus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -8187,28 +8569,43 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->rightshift(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->rightshift(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->rightshift(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->rightshift(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->rightshift(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
@@ -8246,28 +8643,43 @@ Element* List::evall_powerequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(s_constant);
-
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
-            if (lst->type >= t_numbers && lst->type <= t_strings) {
-                lst = lst->power(lisp, NULL);
-                first_element->release();
-                first_element = lst;
-            }
-            else {
-                listsize = lst->size();
-                if (listsize == 0) {
-                    lst->release();
+            switch (lst->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings:
+                    lst = lst->power(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
                     first_element = zero_;
-                }
-                else {
-                    first_element = lst->index(0)->copyatom(1);
-                    for (i = 1; i < listsize; i++) {
-                        first_element = first_element->power(lisp, lst->index(i));
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->power(lisp, u->value);
+                            u = u->next();
+                        }
                     }
-                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->power(lisp, lst->index(i));
+                        }
+                    }
+                    break;
                 }
             }
+            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {

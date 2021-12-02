@@ -5449,9 +5449,13 @@ Element* List::protected_index(LispE* lisp,long i) {
 }
 
 Element* LList::protected_index(LispE* lisp,long i) {
-    if (i >= 0 && i < liste.size())
-        return at_e(i);
-    return null_;
+    Element* e = null_;
+    if (i >= 0) {
+        e = at_e(i)->copying(false);
+        if (e == NULL)
+            return null_;
+    }
+    return e;
 }
 
 Element* Floats::protected_index(LispE* lisp,long i) {
@@ -5577,9 +5581,13 @@ Element* List::value_on_index(LispE* lisp, long i) {
 }
 
 Element* LList::value_on_index(LispE* lisp, long i) {
-    if (i >= 0 && i < liste.size())
-        return at_e(i)->copying(false);
-    return null_;
+    Element* e = null_;
+    if (i >= 0) {
+        e = at_e(i)->copying(false);
+        if (e == NULL)
+            return null_;
+    }
+    return e;
 }
 
 Element* Floats::value_on_index(LispE* lisp, long i) {
@@ -5804,10 +5812,13 @@ Element* LList::value_on_index(LispE* lisp, Element* ix) {
     if (i < 0)
         i = liste.size() + i;
     
-    if (i >= 0 && i < liste.size())
-        return at_e(i)->copying(false);
-    
-    return null_;
+    ix = null_;
+    if (i >= 0) {
+        ix = at_e(i)->copying(false);
+        if (ix == NULL)
+            return null_;
+    }
+    return ix;
 }
 
 Element* Floats::value_on_index(LispE* lisp, Element* ix) {
@@ -5940,10 +5951,14 @@ Element* LList::protected_index(LispE* lisp, Element* ix) {
     if (i < 0)
         i = liste.size() + i;
     
-    if (i >= 0 && i < liste.size())
-        return at_e(i);
-    
-    throw new Error("Error: index out of bounds");
+    if (i >= 0) {
+        ix = at_e(i)->copying(false);
+        if (ix == NULL)
+            throw new Error("Error: index out of bounds");
+    }
+    else
+        throw new Error("Error: index out of bounds");
+    return ix;
 }
 
 Element* Floats::protected_index(LispE* lisp, Element* ix) {
