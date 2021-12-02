@@ -83,8 +83,6 @@ public:
     Element* n_zero;
     Element* n_one;
     
-    uint16_t mark;
-    
     
     std::atomic<short> nbjoined;
 
@@ -97,7 +95,6 @@ public:
     bool preparingthread;
     
     LispE() {
-        mark = 0;
         initpools(this);
         preparingthread = false;
         evaluating = false;

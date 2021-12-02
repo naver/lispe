@@ -118,18 +118,18 @@ public:
     }
     
     inline void initialize(u_link* e) {
-        ++*mark;
-        if (e->mark == *mark)
-            ++*mark;
-        e->mark = *mark;
+        uint16_t m = ++*mark;
+        while (e->mark == m)
+            m = ++*mark;
+        e->mark = m;
     }
     
     inline void initialize() {
         if (first != NULL) {
-            ++*mark;
-            if (first->mark == *mark)
-                ++*mark;
-            first->mark = *mark;
+            uint16_t m = ++*mark;
+            while (first->mark == m)
+                m = ++*mark;
+            first->mark = m;
         }
     }
 

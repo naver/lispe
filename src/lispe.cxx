@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.12.2.13.36";
+static std::string version = "1.2021.12.2.14.27";
 string LispVersion() {
     return version;
 }
@@ -72,6 +72,7 @@ static u_ustring U(string x) {
 //------------------------------------------------------------
 
 Delegation::Delegation() {
+    mark = 0;
     input_handler = get_jag_handler();
     reading_string_function = &lispe_readfromkeyboard;
     display_string_function = &lispe_displaystring;
@@ -837,8 +838,6 @@ void LispE::cleaning() {
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) {
-
-    mark = 0;
     preparingthread = false;
     evaluating = false;
     delegation = lisp->delegation;
@@ -2121,6 +2120,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

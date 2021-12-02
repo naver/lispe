@@ -132,26 +132,6 @@ public:
     
     unordered_map<u_ustring, List> thread_pool;
 
-    char checkComparator(short type, short root) {
-        if (root == type) {
-            if (operators.check(type))
-                return -1;
-            return 0;
-        }
-        
-        if (assignors.check(root))
-            return 0;
-        
-        if (logicals.check(root))
-            return logicals.check(type);
-        
-        if (comparators.check(root)) {
-            return (comparators.check(type) || logicals.check(type));
-        }
-        
-        return (type == l_plus || type == l_minus || comparators.check(type) || logicals.check(type));
-    }
-
     //this is an all-purpose pool for internal usage
 
     unordered_map<long, string> allfiles_names;
@@ -209,6 +189,8 @@ public:
 
     bool next_stop;
     char add_to_listing;
+    uint16_t mark;
+    
     std::atomic<bool> endtrace;
     
     
@@ -251,6 +233,27 @@ public:
         lock.unlocking(tobelocked);
     }
     
+    char checkComparator(short type, short root) {
+        if (root == type) {
+            if (operators.check(type))
+                return -1;
+            return 0;
+        }
+        
+        if (assignors.check(root))
+            return 0;
+        
+        if (logicals.check(root))
+            return logicals.check(type);
+        
+        if (comparators.check(root)) {
+            return (comparators.check(type) || logicals.check(type));
+        }
+        
+        return (type == l_plus || type == l_minus || comparators.check(type) || logicals.check(type));
+    }
+
+
     inline string toString(short c) {
         string s;
         if (code_to_string.check(c)) {

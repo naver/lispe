@@ -2382,7 +2382,7 @@ Element* List::evall_filterlist(LispE* lisp) {
                 result = lisp->provideList();
                 break;
             case t_llist:
-                result = new LList(&lisp->mark);
+                result = new LList(&lisp->delegation->mark);
                 break;
             default:
                 throw new Error("Error: expecting a list as argument");
@@ -2520,7 +2520,7 @@ Element* List::evall_takelist(LispE* lisp) {
                 result = lisp->provideList();
                 break;
             case t_llist:
-                result = new LList(&lisp->mark);
+                result = new LList(&lisp->delegation->mark);
                 break;
             default:
                 throw new Error("Error: expecting a list as argument");
@@ -2669,7 +2669,7 @@ Element* List::evall_droplist(LispE* lisp) {
                 result = lisp->provideList();
                 break;
             case t_llist:
-                result = new LList(&lisp->mark);
+                result = new LList(&lisp->delegation->mark);
                 break;
             default:
                 throw new Error("Error: expecting a list as argument");
@@ -4991,7 +4991,7 @@ Element* List::evall_cons(LispE* lisp) {
                 break;
             }
             case t_llist: {
-                third_element = new LList(&lisp->mark);
+                third_element = new LList(&lisp->delegation->mark);
                 LList* lst = (LList*)second_element;
                 for (u_link* e = lst->liste.begin(); e != NULL; e = e->_next)
                     third_element->append(e->value->copying(false));
@@ -6771,19 +6771,19 @@ Element* List::evall_llist(LispE* lisp) {
                 if (second_element->type == l_llist)
                     return second_element;
                 
-                first_element = new LList(&lisp->mark);
+                first_element = new LList(&lisp->delegation->mark);
                 for (long i = second_element->size() - 1; i >= 0; i--) {
                     first_element->push_front(second_element->index(i)->copying(false));
                 }
             }
             else {
-                first_element = new LList(&lisp->mark);
+                first_element = new LList(&lisp->delegation->mark);
                 first_element->push_front(second_element->copying(false));
             }
             second_element->release();
         }
         else {
-            first_element = new LList(&lisp->mark);
+            first_element = new LList(&lisp->delegation->mark);
             for (long i = listsize - 1; i > 0; i--) {
                 second_element = liste[i]->eval(lisp);
                 first_element->push_front(second_element->copying(false));
