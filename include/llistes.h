@@ -100,6 +100,7 @@ public:
         mark = l.mark;
         u_link* e = l.at(from);
         first = e;
+        initialize(e);
         while (e != NULL) {
             e->inc(1);
             e = e->next();
@@ -108,11 +109,27 @@ public:
 
     u_links(u_links& l, u_link* e) {
         mark = l.mark;
-        l.initialize();
         first = e;
+        initialize(e);
         while (e != NULL) {
             e->inc(1);
             e = e->next();
+        }
+    }
+    
+    inline void initialize(u_link* e) {
+        ++*mark;
+        if (e->mark == *mark)
+            ++*mark;
+        e->mark = *mark;
+    }
+    
+    inline void initialize() {
+        if (first != NULL) {
+            ++*mark;
+            if (first->mark == *mark)
+                ++*mark;
+            first->mark = *mark;
         }
     }
 
@@ -208,22 +225,9 @@ public:
         }
     }
     
-    inline void initialize() {
-        if (first != NULL) {
-            ++*mark;
-            if (first->mark == *mark)
-                ++*mark;
-            first->mark = *mark;
-        }
-    }
-    
     u_link* begin() {
         initialize();
         return first;
-    }
-    
-    u_link* end() {
-        return NULL;
     }
     
     Element* front() {
@@ -422,7 +426,7 @@ public:
     
     Element* fullcopy() {
         LList* l = new LList(liste.mark);
-        for (u_link* a = liste.last(); a != liste.end(); a = a->previous()) {
+        for (u_link* a = liste.last(); a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->fullcopy());
         }
         return l;
@@ -433,7 +437,7 @@ public:
             return this;
 
         LList* l = new LList(liste.mark);
-        for (u_link* a = liste.last(); a != liste.end(); a = a->previous()) {
+        for (u_link* a = liste.last(); a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->copyatom(s));
         }
         release();
@@ -446,7 +450,7 @@ public:
             return this;
         
         LList* l = new LList(liste.mark);
-        for (u_link* a = liste.last(); a != liste.end(); a = a->previous()) {
+        for (u_link* a = liste.last(); a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->copying(false));
         }
         return l;
@@ -520,7 +524,7 @@ public:
             return liste.back();
         
         u_link*  it = liste.begin();
-        for (;it != liste.end(); it++) {
+        for (;it != NULL; it++) {
             if (!idx) {
                 return it->value;
             }
@@ -582,7 +586,7 @@ public:
                 status = s_destructible;
         }
         
-        for (u_link* a = liste.begin(); a != liste.end(); a = a->next())
+        for (u_link* a = liste.begin(); a != NULL; a = a->next())
             a->value->protecting(protection, lisp);
     }
     
@@ -594,7 +598,7 @@ public:
         
         wstring buffer(L"[");
         long i = 0;
-        for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
             if (i && i <= sz)
                 buffer += L",";
             buffer += a->value->jsonString(lisp);
@@ -614,7 +618,7 @@ public:
         
         long i = 0;
         u_link* prev = liste.begin();
-        for (u_link* a = prev; a != liste.end(); a = a->next()) {
+        for (u_link* a = prev; a != NULL; a = a->next()) {
             prev = a;
             if (i && i <= sz)
                 buffer += L" ";
@@ -622,7 +626,7 @@ public:
             i++;
         }
         if (prev->_next)
-            buffer += L"...";
+            buffer += L" ...";
         buffer += L")";
         return buffer;
     }
@@ -637,7 +641,7 @@ public:
         
         long i = 0;
         u_link* prev = liste.begin();
-        for (u_link* a = prev; a != liste.end(); a = a->next()) {
+        for (u_link* a = prev; a != NULL; a = a->next()) {
             prev = a;
             if (i && i <= sz)
                 buffer += U" ";
@@ -645,7 +649,7 @@ public:
             i++;
         }
         if (prev->_next)
-            buffer += U"...";
+            buffer += U" ...";
         buffer += U")";
         return buffer;
     }
@@ -809,7 +813,7 @@ public:
 
     void clear(Element* e) {
         if (!is_protected()) {
-            for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+            for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
                 if (e != a->value)
                     a->value->decrement();
             }

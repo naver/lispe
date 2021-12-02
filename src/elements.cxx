@@ -1230,7 +1230,7 @@ Element* List::check_member(LispE* lisp, Element* the_set) {
 Element* LList::check_member(LispE* lisp, Element* the_set) {
     LList* r = new LList(liste.mark);
     Element* e;
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         e = a->value->check_member(lisp,the_set);
         r->append(e);
     }
@@ -1886,7 +1886,7 @@ Element* LList::minimum(LispE* lisp) {
     Element* v = liste.front();
     u_link* it = liste.begin();
     it = it->next();
-    for (;it != liste.end(); it = it->next()) {
+    for (;it != NULL; it = it->next()) {
         if (v->more(lisp, it->value) == true_)
             v = it->value;
     }
@@ -2040,7 +2040,7 @@ Element* LList::maximum(LispE* lisp) {
     Element* v = liste.front();
     u_link* it = liste.begin();
     it = it->next();
-    for (;it != liste.end(); it = it->next()) {
+    for (;it != NULL; it = it->next()) {
         if (v->less(lisp, it->value) == true_)
             v = it->value;
     }
@@ -2202,7 +2202,7 @@ Element* LList::minmax(LispE* lisp) {
     Element* v_max = v_min;
     u_link* it = liste.begin();
     it = it->next();
-    for (; it != liste.end(); it = it->next()) {
+    for (; it != NULL; it = it->next()) {
         if (v_min->more(lisp, it->value) == true_)
             v_min = it->value;
         else {
@@ -2446,19 +2446,19 @@ void List::flatten(LispE* lisp, Floats* l) {
 }
 
 void LList::flatten(LispE* lisp, List* l) {
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         a->value->flatten(lisp, l);
     }
 }
 
 void LList::flatten(LispE* lisp, Numbers* l) {
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         a->value->flatten(lisp, l);
     }
 }
 
 void LList::flatten(LispE* lisp, Floats* l) {
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         a->value->flatten(lisp, l);
     }
 }
@@ -3118,7 +3118,7 @@ void List::garbaging_values(LispE* lisp) {
 }
 
 void LList::garbaging_values(LispE* lisp) {
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         lisp->control_garbaging(a->value);
         a->value->garbaging_values(lisp);
     }
@@ -3472,7 +3472,7 @@ Element* LList::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         element = a->value->copying(false);
         lisp->replacingvalue(element, label);
         e = null_;
@@ -4209,7 +4209,7 @@ Element* LList::rotate(bool left) {
     u_link* it = liste.begin();
     if (left) {
         it = it->next();
-        for (;it != liste.end(); it = it->next())
+        for (;it != NULL; it = it->next())
             l->append(it->value->copying(false));
         l->append(liste.front()->copying(false));
         return l;
@@ -4217,7 +4217,7 @@ Element* LList::rotate(bool left) {
     
     long i = liste.size() - 1;
     l->append(liste.back()->copying(false));
-    for (;it != liste.end(); it = it->next()) {
+    for (;it != NULL; it = it->next()) {
         if (!i)
             break;
         l->append(it->value->copying(false));
@@ -4257,7 +4257,7 @@ Element* LList::unique(LispE* lisp) {
     list->append(liste.front()->copying(false));
     u_link* it = liste.begin();
     it = it->next();
-    for (;it != liste.end(); it = it->next()) {
+    for (;it != NULL; it = it->next()) {
         found = false;
         for (long j = 0; j < list->liste.size(); j++) {
             if (it->value->unify(lisp, list->liste[j], false)) {
@@ -4744,7 +4744,7 @@ Element* List::search_element(LispE* lisp, Element* valeur, long ix) {
 Element* LList::search_element(LispE* lisp, Element* valeur, long ix) {
     u_link*  it = at(ix);
     long i = 0;
-    for (;it != liste.end(); it = it->next()) {
+    for (;it != NULL; it = it->next()) {
         if (it->value->equal(lisp, valeur) == true_)
             return lisp->provideInteger(i);
         i++;
@@ -4895,7 +4895,7 @@ Element* List::search_all_elements(LispE* lisp, Element* valeur, long ix) {
 Element* LList::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     u_link* a = at(ix);
-    for (; a != liste.end(); a = a->next()) {
+    for (; a != NULL; a = a->next()) {
         if (a->value->equal(lisp, valeur) == true_) {
             l->liste.push_back(ix);
         }
@@ -5047,7 +5047,7 @@ Element* List::search_reverse(LispE* lisp, Element* valeur, long ix) {
 
 Element* LList::search_reverse(LispE* lisp, Element* valeur, long ix) {
     u_link* it = liste.b_at(ix);
-    for (; it != liste.end(); it = it->previous()) {
+    for (; it != NULL; it = it->previous()) {
         if (it->value->equal(lisp, valeur) == true_)
             return lisp->provideInteger(ix);
         if (!ix)
@@ -5197,7 +5197,7 @@ Element* LList::reverse(LispE* lisp, bool duplicate) {
     
     LList* l = new LList(liste.mark);
     u_link*  it = liste.begin();
-    for (; it != liste.end(); it = it->next())
+    for (; it != NULL; it = it->next())
         l->push_front(it->value->copying(false));
     return l;
 }
@@ -6054,7 +6054,7 @@ Element* List::join_in_list(LispE* lisp, u_ustring& sep) {
 Element* LList::join_in_list(LispE* lisp, u_ustring& sep) {
     u_ustring str;
     u_ustring beg;
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         str += beg;
         beg = sep;
         str += a->value->asUString(lisp);
@@ -7076,7 +7076,7 @@ Element* LList::extraction(LispE* lisp, List* l) {
         upto = size();
     LList* ll = new LList(liste.mark);
     u_link*  it = at(from);
-    for (;it != liste.end(); it = it->next(), from++) {
+    for (;it != NULL; it = it->next(), from++) {
         ll->append(it->value->copying(false));
     }
     return ll;
@@ -8109,17 +8109,17 @@ Element* LList::replace_in(LispE* lisp, List* l) {
     LList* ll = new LList(liste.mark);
     long i = 0;
     u_link*  it = liste.begin();
-    for (; i < from && it != liste.end(); it = it->next(), i++) {
+    for (; i < from && it != NULL; it = it->next(), i++) {
         ll->append(it->value->copying(false));
     }
     ll->append(last->copying(false));
 
-    while (it != liste.end() && from < upto) {
+    while (it != NULL && from < upto) {
         it = it->next();
         from++;
     }
     
-    for (; it != liste.end(); it = it->next())
+    for (; it != NULL; it = it->next())
         ll->append(it->value->copying(false));
     return ll;
 }
@@ -8772,7 +8772,7 @@ Element* List::duplicate_constant(bool pair) {
 Element* LList::duplicate_constant(bool pair) {
     if (status == s_constant) {
         LList* l = new LList(liste.mark);
-        for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+        for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
             l->append(a->value->copying(false));
         }
         return l;
@@ -8882,7 +8882,7 @@ Element* Strings::asList(LispE* lisp) {
 
 Element* LList::asList(LispE* lisp) {
     List* l =  lisp->provideList();
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next())
+    for (u_link* a = liste.begin(); a != NULL; a = a->next())
         l->append(a->value);
     return l;
 }
@@ -8890,7 +8890,7 @@ Element* LList::asList(LispE* lisp) {
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
-    throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+    throw new Error("Error: You reached the list size limit");
 }
 
 Element* Element::car(LispE*) {
@@ -8915,7 +8915,7 @@ Element* String::cdr(LispE* lisp) {
 }
 
 Element* Element::cadr(LispE*, u_ustring& actions) {
-    throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+    throw new Error("Error: You reached the list size limit");
 }
 
 Element* List::cadr(LispE* lisp, u_ustring& action) {
@@ -8928,7 +8928,7 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
         if (action[i] == 'a') {
             e = e->protected_index(lisp, pos);
             if (e == null_)
-                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+                throw new Error("Error: You reached the list size limit");
             
             pair = (e->type == t_pair);
             sz = e->size();
@@ -8936,7 +8936,7 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
         }
         else {
             if (pos == sz)
-                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+                throw new Error("Error: You reached the list size limit");
             pos++;
         }
     }
@@ -8958,28 +8958,35 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
     return e;
 }
 
+//cadr and cdr do not take into account cycles
+//They are bounded by the number of times cdr is called...
+//Beware that in the case of recursive calls, you cannot
+//expect cadr to return an empty list if there is a cycle within
+//This is the main difference with loop, which will detect a cycle and stop
 Element* LList::cadr(LispE* lisp, u_ustring& action) {
-    u_link* it = liste.begin();
+    u_link* it = liste.first;
     Element* e = this;
     
     for (long i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
+            if (it == NULL)
+                throw new Error("Error: You reached the list size limit");
+
             e = it->value;
-            if (e == null_)
-                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
             if (i == 0)
                 return e;
             u_ustring act = action.substr(0, i);
             return e->cadr(lisp, act);
         }
         else {
-            if (it == liste.end())
-                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
-            it = it->next();
+            if (it == NULL)
+                throw new Error("Error: You reached the list size limit");
+            //We do not try to detect a cycle here...
+            it = it->_next;
         }
     }
     
-    if (it != liste.end())
+    if (it != NULL)
         return new LList(this, it);
     
     return e;
@@ -8997,7 +9004,7 @@ Element* Floats::cadr(LispE* lisp, u_ustring& action) {
             return lisp->provideFloat(liste[pos]);
         }
         if (pos == sz)
-            throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+            throw new Error("Error: You reached the list size limit");
         pos++;
     }
 
@@ -9022,7 +9029,7 @@ Element* Numbers::cadr(LispE* lisp, u_ustring& action) {
             return lisp->provideNumber(liste[pos]);
         }
         if (pos == sz)
-            throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+            throw new Error("Error: You reached the list size limit");
         pos++;
     }
     
@@ -9050,7 +9057,7 @@ Element* String::cadr(LispE* lisp, u_ustring& action) {
         }
         else {
             if (pos == sz)
-                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+                throw new Error("Error: You reached the list size limit");
             pos++;
         }
     }
@@ -9080,7 +9087,7 @@ Element* Strings::cadr(LispE* lisp, u_ustring& action) {
         }
         
         if (pos == sz)
-            throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+            throw new Error("Error: You reached the list size limit");
         pos++;
     }
     
@@ -9106,7 +9113,7 @@ Element* Shorts::cadr(LispE* lisp, u_ustring& action) {
                 return new Short(liste[pos]);
             }
             if (pos == sz)
-                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+                throw new Error("Error: You reached the list size limit");
             pos++;
         }
     }
@@ -9134,7 +9141,7 @@ Element* Integers::cadr(LispE* lisp, u_ustring& action) {
                 return lisp->provideInteger(liste[pos]);
             }
             if (pos == sz)
-                throw new Error("Error: You can only apply 'car/cdr' to a list or a string");
+                throw new Error("Error: You reached the list size limit");
             pos++;
         }
     }
@@ -9167,14 +9174,18 @@ Element* LList::car(LispE* lisp) {
     return liste.front();
 }
 
+//Note that cycles are not taken into account here
+//If the next element points inside the list again
+//then cdr will return the list at this point...
+//There is potentially a infinite potential loop
+//in the list...
 Element* LList::cdr(LispE* lisp) {
-    if (liste.size() <= 1)
+    u_link* it = liste.first;
+    if (it == NULL || it->_next == NULL)
         return null_;
-    u_link* it = liste.begin();
-    it = it->next();
+    it = it->_next;
     return new LList(this, it);
 }
-
 
 Element* Floats::car(LispE* lisp) {
     if (liste.size() == 0)

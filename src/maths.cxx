@@ -2416,13 +2416,13 @@ Element* Short::rightshift(LispE* lisp, Element* e)  {
 Element* LList::bit_not(LispE* l) {
     //Two cases either e is a number or it is a list...
     if (!status) {
-        for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+        for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
             it->value = it->value->bit_not(l);
         }
         return this;
     }
     LList* lst = new LList(liste.mark);
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         lst->append(it->value->bit_not(l));
     }
     release();
@@ -2434,11 +2434,11 @@ Element* LList::bit_and(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->bit_and(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->bit_and(lisp, e);
     }
     return this;
@@ -2448,11 +2448,11 @@ Element* LList::bit_and_not(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->bit_and_not(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->bit_and_not(lisp, e);
     }
     return this;
@@ -2463,11 +2463,11 @@ Element* LList::bit_or(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->bit_or(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->bit_or(lisp, e);
     }
     return this;
@@ -2477,11 +2477,11 @@ Element* LList::bit_xor(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->bit_xor(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->bit_xor(lisp, e);
     }
     return this;
@@ -2491,11 +2491,11 @@ Element* LList::plus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->plus(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->plus(lisp, e);
     }
     return this;
@@ -2505,11 +2505,11 @@ Element* LList::minus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->minus(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->minus(lisp, e);
     }
     return this;
@@ -2519,11 +2519,11 @@ Element* LList::multiply(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->multiply(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->multiply(lisp, e);
     }
     return this;
@@ -2533,11 +2533,11 @@ Element* LList::divide(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->divide(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->divide(lisp, e);
     }
     return this;
@@ -2547,11 +2547,11 @@ Element* LList::mod(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->mod(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->mod(lisp, e);
     }
     return this;
@@ -2561,11 +2561,11 @@ Element* LList::power(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->power(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->power(lisp, e);
     }
     return this;
@@ -2575,11 +2575,11 @@ Element* LList::leftshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->leftshift(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->leftshift(lisp, e);
     }
     return this;
@@ -2589,11 +2589,11 @@ Element* LList::rightshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
         long i = 0;
-        for (u_link* it = liste.begin(); i < e->size() && it != liste.end(); it = it->next(), i++) {
+        for (u_link* it = liste.begin(); i < e->size() && it != NULL; it = it->next(), i++) {
             it->value = it->value->rightshift(lisp, e->index(i));
         }
     }
-    for (u_link* it = liste.begin(); it != liste.end(); it = it->next()) {
+    for (u_link* it = liste.begin(); it != NULL; it = it->next()) {
         it->value =  it->value->rightshift(lisp, e);
     }
     return this;

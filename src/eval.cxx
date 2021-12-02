@@ -59,7 +59,7 @@ char LList::check_match(LispE* lisp, Element* value) {
     //this contains a data structure definition
     //This method is used to check if value matches the data structure in 'this'
     char i = 0;
-    for (u_link* a = liste.begin(); a != liste.end(); a = a->next()) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         //In this case, we skip it, no constraints...
         if (a->value == null_)
             continue;
@@ -748,13 +748,14 @@ bool LList::unify(LispE* lisp, Element* value, bool record) {
     Element* e;
     u_link* i_rule = liste.begin();
     long irule = 0;
-    for (; i_rule != liste.end() && test; i_rule = i_rule->_next, irule++, ivalue++) {
+    for (; i_rule != NULL && test; i_rule = i_rule->next(), irule++, ivalue++) {
         e = i_rule->value;
         test = (e == null_ || e->unify_kleene(lisp, value, this, ivalue, irule, rec));
         rec = record;
     }
     return (test && (irule == szrules) && (ivalue >= szvalue));
 }
+
 /*
  This is the reason why we have a 'record' Boolean.
  When we use unify in the context of a pattern function, then record is true, as Atom is then a variable name
