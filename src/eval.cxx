@@ -5035,6 +5035,25 @@ Element* List::evall_consp(LispE* lisp) {
     return booleans_[test];
 }
 
+Element* List::evall_cyclicp(LispE* lisp) {
+    Element* second_element = null_;
+    bool test = true;
+
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        test = second_element->is_cyclic();
+        second_element->release();
+    }
+    catch (Error* err) {
+        second_element->release();
+        throw err;
+    }
+
+    return booleans_[test];
+}
+
+
 Element* List::evall_duplicate(LispE* lisp) {
     Element* element = null_;
     Element* res;

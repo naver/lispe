@@ -45,6 +45,10 @@ public:
         status += s;
     }
     
+    bool check_cycle() {
+        return (_next != NULL && mark == _next->mark);
+    }
+    
     bool check_next() {
         return (_next != NULL && mark != _next->mark);
     }
@@ -145,6 +149,16 @@ public:
             e = first;
         }
         first = NULL;
+    }
+    
+    bool check_cycle() {
+        u_link* e = begin();
+        while (e != NULL) {
+            if (e->check_cycle())
+                return true;
+            e = e->next();
+        }
+        return false;
     }
     
     u_link* last() {
@@ -569,6 +583,10 @@ public:
     
     long default_insertion() {
         return 0;
+    }
+    
+    bool is_cyclic() {
+        return liste.check_cycle();
     }
     
     Element* car(LispE* lisp);

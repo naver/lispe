@@ -1143,6 +1143,7 @@ public:
     Element* evall_converttonumber(LispE* lisp);
     Element* evall_converttofloat(LispE* lisp);
     Element* evall_converttostring(LispE* lisp);
+    Element* evall_cyclicp(LispE* lisp);
     Element* evall_data(LispE* lisp);
     Element* evall_deflib(LispE* lisp);
     Element* evall_deflibpat(LispE* lisp);

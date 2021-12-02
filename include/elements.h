@@ -85,7 +85,7 @@ typedef enum {
     
     //Comparisons
         
-    l_in, l_search, l_revertsearch, l_searchall, l_car, l_cdr, l_cadr, l_last, l_flip,
+    l_in, l_search, l_revertsearch, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
     l_fread, l_fwrite, l_fappend,
     
     //mutable operations
@@ -657,6 +657,10 @@ public:
     virtual Element* lessorequal(LispE* lisp, Element* e);
     virtual Element* more(LispE* lisp, Element* e);
     virtual Element* moreorequal(LispE* lisp, Element* e);
+    
+    virtual bool is_cyclic() {
+        return false;
+    }
     
     virtual Element* cadr(LispE*,Element*);
     virtual Element* car(LispE*);

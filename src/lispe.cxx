@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.12.2.14.27";
+static std::string version = "1.2021.12.2.16.11";
 string LispVersion() {
     return version;
 }
@@ -180,6 +180,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
     set_instruction(l_at_index, "at", P_ATLEASTTHREE, &List::evall_at_index);
+    set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom);
     set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
     set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp);
     set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
@@ -205,7 +206,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
-    set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom);
+    set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp);
     set_instruction(l_short, "short", P_TWO, &List::evall_converttoshort);
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger);
     set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat);
@@ -2120,6 +2121,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
