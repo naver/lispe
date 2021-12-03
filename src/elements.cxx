@@ -1881,7 +1881,7 @@ Element* List::minimum(LispE* lisp) {
 }
 
 Element* LList::minimum(LispE* lisp) {
-    if (!liste.size())
+    if (liste.empty())
         return null_;
     Element* v = liste.front();
     u_link* it = liste.begin();
@@ -2035,7 +2035,7 @@ Element* List::maximum(LispE* lisp) {
 }
 
 Element* LList::maximum(LispE* lisp) {
-    if (!liste.size())
+    if (liste.empty())
         return null_;
     Element* v = liste.front();
     u_link* it = liste.begin();
@@ -4202,27 +4202,26 @@ Element* List::rotate(bool left) {
 }
 
 Element* LList::rotate(bool left) {
-    if (liste.size() <= 1)
+    if (liste.first == NULL || liste.first->_next == NULL)
         return this;
     
     LList* l = new LList(liste.mark);
-    u_link* it = liste.begin();
+    u_link* it = liste.last();
     if (left) {
-        it = it->next();
-        for (;it != NULL; it = it->next())
-            l->append(it->value->copying(false));
-        l->append(liste.front()->copying(false));
+        l->append(liste.first->value->copying(false));
+        while (it != liste.first) {
+            l->push_front(it->value->copying(false));
+            it = it->previous();
+        }
         return l;
     }
-    
-    long i = liste.size() - 1;
-    l->append(liste.back()->copying(false));
-    for (;it != NULL; it = it->next()) {
-        if (!i)
-            break;
-        l->append(it->value->copying(false));
-        i--;
+    Element* last = it->value->copying(false);
+    it = it->previous();
+    while (it != NULL) {
+        l->push_front(it->value->copying(false));
+        it = it->previous();
     }
+    l->push_front(last);
     return l;
 }
 
@@ -5192,7 +5191,7 @@ Element* List::reverse(LispE* lisp, bool duplicate) {
 // duplicate is not taking into account for LList
 // there are two many cases where it creates dangling structures...
 Element* LList::reverse(LispE* lisp, bool duplicate) {
-    if (liste.size() <= 1)
+    if (liste.first == NULL || liste.first->_next == NULL)
         return this;
     
     LList* l = new LList(liste.mark);

@@ -168,11 +168,25 @@ public:
             prev = e;
             e = e->next();
         }
+        if (prev != NULL)
+            initialize(prev);
+        return prev;
+    }
+
+    //Here we do not reset the marks at the end
+    //of the loop.
+    u_link* last_raw() {
+        u_link* e = begin();
+        u_link* prev = NULL;
+        while (e) {
+            prev = e;
+            e = e->next();
+        }
         return prev;
     }
     
     void insertbeforelast(Element* v) {
-        u_link* e = last();
+        u_link* e = last_raw();
         if (e == NULL) {
             first = new u_link(v);
             first->inc(1);
@@ -213,7 +227,7 @@ public:
     }
     
     void push_back(Element* v) {
-        u_link* e = last();
+        u_link* e = last_raw();
         if (e == NULL) {
             first = new u_link(v);
             first->inc(1);
@@ -232,7 +246,7 @@ public:
 
     void pop_back() {
         if (first) {
-            u_link* e = last();
+            u_link* e = last_raw();
             if (first == e)
                 first = NULL;
             e->erase();
@@ -351,7 +365,7 @@ public:
             }
         }
         else {
-            u = last();
+            u = last_raw();
             u->_next = l.first;
             l.first->_previous = u;
             //if there is no cycle

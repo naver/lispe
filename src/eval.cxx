@@ -721,8 +721,7 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
 }
 
 bool LList::unify(LispE* lisp, Element* value, bool record) {
-    long szrules = liste.size();
-    if (!szrules)
+    if (liste.empty())
         return (value->size() == 0);
 
     bool rec = true;
@@ -753,7 +752,7 @@ bool LList::unify(LispE* lisp, Element* value, bool record) {
         test = (e == null_ || e->unify_kleene(lisp, value, this, ivalue, irule, rec));
         rec = record;
     }
-    return (test && (irule == szrules) && (ivalue >= szvalue));
+    return (test && (i_rule == NULL) && (ivalue >= szvalue));
 }
 
 /*
