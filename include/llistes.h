@@ -477,16 +477,22 @@ public:
     
     Element* fullcopy() {
         LList* l = new LList(liste.mark);
-        u_link* tail = NULL;
+
         u_link* a = liste.last();
+        if (a == NULL)
+            return l;
+        
+        u_link* tail = NULL;
         bool cyclic = (a->_next != NULL);
 
         for (; a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->fullcopy());
-            if (cyclic && tail == NULL)
+            if (cyclic) {
                 tail = l->liste.first;
+                cyclic = false;
+            }
         }
-        if (cyclic) {
+        if (tail != NULL) {
             //there is a cycle
             //we need to reproduce it...
             l->liste.first->_previous = tail;
@@ -501,16 +507,23 @@ public:
             return this;
 
         LList* l = new LList(liste.mark);
-        u_link* tail = NULL;
         u_link* a = liste.last();
+        if (a == NULL) {
+            release();
+            return l;
+        }
+
         bool cyclic = (a->_next != NULL);
-        
+        u_link* tail = NULL;
+
         for (; a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->copyatom(s));
-            if (cyclic && tail == NULL)
+            if (cyclic) {
                 tail = l->liste.first;
+                cyclic = false;
+            }
         }
-        if (cyclic) {
+        if (tail != NULL) {
             //there is a cycle
             //we need to reproduce it...
             l->liste.first->_previous = tail;
@@ -522,17 +535,21 @@ public:
 
     LList* back_duplicate() {
         LList* l = new LList(liste.mark);
-        
-        u_link* tail = NULL;
         u_link* a = liste.last();
+        if (a == NULL)
+            return l;
+
         bool cyclic = (a->_next != NULL);
-        
+        u_link* tail = NULL;
+
         for (; a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->copying(false));
-            if (cyclic && tail == NULL)
+            if (cyclic) {
                 tail = l->liste.first;
+                cyclic = false;
+            }
         }
-        if (cyclic) {
+        if (tail != NULL) {
             //there is a cycle
             //we need to reproduce it...
             l->liste.first->_previous = tail;

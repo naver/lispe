@@ -4232,12 +4232,14 @@ Element* LList::rotate(bool left) {
     it = it->previous();
     while (it != NULL) {
         l->push_front(it->value->copying(false));
-        if (cyclic && tail == NULL)
+        if (cyclic) {
             tail = l->liste.first;
+            cyclic = false;
+        }
         it = it->previous();
     }
     l->push_front(last);
-    if (cyclic) {
+    if (tail != NULL) {
         //there is a cycle
         //we need to reproduce it...
         l->liste.first->_previous = tail;
