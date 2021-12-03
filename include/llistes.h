@@ -121,6 +121,10 @@ public:
         }
     }
     
+    bool atleast2() {
+        return (first != NULL && first->_next != NULL && first->_next != first);
+    }
+    
     inline void initialize(u_link* e) {
         uint16_t m = ++*mark;
         while (e->mark == m)
@@ -340,17 +344,36 @@ public:
     }
 
     void reverse() {
-        if (first != NULL && first->_next != NULL) {
-            u_link* e = begin();
-            //We invert the directions
-            while (e->check_next()) {
-                first = e->next();
-                e->_next = e->_previous;
-                e->_previous = first;
-                e = first;
+        if (atleast2()) {
+            //First, if it in the middle of a longer list
+            //we cut it from it...
+            u_link* e = last();
+            
+            u_link* p = e->_next;
+            
+            //p != NULL => cycle
+            if (p == NULL) {
+                //no cycle, but "first"
+                //might be inside a list, with some elements before
+                //such as returned by a cdr...
+                p = first->_previous;
+                if (p != NULL) {
+                    p->_next = e;
+                    //we cut this element temporary from the list
+                    first->_previous = NULL;
+                }
             }
+            
+            u_link* n;
+            while (first != e) {
+                n = first->_next;
+                first->_next = first->_previous;
+                first->_previous = n;
+                first = n;
+            }
+
             first->_next = first->_previous;
-            first->_previous = NULL;
+            first->_previous = p;
         }
     }
 
@@ -454,9 +477,22 @@ public:
     
     Element* fullcopy() {
         LList* l = new LList(liste.mark);
-        for (u_link* a = liste.last(); a != NULL; a = a->previous()) {
+        u_link* tail = NULL;
+        u_link* a = liste.last();
+        bool cyclic = (a->_next != NULL);
+
+        for (; a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->fullcopy());
+            if (cyclic && tail == NULL)
+                tail = l->liste.first;
         }
+        if (cyclic) {
+            //there is a cycle
+            //we need to reproduce it...
+            l->liste.first->_previous = tail;
+            tail->_next = l->liste.first;
+        }
+
         return l;
     }
     
@@ -465,25 +501,52 @@ public:
             return this;
 
         LList* l = new LList(liste.mark);
-        for (u_link* a = liste.last(); a != NULL; a = a->previous()) {
+        u_link* tail = NULL;
+        u_link* a = liste.last();
+        bool cyclic = (a->_next != NULL);
+        
+        for (; a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->copyatom(s));
+            if (cyclic && tail == NULL)
+                tail = l->liste.first;
+        }
+        if (cyclic) {
+            //there is a cycle
+            //we need to reproduce it...
+            l->liste.first->_previous = tail;
+            tail->_next = l->liste.first;
         }
         release();
         return l;
     }
 
-    Element* copying(bool duplicate = true) {
-        //If it is a CDR, we need to copy it...
-        if (!is_protected() && !duplicate)
-            return this;
-        
+    LList* back_duplicate() {
         LList* l = new LList(liste.mark);
-        for (u_link* a = liste.last(); a != NULL; a = a->previous()) {
+        
+        u_link* tail = NULL;
+        u_link* a = liste.last();
+        bool cyclic = (a->_next != NULL);
+        
+        for (; a != NULL; a = a->previous()) {
             l->liste.push_front(a->value->copying(false));
+            if (cyclic && tail == NULL)
+                tail = l->liste.first;
+        }
+        if (cyclic) {
+            //there is a cycle
+            //we need to reproduce it...
+            l->liste.first->_previous = tail;
+            tail->_next = l->liste.first;
         }
         return l;
     }
     
+    Element* copying(bool duplicate = true) {
+        //If it is a CDR, we need to copy it...
+        if (!is_protected() && !duplicate)
+            return this;
+        return back_duplicate();
+    }    
 
     Element* quoted(LispE*);
     Element* unique(LispE* lisp);
@@ -640,19 +703,18 @@ public:
     wstring asString(LispE* lisp) {
         if (liste.empty())
             return L"()";
-        
-        long sz = liste.size() - 1;
-        
+                
         wstring buffer(L"(");
         
-        long i = 0;
+        bool first = true;
         u_link* prev = liste.begin();
         for (u_link* a = prev; a != NULL; a = a->next()) {
             prev = a;
-            if (i && i <= sz)
+            if (!first)
                 buffer += L" ";
+            else
+                first = false;
             buffer += a->value->stringInList(lisp);
-            i++;
         }
         if (prev->_next)
             buffer += L" ...";
@@ -664,18 +726,17 @@ public:
         if (liste.empty())
             return U"()";
         
-        long sz = liste.size() - 1;
-
         u_ustring buffer(U"(");
         
-        long i = 0;
+        bool first = true;
         u_link* prev = liste.begin();
         for (u_link* a = prev; a != NULL; a = a->next()) {
             prev = a;
-            if (i && i <= sz)
+            if (!first)
                 buffer += U" ";
+            else
+                first = false;
             buffer += a->value->stringInUList(lisp);
-            i++;
         }
         if (prev->_next)
             buffer += U" ...";
@@ -684,7 +745,7 @@ public:
     }
     
     bool atleast2() {
-        return (liste.first != NULL && liste.first->_next != NULL);
+        return liste.atleast2();
     }
     
     bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);

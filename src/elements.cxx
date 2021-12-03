@@ -4202,16 +4202,29 @@ Element* List::rotate(bool left) {
 }
 
 Element* LList::rotate(bool left) {
-    if (liste.first == NULL || liste.first->_next == NULL)
+    if (!liste.atleast2())
         return this;
     
     LList* l = new LList(liste.mark);
     u_link* it = liste.last();
+    bool cyclic = (it->_next != NULL);
+    u_link* tail = NULL;
+    
     if (left) {
         l->append(liste.first->value->copying(false));
+        if (cyclic)
+            tail = l->liste.first;
+
         while (it != liste.first) {
             l->push_front(it->value->copying(false));
             it = it->previous();
+        }
+        
+        if (cyclic) {
+            //there is a cycle
+            //we need to reproduce it...
+            l->liste.first->_previous = tail;
+            tail->_next = l->liste.first;
         }
         return l;
     }
@@ -4219,9 +4232,17 @@ Element* LList::rotate(bool left) {
     it = it->previous();
     while (it != NULL) {
         l->push_front(it->value->copying(false));
+        if (cyclic && tail == NULL)
+            tail = l->liste.first;
         it = it->previous();
     }
     l->push_front(last);
+    if (cyclic) {
+        //there is a cycle
+        //we need to reproduce it...
+        l->liste.first->_previous = tail;
+        tail->_next = l->liste.first;
+    }
     return l;
 }
 
@@ -5191,14 +5212,28 @@ Element* List::reverse(LispE* lisp, bool duplicate) {
 // duplicate is not taking into account for LList
 // there are two many cases where it creates dangling structures...
 Element* LList::reverse(LispE* lisp, bool duplicate) {
-    if (liste.first == NULL || liste.first->_next == NULL)
-        return this;
+    if (duplicate) {
+        LList* l = new LList(liste.mark);
+        u_link*  it = liste.begin();
+        u_link* p = it;
+        u_link* tail = NULL;
+        for (; it != NULL; it = it->next()) {
+            p = it;
+            l->push_front(it->value->copying(false));
+            if (tail == NULL)
+                tail = l->liste.first;
+        }
+        if (p->_next != NULL) {
+            //there is a cycle
+            //we need to reproduce it...
+            l->liste.first->_previous = tail;
+            tail->_next = l->liste.first;
+        }
+        return l;
+    }
     
-    LList* l = new LList(liste.mark);
-    u_link*  it = liste.begin();
-    for (; it != NULL; it = it->next())
-        l->push_front(it->value->copying(false));
-    return l;
+    liste.reverse();
+    return this;
 }
 
 Element* Floats::reverse(LispE* lisp, bool duplicate) {
@@ -8784,13 +8819,8 @@ Element* List::duplicate_constant(bool pair) {
 }
 
 Element* LList::duplicate_constant(bool pair) {
-    if (status == s_constant) {
-        LList* l = new LList(liste.mark);
-        for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
-            l->append(a->value->copying(false));
-        }
-        return l;
-    }
+    if (status == s_constant)
+        return back_duplicate();
     return this;
 }
 
