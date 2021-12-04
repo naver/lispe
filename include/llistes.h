@@ -409,19 +409,14 @@ class LList : public Element {
 public:
 
     u_links liste;
-    char terminal;
     
-    LList(uint16_t* m) : liste(m), terminal(0), Element(t_llist) {}
-    LList(uint16_t* m, uint16_t s) : liste(m), terminal(0), Element(t_llist, s) {}
-    LList(LList* l, long idx) : terminal(0), liste(l->liste, idx), Element(t_llist) {}
-    LList(LList* l, u_link* it) : terminal(0), liste(l->liste, it), Element(t_llist) {}
+    LList(uint16_t* m) : liste(m), Element(t_llist) {}
+    LList(uint16_t* m, uint16_t s) : liste(m), Element(t_llist, s) {}
+    LList(LList* l, long idx) : liste(l->liste, idx), Element(t_llist) {}
+    LList(LList* l, u_link* it) : liste(l->liste, it), Element(t_llist) {}
     
     bool isContainer() {
         return true;
-    }
-    
-    void setterminal(char v = 1) {
-        terminal |= v;
     }
     
     bool element_container() {
