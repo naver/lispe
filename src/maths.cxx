@@ -110,14 +110,16 @@ Element* List::evall_irange(LispE* lisp) {
     
     double init, inc;
     evalAsNumber(1, lisp, init);
-    evalAsNumber(2, lisp, inc);
     if (sz == 4) {
         double bound;
-        evalAsNumber(3, lisp, bound);
+        evalAsNumber(2, lisp, bound);
+        evalAsNumber(3, lisp, inc);
         if (init == (long)init && inc == (long)inc)
             return new InfiniterangeInteger(init, inc, bound);
         return new InfiniterangeNumber(init, inc, bound);
     }
+    
+    evalAsNumber(2, lisp, inc);
     if (init == (long)init && inc == (long)inc)
         return new InfiniterangeInteger(init, inc);
     return new InfiniterangeNumber(init, inc);

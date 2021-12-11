@@ -177,6 +177,20 @@ public:
         return prev;
     }
 
+    u_link* last(long& sz) {
+        sz = 0;
+        u_link* e = begin();
+        u_link* prev = NULL;
+        while (e) {
+            sz++;
+            prev = e;
+            e = e->next();
+        }
+        if (prev != NULL)
+            initialize(prev);
+        return prev;
+    }
+
     //Here we do not reset the marks at the end
     //of the loop.
     u_link* last_raw() {
@@ -281,9 +295,10 @@ public:
             e = e->previous();
             i--;
         }
+        if (e != NULL)
+            initialize(e);
         return e;
     }
-
 
     u_link* at(long i) {
         if (!i)
@@ -294,10 +309,32 @@ public:
             c = c->next();
             i--;
         }
+        if (c != NULL)
+            initialize(c);
         return c;
     }
 
+    Element* b_at_e(long i) {
+        u_link* e = last();
+        if (e == NULL)
+            return NULL;
+        
+        if (!i)
+            return e->value;
+        
+        while (e != NULL && i) {
+            e = e->previous();
+            i--;
+        }
+        if (e != NULL)
+            return e->value;
+        return NULL;
+    }
+
     Element* at_e(long i) {
+        if (first == NULL)
+            return NULL;
+        
         if (!i)
             return first->value;
         
@@ -481,7 +518,7 @@ public:
         bool cyclic = (a->_next != NULL);
 
         for (; a != NULL; a = a->previous()) {
-            l->liste.push_front(a->value->fullcopy());
+            l->push_front(a->value->fullcopy());
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
@@ -512,7 +549,7 @@ public:
         u_link* tail = NULL;
 
         for (; a != NULL; a = a->previous()) {
-            l->liste.push_front(a->value->copyatom(s));
+            l->push_front(a->value->copyatom(s));
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
@@ -538,7 +575,7 @@ public:
         u_link* tail = NULL;
 
         for (; a != NULL; a = a->previous()) {
-            l->liste.push_front(a->value->copying(false));
+            l->push_front(a->value->copying(false));
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;

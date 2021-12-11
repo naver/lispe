@@ -3787,17 +3787,12 @@ Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
     char check = 0;
     if (!infinite_loop) {
         if (increment < 0)
-            check = 1;
+            check = -1;
         else
-            check = 2;
+            check = 1;
     }
     
-    while (!lisp->hasStopped()) {
-        if (check == 1 && value <= bound)
-            break;
-        if (check == 2 && value >= bound)
-            break;
-        
+    while (!lisp->hasStopped() && compare(check, value)) {
         element = lisp->provideNumber(value);
         lisp->replacingvalue(element, label);
         e = null_;
@@ -3829,17 +3824,12 @@ Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
     char check = 0;
     if (!infinite_loop) {
         if (increment < 0)
-            check = 1;
+            check = -1;
         else
-            check = 2;
+            check = 1;
     }
     
-    while (!lisp->hasStopped()) {
-        if (check == 1 && value <= bound)
-            break;
-        if (check == 2 && value >= bound)
-            break;
-        
+    while (!lisp->hasStopped() && compare(check, value)) {
         element = lisp->provideInteger(value);
         lisp->replacingvalue(element, label);
         e = null_;
@@ -7011,8 +7001,6 @@ Element* LList::extraction(LispE* lisp, List* l) {
         case t_integer:
         case t_number:
             from = e_from->asInteger();
-            if (from < 0)
-                from = size() + from;
             break;
         default:
             e->release();
@@ -7023,12 +7011,17 @@ Element* LList::extraction(LispE* lisp, List* l) {
     e->release();
     e_from->release();
     
-    if (from < 0 || from >= size())
-        return emptylist_;
-    
     if (nxt == l->size()) {
         //Only one element is returned
-        return at_e(from)->copying(false);
+        if (from < 0)
+            e = liste.b_at_e(from*-1);
+        else
+            e = at_e(from);
+        
+        if (e == NULL)
+            return emptylist_;
+        
+        return e->copying(false);
     }
     
     Element* e_upto = l->liste[nxt];
@@ -7064,6 +7057,7 @@ Element* LList::extraction(LispE* lisp, List* l) {
     
     long upto;
     e = null_;
+    long sz = size();
     switch (ty) {
         case t_string: {
             if (firstisString == -1) firstisString = 0;
@@ -7108,7 +7102,7 @@ Element* LList::extraction(LispE* lisp, List* l) {
             else {
                 if (upto <= 0) {
                     //We start from the end...
-                    upto = size() + upto;
+                    upto = sz + upto;
                 }
             }
             break;
@@ -7120,15 +7114,17 @@ Element* LList::extraction(LispE* lisp, List* l) {
     
     e->release();
     e_upto->release();
+
     if (upto <= from)
         return emptylist_;
     
-    if (upto > size())
-        upto = size();
+    if (upto > sz)
+        upto = sz;
+    
     LList* ll = new LList(liste.mark);
-    u_link*  it = at(from);
-    for (;it != NULL; it = it->next(), from++) {
-        ll->append(it->value->copying(false));
+    u_link*  it = liste.at(upto - 1);
+    for (;it != NULL && upto != from; it = it->previous(), upto--) {
+        ll->push_front(it->value->copying(false));
     }
     return ll;
 }
@@ -7944,6 +7940,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
     long firstisString = -1;
     short nxt = 3;
     short ty;
+    long sz = size();
     try {
         switch (e_from->label()) {
             case l_minus:
@@ -8025,7 +8022,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
             case t_number:
                 from = e_from->asInteger();
                 if (from < 0)
-                    from = size() + from;
+                    from = sz + from;
                 break;
             default:
                 e->release();
@@ -8036,14 +8033,14 @@ Element* LList::replace_in(LispE* lisp, List* l) {
         e->release();
         e_from->release();
         
-        if (from < 0 || from >= size()) {
+        if (from < 0 || from >= sz) {
             last->release();
             return this;
         }
         
         if (nxt == l->size() - 1) {
             //We replace our element in place at e_from
-            List* l = (List*)fullcopy();
+            LList* l = (LList*)fullcopy();
             return l->replace(lisp, from, last->copying(false));
         }
         
@@ -8131,7 +8128,7 @@ Element* LList::replace_in(LispE* lisp, List* l) {
                 else {
                     if (upto <= 0) {
                         //We start from the end...
-                        upto = size() + upto;
+                        upto = sz + upto;
                     }
                 }
                 break;
@@ -8154,24 +8151,21 @@ Element* LList::replace_in(LispE* lisp, List* l) {
         return this;
     }
     
-    if (upto > size())
-        upto = size();
-    
     LList* ll = new LList(liste.mark);
-    long i = 0;
-    u_link*  it = liste.begin();
-    for (; i < from && it != NULL; it = it->next(), i++) {
-        ll->append(it->value->copying(false));
+    u_link*  it;
+    it = liste.last();
+    for (; sz != upto && it != NULL; it = it->previous(), sz--) {
+        ll->push_front(it->value->copying(false));
     }
-    ll->append(last->copying(false));
+    ll->push_front(last->copying(false));
 
-    while (it != NULL && from < upto) {
-        it = it->next();
-        from++;
+    while (it != NULL && sz != from) {
+        sz--;
+        it = it->previous();
     }
     
-    for (; it != NULL; it = it->next())
-        ll->append(it->value->copying(false));
+    for (; it != NULL; it = it->previous())
+        ll->push_front(it->value->copying(false));
     return ll;
 }
 

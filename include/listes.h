@@ -58,6 +58,14 @@ public:
         //it cannot be accessed through normal means
     }
     
+    inline void reserve(long t) {
+        if (t > sz) {
+            sz = t;
+            //We reallocate our vecteur
+            buffer = (Element**)realloc(buffer, sizeof(Element*)*(sz + 1));
+        }
+    }
+    
     inline void resize(long t) {
         if (t >= sz) {
             sz = t << 1;
@@ -225,6 +233,10 @@ public:
         return ((item->last == 0 && l.item->last == 0) || (l.item == item && home == l.home));
     }
 
+    inline void reserve(long sz) {
+        item->reserve(sz);
+    }
+    
     inline void put(long pos, Element* val) {
         item->buffer[pos + home] = val;
     }
@@ -493,6 +505,10 @@ public:
     
     Element* asList(LispE* lisp) {
         return this;
+    }
+    
+    void reserve(long sz) {
+        liste.reserve(sz);
     }
     
     virtual Element* loop(LispE* lisp, short label,  List* code);
@@ -1668,6 +1684,10 @@ public:
 
     Element* asList(LispE* lisp);
     
+    void reserve(long sz) {
+        liste.reserve(sz);
+    }
+    
     Element* newInstance(Element* v) {
         return new Floats(liste.size(), v->asFloat());
     }
@@ -2082,6 +2102,10 @@ public:
         return new Numbers;
     }
 
+    void reserve(long sz) {
+        liste.reserve(sz);
+    }
+    
     Element* asList(LispE* lisp);
     
     Element* newInstance(Element* v) {
@@ -2497,6 +2521,10 @@ public:
         return new Shorts;
     }
 
+    void reserve(long sz) {
+        liste.reserve(sz);
+    }
+    
     Element* asList(LispE* lisp);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
@@ -2863,6 +2891,10 @@ public:
         return new Integers;
     }
 
+    void reserve(long sz) {
+        liste.reserve(sz);
+    }
+    
     Element* asList(LispE* lisp);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
@@ -4252,6 +4284,10 @@ public:
         return new Strings(liste.size(), v->asString(NULL));
     }
 
+    void reserve(long sz) {
+        liste.reserve(sz);
+    }
+    
     Element* check_member(LispE* lisp, Element* the_set);
     
     void concatenate(LispE* lisp, Element* e) {

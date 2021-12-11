@@ -210,7 +210,7 @@ static void fltk_close_callback(Fl_Widget *w, void *data) {
 
 //------------------------------------------------------------------------------------
 bool Fltk_widget::check() {
-    if (function != null_)
+    if (function != null_ && function != NULL)
         return true;
     return false;
 }

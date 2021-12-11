@@ -676,6 +676,18 @@ public:
         //it cannot be accessed through normal means
     }
     
+    inline void reserve(long t) {
+        if (t > sz) {
+            sz = t;
+            //We reallocate our vecteur
+            Z* b = new Z[sz + 1];
+            for (long i = 0; i < last; i++)
+                b[i] = buffer[i];
+            delete[] buffer;
+            buffer = b;
+        }
+    }
+    
     inline void resize(long t) {
         if (t >= sz) {
             sz = t << 1;
@@ -888,6 +900,10 @@ public:
         items->erase(pos +home);
     }
 
+    inline void reserve(long t) {
+        items->reserve(t);
+    }
+    
     void reverse() {
         long sz = items->last - 1;
         for (long i = home; i < sz && items->reverse(i,sz); i++) {

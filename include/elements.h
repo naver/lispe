@@ -450,6 +450,8 @@ public:
     void prettyfying(LispE* lisp, string& code);
     string prettify(LispE* lisp);
     
+    virtual void reserve(long sz) {}
+    
     virtual string toString(LispE* lisp) {
         string s;
         u_ustring w = asUString(lisp);
@@ -2160,6 +2162,10 @@ public:
         bound = b;
     }
     
+    inline bool compare(char check, long value) {
+        return (!check || (check == -1 && value > bound) || (check == 1 && value < bound));
+    }
+
     bool isContainer() {
         return true;
     }
@@ -2194,6 +2200,10 @@ public:
         increment = i;
         infinite_loop = false;
         bound = b;
+    }
+    
+    inline bool compare(char check, long value) {
+        return (!check || (check == -1 && value > bound) || (check == 1 && value < bound));
     }
     
     bool isContainer() {

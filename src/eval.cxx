@@ -4080,79 +4080,120 @@ Element* List::evall_rho(LispE* lisp) {
             switch (e->type) {
                 case t_floats: {
                     res = lisp->provideFloats();
-                    for (long i = 0; i < sz1; i++) {
-                        if (!listsize)
-                            ((Floats*)res)->liste.push_back(0);
-                        else {
-                            if (ei == listsize)
-                                ei = 0;
-                            ((Floats*)res)->liste.push_back(e->index(ei++)->asFloat());
+                    res->reserve(sz1);
+                    if (listsize <= 1) {
+                        float v = 0;
+                        if (listsize == 1)
+                            v = e->index(0)->asFloat();
+                        for (long i = 0; i < sz1; i++) {
+                            ((Floats*)res)->liste.push_back(v);
                         }
+                        break;
+                    }
+                    
+                    for (long i = 0; i < sz1; i++) {
+                        if (ei == listsize)
+                            ei = 0;
+                        ((Floats*)res)->liste.push_back(e->index(ei++)->asFloat());
                     }
                     break;
                 }
                 case t_numbers: {
                     res = lisp->provideNumbers();
-                    for (long i = 0; i < sz1; i++) {
-                        if (!listsize)
-                            ((Numbers*)res)->liste.push_back(0);
-                        else {
-                            if (ei == listsize)
-                                ei = 0;
-                            ((Numbers*)res)->liste.push_back(e->index(ei++)->asNumber());
+                    res->reserve(sz1);
+                    if (listsize <= 1) {
+                        double v = 0;
+                        if (listsize == 1)
+                            v = e->index(0)->asNumber();
+                        for (long i = 0; i < sz1; i++) {
+                            ((Numbers*)res)->liste.push_back(v);
                         }
+                        break;
+                    }
+                    
+                    for (long i = 0; i < sz1; i++) {
+                        if (ei == listsize)
+                            ei = 0;
+                        ((Numbers*)res)->liste.push_back(e->index(ei++)->asNumber());
                     }
                     break;
                 }
                 case t_shorts: {
                     res = new Shorts();
-                    for (long i = 0; i < sz1; i++) {
-                        if (!listsize)
-                            ((Shorts*)res)->liste.push_back(0);
-                        else {
-                            if (ei == listsize)
-                                ei = 0;
-                            ((Shorts*)res)->liste.push_back(e->index(ei++)->asShort());
+                    res->reserve(sz1);
+                    if (listsize <= 1) {
+                        short v = 0;
+                        if (listsize == 1)
+                            v = e->index(0)->asShort();
+                        for (long i = 0; i < sz1; i++) {
+                            ((Shorts*)res)->liste.push_back(v);
                         }
+                        break;
+                    }
+                    
+                    for (long i = 0; i < sz1; i++) {
+                        if (ei == listsize)
+                            ei = 0;
+                        ((Shorts*)res)->liste.push_back(e->index(ei++)->asShort());
                     }
                     break;
                 }
                 case t_integers: {
                     res = lisp->provideIntegers();
-                    for (long i = 0; i < sz1; i++) {
-                        if (!listsize)
-                            ((Integers*)res)->liste.push_back(0);
-                        else {
-                            if (ei == listsize)
-                                ei = 0;
-                            ((Integers*)res)->liste.push_back(e->index(ei++)->asInteger());
+                    res->reserve(sz1);
+                    if (listsize <= 1) {
+                        long v = 0;
+                        if (listsize == 1)
+                            v = e->index(0)->asInteger();
+                        for (long i = 0; i < sz1; i++) {
+                            ((Integers*)res)->liste.push_back(v);
                         }
+                        break;
+                    }
+                    
+                    for (long i = 0; i < sz1; i++) {
+                        if (ei == listsize)
+                            ei = 0;
+                        ((Integers*)res)->liste.push_back(e->index(ei++)->asInteger());
                     }
                     break;
                 }
                 case t_strings: {
                     res = lisp->provideStrings();
-                    for (long i = 0; i < sz1; i++) {
-                        if (!listsize)
-                            ((Strings*)res)->liste.push_back(U"");
-                        else {
-                            if (ei == listsize)
-                                ei = 0;
-                            ((Strings*)res)->liste.push_back(e->index(ei++)->asUString(lisp));
+                    res->reserve(sz1);
+                    if (listsize <= 1) {
+                        u_ustring v;
+                        if (listsize == 1)
+                            v = e->index(0)->asUString(lisp);
+                        for (long i = 0; i < sz1; i++) {
+                            ((Strings*)res)->liste.push_back(v);
                         }
+                        break;
+                    }
+                    
+                    for (long i = 0; i < sz1; i++) {
+                        if (ei == listsize)
+                            ei = 0;
+                        ((Strings*)res)->liste.push_back(e->index(ei++)->asUString(lisp));
                     }
                     break;
                 }
                 default: {
                     res = lisp->provideList();
+                    res->reserve(sz1);
+                    if (listsize == 1) {
+                        Element* v = zero_;
+                        if (listsize == 1)
+                            v = e->index(0);
+                        for (long i = 0; i < sz1; i++)
+                            res->append(v);
+                        break;
+                    }
+                    
                     for (long i = 0; i < sz1; i++) {
-                        if (!listsize)
-                            res->append(zero_);
-                        else {
-                            if (ei == listsize)
-                                ei = 0;
-                            res->append(e->index(ei++));
-                        }
+                        if (ei == listsize)
+                            ei = 0;
+                        res->append(e->index(ei++));
                     }
                 }
             }
@@ -4992,8 +5033,9 @@ Element* List::evall_cons(LispE* lisp) {
             case t_llist: {
                 third_element = new LList(&lisp->delegation->mark);
                 LList* lst = (LList*)second_element;
-                for (u_link* e = lst->liste.begin(); e != NULL; e = e->_next)
-                    third_element->append(e->value->copying(false));
+                for (u_link* e = lst->liste.last(); e != NULL; e = e->previous())
+                    ((LList*)third_element)->push_front(e->value->copying(false));
+                ((LList*)third_element)->push_front(first_element);
                 break;
             }
             default: {
@@ -8181,6 +8223,7 @@ Element* List::evall_extend(LispE* lisp) {
 Element* List::evall_push(LispE* lisp) {
     Element* first_element = liste[1];
     Element* second_element = null_;
+    Element* e;
 
     try {
         //We store a value in a list
@@ -8191,17 +8234,22 @@ Element* List::evall_push(LispE* lisp) {
         if (first_element->type == t_llist) {
             for (long i = 2; i < size(); i++) {
                 second_element = liste[i]->eval(lisp);
-                ((LList*)first_element)->push_front(second_element->copying(false));
-                _releasing(second_element);
+                e = second_element->copying(false);
+                if (e != second_element) {
+                    _releasing(second_element);
+                }
+                ((LList*)first_element)->push_front(e);
             }
         }
         else {
-            Element* e;
             for (long i = 2; i < size(); i++) {
                 second_element = liste[i]->eval(lisp);
                 e = second_element->copying(false);
-                _releasing(second_element);
                 first_element->append(e);
+                if (e != second_element) {
+                    _releasing(second_element);
+                }
+                e->release();
             }
         }
     }
@@ -8216,6 +8264,7 @@ Element* List::evall_push(LispE* lisp) {
 Element* List::evall_pushfirst(LispE* lisp) {
     Element* first_element = liste[1];
     Element* second_element = null_;
+    Element* e;
 
     try {
         //We store a value in a list
@@ -8226,15 +8275,22 @@ Element* List::evall_pushfirst(LispE* lisp) {
         if (first_element->type == t_llist) {
             for (long i = 2; i < size(); i++) {
                 second_element = liste[i]->eval(lisp);
-                ((LList*)first_element)->push_front(second_element->copying(false));
-                _releasing(second_element);
+                e = second_element->copying(false);
+                if (e != second_element) {
+                    _releasing(second_element);
+                }
+                ((LList*)first_element)->push_front(e);
             }
         }
         else {
             for (long i = 2; i < size(); i++) {
                 second_element = liste[i]->eval(lisp);
-                first_element->insert(lisp, second_element->copying(false), 0);
-                _releasing(second_element);
+                e = second_element->copying(false);
+                first_element->insert(lisp, e, 0);
+                if (e != second_element) {
+                    _releasing(second_element);
+                }
+                e->release();
             }
         }
     }
@@ -8250,6 +8306,7 @@ Element* List::evall_pushfirst(LispE* lisp) {
 Element* List::evall_pushlast(LispE* lisp) {
     Element* first_element = liste[1];
     Element* second_element = null_;
+    Element* e;
 
     try {
         //We store a value in a list
@@ -8257,11 +8314,26 @@ Element* List::evall_pushlast(LispE* lisp) {
         if (!first_element->isList())
             throw new Error(L"Error: missing list in 'push'");
         first_element = first_element->duplicate_constant();
-        
-        for (long i = 2; i < size(); i++) {
-            second_element = liste[i]->eval(lisp);
-            first_element->append(second_element->copying(false));
-            _releasing(second_element);
+        if (first_element->type == t_llist) {
+            for (long i = 2; i < size(); i++) {
+                second_element = liste[i]->eval(lisp);
+                e = second_element->copying(false);
+                if (e != second_element) {
+                    _releasing(second_element);
+                }
+                ((LList*)first_element)->append(e);
+            }
+        }
+        else {
+            for (long i = 2; i < size(); i++) {
+                second_element = liste[i]->eval(lisp);
+                e = second_element->copying(false);
+                first_element->append(e);
+                if (e != second_element) {
+                    _releasing(second_element);
+                }
+                e->release();
+            }
         }
     }
     catch (Error* err) {
