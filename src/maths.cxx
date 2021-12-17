@@ -783,6 +783,57 @@ void Tenseur_float::build(LispE* lisp, long isz, Element* res) {
         }
     }
 }
+
+void List::build(LispE* lisp, vecte<long>& shape, long isz, Element* res, Element* lst, long& idx) {
+    long i;
+    if (isz == shape.size() - 2) {
+        List* l;
+        long j;
+        for (i = 0; i < shape[isz]; i++) {
+            l = lisp->provideList();
+            res->append(l);
+            for (j = 0; j < shape[isz+1]; j++) {
+                if (idx == lst->size())
+                    idx = 0;
+                l->append(lst->index(idx++)->copying(false));
+            }
+        }
+    }
+    else {
+        List* l;
+        for (i = 0; i < shape[isz]; i++) {
+            l = lisp->provideList();
+            res->append(l);
+            build(lisp, shape, isz+1, l, lst, idx);
+        }
+    }
+}
+
+void LList::build(LispE* lisp, vecte<long>& shape, long isz, LList* res, LList* lst, u_link** idx) {
+    long i;
+    if (isz == shape.size() - 2) {
+        LList* l;
+        long j;
+        for (i = 0; i < shape[isz]; i++) {
+            l = new LList(liste.mark);
+            res->push_front(l);
+            for (j = 0; j < shape[isz+1]; j++) {
+                if (*idx == NULL)
+                    *idx = lst->liste.begin();
+                l->push_front((*idx)->value->copying(false));
+                *idx = (*idx)->next();
+            }
+        }
+    }
+    else {
+        LList* l;
+        for (i = 0; i < shape[isz]; i++) {
+            l = new LList(liste.mark);
+            build(lisp, shape, isz+1, l, lst, idx);
+            res->push_front(l);
+        }
+    }
+}
 //---------------------------------------------------------------------------------------------------
 
 

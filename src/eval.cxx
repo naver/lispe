@@ -2157,6 +2157,12 @@ Element* List::evall_elapse(LispE* lisp) {
     return lisp->provideNumber(diff);
 }
 
+Element* List::evall_emptyp(LispE* lisp) {
+    
+    Element* element = liste[1]->eval(lisp);
+    return booleans_[element->isEmpty()];
+}
+
 Element* List::evall_cadr(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
@@ -4004,6 +4010,7 @@ Element* List::evall_rho(LispE* lisp) {
 
     try {
         if (listsize == 2) {
+            //In this case we return the shape of our list
             e = liste[1]->eval(lisp);
             switch (e->type) {
                 case t_matrix: {
@@ -4045,23 +4052,25 @@ Element* List::evall_rho(LispE* lisp) {
                     e->release();
                     lisp->set_true_as_true();
                     return lisp->provideInteger(listsize);
-                default:
-                    if (e->isList()) {
-                        vecte<long> sizes;
-                        e->getShape(sizes);
-                        if (sizes.size() == 1) {
-                            lisp->set_true_as_true();
-                            return lisp->provideInteger(sizes[0]);
-                        }
-                        if (e->checkShape(0, sizes)) {
-                            res = lisp->provideIntegers();
-                            for (long i = 0; i < sizes.size(); i++) {
-                                ((Integers*)res)->liste.push_back(sizes[i]);
-                            }
-                            lisp->set_true_as_true();
-                            return res;
-                        }
+                case t_list:
+                case t_llist: {
+                    vecte<long> sizes;
+                    e->getShape(sizes);
+                    if (sizes.size() == 1) {
+                        lisp->set_true_as_true();
+                        return lisp->provideInteger(sizes[0]);
                     }
+                    if (e->checkShape(0, sizes)) {
+                        res = lisp->provideIntegers();
+                        for (long i = 0; i < sizes.size(); i++) {
+                            ((Integers*)res)->liste.push_back(sizes[i]);
+                        }
+                        lisp->set_true_as_true();
+                        return res;
+                    }
+                    break;
+                }
+                default:
                     listsize = e->size();
                     e->release();
                     lisp->set_true_as_true();
@@ -4075,10 +4084,10 @@ Element* List::evall_rho(LispE* lisp) {
             e = liste[2]->eval(lisp);
             if (!e->isList())
                 throw new Error("Error: Second argument should be a list");
-            listsize = e->size();
             evalAsInteger(1, lisp, sz1);
             switch (e->type) {
                 case t_floats: {
+                    listsize = e->size();
                     res = lisp->provideFloats();
                     res->reserve(sz1);
                     if (listsize <= 1) {
@@ -4099,6 +4108,7 @@ Element* List::evall_rho(LispE* lisp) {
                     break;
                 }
                 case t_numbers: {
+                    listsize = e->size();
                     res = lisp->provideNumbers();
                     res->reserve(sz1);
                     if (listsize <= 1) {
@@ -4119,6 +4129,7 @@ Element* List::evall_rho(LispE* lisp) {
                     break;
                 }
                 case t_shorts: {
+                    listsize = e->size();
                     res = new Shorts();
                     res->reserve(sz1);
                     if (listsize <= 1) {
@@ -4139,6 +4150,7 @@ Element* List::evall_rho(LispE* lisp) {
                     break;
                 }
                 case t_integers: {
+                    listsize = e->size();
                     res = lisp->provideIntegers();
                     res->reserve(sz1);
                     if (listsize <= 1) {
@@ -4159,6 +4171,7 @@ Element* List::evall_rho(LispE* lisp) {
                     break;
                 }
                 case t_strings: {
+                    listsize = e->size();
                     res = lisp->provideStrings();
                     res->reserve(sz1);
                     if (listsize <= 1) {
@@ -4178,10 +4191,11 @@ Element* List::evall_rho(LispE* lisp) {
                     }
                     break;
                 }
-                default: {
+                case t_list: {
+                    listsize = e->size();
                     res = lisp->provideList();
                     res->reserve(sz1);
-                    if (listsize == 1) {
+                    if (listsize <= 1) {
                         Element* v = zero_;
                         if (listsize == 1)
                             v = e->index(0);
@@ -4194,6 +4208,32 @@ Element* List::evall_rho(LispE* lisp) {
                         if (ei == listsize)
                             ei = 0;
                         res->append(e->index(ei++));
+                    }
+                    break;
+                }
+                case t_llist: {
+                    res = new LList(&lisp->delegation->mark);
+                    u_link* u = ((LList*)e)->liste.begin();
+                    if (u == NULL) {
+                        Element* v = zero_;
+                        for (long i = 0; i < sz1; i++)
+                            ((LList*)res)->push_front(v);
+                        break;
+                    }
+                    else {
+                        if (u->_next == NULL) {
+                            Element* v = u->value->copying(false);
+                            for (long i = 0; i < sz1; i++)
+                                ((LList*)res)->push_front(v);
+                        }
+                        else {
+                            for (long i = 0; i < sz1; i++) {
+                                if (u == NULL)
+                                    u = ((LList*)e)->liste.begin();
+                                ((LList*)res)->push_front(u->value->copying(false));
+                                u = u->next();
+                            }
+                        }
                     }
                 }
             }
@@ -4210,31 +4250,143 @@ Element* List::evall_rho(LispE* lisp) {
             
             evalAsInteger(1, lisp, sz1);
             evalAsInteger(2, lisp, sz2);
-            listsize = e->size();
-            if (e->type == t_floats)
-                res = new Matrice_float(lisp, e, sz1, sz2);
-            else
-                res = new Matrice(lisp, e, sz1, sz2);
+            switch (e->type) {
+                case t_floats:
+                case t_numbers:
+                    if (e->isEmpty()) {
+                        e->release();
+                        e = lisp->provideFloats(1, 0);
+                    }
+                    res = new Matrice_float(lisp, e, sz1, sz2);
+                    break;
+                case t_shorts:
+                case t_integers:
+                    if (e->isEmpty()) {
+                        e->release();
+                        e = lisp->provideIntegers(1, 0);
+                    }
+                    res = new Matrice(lisp, e, sz1, sz2);
+                    break;
+                case t_strings: {
+                    if (e->isEmpty()) {
+                        e->release();
+                        e = lisp->provideStrings();
+                        e->append(emptystring_);
+                    }
+                    vecte<long> shape;
+                    shape.push_back(sz1);
+                    shape.push_back(sz2);
+                    res = new List;
+                    sz1 = 0;
+                    ((List*)res)->build(lisp,shape, 0,res, e, sz1);
+                    break;
+                }
+                case t_list: {
+                    if (e->isEmpty()) {
+                        e->release();
+                        e = lisp->provideIntegers(1, 0);
+                        res = new Matrice(lisp, e, sz1, sz2);
+                        break;
+                    }
+                    else {
+                        vecte<long> shape;
+                        shape.push_back(sz1);
+                        shape.push_back(sz2);
+                        res = new List;
+                        sz1 = 0;
+                        ((List*)res)->build(lisp,shape, 0,res, e, sz1);
+                    }
+                    break;
+                }
+                case t_llist: {
+                    vecte<long> shape;
+                    shape.push_back(sz1);
+                    shape.push_back(sz2);
+                    res = new LList(&lisp->delegation->mark);
+                    u_link* u = ((LList*)e)->liste.begin();
+                    if (u == NULL) {
+                        e->release();
+                        e = new LList(&lisp->delegation->mark);
+                        e->append(zero_);
+                        u = ((LList*)e)->liste.begin();
+                    }
+                    ((LList*)res)->build(lisp,shape, 0, (LList*)res, (LList*)e, &u);
+                    break;
+                }
+            }
             
             e->release();
             lisp->set_true_as_true();
             return res;
         }
 
-        vecte<long> sizes;
-        long s;
+        vecte<long> shape;
+        long idx;
         listsize--;
         for (long i = 1; i < listsize; i++) {
-            evalAsInteger(i, lisp, s);
-            sizes.push_back(s);
+            evalAsInteger(i, lisp, idx);
+            shape.push_back(idx);
         }
         e = liste[listsize]->eval(lisp);
         if (!e->isList())
             throw new Error("Error: last argument should be a list");
-        if (e->type == t_floats)
-            res = new Tenseur_float(lisp, e, sizes);
-        else
-            res = new Tenseur(lisp, e, sizes);
+
+        switch (e->type) {
+            case t_floats:
+            case t_numbers:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = lisp->provideFloats(1, 0);
+                }
+                res = new Tenseur_float(lisp, e, shape);
+                break;
+            case t_shorts:
+            case t_integers:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = lisp->provideIntegers(1, 0);
+                }
+                res = new Tenseur(lisp, e, shape);
+                break;
+            case t_strings:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = lisp->provideStrings();
+                    e->append(emptystring_);
+                }
+                else {
+                    res = new List;
+                    idx = 0;
+                    ((List*)res)->build(lisp,shape, 0,res, e, idx);
+                }
+                break;
+            case t_list: {
+                if (e->isEmpty()) {
+                    e->release();
+                    e = lisp->provideIntegers(1, 0);
+                    res = new Tenseur(lisp, e, shape);
+                }
+                else {
+                    res = new List;
+                    idx = 0;
+                    ((List*)res)->build(lisp,shape, 0,res, e, idx);
+                }
+                break;
+            }
+            case t_llist: {
+                res = new LList(&lisp->delegation->mark);
+                u_link* u = ((LList*)e)->liste.begin();
+                if (u == NULL) {
+                    e->release();
+                    e = new LList(&lisp->delegation->mark);
+                    e->append(zero_);
+                    u = ((LList*)e)->liste.begin();
+                }
+                ((LList*)res)->build(lisp,shape, 0, (LList*)res, (LList*)e, &u);
+                break;
+            }
+        }
+
         e->release();
         lisp->set_true_as_true();
     }
@@ -6819,7 +6971,7 @@ Element* List::evall_list(LispE* lisp) {
 Element* List::evall_llist(LispE* lisp) {
     short listsize = liste.size();
     if (listsize == 1)
-        return emptylist_;
+        return new LList(&lisp->delegation->mark);
 
     LList* first_element = NULL;
     Element* second_element = null_;

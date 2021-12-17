@@ -120,6 +120,10 @@ public:
             e = e->next();
         }
     }
+
+    bool isone() {
+        return (first != NULL && first->_next == NULL);
+    }
     
     bool atleast2() {
         return (first != NULL && first->_next != NULL && first->_next != first);
@@ -565,6 +569,8 @@ public:
         return l;
     }
 
+    void build(LispE* lisp, vecte<long>& shape, long isz, LList* res, LList* lst, u_link** idx);
+    
     LList* back_duplicate() {
         LList* l = new LList(liste.mark);
         u_link* a = liste.last();
@@ -609,10 +615,46 @@ public:
     // We must force the copy when it is a constant
     Element* duplicate_constant(bool pair = false);
     
+    bool checkShape(long depth, vecte<long>& sz) {
+        if (size() != sz[depth])
+            return false;
+        if (depth == sz.size()-1) {
+            for (u_link* u = liste.begin(); u != NULL; u = u->next()) {
+                if (u->value->isList())
+                    return false;
+            }
+            return true;
+        }
+        
+        for (u_link* u = liste.begin(); u != NULL; u = u->next()) {
+            if (!u->value->isList())
+                return false;
+            if (!u->value->checkShape(depth+1,sz))
+                return false;
+        }
+        return true;
+    }
+
+    void getShape(vecte<long>& sz) {
+        long s;
+        Element* l = this;
+        while (l->type != v_null) {
+            s = l->size();
+            if (!s)
+                return;
+            sz.push_back(s);
+            l = l->index(0);
+        }
+    }
+
     bool isList() {
         return true;
     }
     
+    bool isEmpty() {
+        return liste.empty();
+    }
+
     bool isNotEmptyList() {
         return (!liste.empty());
     }
@@ -791,6 +833,10 @@ public:
             buffer += U" ...";
         buffer += U")";
         return buffer;
+    }
+    
+    bool isone() {
+        return liste.isone();
     }
     
     bool atleast2() {

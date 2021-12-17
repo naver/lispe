@@ -63,7 +63,7 @@ typedef enum {
     l_catch, l_throw, l_maybe,
     
     //Check values
-    l_atomp, l_numberp, l_consp, l_zerop, l_nullp, l_stringp,
+    l_atomp, l_numberp, l_consp, l_emptyp, l_zerop, l_nullp, l_stringp,
     l_quote,
     //Numerical operations
     l_sign, l_signp, l_minus_plus,
@@ -559,6 +559,10 @@ public:
         return false;
     }
 
+    virtual bool isEmpty() {
+        return true;
+    }
+    
     virtual bool isNonOperatorAtom() {
         return false;
     }
@@ -1957,6 +1961,10 @@ public:
     }
     
     Element* loop(LispE* lisp, short label,  List* code);
+    
+    bool isEmpty() {
+        return (content == U"");
+    }
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);

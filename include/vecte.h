@@ -219,7 +219,7 @@ public:
     }
     
     inline bool empty() {
-        return (last == 0);
+        return !last;
     }
     
     inline Z get(long pos) {

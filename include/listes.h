@@ -459,7 +459,11 @@ public:
     inline bool is_not_empty() {
         return (home != item->last);
     }
-    
+
+    inline bool empty() {
+        return (home == item->last);
+    }
+
     inline bool checkType() {
         return (home != item->last && item->buffer[0]->type < l_final);
     }
@@ -565,6 +569,8 @@ public:
         return false;
     }
 
+    void build(LispE* lisp, vecte<long>& shape, long isz, Element* res, Element* lst, long& idx);
+    
     bool isExecutable(LispE*);
     
     char check_match(LispE* lisp, Element* value);
@@ -640,8 +646,12 @@ public:
         return (liste.size() && liste.item->buffer[0]->type == l_lambda);
     }
     
+    bool isEmpty() {
+        return liste.empty();
+    }
+
     bool isNotEmptyList() {
-        return (liste.size());
+        return (!liste.empty());
     }
     
     void increment() {
@@ -1172,6 +1182,7 @@ public:
     Element* evall_divideequal(LispE* lisp);
     Element* evall_duplicate(LispE* lisp);
     Element* evall_elapse(LispE* lisp);
+    Element* evall_emptyp(LispE* lisp);
     Element* evall_eq(LispE* lisp);
     Element* evall_equal(LispE* lisp);
     Element* evall_equalonezero(LispE* lisp);
@@ -1792,8 +1803,13 @@ public:
         return true;
     }
     
+    bool isEmpty() {
+        return liste.empty();
+    }
+
+
     bool isNotEmptyList() {
-        return (liste.size());
+        return !liste.empty();
     }
         
     Element* join_in_list(LispE* lisp, u_ustring& sep);
@@ -2213,10 +2229,15 @@ public:
         return true;
     }
     
-    bool isNotEmptyList() {
-        return (liste.size());
+    bool isEmpty() {
+        return liste.empty();
     }
-        
+
+
+    bool isNotEmptyList() {
+        return !liste.empty();
+    }
+
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -2609,10 +2630,15 @@ public:
         return true;
     }
     
-    bool isNotEmptyList() {
-        return (liste.size());
+    bool isEmpty() {
+        return liste.empty();
     }
-    
+
+
+    bool isNotEmptyList() {
+        return !liste.empty();
+    }
+
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -2979,10 +3005,15 @@ public:
         return true;
     }
     
-    bool isNotEmptyList() {
-        return (liste.size());
+    bool isEmpty() {
+        return liste.empty();
     }
-    
+
+
+    bool isNotEmptyList() {
+        return !liste.empty();
+    }
+
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -4369,11 +4400,15 @@ public:
         return true;
     }
     
-    bool isNotEmptyList() {
-        return (liste.size());
+    bool isEmpty() {
+        return liste.empty();
     }
-    
-    
+
+
+    bool isNotEmptyList() {
+        return !liste.empty();
+    }
+
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
