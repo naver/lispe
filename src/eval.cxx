@@ -3144,10 +3144,11 @@ Element* List::evall_innerproduct(LispE* lisp) {
             if (sx_1 != sx_2)
                 throw new Error("Error: lists should have the same size for '.'");
                                 
-
+            l1->increment();
+            l2->increment();
             e = apply_op1_op2(lisp, op1, op2, l1, l2);
-            l1->release();
-            l2->release();
+            l1->decrement();
+            l2->decrement();
             op1->release();
             op2->release();
             lisp->set_true_as_true();
@@ -3169,9 +3170,11 @@ Element* List::evall_innerproduct(LispE* lisp) {
                 }
             }
             
+            l1->increment();
+            l2->increment();
             e = apply_op1_op2(lisp, op1, op2, l1, l2);
-            l1->release();
-            l2->release();
+            l1->decrement();
+            l2->decrement();
             op1->release();
             op2->release();
             lisp->set_true_as_true();
@@ -4252,13 +4255,13 @@ Element* List::evall_rho(LispE* lisp) {
             evalAsInteger(2, lisp, sz2);
             switch (e->type) {
                 case t_floats:
-                case t_numbers:
                     if (e->isEmpty()) {
                         e->release();
                         e = lisp->provideFloats(1, 0);
                     }
                     res = new Matrice_float(lisp, e, sz1, sz2);
                     break;
+                case t_numbers:
                 case t_shorts:
                 case t_integers:
                     if (e->isEmpty()) {
@@ -4333,13 +4336,13 @@ Element* List::evall_rho(LispE* lisp) {
 
         switch (e->type) {
             case t_floats:
-            case t_numbers:
                 if (e->isEmpty()) {
                     e->release();
                     e = lisp->provideFloats(1, 0);
                 }
                 res = new Tenseur_float(lisp, e, shape);
                 break;
+            case t_numbers:
             case t_shorts:
             case t_integers:
                 if (e->isEmpty()) {
