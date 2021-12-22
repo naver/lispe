@@ -19,8 +19,6 @@
 		0B4E1AAE260B85D800BBAE21 /* rgx.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9C260B85D700BBAE21 /* rgx.cxx */; };
 		0B4E1AAF260B85D800BBAE21 /* jagget.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9D260B85D800BBAE21 /* jagget.cxx */; };
 		0B4E1AB1260B85D800BBAE21 /* maths.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9F260B85D800BBAE21 /* maths.cxx */; };
-		0B4E1ABE260B871900BBAE21 /* libfltk.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B4E1ABD260B870200BBAE21 /* libfltk.a */; };
-		0B4E1AC0260B873D00BBAE21 /* libfltk_images.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B4E1ABF260B872900BBAE21 /* libfltk_images.a */; };
 		0B4EC62D1FC5C27200082CA6 /* Linenumber.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B4EC62C1FC5C27200082CA6 /* Linenumber.m */; };
 		0B4EC6341FC8150400082CA6 /* tamgudebugger.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B4EC6331FC8150400082CA6 /* tamgudebugger.m */; };
 		0B55A5151FC3140F005339A9 /* Lecode.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B55A5141FC3140F005339A9 /* Lecode.m */; };
@@ -122,9 +120,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0B4E1ABE260B871900BBAE21 /* libfltk.a in Frameworks */,
 				0BF4E43A1FC2D357004C0821 /* Cocoa.framework in Frameworks */,
-				0B4E1AC0260B873D00BBAE21 /* libfltk_images.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

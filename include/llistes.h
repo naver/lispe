@@ -61,6 +61,11 @@ public:
         return NULL;
     }
 
+    u_link* next_mark() {
+        _next->mark = mark;
+        return _next;
+    }
+
     u_link* previous() {
         if (_previous != NULL && mark != _previous->mark) {
             _previous->mark = mark;
@@ -170,41 +175,39 @@ public:
     }
     
     u_link* last() {
+        if (!first)
+            return NULL;
         u_link* e = begin();
-        u_link* prev = NULL;
-        while (e) {
-            prev = e;
-            e = e->next();
+        while (e->check_next()) {
+            e = e->next_mark();
         }
-        if (prev != NULL)
-            initialize(prev);
-        return prev;
+        initialize(e);
+        return e;
     }
 
     u_link* last(long& sz) {
         sz = 0;
+        if (!first)
+            return NULL;
         u_link* e = begin();
-        u_link* prev = NULL;
-        while (e) {
+        while (e->check_next()) {
             sz++;
-            prev = e;
-            e = e->next();
+            e = e->next_mark();
         }
-        if (prev != NULL)
-            initialize(prev);
-        return prev;
+        initialize(e);
+        return e;
     }
 
     //Here we do not reset the marks at the end
     //of the loop.
     u_link* last_raw() {
+        if (!first)
+            return NULL;
         u_link* e = begin();
-        u_link* prev = NULL;
-        while (e) {
-            prev = e;
-            e = e->next();
+        while (e->check_next()) {
+            e = e->next_mark();
         }
-        return prev;
+        return e;
     }
     
     void insertbeforelast(Element* v) {
@@ -344,7 +347,7 @@ public:
         
         u_link* c = begin();
         while (c != NULL && i) {
-            c = c->_next;
+            c = c->next();
             i--;
         }
         if (c != NULL)

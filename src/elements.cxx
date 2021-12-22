@@ -5207,6 +5207,9 @@ Element* LList::reverse(LispE* lisp, bool duplicate) {
     if (duplicate) {
         LList* l = new LList(liste.mark);
         u_link*  it = liste.begin();
+        if (it == NULL)
+            return l;
+        
         u_link* p = it;
         u_link* tail = NULL;
         for (; it != NULL; it = it->next()) {
