@@ -1858,9 +1858,12 @@ void jag_editor::deindentminus() {
     for (; u < line.size() && line[u] == ' '; u++) {}
     if (u >= nb) {
         tobesaved = true;
+        long sz = line.size();
         line = line.substr(nb, line.size());
         undo(lines[pos],pos, u_modif);
         lines[pos] = line;
+        wstring blanks(sz, ' ');
+        printline(pos, blanks, -1);
         printline(pos, line, -1);
         movetoline(currentline);
         movetoposition();
