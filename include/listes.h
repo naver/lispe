@@ -4704,6 +4704,7 @@ public:
     vecte<long> positions;
     long max_iterator;
     Element* index_value;
+    bool last;
     
     Rankloop(LispE* lp, List* l);
     
@@ -4725,45 +4726,74 @@ public:
 
     Element* index(long i) {
         index_value->decrement();
-        positions.push_back(i);
-        index_value = lst->rank(lisp, positions);
-        positions.pop_back();
+        if (last)
+            index_value = lst->rank(lisp, positions);
+        else {
+            positions.push_back(i);
+            index_value = lst->rank(lisp, positions);
+            positions.pop_back();
+        }
         index_value->increment();
         return index_value;
     }
 
     Element* protected_index(LispE* lisp,long i) {
-        positions.push_back(i);
-        Element* r = lst->rank(lisp, positions);
-        positions.pop_back();
+        Element* r;
+        if (last)
+            r = lst->rank(lisp, positions);
+        else {
+            positions.push_back(i);
+            r = lst->rank(lisp, positions);
+            positions.pop_back();
+        }
         return r;
     }
     
     Element* value_from_index(LispE* lisp, long i) {
-        positions.push_back(i);
-        Element* r = lst->rank(lisp, positions);
-        positions.pop_back();
+        Element* r;
+        if (last)
+            r = lst->rank(lisp, positions);
+        else {
+            positions.push_back(i);
+            r = lst->rank(lisp, positions);
+            positions.pop_back();
+        }
         return r;
     }
     
     Element* value_on_index(LispE*, long i) {
-        positions.push_back(i);
-        Element* r = lst->rank(lisp, positions);
-        positions.pop_back();
+        Element* r;
+        if (last)
+            r = lst->rank(lisp, positions);
+        else {
+            positions.push_back(i);
+            r = lst->rank(lisp, positions);
+            positions.pop_back();
+        }
         return r;
     }
     
     Element* value_on_index(LispE*, Element* idx) {
-        positions.push_back(idx->asInteger());
-        Element* r = lst->rank(lisp, positions);
-        positions.pop_back();
+        Element* r;
+        if (last)
+            r = lst->rank(lisp, positions);
+        else {
+            positions.push_back(idx->asInteger());
+            r = lst->rank(lisp, positions);
+            positions.pop_back();
+        }
         return r;
     }
     
     Element* protected_index(LispE*, Element* k)  {
-        positions.push_back(k->asInteger());
-        Element* r = lst->rank(lisp, positions);
-        positions.pop_back();
+        Element* r;
+        if (last)
+            r = lst->rank(lisp, positions);
+        else {
+            positions.push_back(k->asInteger());
+            r = lst->rank(lisp, positions);
+            positions.pop_back();
+        }
         return r;
     }
 

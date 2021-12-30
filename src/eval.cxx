@@ -3387,9 +3387,15 @@ Element* List::evall_irank(LispE* lisp) {
         vecte<long> shape;
         element->getShape(shape);
         
-        if (shape.size() <= r->positions.size())
+        if (shape.size() < r->positions.size())
             throw new Error("Error: cannot loop with 'irank' with these indexes");
-        r->max_iterator = shape[r->positions.size()];
+        
+        if (shape.size() == r->positions.size()) {
+            r->max_iterator = 1;
+            r->last = true;
+        }
+        else
+            r->max_iterator = shape[r->positions.size()];
     }
     catch (Error* err) {
         if (r != NULL)

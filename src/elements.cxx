@@ -42,6 +42,7 @@ Element* Element::quoting(LispE* lisp) {
 }
 //------------------------------------------------------------------------------------------
 Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
+    last = false;
     type = l_irank;
     lisp = lp;
     index_value = null_;
@@ -3618,9 +3619,13 @@ Element* Rankloop::loop(LispE* lisp, short label, List* code) {
     Element* ranks = null_;
     
     for (long i = 0; i < max_iterator; i++) {
-        positions.push_back(i);
-        ranks = lst->rank(lisp, positions);
-        positions.pop_back();
+        if (last)
+            ranks = lst->rank(lisp, positions);
+        else {
+            positions.push_back(i);
+            ranks = lst->rank(lisp, positions);
+            positions.pop_back();
+        }
         lisp->replacingvalue(ranks, label);
         e = null_;
         //We then execute our instructions
