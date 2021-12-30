@@ -2067,9 +2067,9 @@ Element* List::evall_bitnot(LispE* lisp) {
         
     try {
         first_element = first_element->eval(lisp);
+        first_element = first_element->copyatom(1);
         e = first_element->bit_not(lisp);
-        if (e != first_element)
-            first_element->release();
+        first_element->release();
     }
     catch (Error* err) {
         first_element->release();
@@ -3276,7 +3276,8 @@ Element* List::evall_outerproduct(LispE* lisp) {
         l1->getShape(size);
         l2->getShape(size);
         if (size.size() == 2) {
-            if (l1->type == t_floats && l2->type == t_floats) {
+            if ((l1->type == t_floats && l2->type == t_floats) ||
+                (l1->type == t_shorts && l2->type == t_shorts)) {
                 res = new Matrice_float(lisp, size[0], size[1], 0.0);
                 ((Matrice_float*)res)->combine(lisp, l1, l2, call);
             }
@@ -3286,7 +3287,8 @@ Element* List::evall_outerproduct(LispE* lisp) {
             }
         }
         else {
-            if (l1->type == t_floats && l2->type == t_floats) {
+            if ((l1->type == t_floats && l2->type == t_floats) ||
+                (l1->type == t_shorts && l2->type == t_shorts)) {
                 res = new Tenseur_float(lisp, size, zero_);
                 ((Tenseur_float*)res)->combine(lisp, l1, l2, call);
             }
@@ -3354,6 +3356,50 @@ Element* List::evall_rank(LispE* lisp) {
         throw err;
     }
     return lst;
+}
+
+Element* List::evall_irank(LispE* lisp) {
+    short listsz = liste.size();
+    
+    Element* element = null_;
+    Element* e = null_;
+    Element* lst = null_;
+    Rankloop* r = NULL;
+    long i, v;
+    
+    try {
+        element = liste[1]->eval(lisp);
+        if (element->type < t_matrix || element->type > t_tensor_float)
+            throw new Error("Error: expecting a matrix or a tensor for 'rank'");
+
+        r = new Rankloop(lisp, (List*)element);
+        
+        for (i = 2; i < listsz; i++) {
+            e = liste[i]->eval(lisp);
+            if (e->isNumber()) {
+                v = e->asInteger();
+                r->positions.push_back(v);
+            }
+            else
+                r->positions.push_back(-1);
+            _releasing(e);
+        }
+        vecte<long> shape;
+        element->getShape(shape);
+        
+        if (shape.size() <= r->positions.size())
+            throw new Error("Error: cannot loop with 'irank' with these indexes");
+        r->max_iterator = shape[r->positions.size()];
+    }
+    catch (Error* err) {
+        if (r != NULL)
+            r->release();
+        lst->release();
+        element->release();
+        e->release();
+        throw err;
+    }
+    return r;
 }
 
 Element* List::evall_reduce(LispE* lisp) {
@@ -4254,6 +4300,7 @@ Element* List::evall_rho(LispE* lisp) {
             evalAsInteger(1, lisp, sz1);
             evalAsInteger(2, lisp, sz2);
             switch (e->type) {
+                case t_shorts:
                 case t_floats:
                     if (e->isEmpty()) {
                         e->release();
@@ -4262,7 +4309,6 @@ Element* List::evall_rho(LispE* lisp) {
                     res = new Matrice_float(lisp, e, sz1, sz2);
                     break;
                 case t_numbers:
-                case t_shorts:
                 case t_integers:
                     if (e->isEmpty()) {
                         e->release();
@@ -4335,6 +4381,7 @@ Element* List::evall_rho(LispE* lisp) {
             throw new Error("Error: last argument should be a list");
 
         switch (e->type) {
+            case t_shorts:
             case t_floats:
                 if (e->isEmpty()) {
                     e->release();
@@ -4343,7 +4390,6 @@ Element* List::evall_rho(LispE* lisp) {
                 res = new Tenseur_float(lisp, e, shape);
                 break;
             case t_numbers:
-            case t_shorts:
             case t_integers:
                 if (e->isEmpty()) {
                     e->release();

@@ -41,6 +41,14 @@ Element* Element::quoting(LispE* lisp) {
     return l;
 }
 //------------------------------------------------------------------------------------------
+Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
+    type = l_irank;
+    lisp = lp;
+    index_value = null_;
+    lst = l;
+    max_iterator = 0;
+}
+//------------------------------------------------------------------------------------------
 short Element::function_label() {
     throw new Error("Error: Not a function or a data structure");
 }
@@ -3587,6 +3595,33 @@ Element* Tenseur_float::loop(LispE* lisp, short label, List* code) {
     long sz = code->liste.size();
     for (long i = 0; i < shape[0]; i++) {
         lisp->replacingvalue(liste[i], label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Rankloop::loop(LispE* lisp, short label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    long sz = code->liste.size();
+    Element* ranks = null_;
+    
+    for (long i = 0; i < max_iterator; i++) {
+        positions.push_back(i);
+        ranks = lst->rank(lisp, positions);
+        positions.pop_back();
+        lisp->replacingvalue(ranks, label);
         e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {

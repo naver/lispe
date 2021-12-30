@@ -80,7 +80,7 @@ typedef enum {
     l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max,
     
     l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
-    l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank,
+    l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank,
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     
     //Comparisons
@@ -2147,7 +2147,6 @@ public:
     Element* copying(bool duplicate = true);
     Element* duplicate_constant(bool pair = false);
 };
-
 
 class InfiniterangeNumber : public Element {
 public:

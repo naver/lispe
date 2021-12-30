@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2021.12.22.15.25";
+static std::string version = "1.2021.12.30.18.39";
 string LispVersion() {
     return version;
 }
@@ -403,6 +403,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_ludcmp, "ludcmp", P_TWO, &List::evall_ludcmp);
     set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb);
     set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
+    set_instruction(l_irank, "irank", P_ATLEASTTHREE, &List::evall_irank);
     set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce);
     set_instruction(l_scan, "scan", P_THREE, &List::evall_scan);
     set_instruction(l_backreduce, "backreduce", P_TWO | P_THREE, &List::evall_backreduce);
@@ -2122,6 +2123,8 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
 
 
 

@@ -699,7 +699,7 @@ public:
     Element* extraction(LispE* lisp, List*);
     Element* replace_in(LispE* lisp, List*);
     
-    Element* index(long i) {
+    virtual Element* index(long i) {
         return liste[i];
     }
     
@@ -1210,6 +1210,7 @@ public:
     Element* evall_infix(LispE* lisp);
     Element* evall_innerproduct(LispE* lisp);
     Element* evall_input(LispE* lisp);
+    Element* evall_irank(LispE* lisp);
     Element* evall_insert(LispE* lisp);
     Element* evall_integers(LispE* lisp);
     Element* evall_shorts(LispE* lisp);
@@ -4693,6 +4694,80 @@ public:
     Element* copyatom(uint16_t s);
     Element* copying(bool duplicate = true);
 
+};
+
+
+class Rankloop : public List {
+public:
+    LispE* lisp;
+    Element* lst;
+    vecte<long> positions;
+    long max_iterator;
+    Element* index_value;
+    
+    Rankloop(LispE* lp, List* l);
+    
+    ~Rankloop() {
+        index_value->decrement();
+    }
+    
+    bool isContainer() {
+        return true;
+    }
+    
+    bool isList() {
+        return true;
+    }
+
+    long size() {
+        return max_iterator;
+    }
+
+    Element* index(long i) {
+        index_value->decrement();
+        positions.push_back(i);
+        index_value = lst->rank(lisp, positions);
+        positions.pop_back();
+        index_value->increment();
+        return index_value;
+    }
+
+    Element* protected_index(LispE* lisp,long i) {
+        positions.push_back(i);
+        Element* r = lst->rank(lisp, positions);
+        positions.pop_back();
+        return r;
+    }
+    
+    Element* value_from_index(LispE* lisp, long i) {
+        positions.push_back(i);
+        Element* r = lst->rank(lisp, positions);
+        positions.pop_back();
+        return r;
+    }
+    
+    Element* value_on_index(LispE*, long i) {
+        positions.push_back(i);
+        Element* r = lst->rank(lisp, positions);
+        positions.pop_back();
+        return r;
+    }
+    
+    Element* value_on_index(LispE*, Element* idx) {
+        positions.push_back(idx->asInteger());
+        Element* r = lst->rank(lisp, positions);
+        positions.pop_back();
+        return r;
+    }
+    
+    Element* protected_index(LispE*, Element* k)  {
+        positions.push_back(k->asInteger());
+        Element* r = lst->rank(lisp, positions);
+        positions.pop_back();
+        return r;
+    }
+
+    Element* loop(LispE* lisp, short label,  List* code);
 };
 
 
