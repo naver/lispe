@@ -3761,38 +3761,7 @@ public:
         return new Tenseur_float(this);
     }
 
-    Element* storeRank(Element* current, vecte<long>& positions, long idx) {
-        bool last = false;
-        if (idx == shape.size() - 1) {
-            last = true;
-        }
-        
-        long p_idx = -1;
-        if (idx < positions.size())
-            p_idx = positions[idx];
-        
-        if (p_idx == -1) {
-            if (last)
-                return new Floats((Floats*)current);
-            
-            Element* result;
-            Element* e = storeRank(current->index(0), positions, idx+1);
-            if (e->type == t_number)
-                result = new Floats;
-            else
-                result = new List;
-            result->append(e);
-            for (p_idx = 1; p_idx < shape[idx]; p_idx++) {
-                result->append(storeRank(current->index(p_idx), positions, idx+1));
-            }
-            return result;
-        }
-
-        if (last)
-            return current->index(p_idx);
-        return storeRank(current->index(p_idx), positions, idx+1);
-    }
-    
+    Element* storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
     void build(LispE* lisp, long isz, Element* res, float n);
@@ -4066,38 +4035,7 @@ public:
         return new Tenseur(this);
     }
 
-    Element* storeRank(Element* current, vecte<long>& positions, long idx) {
-        bool last = false;
-        if (idx == shape.size() - 1) {
-            last = true;
-        }
-        
-        long p_idx = -1;
-        if (idx < positions.size())
-            p_idx = positions[idx];
-        
-        if (p_idx == -1) {
-            if (last)
-                return new Numbers((Numbers*)current);
-            
-            Element* result;
-            Element* e = storeRank(current->index(0), positions, idx+1);
-            if (e->type == t_number)
-                result = new Numbers;
-            else
-                result = new List;
-            result->append(e);
-            for (p_idx = 1; p_idx < shape[idx]; p_idx++) {
-                result->append(storeRank(current->index(p_idx), positions, idx+1));
-            }
-            return result;
-        }
-
-        if (last)
-            return current->index(p_idx);
-        return storeRank(current->index(p_idx), positions, idx+1);
-    }
-    
+    Element* storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
     void build(LispE* lisp, long isz, Element* res, double n);

@@ -3309,6 +3309,70 @@ void Dictionarypool::append(LispE* lisp, long v) {
 }
 
 //------------------------------------------------------------------------------------------
+Element* Tenseur::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
+    bool last = false;
+    if (idx == shape.size() - 1) {
+        last = true;
+    }
+    
+    long p_idx = -1;
+    if (idx < positions.size())
+        p_idx = positions[idx];
+    
+    if (p_idx == -1) {
+        if (last)
+            return lisp->provideNumbers((Numbers*)current);
+        
+        Element* result;
+        Element* e = storeRank(lisp, current->index(0), positions, idx+1);
+        if (e->type == t_number)
+            result = lisp->provideNumbers();
+        else
+            result = lisp->provideList();
+        result->append(e);
+        for (p_idx = 1; p_idx < shape[idx]; p_idx++) {
+            result->append(storeRank(lisp, current->index(p_idx), positions, idx+1));
+        }
+        return result;
+    }
+
+    if (last)
+        return current->index(p_idx);
+    return storeRank(lisp, current->index(p_idx), positions, idx+1);
+}
+
+Element* Tenseur_float::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
+    bool last = false;
+    if (idx == shape.size() - 1) {
+        last = true;
+    }
+    
+    long p_idx = -1;
+    if (idx < positions.size())
+        p_idx = positions[idx];
+    
+    if (p_idx == -1) {
+        if (last)
+            return lisp->provideFloats((Floats*)current);
+        
+        Element* result;
+        Element* e = storeRank(lisp, current->index(0), positions, idx+1);
+        if (e->type == t_number)
+            result = lisp->provideFloats();
+        else
+            result = lisp->provideList();
+        result->append(e);
+        for (p_idx = 1; p_idx < shape[idx]; p_idx++) {
+            result->append(storeRank(lisp, current->index(p_idx), positions, idx+1));
+        }
+        return result;
+    }
+
+    if (last)
+        return current->index(p_idx);
+    return storeRank(lisp, current->index(p_idx), positions, idx+1);
+}
+
 Element* Matrice_float::rank(LispE* lisp, vecte<long>& positions) {
     while (positions.back() < 0)
         positions.pop_back();
@@ -3386,7 +3450,7 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
             throw new Error("Error: indexes out of bounds");
     }
     
-    Element* res = storeRank(this, positions, 0);
+    Element* res = storeRank(lisp, this, positions, 0);
     if (res->type == t_numbers)
         return res;
     
@@ -3421,7 +3485,7 @@ Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
             throw new Error("Error: indexes out of bounds");
     }
     
-    Element* res = storeRank(this, positions, 0);
+    Element* res = storeRank(lisp, this, positions, 0);
     if (res->type == t_floats)
         return res;
     
