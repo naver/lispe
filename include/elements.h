@@ -902,6 +902,26 @@ public:
         return atome;
     }
     
+    double asNumber() {
+        return Boolean();
+    }
+
+    float asFloat() {
+        return Boolean();
+    }
+
+    short asShort() {
+        return Boolean();
+    }
+    
+    long asInteger() {
+        return Boolean();
+    }
+    
+    int asInt() {
+        return Boolean();
+    }
+        
     virtual char check_match(LispE* lisp, Element* value) {
         return check_ok*(atome == value->label());
     }
