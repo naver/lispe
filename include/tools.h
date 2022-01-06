@@ -175,7 +175,7 @@ Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second);
 Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code);
 Exporting bool c_utf16(u_uchar code);
 
-char c_test_utf8(unsigned char* utf);
+Exporting char c_test_utf8(unsigned char* utf);
 
 #define c_is_digit(c) (c >= '0' && c <= '9')
 

@@ -874,7 +874,7 @@ string c_unicode_to_utf8(UWCHAR code) {
     return utf;
 }
 
-char c_test_utf8(unsigned char* utf) {
+Exporting char c_test_utf8(unsigned char* utf) {
     if (utf == NULL || !(utf[0] & 0x0080))
         return 0;
     

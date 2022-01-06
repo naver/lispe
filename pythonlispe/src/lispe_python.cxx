@@ -186,9 +186,11 @@ static PyObject* toPython(LispE* lisp, Element* resultat) {
     if (resultat->type == t_llist) {
         PyObject* vect = PyList_New(0);
         u_link* u = ((LList*)resultat)->liste.begin();
+		i = 0;
         for (; u != NULL; u = u->next()) {
             pcourant = toPython(lisp, u->value);
             PyList_Insert(vect, i, pcourant);
+			i++;
             Py_DECREF(pcourant);
         }
         return vect;
