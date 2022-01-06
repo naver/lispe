@@ -522,6 +522,8 @@ public:
     long find_element(LispE*, Element* element_value, long idx);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     virtual Element* last_element(LispE* lisp);
@@ -545,6 +547,9 @@ public:
         else
             liste.insert(sz-1, e);
     }
+
+    Element* storeRank(LispE* lisp, Element* current, vecte<long>& shape, vecte<long>& positions, long idx);
+    Element* rank(LispE* lisp, vecte<long>& positions);
 
     short label(long i) {
         return ((Atome*)liste.item->buffer[i])->atome;
@@ -1169,6 +1174,7 @@ public:
     Element* evall_converttonumber(LispE* lisp);
     Element* evall_converttofloat(LispE* lisp);
     Element* evall_converttostring(LispE* lisp);
+    Element* evall_count(LispE* lisp);
     Element* evall_cyclicp(LispE* lisp);
     Element* evall_data(LispE* lisp);
     Element* evall_deflib(LispE* lisp);
@@ -1231,6 +1237,7 @@ public:
     Element* evall_list(LispE* lisp);
     Element* evall_llist(LispE* lisp);
     Element* evall_to_list(LispE* lisp);
+    Element* evall_to_llist(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_lock(LispE* lisp);
     Element* evall_loop(LispE* lisp);
@@ -1287,6 +1294,7 @@ public:
     Element* evall_range(LispE* lisp);
     Element* evall_rank(LispE* lisp);
     Element* evall_reduce(LispE* lisp);
+    Element* evall_replaceall(LispE* lisp);
     Element* evall_resetmark(LispE* lisp);
     Element* evall_return(LispE* lisp);
     Element* evall_reverse(LispE* lisp);
@@ -1303,6 +1311,7 @@ public:
     Element* evall_set_at(LispE* lisp);
     Element* evall_set_range(LispE* lisp);
     Element* evall_setg(LispE* lisp);
+    Element* evall_seti(LispE* lisp);
     Element* evall_setn(LispE* lisp);
     Element* evall_setq(LispE* lisp);
     Element* evall_sign(LispE* lisp);
@@ -1461,9 +1470,14 @@ public:
         return false;
     }
     short label() {
-        if (liste[0]->type == l_set)
-            return t_set;
-        return t_setn;
+        switch (liste[0]->type) {
+            case l_set:
+                return t_set;
+            case l_setn:
+                return t_setn;
+            default:
+                return t_seti;
+        }
     }
     
     bool unify(LispE* lisp, Element* value, bool record);
@@ -1714,6 +1728,10 @@ public:
         }
     }
 
+    bool checkShape(long depth, vecte<long>& sz) {
+        return (depth < sz.size() && sz[depth] == size());
+    }
+    
     Element* invert_sign(LispE* lisp);
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
@@ -1742,6 +1760,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     Element* last_element(LispE* lisp);
@@ -2075,6 +2095,18 @@ public:
         exchange_value.provide = true;
     }
 
+    Floatspool(LispE* l, Floats* f, long pos) : Floats(f, pos) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+    
+    inline Floatspool* set(Floats* nb, long pos) {
+        liste.clear();
+        for (long i = pos; i < nb->liste.size(); i++)
+            liste.push_back(nb->liste[i]);
+        return this;
+    }
+
     inline Floatspool* set(long nb, float v) {
         liste.clear();
         while (nb != 0) {
@@ -2123,6 +2155,10 @@ public:
         liste.reserve(sz);
     }
     
+    bool checkShape(long depth, vecte<long>& sz) {
+        return (depth < sz.size() && sz[depth] == size());
+    }
+
     Element* asList(LispE* lisp);
     
     Element* newInstance(Element* v) {
@@ -2168,6 +2204,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     Element* last_element(LispE* lisp);
@@ -2498,6 +2536,19 @@ public:
         exchange_value.provide = true;
     }
 
+    Numberspool(LispE* l, Numbers* f, long pos) : Numbers(f, pos) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+    
+
+    inline Numberspool* set(Numbers* nb, long pos) {
+        liste.clear();
+        for (long i = pos; i < nb->liste.size(); i++)
+            liste.push_back(nb->liste[i]);
+        return this;
+    }
+
     inline Numberspool* set(long nb, double v) {
         liste.clear();
         while (nb != 0) {
@@ -2547,6 +2598,10 @@ public:
         liste.reserve(sz);
     }
     
+    bool checkShape(long depth, vecte<long>& sz) {
+        return (depth < sz.size() && sz[depth] == size());
+    }
+
     Element* asList(LispE* lisp);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
@@ -2577,6 +2632,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     Element* last_element(LispE* lisp);
@@ -2922,6 +2979,10 @@ public:
         liste.reserve(sz);
     }
     
+    bool checkShape(long depth, vecte<long>& sz) {
+        return (depth < sz.size() && sz[depth] == size());
+    }
+
     Element* asList(LispE* lisp);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
@@ -2952,6 +3013,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     Element* last_element(LispE* lisp);
@@ -3293,6 +3356,18 @@ public:
     Integerspool(LispE* l, Integers* n) : lisp(l), Integers(n) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
+    }
+
+    Integerspool(LispE* l, Integers* f, long pos) : Integers(f, pos) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+    
+    inline Integerspool* set(Integers* nb, long pos) {
+        liste.clear();
+        for (long i = pos; i < nb->liste.size(); i++)
+            liste.push_back(nb->liste[i]);
+        return this;
     }
 
     inline Integerspool* set(long nb, long v) {
@@ -4250,6 +4325,10 @@ public:
         return new Strings;
     }
 
+    bool checkShape(long depth, vecte<long>& sz) {
+        return (depth < sz.size() && sz[depth] == size());
+    }
+
     Element* newInstance(Element* v) {
         return new Strings(liste.size(), v->asString(NULL));
     }
@@ -4285,6 +4364,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     Element* last_element(LispE* lisp);

@@ -40,7 +40,7 @@ typedef enum {
     //Default types
     t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
-    t_set, t_setn, t_floats, t_shorts, t_integers, t_numbers, t_strings,
+    t_set, t_setn, t_seti, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryn, t_data, t_maybe,
     t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
@@ -85,14 +85,14 @@ typedef enum {
     
     //Comparisons
         
-    l_in, l_search, l_revertsearch, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
+    l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
     l_fread, l_fwrite, l_fappend,
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_list, l_llist, l_cons, l_flatten, l_nconc, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
+    l_to_list, l_to_llist, l_list, l_llist, l_cons, l_flatten, l_nconc, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
-    l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn,
+    l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti,
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
@@ -383,9 +383,7 @@ public:
         return this;
     }
     
-    virtual Element* rank(LispE* lisp, vecte<long>&) {
-        return NULL;
-    }
+    virtual Element* rank(LispE* lisp, vecte<long>&);
     
     //We only duplicate constant containers...
     virtual Element* duplicate_constant(bool pair = false) {
@@ -407,6 +405,8 @@ public:
     virtual void clean_iter(void* it) {}
     virtual Element* search_element(LispE*, Element* element_value, long idx);
     virtual Element* search_all_elements(LispE*, Element* element_value, long idx);
+    virtual Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    virtual Element* count_all_elements(LispE*, Element* element_value, long idx);
     virtual Element* search_reverse(LispE*, Element* element_value, long idx);
     
     virtual bool compare_string(LispE* lisp, u_ustring& u) {
@@ -1308,7 +1308,7 @@ public:
     }
 
     virtual Element* copying(bool duplicate = true) {
-        if (!is_protected() || !duplicate)
+        if (!status)
             return this;
         
         return new Float(number);
@@ -1449,7 +1449,7 @@ public:
     }
 
     virtual Element* copying(bool duplicate = true) {
-        if (!is_protected() || !duplicate)
+        if (!status)
             return this;
         
         return new Number(number);
@@ -1658,7 +1658,7 @@ public:
     // There is a difference between the two copies
     //The first one makes a final copy
     virtual Element* copying(bool duplicate = true) {
-        if (!is_protected() || !duplicate)
+        if (!status)
             return this;
         
         return new Short(integer);
@@ -1807,7 +1807,7 @@ public:
     // There is a difference between the two copies
     //The first one makes a final copy
     virtual Element* copying(bool duplicate = true) {
-        if (!is_protected() || !duplicate)
+        if (!status)
             return this;
         
         return new Integer(integer);
@@ -1988,6 +1988,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
     Element* insert(LispE* lisp, Element* e, long idx);
@@ -2048,7 +2050,7 @@ public:
     // There is a difference between the two copies
     //The first one makes a final copy
     virtual Element* copying(bool duplicate = true) {
-        if (!is_protected() || !duplicate)
+        if (!status)
             return this;
         
         return new String(content);
@@ -2087,27 +2089,19 @@ public:
     }
     
     double asNumber() {
-        string code;
-        s_unicode_to_utf8(code, content);
-        return convertingfloathexa(code.c_str());
+        return convertingfloathexa(content);
     }
     
     float asFloat() {
-        string code;
-        s_unicode_to_utf8(code, content);
-        return convertingfloathexa(code.c_str());
+        return convertingfloathexa(content);
     }
 
     short asShort() {
-        string code;
-        s_unicode_to_utf8(code, content);
-        return (short)convertingfloathexa(code.c_str());
+        return (short)convertingfloathexa(content);
     }
     
     long asInteger() {
-        string code;
-        s_unicode_to_utf8(code, content);
-        return (long)convertingfloathexa(code.c_str());
+        return (long)convertingfloathexa(content);
     }
     
     Element* plus(LispE* l, Element* e);
@@ -2385,6 +2379,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);    
     Element* checkkey(LispE* lisp, Element* e);
 
@@ -2829,6 +2825,8 @@ public:
     Element* loop(LispE* lisp, short label,  List* code);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
     Element* reverse(LispE*, bool duplique = true);
@@ -3377,6 +3375,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
 
@@ -3674,6 +3674,8 @@ public:
     
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
 
@@ -3876,6 +3878,272 @@ public:
     }
 
     Set_npool* set(Set_n* s) {
+        ensemble = s->ensemble;
+        return this;
+    }
+    
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
+    Element* copyatom(uint16_t s);
+    Element* newInstance();
+
+};
+
+class Set_i : public Element {
+public:
+    
+    std::set<long> ensemble;
+    Constinteger exchange_value;
+    
+    Set_i() : exchange_value(0), Element(t_seti) {}
+    
+    Set_i(std::set<long>& e) : exchange_value(0), ensemble(e), Element(t_seti) {}
+    
+    Set_i(uint16_t s) : exchange_value(0), Element(t_seti, s) {}
+    
+    bool isContainer() {
+        return true;
+    }
+        
+    Element* newInstance() {
+        return new Set_i();
+    }
+
+    void* begin_iter() {
+        return new std::set<long>::iterator(ensemble.begin());
+    }
+    
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+
+        return new Set_i(ensemble);
+    }
+
+    Element* next_iter(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (std::set<long>::iterator*)it;
+    }
+
+    Element* loop(LispE* lisp, short label,  List* code);
+    
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+    Element* minmax(LispE*);
+    
+    void flatten(LispE*, List* l);
+    
+    Element* search_element(LispE*, Element* element_value, long idx);
+    Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
+    Element* search_reverse(LispE*, Element* element_value, long idx);
+    Element* checkkey(LispE* lisp, Element* e);
+
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
+    
+    //In the case of a container for push, key and keyn
+    // We must force the copy when it is a constant
+    Element* duplicate_constant(bool pair = false) {
+        if (status == s_constant) {
+            return new Set_i(ensemble);
+        }
+        return this;
+    }
+    
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
+    
+    bool unify(LispE* lisp, Element* e, bool record) {
+        if (e == this)
+            return true;
+        
+        if (e->type != t_set)
+            return false;
+
+        return ensemble == ((Set_i*)e)->ensemble;
+    }
+     
+    bool egal(Element* e);
+    Element* equal(LispE* lisp, Element* e);
+    
+    long size() {
+        return ensemble.size();
+    }
+            
+    wstring jsonString(LispE* lisp) {
+        if (ensemble.empty())
+            return L"[]";
+        
+        wstring buffer(L"[");
+        bool first = true;
+        for (auto& a: ensemble) {
+            if (first)
+                first = false;
+            else
+                buffer += L",";
+            buffer += convertToWString(a);
+        }
+        buffer += L"]";
+        return buffer;
+    }
+    
+    u_ustring asUString(LispE* lisp) {
+        if (ensemble.empty())
+            return U"{}";
+        
+        u_ustring buffer(U"{");
+        bool first = true;
+        for (auto& a: ensemble) {
+            if (first)
+                first = false;
+            else
+                buffer += U" ";
+            buffer += convertToUString(a);
+        }
+        buffer += U"}";
+        return buffer;
+    }
+    
+    wstring asString(LispE* lisp) {
+        if (ensemble.empty())
+            return L"{}";
+        
+        wstring buffer(L"{");
+        bool first = true;
+        for (auto& a: ensemble) {
+            if (first)
+                first = false;
+            else
+                buffer += L" ";
+            buffer += convertToWString(a);
+        }
+        buffer += L"}";
+        return buffer;
+    }
+    
+    bool Boolean() {
+        return ensemble.empty();
+    }
+    
+    Element* index(long i) {
+        for (auto& a: ensemble) {
+            if (i <= 0) {
+                exchange_value.integer = a;
+                return &exchange_value;
+            }
+            i--;
+        }
+        exchange_value.integer = 0;
+        return &exchange_value;
+    }
+
+    Element* value_from_index(LispE*, long i);
+    
+    Element* value_on_index(LispE*, long i);
+    Element* protected_index(LispE*,long i);
+    
+    Element* protected_index(LispE*, double&);
+    Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
+    void storevalue(LispE*, double k) {
+        ensemble.insert(k);
+    }
+
+    
+    void add(double k) {
+        ensemble.insert(k);
+    }
+
+    void append(LispE* lisp, double v) {
+        ensemble.insert(v);
+    }
+    void append(LispE* lisp, long v) {
+        ensemble.insert((double)v);
+    }
+
+    void append(Element* e) {
+        ensemble.insert(e->asNumber());
+    }
+    
+    void appendraw(Element* e) {
+        ensemble.insert(e->asNumber());
+    }
+
+    Element* insert(LispE* lisp, Element* e, long idx) {
+        ensemble.insert(e->asNumber());
+        return this;
+    }
+    
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        double k = i->asNumber();
+        if (ensemble.find(k) != ensemble.end()) {
+            ensemble.erase(k);
+        }
+        ensemble.insert(e->asNumber());
+        return this;
+    }
+
+    Element* thekeys(LispE* lisp);
+    Element* thevalues(LispE* lisp);
+
+    bool remove(LispE* lisp, Element* e) {
+        double k = e->asNumber();
+        if (ensemble.find(k) == ensemble.end()) {
+            return false;
+        }
+        else {
+            ensemble.erase(k);
+            return true;
+        }
+    }
+
+    bool remove(double k) {
+        if (ensemble.find(k) == ensemble.end()) {
+            return false;
+        }
+        else {
+            ensemble.erase(k);
+            return true;
+        }
+    }
+        
+    Element* bit_not(LispE* l);
+    Element* bit_and(LispE* l, Element* e);
+    Element* bit_and_not(LispE* l, Element* e);
+    Element* bit_or(LispE* l, Element* e);
+    Element* bit_xor(LispE* l, Element* e);
+    Element* plus(LispE* l, Element* e);
+    Element* minus(LispE* l, Element* e);
+    Element* multiply(LispE* l, Element* e);
+    Element* divide(LispE* l, Element* e);
+    Element* mod(LispE* l, Element* e);
+    Element* power(LispE* l, Element* e);
+    Element* leftshift(LispE* l, Element* e);
+    Element* rightshift(LispE* l, Element* e);
+
+};
+
+class Set_ipool : public Set_i {
+public:
+    LispE* lisp;
+    
+    Set_ipool(LispE* l) : lisp(l) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+
+    Set_ipool(LispE* l, Set_i* e) : lisp(l), Set_i(e->ensemble) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+
+    Set_ipool* set(Set_i* s) {
         ensemble = s->ensemble;
         return this;
     }

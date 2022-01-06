@@ -570,6 +570,27 @@ static UWCHAR temojiscomplement[] = {
     0xFE0F, 0};
 
 
+long Chaine_UTF8::c_bytetocharposition(unsigned char* contenu, long charpos) {
+    long i = 0;
+    long sz = 0;
+    long nb;
+    while (i < charpos) {
+        nb = c_test_utf8(contenu + i);
+        if (nb == 3 && c_is_emoji(contenu,i)) {
+            i++;
+            while (c_is_emojicomp(contenu, i)) {
+                i++;
+            }
+        }
+        else
+            i += nb + 1;
+        sz++;
+    }
+    return sz;
+}
+
+
+
 long Chaine_UTF8::getonchar(u_ustring& w, long position) {
     long i = 0;
     long nb = 0;
@@ -2055,6 +2076,31 @@ u_ustring s_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep) {
     return neo;
 }
 
+long nb_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep) {
+    u_ustring neo;
+    
+    long gsz = reg.size();
+    if (!gsz)
+        return 0;
+    
+    long rsz = s.size();
+    long from = 0;
+    long nb = 0;
+    long foundHere;
+    while ((foundHere = s.find(reg, from)) != string::npos) {
+        if (foundHere != from)
+            neo += s.substr(from, foundHere - from);
+        neo += rep;
+        from = foundHere + gsz;
+        nb++;
+    }
+    if (from < rsz)
+        neo += s.substr(from, rsz - from);
+    s = neo;
+    return nb;
+}
+
+
 
 //------------------------------------------------------------------------
 /*
@@ -2169,13 +2215,24 @@ double convertingfloathexa(const char* s) {
         if (*s=='+')
             ++s;
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        return conversiontofloathexa(s, sign);
-    }
-    
     long v;
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                return conversiontofloathexa(s, sign);
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                v = *s++ & 15;
+                while (*s == '1' || *s == '0') {
+                    v = (v << 1) + (*s++ & 15);
+                }
+                return v;
+            }
+        }
+        
         v = *s++ & 15;
         while (isadigit(*s)) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
@@ -2292,13 +2349,24 @@ double convertingfloathexa(const wchar_t* s) {
         if (*s=='+')
             ++s;
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        return conversiontofloathexa(s, sign);
-    }
-    
     long v;
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                return conversiontofloathexa(s, sign);
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                v = *s++ & 15;
+                while (*s == '1' || *s == '0') {
+                    v = (v << 1) + (*s++ & 15);
+                }
+                return v;
+            }
+        }
+        
         v = *s++ & 15;
         while (isadigit(*s)) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
@@ -2398,6 +2466,7 @@ double conversiontofloathexa(const u_uchar* s, int sign) {
     
     return res*sign;
 }
+
 double convertingfloathexa(const u_uchar* s) {
     while (*s!=0 && *s<=32) ++s;
     //End of string...
@@ -2415,13 +2484,24 @@ double convertingfloathexa(const u_uchar* s) {
         if (*s=='+')
             ++s;
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        return conversiontofloathexa(s, sign);
-    }
-    
     long v;
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                return conversiontofloathexa(s, sign);
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                v = *s++ & 15;
+                while (*s == '1' || *s == '0') {
+                    v = (v << 1) + (*s++ & 15);
+                }
+                return v;
+            }
+        }
+        
         v = *s++ & 15;
         while (isadigit(*s)) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
@@ -2465,6 +2545,143 @@ double convertingfloathexa(const u_uchar* s) {
             v = *s++ & 15;
             while (isadigit(*s))
                 v = (v << 3) + (v << 1) + (*s++ & 15);
+            
+            res *= power10(v*sgn);
+        }
+    }
+    return res*sign;
+}
+
+double conversiontofloathexa(u_ustring& s, long& i, int sign) {
+    long v = 0;
+    uchar c = s[i++];
+    while (digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = s[i++];
+    }
+    
+    double res = v;
+    
+    if (c == '.') {
+        uchar mantissa = 0;
+        v = 0;
+        c = s[i++];
+        while (digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = s[i++];
+            mantissa += 4;
+        }
+        
+        res += (double)v/(double)(1 << mantissa);
+    }
+    
+    
+    if ((c &0xDF) == 'P') {
+        bool sgn = false;
+        if (s[i] == '-') {
+            sgn = true;
+            i++;
+        }
+        else {
+            if (s[i] == '+')
+                i++;
+        }
+        
+        v = s[i++] & 15;
+        while (isadigit(s[i])) {
+            v = (v << 3) + (v << 1) + (s[i++] & 15);
+        }
+        v = 1 << v;
+        if (sgn)
+            res *= 1 / (double)v;
+        else
+            res *= v;
+        
+    }
+    
+    return res*sign;
+}
+
+double convertingfloathexa(u_ustring& s) {
+    long i = 0;
+    while (s[i]!=0 && s[i]<=32) i++;
+    
+    //End of string...
+    if (s[i] == 0 )
+        return 0;
+    
+    int sign = 1;
+    
+    //Sign
+    if (s[i]=='-') {
+        sign = -1;
+        ++i;
+    }
+    else
+        if (s[i]=='+')
+            i++;
+    
+    long v;
+    if (isadigit(s[i])) {
+        if (s[i] == '0') {
+            i++;
+            if (s[i] == 'x') {
+                i++;
+                return conversiontofloathexa(s, i, sign);
+            }
+            if (s[i] == 'b') {
+                i++;
+                v = 0;
+                while (s[i] == '0' || s[i] == '1') {
+                    v = (v << 1) + (s[i++] & 15);
+                }
+                return v;
+            }
+        }
+        
+        v = s[i++] & 15;
+        while (isadigit(s[i])) {
+            v = (v << 3) + (v << 1) + (s[i++] & 15);
+        }
+        if (!s[i])
+            return v*sign;
+    }
+    else
+        return 0;
+    
+    double res = v;
+    
+    if (s[i]=='.') {
+        i++;
+        if (isadigit(s[i])) {
+            uchar mantissa = 1;
+            v = s[i++] & 15;
+            while (isadigit(s[i])) {
+                v = (v << 3) + (v << 1) + (s[i++] & 15);
+                ++mantissa;
+            }
+            res += (double)v / power10(mantissa);
+        }
+        else
+            return res*sign;
+    }
+    
+    if ((s[i] &0xDF) == 'E') {
+        i++;
+        long sgn = 1;
+        if (s[i] == '-') {
+            sgn = -1;
+            i++;
+        }
+        else {
+            if (s[i] == '+')
+                i++;
+        }
+        
+        if (isadigit(s[i])) {
+            v = s[i++] & 15;
+            while (isadigit(s[i]))
+                v = (v << 3) + (v << 1) + (s[i++] & 15);
             
             res *= power10(v*sgn);
         }
@@ -2551,14 +2768,26 @@ double convertingfloathexa(const char* s, long& l) {
             l++;
         }
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        l++;
-        return conversiontofloathexa(s, sign, l);
-    }
-    
     long v;
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                l++;
+                return conversiontofloathexa(s, sign, l);
+            }
+            if (s[1]=='b') {
+                s+=2;
+                v = *s++ & 15;
+                l += 3;
+                while (*s=='0' || *s == '1') {
+                    v = (v << 1) + (*s++ & 15);
+                    l++;
+                }
+                return v;
+            }
+        }
+        
         v = *s++ & 15;
         l++;
         while (isadigit(*s)) {
@@ -2682,14 +2911,27 @@ void noconvertingfloathexa(const char* s, short& l) {
             l++;
         }
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        l++;
-        noconversiontofloathexa(s, sign, l);
-        return;
-    }
     
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                l++;
+                noconversiontofloathexa(s, sign, l);
+                return;
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                l+=2;
+                while (*s == '0' || *s == '1') {
+                    s++;
+                    l++;
+                }
+                return;
+            }
+        }
+        
         s++;
         l++;
         while (isadigit(*s)) {
@@ -2802,14 +3044,26 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
             l++;
         }
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        l++;
-        noconversiontofloathexa(s, sign, l);
-        return;
-    }
-    
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                l++;
+                noconversiontofloathexa(s, sign, l);
+                return;
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                l+=2;
+                while (*s == '0' || *s == '1') {
+                    s++;
+                    l++;
+                }
+                return;
+            }
+        }
+        
         s++;
         l++;
         while (isadigit(*s)) {
@@ -2926,23 +3180,33 @@ long convertinginteger(wstring& number) {
     if (number.size() == ipos)
         return (c - 48);
 
-    if (c == '0' || number[ipos] == 'x') {
-        ipos++;
-        c = number[ipos++];
-        while (digitaction[c]) {
-            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+    if (c == '0') {
+        if (number[ipos] == 'x') {
+            ipos++;
             c = number[ipos++];
-        }
-        return v*sign;
-    }
-    else {
-        if (isadigit(c)) {
-            v = c & 15;
-            c = number[ipos++];
-            while (isadigit(c)) {
-                v = (v << 3) + (v << 1) + (c & 15);
+            while (digitaction[c]) {
+                v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
                 c = number[ipos++];
             }
+            return v*sign;
+        }
+        if (number[ipos] == 'b') {
+            ipos++;
+            c = number[ipos++];
+            while (c == '0' || c == '1') {
+                v = (v << 1) + (c & 15);
+                c = number[ipos++];
+            }
+            return v;
+        }
+    }
+    
+    if (isadigit(c)) {
+        v = c & 15;
+        c = number[ipos++];
+        while (isadigit(c)) {
+            v = (v << 3) + (v << 1) + (c & 15);
+            c = number[ipos++];
         }
     }
     return v*sign;
@@ -2969,23 +3233,33 @@ long convertinginteger(u_ustring& number) {
     if (number.size() == ipos)
         return (c - 48);
 
-    if (c == '0' || number[ipos] == 'x') {
-        ipos++;
-        c = number[ipos++];
-        while (digitaction[c]) {
-            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+    if (c == '0') {
+        if (number[ipos] == 'x') {
+            ipos++;
             c = number[ipos++];
-        }
-        return v*sign;
-    }
-    else {
-        if (isadigit(c)) {
-            v = c & 15;
-            c = number[ipos++];
-            while (isadigit(c)) {
-                v = (v << 3) + (v << 1) + (c & 15);
+            while (digitaction[c]) {
+                v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
                 c = number[ipos++];
             }
+            return v*sign;
+        }
+        if (number[ipos] == 'b') {
+            ipos++;
+            c = number[ipos++];
+            while (digitaction[c]) {
+                v = (v << 1) + (c & 15);
+                c = number[ipos++];
+            }
+            return v;
+        }
+    }
+    
+    if (isadigit(c)) {
+        v = c & 15;
+        c = number[ipos++];
+        while (isadigit(c)) {
+            v = (v << 3) + (v << 1) + (c & 15);
+            c = number[ipos++];
         }
     }
     return v*sign;
@@ -3070,14 +3344,27 @@ double convertingfloathexa(wchar_t* s, long& l) {
             l++;
         }
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        l++;
-        return convertingtofloathexa(s, sign, l);
-    }
-    
     long v;
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                l++;
+                return convertingtofloathexa(s, sign, l);
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                v = *s++ & 15;
+                l+=3;
+                while (*s == '0' || *s == '1') {
+                    v = (v << 1) + (*s++ & 15);
+                    l++;
+                }
+                return v;
+            }
+        }
+        
         v = *s++ & 15;
         l++;
         while (isadigit(*s)) {
@@ -3219,14 +3506,26 @@ double convertingfloathexa(u_uchar* s, long& l) {
             l++;
         }
     
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        l++;
-        return convertingtofloathexa(s, sign, l);
-    }
-    
     long v;
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                l++;
+                return convertingtofloathexa(s, sign, l);
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                v = *s++ & 15;
+                l+=3;
+                while (*s == '0' || *s == '1') {
+                    v = (v << 1) + (*s++ & 15);
+                    l++;
+                }
+                return v;
+            }
+        }
         v = *s++ & 15;
         l++;
         while (isadigit(*s)) {

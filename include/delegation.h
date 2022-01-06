@@ -160,6 +160,7 @@ public:
     Atome* _DICO_KEYN;
     Atome* _DICO_KEY;
     Atome* _DICO_SETN;
+    Atome* _DICO_SETI;
     Atome* _DICO_SET;
     Atome* _QUOTE;
     Element* _BREAK;

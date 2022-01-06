@@ -97,6 +97,8 @@ double convertingfloathexa(const wchar_t* s);
 double convertingfloathexa(u_uchar* s, long& l);
 double convertingfloathexa(const u_uchar* s);
 
+double convertingfloathexa(u_ustring& u);
+
 #ifdef WIN32
 Exporting wstring u_to_w(u_ustring u);
 Exporting u_ustring w_to_u(wstring w);
@@ -128,6 +130,8 @@ u_ustring convertToUString(float d);
 string s_replacingstring(string& s, string reg, string rep);
 wstring s_wreplacestring(wstring& s, wstring reg, wstring rep);
 u_ustring s_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep);
+
+long nb_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep);
 
 string s_left(string& s, long nb);
 string s_right(string& s, long nb);
@@ -171,6 +175,8 @@ Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second);
 Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code);
 Exporting bool c_utf16(u_uchar code);
 
+char c_test_utf8(unsigned char* utf);
+
 #define c_is_digit(c) (c >= '0' && c <= '9')
 
 #define getonewchar(w, i) w[i]
@@ -201,6 +207,8 @@ public:
     bool s_is_lower(wstring& s);
     bool s_is_upper(wstring& s);
     bool s_is_alpha(wstring& s);
+    
+    long c_bytetocharposition(unsigned char* contenu, long charpos);
     
     char c_is_alpha(u_uchar);
     char c_is_alpha(wchar_t);

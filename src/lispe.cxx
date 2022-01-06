@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.2.18.45";
+static std::string version = "1.2022.1.6.16.24";
 string LispVersion() {
     return version;
 }
@@ -206,6 +206,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
+    set_instruction(l_count, "count", P_THREE|P_FOUR, &List::evall_count);
     set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp);
     set_instruction(l_short, "short", P_TWO, &List::evall_converttoshort);
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger);
@@ -268,6 +269,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_list, "list", P_ATLEASTONE, &List::evall_list);
     set_instruction(l_llist, "llist", P_ATLEASTONE, &List::evall_llist);
     set_instruction(l_to_list, "to_list", P_TWO, &List::evall_to_list);
+    set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist);
     set_instruction(l_load, "load", P_TWO, &List::evall_load);
     set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock);
     set_instruction(l_loop, "loop", P_ATLEASTFOUR, &List::evall_loop);
@@ -321,6 +323,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_range, "range", P_FOUR, &List::evall_range);
     set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark);
     set_instruction(l_return, "return", P_ONE | P_TWO , &List::evall_return);
+    set_instruction(l_replaceall, "replaceall", P_FOUR, &List::evall_replaceall);
     set_instruction(l_reverse, "reverse", P_TWO | P_THREE, &List::evall_reverse);
     set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch);
     set_instruction(l_rightshift, ">>", P_ATLEASTTHREE, &List::evall_rightshift);
@@ -334,6 +337,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_set_range, "setrange", P_FOUR|P_FIVE|P_SIX|P_SEVEN, &List::evall_set_range);
     set_instruction(l_set_at, "set@", P_ATLEASTFOUR, &List::evall_set_at);
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
+    set_instruction(l_seti, "seti", P_ATLEASTONE, &List::evall_seti);
     set_instruction(l_setn, "setn", P_ATLEASTONE, &List::evall_setn);
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
     set_instruction(l_sign, "sign", P_TWO, &List::evall_sign);
@@ -408,7 +412,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_scan, "scan", P_THREE, &List::evall_scan);
     set_instruction(l_backreduce, "backreduce", P_TWO | P_THREE, &List::evall_backreduce);
     set_instruction(l_backscan, "backscan", P_THREE, &List::evall_backscan);
-    set_instruction(l_rank, "rank", P_ATLEASTTHREE, &List::evall_rank);
+    set_instruction(l_rank, "rank", P_ATLEASTTWO, &List::evall_rank);
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
     set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
     set_instruction(l_member, "member", P_THREE, &List::evall_member);
@@ -519,6 +523,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_dictionaryn] = U"dictionary_n_";
     code_to_string[t_set] = U"set_";
     code_to_string[t_setn] = U"set_n_";
+    code_to_string[t_seti] = U"set_i_";
     code_to_string[t_atom] = U"atom_";
     code_to_string[t_function] = U"function_";
     code_to_string[t_library_function] = U"library_function_";
@@ -562,6 +567,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     _DICO_SET = (Atome*)lisp->provideAtomOrInstruction(l_set);
     _DICO_SETN = (Atome*)lisp->provideAtomOrInstruction(l_setn);
+    _DICO_SETI = (Atome*)lisp->provideAtomOrInstruction(l_seti);
 
     _QUOTE = (Atome*)lisp->provideAtomOrInstruction(l_quote);
 
@@ -802,6 +808,7 @@ void LispE::cleaning() {
 
     set_pool.cleaning();
     setn_pool.cleaning();
+    seti_pool.cleaning();
 
     for (auto& a : const_string_pool) {
         delete a.second;
@@ -903,7 +910,6 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
             stops[idx] = true;
         }
 
-        stops['!'] = true;
         stops['?'] = true;
         stops['('] = true;
         stops[')'] = true;
@@ -2123,6 +2129,15 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
+
+
+
+
 
 
 

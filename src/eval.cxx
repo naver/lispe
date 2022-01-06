@@ -477,10 +477,17 @@ bool Listargumentset::unify(LispE* lisp, Element* value, bool record) {
             }
             //we need to build a sublist out of value...
             Element* sublist;
-            if (value->type == t_set)
-                sublist = lisp->provideSet();
-            else
-                sublist = lisp->provideSet_n();
+            switch (value->type) {
+                case t_seti:
+                    sublist = lisp->provideSet_i();
+                    break;
+                case t_setn:
+                    sublist = lisp->provideSet_n();
+                    break;
+                default:
+                    sublist = lisp->provideSet();
+            }
+            
             while (next_value != emptyatom_) {
                 if (flat.find_element(lisp, next_value, 0) == -1)
                     sublist->append(next_value);
@@ -2215,7 +2222,7 @@ Element* List::evall_car(LispE* lisp) {
 }
 
 Element* List::evall_maplist(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     //Operation is: (// operation l1)
     
     Element* element = null_;
@@ -2352,7 +2359,7 @@ Element* List::evall_maplist(LispE* lisp) {
 }
 
 Element* List::evall_filterlist(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     //Operation is: (// operation l1)
     
     Element* element = null_;
@@ -2490,7 +2497,7 @@ Element* List::evall_filterlist(LispE* lisp) {
 }
 
 Element* List::evall_takelist(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     //Operation is: (// operation l1)
     
     Element* element = null_;
@@ -2639,7 +2646,7 @@ Element* List::evall_takelist(LispE* lisp) {
 }
 
 Element* List::evall_droplist(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     //Operation is: (// operation l1)
     
     Element* element = null_;
@@ -3320,7 +3327,7 @@ Element* List::evall_outerproduct(LispE* lisp) {
 }
 
 Element* List::evall_rank(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     
     Element* element = null_;
     Element* e = null_;
@@ -3330,9 +3337,6 @@ Element* List::evall_rank(LispE* lisp) {
     
     try {
         element = liste[1]->eval(lisp);
-        if (element->type < t_matrix || element->type > t_tensor_float)
-            throw new Error("Error: expecting a matrix or a tensor for 'rank'");
-        
         for (i = 2; i < listsz; i++) {
             e = liste[i]->eval(lisp);
             if (e->isNumber()) {
@@ -3359,7 +3363,7 @@ Element* List::evall_rank(LispE* lisp) {
 }
 
 Element* List::evall_irank(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     
     Element* element = null_;
     Element* e = null_;
@@ -3369,9 +3373,6 @@ Element* List::evall_irank(LispE* lisp) {
     
     try {
         element = liste[1]->eval(lisp);
-        if (element->type < t_matrix || element->type > t_tensor_float)
-            throw new Error("Error: expecting a matrix or a tensor for 'rank'");
-
         r = new Rankloop(lisp, (List*)element);
         
         for (i = 2; i < listsz; i++) {
@@ -3409,7 +3410,7 @@ Element* List::evall_irank(LispE* lisp) {
 }
 
 Element* List::evall_reduce(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     //Operation is: (// operation l1)
     
     Element* l1 = null_;
@@ -3443,7 +3444,7 @@ Element* List::evall_reduce(LispE* lisp) {
             return null_;
         }
                 
-        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+        if (op->isList() && op->size() && op->index(0)->type != l_lambda) {
             //this is a filter, the first list
             long j = 0;
             long nb;
@@ -3452,8 +3453,10 @@ Element* List::evall_reduce(LispE* lisp) {
                     Floats* res = lisp->provideFloats();
                     for (long i = 0; i < op->size(); i++) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j++;
                             continue;
+                        }
                         if (j == sz) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3473,8 +3476,10 @@ Element* List::evall_reduce(LispE* lisp) {
                     Numbers* res = lisp->provideNumbers();
                     for (long i = 0; i < op->size(); i++) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j++;
                             continue;
+                        }
                         if (j == sz) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3494,8 +3499,10 @@ Element* List::evall_reduce(LispE* lisp) {
                     Shorts* res = new Shorts();
                     for (long i = 0; i < op->size(); i++) {
                         nb = op->index(i)->asShort();
-                        if (!nb)
+                        if (!nb) {
+                            j++;
                             continue;
+                        }
                         if (j == sz) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3515,8 +3522,10 @@ Element* List::evall_reduce(LispE* lisp) {
                     Integers* res = lisp->provideIntegers();
                     for (long i = 0; i < op->size(); i++) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j++;
                             continue;
+                        }
                         if (j == sz) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3536,8 +3545,10 @@ Element* List::evall_reduce(LispE* lisp) {
                     Strings* res = lisp->provideStrings();
                     for (long i = 0; i < op->size(); i++) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j++;
                             continue;
+                        }
                         if (j == sz) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3557,8 +3568,10 @@ Element* List::evall_reduce(LispE* lisp) {
                     List* res = lisp->provideList();
                     for (long i = 0; i < op->size(); i++) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j++;
                             continue;
+                        }
                         
                         if (j == sz) {
                             res->release();
@@ -3639,7 +3652,7 @@ inline long mmin(long x, long y) {
 }
 
 Element* List::evall_backreduce(LispE* lisp) {
-    short listsz = liste.size();
+    long listsz = liste.size();
     //Operation is: (//- operation l1)
     
     Element* l1 = null_;
@@ -3674,7 +3687,7 @@ Element* List::evall_backreduce(LispE* lisp) {
         }
                 
 
-        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+        if (op->isList() && op->size() && op->index(0)->type != l_lambda) {
             //this is a filter, the first list
             long j = sz - 1;
             long nb;
@@ -3683,8 +3696,10 @@ Element* List::evall_backreduce(LispE* lisp) {
                     Floats* res = lisp->provideFloats();
                     for (long i = op->size() - 1; i >= 0; i--) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j--;
                             continue;
+                        }
                         if (j == -1) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3704,8 +3719,10 @@ Element* List::evall_backreduce(LispE* lisp) {
                     Numbers* res = lisp->provideNumbers();
                     for (long i = op->size() - 1; i >= 0; i--) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j--;
                             continue;
+                        }
                         if (j == -1) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3725,8 +3742,10 @@ Element* List::evall_backreduce(LispE* lisp) {
                     Shorts* res = new Shorts();
                     for (long i = op->size() - 1; i >= 0; i--) {
                         nb = op->index(i)->asShort();
-                        if (!nb)
+                        if (!nb) {
+                            j--;
                             continue;
+                        }
                         if (j == -1) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3746,8 +3765,10 @@ Element* List::evall_backreduce(LispE* lisp) {
                     Integers* res = lisp->provideIntegers();
                     for (long i = op->size() - 1; i >= 0; i--) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j--;
                             continue;
+                        }
                         if (j == -1) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3767,8 +3788,10 @@ Element* List::evall_backreduce(LispE* lisp) {
                     Strings* res = lisp->provideStrings();
                     for (long i = op->size() - 1; i >= 0; i--) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j--;
                             continue;
+                        }
                         if (j == -1) {
                             delete res;
                             throw new Error("Error: List size mismatch");
@@ -3788,9 +3811,10 @@ Element* List::evall_backreduce(LispE* lisp) {
                     List* res = lisp->provideList();
                     for (long i = op->size() - 1; i >= 0; i--) {
                         nb = op->index(i)->asInteger();
-                        if (!nb)
+                        if (!nb) {
+                            j--;
                             continue;
-                        
+                        }
                         if (j == -1) {
                             res->release();
                             throw new Error("Error: List size mismatch");
@@ -4517,7 +4541,7 @@ Element* List::evall_scan(LispE* lisp) {
             return null_;
         }
                 
-        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+        if (op->isList() && op->size() && op->index(0)->type != l_lambda) {
             //this is a filter, the first list
             long j = 0;
             long nb;
@@ -4773,7 +4797,7 @@ Element* List::evall_backscan(LispE* lisp) {
             return null_;
         }
                 
-        if (op->isList() && op->protected_index(lisp,(long)0)->type != l_lambda) {
+        if (op->isList() && op->size() && op->index(0)->type != l_lambda) {
             //this is a filter, the first list
             long j = sz - 1;
             long nb;
@@ -7032,29 +7056,10 @@ Element* List::evall_llist(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        if (listsize == 2) {
-            second_element = liste[1]->eval(lisp);
-            if (second_element->isList()) {
-                if (second_element->type == l_llist)
-                    return second_element;
-                
-                first_element = new LList(&lisp->delegation->mark);
-                for (long i = second_element->size() - 1; i >= 0; i--) {
-                    first_element->push_front(second_element->index(i)->copying(false));
-                }
-            }
-            else {
-                first_element = new LList(&lisp->delegation->mark);
-                first_element->push_front(second_element->copying(false));
-            }
-            second_element->release();
-        }
-        else {
-            first_element = new LList(&lisp->delegation->mark);
-            for (long i = listsize - 1; i > 0; i--) {
-                second_element = liste[i]->eval(lisp);
-                first_element->push_front(second_element->copying(false));
-            }
+        first_element = new LList(&lisp->delegation->mark);
+        for (long i = listsize - 1; i > 0; i--) {
+            second_element = liste[i]->eval(lisp);
+            first_element->push_front(second_element->copying(false));
         }
     }
     catch (Error* err) {
@@ -7085,6 +7090,38 @@ Element* List::evall_to_list(LispE* lisp) {
 
     return first_element;
 }
+
+Element* List::evall_to_llist(LispE* lisp) {
+    Element* second_element = liste[1];
+    LList* first_element = NULL;
+
+    try {
+        second_element = liste[1]->eval(lisp);
+        if (second_element->isList()) {
+            if (second_element->type == l_llist)
+                return second_element;
+            
+            first_element = new LList(&lisp->delegation->mark);
+            for (long i = second_element->size() - 1; i >= 0; i--) {
+                first_element->push_front(second_element->index(i)->copying(false));
+            }
+        }
+        else {
+            first_element = new LList(&lisp->delegation->mark);
+            first_element->push_front(second_element->copying(false));
+        }
+        second_element->release();
+    }
+    catch (Error* err) {
+        if (first_element != NULL)
+            first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
 
 Element* List::evall_nconc(LispE* lisp) {
     short listsize = liste.size();
@@ -8037,6 +8074,42 @@ Element* List::evall_set(LispE* lisp) {
     return n;
 }
 
+Element* List::evall_seti(LispE* lisp) {
+    long listsz = size();
+    if (listsz == 1)
+        return lisp->provideSet_i();
+
+    Set_i* n = lisp->provideSet_i();
+    Element* values = null_;
+
+
+    try {
+        for (long e = 1; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->type == t_seti)
+                n->ensemble = ((Set_i*)values)->ensemble;
+            else {
+                if (values->isList()) {
+                    for (long i = 0; i < values->size(); i++) {
+                        n->add(values->index(i)->asInteger());
+                    }
+                }
+                else
+                    n->add(values->asInteger());
+            }
+            _releasing(values);
+        }
+        
+    }
+    catch (Error* err) {
+        delete n;
+        values->release();
+        throw err;
+    }
+
+    return n;
+}
+
 Element* List::evall_setn(LispE* lisp) {
     long listsz = size();
     if (listsz == 1)
@@ -8642,6 +8715,33 @@ Element* List::evall_search(LispE* lisp) {
 }
 
 
+Element* List::evall_count(LispE* lisp) {
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        long ix = 0;
+        if (liste.size() == 4) {
+            evalAsInteger(3,lisp, ix);
+        }
+        third_element = first_element->count_all_elements(lisp, second_element, ix);
+        first_element->release();
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return third_element;
+}
+
 Element* List::evall_searchall(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
@@ -8667,6 +8767,31 @@ Element* List::evall_searchall(LispE* lisp) {
     }
 
     return third_element;
+}
+
+Element* List::evall_replaceall(LispE* lisp) {
+    Element* object = liste[0];
+    Element* search = null_;
+    Element* replace = null_;
+    Element* e = null_;
+    
+    try {
+        object = liste[1]->eval(lisp);
+        search = liste[2]->eval(lisp);
+        replace = liste[3]->eval(lisp);
+        e = object->replace_all_elements(lisp, search, replace);
+        object->release();
+        search->release();
+        replace->release();
+    }
+    catch (Error* err) {
+        object->release();
+        search->release();
+        replace->release();
+        throw err;
+    }
+
+    return e;
 }
 
 

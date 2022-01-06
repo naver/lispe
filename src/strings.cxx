@@ -604,10 +604,31 @@ public:
             }
             case str_split_empty: {
                 u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
-                u_ustring search_string =  lisp->get_variable(v_fnd)->asUString(lisp);
+                Element* u_find = lisp->get_variable(v_fnd);
                 Strings* result = lisp->provideStrings();
+                u_ustring search_string;
+                
+                if (u_find == null_) {
+                    u_uchar c;
+                    long sz = strvalue.size();
+                    for (long i = 0; i < sz; i++) {
+                        c = strvalue[i];
+                        if (c <= 32) {
+                            result->liste.push_back(search_string);
+                            search_string = U"";
+                        }
+                        else
+                            search_string += c;
+                    }
+                    if (search_string != U"")
+                        result->liste.push_back(search_string);
+                    return result;
+                }
+                
                 u_ustring localvalue;
                 long pos = 0;
+
+                search_string = u_find->asUString(lisp);
                 if (search_string == U"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters
@@ -639,11 +660,33 @@ public:
             }
             case str_split: {
                 u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
-                u_ustring search_string =  lisp->get_variable(v_fnd)->asUString(lisp);
-                
+                Element* u_find = lisp->get_variable(v_fnd);
                 Strings* result = lisp->provideStrings();
+                u_ustring search_string;
+                
+                if (u_find == null_) {
+                    u_uchar c;
+                    long sz = strvalue.size();
+                    for (long i = 0; i < sz; i++) {
+                        c = strvalue[i];
+                        if (c <= 32) {
+                            if (search_string != U"") {
+                                result->liste.push_back(search_string);
+                                search_string = U"";
+                            }
+                        }
+                        else
+                            search_string += c;
+                    }
+                    if (search_string != U"")
+                        result->liste.push_back(search_string);
+                    return result;
+                }
+                
                 u_ustring localvalue;
                 long pos = 0;
+                
+                search_string = u_find->asUString(lisp);
                 if (search_string == U"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters
@@ -910,8 +953,8 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib middle (str pos nb)", new Stringmethod(lisp, str_middle));
     lisp->extension("deflib tokenize (str)", new Stringmethod(lisp, str_tokenize_lispe));
     lisp->extension("deflib tokenizee (str)", new Stringmethod(lisp, str_tokenize_empty));
-    lisp->extension("deflib split (str fnd)", new Stringmethod(lisp, str_split));
-    lisp->extension("deflib splite (str fnd)", new Stringmethod(lisp, str_split_empty));
+    lisp->extension("deflib split (str (fnd))", new Stringmethod(lisp, str_split));
+    lisp->extension("deflib splite (str (fnd))", new Stringmethod(lisp, str_split_empty));
     lisp->extension("deflib ord (str)", new Stringmethod(lisp, str_ord));
     lisp->extension("deflib chr (nb)", new Stringmethod(lisp, str_chr));
     lisp->extension("deflib padding (str c nb)", new Stringmethod(lisp, str_padding));

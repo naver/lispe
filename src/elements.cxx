@@ -404,7 +404,7 @@ Element* Floatpool::copying(bool duplicate) {
     if (lisp->preparingthread)
         return new Float(number);
     
-    if (!is_protected() || !duplicate)
+    if (!status)
         return this;
     return lisp->provideFloat(number);
 }
@@ -429,7 +429,7 @@ Element* Numberpool::copying(bool duplicate) {
     if (lisp->preparingthread)
         return new Number(number);
     
-    if (!is_protected() || !duplicate)
+    if (!status)
         return this;
     return lisp->provideNumber(number);
 }
@@ -454,7 +454,7 @@ Element* Integerpool::copying(bool duplicate) {
     if (lisp->preparingthread)
         return new Integer(integer);
     
-    if (!is_protected() || !duplicate)
+    if (!status)
         return this;
     
     return lisp->provideInteger(integer);
@@ -577,7 +577,7 @@ Element* Stringpool::copying(bool duplicate) {
     if (lisp->preparingthread)
         return new String(content);
     
-    if (!is_protected() || !duplicate)
+    if (!status)
         return this;
     
     return lisp->provideString(content);
@@ -2146,6 +2146,7 @@ Element* Set_n::maximum(LispE* lisp) {
     
     return lisp->provideNumber(w);
 }
+
 Element* Dictionary::maximum(LispE* lisp) {
     if (!dictionary.size())
         return null_;
@@ -3040,10 +3041,14 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
     if (!choice || keyvalues.size() != valuevalues.size()) {
         if (valuevalues.size() == 0) {
             //We create a set...
-            if (type >= t_float && type <= t_number)
+            if (type == t_float || type == t_number)
                 keycmd = lisp->delegation->_DICO_SETN;
-            else
-                keycmd = lisp->delegation->_DICO_SET;
+            else {
+                if (type == t_short || type == t_integer)
+                    keycmd = lisp->delegation->_DICO_SETI;
+                else
+                    keycmd = lisp->delegation->_DICO_SET;
+            }
             //We generate: (set k v k' v' k" v"...)
             last_element->append(keycmd);
             for (long i = 0; i < keyvalues.size(); i++)
@@ -3309,94 +3314,50 @@ void Dictionarypool::append(LispE* lisp, long v) {
 }
 
 //------------------------------------------------------------------------------------------
-Element* Tenseur::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
-    bool last = false;
-    if (idx == shape.size() - 1) {
-        last = true;
-    }
-    
-    long p_idx = -1;
-    if (idx < positions.size())
-        p_idx = positions[idx];
-    
-    if (p_idx == -1) {
-        if (last)
-            return lisp->provideNumbers((Numbers*)current);
-        
-        Element* result;
-        Element* e = storeRank(lisp, current->index(0), positions, idx+1);
-        if (e->type == t_number)
-            result = lisp->provideNumbers();
-        else
-            result = lisp->provideList();
-        result->append(e);
-        for (p_idx = 1; p_idx < shape[idx]; p_idx++) {
-            result->append(storeRank(lisp, current->index(p_idx), positions, idx+1));
-        }
-        return result;
-    }
-
-    if (last)
-        return current->index(p_idx);
-    return storeRank(lisp, current->index(p_idx), positions, idx+1);
-}
-
-Element* Tenseur_float::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
-    bool last = false;
-    if (idx == shape.size() - 1) {
-        last = true;
-    }
-    
-    long p_idx = -1;
-    if (idx < positions.size())
-        p_idx = positions[idx];
-    
-    if (p_idx == -1) {
-        if (last)
-            return lisp->provideFloats((Floats*)current);
-        
-        Element* result;
-        Element* e = storeRank(lisp, current->index(0), positions, idx+1);
-        if (e->type == t_number)
-            result = lisp->provideFloats();
-        else
-            result = lisp->provideList();
-        result->append(e);
-        for (p_idx = 1; p_idx < shape[idx]; p_idx++) {
-            result->append(storeRank(lisp, current->index(p_idx), positions, idx+1));
-        }
-        return result;
-    }
-
-    if (last)
-        return current->index(p_idx);
-    return storeRank(lisp, current->index(p_idx), positions, idx+1);
+Element* Element::rank(LispE* lisp, vecte<long>& positions) {
+    throw new Error("Error: cannot apply 'rank' to this element");
 }
 
 Element* Matrice_float::rank(LispE* lisp, vecte<long>& positions) {
-    while (positions.back() < 0)
-        positions.pop_back();
-    
     short sz = positions.size();
     if (!sz || sz > 2)
         throw new Error("Error: index mismatch");
-    
-    if (positions[0] != -1) {
-        if (sz == 2) {
+        
+    if (positions[0] == -1) {
+        //We return all columns
+        if (sz == 1 || positions[1] == -1) {
+            Matrice_float* m = new Matrice_float();
+            Floats* result;
+            
+            for (long j = 0; j < size_y; j++) {
+                result = lisp->provideFloats();
+                for (long i = 0; i < size_x; i++) {
+                    result->liste.push_back(val(i,j));
+                }
+                m->append(result);
+            }
+            m->size_x = size_y;
+            m->size_y = size_x;
+            return m;
+        }
+        else {
+            if (positions[1] >= size_y)
+                throw new Error("Error: indexes out of bounds");
+        }
+    }
+    else {
+        if (sz == 2 && positions[1] != -1) {
             if (positions[1] >= size_y)
                 throw new Error("Error: indexes out of bounds");
             return lisp->provideFloat(val(positions[0], positions[1]));
         }
         
-        if (positions[0] < 0 || positions[0] >= size_x)
+        if (positions[0] >= size_x)
             throw new Error("Error: indexes out of bounds");
         
-        return lisp->provideFloats((((Floats*)liste[positions[0]])));
+        return lisp->provideFloats(((Floats*)liste[positions[0]]));
     }
-    
-    if (sz == 1 || positions[1] >= size_y)
-        throw new Error("Error: indexes out of bounds");
-    
+
     Floats* result = lisp->provideFloats();
     for (long i = 0; i < size_x; i++) {
         result->liste.push_back(val(i,positions[1]));
@@ -3405,29 +3366,45 @@ Element* Matrice_float::rank(LispE* lisp, vecte<long>& positions) {
 }
 
 Element* Matrice::rank(LispE* lisp, vecte<long>& positions) {
-    while (positions.back() < 0)
-        positions.pop_back();
-    
     short sz = positions.size();
     if (!sz || sz > 2)
         throw new Error("Error: index mismatch");
-    
-    if (positions[0] != -1) {
-        if (sz == 2) {
+        
+    if (positions[0] == -1) {
+        //We return all columns
+        if (sz == 1 || positions[1] == -1) {
+            Matrice* m = new Matrice();
+            Numbers* result;
+            
+            for (long j = 0; j < size_y; j++) {
+                result = lisp->provideNumbers();
+                for (long i = 0; i < size_x; i++) {
+                    result->liste.push_back(val(i,j));
+                }
+                m->append(result);
+            }
+            m->size_x = size_y;
+            m->size_y = size_x;
+            return m;
+        }
+        else {
+            if (positions[1] >= size_y)
+                throw new Error("Error: indexes out of bounds");
+        }
+    }
+    else {
+        if (sz == 2 && positions[1] != -1) {
             if (positions[1] >= size_y)
                 throw new Error("Error: indexes out of bounds");
             return lisp->provideNumber(val(positions[0], positions[1]));
         }
         
-        if (positions[0] < 0 || positions[0] >= size_x)
+        if (positions[0] >= size_x)
             throw new Error("Error: indexes out of bounds");
         
         return lisp->provideNumbers(((Numbers*)liste[positions[0]]));
     }
-    
-    if (sz == 1 || positions[1] >= size_y)
-        throw new Error("Error: indexes out of bounds");
-    
+
     Numbers* result = lisp->provideNumbers();
     for (long i = 0; i < size_x; i++) {
         result->liste.push_back(val(i,positions[1]));
@@ -3435,14 +3412,92 @@ Element* Matrice::rank(LispE* lisp, vecte<long>& positions) {
     return result;
 }
 
+Element* Tenseur::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
+    long nb = shape.size() - idx;
+    long p_idx = -1;
+    if (idx < positions.size())
+        p_idx = positions[idx];
+    
+    long i;
+    if (p_idx == -1) {
+        //If nb == 2, then it is a matrix
+        //If nb == 1, then it is a vector
+        if (nb == 1)
+            return lisp->provideNumbers((Numbers*)current);
+        
+        List* m = lisp->provideList();
+
+        if (nb == 2) {
+            Numbers* result;
+            for (long j = 0; j < shape[idx+1]; j++) {
+                result = lisp->provideNumbers();
+                for (i = 0; i < shape[idx]; i++) {
+                    result->liste.push_back(current->index(i)->index(j)->asNumber());
+                }
+                m->append(result);
+            }
+        }
+        else {
+            for (i = 0; i < shape[idx]; i++) {
+                m->append(storeRank(lisp, current->index(i), positions, idx+1));
+            }
+        }
+        return m;
+    }
+    
+    if (nb == 1)
+        return current->index(p_idx);
+    
+    return storeRank(lisp, current->index(p_idx), positions, idx+1);
+}
+
+Element* Tenseur_float::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
+    long nb = shape.size() - idx;
+    long p_idx = -1;
+    if (idx < positions.size())
+        p_idx = positions[idx];
+    
+    long i;
+    if (p_idx == -1) {
+        //If nb == 2, then it is a matrix
+        //If nb == 1, then it is a vector
+        if (nb == 1)
+            return lisp->provideFloats((Floats*)current);
+        
+        List* m = lisp->provideList();
+
+        if (nb == 2) {
+            Floats* result;
+            for (long j = 0; j < shape[idx+1]; j++) {
+                result = lisp->provideFloats();
+                for (i = 0; i < shape[idx]; i++) {
+                    result->liste.push_back(current->index(i)->index(j)->asFloat());
+                }
+                m->append(result);
+            }
+        }
+        else {
+            for (i = 0; i < shape[idx]; i++) {
+                m->append(storeRank(lisp, current->index(i), positions, idx+1));
+            }
+        }
+        return m;
+    }
+    
+    if (nb == 1)
+        return current->index(p_idx);
+    
+    return storeRank(lisp, current->index(p_idx), positions, idx+1);}
+
+
 Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
-    while (positions.back() < 0)
-        positions.pop_back();
-    
     short sz = positions.size();
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
+
+    while (positions.size() > 1 && positions.back() < 0)
+        positions.pop_back();
     
     //Check positions
     for (long i = 0; i < sz; i++) {
@@ -3455,12 +3510,12 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
         return res;
     
     if (res->type == t_number)
-        return lisp->provideNumber(res->asNumber());
+        return lisp->provideFloat(res->asNumber());
     
     //We steal the ITEM structure of res
     //which is a very fast operation
     //Since its internal values are not copied but borrowed
-    if (res->index(0)->type == t_numbers) {
+    if (res->index(0)->type == t_floats) {
         Matrice* m = new Matrice((List*)res);
         res->release();
         return m;
@@ -3472,13 +3527,13 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
 
 Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
-    while (positions.back() < 0)
-        positions.pop_back();
-    
     short sz = positions.size();
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
-    
+
+    while (positions.size() > 1 && positions.back() < 0)
+        positions.pop_back();
+
     //Check positions
     for (long i = 0; i < sz; i++) {
         if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
@@ -3496,7 +3551,7 @@ Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     //which is a very fast operation
     //Since its internal values are not copied but borrowed
     if (res->index(0)->type == t_floats) {
-        Matrice* m = new Matrice((List*)res);
+        Matrice_float* m = new Matrice_float((List*)res);
         res->release();
         return m;
     }
@@ -3504,6 +3559,78 @@ Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     res->release();
     return ts;
 }
+
+Element* List::storeRank(LispE* lisp, Element* current, vecte<long>& shape, vecte<long>& positions, long idx) {
+    long nb = shape.size() - idx;
+    long p_idx = -1;
+    if (idx < positions.size())
+        p_idx = positions[idx];
+    
+    long i;
+    if (p_idx == -1) {
+        //If nb == 2, then it is a matrix
+        //If nb == 1, then it is a vector
+        if (nb == 1)
+            return current;
+        
+        List* m = lisp->provideList();
+
+        if (nb == 2) {
+            Element* result;
+            Element* ref = current->index(0);
+            if (ref->isValueList()) {
+                for (long j = 0; j < shape[idx+1]; j++) {
+                    result = ref->newInstance();
+                    for (i = 0; i < shape[idx]; i++) {
+                        result->append(current->index(i)->index(j));
+                    }
+                    m->append(result);
+                }
+            }
+            else {
+                for (long j = 0; j < shape[idx+1]; j++) {
+                    result = ref->newInstance();
+                    for (i = 0; i < shape[idx]; i++) {
+                        result->append(current->index(i)->index(j)->copying(false));
+                    }
+                    m->append(result);
+                }
+            }
+        }
+        else {
+            for (i = 0; i < shape[idx]; i++) {
+                m->append(storeRank(lisp, current->index(i), shape, positions, idx+1));
+            }
+        }
+        return m;
+    }
+    
+    if (nb == 1)
+        return current->index(p_idx)->copying(false);
+    
+    return storeRank(lisp, current->index(p_idx), shape, positions, idx+1);
+}
+
+Element* List::rank(LispE* lisp, vecte<long>& positions) {
+    //We get rid of the final negative values (useless)
+    while (positions.size() > 1 && positions.back() < 0)
+        positions.pop_back();
+    
+    vecte<long> shape;
+    getShape(shape);
+    if (!checkShape(0, shape))
+        throw new Error("Error: unregular matrix: some sub-lists have different sizes");
+    
+    short sz = positions.size();
+    if (!sz || sz > shape.size())
+        throw new Error("Error: index mismatch");
+
+    while (positions.size() > 1 && positions.back() < 0)
+        positions.pop_back();
+
+    return storeRank(lisp, this, shape, positions, 0);
+}
+
 //------------------------------------------------------------------------------------------
 
 Element* Element::loop(LispE* lisp, short label,  List* code) {
@@ -4234,6 +4361,22 @@ Element* s_findall(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
         pos=s.find(sub,pos+sz);
     }
     return liste;
+}
+
+Element* s_count(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
+    long sz = sub.size();
+    if (!sz)
+        return zero_;
+    
+    long pos = s.find(sub, from);
+    if (pos == -1)
+        return zero_;
+    long nb = 0;
+    while (pos != -1) {
+        nb++;
+        pos=s.find(sub,pos+sz);
+    }
+    return lisp->provideInteger(nb);
 }
 
 
@@ -4984,6 +5127,166 @@ Element* Dictionary_n::checkkey(LispE* lisp, Element* e) {
 
 
 //------------------------------------------------------------------------------------------
+Element* Element::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    return zero_;
+}
+
+Element* String::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    u_ustring cherche = valeur->asUString(lisp);
+    u_ustring remplacement = remp->asUString(lisp);
+    long nb = nb_ureplacestring(content,cherche, remplacement);
+    return lisp->provideInteger(nb);
+}
+
+Element* List::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    for (long i = 0; i < liste.size(); i++) {
+        if (liste[i]->equal(lisp, valeur) == true_) {
+            replacing(i, remp->copying(false));
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* LList::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    u_link* a = liste.begin();
+    long nb = 0;
+    for (; a != NULL; a = a->next()) {
+        if (a->value->equal(lisp, valeur) == true_) {
+            if (a->value != remp) {
+                a->value->decrement();
+                a->value = remp->copying(false);
+                a->value->increment();
+                nb++;
+            }
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Floats::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    float r = remp->asFloat();
+    float v = valeur->asFloat();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] == v) {
+            liste[i] = r;
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Numbers::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    double v = valeur->asNumber();
+    double r = remp->asNumber();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] == v) {
+            liste[i] = r;
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Shorts::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    short v = valeur->asShort();
+    short r = remp->asShort();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] == v) {
+            liste[i] = r;
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Integers::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    long v = valeur->asInteger();
+    long r = remp->asInteger();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] == v) {
+            liste[i] = r;
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Strings::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    u_ustring v = valeur->asUString(lisp);
+    u_ustring r = remp->asUString(lisp);
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] == v) {
+            liste[i] = r;
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Set::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    u_ustring keyvalue = valeur->asUString(lisp);
+    if (ensemble.find(keyvalue) != ensemble.end()) {
+        ensemble.erase(keyvalue);
+        ensemble.insert(remp->asUString(lisp));
+        return one_;
+    }
+    return zero_;
+}
+
+Element* Set_n::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    double keyvalue = valeur->asNumber();
+    if (ensemble.find(keyvalue) != ensemble.end()) {
+        ensemble.erase(keyvalue);
+        ensemble.insert(remp->asNumber());
+        return one_;
+    }
+    return zero_;
+}
+
+
+Element* Dictionary::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    for (auto& a : dictionary) {
+        if (a.second->equal(lisp, valeur) == true_) {
+            if (a.second != remp) {
+                a.second->decrement();
+                a.second = remp->copying(false);
+                a.second->increment();
+                nb++;
+            }
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Dictionary_n::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long nb = 0;
+    for (auto& a : dictionary) {
+        if (a.second->equal(lisp, valeur) == true_) {
+            if (a.second != remp) {
+                a.second->decrement();
+                a.second = remp->copying(false);
+                a.second->increment();
+                nb++;
+            }
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+//------------------------------------------------------------------------------------------
 Element* Element::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     return emptylist_;
 }
@@ -4996,13 +5299,14 @@ Element* String::search_all_elements(LispE* lisp, Element* valeur, long ix) {
 
 Element* List::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
-    for (long i = ix; i < liste.size(); i++) {
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
         if (liste[i]->equal(lisp, valeur) == true_) {
             l->liste.push_back(i);
         }
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5018,7 +5322,7 @@ Element* LList::search_all_elements(LispE* lisp, Element* valeur, long ix) {
         ix++;
     }
     if (l->liste.empty()) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5027,12 +5331,13 @@ Element* LList::search_all_elements(LispE* lisp, Element* valeur, long ix) {
 Element* Floats::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     float v = valeur->asFloat();
-    for (long i = ix; i < liste.size(); i++) {
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5041,12 +5346,13 @@ Element* Floats::search_all_elements(LispE* lisp, Element* valeur, long ix) {
 Element* Numbers::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     double v = valeur->asNumber();
-    for (long i = ix; i < liste.size(); i++) {
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5055,12 +5361,13 @@ Element* Numbers::search_all_elements(LispE* lisp, Element* valeur, long ix) {
 Element* Shorts::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     short v = valeur->asShort();
-    for (long i = ix; i < liste.size(); i++) {
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5069,12 +5376,13 @@ Element* Shorts::search_all_elements(LispE* lisp, Element* valeur, long ix) {
 Element* Integers::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     long v = valeur->asInteger();
-    for (long i = ix; i < liste.size(); i++) {
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5083,12 +5391,13 @@ Element* Integers::search_all_elements(LispE* lisp, Element* valeur, long ix) {
 Element* Strings::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     u_ustring v = valeur->asUString(lisp);
-    for (long i = ix; i < liste.size(); i++) {
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
         if (liste[i] == v)
             l->liste.push_back(i);
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5123,7 +5432,7 @@ Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long ix) 
         }
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
@@ -5136,10 +5445,134 @@ Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long ix
             l->liste.push_back(a.first);
     }
     if (l->liste.size() == 0) {
-        delete l;
+        l->release();
         return emptylist_;
     }
     return l;
+}
+
+//------------------------------------------------------------------------------------------
+Element* Element::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    return zero_;
+}
+
+Element* String::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    u_ustring val = valeur->asUString(lisp);
+    ix =  content.find(val, ix);
+    return s_count(lisp,content, val, ix);
+}
+
+Element* List::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
+        if (liste[i]->equal(lisp, valeur) == true_) {
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* LList::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    u_link* a = at(ix);
+    for (; a != NULL; a = a->next()) {
+        if (a->value->equal(lisp, valeur) == true_) {
+            nb++;
+        }
+        ix++;
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Floats::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    float v = valeur->asFloat();
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
+        if (liste[i] == v)
+            nb++;
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Numbers::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    double v = valeur->asNumber();
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
+        if (liste[i] == v)
+            nb++;
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Shorts::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    short v = valeur->asShort();
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
+        if (liste[i] == v)
+            nb++;
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Integers::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    long v = valeur->asInteger();
+    long sz = liste.size();
+    for (long i = ix; i < sz; i++) {
+        if (liste[i] == v)
+            nb++;
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Strings::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    u_ustring v = valeur->asUString(lisp);
+    for (long i = ix; i <
+         liste.size(); i++) {
+        if (liste[i] == v)
+            nb++;
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Set::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    u_ustring keyvalue = valeur->asUString(lisp);
+    if (ensemble.find(keyvalue) == ensemble.end())
+        return zero_;
+    return one_;
+}
+
+Element* Set_n::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    double keyvalue = valeur->asNumber();
+    if (ensemble.find(keyvalue) == ensemble.end())
+        return zero_;
+    return one_;
+}
+
+Element* Dictionary::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    u_ustring keyvalue;
+    for (auto& a : dictionary) {
+        if (a.second->equal(lisp, valeur) == true_) {
+            keyvalue = a.first;
+            nb++;
+        }
+    }
+    return lisp->provideInteger(nb);
+}
+
+Element* Dictionary_n::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long nb = 0;
+    for (auto& a : dictionary) {
+        if (a.second->equal(lisp, valeur) == true_)
+            nb++;
+    }
+    return lisp->provideInteger(nb);
 }
 
 //------------------------------------------------------------------------------------------
@@ -5474,7 +5907,7 @@ Element* Matrice_float::rotate(LispE* lisp, long axis) {
     
     Element* e;
     for (i = size_x-1; i>= 0;  i--) {
-        e = new Floats((Floats*)liste[i]);
+        e = lisp->provideFloats((Floats*)liste[i]);
         revert_matrix->append(e);
     }
     return revert_matrix;
@@ -5496,7 +5929,7 @@ Element* Matrice::rotate(LispE* lisp, long axis) {
     
     Element* e;
     for (i = size_x-1; i>= 0;  i--) {
-        e = new Numbers((Numbers*)liste[i]);
+        e = lisp->provideNumbers((Numbers*)liste[i]);
         revert_matrix->append(e);
     }
     return revert_matrix;
@@ -5507,7 +5940,7 @@ Element* Tenseur::reversion(LispE* lisp, Element* value, long pos, long axis, bo
         return value->reverse(lisp,true);
     
     if (pos == shape.size() -1)
-        return new Numbers((Numbers*)value);
+        return lisp->provideNumbers((Numbers*)value);
     
     Element* r;
     if (init) {
@@ -5534,7 +5967,7 @@ Element* Tenseur_float::reversion(LispE* lisp, Element* value, long pos, long ax
         return value->reverse(lisp,true);
     
     if (pos == shape.size() -1)
-        return new Numbers((Numbers*)value);
+        return lisp->provideNumbers((Numbers*)value);
     
     Element* r;
     if (init) {
@@ -6613,83 +7046,83 @@ Element* Element::moreorequal(LispE* lisp, Element* e) {
 }
 
 Element* String::less(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_string && content < e->asUString(lisp))];
+    return booleans_[content < e->asUString(lisp)];
 }
 
 Element* String::lessorequal(LispE* lisp, Element* e){
-    return booleans_[(e->type == t_string && content <= e->asUString(lisp))];
+    return booleans_[content <= e->asUString(lisp)];
 }
 
 Element* String::more(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_string && content > e->asUString(lisp))];
+    return booleans_[content > e->asUString(lisp)];
 }
 
 Element* String::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_string && content >= e->asUString(lisp))];
+    return booleans_[content >= e->asUString(lisp)];
 }
 
 Element* Number::less(LispE* lisp, Element* e) {
-    return booleans_[number < e->checkNumber(lisp)];
+    return booleans_[number < e->asNumber()];
 }
 
 Element* Float::less(LispE* lisp, Element* e) {
-    return booleans_[number < e->checkFloat(lisp)];
+    return booleans_[number < e->asFloat()];
 }
 
 Element* Float::lessorequal(LispE* lisp, Element* e){
-    return booleans_[number <= e->checkFloat(lisp)];
+    return booleans_[number <= e->asFloat()];
 }
 
 Element* Number::lessorequal(LispE* lisp, Element* e){
-    return booleans_[number <= e->checkNumber(lisp)];
+    return booleans_[number <= e->asNumber()];
 }
 
 Element* Float::more(LispE* lisp, Element* e) {
-    return booleans_[number > e->checkFloat(lisp)];
+    return booleans_[number > e->asFloat()];
 }
 
 Element* Number::more(LispE* lisp, Element* e) {
-    return booleans_[number > e->checkNumber(lisp)];
+    return booleans_[number > e->asNumber()];
 }
 
 Element* Float::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[number >= e->checkFloat(lisp)];
+    return booleans_[number >= e->asFloat()];
 }
 
 Element* Number::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[number >= e->checkNumber(lisp)];
+    return booleans_[number >= e->asNumber()];
 }
 
 Element* Integer::less(LispE* lisp, Element* e) {
-    return booleans_[integer < e->checkInteger(lisp)];
+    return booleans_[integer < e->asInteger()];
 }
 
 Element* Short::less(LispE* lisp, Element* e) {
-    return booleans_[integer < e->checkShort(lisp)];
+    return booleans_[integer < e->asShort()];
 }
 
 Element* Short::lessorequal(LispE* lisp, Element* e) {
-    return booleans_[integer <= e->checkShort(lisp)];
+    return booleans_[integer <= e->asShort()];
 }
 
 Element* Integer::lessorequal(LispE* lisp, Element* e){
-    return booleans_[integer <= e->checkInteger(lisp)];
+    return booleans_[integer <= e->asInteger()];
 }
 
 Element* Integer::more(LispE* lisp, Element* e) {
-    return booleans_[integer > e->checkInteger(lisp)];
+    return booleans_[integer > e->asInteger()];
 }
 
 Element* Integer::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[integer >= e->checkInteger(lisp)];
+    return booleans_[integer >= e->asInteger()];
 }
 
 Element* Short::more(LispE* lisp, Element* e) {
-    return booleans_[integer > e->checkShort(lisp)];
+    return booleans_[integer > e->asShort()];
 }
 
 Element* Short::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[integer >= e->checkShort(lisp)];
+    return booleans_[integer >= e->asShort()];
 }
 
 
@@ -9158,7 +9591,7 @@ Element* Floats::cadr(LispE* lisp, u_ustring& action) {
     if (pos) {
         if (pos == sz)
             return null_;
-        return new Floats(this, pos);
+        return lisp->provideFloats(this, pos);
     }
     
     return null_;
@@ -9183,7 +9616,7 @@ Element* Numbers::cadr(LispE* lisp, u_ustring& action) {
     if (pos) {
         if (pos == sz)
             return null_;
-        return new Numbers(this, pos);
+        return lisp->provideNumbers(this, pos);
     }
     
     return null_;
@@ -9296,7 +9729,7 @@ Element* Integers::cadr(LispE* lisp, u_ustring& action) {
     if (pos) {
         if (pos == sz)
             return null_;
-        return new Integers(this, pos);
+        return lisp->provideIntegers(this, pos);
     }
     
     return null_;
@@ -9343,7 +9776,7 @@ Element* Floats::car(LispE* lisp) {
 Element* Floats::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
-    return new Floats(this, 1);
+    return lisp->provideFloats(this, 1);
 }
 
 Element* Numbers::car(LispE* lisp) {
@@ -9355,7 +9788,7 @@ Element* Numbers::car(LispE* lisp) {
 Element* Numbers::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
-    return new Numbers(this, 1);
+    return lisp->provideNumbers(this, 1);
 }
 
 Element* Shorts::car(LispE* lisp) {
@@ -9379,7 +9812,7 @@ Element* Shorts::cdr(LispE* lisp) {
 Element* Integers::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
-    return new Integers(this, 1);
+    return lisp->provideIntegers(this, 1);
 }
 
 Element* Strings::car(LispE* lisp) {
@@ -9422,3 +9855,320 @@ Element* InfiniterangeInteger::cdr(LispE* lisp) {
     return new InfiniterangeInteger(initial_value+increment, increment);
 }
 //------------------------------------------------------------------------------------------
+
+Element* Set_i::fullcopy() {
+    return new Set_i(ensemble);
+}
+
+Element* Set_i::copying(bool duplicate) {
+    if (exchange_value.provide && exchange_value.lisp->preparingthread)
+        return new Set_i(ensemble);
+    
+    if (!is_protected() && !duplicate)
+        return this;
+    
+    return new Set_i(ensemble);
+}
+
+Element* Set_ipool::copyatom(uint16_t s) {
+    if (status < s)
+        return this;
+    
+    return lisp->provideSet_i(this);
+}
+
+Element* Set_ipool::newInstance() {
+    return lisp->provideSet_i();
+}
+
+Element* Set_ipool::fullcopy() {
+    if (lisp->preparingthread)
+        return new Set_i(ensemble);
+    else
+        return lisp->provideSet_i(this);
+}
+
+Element* Set_ipool::copying(bool duplicate) {
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
+    if (!lisp->preparingthread && !is_protected() && !duplicate)
+        return this;
+    
+    if (lisp->preparingthread)
+        return new Set_i(ensemble);
+    else
+        return lisp->provideSet_i(this);
+}
+
+void Set_ipool::decrement() {
+    if (is_protected())
+        return;
+    
+    status--;
+    if (!status) {
+        ensemble.clear();
+        lisp->seti_pool.push_back(this);
+    }
+}
+
+
+void Set_ipool::decrementstatus(uint16_t nb) {
+    if (is_protected())
+        return;
+    
+    status-=nb;
+    if (!status) {
+        ensemble.clear();
+        lisp->seti_pool.push_back(this);
+    }
+}
+
+void Set_ipool::release() {
+    if (!status) {
+        ensemble.clear();
+        lisp->seti_pool.push_back(this);
+    }
+}
+
+Element* Set_i::minimum(LispE* lisp) {
+    if (ensemble.empty())
+        return null_;
+    long w = 0;
+    bool first = true;
+    for (auto& a : ensemble) {
+        if (first) {
+            w = a;
+            first = false;
+        }
+        else
+            if (w < a)
+                w = a;
+    }
+    
+    return lisp->provideInteger(w);
+}
+
+Element* Set_i::maximum(LispE* lisp) {
+    if (ensemble.empty())
+        return null_;
+    long w = 0;
+    bool first = true;
+    for (auto& a : ensemble) {
+        if (first) {
+            w = a;
+            first = false;
+        }
+        else
+            if (w > a)
+                w = a;
+    }
+    
+    return lisp->provideInteger(w);
+}
+
+Element* Set_i::minmax(LispE* lisp) {
+    if (ensemble.empty())
+        return null_;
+    long v_min = 0;
+    long v_max = 0;
+    bool first = true;
+    
+    for (auto& a : ensemble) {
+        if (first) {
+            v_min = a;
+            v_max = a;
+            first = false;
+        }
+        else {
+            if (v_max < a)
+                v_max = a;
+            else
+                if (v_min > a)
+                    v_min = a;
+        }
+    }
+    Numbers* f = lisp->provideNumbers();
+    f->liste.push_back(v_min);
+    f->liste.push_back(v_max);
+    return f;
+}
+
+void Set_i::flatten(LispE* lisp, List* l) {
+    if (ensemble.empty())
+        return;
+    for (auto& a : ensemble) {
+        l->append(lisp->provideInteger(a));
+    }
+}
+
+Element* Set_i::loop(LispE* lisp, short label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    Integer* element;
+    lisp->recording(null_, label);
+    long sz = code->liste.size();
+    for (auto & a: ensemble) {
+        element = lisp->provideInteger(a);
+        lisp->replacingvalue(element, label);
+        e = null_;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Set_i::thekeys(LispE* lisp) {
+    Numbers* keys = lisp->provideNumbers();
+    if (ensemble.empty())
+        return keys;
+    for (auto& a : ensemble) {
+        keys->append(lisp->provideInteger(a));
+    }
+    return keys;
+}
+
+Element* Set_i::thevalues(LispE* lisp) {
+    Numbers* keys = lisp->provideNumbers();
+    if (ensemble.empty())
+        return keys;
+    for (auto& a : ensemble) {
+        keys->append(lisp->provideInteger(a));
+    }
+    return keys;
+}
+
+Element* Set_i::next_iter(LispE* lisp, void* it) {
+    std::set<long>::iterator* n = (std::set<long>::iterator*)it;
+    if (*n == ensemble.end())
+        return emptyatom_;
+    Element* r = lisp->provideInteger(**n);
+    (*n)++;
+    return r;
+}
+
+Element* Set_i::search_element(LispE* lisp, Element* valeur, long ix) {
+    long k = valeur->asInteger();
+    if (ensemble.find(k) == ensemble.end())
+        return null_;
+    return true_;
+}
+
+Element* Set_i::checkkey(LispE* lisp, Element* e) {
+    if (ensemble.find(e->asInteger()) == ensemble.end())
+        return null_;
+    return true_;
+}
+
+Element* Set_i::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    long keyvalue = valeur->asInteger();
+    if (ensemble.find(keyvalue) != ensemble.end()) {
+        ensemble.erase(keyvalue);
+        ensemble.insert(remp->asInteger());
+        return one_;
+    }
+    return zero_;
+}
+
+Element* Set_i::search_all_elements(LispE* lisp, Element* valeur, long ix) {
+    Numbers* l = lisp->provideNumbers();
+    long keyvalue = valeur->asInteger();
+    if (ensemble.find(keyvalue) == ensemble.end())
+        return emptylist_;
+    l->liste.push_back(keyvalue);
+    return l;
+}
+
+Element* Set_i::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    long keyvalue = valeur->asInteger();
+    if (ensemble.find(keyvalue) == ensemble.end())
+        return zero_;
+    return one_;
+}
+
+Element* Set_i::search_reverse(LispE* lisp, Element* valeur, long ix) {
+    Numbers* l = lisp->provideNumbers();
+    long keyvalue = valeur->asInteger();
+    if (ensemble.find(keyvalue) == ensemble.end())
+        return emptylist_;
+    l->liste.push_back(keyvalue);
+    return l;
+}
+
+Element* Set_i::protected_index(LispE* lisp, long i) {
+    if (i >= 0 && i < ensemble.size()) {
+        for (auto& a: ensemble) {
+            if (!i) {
+                return lisp->provideInteger(a);
+            }
+            i--;
+        }
+    }
+    return null_;
+}
+
+Element* Set_i::value_on_index(LispE* lisp, long i) {
+    if (i >= 0 && i < ensemble.size()) {
+        for (auto& a: ensemble) {
+            if (!i) {
+                return lisp->provideInteger(a);
+            }
+            i--;
+        }
+    }
+    return null_;
+}
+
+Element* Set_i::value_from_index(LispE* lisp, long i) {
+    for (auto& a: ensemble) {
+        if (!i) {
+            return lisp->provideInteger(a);
+        }
+        i--;
+    }
+    return null_;
+}
+
+Element* Set_i::value_on_index(LispE* lisp, Element* ix) {
+    long k = ix->asInteger();
+    if (ensemble.find(k) == ensemble.end())
+        return null_;
+    return lisp->provideInteger(k);
+}
+
+Element* Set_i::protected_index(LispE* lisp, Element* ix) {
+    long k = ix->asInteger();
+    if (ensemble.find(k) == ensemble.end())
+        return null_;
+    return lisp->provideInteger(k);
+}
+
+Element* Set_i::join_in_list(LispE* lisp, u_ustring& sep) {
+    if (sep == U"")
+        sep = U",";
+    u_ustring str;
+    u_ustring beg;
+    for (auto& a: ensemble) {
+        str += beg;
+        beg = sep;
+        str += convertToUString(a);
+    }
+    return lisp->provideString(str);
+}
+
+Element* Set_i::equal(LispE* lisp, Element* e) {
+    return booleans_[(e->type == t_seti && ensemble == ((Set_i*)e)->ensemble)];
+}
+
+bool Set_i::egal(Element* e) {
+    return (e->type == t_seti && ensemble == ((Set_i*)e)->ensemble);
+}
