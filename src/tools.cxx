@@ -2624,13 +2624,12 @@ double convertingfloathexa(u_ustring& s) {
     long v;
     if (isadigit(s[i])) {
         if (s[i] == '0') {
-            i++;
-            if (s[i] == 'x') {
-                i++;
+            if (s[i+1] == 'x') {
+                i+=2;
                 return conversiontofloathexa(s, i, sign);
             }
-            if (s[i] == 'b') {
-                i++;
+            if (s[i+1] == 'b') {
+                i+=2;
                 v = 0;
                 while (s[i] == '0' || s[i] == '1') {
                     v = (v << 1) + (s[i++] & 15);
@@ -3137,23 +3136,33 @@ long convertinginteger(string& number) {
     if (number.size() == ipos)
         return (c - 48);
 
-    if (c == '0' || number[ipos] == 'x') {
-        ipos++;
-        c = number[ipos++];
-        while (digitaction[c]) {
-            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+    if (c == '0') {
+        if (number[ipos] == 'x') {
+            ipos++;
             c = number[ipos++];
-        }
-        return v*sign;
-    }
-    else {
-        if (isadigit(c)) {
-            v = c & 15;
-            c = number[ipos++];
-            while (isadigit(c)) {
-                v = (v << 3) + (v << 1) + (c & 15);
+            while (digitaction[c]) {
+                v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
                 c = number[ipos++];
             }
+            return v*sign;
+        }
+        if (number[ipos] == 'b') {
+            ipos++;
+            c = number[ipos++];
+            while (c == '0' || c == '1') {
+                v = (v << 1) + (c & 15);
+                c = number[ipos++];
+            }
+            return v;
+        }
+    }
+    
+    if (isadigit(c)) {
+        v = c & 15;
+        c = number[ipos++];
+        while (isadigit(c)) {
+            v = (v << 3) + (v << 1) + (c & 15);
+            c = number[ipos++];
         }
     }
     return v*sign;
