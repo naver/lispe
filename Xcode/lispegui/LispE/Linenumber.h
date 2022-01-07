@@ -24,7 +24,7 @@
     NSMutableArray* ypositions;
 }
 
--(bool)findbreakline:(int)ligne;
+-(bool)findbreakline:(long)ligne;
 -(void)ajoutey:(NSInteger)i;
 -(void)nettoiey;
 -(void)ajoutel:(NSInteger)i;

@@ -142,6 +142,48 @@ BOOL dark = false;
     [ruleur setNeedsDisplay:YES];
 }
 
+-(void)updateruleur:(NSString*)fileContent {
+    NSLayoutManager* layoutManager = [self layoutManager];
+    NSTextContainer* container = [self textContainer];
+    NSRect ps;
+        
+    long longueur=[fileContent length];
+    //First we renumber all our lines...
+    [ruleur nettoiey];
+    [ruleur nettoiel];
+    NSRange suivant=NSMakeRange(0,0);
+    
+    long diff=-1;
+    long lasty=0;
+    while (suivant.location < longueur) {
+        suivant = [fileContent paragraphRangeForRange: suivant];
+        ps = [layoutManager boundingRectForGlyphRange:suivant inTextContainer:container];
+        
+        if (diff == -1) {
+            lasty=ps.origin.y;
+            diff=0;
+        }
+        else {
+            if (ps.origin.y==0)
+                lasty+=diff;
+            else {
+                diff=ps.origin.y-lasty;
+                lasty=ps.origin.y;
+            }
+        }
+        
+        [ruleur ajoutey:lasty];
+        [ruleur ajoutel:suivant.location];
+        
+        if (suivant.length!=0) {
+            suivant.location+=suivant.length;
+            suivant.length = 0;
+        }
+        else
+            suivant.location+=1;
+    }
+}
+
 -(void)majruleur:(NSString*)fileContent {
     NSLayoutManager            *layoutManager;
     NSTextContainer            *container;
@@ -270,6 +312,7 @@ BOOL dark = false;
     
     letexte=[self string];
     
+    NSRect visibleRect = [[[ruleur scrollView] contentView] bounds];
     if (dark)
         [self setTextColor: [NSColor whiteColor] range:suivant];
     else
@@ -277,6 +320,8 @@ BOOL dark = false;
     
     limite = [letexte lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     long* tobecolored=colorparser([letexte UTF8String], suivant.location, limite);
+    
+    //[ruleur majy: visibleRect.origin.y];
 
     for (long i=0; tobecolored[i]!=-1;i+=3) {
         trouve.location=tobecolored[i+1];
@@ -304,11 +349,14 @@ BOOL dark = false;
             case 7: //comments
                 [self setTextColor: couleurcommentaires range:trouve];
                 break;
-            case 8: //special variables ?label #D+ $d+
+            default: //special variables ?label #D+ $d+
                 [self setTextColor: couleurvar range:trouve];
         }
     }
     deletion(tobecolored);
+    NSRect visibleRectFinal = [[[ruleur scrollView] contentView] bounds];
+    if (visibleRectFinal.origin.y != visibleRect.origin.y)
+        [self majruleur:[self string]];
 }
 
 -(BOOL)testpadding:(NSString*)localstring {
@@ -529,7 +577,6 @@ BOOL dark = false;
         localrange.length=0;
         currentrange=[self viewRange];
         [self colorie];
-
         [self setSelectedRange:localrange];
         return YES;
     }

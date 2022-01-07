@@ -102,7 +102,7 @@ void clearallbreakpoints(void);
     [textecode scrollRangeToVisible: rg];
 }
 
--(bool)findbreakline:(int)ligne {
+-(bool)findbreakline:(long)ligne {
     if (breakpoints==NULL)
         return false;
     long idx=[breakpoints indexOfObjectIdenticalTo:[NSNumber numberWithLong:ligne]];
@@ -189,14 +189,13 @@ void clearallbreakpoints(void);
     //NSRange glyphRange = [layoutManager glyphRangeForBoundingRect:visibleRect inTextContainer:container];
     //NSRange range = [layoutManager characterRangeForGlyphRange:glyphRange actualGlyphRange:NULL];
     
-    int l=0;
+    long l = 0;
     NSString* labelText;
     NSSize szn;
     int base=visibleRect.origin.y - 2;
-    long mn=0;
-    for (NSNumber* n in lignes)  {
-        // if ([n intValue]>=range.location) { //&& [n intValue]<=(range.location+range.length)) {
-        labelText = [NSString stringWithFormat:@"%d", l+1];
+    long nblines = [lignes count];
+    for (l = 0; l < nblines; l++)  {
+        labelText = [NSString stringWithFormat:@"%ld", l + 1];
         
         if ([self findbreakline:l+1]) {
             szn=[labelText sizeWithAttributes: attributsBreaks];
@@ -215,9 +214,6 @@ void clearallbreakpoints(void);
             // Draw string flush right, centered vertically within the line
             [labelText drawInRect:rectb withAttributes:attributsNumeros];
         }
-        //}
-        mn=[n intValue]+1;
-        l++;
     }
 }
 

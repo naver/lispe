@@ -133,7 +133,10 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                 idx = i;
                 if (code[i+1] == ';') {
                     idx += 2;
+                    wstring cc;
+                    cc += L";;";
                     while (idx < sz-1 && (code[idx] != ';' || code[idx+1] != ';')) {
+                        cc += code[idx];
                         if (code[idx] == '\n') {
                             line_number++;
                             infos.append(t_comment, i, idx);
@@ -206,6 +209,9 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                 tampon = L"";
                 while (idx < sz && code[idx] != '`') {
                     c = code[idx];
+                    if (c == '\n')
+                        line_number++;
+                    
                     infos.drift += c_utf16(c);
                     if (c == '\\') {
                         idx++;
@@ -680,6 +686,7 @@ extern "C" {
             windowmode = false;
         }
 
+/*
         long drift = 0;
         if (from) {
             char c = txt[from];
@@ -700,21 +707,24 @@ extern "C" {
                 ((char*)txt)[from] = c;
             }
         }
-
+*/
         wstring line;
-        s_utf8_to_unicode(line, (unsigned char*)txt+from, upto - from);
+        s_utf8_to_unicode(line, (unsigned char*)txt, upto);
         tokenize_line(line, infos);
+        if (from) {
+            from = special_characters.c_bytetocharposition((unsigned char*)txt, from);
+        }
         
         long left = 0, right = 0;
         wstring sub;
         short type;
         for (long isegment = 0; isegment < infos.types.size(); isegment++) {
-            type = infos.types[isegment];
             left =  infos.positions[isegment<<1];
+            type = infos.types[isegment];
             right = infos.positions[1+(isegment<<1)] - left;
 
-            sub = line.substr(left, right);
-            left += drift;
+            //sub = line.substr(left, right);
+            //left += drift;
             switch (type) {
                 case t_emptystring:
                 case t_string:

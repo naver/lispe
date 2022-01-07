@@ -50,6 +50,7 @@
 -(void)clearallbreakpoints;
 -(void)insere:(NSString*)car;
 -(void)majruleur:(NSString*)fileContent;
+-(void)updateruleur:(NSString*)fileContent;
 -(void)insertBreakpoint;
 -(void)selectmatchingbracket;
 -(void)coloreview;
