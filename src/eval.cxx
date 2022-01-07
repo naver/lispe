@@ -6323,7 +6323,7 @@ Element* List::evall_at_index(LispE* lisp) {
                     }
                     if (listsize == 5) {
                         value = liste[4]->eval(lisp);
-                        result = m->index(x)->replace(lisp, y, value);
+                        result = m->index(x)->replace(lisp, y, value->copying(false));
                         value->release();
                         return result;
                     }
@@ -6352,7 +6352,7 @@ Element* List::evall_at_index(LispE* lisp) {
                     }
                     if (listsize == 5) {
                         value = liste[4]->eval(lisp);
-                        result = m->index(x)->replace(lisp, y, value);
+                        result = m->index(x)->replace(lisp, y, value->copying(false));
                         value->release();
                         return result;
                     }
@@ -6450,7 +6450,7 @@ Element* List::evall_at_index(LispE* lisp) {
         if (listsize == 4) {
             ix = liste[2]->eval(lisp);
             value = liste[3]->eval(lisp);
-            result = container->replace(lisp, ix, value);
+            result = container->replace(lisp, ix, value->copying(false));
             ix->release();
             value->release();
             return result;
@@ -6527,7 +6527,7 @@ Element* List::evall_set_at(LispE* lisp) {
         }
         ix = liste[listsize-2]->eval(lisp);
         value = liste[listsize-1]->eval(lisp);
-        result->replace(lisp, ix, value);
+        result->replace(lisp, ix, value->copying(false));
         value->release();
         ix->release();
         if (container->element_container()) {
