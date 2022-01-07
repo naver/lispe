@@ -6322,8 +6322,8 @@ Element* List::evall_at_index(LispE* lisp) {
                         throw new Error("Error: indexes out of bounds");
                     }
                     if (listsize == 5) {
-                        value = liste[4]->eval(lisp);
-                        result = m->index(x)->replace(lisp, y, value->copying(false));
+                        value = liste[4]->eval(lisp)->copying(false);
+                        result = m->index(x)->replace(lisp, y, value);
                         value->release();
                         return result;
                     }
@@ -6351,8 +6351,8 @@ Element* List::evall_at_index(LispE* lisp) {
                         throw new Error("Error: indexes out of bounds");
                     }
                     if (listsize == 5) {
-                        value = liste[4]->eval(lisp);
-                        result = m->index(x)->replace(lisp, y, value->copying(false));
+                        value = liste[4]->eval(lisp)->copying(false);
+                        result = m->index(x)->replace(lisp, y, value);
                         value->release();
                         return result;
                     }
@@ -6449,8 +6449,8 @@ Element* List::evall_at_index(LispE* lisp) {
         
         if (listsize == 4) {
             ix = liste[2]->eval(lisp);
-            value = liste[3]->eval(lisp);
-            result = container->replace(lisp, ix, value->copying(false));
+            value = liste[3]->eval(lisp)->copying(false);
+            result = container->replace(lisp, ix, value);
             ix->release();
             value->release();
             return result;
@@ -6526,8 +6526,8 @@ Element* List::evall_set_at(LispE* lisp) {
             ix->release();
         }
         ix = liste[listsize-2]->eval(lisp);
-        value = liste[listsize-1]->eval(lisp);
-        result->replace(lisp, ix, value->copying(false));
+        value = liste[listsize-1]->eval(lisp)->copying(false);
+        result->replace(lisp, ix, value);
         value->release();
         ix->release();
         if (container->element_container()) {

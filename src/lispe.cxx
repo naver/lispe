@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.7.12.49";
+static std::string version = "1.2022.1.7.16.36";
 string LispVersion() {
     return version;
 }
@@ -570,6 +570,8 @@ void Delegation::initialisation(LispE* lisp) {
     _DICO_SETI = (Atome*)lisp->provideAtomOrInstruction(l_seti);
 
     _QUOTE = (Atome*)lisp->provideAtomOrInstruction(l_quote);
+    
+    _SET_AT = (Atome*)lisp->provideAtomOrInstruction(l_set_at);
 
     _THEEND = new Error(L"Break Requested", s_constant);
 
@@ -2129,6 +2131,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

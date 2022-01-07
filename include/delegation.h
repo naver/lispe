@@ -163,6 +163,7 @@ public:
     Atome* _DICO_SETI;
     Atome* _DICO_SET;
     Atome* _QUOTE;
+    Atome* _SET_AT;
     Element* _BREAK;
     Listbreak _BREAKEVAL;
     
