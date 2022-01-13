@@ -519,6 +519,7 @@ public:
     Element* multiloop(LispE* lisp);
     Element* polyloop(LispE* lisp);
     
+    bool check_element(LispE* lisp, Element* element_value);
     long find_element(LispE*, Element* element_value, long idx);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
@@ -526,6 +527,10 @@ public:
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     virtual Element* last_element(LispE* lisp);
     
     Element* last() {
@@ -720,6 +725,9 @@ public:
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     
+    virtual void combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action);    
+    virtual void combine(LispE* lisp, Element* l1, Element* l2, List* action);
+
     virtual void release() {
         if (!status) {
             liste.decrement();
@@ -1236,6 +1244,9 @@ public:
     Element* evall_link(LispE* lisp);
     Element* evall_list(LispE* lisp);
     Element* evall_llist(LispE* lisp);
+    Element* evall_listand(LispE* lisp);
+    Element* evall_listor(LispE* lisp);
+    Element* evall_listxor(LispE* lisp);
     Element* evall_to_list(LispE* lisp);
     Element* evall_to_llist(LispE* lisp);
     Element* evall_load(LispE* lisp);
@@ -1264,6 +1275,7 @@ public:
     Element* evall_multiplyequal(LispE* lisp);
     Element* evall_ncheck(LispE* lisp);
     Element* evall_nconc(LispE* lisp);
+    Element* evall_nconcn(LispE* lisp);
     Element* evall_neq(LispE* lisp);
     Element* evall_not(LispE* lisp);
     Element* evall_nullp(LispE* lisp);
@@ -1758,12 +1770,17 @@ public:
 
     Element* loop(LispE* lisp, short label,  List* code);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     Element* last_element(LispE* lisp);
     
     void swap(long i, long j) {
@@ -2202,12 +2219,17 @@ public:
 
     Element* loop(LispE* lisp, short label,  List* code);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     Element* last_element(LispE* lisp);
     
     void swap(long i, long j) {
@@ -2630,12 +2652,17 @@ public:
 
     Element* loop(LispE* lisp, short label,  List* code);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
@@ -3011,12 +3038,17 @@ public:
 
     Element* loop(LispE* lisp, short label,  List* code);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
@@ -4362,12 +4394,17 @@ public:
 
     Element* loop(LispE* lisp, short label,  List* code);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {

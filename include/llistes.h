@@ -472,12 +472,17 @@ public:
     Element* loop(LispE* lisp, short label,  List* code);
 
     long find_element(LispE*, Element* element_value, long idx);
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     Element* last_element(LispE* lisp);
     
     Element* last() {

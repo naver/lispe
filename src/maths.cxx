@@ -835,7 +835,48 @@ void LList::build(LispE* lisp, vecte<long>& shape, long isz, LList* res, LList* 
     }
 }
 //---------------------------------------------------------------------------------------------------
+void List::combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
+    if (!l1->isList() && !l2->isList()) {
+        if (isz1.size() && isz2.size()) {
+            action->liste[1] = l1;
+            action->liste[2] = l2;
+            Element* e = action->eval(lisp);
+            Element* r = this;
+            long i;
+            for (i = 0; i < isz1.size(); i++) {
+                r = r->index(isz1[i]);
+            }
+            for (i = 0; i < isz2.size()-1; i++) {
+                r = r->index(isz2[i]);
+            }
+            r->replacing(isz2.back(), e);
+            e->release();
+        }
+        return;
+    }
+    
+    if (l1->isList()) {
+        for (long i1 = 0; i1 < l1->size(); i1++) {
+            isz1.push_back(i1);
+            combine(lisp, isz1, isz2, l1->index(i1), l2, action);
+            isz1.pop_back();
+        }
+    }
+    if (l2->isList()) {
+        for (long i2 = 0; i2 < l2->size(); i2++) {
+            isz2.push_back(i2);
+            combine(lisp, isz1, isz2, l1, l2->index(i2), action);
+            isz2.pop_back();
+        }
+    }
+}
 
+void List::combine(LispE* lisp, Element* l1, Element* l2, List* action) {
+    vecte<long> isz1;
+    vecte<long> isz2;
+    combine(lisp, isz1, isz2, l1, l2, action);
+}
+//------------------------------------------------------------------------------------------
 
 //LU decomposition
 long LUDCMP(long n, vecte<long>& indexes, long& d, Matrice* m) {
@@ -8220,6 +8261,66 @@ Element* List::evall_multiply(LispE* lisp) {
     }
 
     return first_element;
+}
+
+Element* List::evall_listand(LispE* lisp) {
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
+    Element* result;
+    
+    try {
+        first_element = first_element->eval(lisp);
+        second_element = second_element->eval(lisp);
+        result = first_element->list_and(lisp, second_element);
+        first_element->release();
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+    return result;
+}
+
+Element* List::evall_listor(LispE* lisp) {
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
+    Element* result;
+    
+    try {
+        first_element = first_element->eval(lisp);
+        second_element = second_element->eval(lisp);
+        result = first_element->list_or(lisp, second_element);
+        first_element->release();
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+    return result;
+}
+
+Element* List::evall_listxor(LispE* lisp) {
+    Element* first_element = liste[1];
+    Element* second_element = liste[2];
+    Element* result;
+    
+    try {
+        first_element = first_element->eval(lisp);
+        second_element = second_element->eval(lisp);
+        result = first_element->list_xor(lisp, second_element);
+        first_element->release();
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+    return result;
 }
 
 

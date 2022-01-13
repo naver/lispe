@@ -336,6 +336,31 @@ public:
         base = p; //this the new zero position
     }
 
+    void push(uint16_t r) {
+        if (base == -1) {
+            base = r >> binBits;
+            r &= binMin;
+            indexes[0] |= binVal64[r];
+            return;
+        }
+        
+        uint16_t i = r >> binBits;
+        r &= binMin;
+        if (i < base) {
+            insert(i);
+            indexes[0] |= binVal64[r];
+            return;
+        }
+
+        i -= base;
+        if (i >= tsize) {
+            resize(i + (i >> 1) + 1);
+            indexes[i] |= binVal64[r];
+            return;
+        }
+        
+        indexes[i] |= binVal64[r];
+    }
 
     bool& operator [](uint16_t r) {
         if (base == -1) {

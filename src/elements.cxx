@@ -3650,7 +3650,7 @@ Element* String::loop(LispE* lisp, short label, List* code) {
         lisp->handlingutf8->getchar(content, localvalue, i, szc);
         element = lisp->provideString(localvalue);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3675,7 +3675,7 @@ Element* LList::loop(LispE* lisp, short label, List* code) {
     for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         element = a->value->copying(false);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3699,7 +3699,7 @@ Element* List::loop(LispE* lisp, short label, List* code) {
     for (long i = 0; i < liste.size(); i++) {
         element = liste[i]->copying(false);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3721,7 +3721,7 @@ Element* Matrice::loop(LispE* lisp, short label, List* code) {
     long sz = code->liste.size();
     for (long i = 0; i < size_x; i++) {
         lisp->replacingvalue(liste[i], label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3743,7 +3743,7 @@ Element* Matrice_float::loop(LispE* lisp, short label, List* code) {
     long sz = code->liste.size();
     for (long i = 0; i < size_x; i++) {
         lisp->replacingvalue(liste[i], label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3765,7 +3765,7 @@ Element* Tenseur::loop(LispE* lisp, short label, List* code) {
     long sz = code->liste.size();
     for (long i = 0; i < shape[0]; i++) {
         lisp->replacingvalue(liste[i], label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3787,7 +3787,7 @@ Element* Tenseur_float::loop(LispE* lisp, short label, List* code) {
     long sz = code->liste.size();
     for (long i = 0; i < shape[0]; i++) {
         lisp->replacingvalue(liste[i], label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3818,7 +3818,7 @@ Element* Rankloop::loop(LispE* lisp, short label, List* code) {
             positions.pop_back();
         }
         lisp->replacingvalue(ranks, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3842,7 +3842,7 @@ Element* Floats::loop(LispE* lisp, short label, List* code) {
     for (long i = 0; i < liste.size(); i++) {
         element = lisp->provideFloat(liste[i]);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3867,7 +3867,7 @@ Element* Numbers::loop(LispE* lisp, short label, List* code) {
     for (long i = 0; i < liste.size(); i++) {
         element = lisp->provideNumber(liste[i]);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3891,7 +3891,7 @@ Element* Shorts::loop(LispE* lisp, short label, List* code) {
     for (long i = 0; i < liste.size(); i++) {
         element = lisp->provideInteger(liste[i]);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3915,7 +3915,7 @@ Element* Integers::loop(LispE* lisp, short label, List* code) {
     for (long i = 0; i < liste.size(); i++) {
         element = lisp->provideInteger(liste[i]);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3941,7 +3941,7 @@ Element* Set::loop(LispE* lisp, short label, List* code) {
         u = a;
         element = lisp->provideString(u);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3965,7 +3965,7 @@ Element* Set_n::loop(LispE* lisp, short label, List* code) {
     for (auto & a: ensemble) {
         element = lisp->provideNumber(a);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3989,7 +3989,7 @@ Element* Strings::loop(LispE* lisp, short label, List* code) {
     for (long i = 0; i < liste.size(); i++) {
         element = lisp->provideString(liste[i]);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -4026,7 +4026,7 @@ Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
     while (!lisp->hasStopped() && compare(check, value)) {
         element = lisp->provideNumber(value);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
             e->release();
@@ -4063,7 +4063,7 @@ Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
     while (!lisp->hasStopped() && compare(check, value)) {
         element = lisp->provideInteger(value);
         lisp->replacingvalue(element, label);
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
             e->release();
@@ -4088,7 +4088,7 @@ Element* Infinitelist::loop(LispE* lisp, short label, List* code) {
     lisp->recording(element, label);
     
     while (!lisp->hasStopped()) {
-        e = null_;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
             e->release();
@@ -4120,6 +4120,7 @@ Element* Cyclelist::loop(LispE* lisp, short label, List* code) {
     while (!lisp->hasStopped()) {
         element = values->liste[i]->copying(false);
         lisp->replacingvalue(element, label);
+        _releasing(e);
         if ((++i) >= sze)
             i = 0;
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -4154,7 +4155,7 @@ Element* Dictionary::loop(LispE* lisp, short label, List* code) {
         for (long i = 0; i < _keys->size(); i++) {
             element = lisp->provideString(_keys->liste[i]);
             lisp->replacingvalue(element, label);
-            e = null_;
+            _releasing(e);
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();
@@ -4191,7 +4192,7 @@ Element* Dictionary_n::loop(LispE* lisp, short label, List* code) {
     try {
         for (long a_key = 0; a_key < _keys->liste.size(); a_key++) {
             lisp->replacingvalue(lisp->provideNumber(_keys->liste[a_key]), label);
-            e = null_;
+            _releasing(e);
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();
@@ -4242,16 +4243,17 @@ Element* List::multiloop(LispE* lisp) {
         }
         
         long nb = values->liste[0]->size();
-        
+        e = null_;
         while (indexe < nb) {
+            _releasing(e);
             for (var = 0; var < nbvars; var++) {
                 ix = indexes->liste[var]->index(indexe);
                 e = values->liste[var]->value_on_index(lisp, ix);
                 label = liste[1]->index(var)->label();
                 lisp->replacingvalue(e, label);
             }
-            e = null_;
             //We then execute our instructions
+            e = null_;
             for (var = nbvars + 2; var < sz && e->type != l_return; var++) {
                 e->release();
                 e = liste[var]->eval(lisp);
@@ -4299,6 +4301,7 @@ Element* List::polyloop(LispE* lisp) {
         long nb = values->liste[0]->size();
         
         while (indexe < nb) {
+            _releasing(e);
             for (var = 0; var < nbvars; var++) {
                 e = values->liste[var]->value_from_index(lisp, indexe);
                 label = liste[1]->index(var)->label();
@@ -4951,6 +4954,9 @@ Element* Element::Boolean(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------------
+Element* Element::next_iter(LispE* lisp, void* it) {
+    return emptyatom_;
+}
 
 Element* Set::next_iter(LispE* lisp, void* it) {
     std::set<u_ustring>::iterator* n = (std::set<u_ustring>::iterator*)it;
@@ -4969,6 +4975,46 @@ Element* Set_n::next_iter(LispE* lisp, void* it) {
     Element* r = lisp->provideNumber(**n);
     (*n)++;
     return r;
+}
+
+Element* Set_i::next_iter(LispE* lisp, void* it) {
+    std::set<long>::iterator* n = (std::set<long>::iterator*)it;
+    if (*n == ensemble.end())
+        return emptyatom_;
+    Element* r = lisp->provideInteger(**n);
+    (*n)++;
+    return r;
+}
+
+Element* Element::next_iter_exchange(LispE* lisp, void* it) {
+    return emptyatom_;
+}
+
+Element* Set::next_iter_exchange(LispE* lisp, void* it) {
+    std::set<u_ustring>::iterator* n = (std::set<u_ustring>::iterator*)it;
+    if (*n == ensemble.end())
+        return emptyatom_;
+    exchange_value.content = **n;
+    (*n)++;
+    return &exchange_value;
+}
+
+Element* Set_n::next_iter_exchange(LispE* lisp, void* it) {
+    std::set<double>::iterator* n = (std::set<double>::iterator*)it;
+    if (*n == ensemble.end())
+        return emptyatom_;
+    exchange_value.number = **n;
+    (*n)++;
+    return &exchange_value;
+}
+
+Element* Set_i::next_iter_exchange(LispE* lisp, void* it) {
+    std::set<long>::iterator* n = (std::set<long>::iterator*)it;
+    if (*n == ensemble.end())
+        return emptyatom_;
+    exchange_value.integer = **n;
+    (*n)++;
+    return &exchange_value;
 }
 
 //------------------------------------------------------------------------------------------
@@ -5089,11 +5135,120 @@ Element* Dictionary_n::search_element(LispE* lisp, Element* valeur, long ix) {
     return null_;
 }
 
+//------------------------------------------------------------------------------------------
+bool Element::check_element(LispE* lisp, Element* valeur) {
+    return false;
+}
+
+bool String::check_element(LispE* lisp, Element* valeur) {
+    u_ustring val = valeur->asUString(lisp);
+    return (content.find(val, 0) != -1);
+}
+
+bool List::check_element(LispE* lisp, Element* valeur) {
+    for (long i = 0; i < liste.size(); i++) {
+        if (liste[i]->equal(lisp, valeur) == true_)
+            return true;
+    }
+    return false;
+}
+
+bool LList::check_element(LispE* lisp, Element* valeur) {
+    u_link*  it = liste.begin();
+    long i = 0;
+    for (;it != NULL; it = it->next()) {
+        if (it->value->equal(lisp, valeur) == true_)
+            return true;
+        i++;
+    }
+    return false;
+}
+
+bool Floats::check_element(LispE* lisp, Element* valeur) {
+    float v = valeur->asFloat();
+    for (long i = 0; i < liste.size(); i++) {
+        if (liste[i] == v)
+            return true;
+    }
+    return false;
+}
+
+bool Numbers::check_element(LispE* lisp, Element* valeur) {
+    double v = valeur->asNumber();
+    for (long i = 0; i < liste.size(); i++) {
+        if (liste[i] == v)
+            return true;
+    }
+    return false;
+}
+
+bool Integers::check_element(LispE* lisp, Element* valeur) {
+    long v = valeur->asInteger();
+    for (long i = 0; i < liste.size(); i++) {
+        if (liste[i] == v)
+            return true;
+    }
+    return false;
+}
+
+bool Shorts::check_element(LispE* lisp, Element* valeur) {
+    short v = valeur->asShort();
+    for (long i = 0; i < liste.size(); i++) {
+        if (liste[i] == v)
+            return true;
+    }
+    return false;
+}
+
+bool Strings::check_element(LispE* lisp, Element* valeur) {
+    u_ustring v = valeur->asUString(lisp);
+    for (long i = 0; i < liste.size(); i++) {
+        if (liste[i] == v)
+            return true;
+    }
+    return false;
+}
+
+bool Set::check_element(LispE* lisp, Element* valeur) {
+    u_ustring k = valeur->asUString(lisp);
+    return (ensemble.find(k) != ensemble.end());
+}
+
+bool Set_i::check_element(LispE* lisp, Element* valeur) {
+    long k = valeur->asInteger();
+    return (ensemble.find(k) != ensemble.end());
+}
+
+bool Set_n::check_element(LispE* lisp, Element* valeur) {
+    double k = valeur->asNumber();
+    return (ensemble.find(k) != ensemble.end());
+}
+
+bool Dictionary::check_element(LispE* lisp, Element* valeur) {
+    for (auto& a : dictionary) {
+        if (a.second->equal(lisp, valeur) == true_) {
+            u_ustring keyvalue = a.first;
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool Dictionary_n::check_element(LispE* lisp, Element* valeur) {
+    for (auto& a : dictionary) {
+        if (a.second->equal(lisp, valeur) == true_)
+            return true;
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------------------------
+
 Element* Element::checkkey(LispE* lisp, Element* e) {
     return null_;
 }
 
-//------------------------------------------------------------------------------------------
 Element* Set::checkkey(LispE* lisp, Element* e) {
     if (ensemble.find(e->asUString(lisp)) == ensemble.end())
         return null_;
@@ -5573,6 +5728,1256 @@ Element* Dictionary_n::count_all_elements(LispE* lisp, Element* valeur, long ix)
             nb++;
     }
     return lisp->provideInteger(nb);
+}
+
+//------------------------------------------------------------------------------------------
+Element* Element::list_and(LispE* lisp, Element* value) {
+    return this;
+}
+
+Element* String::list_and(LispE* lisp, Element* value) {
+    String* result = lisp->provideString();
+    u_ustring val = value->asUString(lisp);
+    for (long i = 0; i < content.size(); i++) {
+        if (val.find(content[i]) != -1 && result->content.find(content[i]) == -1)
+            result->content += content[i];
+    }
+    return result;
+}
+
+Element* List::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    List* result = lisp->provideList();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (value->check_element(lisp, liste[i]) && !result->check_element(lisp, liste[i]))
+            result->append(liste[i]->copying(false));
+    }
+    if (result->isEmpty()) {
+        result->release();
+        return emptylist_;
+    }
+    return result;
+}
+
+Element* LList::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    LList* result = new LList(liste.mark);
+    u_link* a = liste.begin();
+    for (; a != NULL; a = a->next()) {
+        if (value->check_element(lisp, a->value) && !result->check_element(lisp, a->value))
+            result->append(a->value->copying(false));
+    }
+    if (result->isEmpty()) {
+        result->release();
+        return emptylist_;
+    }
+    return result;
+}
+
+Element* Floats::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Floats* l = lisp->provideFloats();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]) && value->check_element(lisp, index(i)))
+            l->liste.push_back(liste[i]);
+    }
+
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Numbers::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Numbers* l = lisp->provideNumbers();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]) && value->check_element(lisp, index(i)))
+            l->liste.push_back(liste[i]);
+    }
+    
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Shorts::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Shorts* l = new Shorts();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]) && value->check_element(lisp, index(i)))
+            l->liste.push_back(liste[i]);
+    }
+
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Integers::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Integers* l = lisp->provideIntegers();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]) && value->check_element(lisp, index(i)))
+            l->liste.push_back(liste[i]);
+    }
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Strings::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Strings* l = lisp->provideStrings();
+    long sz = liste.size();
+    for (long i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]) && value->check_element(lisp, index(i)))
+            l->liste.push_back(liste[i]);
+    }
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Set::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Set* s = lisp->provideSet();
+    for (auto& a: ensemble) {
+        exchange_value.content = a;
+        if (value->check_element(lisp, &exchange_value))
+            s->add(a);
+    }
+    return s;
+}
+
+Element* Set_n::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Set_n* s = lisp->provideSet_n();
+    for (auto& a: ensemble) {
+        exchange_value.number = a;
+        if (value->check_element(lisp, &exchange_value))
+            s->add(a);
+    }
+    return s;
+}
+
+Element* Set_i::list_and(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
+    
+    Set_i* s = lisp->provideSet_i();
+    for (auto& a: ensemble) {
+        exchange_value.integer = a;
+        if (value->check_element(lisp, &exchange_value))
+            s->add(a);
+    }
+    return s;
+}
+
+//------------------------------------------------------------------------------------------
+Element* Element::list_or(LispE* lisp, Element* value) {
+    return this;
+}
+
+Element* String::list_or(LispE* lisp, Element* value) {
+    String* result = lisp->provideString();
+    u_ustring val = value->asUString(lisp);
+    long i;
+    for (i = 0; i < content.size(); i++) {
+        if (result->content.find(content[i]) == -1)
+            result->content += content[i];
+    }
+
+    for (i = 0; i < val.size(); i++) {
+        if (result->content.find(val[i]) == -1)
+            result->content += val[i];
+    }
+
+    return result;
+}
+
+Element* List::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    List* result = lisp->provideList();
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (result->check_element(lisp, liste[i]) == false)
+            result->append(liste[i]->copying(false));
+    }
+    
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            if (result->check_element(lisp, a->value) == false)
+                result->append(a->value->copying(false));
+        }
+    }
+    else {
+        if (value->isList()) {
+            sz = value->size();
+            for (i = 0; i < sz; i++) {
+                if (result->check_element(lisp, value->index(i)) == false)
+                    result->append(value->index(i)->copying(false));
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter(lisp, iter);
+                while (next_value != emptyatom_) {
+                    if (result->check_element(lisp, next_value) == false)
+                        result->append(next_value);
+                    next_value = value->next_iter(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    
+    if (result->isEmpty()) {
+        result->release();
+        return emptylist_;
+    }
+    return result;
+}
+
+Element* LList::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    LList* result = new LList(liste.mark);
+    u_link* a = liste.begin();
+    for (; a != NULL; a = a->next()) {
+        if (result->check_element(lisp, a->value) == false)
+            result->append(a->value->copying(false));
+    }
+    
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            if (result->check_element(lisp, a->value) == false)
+                result->append(a->value->copying(false));
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long i = 0; i < sz; i++) {
+                if (result->check_element(lisp, value->index(i)) == false)
+                    result->append(value->index(i)->copying(false));
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter(lisp, iter);
+                while (next_value != emptyatom_) {
+                    if (result->check_element(lisp, next_value) == false)
+                        result->append(next_value);
+                    next_value = value->next_iter(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    
+    if (result->isEmpty()) {
+        result->release();
+        return emptylist_;
+    }
+    return result;
+}
+
+Element* Floats::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Floats* l = lisp->provideFloats();
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            for (i = 0; i < l->size(); i++) {
+                if (l->liste[i] == a->value->asFloat())
+                    break;
+            }
+            if (i == l->size())
+                l->liste.push_back(a->value->asFloat());
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                for (i = 0; i < l->size(); i++) {
+                    if (l->liste[i] == value->index(j)->asFloat())
+                        break;
+                }
+                if (i == l->size())
+                    l->liste.push_back(value->index(j)->asFloat());
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    for (i = 0; i < l->size(); i++) {
+                        if (l->liste[i] == next_value->asFloat())
+                            break;
+                    }
+                    if (i == l->size())
+                        l->liste.push_back(next_value->asFloat());
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Numbers::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Numbers* l = lisp->provideNumbers();
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            for (i = 0; i < l->size(); i++) {
+                if (l->liste[i] == a->value->asNumber())
+                    break;
+            }
+            if (i == l->size())
+                l->liste.push_back(a->value->asNumber());
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                for (i = 0; i < l->size(); i++) {
+                    if (l->liste[i] == value->index(j)->asNumber())
+                        break;
+                }
+                if (i == l->size())
+                    l->liste.push_back(value->index(j)->asNumber());
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    for (i = 0; i < l->size(); i++) {
+                        if (l->liste[i] == next_value->asNumber())
+                            break;
+                    }
+                    if (i == l->size())
+                        l->liste.push_back(next_value->asNumber());
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Shorts::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Shorts* l = new Shorts();
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            for (i = 0; i < l->size(); i++) {
+                if (l->liste[i] == a->value->asShort())
+                    break;
+            }
+            if (i == l->size())
+                l->liste.push_back(a->value->asShort());
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                for (i = 0; i < l->size(); i++) {
+                    if (l->liste[i] == value->index(j)->asShort())
+                        break;
+                }
+                if (i == l->size())
+                    l->liste.push_back(value->index(j)->asShort());
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    for (i = 0; i < l->size(); i++) {
+                        if (l->liste[i] == next_value->asShort())
+                            break;
+                    }
+                    if (i == l->size())
+                        l->liste.push_back(next_value->asShort());
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Integers::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Integers* l = lisp->provideIntegers();
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            for (i = 0; i < l->size(); i++) {
+                if (l->liste[i] == a->value->asInteger())
+                    break;
+            }
+            if (i == l->size())
+                l->liste.push_back(a->value->asInteger());
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                for (i = 0; i < l->size(); i++) {
+                    if (l->liste[i] == value->index(j)->asInteger())
+                        break;
+                }
+                if (i == l->size())
+                    l->liste.push_back(value->index(j)->asInteger());
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    for (i = 0; i < l->size(); i++) {
+                        if (l->liste[i] == next_value->asInteger())
+                            break;
+                    }
+                    if (i == l->size())
+                        l->liste.push_back(next_value->asInteger());
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Strings::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Strings* l = lisp->provideStrings();
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            for (i = 0; i < l->size(); i++) {
+                if (l->liste[i] == a->value->asUString(lisp))
+                    break;
+            }
+            if (i == l->size())
+                l->liste.push_back(a->value->asUString(lisp));
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                for (i = 0; i < l->size(); i++) {
+                    if (l->liste[i] == value->index(j)->asUString(lisp))
+                        break;
+                }
+                if (i == l->size())
+                    l->liste.push_back(value->index(j)->asUString(lisp));
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    for (i = 0; i < l->size(); i++) {
+                        if (l->liste[i] == next_value->asUString(lisp))
+                            break;
+                    }
+                    if (i == l->size())
+                        l->liste.push_back(next_value->asUString(lisp));
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Set::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Set* s = lisp->provideSet();
+    s->ensemble = ensemble;
+    
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            s->add(a->value->asUString(lisp));
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                s->add(value->index(j)->asUString(lisp));
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    s->add(next_value->asUString(lisp));
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    return s;
+}
+
+Element* Set_n::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Set_n* s = lisp->provideSet_n();
+    s->ensemble = ensemble;
+    
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            s->add(a->value->asNumber());
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                s->add(value->index(j)->asNumber());
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    s->add(next_value->asNumber());
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    return s;
+}
+
+Element* Set_i::list_or(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '|||' to strings, lists or sets");
+    
+    Set_i* s = lisp->provideSet_i();
+    s->ensemble = ensemble;
+    
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            s->add(a->value->asInteger());
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long j = 0; j < sz; j++) {
+                s->add(value->index(j)->asInteger());
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    s->add(next_value->asInteger());
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    return s;
+}
+
+//------------------------------------------------------------------------------------------
+Element* Element::list_xor(LispE* lisp, Element* value) {
+    return this;
+}
+
+Element* String::list_xor(LispE* lisp, Element* value) {
+    String* intersection = (String*)list_and(lisp, value);
+    
+    String* result = lisp->provideString();
+    u_ustring val = value->asUString(lisp);
+    long i;
+    for (i = 0; i < content.size(); i++) {
+        if (intersection->content.find(content[i]) == -1 && result->content.find(content[i]) == -1)
+            result->content += content[i];
+    }
+
+    for (i = 0; i < val.size(); i++) {
+        if (intersection->content.find(val[i]) == -1 && result->content.find(val[i]) == -1)
+            result->content += val[i];
+    }
+    intersection->release();
+    return result;
+}
+
+Element* List::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    List* intersection = (List*)list_and(lisp, value);
+    
+    List* result = lisp->provideList();
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!intersection->check_element(lisp, liste[i]) && !result->check_element(lisp, liste[i]))
+            result->append(liste[i]->copying(false));
+    }
+    
+    Element* v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value;
+            if (!intersection->check_element(lisp, v) && !result->check_element(lisp, v))
+                result->append(v->copying(false));
+        }
+    }
+    else {
+        if (value->isList()) {
+            sz = value->size();
+            for (i = 0; i < sz; i++) {
+                v = value->index(i);
+                if (!intersection->check_element(lisp, v) && !result->check_element(lisp, v))
+                    result->append(v->copying(false));
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                v = value->next_iter(lisp, iter);
+                while (v != emptyatom_) {
+                    if (!intersection->check_element(lisp, v) && !result->check_element(lisp, v))
+                        result->append(v);
+                    v = value->next_iter(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    intersection->release();
+    if (result->isEmpty()) {
+        result->release();
+        return emptylist_;
+    }
+    return result;
+}
+
+Element* LList::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    LList* intersection = (LList*)list_and(lisp, value);
+    
+    LList* result = new LList(liste.mark);
+    u_link* a = liste.begin();
+    for (; a != NULL; a = a->next()) {
+        if (!intersection->check_element(lisp, a->value) && !result->check_element(lisp, a->value))
+            result->append(a->value->copying(false));
+    }
+    
+    Element* v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value;
+            if (!intersection->check_element(lisp, v) && !result->check_element(lisp, v))
+                result->append(v->copying(false));
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long i = 0; i < sz; i++) {
+                v = value->index(i);
+                if (!intersection->check_element(lisp, v) && !result->check_element(lisp, v))
+                    result->append(v->copying(false));
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                v = value->next_iter(lisp, iter);
+                while (v != emptyatom_) {
+                    if (!intersection->check_element(lisp, v) && !result->check_element(lisp, v))
+                        result->append(v);
+                   v = value->next_iter(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    intersection->release();
+    if (result->isEmpty()) {
+        result->release();
+        return emptylist_;
+    }
+    return result;
+}
+
+Element* Floats::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    
+    Floats* l = lisp->provideFloats();
+
+    Floats* intersection = (Floats*)list_and(lisp, value);
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!intersection->liste.check(liste[i]) && !l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    float v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asFloat();
+            if (!intersection->liste.check(v) && !l->liste.check(v))
+                l->liste.push_back(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (i = 0; i < sz; i++) {
+                v = value->index(i)->asFloat();
+                if (!intersection->liste.check(v) && !l->liste.check(v))
+                    l->liste.push_back(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asFloat();
+                    if (!intersection->liste.check(v) && !l->liste.check(v))
+                        l->liste.push_back(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    intersection->release();
+    
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Numbers::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    Numbers* l = lisp->provideNumbers();
+    Numbers* intersection = (Numbers*)list_and(lisp, value);
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!intersection->liste.check(liste[i]) && !l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    double v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asNumber();
+            if (!intersection->liste.check(v) && !l->liste.check(v))
+                l->liste.push_back(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (i = 0; i < sz; i++) {
+                v = value->index(i)->asNumber();
+                if (!intersection->liste.check(v) && !l->liste.check(v))
+                    l->liste.push_back(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asNumber();
+                    if (!intersection->liste.check(v) && !l->liste.check(v))
+                        l->liste.push_back(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    intersection->release();
+    
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Shorts::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    Shorts* l = new Shorts();
+    Shorts* intersection = (Shorts*)list_and(lisp, value);
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!intersection->liste.check(liste[i]) && !l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    short v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asShort();
+            if (!intersection->liste.check(v) && !l->liste.check(v))
+                l->liste.push_back(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (i = 0; i < sz; i++) {
+                v = value->index(i)->asShort();
+                if (!intersection->liste.check(v) && !l->liste.check(v))
+                    l->liste.push_back(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asShort();
+                    if (!intersection->liste.check(v) && !l->liste.check(v))
+                        l->liste.push_back(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    intersection->release();
+    
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Integers::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    Integers* l = lisp->provideIntegers();
+    Integers* intersection = (Integers*)list_and(lisp, value);
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!intersection->liste.check(liste[i]) && !l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    long v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asInteger();
+            if (!intersection->liste.check(v) && !l->liste.check(v))
+                l->liste.push_back(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (i = 0; i < sz; i++) {
+                v = value->index(i)->asInteger();
+                if (!intersection->liste.check(v) && !l->liste.check(v))
+                    l->liste.push_back(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asInteger();
+                    if (!intersection->liste.check(v) && !l->liste.check(v))
+                        l->liste.push_back(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    intersection->release();
+    
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Strings::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    Strings* l = lisp->provideStrings();
+    Strings* intersection = (Strings*)list_and(lisp, value);
+    long sz = liste.size();
+    long i;
+    for (i = 0; i < sz; i++) {
+        if (!intersection->liste.check(liste[i]) && !l->liste.check(liste[i]))
+            l->liste.push_back(liste[i]);
+    }
+
+    u_ustring v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asUString(lisp);
+            if (!intersection->liste.check(v) && !l->liste.check(v))
+                l->liste.push_back(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (i = 0; i < sz; i++) {
+                v = value->index(i)->asUString(lisp);
+                if (!intersection->liste.check(v) && !l->liste.check(v))
+                    l->liste.push_back(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asUString(lisp);
+                    if (!intersection->liste.check(v) && !l->liste.check(v))
+                        l->liste.push_back(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+    
+    intersection->release();
+    
+    if (l->liste.size() == 0) {
+        l->release();
+        return emptylist_;
+    }
+    return l;
+}
+
+Element* Set::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    Set* s = lisp->provideSet();
+    Set* intersection = (Set*)list_and(lisp, value);
+    
+    for (auto & a : ensemble) {
+        if (intersection->ensemble.find(a) == intersection->ensemble.end())
+            s->add(a);
+    }
+    
+    u_ustring v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asUString(lisp);
+            if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                s->add(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long i = 0; i < sz; i++) {
+                v = value->index(i)->asUString(lisp);
+                if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                    s->add(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asUString(lisp);
+                    if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                        s->add(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    intersection->release();
+    return s;
+}
+
+Element* Set_n::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    Set_n* s = lisp->provideSet_n();
+    Set_n* intersection = (Set_n*)list_and(lisp, value);
+    
+    for (auto & a : ensemble) {
+        if (intersection->ensemble.find(a) == intersection->ensemble.end())
+            s->add(a);
+    }
+
+    double v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asNumber();
+            if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                s->add(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long i = 0; i < sz; i++) {
+                v = value->index(i)->asNumber();
+                if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                    s->add(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asNumber();
+                    if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                        s->add(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    intersection->release();
+    return s;
+}
+
+Element* Set_i::list_xor(LispE* lisp, Element* value) {
+    if (!value->isList() && !value->isSet())
+        throw new Error("Error: Can only apply '^^^' to strings, lists or sets");
+    
+    Set_i* s = lisp->provideSet_i();
+    Set_i* intersection = (Set_i*)list_and(lisp, value);
+    
+    for (auto & a : ensemble) {
+        if (intersection->ensemble.find(a) == intersection->ensemble.end())
+            s->add(a);
+    }
+
+    long v;
+    if (value->type == t_llist) {
+        u_link* a = ((LList*)value)->liste.begin();
+        for (; a != NULL; a = a->next()) {
+            v = a->value->asInteger();
+            if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                s->add(v);
+        }
+    }
+    else {
+        if (value->isList()) {
+            long sz = value->size();
+            for (long i = 0; i < sz; i++) {
+                v = value->index(i)->asInteger();
+                if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                    s->add(v);
+            }
+        }
+        else {
+            if (value->isSet()) {
+                void* iter = value->begin_iter();
+                Element* next_value = value->next_iter_exchange(lisp, iter);
+                while (next_value != emptyatom_) {
+                    v = next_value->asInteger();
+                    if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                        s->add(v);
+                    next_value = value->next_iter_exchange(lisp, iter);
+                }
+                value->clean_iter(iter);
+            }
+        }
+    }
+
+    intersection->release();
+    return s;
 }
 
 //------------------------------------------------------------------------------------------
@@ -9466,7 +10871,34 @@ Element* LList::asList(LispE* lisp) {
         l->append(a->value);
     return l;
 }
-    
+
+Element* Set::asList(LispE* lisp) {
+    List* l = lisp->provideList();
+    u_ustring v;
+    for (auto& a: ensemble) {
+        v = a;
+        l->append(lisp->provideString(v));
+    }
+    return l;
+}
+
+Element* Set_n::asList(LispE* lisp) {
+    List* l = lisp->provideList();
+    for (auto& a: ensemble) {
+        l->append(lisp->provideNumber(a));
+    }
+    return l;
+}
+
+Element* Set_i::asList(LispE* lisp) {
+    List* l = lisp->provideList();
+    for (auto& a: ensemble) {
+        l->append(lisp->provideInteger(a));
+    }
+    return l;
+}
+
+
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
@@ -10045,15 +11477,6 @@ Element* Set_i::thevalues(LispE* lisp) {
         keys->append(lisp->provideInteger(a));
     }
     return keys;
-}
-
-Element* Set_i::next_iter(LispE* lisp, void* it) {
-    std::set<long>::iterator* n = (std::set<long>::iterator*)it;
-    if (*n == ensemble.end())
-        return emptyatom_;
-    Element* r = lisp->provideInteger(**n);
-    (*n)++;
-    return r;
 }
 
 Element* Set_i::search_element(LispE* lisp, Element* valeur, long ix) {

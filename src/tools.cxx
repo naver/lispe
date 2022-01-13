@@ -2054,6 +2054,26 @@ wstring s_wreplacestring(wstring& s, wstring reg, wstring rep) {
     return neo;
 }
 
+u_ustring s_ureplacechar(u_ustring& s, u_uchar reg, u_ustring rep) {
+    u_ustring neo;
+    
+    long gsz = 1;
+    
+    long rsz = s.size();
+    long from = 0;
+    
+    long foundHere;
+    while ((foundHere = s.find(reg, from)) != string::npos) {
+        if (foundHere != from)
+            neo += s.substr(from, foundHere - from);
+        neo += rep;
+        from = foundHere + gsz;
+    }
+    if (from < rsz)
+        neo += s.substr(from, rsz - from);
+    return neo;
+}
+
 u_ustring s_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep) {
     u_ustring neo;
     

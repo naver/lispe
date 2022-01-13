@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.7.16.36";
+static std::string version = "1.2022.1.13.12.55";
 string LispVersion() {
     return version;
 }
@@ -268,6 +268,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_link, "link", P_THREE, &List::evall_link);
     set_instruction(l_list, "list", P_ATLEASTONE, &List::evall_list);
     set_instruction(l_llist, "llist", P_ATLEASTONE, &List::evall_llist);
+    set_instruction(l_listand, "&&&", P_THREE, &List::evall_listand);
+    set_instruction(l_listor, "|||", P_THREE, &List::evall_listor);
+    set_instruction(l_listxor, "^^^", P_THREE, &List::evall_listxor);
     set_instruction(l_to_list, "to_list", P_TWO, &List::evall_to_list);
     set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist);
     set_instruction(l_load, "load", P_TWO, &List::evall_load);
@@ -295,6 +298,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_multiplyequal, "*=", P_ATLEASTTWO, &List::evall_multiplyequal);
     set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE, &List::evall_ncheck);
     set_instruction(l_nconc, "nconc", P_ATLEASTONE, &List::evall_nconc);
+    set_instruction(l_nconcn, "nconcn", P_ATLEASTONE, &List::evall_nconcn);
     set_instruction(l_neq, "neq", P_ATLEASTTHREE, &List::evall_neq);
     set_instruction(l_not, "not", P_TWO, &List::evall_not);
     set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp);
@@ -444,6 +448,9 @@ void Delegation::initialisation(LispE* lisp) {
     operators[l_powerequal] = true;
     operators[l_leftshiftequal] = true;
     operators[l_rightshiftequal] = true;
+    operators[l_listand] = true;
+    operators[l_listor] = true;
+    operators[l_listxor] = true;
 
     math_operators = operators;
 
@@ -762,6 +769,7 @@ void Delegation::initialisation(LispE* lisp) {
     lisp->provideAtom(c_opening_bracket);
     lisp->provideAtom(c_closing_bracket);
 
+    
     //We add an extension to the language... see systeme.cxx
     moduleSysteme(lisp);
     moduleChaines(lisp);
@@ -775,7 +783,14 @@ void Delegation::initialisation(LispE* lisp) {
 #endif
     
     atom_basic_pool.set(atom_pool.base, atom_pool.tsize, atom_pool.indexes);
-     
+    number_types.push(t_shorts);
+    number_types.push(t_floats);
+    number_types.push(t_integers);
+    number_types.push(t_numbers);
+    number_types.push(t_matrix);
+    number_types.push(t_matrix_float);
+    number_types.push(t_tensor);
+    number_types.push(t_tensor_float);
 }
 
 void LispE::cleaning() {
@@ -2131,6 +2146,9 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
 
 
 

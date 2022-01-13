@@ -118,6 +118,7 @@ public:
     binHash<unsigned long> arities;
     binHash<Element*> macros;
 
+    binSet number_types;
     
     unordered_map<u_ustring, short> string_to_code;
     unordered_map<short, vector<short> > data_descendant;
@@ -278,6 +279,10 @@ public:
         return U"nil";
     }
 
+    bool isNumberType(short u) {
+        return number_types.check(u);
+    }
+    
     void updatepathname(string& pathname) {
         try {
             i_current_file = allfiles.at(pathname);

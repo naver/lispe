@@ -3230,8 +3230,7 @@ Element* List::evall_innerproduct(LispE* lisp) {
 // (° '(2 3 4) '* '(1 2 3 4))
 // (° (rho 2 3 '(4 5 6 9)) '* (rho 3 3 (iota 10)))
 Element* List::evall_outerproduct(LispE* lisp) {
-    //Operation is: (° operation l1 l2)
-    
+    //Operation is: (° operation l1 l2)    
     Element* l1 = null_;
     Element* l2 = null_;
     Element* op = null_;
@@ -3282,27 +3281,38 @@ Element* List::evall_outerproduct(LispE* lisp) {
         vecte<long> size;
         l1->getShape(size);
         l2->getShape(size);
-        if (size.size() == 2) {
-            if ((l1->type == t_floats && l2->type == t_floats) ||
-                (l1->type == t_shorts && l2->type == t_shorts)) {
-                res = new Matrice_float(lisp, size[0], size[1], 0.0);
-                ((Matrice_float*)res)->combine(lisp, l1, l2, call);
+        if (lisp->delegation->isNumberType(l1->type) && lisp->delegation->isNumberType(l2->type)) {
+            if (size.size() == 2) {
+                if ((l1->type == t_floats && l2->type == t_floats) ||
+                    (l1->type == t_shorts && l2->type == t_shorts)) {
+                    res = new Matrice_float(lisp, size[0], size[1], 0.0);
+                    ((Matrice_float*)res)->combine(lisp, l1, l2, call);
+                }
+                else {
+                    res = new Matrice(lisp, size[0], size[1], 0.0);
+                    ((Matrice*)res)->combine(lisp, l1, l2, call);
+                }
             }
             else {
-                res = new Matrice(lisp, size[0], size[1], 0.0);
-                ((Matrice*)res)->combine(lisp, l1, l2, call);
+                if ((l1->type == t_floats && l2->type == t_floats) ||
+                    (l1->type == t_shorts && l2->type == t_shorts)) {
+                    res = new Tenseur_float(lisp, size, zero_);
+                    ((Tenseur_float*)res)->combine(lisp, l1, l2, call);
+                }
+                else {
+                    res = new Tenseur(lisp, size, zero_);
+                    ((Tenseur*)res)->combine(lisp, l1, l2, call);
+                }
             }
         }
         else {
-            if ((l1->type == t_floats && l2->type == t_floats) ||
-                (l1->type == t_shorts && l2->type == t_shorts)) {
-                res = new Tenseur_float(lisp, size, zero_);
-                ((Tenseur_float*)res)->combine(lisp, l1, l2, call);
-            }
-            else {
-                res = new Tenseur(lisp, size, zero_);
-                ((Tenseur*)res)->combine(lisp, l1, l2, call);
-            }
+            res = lisp->provideList();
+            vecte<long> shape;
+            l1->getShape(shape);
+            l2->getShape(shape);
+            long idx = 0;
+            ((List*)res)->build(lisp, shape, 0, res, l1, idx);
+            ((List*)res)->combine(lisp, l1, l2, call);
         }
         
         call->rawrelease();
@@ -7097,18 +7107,31 @@ Element* List::evall_to_llist(LispE* lisp) {
 
     try {
         second_element = liste[1]->eval(lisp);
-        if (second_element->isList()) {
-            if (second_element->type == l_llist)
-                return second_element;
-            
+        if (second_element->isSet()) {
             first_element = new LList(&lisp->delegation->mark);
-            for (long i = second_element->size() - 1; i >= 0; i--) {
-                first_element->push_front(second_element->index(i)->copying(false));
+            void* iter = second_element->begin_iter();
+            Element* next_value = second_element->next_iter(lisp, iter);
+            while (next_value != emptyatom_) {
+                if (second_element->check_element(lisp, next_value))
+                    first_element->push_front(next_value);
+                next_value = second_element->next_iter(lisp, iter);
             }
+            second_element->clean_iter(iter);
         }
         else {
-            first_element = new LList(&lisp->delegation->mark);
-            first_element->push_front(second_element->copying(false));
+            if (second_element->isList()) {
+                if (second_element->type == l_llist)
+                    return second_element;
+                
+                first_element = new LList(&lisp->delegation->mark);
+                for (long i = second_element->size() - 1; i >= 0; i--) {
+                    first_element->push_front(second_element->index(i)->copying(false));
+                }
+            }
+            else {
+                first_element = new LList(&lisp->delegation->mark);
+                first_element->push_front(second_element->copying(false));
+            }
         }
         second_element->release();
     }
@@ -7131,6 +7154,7 @@ Element* List::evall_nconc(LispE* lisp) {
     Element* first_element = null_;
     Element* second_element = null_;
     Element* last = null_;
+    Element* e;
 
     long i, l;
     bool pair = false;
@@ -7161,7 +7185,9 @@ Element* List::evall_nconc(LispE* lisp) {
             second_element = liste[i]->eval(lisp);
             if (second_element->isList()) {
                 for (l = 0; l < second_element->size(); l++) {
-                    first_element->append(second_element->value_on_index(lisp, l));
+                    e = second_element->value_on_index(lisp, l);
+                    first_element->append(e);
+                    e->release();
                 }
                 _releasing(second_element);
             }
@@ -7181,7 +7207,87 @@ Element* List::evall_nconc(LispE* lisp) {
             first_element->append(last);
         else {
             for (l = 0; l < last->size(); l++) {
-                first_element->append(last->value_on_index(lisp, l));
+                e = last->value_on_index(lisp, l);
+                first_element->append(e);
+                e->release();
+            }
+            _releasing(last);
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        last->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+Element* List::evall_nconcn(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize == 1)
+        return emptylist_;
+
+    Element* first_element = null_;
+    Element* second_element = null_;
+    Element* last = null_;
+    Element* e;
+
+    long i, l;
+    bool pair = false;
+
+    try {
+        last =  liste.back()->eval(lisp);
+        pair = !last->isList();
+        second_element = liste[1]->eval(lisp);
+        if (second_element == emptylist_ || second_element == null_) {
+            if (pair) {
+                if (listsize == 3)
+                    return last;
+                first_element = new Pair();
+            }
+            else
+                first_element = lisp->provideList();
+        }
+        else {
+            if (second_element->isList())
+                first_element = second_element->fullcopy();
+            else
+                throw new Error("Error: first element is not a list");
+        }
+
+        second_element = emptylist_;
+        listsize--;
+        for (i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            if (second_element->isList()) {
+                for (l = 0; l < second_element->size(); l++) {
+                    e = second_element->value_on_index(lisp, l);
+                    first_element->append(e);
+                    e->release();
+                }
+                _releasing(second_element);
+            }
+            else {
+                std::wstringstream st;
+                if (i == 2)
+                    st << "Error: second argument is not a list";
+                else
+                    if (i == 3)
+                        st << "Error: third argument is not a list";
+                    else
+                        st << "Error: " << i << "th argument is not a list";
+                throw new Error(st.str());
+            }
+        }
+        if (pair)
+            first_element->append(last);
+        else {
+            for (l = 0; l < last->size(); l++) {
+                e = last->value_on_index(lisp, l);
+                first_element->append(e);
+                e->release();
             }
             _releasing(last);
         }
@@ -9450,6 +9556,7 @@ Element* List::evall_zip(LispE* lisp) {
         
         result = lisp->provideList();
         Element* sub;
+        Element* e;
         switch (thetype) {
             case t_strings:
                 sub = lisp->provideStrings();
@@ -9473,8 +9580,11 @@ Element* List::evall_zip(LispE* lisp) {
             if (j)
                 sub = sub->newInstance();
             result->append(sub);
-            for (i = 0; i <lists->size(); i++)
-                sub->append(lists->liste[i]->value_on_index(lisp, j));
+            for (i = 0; i <lists->size(); i++) {
+                e = lists->liste[i]->value_on_index(lisp, j);
+                sub->append(e);
+                e->release();
+            }
         }
         lists->release();
     }
@@ -9628,6 +9738,7 @@ Element* List::evall_zipwith(LispE* lisp) {
         lists->release();
     }
     catch (Error* err) {
+        container->increment();
         if (params != NULL) {
             for (i = 0; i < call->size(); i+=2) {
                 lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
@@ -9641,7 +9752,7 @@ Element* List::evall_zipwith(LispE* lisp) {
             call->rawrelease();
         lists->release();
         function->release();
-        container->release();
+        container->decrement();
         value->release();
         throw err;
     }

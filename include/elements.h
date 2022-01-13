@@ -68,8 +68,10 @@ typedef enum {
     //Numerical operations
     l_sign, l_signp, l_minus_plus,
     l_plus, l_minus, l_multiply, l_power,
-    l_leftshift, l_rightshift, l_bitand, l_bitor, l_bitxor, l_bitandnot,
+    l_leftshift, l_rightshift,
+    l_bitand, l_bitor, l_bitxor, l_bitandnot,
     l_bitnot, l_divide, l_mod,
+    l_listand, l_listor, l_listxor,
     
     l_plusequal, l_minusequal, l_multiplyequal,  l_powerequal,
     l_leftshiftequal, l_rightshiftequal,
@@ -90,7 +92,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_to_llist, l_list, l_llist, l_cons, l_flatten, l_nconc, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
+    l_to_list, l_to_llist, l_list, l_llist, l_cons, l_flatten, l_nconc, l_nconcn, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti,
     
@@ -398,17 +400,21 @@ public:
         return NULL;
     }
     
-    virtual Element* next_iter(LispE* lisp, void* it) {
-        return NULL;
-    }
-
+    virtual Element* next_iter(LispE* lisp, void* it);
+    virtual Element* next_iter_exchange(LispE* lisp, void* it);
+    
     virtual void clean_iter(void* it) {}
+    virtual bool check_element(LispE* lisp, Element* element_value);
     virtual Element* search_element(LispE*, Element* element_value, long idx);
     virtual Element* search_all_elements(LispE*, Element* element_value, long idx);
     virtual Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     virtual Element* count_all_elements(LispE*, Element* element_value, long idx);
     virtual Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    virtual Element* list_and(LispE*, Element* value);
+    virtual Element* list_xor(LispE*, Element* value);
+    virtual Element* list_or(LispE*, Element* value);
+
     virtual bool compare_string(LispE* lisp, u_ustring& u) {
         return (u == asUString(lisp));
     }
@@ -584,6 +590,10 @@ public:
     }
     
     virtual bool isList() {
+        return false;
+    }
+
+    virtual bool isSet() {
         return false;
     }
 
@@ -1985,13 +1995,18 @@ public:
     bool isEmpty() {
         return (content == U"");
     }
-    
+        
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
     Element* insert(LispE* lisp, Element* e, long idx);
 
     bool equalvalue(u_ustring& v) {
@@ -2377,6 +2392,7 @@ public:
     
     void flatten(LispE*, List* l);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
@@ -2822,6 +2838,7 @@ public:
 
     void flatten(LispE*, List* l);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* loop(LispE* lisp, short label,  List* code);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
@@ -3351,15 +3368,22 @@ public:
         return true;
     }
     
+    bool isSet() {
+        return true;
+    }
+    
     virtual Element* newInstance() {
         return new Set();
     }
+    
+    Element* asList(LispE* lisp);
 
     void* begin_iter() {
         return new std::set<u_ustring>::iterator(ensemble.begin());
     }
     
     Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
         delete (std::set<u_ustring>::iterator*)it;
@@ -3373,12 +3397,17 @@ public:
     
     void flatten(LispE*, List* l);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
+
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
 
     virtual Element* fullcopy();
     virtual Element* copying(bool duplicate = true);
@@ -3643,10 +3672,16 @@ public:
         return true;
     }
         
+    bool isSet() {
+        return true;
+    }
+    
     Element* newInstance() {
         return new Set_n();
     }
 
+    Element* asList(LispE* lisp);
+    
     void* begin_iter() {
         return new std::set<double>::iterator(ensemble.begin());
     }
@@ -3659,6 +3694,7 @@ public:
     }
 
     Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
         delete (std::set<double>::iterator*)it;
@@ -3672,12 +3708,17 @@ public:
     
     void flatten(LispE*, List* l);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
+
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
 
     Element* fullcopy();
     Element* copying(bool duplicate = true);
@@ -3909,6 +3950,12 @@ public:
         return true;
     }
         
+    bool isSet() {
+        return true;
+    }
+    
+    Element* asList(LispE* lisp);
+    
     Element* newInstance() {
         return new Set_i();
     }
@@ -3925,6 +3972,7 @@ public:
     }
 
     Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
         delete (std::set<long>::iterator*)it;
@@ -3938,12 +3986,17 @@ public:
     
     void flatten(LispE*, List* l);
     
+    bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
     Element* count_all_elements(LispE*, Element* element_value, long idx);
     Element* search_reverse(LispE*, Element* element_value, long idx);
     Element* checkkey(LispE* lisp, Element* e);
+
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
 
     Element* fullcopy();
     Element* copying(bool duplicate = true);
