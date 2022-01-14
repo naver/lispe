@@ -45,14 +45,14 @@ BOOL dark = false;
         couleurcommentaires=[NSColor greenColor];
         functioncouleur=[NSColor orangeColor];
         couleurchaine=[NSColor redColor];
-        couleurchainesingle = [NSColor colorWithSRGBRed:0.7 green:0.5 blue:1 alpha:1.00];
+        couleurquote = [NSColor colorWithSRGBRed:0.7 green:0.5 blue:1 alpha:1.00];
         couleurvar=[NSColor whiteColor];
     } else {
         localcouleur=[NSColor colorWithSRGBRed:0.62 green:0.131 blue:0.137 alpha:1.00];
         functioncouleur=[NSColor colorWithSRGBRed:5.0/255.0 green:5.0/255.0 blue:245.0/255.0 alpha:1.00];
         couleurcommentaires=[NSColor colorWithSRGBRed:45.0/255.0 green:140.0/255.0 blue:45.0/255.0 alpha:1.00];
         couleurchaine = [NSColor redColor];
-        couleurchainesingle =[NSColor colorWithSRGBRed:140.0/255.0 green:140.0/255.0 blue:245.0/255.0 alpha:1.00];
+        couleurquote =[NSColor colorWithSRGBRed:140.0/255.0 green:140.0/255.0 blue:245.0/255.0 alpha:1.00];
         couleurvar=[NSColor colorWithSRGBRed:130.0/255.0 green:130.0/255.0 blue:230.0/255.0 alpha:1.00];
     }
     
@@ -113,7 +113,7 @@ BOOL dark = false;
         [wnd setTitle:[fileName path]];
 
     [self setString: fileContent];
-    [self colorie];
+    [self colorie:NO];
     [self majruleur:fileContent];
 }
 
@@ -280,7 +280,9 @@ BOOL dark = false;
     
     layoutManager = [self layoutManager];
     container = [self textContainer];
-    visibleRect = [[lecode contentView] bounds];
+    //visibleRect = [[ruleur scrollView] bounds];
+    //visibleRect = [[lecode contentView] bounds];
+    visibleRect = [[[ruleur scrollView] contentView] bounds];
     NSRange glyphRange = [layoutManager glyphRangeForBoundingRect:visibleRect inTextContainer:container];
     NSRange range = [layoutManager characterRangeForGlyphRange:glyphRange actualGlyphRange:NULL];
     return range;
@@ -288,54 +290,58 @@ BOOL dark = false;
 
 -(void)coloreview {
     currentrange=NSMakeRange(0, 0);
-    [self colorie];
+    [self colorie:NO];
 }
     
--(void)colorie {
+-(void)colorie:(BOOL)cr {
     unsigned long longueur = [[self string] length];
     if (longueur<=3)
         return;
     
     long limite=longueur;
-    
+
     NSRange suivant;
     NSRange trouve;
-    NSString* letexte;
+    NSString* letexte = [self string];
+    //unichar test[1000];
+    
     if (currentrange.length != 0) {
-        suivant=currentrange;
-        limite=currentrange.location+currentrange.length;
+        suivant = [letexte paragraphRangeForRange: [self selectedRange]];
+        limite = suivant.location + suivant.length;
+        if (cr == YES) {
+            if (suivant.location > 0) {
+                //it could be a cariage return
+                suivant.location -= 1;
+                suivant = [letexte paragraphRangeForRange: suivant];
+                limite += suivant.length;
+                //[letexte getCharacters:test range:suivant];
+            }
+        }
     }
     else {
         suivant.location=0;
         suivant.length = longueur;
     }
-    
-    letexte=[self string];
-    
-    NSRect visibleRect = [[[ruleur scrollView] contentView] bounds];
-    if (dark)
-        [self setTextColor: [NSColor whiteColor] range:suivant];
-    else
-        [self setTextColor: [NSColor blackColor] range:suivant];
-    
+        
     limite = [letexte lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     long* tobecolored=colorparser([letexte UTF8String], suivant.location, limite);
-    
-    //[ruleur majy: visibleRect.origin.y];
 
-    for (long i=0; tobecolored[i]!=-1;i+=3) {
+    NSColor* defaultcolor = [NSColor blackColor];
+    if (dark) {
+        defaultcolor = [NSColor whiteColor];
+    }
+
+    
+    for (long i = 0; tobecolored[i]!=-1; i+=3) {
         trouve.location=tobecolored[i+1];
         trouve.length=tobecolored[i+2];
-
+        
         switch (tobecolored[i]) {
             case 1: //string ""
                 [self setTextColor: couleurchaine range:trouve];
                 break;
             case 2://string ''
-                [self setTextColor: couleurchainesingle range:trouve];
-                break;
-            case 3://string @""@;
-                [self setTextColor: [NSColor grayColor] range:trouve];
+                [self setTextColor: couleurquote range:trouve];
                 break;
             case 4: //.xxx(
                 [self setTextColor: functioncouleur range:trouve];
@@ -349,14 +355,11 @@ BOOL dark = false;
             case 7: //comments
                 [self setTextColor: couleurcommentaires range:trouve];
                 break;
-            default: //special variables ?label #D+ $d+
-                [self setTextColor: couleurvar range:trouve];
+            default: //other characters
+                [self setTextColor: defaultcolor range:trouve];
         }
     }
     deletion(tobecolored);
-    NSRect visibleRectFinal = [[[ruleur scrollView] contentView] bounds];
-    if (visibleRectFinal.origin.y != visibleRect.origin.y)
-        [self majruleur:[self string]];
 }
 
 -(BOOL)testpadding:(NSString*)localstring {
@@ -425,7 +428,7 @@ BOOL dark = false;
 }
 
 -(BOOL)localcolor:(char)key {
-    static const char cc[]={'"','\'',';','=','/', ' ', 0};
+    static const char cc[]={'"','\'',';','=',' ', '`', 0};
     
     modified=YES;
     
@@ -439,18 +442,26 @@ BOOL dark = false;
     currentrange=NSMakeRange(locpos,0);
     NSString* truc;
     
+    if (key == '`') {
+        currentrange = NSMakeRange(0, 0);
+        [self colorie: NO];
+        return YES;
+    }
+    
     if (strchr(cc,key) != NULL) {
-        if (localrange.location>1 && key=='/') {
+        if (localrange.location>1 && key==';') {
             key=[[self string] characterAtIndex:localrange.location-2];
-            if (key=='@')
-                currentrange=[self viewRange];
-            else
-                currentrange=[[self string] paragraphRangeForRange: localrange];
+            if (key==';') {
+                currentrange = NSMakeRange(0, 0);
+                [self colorie:NO];
+                return TRUE;
+            }
+            currentrange=[[self string] paragraphRangeForRange: localrange];
         }
         else
             //We force coloring
             currentrange=[[self string] paragraphRangeForRange: localrange];
-        [self colorie];
+        [self colorie:NO];
         return TRUE;
     }
 
@@ -576,12 +587,12 @@ BOOL dark = false;
         localrange.location+=ln;
         localrange.length=0;
         currentrange=[self viewRange];
-        [self colorie];
+        [self colorie: YES];
         [self setSelectedRange:localrange];
         return YES;
     }
     currentrange=[self viewRange];
-    [self colorie];
+    [self colorie: YES];
     localrange.length=0;
     [self setSelectedRange:localrange];
     return YES;
@@ -609,7 +620,7 @@ BOOL dark = false;
     [self setHidden:true];
     if ([self shouldChangeTextInRange:all replacementString:indentedcode]) {
         [self setString:indentedcode];
-        [self colorie];
+        [self colorie: NO];
         [self majruleur: indentedcode];
     }
     [self setHidden:false];

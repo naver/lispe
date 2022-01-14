@@ -5976,6 +5976,7 @@ Element* List::evall_flip(LispE* lisp) {
                 return l;
             }
             case t_dictionary:
+            case t_dictionaryi:
             case t_dictionaryn: {
                 second_element = first_element->reverse(lisp, true);
                 first_element->release();
@@ -6282,31 +6283,22 @@ Element* List::evall_ife(LispE* lisp) {
 Element* List::evall_in(LispE* lisp) {
     Element* first_element = liste[0];
     Element* second_element = null_;
-    Element* third_element = null_;
-
-
+    bool res = false;
+    
     try {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        long ix = 0;
-        if (liste.size() == 4)
-            evalAsInteger(3,lisp, ix);
-        third_element = first_element->search_element(lisp, second_element, ix);
+        res = first_element->check_element(lisp, second_element);
         first_element->release();
         second_element->release();
-        if (third_element != null_) {
-            third_element->release();
-            return true_;
-        }
     }
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        third_element->release();
         throw err;
     }
 
-    return third_element;
+    return booleans_[res];
 }
 
 
@@ -6873,46 +6865,71 @@ Element* List::evall_key(LispE* lisp) {
         if (listsize == 3) {
             //The second element is an a_key
             first_element = liste[1]->eval(lisp);
-            if (first_element->type == t_dictionary) {
-                u_ustring a_key;
-                evalAsUString(2, lisp, a_key);
-                second_element = first_element->protected_index(lisp, a_key);
-                first_element->release();
-                return second_element;
+            switch (first_element->type) {
+                case t_dictionary: {
+                    u_ustring a_key;
+                    evalAsUString(2, lisp, a_key);
+                    second_element = first_element->protected_index(lisp, a_key);
+                    first_element->release();
+                    return second_element;
+                }
+                case t_dictionaryi: {
+                    long a_key;
+                    evalAsInteger(2, lisp, a_key);
+                    second_element = first_element->protected_index(lisp, a_key);
+                    first_element->release();
+                    return second_element;
+                }
+                case t_dictionaryn: {
+                    double a_key;
+                    evalAsNumber(2, lisp, a_key);
+                    second_element = first_element->protected_index(lisp, a_key);
+                    first_element->release();
+                    return second_element;
+                }
+                default:
+                    throw new Error(L"Error: the first argument must be a dictionary");
             }
-            if (first_element->type == t_dictionaryn) {
-                double a_key;
-                evalAsNumber(2, lisp, a_key);
-                second_element = first_element->protected_index(lisp, a_key);
-                first_element->release();
-                return second_element;
-            }
-            throw new Error(L"Error: the first argument must be a dictionary");
         }
 
         //We store values
         first_element = liste[1]->eval(lisp);
-        if (first_element->type == t_dictionary) {
-            u_ustring a_key;
-			// It is out of question to manipulate a dictionary declared in the code
-			first_element = first_element->duplicate_constant();
-			for (long i = 2; i < listsize; i+=2) {
-                evalAsUString(i, lisp, a_key);
-                second_element = liste[i+1]->eval(lisp);
-                first_element->recording(a_key, second_element->copying(false));
+        switch (first_element->type) {
+            case t_dictionary: {
+                u_ustring a_key;
+                // It is out of question to manipulate a dictionary declared in the code
+                first_element = first_element->duplicate_constant();
+                for (long i = 2; i < listsize; i+=2) {
+                    evalAsUString(i, lisp, a_key);
+                    second_element = liste[i+1]->eval(lisp);
+                    first_element->recording(a_key, second_element->copying(false));
+                }
+                break;
             }
-            return first_element;
-        }
-        if (first_element->type == t_dictionaryn) {
-            double a_key;
-			// It is out of question to manipulate a dictionary declared in the code
-			first_element = first_element->duplicate_constant();
-			for (long i = 2; i < listsize; i+=2) {
-                evalAsNumber(i, lisp, a_key);
-                second_element = liste[i+1]->eval(lisp);
-                first_element->recording(a_key, second_element->copying(false));
+            case t_dictionaryi: {
+                long a_key;
+                // It is out of question to manipulate a dictionary declared in the code
+                first_element = first_element->duplicate_constant();
+                for (long i = 2; i < listsize; i+=2) {
+                    evalAsInteger(i, lisp, a_key);
+                    second_element = liste[i+1]->eval(lisp);
+                    first_element->recording(a_key, second_element->copying(false));
+                }
+                break;
             }
-            return first_element;
+            case t_dictionaryn: {
+                double a_key;
+                // It is out of question to manipulate a dictionary declared in the code
+                first_element = first_element->duplicate_constant();
+                for (long i = 2; i < listsize; i+=2) {
+                    evalAsNumber(i, lisp, a_key);
+                    second_element = liste[i+1]->eval(lisp);
+                    first_element->recording(a_key, second_element->copying(false));
+                }
+                break;
+            }
+            default:
+                throw new Error(L"Error: the first argument must be a dictionary");
         }
     }
     catch (Error* err) {
@@ -6921,9 +6938,57 @@ Element* List::evall_key(LispE* lisp) {
         throw err;
     }
 
-    throw new Error(L"Error: the first argument must be a dictionary");
+    return first_element;
 }
 
+
+Element* List::evall_keyi(LispE* lisp) {
+    short listsize = liste.size();
+    if (listsize > 3 && (listsize % 2 ))
+        throw new Error("Error: wrong number of arguments for 'keyn'");
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+
+
+    try {
+        if (listsize == 1) {
+            //We create an empty dictionary
+            return lisp->provideDictionary_i();
+        }
+        if (listsize == 3) {
+            //The second element is an a_key
+            first_element = liste[1]->eval(lisp);
+            if (first_element->type != t_dictionaryi)
+                throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
+
+            long a_key;
+            evalAsInteger(2, lisp, a_key);
+            second_element = first_element->protected_index(lisp, a_key);
+            first_element->release();
+            return second_element;
+        }
+
+        //We store a value
+        first_element = liste[1]->eval(lisp);
+        if (first_element->type != t_dictionaryi)
+            throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
+        long a_key;
+        // It is out of question to manipulate a dictionary declared in the code
+        first_element = first_element->duplicate_constant();
+        for (long i = 2; i < listsize; i+=2) {
+            evalAsInteger(i, lisp, a_key);
+            second_element = liste[i+1]->eval(lisp);
+            first_element->recording(a_key, second_element->copying(false));
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
 
 Element* List::evall_keyn(LispE* lisp) {
     short listsize = liste.size();
@@ -6956,9 +7021,9 @@ Element* List::evall_keyn(LispE* lisp) {
         if (first_element->type != t_dictionaryn)
             throw new Error(L"Error: the first argument must be a dictionary indexed on numbers");
         double a_key;
-		// It is out of question to manipulate a dictionary declared in the code
-		first_element = first_element->duplicate_constant();
-		for (long i = 2; i < listsize; i+=2) {
+        // It is out of question to manipulate a dictionary declared in the code
+        first_element = first_element->duplicate_constant();
+        for (long i = 2; i < listsize; i+=2) {
             evalAsNumber(i, lisp, a_key);
             second_element = liste[i+1]->eval(lisp);
             first_element->recording(a_key, second_element->copying(false));
@@ -6981,7 +7046,7 @@ Element* List::evall_keys(LispE* lisp) {
 
     try {
         first_element = liste[1]->eval(lisp);
-        if (first_element->type != t_dictionary && first_element->type != t_dictionaryn)
+        if (first_element->type != t_dictionary && first_element->type != t_dictionaryn && first_element->type != t_dictionaryi)
             throw new Error(L"Error: the first argument must be a dictionary");
         second_element = first_element->thekeys(lisp);
         first_element->release();
@@ -8614,7 +8679,7 @@ Element* List::evall_push(LispE* lisp) {
     try {
         //We store a value in a list
         first_element = first_element->eval(lisp);
-        if (!first_element->isList())
+        if (!first_element->isList() && !first_element->isSet())
             throw new Error(L"Error: missing list in 'push'");
         first_element = first_element->duplicate_constant();
         if (first_element->type == t_llist) {

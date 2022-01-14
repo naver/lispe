@@ -3896,7 +3896,7 @@ Exporting long GetBlankSize() {
 }
 
 
-static const char _tocheck[] = {'"', '\'', '@', ':', ',','-', '+','0','1','2','3','4','5', '6','7','8', '9','[',']','{', '}', 0};
+static const unsigned char _tocheck[] = {'"', '\'', '`', '@', ':', ',','-', '+','0','1','2','3','4','5', '6','7','8', '9','[',']','{', '}', 171, 187, 0};
 static const char _checkingmore[] = {'\n', '/', '(', ')', '<', '>','=',';', 0};
 
 void split_container(unsigned char* src, long lensrc, vector<long>& pos, bool forindent) {
@@ -3907,7 +3907,7 @@ void split_container(unsigned char* src, long lensrc, vector<long>& pos, bool fo
         if (forindent && strchr(_checkingmore, c))
             pos.push_back(e);
         else
-            if (strchr(_tocheck, c))
+            if (strchr((char*)_tocheck, (char)c))
                 pos.push_back(e);
     }
 }
@@ -4044,6 +4044,26 @@ long IndentationCode(string& codestr) {
                 while (r < sz) {
                     p = pos[r++];
                     if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                        break;
+                }
+                p++;
+                i = p;
+                break;
+            case '`':
+                p = i;
+                while (r < sz) {
+                    p = pos[r++];
+                    if (codestr[p] == '`')
+                        break;
+                }
+                p++;
+                i = p;
+                break;
+            case 171:
+                p = i;
+                while (r < sz) {
+                    p = pos[r++];
+                    if ((uchar)codestr[p] == 187)
                         break;
                 }
                 p++;
@@ -4290,6 +4310,34 @@ void IndentationCode(string& str, string& codeindente) {
                 while (r < sz) {
                     p = pos[r++];
                     if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                        break;
+                }
+                p++;
+                c = codestr[p];
+                codestr[p] = 0;
+                codeindente += (char*)codestr+i-1;
+                codestr[p] = c;
+                i = p;
+                break;
+            case '`':
+                p = i;
+                while (r < sz) {
+                    p = pos[r++];
+                    if (codestr[p] == '`')
+                        break;
+                }
+                p++;
+                c = codestr[p];
+                codestr[p] = 0;
+                codeindente += (char*)codestr+i-1;
+                codestr[p] = c;
+                i = p;
+                break;
+            case 171:
+                p = i;
+                while (r < sz) {
+                    p = pos[r++];
+                    if ((uchar)codestr[p] == 187)
                         break;
                 }
                 p++;
@@ -4695,7 +4743,7 @@ void split_container(u_uchar* src, long lensrc, vector<long>& pos) {
     
     for (long e = 0; e < lensrc; e++) {
         c = src[e];
-        if (strchr(_tocheck, (uchar)c))
+        if (strchr((char*)_tocheck, (char)c))
             pos.push_back(e);
     }
 }

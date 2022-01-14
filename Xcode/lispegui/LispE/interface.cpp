@@ -55,6 +55,21 @@ public:
     }
     
     void append(short t, long posbeg, long posend) {
+        if (types.size()) {
+            if (types.back() == l_wait) {
+                types.pop_back();
+                types.push_back(l_quote);
+                t = l_quote;
+            }
+            else {
+                if (types.back() == t) {
+                    positions.pop_back();
+                    positions.push_back(posend+drift);
+                    return;
+                }
+            }
+        }
+        
         types.push_back(t);
         positions.push_back(posbeg+drift);
         positions.push_back(posend+drift);
@@ -110,8 +125,6 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
     //The first line of the code is 1
     long line_number = 1;
     UWCHAR c, nxt;
-    uchar lc;
-    bool quote = false;
     bool point = false;
     
     for (i = 0; i < sz; i++) {
@@ -120,7 +133,7 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
         infos.drift += c_utf16(c);
         switch (c) {
             case '\'':
-                quote = true;
+                infos.append(l_wait, i, i + 1);
                 point = false;
                 break;
             case '.':
@@ -129,22 +142,19 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
             case ';':
 			case '#':
 				point = false;
-                quote = false;
                 idx = i;
                 if (code[i+1] == ';') {
                     idx += 2;
-                    wstring cc;
-                    cc += L";;";
                     while (idx < sz-1 && (code[idx] != ';' || code[idx+1] != ';')) {
-                        cc += code[idx];
                         if (code[idx] == '\n') {
                             line_number++;
                             infos.append(t_comment, i, idx);
-                            i = idx;
+                            i = idx + 1;
                         }
                         idx++;
                         infos.drift += c_utf16(code[idx]);
                     }
+                    idx++;
                 }
                 else {
                     while (idx < sz && code[idx] != '\n') {
@@ -158,55 +168,50 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                 break;
             case '\n':
                 point = false;
-                quote = false;
                 line_number++;
+                infos.append(v_null, i, i + 1);
                 break;
-            case '\t':
             case '\r':
+            case '\t':
             case ' ':
                 point = false;
-                quote = false;
                 continue;
             case '"': {
                 point = false;
-                quote = false;
                 idx = i + 1;
-                tampon = L"";
                 while (idx < sz && code[idx] != '"' && code[idx] != '\n') {
                     c = code[idx];
                     infos.drift += c_utf16(c);
-                    if (c == '\\') {
+                    if (c == '\\')
                         idx++;
-                        switch (code[idx]) {
-                            case 'n':
-                                tampon += '\n';
-                                idx++;
-                                continue;
-                            case 'r':
-                                tampon += '\r';
-                                idx++;
-                                continue;
-                            case 't':
-                                tampon += '\t';
-                                idx++;
-                                continue;
-                        }
-                    }
-                    tampon += c;
                     idx++;
                 }
-                if (tampon == L"")
-                    infos.append(t_emptystring, i, idx + 1);
-                else
-                    infos.append(t_string, i, idx + 1);
+                
+                infos.append(t_string, i, idx + 1);
                 i = idx;
                 break;
             }
+            case 171:
+                point = false;
+                idx = i + 1;
+                while (idx < sz && code[idx] != 187) {
+                    c = code[idx];
+                    if (c == '\n')
+                        line_number++;
+                    
+                    infos.drift += c_utf16(c);
+                    if (c == '\\') {
+                        idx++;
+                    }
+                    idx++;
+                }
+                
+                infos.append(t_string, i, idx + 1);
+                i = idx;
+                break;
             case '`': {
                 point = false;
-                quote = false;
                 idx = i + 1;
-                tampon = L"";
                 while (idx < sz && code[idx] != '`') {
                     c = code[idx];
                     if (c == '\n')
@@ -215,28 +220,11 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                     infos.drift += c_utf16(c);
                     if (c == '\\') {
                         idx++;
-                        switch (code[idx]) {
-                            case 'n':
-                                tampon += '\n';
-                                idx++;
-                                continue;
-                            case 'r':
-                                tampon += '\r';
-                                idx++;
-                                continue;
-                            case 't':
-                                tampon += '\t';
-                                idx++;
-                                continue;
-                        }
                     }
-                    tampon += c;
                     idx++;
                 }
-                if (tampon == L"")
-                    infos.append(t_emptystring, i, idx + 1);
-                else
-                    infos.append(t_string, i, idx + 1);
+                
+                infos.append(t_string, i, idx + 1);
                 i = idx;
                 break;
             }
@@ -244,8 +232,8 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                 //If the character is a multi-byte character, we need
                 //to position on the beginning of the character again
                 if (special_characters.c_is_punctuation(c) || stops[c]) {
+                    infos.append(v_null, i, i + 1);
                     point = false;
-                    quote = false;
                     break;
                 }
 
@@ -258,32 +246,27 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                     idx++;
                 }
                 
-                if ((i - current_i) <= 1) {
+                if ((i - current_i) <= 1)
                     tampon = c;
-                }
                 else
                     tampon = code.substr(current_i, i - current_i);
-                                
-                lc = tampon[0];
 
-                if (quote)
-                    infos.append(l_quote, current_i, i);
+                if (point)
+                    infos.append(l_defun, current_i, i);
                 else {
-                    if (point)
-                        infos.append(l_defun, current_i, i);
+                    if (lispe != NULL && lispe->delegation->is_basic_atom(tampon) != -1)
+                        infos.append(t_atom, current_i, i);
                     else {
-                        if (lispe != NULL && lispe->delegation->is_basic_atom(tampon) != -1)
-                            infos.append(t_atom, current_i, i);
+                        if (current_i > 0 && code[current_i-1] == '(')
+                            infos.append(l_defpat, current_i, i);
                         else
-                            if (current_i > 0 && code[current_i-1] == '(')
-                                infos.append(l_defpat, current_i, i);
+                            infos.append(v_null, current_i, i);
                     }
                 }
                 
                 if (i != current_i)
                     i--;
                 point = false;
-                quote = false;
                 break;
             }
         }
@@ -720,13 +703,14 @@ extern "C" {
         short type;
         for (long isegment = 0; isegment < infos.types.size(); isegment++) {
             left =  infos.positions[isegment<<1];
+            if (left < from)
+                continue;
             type = infos.types[isegment];
             right = infos.positions[1+(isegment<<1)] - left;
 
             //sub = line.substr(left, right);
             //left += drift;
             switch (type) {
-                case t_emptystring:
                 case t_string:
                     limits.push_back(1);
                     limits.push_back(left);
@@ -754,6 +738,11 @@ extern "C" {
                     break;
                 case t_comment:
                     limits.push_back(7);
+                    limits.push_back(left);
+                    limits.push_back(right);
+                    break;
+                default:
+                    limits.push_back(8);
                     limits.push_back(left);
                     limits.push_back(right);
                     break;

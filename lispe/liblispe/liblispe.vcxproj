@@ -158,21 +158,25 @@
     <ClInclude Include="..\..\include\elements.h" />
     <ClInclude Include="..\..\include\jag.h" />
     <ClInclude Include="..\..\include\lispe.h" />
+    <ClInclude Include="..\..\include\llistes.h" />
     <ClInclude Include="..\..\include\rgx.h" />
     <ClInclude Include="..\..\include\segmentation.h" />
     <ClInclude Include="..\..\include\tools.h" />
     <ClInclude Include="..\..\include\vecte.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\dictionaries.cxx" />
     <ClCompile Include="..\..\src\elements.cxx" />
     <ClCompile Include="..\..\src\jagwin.cxx" />
     <ClCompile Include="..\..\src\jagget.cxx" />
     <ClCompile Include="..\..\src\eval.cxx" />
     <ClCompile Include="..\..\src\composing.cxx" />
     <ClCompile Include="..\..\src\lispe.cxx" />
+    <ClCompile Include="..\..\src\lists.cxx" />
     <ClCompile Include="..\..\src\maths.cxx" />
     <ClCompile Include="..\..\src\randoms.cxx" />
     <ClCompile Include="..\..\src\rgx.cxx" />
+    <ClCompile Include="..\..\src\sets.cxx" />
     <ClCompile Include="..\..\src\sockets.cxx" />
     <ClCompile Include="..\..\src\strings.cxx" />
     <ClCompile Include="..\..\src\systems.cxx" />
@@ -183,4 +187,3 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
-

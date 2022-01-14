@@ -98,13 +98,13 @@ extern NSMutableDictionary* allfiles;
  }
 
 -(void)textDidChange:(NSNotification *)notification {
-    static const char cc[]={'}',']',')','"','\'',';','/','\r',' ', 0};
+    static const char active_character[]={'}',']',')','"','\'',';',' ','\r', '`', 0};
     
     NSWindow* wnd=[[NSApp orderedWindows] objectAtIndex:0];
     NSEvent* evenement=[wnd currentEvent];
     @try {
         NSString * key = [evenement characters];
-        const char c = [key characterAtIndex:0];
+        char c = [key characterAtIndex:0];
         if (wnd == [tview window]) {
             if (c == ')' || c == '}' || c == ']') {
                 //looking for the corresponding (
@@ -115,8 +115,9 @@ extern NSMutableDictionary* allfiles;
         
         NSViewController* n=[wnd contentViewController];
         CodeViewController* cn=(CodeViewController*)n;
-        
-        if (strchr(cc,c)!= NULL)
+        if ([key  isEqual: @"«"] || [key isEqual: @"»"])
+            c = '`';
+        if (strchr(active_character,c)!= NULL)
             [[cn Code] localcolor: c];
         else
             [[cn Code] setmodified:YES];

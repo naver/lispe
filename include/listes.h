@@ -1234,6 +1234,7 @@ public:
     Element* evall_irange(LispE* lisp);
     Element* evall_join(LispE* lisp);
     Element* evall_key(LispE* lisp);
+    Element* evall_keyi(LispE* lisp);
     Element* evall_keyn(LispE* lisp);
     Element* evall_keys(LispE* lisp);
     Element* evall_label(LispE* lisp);

@@ -29,7 +29,7 @@
     NSColor* functioncouleur;
     NSColor* couleurcommentaires;
     NSColor* couleurchaine;
-    NSColor* couleurchainesingle;
+    NSColor* couleurquote;
     NSColor* couleurvar;
 
 }
@@ -42,7 +42,7 @@
 -(NSURL*)FileURL;
 -(NSString*) Contenu;
 -(NSURL*) Setname;
--(void)colorie;
+-(void)colorie:(BOOL)cr;
 -(void)indentation;
 -(BOOL)localcolor:(char)key;
 -(void)blinkMatchingParenthesis;

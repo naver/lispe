@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.13.12.55";
+static std::string version = "1.2022.1.14.16.40";
 string LispVersion() {
     return version;
 }
@@ -247,7 +247,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal);
     set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if);
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife);
-    set_instruction(l_in, "in", P_THREE|P_FOUR, &List::evall_in);
+    set_instruction(l_in, "in", P_THREE, &List::evall_in);
     set_instruction(l_index, "@", P_ATLEASTTHREE, &List::evall_index);
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
@@ -258,8 +258,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_irange, "irange", P_THREE | P_FOUR, &List::evall_irange);
     set_instruction(l_join, "join", P_TWO | P_THREE, &List::evall_join);
     set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE, &List::evall_key);
+    set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE, &List::evall_keyi);
     set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE, &List::evall_keyn);
-    set_instruction(l_keys, "keys", P_TWO, &List::evall_keys);
+    set_instruction(l_keys, "containerkeys", P_TWO, &List::evall_keys);
     set_instruction(l_label, "label", P_THREE, &List::evall_label);
     set_instruction(l_lambda, "lambda", P_ATLEASTTHREE, &List::evall_lambda);
     set_instruction(l_last, "last", P_TWO, &List::evall_last);
@@ -364,7 +365,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_type, "type", P_TWO, &List::evall_type);
     set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
     set_instruction(l_use, "use", P_TWO, &List::evall_use);
-    set_instruction(l_values, "values", P_TWO, &List::evall_values);
+    set_instruction(l_values, "containervalues", P_TWO, &List::evall_values);
     set_instruction(l_wait, "wait", P_ONE, &List::evall_wait);
     set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton);
     set_instruction(l_while, "while", P_ATLEASTTHREE, &List::evall_while);
@@ -528,6 +529,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_error] = U"error_";
     code_to_string[t_dictionary] = U"dictionary_";
     code_to_string[t_dictionaryn] = U"dictionary_n_";
+    code_to_string[t_dictionaryi] = U"dictionary_i_";
     code_to_string[t_set] = U"set_";
     code_to_string[t_setn] = U"set_n_";
     code_to_string[t_seti] = U"set_i_";
@@ -639,6 +641,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_maybe);
     provideAtomType(t_dictionary);
     provideAtomType(t_dictionaryn);
+    provideAtomType(t_dictionaryi);
     provideAtomType(t_set);
     provideAtomType(t_setn);
     provideAtomType(t_atom);
@@ -668,6 +671,7 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_maybe, _NULL), t_maybe, v_null);
     recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
     recordingData(lisp->create_instruction(t_dictionaryn, _NULL), t_dictionaryn, v_null);
+    recordingData(lisp->create_instruction(t_dictionaryi, _NULL), t_dictionaryi, v_null);
     recordingData(lisp->create_instruction(t_set, _NULL), t_set, v_null);
     recordingData(lisp->create_instruction(t_setn, _NULL), t_setn, v_null);
     recordingData(lisp->create_instruction(t_atom, _NULL), t_atom, v_null);
@@ -821,6 +825,7 @@ void LispE::cleaning() {
     list_pool.cleaning();
 
     dictionary_pool.cleaning();
+    dictionaryi_pool.cleaning();
     dictionaryn_pool.cleaning();
 
     set_pool.cleaning();
@@ -2146,6 +2151,9 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
 
 
 

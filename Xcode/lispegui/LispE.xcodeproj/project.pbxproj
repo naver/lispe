@@ -33,6 +33,9 @@
 		0BF4E43A1FC2D357004C0821 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0BF4E4391FC2D34A004C0821 /* Cocoa.framework */; };
 		0BF4E58B1FC2D4B4004C0821 /* Console.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E58A1FC2D4B4004C0821 /* Console.m */; };
 		0BF4E58D1FC2FCEB004C0821 /* interface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E58C1FC2FCEB004C0821 /* interface.cpp */; };
+		0BF51AE22791CAF7001C1BCE /* lists.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BF51ADF2791CAF7001C1BCE /* lists.cxx */; };
+		0BF51AE32791CAF7001C1BCE /* dictionaries.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BF51AE02791CAF7001C1BCE /* dictionaries.cxx */; };
+		0BF51AE42791CAF7001C1BCE /* sets.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BF51AE12791CAF7001C1BCE /* sets.cxx */; };
 		0BFFCCBA1FCDD5860043CAF3 /* animationSegue.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BFFCCB91FCDD5860043CAF3 /* animationSegue.m */; };
 /* End PBXBuildFile section */
 
@@ -111,6 +114,9 @@
 		0BF4E5891FC2D4B4004C0821 /* Console.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Console.h; sourceTree = "<group>"; };
 		0BF4E58A1FC2D4B4004C0821 /* Console.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Console.m; sourceTree = "<group>"; };
 		0BF4E58C1FC2FCEB004C0821 /* interface.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface.cpp; sourceTree = "<group>"; };
+		0BF51ADF2791CAF7001C1BCE /* lists.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lists.cxx; path = ../../../src/lists.cxx; sourceTree = "<group>"; };
+		0BF51AE02791CAF7001C1BCE /* dictionaries.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dictionaries.cxx; path = ../../../src/dictionaries.cxx; sourceTree = "<group>"; };
+		0BF51AE12791CAF7001C1BCE /* sets.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sets.cxx; path = ../../../src/sets.cxx; sourceTree = "<group>"; };
 		0BFFCCB81FCDD5860043CAF3 /* animationSegue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = animationSegue.h; sourceTree = "<group>"; };
 		0BFFCCB91FCDD5860043CAF3 /* animationSegue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = animationSegue.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -178,15 +184,18 @@
 		0B09F07822930E7D00CD9755 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */,
 				0B4E1A90260B85D700BBAE21 /* composing.cxx */,
+				0BF51AE02791CAF7001C1BCE /* dictionaries.cxx */,
 				0B4E1A92260B85D700BBAE21 /* elements.cxx */,
 				0B4E1A9B260B85D700BBAE21 /* eval.cxx */,
 				0B4E1A9D260B85D800BBAE21 /* jagget.cxx */,
 				0B4E1A91260B85D700BBAE21 /* lispe.cxx */,
+				0BF51ADF2791CAF7001C1BCE /* lists.cxx */,
 				0B4E1A9F260B85D800BBAE21 /* maths.cxx */,
+				0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */,
 				0B4E1A98260B85D700BBAE21 /* randoms.cxx */,
 				0B4E1A9C260B85D700BBAE21 /* rgx.cxx */,
+				0BF51AE12791CAF7001C1BCE /* sets.cxx */,
 				0B4E1A96260B85D700BBAE21 /* sockets.cxx */,
 				0B4E1A94260B85D700BBAE21 /* strings.cxx */,
 				0B4E1A99260B85D700BBAE21 /* systems.cxx */,
@@ -426,8 +435,11 @@
 				0B4E1AAF260B85D800BBAE21 /* jagget.cxx in Sources */,
 				0BF4E3EA1FC2D12D004C0821 /* AppDelegate.m in Sources */,
 				0BFFCCBA1FCDD5860043CAF3 /* animationSegue.m in Sources */,
+				0BF51AE32791CAF7001C1BCE /* dictionaries.cxx in Sources */,
+				0BF51AE42791CAF7001C1BCE /* sets.cxx in Sources */,
 				0B55A5151FC3140F005339A9 /* Lecode.m in Sources */,
 				0B4EC62D1FC5C27200082CA6 /* Linenumber.m in Sources */,
+				0BF51AE22791CAF7001C1BCE /* lists.cxx in Sources */,
 				0B4E1AA8260B85D800BBAE21 /* sockets.cxx in Sources */,
 				0B4E1AAA260B85D800BBAE21 /* randoms.cxx in Sources */,
 				0B4E1AAC260B85D800BBAE21 /* tools.cxx in Sources */,

@@ -3,7 +3,7 @@ include Makefile.in
 ################################################################
 COMPPLUSPLUS = g++
 ################ Compiler LispE #################################
-SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx ontology.cxx
+SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx ontology.cxx sets.cxx lists.cxx dictionaries.cxx
 SOURCEMAIN = jag.cxx main.cxx lispeditor.cxx
 SOURCEJAG = jagmain.cxx jag.cxx jagget.cxx jagrgx.cxx jagtools.cxx
 #------------------------------------------------------------

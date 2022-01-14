@@ -42,7 +42,7 @@ typedef enum {
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_set, t_setn, t_seti, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
-    t_dictionary, t_dictionaryn, t_data, t_maybe,
+    t_dictionary, t_dictionaryi, t_dictionaryn, t_data, t_maybe,
     t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
     
     //System instructions
@@ -91,7 +91,7 @@ typedef enum {
     l_fread, l_fwrite, l_fappend,
     
     //mutable operations
-    l_key, l_keyn, l_keys, l_values, l_pop, l_popfirst, l_poplast,
+    l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
     l_to_list, l_to_llist, l_list, l_llist, l_cons, l_flatten, l_nconc, l_nconcn, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti,
@@ -739,7 +739,8 @@ public:
     virtual void recording(string&, Element*) {}
     virtual void recording(u_ustring&, Element*) {}
     virtual void recording(double, Element*) {}
-    
+    virtual void recording(long, Element*) {}
+
     virtual bool remove(LispE*, Element*) {
         return false;
     }
@@ -761,6 +762,10 @@ public:
     }
 
     virtual bool remove(wstring&) {
+        return false;
+    }
+    
+    virtual bool remove(u_ustring&) {
         return false;
     }
     
@@ -3160,6 +3165,406 @@ public:
     Element* newInstance();
 };
 
+//This version of the dictionary is indexed on a number
+class Dictionary_i : public Element {
+public:
+
+    unordered_map<long, Element*> dictionary;
+    Element* object;
+    bool marking;
+    bool usermarking;
+    
+
+    Dictionary_i() : Element(t_dictionaryi) {
+        object = NULL;
+        marking = false;
+        usermarking = false;
+    }
+    
+    Dictionary_i(uint16_t s) : Element(t_dictionaryi, s) {
+        object = NULL;
+        marking = false;
+        usermarking = false;
+    }
+    
+    ~Dictionary_i() {
+        //There might be some left over
+        for (auto& a : dictionary)
+            a.second->decrement();
+    }
+
+    bool isDictionary() {
+        return true;
+    }
+    
+    virtual Element* newInstance() {
+        return new Dictionary_i;
+    }
+
+    bool element_container() {
+        return true;
+    }
+    
+    bool isContainer() {
+        return true;
+    }
+    
+    void setmark(bool v) {
+        marking = v;
+    }
+    
+    bool mark() {
+        return marking;
+    }
+
+    void setusermark(bool v) {
+        usermarking = v;
+    }
+    
+    bool usermark() {
+        return  usermarking;
+    }
+
+    void resetusermark() {
+        if (marking)
+            return;
+        marking = true;
+        usermarking = false;
+        for (auto& a: dictionary) {
+            a.second->resetusermark();
+        }
+        marking = false;
+    }
+
+    void garbaging_values(LispE*);
+    
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+    Element* minmax(LispE*);
+
+    void flatten(LispE*, List* l);
+    
+    bool check_element(LispE* lisp, Element* element_value);
+    Element* loop(LispE* lisp, short label,  List* code);
+    Element* search_element(LispE*, Element* element_value, long idx);
+    Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
+    Element* search_reverse(LispE*, Element* element_value, long idx);
+    Element* checkkey(LispE* lisp, Element* e);
+    Element* reverse(LispE*, bool duplique = true);
+
+    virtual Element* fullcopy() {
+        if (marking)
+            return object;
+        
+        marking = true;
+        Dictionary_i* d = new Dictionary_i;
+        object = d;
+        Element* e;
+        for (auto& a: dictionary) {
+            e = a.second->fullcopy();
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        marking = false;
+        return d;
+    }
+    
+
+    virtual Element* copying(bool duplicate = true) {
+        if (!is_protected() && !duplicate)
+            return this;
+        
+        Dictionary_i* d = new Dictionary_i;
+        Element* e;
+        for (auto& a: dictionary) {
+            e = a.second->copying(false);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+    
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+
+        Dictionary_i* d = new Dictionary_i;
+        Element* e;
+        for (auto& a: dictionary) {
+            e = a.second->copying(false);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+
+    //In the case of a container for push, key and keyn
+    // We must force the copy when it is a constant
+    Element* duplicate_constant(bool pair = false) {
+        if (status == s_constant) {
+            Dictionary_i* d = new Dictionary_i;
+            Element* e;
+            for (auto& a: dictionary) {
+                e = a.second->copying(false);
+                d->dictionary[a.first] = e;
+                e->increment();
+            }
+            return d;
+        }
+        return this;
+    }
+    
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
+    
+    void release() {
+        if (!status && !marking) {
+            marking = true;
+            marking = false;
+            delete this;
+        }
+    }
+    
+    void decrement() {
+        if (is_protected() || marking)
+            return;
+        
+        marking = true;
+        
+        status--;
+        if (!status) {
+            delete this;
+        }
+        else
+            marking = false;
+    }
+    
+
+    void decrementstatus(uint16_t nb) {
+        if (is_protected() || marking)
+            return;
+        
+        marking = true;
+        
+        status-=nb;
+        if (!status) {
+            delete this;
+        }
+        else
+            marking = false;
+    }
+    
+    bool unify(LispE* lisp, Element* e, bool record) {
+        if (marking)
+            return (object == e);
+        
+        if (e == this)
+            return true;
+        
+        if (e->type != t_dictionaryi || e->size() != dictionary.size())
+            return false;
+        
+        marking =  true;
+        object = e;
+        
+        Dictionary_i* d = (Dictionary_i*)e;
+        for (auto& a: dictionary) {
+            try {
+                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
+                    marking = false;
+                    return false;
+                }
+            }
+            catch (...) {
+                marking = false;
+                return false;
+            }
+        }
+        
+        marking = false;
+        return true;
+    }
+    
+    bool egal(Element* e);
+    Element* equal(LispE* lisp, Element* e);
+    
+    long size() {
+        return dictionary.size();
+    }
+    
+    void protecting(bool protection, LispE* lisp) {
+        if (protection) {
+            if (status == s_constant)
+                status = s_protect;
+        }
+        else {
+            if (status == s_protect)
+                status = s_destructible;
+        }
+        
+        for (auto& a: dictionary)
+            a.second->protecting(protection, lisp);
+    }
+    
+    
+    wstring jsonString(LispE* lisp) {
+        if (!dictionary.size())
+            return L"{}";
+                
+        if (marking)
+            return L"#inf";
+        
+        marking = true;
+
+        wstring tampon;
+        tampon += L"{";
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += L",";
+            }
+            else
+                premier = false;
+            
+            tampon += convertToWString(a.first);
+            tampon += L":";
+            tampon += a.second->jsonString(lisp);
+        }
+        tampon += L"}";
+        marking = false;
+        return tampon;
+    }
+    
+    
+    wstring asString(LispE* lisp) {
+        long taille = dictionary.size();
+        if (!taille)
+            return L"{}";
+
+        if (marking)
+            return L"...";
+        
+        marking = true;
+
+        wstring tampon;
+        tampon += L"{";
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += L" ";
+            }
+            else
+                premier = false;
+            tampon += convertToWString(a.first);
+            tampon += L":";
+            tampon += a.second->stringInList(lisp);
+        }
+        tampon += L"}";
+        marking = false;
+        return tampon;
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        long taille = dictionary.size();
+        if (!taille)
+            return U"{}";
+
+        if (marking)
+            return U"...";
+        
+        marking = true;
+
+        u_ustring tampon;
+        tampon += U"{";
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += U" ";
+            }
+            else
+                premier = false;
+            tampon += convertToUString(a.first);
+            tampon += U":";
+            tampon += a.second->stringInUList(lisp);
+        }
+        tampon += U"}";
+        marking = false;
+        return tampon;
+    }
+    
+
+    bool Boolean() {
+        return (dictionary.size());
+    }
+    
+    Element* protected_index(LispE*, long k);
+
+    Element* value_on_index(long k, LispE* l);
+    Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
+    
+    void recording(long k, Element* e) {
+        try {
+            Element* a = dictionary.at(k);
+            if (a == e)
+                return;
+            a->decrement();
+            dictionary[k] = e;
+        }
+        catch (...) {
+            dictionary[k] = e;
+        }
+        e->increment();
+    }
+    
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        recording(i->asInteger(), e);
+        return e;
+    }
+    
+    Element* thekeys(LispE* lisp);
+    
+    Element* thevalues(LispE* lisp);
+    
+    bool remove(LispE*, Element* e) {
+        long d =  e->asInteger();
+        return remove(d);
+    }
+
+    bool remove(long d) {
+        try {
+            Element* e = dictionary.at(d);
+            dictionary.erase(d);
+            e->decrement();
+            return true;
+        }
+        catch (...) {
+            return false;
+        }
+    }
+    
+    //bool traverse(LispE*, Dictionary_as_list*);
+};
+
+class Dictionary_ipool : public Dictionary_i {
+public:
+    LispE* lisp;
+    
+    Dictionary_ipool(LispE* l) : lisp(l) {}
+
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
+    Element* fullcopy();
+    Element* copyatom(uint16_t s);
+    Element* copying(bool duplicate = true);
+    Element* newInstance();
+};
 
 // A temporary structure to read a dictionary
 class Dictionary_as_list : public Element {

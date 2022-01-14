@@ -58,7 +58,8 @@ public:
 
     vecte<Dictionarypool*> dictionary_pool;
     vecte<Dictionary_npool*> dictionaryn_pool;
-
+    vecte<Dictionary_ipool*> dictionaryi_pool;
+    
     vecte<Listpool*> list_pool;
     
     vecte<Returnpool*> return_pool;
@@ -1006,6 +1007,10 @@ public:
 
     inline Dictionary_n* provideDictionary_n() {
         return dictionaryn_pool.last?dictionaryn_pool.backpop(): new Dictionary_npool(this);
+    }
+
+    inline Dictionary_i* provideDictionary_i() {
+        return dictionaryi_pool.last?dictionaryi_pool.backpop(): new Dictionary_ipool(this);
     }
 
     inline Set* provideSet() {
