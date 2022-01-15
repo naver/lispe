@@ -6963,6 +6963,9 @@ Element* List::evall_keyi(LispE* lisp) {
 
         long a_key;
         if (listsize == 3 && first_element->isDictionary()) {
+            if (first_element->type != t_dictionaryi)
+                throw new Error("Error: wrong dictionary type for 'keyi'");
+
             evalAsInteger(2, lisp, a_key);
             second_element = first_element->protected_index(lisp, a_key);
             first_element->release();
@@ -7022,6 +7025,9 @@ Element* List::evall_keyn(LispE* lisp) {
 
         double a_key;
         if (listsize == 3 && first_element->isDictionary()) {
+            if (first_element->type != t_dictionaryn)
+                throw new Error("Error: wrong dictionary type for 'keyn'");
+
             evalAsNumber(2, lisp, a_key);
             second_element = first_element->protected_index(lisp, a_key);
             first_element->release();
