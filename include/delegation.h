@@ -158,6 +158,7 @@ public:
     Atome* _EMPTYATOM;
     Atome* _LISTSEPARATOR;
     Atome* _DEFPAT;
+    Atome* _DICO_KEYI;
     Atome* _DICO_KEYN;
     Atome* _DICO_KEY;
     Atome* _DICO_SETN;

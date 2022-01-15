@@ -656,15 +656,17 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
         }
     }
     else {
-        if (type >= t_float && type <= t_number)
+        if (type == t_float || type == t_number)
             keycmd = lisp->delegation->_DICO_KEYN;
-        else
-            keycmd = lisp->delegation->_DICO_KEY;
+        else {
+            if (type == t_short || type == t_integer)
+                keycmd = lisp->delegation->_DICO_KEYI;
+            else
+                keycmd = lisp->delegation->_DICO_KEY;
+        }
         
-        //We generate: (key (key) k v k' v' k" v"...)
+        //We generate: (key k v k' v' k" v"...)
         last_element->append(keycmd);
-        last_element->append(lisp->provideList());
-        last_element->liste[1]->append(keycmd);
         for (long i = 0; i < keyvalues.size(); i++) {
             last_element->append(keyvalues[i]);
             last_element->append(valuevalues[i]);

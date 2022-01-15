@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.14.16.40";
+static std::string version = "1.2022.1.15.9.20";
 string LispVersion() {
     return version;
 }
@@ -572,6 +572,7 @@ void Delegation::initialisation(LispE* lisp) {
     _DEFPAT = (Atome*)lisp->provideAtomOrInstruction(l_defpat);
 
     _DICO_KEY = (Atome*)lisp->provideAtomOrInstruction(l_key);
+    _DICO_KEYI = (Atome*)lisp->provideAtomOrInstruction(l_keyi);
     _DICO_KEYN = (Atome*)lisp->provideAtomOrInstruction(l_keyn);
 
     _DICO_SET = (Atome*)lisp->provideAtomOrInstruction(l_set);
@@ -2151,6 +2152,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

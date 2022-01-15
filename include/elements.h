@@ -609,6 +609,10 @@ public:
         return false;
     }
     
+    virtual bool isInteger() {
+        return false;
+    }
+    
     virtual bool isNumber() {
         return false;
     }
@@ -1620,6 +1624,10 @@ public:
         return convertToString((long)integer);
     }
 
+    bool isInteger() {
+        return true;
+    }
+
     bool isNumber() {
         return true;
     }
@@ -1769,6 +1777,10 @@ public:
         return convertToString(integer);
     }
 
+    bool isInteger() {
+        return true;
+    }
+    
     bool isNumber() {
         return true;
     }
@@ -3632,15 +3644,23 @@ public:
             keyvalues.push_back(e);
             if (type == t_dictionary) {
                 //Initial, type prend le type de 'e'
-                if (e->isNumber())
-                    type = t_number;
-                else
-                    type = t_string;
+                if (e->isInteger())
+                    type = t_integer;
+                else {
+                    if (e->isNumber())
+                        type = t_number;
+                    else
+                        type = t_string;
+                }
             }
             else {
                 //If the elements are mangled, then it is a dictionary indexed on strings
-                if (type == t_number && !e->isNumber()) {
-                    type = t_string;
+                if (type == t_integer && !e->isInteger() && e->isNumber())
+                    type = t_number;
+                else {
+                    if ( (type == t_integer || type == t_number) && !e->isNumber()) {
+                        type = t_string;
+                    }
                 }
             }
         }
