@@ -335,6 +335,11 @@ public:
         }
         return false;
     }
+    
+    inline void to_vector(vector<Z>& v) {
+        for (long i = 0; i < last; i++)
+            v.push_back(vecteur[i]);
+    }
 };
 
 
@@ -655,6 +660,11 @@ public:
         return true;
     }
 
+    inline void to_vector(vector<Z>& v) {
+        for (long i = home; i < size(); i++) {
+            v.push_back(items->buffer[home+i]);
+        }
+    }
 };
 
 //We use the new method here. The alloc cannot work for strings...
@@ -945,6 +955,12 @@ public:
                 return false;
         }
         return true;
+    }
+
+    inline void to_vector(vector<Z>& v) {
+        for (long i = home; i < size(); i++) {
+            v.push_back(items->buffer[home+i]);
+        }
     }
 
 };

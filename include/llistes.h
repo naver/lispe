@@ -447,6 +447,15 @@ public:
             }
         }
     }
+    
+    inline void to_vector(std::vector<Element*>& v) {
+        u_link* u = begin();
+        while (u != NULL) {
+            v.push_back(u->value);
+            u = u->next();
+        }
+    }
+
 };
 
 class LList : public Element {

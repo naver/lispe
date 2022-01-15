@@ -480,6 +480,11 @@ public:
         }            
     }
 
+    inline void to_vector(std::vector<Element*>& v) {
+        for (long i = home; i < item->last; i++)
+            v.push_back(item->buffer[i]);
+    }
+
 };
 
 class List : public Element {
