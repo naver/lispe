@@ -40,7 +40,7 @@ typedef enum {
     //Default types
     t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
-    t_set, t_setn, t_seti, t_floats, t_shorts, t_integers, t_numbers, t_strings,
+    t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_data, t_maybe,
     t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
@@ -94,7 +94,7 @@ typedef enum {
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
     l_to_list, l_to_llist, l_list, l_llist, l_cons, l_flatten, l_nconc, l_nconcn, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
-    l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti,
+    l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti, l_sets, 
     
     //Display values
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
@@ -1992,6 +1992,10 @@ public:
         return this;
     }
     
+    void append(Element* e) {
+        content += e->asUString(NULL);
+    }
+        
     Element* cadr(LispE*, u_ustring& actions);
     Element* rotate(bool left);
     
@@ -2013,6 +2017,19 @@ public:
         return (content == U"");
     }
         
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
+    }
+
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
@@ -2356,6 +2373,10 @@ public:
             a.second->decrement();
     }
     
+    bool isEmpty() {
+        return dictionary.empty();
+    }
+
     bool element_container() {
         return true;
     }
@@ -2378,6 +2399,17 @@ public:
 
     virtual Element* newInstance() {
         return new Dictionary;
+    }
+
+    void* begin_iter() {
+        return new std::map<u_ustring, Element*>::iterator(dictionary.begin());
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (std::map<u_ustring, Element*>::iterator*)it;
     }
 
     void setusermark(bool v) {
@@ -2808,6 +2840,10 @@ public:
         return true;
     }
     
+    bool isEmpty() {
+        return dictionary.empty();
+    }
+
     virtual Element* newInstance() {
         return new Dictionary_n;
     }
@@ -2845,6 +2881,17 @@ public:
             a.second->resetusermark();
         }
         marking = false;
+    }
+
+    void* begin_iter() {
+        return new std::unordered_map<double, Element*>::iterator(dictionary.begin());
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (std::unordered_map<double, Element*>::iterator*)it;
     }
 
     void garbaging_values(LispE*);
@@ -3209,6 +3256,21 @@ public:
         return true;
     }
     
+    bool isEmpty() {
+        return dictionary.empty();
+    }
+
+    void* begin_iter() {
+        return new std::unordered_map<long, Element*>::iterator(dictionary.begin());
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (std::unordered_map<long, Element*>::iterator*)it;
+    }
+
     virtual Element* newInstance() {
         return new Dictionary_i;
     }
@@ -3777,17 +3839,17 @@ public:
     
 };
 
-class Set : public Element {
+class Set_s : public Element {
 public:
     
     std::set<u_ustring> ensemble;
     Conststring exchange_value;
 
-    Set() : exchange_value(U""), Element(t_set) {}
+    Set_s() : exchange_value(U""), Element(t_sets) {}
     
-    Set(std::set<u_ustring>& e) : exchange_value(U""), ensemble(e), Element(t_set) {}
+    Set_s(std::set<u_ustring>& e) : exchange_value(U""), ensemble(e), Element(t_sets) {}
     
-    Set(uint16_t s) : exchange_value(U""), Element(t_set, s) {}
+    Set_s(uint16_t s) : exchange_value(U""), Element(t_sets, s) {}
     
     bool isContainer() {
         return true;
@@ -3797,8 +3859,12 @@ public:
         return true;
     }
     
+    bool isEmpty() {
+        return ensemble.empty();
+    }
+    
     virtual Element* newInstance() {
-        return new Set();
+        return new Set_s();
     }
     
     Element* asList(LispE* lisp);
@@ -3841,7 +3907,7 @@ public:
     // We must force the copy when it is a constant
     Element* duplicate_constant(bool pair = false) {
         if (status == s_constant) {
-            return new Set(ensemble);
+            return new Set_s(ensemble);
         }
         return this;
     }
@@ -3852,10 +3918,10 @@ public:
         if (e == this)
             return true;
         
-        if (e->type != t_set)
+        if (e->type != t_sets)
             return false;
 
-        return ensemble == ((Set*)e)->ensemble;
+        return ensemble == ((Set_s*)e)->ensemble;
     }
      
     bool egal(Element* e);
@@ -4045,27 +4111,27 @@ public:
         if (status < s)
             return this;
 
-        return new Set(ensemble);
+        return new Set_s(ensemble);
     }
 
     Element* plus(LispE* l, Element* e);
 };
 
-class Setpool : public Set {
+class Set_spool : public Set_s {
 public:
     LispE* lisp;
     
-    Setpool(LispE* l) : lisp(l) {
+    Set_spool(LispE* l) : lisp(l) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
 
-    Setpool(LispE* l, Set* e) : lisp(l), Set(e->ensemble) {
+    Set_spool(LispE* l, Set_s* e) : lisp(l), Set_s(e->ensemble) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
 
-    Setpool* set(Set* s) {
+    Set_spool* set(Set_s* s) {
         ensemble = s->ensemble;
         return this;
     }
@@ -4101,6 +4167,10 @@ public:
         return true;
     }
     
+    bool isEmpty() {
+        return ensemble.empty();
+    }
+
     Element* newInstance() {
         return new Set_n();
     }
@@ -4163,7 +4233,7 @@ public:
         if (e == this)
             return true;
         
-        if (e->type != t_set)
+        if (e->type != t_sets)
             return false;
 
         return ensemble == ((Set_n*)e)->ensemble;
@@ -4379,6 +4449,10 @@ public:
         return true;
     }
     
+    bool isEmpty() {
+        return ensemble.empty();
+    }
+
     Element* asList(LispE* lisp);
     
     Element* newInstance() {
@@ -4441,7 +4515,7 @@ public:
         if (e == this)
             return true;
         
-        if (e->type != t_set)
+        if (e->type != t_sets)
             return false;
 
         return ensemble == ((Set_i*)e)->ensemble;
@@ -4637,4 +4711,343 @@ public:
 
 };
 
+class Set : public Element {
+public:
+    
+    std::unordered_map<u_ustring, Element*> dictionary;
+
+    Set() : Element(t_set) {}
+    
+    Set(std::unordered_map<u_ustring, Element*>& d) : dictionary(d), Element(t_set) {
+        for (auto& a : dictionary)
+            a.second->increment();
+    }
+
+    Set(std::unordered_map<u_ustring, Element*>& d, bool duplicate) : Element(t_set) {
+        Element* v;
+        for (auto& a : d) {
+            v = a.second->fullcopy();
+            dictionary[a.first] = v;
+            v->increment();
+        }
+    }
+
+    Set(uint16_t s) : Element(t_sets, s) {}
+    
+    bool isContainer() {
+        return true;
+    }
+    
+    bool isSet() {
+        return true;
+    }
+    
+    bool isEmpty() {
+        return dictionary.empty();
+    }
+    
+    virtual Element* newInstance() {
+        return new Set();
+    }
+    
+    Element* asList(LispE* lisp);
+
+    void* begin_iter() {
+        return new std::unordered_map<u_ustring, Element*>::iterator(dictionary.begin());
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (std::unordered_map<u_ustring, Element*>::iterator*)it;
+    }
+
+    Element* loop(LispE* lisp, short label,  List* code);
+    
+    Element* minimum(LispE*);
+    Element* maximum(LispE*);
+    Element* minmax(LispE*);
+    
+    void flatten(LispE*, List* l);
+    
+    bool check_element(LispE* lisp, Element* element_value);
+    Element* search_element(LispE*, Element* element_value, long idx);
+    Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
+    Element* search_reverse(LispE*, Element* element_value, long idx);
+    Element* checkkey(LispE* lisp, Element* e);
+
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
+    virtual Element* fullcopy();
+    virtual Element* copying(bool duplicate = true);
+    
+    //In the case of a container for push, key and keyn
+    // We must force the copy when it is a constant
+    Element* duplicate_constant(bool pair = false) {
+        if (status == s_constant) {
+            return new Set(dictionary);
+        }
+        return this;
+    }
+    
+    Element* join_in_list(LispE* lisp, u_ustring& sep);
+    
+    void add(LispE* lisp, Element* e) {
+        u_ustring k = e->asUString(lisp);
+        if (dictionary.find(k) != dictionary.end())
+            dictionary[k]->decrement();
+        
+        dictionary[k] = e;
+        e->increment();
+    }
+
+    bool unify(LispE* lisp, Element* e, bool record) {
+        if (e == this)
+            return true;
+        
+        if (e->type != t_sets)
+            return false;
+
+        return dictionary == ((Set*)e)->dictionary;
+    }
+     
+    bool egal(Element* e);
+    Element* equal(LispE* lisp, Element* e);
+    
+    long size() {
+        return dictionary.size();
+    }
+            
+    wstring jsonString(LispE* lisp) {
+        if (dictionary.empty())
+            return L"[]";
+                
+        wstring tampon(L"[");
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += L",";
+            }
+            else
+                premier = false;
+            tampon += a.second->jsonString(lisp);
+        }
+        tampon += L"]";
+        return tampon;
+    }
+    
+    wstring asString(LispE* lisp) {
+        if (dictionary.empty())
+            return L"{}";
+                
+        wstring tampon(L"{");
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += L" ";
+            }
+            else
+                premier = false;
+            tampon += a.second->asString(lisp);
+        }
+        tampon += L"}";
+        return tampon;
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        if (dictionary.empty())
+            return U"{}";
+                
+        u_ustring tampon(U"{");
+        
+        bool premier = true;
+        for (auto& a: dictionary) {
+            if (!premier) {
+                tampon += U" ";
+            }
+            else
+                premier = false;
+            tampon += a.second->asUString(lisp);
+        }
+        tampon += U"}";
+        return tampon;
+    }
+    
+
+    bool Boolean() {
+        return dictionary.empty();
+    }
+    
+    Element* protected_index(LispE*, u_ustring&);
+    
+    Element* index(long i) {
+        for (auto& a: dictionary) {
+            if (i <= 0) {
+                return a.second;
+            }
+            i--;
+        }
+        return NULL;
+    }
+
+    Element* value_from_index(LispE*, long i);
+    
+    Element* value_on_index(LispE*, long i);
+    Element* protected_index(LispE*,long i);
+
+    Element* value_on_index(wstring& k, LispE* l);
+    Element* value_on_index(u_ustring& k, LispE* l);
+    Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
+
+    void append(Element* e) {
+        u_ustring k = e->asUString(NULL);
+        if (dictionary.find(k) != dictionary.end())
+            dictionary[k]->decrement();
+        dictionary[k] = e;
+        e->increment();
+    }
+    
+    void appendraw(Element* e) {
+        u_ustring k = e->asUString(NULL);
+        if (dictionary.find(k) != dictionary.end())
+            dictionary[k]->decrement();
+        dictionary[k] = e;
+        e->increment();
+    }
+
+    Element* insert(LispE* lisp, Element* e, long idx) {
+        u_ustring k = e->asUString(NULL);
+        if (dictionary.find(k) != dictionary.end())
+            dictionary[k]->decrement();
+        dictionary[k] = e;
+        e->increment();
+        return this;
+    }
+    
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        u_ustring k = i->asUString(lisp);
+        if (dictionary.find(k) != dictionary.end()) {
+            dictionary[k]->decrement();
+            dictionary.erase(k);
+        }
+        k = e->asUString(lisp);
+        dictionary[k] = e;
+        e->increment();
+        return this;
+    }
+
+    Element* thekeys(LispE* lisp);
+    Element* thevalues(LispE* lisp);
+
+    bool remove(LispE* lisp, Element* e) {
+        u_ustring k =  e->asUString(lisp);
+        if (dictionary.find(k) == dictionary.end())
+            return false;
+        else {
+            dictionary[k]->decrement();
+            dictionary.erase(k);
+            return true;
+        }
+    }
+
+    bool remove(wstring& w) {
+        u_pstring k = _w_to_u(w);
+        if (dictionary.find(k) == dictionary.end())
+            return false;
+        else {
+            dictionary[k]->decrement();
+            dictionary.erase(k);
+            return true;
+        }
+    }
+
+    bool remove(u_ustring& k) {
+        if (dictionary.find(k) == dictionary.end())
+            return false;
+        else {
+            dictionary[k]->decrement();
+            dictionary.erase(k);
+            return true;
+        }
+    }
+    
+    virtual Element* copyatom(uint16_t s) {
+        if (status < s)
+            return this;
+
+        return new Set(dictionary);
+    }
+    
+    virtual void release() {
+        if (!status) {
+            for (auto& a: dictionary)
+                a.second->release();
+            delete this;
+        }
+    }
+    
+    virtual void decrement() {
+        if (is_protected())
+            return;
+        
+        status--;
+        if (!status) {
+            for (auto& a: dictionary)
+                a.second->release();
+            delete this;
+        }
+    }
+    
+
+    virtual void decrementstatus(uint16_t nb) {
+        if (is_protected())
+            return;
+        
+        
+        status-=nb;
+        if (!status) {
+            for (auto& a: dictionary)
+                a.second->release();
+            delete this;
+        }
+    }
+
+};
+
+class Setpool : public Set {
+public:
+    LispE* lisp;
+    
+    Setpool(LispE* l) : lisp(l) {}
+
+    Setpool(LispE* l, Set* e) : lisp(l), Set(e->dictionary) {}
+
+    Setpool* set(Set* s) {
+        dictionary = s->dictionary;
+        for (auto& a : dictionary)
+            a.second->increment();
+        return this;
+    }
+    
+    void decrementstatus(uint16_t nb);
+    void decrement();
+    
+    void release();
+    Element* fullcopy();
+    Element* copying(bool duplicate = true);
+    Element* copyatom(uint16_t s);
+    Element* newInstance();
+    
+};
+
+
 #endif /* elements_h */
+

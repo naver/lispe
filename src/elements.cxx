@@ -638,12 +638,12 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
         if (valuevalues.size() == 0) {
             //We create a set...
             if (type == t_float || type == t_number)
-                keycmd = lisp->delegation->_DICO_SETN;
+                keycmd = lisp->delegation->_SET_NUMBERS;
             else {
                 if (type == t_short || type == t_integer)
-                    keycmd = lisp->delegation->_DICO_SETI;
+                    keycmd = lisp->delegation->_SET_INTEGERS;
                 else
-                    keycmd = lisp->delegation->_DICO_SET;
+                    keycmd = lisp->delegation->_SET_STRINGS;
             }
             //We generate: (set k v k' v' k" v"...)
             last_element->append(keycmd);
@@ -1435,7 +1435,7 @@ Element* Maybe::equal(LispE* lisp, Element* e) {
 }
 
 Element* String::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_string && content == e->asUString(lisp))];
+    return booleans_[(e->type == t_string && content == ((String*)e)->content)];
 }
 
 Element* Number::equal(LispE* lisp, Element* e) {
@@ -1467,7 +1467,7 @@ bool Maybe::egal(Element* e) {
 }
 
 bool String::egal(Element* e) {
-    return (e->type == t_string && content == e->asUString(NULL));
+    return (e->type == t_string && content == ((String*)e)->content);
 }
 
 bool Number::egal(Element* e) {
@@ -2179,3 +2179,20 @@ Element* InfiniterangeInteger::cdr(LispE* lisp) {
 }
 
 
+Element* String::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == content.size())
+        return emptyatom_;
+    u_uchar u = content[n[0]];
+    n[0]++;
+    return lisp->provideString(u);
+}
+
+Element* String::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == content.size())
+        return emptyatom_;
+    u_uchar u = content[n[0]];
+    n[0]++;
+    return lisp->provideString(u);
+}

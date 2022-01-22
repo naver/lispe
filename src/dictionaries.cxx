@@ -1251,3 +1251,61 @@ bool Dictionary_n::egal(Element* e) {
     return ((e->type == t_dictionaryn && e->size() == 0 && dictionary.size() == 0) || e== this);
 }
 
+Element* Dictionary::next_iter(LispE* lisp, void* it) {
+    std::map<u_ustring, Element*>::iterator* n = (std::map<u_ustring, Element*>::iterator*)it;
+    if (*n == dictionary.end())
+        return emptyatom_;
+    
+    u_ustring u = (*n)->first;
+    (*n)++;
+    return lisp->provideString(u);
+}
+
+Element* Dictionary::next_iter_exchange(LispE* lisp, void* it) {
+    std::map<u_ustring, Element*>::iterator* n = (std::map<u_ustring, Element*>::iterator*)it;
+    if (*n == dictionary.end())
+        return emptyatom_;
+    
+    u_ustring u = (*n)->first;
+    (*n)++;
+    return lisp->provideString(u);
+}
+
+Element* Dictionary_i::next_iter(LispE* lisp, void* it) {
+    std::unordered_map<long, Element*>::iterator* n = (std::unordered_map<long, Element*>::iterator*)it;
+    if (*n == dictionary.end())
+        return emptyatom_;
+
+    long u = (*n)->first;
+    (*n)++;
+    return lisp->provideInteger(u);
+}
+
+Element* Dictionary_i::next_iter_exchange(LispE* lisp, void* it) {
+    std::unordered_map<long, Element*>::iterator* n = (std::unordered_map<long, Element*>::iterator*)it;
+    if (*n == dictionary.end())
+        return emptyatom_;
+
+    long u = (*n)->first;
+    (*n)++;
+    return lisp->provideInteger(u);
+}
+
+Element* Dictionary_n::next_iter(LispE* lisp, void* it) {
+    std::unordered_map<double, Element*>::iterator* n = (std::unordered_map<double, Element*>::iterator*)it;
+    if (*n == dictionary.end())
+        return emptyatom_;
+    double u = (*n)->first;
+    (*n)++;
+    return lisp->provideInteger(u);
+}
+
+Element* Dictionary_n::next_iter_exchange(LispE* lisp, void* it) {
+    std::unordered_map<double, Element*>::iterator* n = (std::unordered_map<double, Element*>::iterator*)it;
+    if (*n == dictionary.end())
+        return emptyatom_;
+    double u = (*n)->first;
+    (*n)++;
+    return lisp->provideInteger(u);
+}
+

@@ -52,9 +52,10 @@ public:
     vecte<Integerspool*> integers_pool;
     vecte<Stringspool*> strings_pool;
 
-    vecte<Setpool*> set_pool;
+    vecte<Set_spool*> sets_pool;
     vecte<Set_npool*> setn_pool;
     vecte<Set_ipool*> seti_pool;
+    vecte<Setpool*> set_pool;
 
     vecte<Dictionarypool*> dictionary_pool;
     vecte<Dictionary_npool*> dictionaryn_pool;
@@ -1013,12 +1014,12 @@ public:
         return dictionaryi_pool.last?dictionaryi_pool.backpop(): new Dictionary_ipool(this);
     }
 
-    inline Set* provideSet() {
-        return set_pool.last?set_pool.backpop(): new Setpool(this);
+    inline Set_s* provideSet_s() {
+        return sets_pool.last?sets_pool.backpop(): new Set_spool(this);
     }
 
-    inline Set* provideSet(Set* e) {
-        return set_pool.last?set_pool.backpop()->set(e): new Setpool(this, e);
+    inline Set_s* provideSet_s(Set_s* e) {
+        return sets_pool.last?sets_pool.backpop()->set(e): new Set_spool(this, e);
     }
 
     inline Set_n* provideSet_n() {
@@ -1035,6 +1036,14 @@ public:
 
     inline Set_i* provideSet_i(Set_i* e) {
         return seti_pool.last?seti_pool.backpop()->set(e): new Set_ipool(this, e);
+    }
+
+    inline Set* provideSet() {
+        return set_pool.last?set_pool.backpop(): new Setpool(this);
+    }
+
+    inline Set* provideSet(Set* e) {
+        return set_pool.last?set_pool.backpop()->set(e): new Setpool(this, e);
     }
 
     inline Floats* provideFloats() {

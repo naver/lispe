@@ -4896,7 +4896,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
 #endif
             szl = lmin(szl, i);
             for (i = 0; i < szl; i++) {
-                liste[i] -= n->liste[i];
+                liste[i] += n->liste[i];
             }
             return this;
         }
@@ -6777,7 +6777,7 @@ Element* Set_i::bit_not(LispE* lisp) {
 
 Element* Set_i::leftshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d;
+    long d = 0;
     if (e == NULL) {
         bool first = true;
         for (auto& a: ensemble) {
@@ -6834,7 +6834,7 @@ Element* Set_i::leftshift(LispE* lisp, Element* e) {
 
 Element* Set_i::rightshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
-    long d;
+    long d = 0;
     if (e == NULL) {
         bool first = true;
         for (auto& a: ensemble) {
@@ -7652,11 +7652,16 @@ Element* List::evall_bitand(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '&' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_and(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -7731,11 +7736,16 @@ Element* List::evall_bitandnot(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '&~' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_and_not(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -7809,11 +7819,16 @@ Element* List::evall_bitor(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '|' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_or(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -7886,11 +7901,16 @@ Element* List::evall_bitxor(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '^' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_xor(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -7963,11 +7983,16 @@ Element* List::evall_divide(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '/' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->divide(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8040,11 +8065,16 @@ Element* List::evall_minus(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '-' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->minus(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8118,11 +8148,16 @@ Element* List::evall_mod(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '%' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->mod(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8196,11 +8231,16 @@ Element* List::evall_multiply(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '*' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->multiply(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8336,11 +8376,22 @@ Element* List::evall_plus(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return emptystring_;
+                    }
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    return lst;
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->plus(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8415,11 +8466,16 @@ Element* List::evall_leftshift(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '<<' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->leftshift(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8493,11 +8549,16 @@ Element* List::evall_rightshift(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '>>' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->rightshift(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8571,11 +8632,16 @@ Element* List::evall_power(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '^^' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->power(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8664,15 +8730,18 @@ Element* List::evall_bitandequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -8688,15 +8757,21 @@ Element* List::evall_bitandequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '&' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_and(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8739,6 +8814,9 @@ Element* List::evall_bitandequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -8748,10 +8826,11 @@ Element* List::evall_bitandequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -8767,15 +8846,18 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -8791,15 +8873,21 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '&~' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_and_not(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8842,6 +8930,9 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -8851,10 +8942,11 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -8870,15 +8962,18 @@ Element* List::evall_bitorequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -8894,15 +8989,21 @@ Element* List::evall_bitorequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '|' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_or(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -8945,6 +9046,9 @@ Element* List::evall_bitorequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -8954,10 +9058,11 @@ Element* List::evall_bitorequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -8975,15 +9080,18 @@ Element* List::evall_bitxorequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -8999,15 +9107,21 @@ Element* List::evall_bitxorequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '^' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->bit_xor(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9050,6 +9164,9 @@ Element* List::evall_bitxorequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9059,10 +9176,11 @@ Element* List::evall_bitxorequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9078,15 +9196,18 @@ Element* List::evall_divideequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9102,15 +9223,21 @@ Element* List::evall_divideequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '/' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->divide(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9153,6 +9280,9 @@ Element* List::evall_divideequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9162,10 +9292,11 @@ Element* List::evall_divideequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9181,15 +9312,18 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9205,15 +9339,21 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '<<' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->leftshift(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9256,6 +9396,9 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9265,10 +9408,11 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9284,15 +9428,18 @@ Element* List::evall_minusequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9308,15 +9455,21 @@ Element* List::evall_minusequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '-' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->minus(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9359,6 +9512,9 @@ Element* List::evall_minusequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9368,10 +9524,11 @@ Element* List::evall_minusequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9387,15 +9544,18 @@ Element* List::evall_modequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9411,15 +9571,21 @@ Element* List::evall_modequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '%' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->mod(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9462,6 +9628,9 @@ Element* List::evall_modequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9471,10 +9640,11 @@ Element* List::evall_modequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9491,15 +9661,18 @@ Element* List::evall_multiplyequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9515,15 +9688,21 @@ Element* List::evall_multiplyequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '*' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->multiply(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9566,6 +9745,9 @@ Element* List::evall_multiplyequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9575,10 +9757,11 @@ Element* List::evall_multiplyequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9594,15 +9777,18 @@ Element* List::evall_plusequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9618,15 +9804,27 @@ Element* List::evall_plusequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return emptystring_;
+                    }
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    return lst;
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->plus(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9669,8 +9867,9 @@ Element* List::evall_plusequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
-        if (exec != NULL)
+        if (exec != NULL) {
             exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9680,10 +9879,11 @@ Element* List::evall_plusequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9699,11 +9899,14 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
@@ -9728,11 +9931,16 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '>>' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->rightshift(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9775,6 +9983,9 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9784,10 +9995,11 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);
@@ -9803,15 +10015,18 @@ Element* List::evall_powerequal(LispE* lisp) {
     if (label < l_final) {
         label = -1;
         if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+            if (liste[1]->index(1)->label() < l_final)
+                throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
             exec->append(liste[1]->index(0));
+            exec->append(liste[1]->index(1));
             listsize = liste[1]->size();
             try {
-                for (i = 1; i < listsize; i++) {
+                for (i = 2; i < listsize; i++) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec;
+                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9827,15 +10042,21 @@ Element* List::evall_powerequal(LispE* lisp) {
     Element* second_element = null_;
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        if (label != -1)
+            first_element = first_element->eval(lisp)->copyatom(s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '^^' to a string");
                 case t_floats:
                 case t_shorts:
                 case t_integers:
                 case t_numbers:
-                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
                     lst = lst->power(lisp, NULL);
                     first_element->release();
                     return lst;
@@ -9878,6 +10099,9 @@ Element* List::evall_powerequal(LispE* lisp) {
         }
     }
     catch (Error* err) {
+        if (exec != NULL) {
+            exec->release();
+        }
         if (lst != this)
             lst->release();
         if (first_element != second_element)
@@ -9887,10 +10111,11 @@ Element* List::evall_powerequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->liste.item->buffer[0] = lisp->delegation->_SET_AT;
-        exec->append(first_element);
-        first_element = exec->eval(lisp);
+        exec->append(first_element->quoting(lisp));
+        exec->evall_set_at(lisp);
+        first_element->increment();
         exec->release();
+        first_element->decrementkeep();
         return first_element;
     }
     return lisp->recording_variable(first_element, label);

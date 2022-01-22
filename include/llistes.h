@@ -23,7 +23,7 @@ public:
     u_link* _next;
     u_link* _previous;
     short status;
-    uint16_t mark;
+    uint32_t mark;
     
     u_link(Element* v) {
         mark = 0;
@@ -99,9 +99,9 @@ class u_links {
 public:
     
     u_link* first;
-    uint16_t* mark;
+    uint32_t* mark;
     
-    u_links(uint16_t* m) : mark(m) {
+    u_links(uint32_t* m) : mark(m) {
         first = NULL;
     }
     
@@ -135,18 +135,12 @@ public:
     }
     
     inline void initialize(u_link* e) {
-        uint16_t m = ++*mark;
-        while (e->mark == m)
-            m = ++*mark;
-        e->mark = m;
+        e->mark = ++*mark;
     }
     
     inline void initialize() {
         if (first != NULL) {
-            uint16_t m = ++*mark;
-            while (first->mark == m)
-                m = ++*mark;
-            first->mark = m;
+            first->mark = ++*mark;
         }
     }
 
@@ -463,8 +457,8 @@ public:
 
     u_links liste;
     
-    LList(uint16_t* m) : liste(m), Element(t_llist) {}
-    LList(uint16_t* m, uint16_t s) : liste(m), Element(t_llist, s) {}
+    LList(uint32_t* m) : liste(m), Element(t_llist) {}
+    LList(uint32_t* m, uint16_t s) : liste(m), Element(t_llist, s) {}
     LList(LList* l, long idx) : liste(l->liste, idx), Element(t_llist) {}
     LList(LList* l, u_link* it) : liste(l->liste, it), Element(t_llist) {}
     
@@ -515,6 +509,19 @@ public:
         liste.push_front(e);
     }
     
+    void* begin_iter() {
+        u_links* u = new u_links(liste.mark);
+        u->first = liste.begin();
+        return u;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (u_links*)it;
+    }
+
     void beforelast(Element* e) {
         liste.insertbeforelast(e);
         e->increment();

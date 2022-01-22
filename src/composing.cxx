@@ -1130,7 +1130,7 @@ Element* List::transformargument(LispE* lisp) {
     
     //Then we evaluate the initial label
     //This is a set description
-    if (label == l_set || label == l_setn || label == l_seti) {
+    if (label >= l_set && label <= l_sets) {
         element = new Listargumentset(this);
         lisp->removefromgarbage(this);
         return lisp->push_in_garbage(element);

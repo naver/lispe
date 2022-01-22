@@ -161,9 +161,9 @@ public:
     Atome* _DICO_KEYI;
     Atome* _DICO_KEYN;
     Atome* _DICO_KEY;
-    Atome* _DICO_SETN;
-    Atome* _DICO_SETI;
-    Atome* _DICO_SET;
+    Atome* _SET_NUMBERS;
+    Atome* _SET_INTEGERS;
+    Atome* _SET_STRINGS;
     Atome* _QUOTE;
     Atome* _SET_AT;
     Element* _BREAK;
@@ -193,7 +193,7 @@ public:
 
     bool next_stop;
     char add_to_listing;
-    uint16_t mark;
+    uint32_t mark;
     
     std::atomic<bool> endtrace;
     

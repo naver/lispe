@@ -429,7 +429,7 @@ bool Listargumentdata::unify(LispE* lisp, Element* value, bool record) {
 }
 
 bool Listargumentset::unify(LispE* lisp, Element* value, bool record) {
-    if (value->type != t_set && value->type != t_setn)
+    if (!value->isSet())
         return false;
 
     liste.object = value;
@@ -478,6 +478,9 @@ bool Listargumentset::unify(LispE* lisp, Element* value, bool record) {
             //we need to build a sublist out of value...
             Element* sublist;
             switch (value->type) {
+                case t_sets:
+                    sublist = lisp->provideSet_s();
+                    break;
                 case t_seti:
                     sublist = lisp->provideSet_i();
                     break;
@@ -2167,7 +2170,9 @@ Element* List::evall_elapse(LispE* lisp) {
 Element* List::evall_emptyp(LispE* lisp) {
     
     Element* element = liste[1]->eval(lisp);
-    return booleans_[element->isEmpty()];
+    bool b = element->isEmpty();
+    element->release();
+    return booleans_[b];
 }
 
 Element* List::evall_cadr(LispE* lisp) {
@@ -2232,7 +2237,7 @@ Element* List::evall_maplist(LispE* lisp) {
     lisp->set_true_as_one();
     List* call = lisp->provideList();
     short label = -1;
-    
+    void* iter = NULL;
     
     try {
         element = liste[2]->eval(lisp);
@@ -2257,10 +2262,13 @@ Element* List::evall_maplist(LispE* lisp) {
             if (label < l_final)
                 throw new Error("Error: Wrong argument");
             
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+
             if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(element->index(0), label);
+                lisp->replacingvalue(nxt, label);
             else
-                lisp->recording(element->index(0), label);
+                lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
             switch (e->type) {
@@ -2282,13 +2290,16 @@ Element* List::evall_maplist(LispE* lisp) {
             e = e->copying(false);
             container->append(e);
             e->release();
-            for (long i = 1; i < listsz; i++) {
-                lisp->replacingvalue(element->index(i), label);
+            nxt = element->next_iter_exchange(lisp, iter);
+            while (nxt != emptyatom_) {
+                lisp->replacingvalue(nxt, label);
                 e = eval_lambda_min(lisp, (List*)op);
                 e = e->copying(false);
                 container->append(e);
                 e->release();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
+            element->clean_iter(iter);
             if (call->size())
                 lisp->replacingvalue(call->liste[1], label);
             else
@@ -2300,7 +2311,10 @@ Element* List::evall_maplist(LispE* lisp) {
             call->append(null_);
 
             methodEval met = lisp->delegation->evals[op->type];
-            call->liste[1] = element->index(0)->quoting(lisp);
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+            call->liste[1] = nxt->quoting(lisp);
+            call->liste[1]->increment();
             e = (call->*met)(lisp);
             switch (e->type) {
                 case t_string:
@@ -2321,17 +2335,21 @@ Element* List::evall_maplist(LispE* lisp) {
             e = e->copying(false);
             container->append(e);
             if (e != call->liste[1])
-                call->liste[1]->release();
+                call->liste[1]->decrement();
             e->release();
-            for (long i = 1; i < listsz; i++) {
-                call->liste[1] = element->index(i)->quoting(lisp);
+            nxt = element->next_iter_exchange(lisp, iter);
+            while (nxt != emptyatom_) {
+                call->liste[1] = nxt->quoting(lisp);
+                call->liste[1]->increment();
                 e = (call->*met)(lisp)->copying(false);
                 container->append(e);
                 if (e != call->liste[1])
-                    call->liste[1]->release();
+                    call->liste[1]->decrement();
                 e->release();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
             call->rawrelease();
+            element->clean_iter(iter);
         }
         element->release();
         op->release();
@@ -2345,7 +2363,8 @@ Element* List::evall_maplist(LispE* lisp) {
             else
                 lisp->removefromstack(label);
         }
-        
+        if (iter != NULL)
+            element->clean_iter(iter);
         call->release();
         lisp->set_true_as_true();
         element->release();
@@ -2370,6 +2389,7 @@ Element* List::evall_filterlist(LispE* lisp) {
     short ps = 1;
     List* call = lisp->provideList();
     short label = -1;
+    void* iter =  NULL;
     
     try {
         element = liste[2]->eval(lisp);
@@ -2390,14 +2410,14 @@ Element* List::evall_filterlist(LispE* lisp) {
             case t_strings:
                 result = lisp->provideStrings();
                 break;
-            case t_list:
-                result = lisp->provideList();
+            case t_string:
+                result = lisp->provideString();
                 break;
             case t_llist:
                 result = new LList(&lisp->delegation->mark);
                 break;
             default:
-                throw new Error("Error: expecting a list as argument");
+                result = lisp->provideList();
         }
 
         listsz = element->size();
@@ -2421,10 +2441,13 @@ Element* List::evall_filterlist(LispE* lisp) {
             if (label < l_final)
                 throw new Error("Error: Wrong argument");
 
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+
             if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(element->index(0), label);
+                lisp->replacingvalue(nxt, label);
             else
-                lisp->recording(element->index(0), label);
+                lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
             if (e->Boolean()) {
@@ -2433,17 +2456,19 @@ Element* List::evall_filterlist(LispE* lisp) {
                 result->append(e);
             }
             e->release();
-
-            for (long i = 1; i < listsz; i++) {
-                lisp->replacingvalue(element->index(i), label);
+            nxt = element->next_iter_exchange(lisp, iter);
+            while (nxt != emptyatom_) {
+                lisp->replacingvalue(nxt, label);
                 e = call->eval_lambda_min(lisp, (List*)op);
                 if (e->Boolean()) {
                     e->release();
-                    e = element->index(i)->copying(false);
+                    e = nxt->copying(false);
                     result->append(e);
                 }
                 e->release();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
+            element->clean_iter(iter);
             if (call->size())
                 lisp->replacingvalue(call->liste[1], call->liste[0]->label());
             else
@@ -2459,17 +2484,22 @@ Element* List::evall_filterlist(LispE* lisp) {
             }
             call->append(null_);
             methodEval met = lisp->delegation->evals[op->type];
-            for (long i = 0; i < listsz; i++) {
-                call->liste[ps] = element->index(i)->quoting(lisp);
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+            while (nxt != emptyatom_) {
+                call->liste[ps] = nxt->quoting(lisp);
+                call->liste[ps]->increment();
                 e = (call->*met)(lisp);
                 if (e->Boolean()) {
                     e->release();
-                    e = element->index(i)->copying(false);
+                    e = nxt->copying(false);
                     result->append(e);
                 }
                 e->release();
-                call->liste[ps]->release();
+                call->liste[ps]->decrement();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
+            element->clean_iter(iter);
             call->rawrelease();
         }
         element->release();
@@ -2487,6 +2517,8 @@ Element* List::evall_filterlist(LispE* lisp) {
         
         call->release();
         lisp->set_true_as_true();
+        if (iter != NULL)
+            element->clean_iter(iter);
         element->release();
         op->release();
         result->release();
@@ -2508,6 +2540,7 @@ Element* List::evall_takelist(LispE* lisp) {
     short ps = 1;
     List* call = lisp->provideList();
     short label = -1;
+    void* iter = NULL;
     
     try {
         element = liste[2]->eval(lisp);
@@ -2528,14 +2561,14 @@ Element* List::evall_takelist(LispE* lisp) {
             case t_strings:
                 result = lisp->provideStrings();
                 break;
-            case t_list:
-                result = lisp->provideList();
+            case t_string:
+                result = lisp->provideString();
                 break;
             case t_llist:
                 result = new LList(&lisp->delegation->mark);
                 break;
             default:
-                throw new Error("Error: expecting a list as argument");
+                result = lisp->provideList();
         }
 
         listsz = element->size();
@@ -2559,10 +2592,13 @@ Element* List::evall_takelist(LispE* lisp) {
             if (label < l_final)
                 throw new Error("Error: Wrong argument");
 
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+
             if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(element->index(0), label);
+                lisp->replacingvalue(nxt, label);
             else
-                lisp->recording(element->index(0), label);
+                lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
             if (e->Boolean()) {
@@ -2574,12 +2610,13 @@ Element* List::evall_takelist(LispE* lisp) {
                 listsz = 0; //we force to stop now...
             
             e->release();
-            for (long i = 1; i < listsz; i++) {
-                lisp->replacingvalue(element->index(i), label);
+            nxt = element->next_iter_exchange(lisp, iter);
+            while (nxt != emptyatom_) {
+                lisp->replacingvalue(nxt, label);
                 e = call->eval_lambda_min(lisp, (List*)op);
                 if (e->Boolean()) {
                     e->release();
-                    e = element->index(i)->copying(false);
+                    e = nxt->copying(false);
                     result->append(e);
                 }
                 else {
@@ -2587,7 +2624,9 @@ Element* List::evall_takelist(LispE* lisp) {
                     break;
                 }
                 e->release();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
+            element->clean_iter(iter);
             if (call->size())
                 lisp->replacingvalue(call->liste[1], call->liste[0]->label());
             else
@@ -2603,22 +2642,28 @@ Element* List::evall_takelist(LispE* lisp) {
             }
             call->append(null_);
             methodEval met = lisp->delegation->evals[op->type];
-            for (long i = 0; i < listsz; i++) {
-                call->liste[ps] = element->index(i)->quoting(lisp);
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+
+            while (nxt != emptyatom_) {
+                call->liste[ps] = nxt->quoting(lisp);
+                call->liste[ps]->increment();
                 e = (call->*met)(lisp);
                 if (e->Boolean()) {
                     e->release();
-                    e = element->index(i)->copying(false);
+                    e = nxt->copying(false);
                     result->append(e);
                     e->release();
                 }
                 else {
                     e->release();
-                    call->liste[ps]->release();
+                    call->liste[ps]->decrement();
                     break;
                 }
-                call->liste[ps]->release();
+                call->liste[ps]->decrement();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
+            element->clean_iter(iter);
             call->rawrelease();
         }
         element->release();
@@ -2634,6 +2679,8 @@ Element* List::evall_takelist(LispE* lisp) {
                 lisp->removefromstack(label);
         }
         
+        if (iter != NULL)
+            element->clean_iter(iter);
         call->release();
         lisp->set_true_as_true();
         element->release();
@@ -2657,6 +2704,7 @@ Element* List::evall_droplist(LispE* lisp) {
     short ps = 1;
     List* call = lisp->provideList();
     short label = -1;
+    void* iter = NULL;
     
     try {
         element = liste[2]->eval(lisp);
@@ -2677,14 +2725,14 @@ Element* List::evall_droplist(LispE* lisp) {
             case t_strings:
                 result = lisp->provideStrings();
                 break;
-            case t_list:
-                result = lisp->provideList();
+            case t_string:
+                result = lisp->provideString();
                 break;
             case t_llist:
                 result = new LList(&lisp->delegation->mark);
                 break;
             default:
-                throw new Error("Error: expecting a list as argument");
+                result = lisp->provideList();
         }
 
         listsz = element->size();
@@ -2709,10 +2757,13 @@ Element* List::evall_droplist(LispE* lisp) {
             if (label < l_final)
                 throw new Error("Error: Wrong argument");
 
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+
             if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(element->index(0), label);
+                lisp->replacingvalue(nxt, label);
             else
-                lisp->recording(element->index(0), label);
+                lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
             if (e->Boolean()) {
@@ -2722,18 +2773,21 @@ Element* List::evall_droplist(LispE* lisp) {
                 add = true;
             }
             e->release();
-            
-            for (long i = 1; i < listsz; i++) {
-                lisp->replacingvalue(element->index(i), label);
+            nxt = element->next_iter_exchange(lisp, iter);
+
+            while (nxt != emptyatom_) {
+                lisp->replacingvalue(nxt, label);
                 e = call->eval_lambda_min(lisp, (List*)op);
                 if (add || e->Boolean()) {
                     e->release();
-                    e = element->index(i)->copying(false);
+                    e = nxt->copying(false);
                     result->append(e);
                     add = true;
                 }
                 e->release();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
+            element->clean_iter(iter);
             if (call->size())
                 lisp->replacingvalue(call->liste[1], call->liste[0]->label());
             else
@@ -2749,18 +2803,24 @@ Element* List::evall_droplist(LispE* lisp) {
             }
             call->append(null_);
             methodEval met = lisp->delegation->evals[op->type];
-            for (long i = 0; i < listsz; i++) {
-                call->liste[ps] = element->index(i)->quoting(lisp);
+            iter = element->begin_iter();
+            Element* nxt = element->next_iter_exchange(lisp, iter);
+
+            while (nxt != emptyatom_) {
+                call->liste[ps] = nxt->quoting(lisp);
+                call->liste[ps]->increment();
                 e = (call->*met)(lisp);
                 if (add || e->Boolean()) {
                     e->release();
-                    e = element->index(i)->copying(false);
+                    e = nxt->copying(false);
                     result->append(e);
                     add = true;
                 }
                 e->release();
-                call->liste[ps]->release();
+                call->liste[ps]->decrement();
+                nxt = element->next_iter_exchange(lisp, iter);
             }
+            element->clean_iter(iter);
             call->rawrelease();
         }
         element->release();
@@ -2776,6 +2836,9 @@ Element* List::evall_droplist(LispE* lisp) {
                 lisp->removefromstack(label);
         }
         
+        if (iter != NULL)
+            element->clean_iter(iter);
+
         call->release();
         lisp->set_true_as_true();
         element->release();
@@ -6511,6 +6574,55 @@ Element* List::evall_index(LispE* lisp) {
     return result;
 }
 
+Element* List::evall_index_zero(LispE* lisp) {
+    short listsize = liste.size();
+    Element* container = liste[1];
+    Element* value = null_;
+    Element* result = null_;
+    long i = 2;
+
+    try {
+        listsize--;
+        container = container->eval(lisp);
+        result = container;
+        //The user might have provided a list of indexes
+        //which we use to traverse a complex hierarchical structure...
+        for (i = 2; i < listsize; i++) {
+            value = liste[i]->eval(lisp);
+            result = result->protected_index(lisp, value);
+            value->release();
+        }
+        
+        value = liste[i]->eval(lisp);
+        short the_type = result->type;
+        result = result->value_on_index(lisp, value);
+        value->release();
+        if (result == null_) {
+            if (the_type == t_string || the_type == t_strings || the_type == t_sets)
+                return emptystring_;
+            return zero_;
+
+        }
+        
+        if (container->element_container()) {
+            result->increment();
+            container->release();
+            result->decrementkeep();
+        }
+        else
+            container->release();
+    }
+    catch (Error* err) {
+        container->release();
+        value->release();
+        result->release();
+        throw err;
+    }
+
+    return result;
+}
+
+
 Element* List::evall_set_at(LispE* lisp) {
     short listsize = liste.size();
     Element* container = liste[1];
@@ -8255,8 +8367,64 @@ Element* List::evall_set(LispE* lisp) {
     try {
         for (long e = 1; e < listsz; e++) {
             values = liste[e]->eval(lisp);
-            if (values->type == t_set)
-                n->ensemble = ((Set*)values)->ensemble;
+            n->add(lisp, values);
+            _releasing(values);
+        }
+    }
+    catch (Error* err) {
+        delete n;
+        values->release();
+        throw err;
+    }
+
+    return n;
+}
+
+Element* List::evall_sets(LispE* lisp) {
+    long listsz = size();
+    if (listsz == 1)
+        return lisp->provideSet_s();
+
+    Set_s* n = lisp->provideSet_s();
+    Element* values = null_;
+
+    try {
+        values = liste[1]->eval(lisp);
+        if (values->isSet()) {
+            if (values->type == t_sets)
+                n->ensemble = ((Set_s*)values)->ensemble;
+            else {
+                void* iter = values->begin_iter();
+                Element* nxt = values->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    n->ensemble.insert(nxt->asUString(lisp));
+                    nxt = values->next_iter_exchange(lisp, iter);
+                }
+                values->clean_iter(iter);
+            }
+        }
+        else {
+            if (values->isList()) {
+                for (long i = 0; i < values->size(); i++) {
+                    n->add(values->index(i)->asUString(lisp));
+                }
+            }
+            else
+                n->add(values->asUString(lisp));
+        }
+        _releasing(values);
+
+        for (long e = 2; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->isSet()) {
+                void* iter = values->begin_iter();
+                Element* nxt = values->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    n->ensemble.insert(nxt->asUString(lisp));
+                    nxt = values->next_iter_exchange(lisp, iter);
+                }
+                values->clean_iter(iter);
+            }
             else {
                 if (values->isList()) {
                     for (long i = 0; i < values->size(); i++) {
@@ -8287,12 +8455,43 @@ Element* List::evall_seti(LispE* lisp) {
     Set_i* n = lisp->provideSet_i();
     Element* values = null_;
 
-
     try {
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
+        values = liste[1]->eval(lisp);
+        if (values->isSet()) {
             if (values->type == t_seti)
                 n->ensemble = ((Set_i*)values)->ensemble;
+            else {
+                void* iter = values->begin_iter();
+                Element* nxt = values->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    n->ensemble.insert(nxt->asInteger());
+                    nxt = values->next_iter_exchange(lisp, iter);
+                }
+                values->clean_iter(iter);
+            }
+        }
+        else {
+            if (values->isList()) {
+                for (long i = 0; i < values->size(); i++) {
+                    n->add(values->index(i)->asInteger());
+                }
+            }
+            else
+                n->add(values->asNumber());
+        }
+        _releasing(values);
+
+        for (long e = 2; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->isSet()) {
+                void* iter = values->begin_iter();
+                Element* nxt = values->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    n->ensemble.insert(nxt->asInteger());
+                    nxt = values->next_iter_exchange(lisp, iter);
+                }
+                values->clean_iter(iter);
+            }
             else {
                 if (values->isList()) {
                     for (long i = 0; i < values->size(); i++) {
@@ -8323,12 +8522,43 @@ Element* List::evall_setn(LispE* lisp) {
     Set_n* n = lisp->provideSet_n();
     Element* values = null_;
 
-
     try {
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
+        values = liste[1]->eval(lisp);
+        if (values->isSet()) {
             if (values->type == t_setn)
                 n->ensemble = ((Set_n*)values)->ensemble;
+            else {
+                void* iter = values->begin_iter();
+                Element* nxt = values->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    n->ensemble.insert(nxt->asNumber());
+                    nxt = values->next_iter_exchange(lisp, iter);
+                }
+                values->clean_iter(iter);
+            }
+        }
+        else {
+            if (values->isList()) {
+                for (long i = 0; i < values->size(); i++) {
+                    n->add(values->index(i)->asNumber());
+                }
+            }
+            else
+                n->add(values->asNumber());
+        }
+        _releasing(values);
+
+        for (long e = 2; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->isSet()) {
+                void* iter = values->begin_iter();
+                Element* nxt = values->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    n->ensemble.insert(nxt->asNumber());
+                    nxt = values->next_iter_exchange(lisp, iter);
+                }
+                values->clean_iter(iter);
+            }
             else {
                 if (values->isList()) {
                     for (long i = 0; i < values->size(); i++) {
@@ -9201,14 +9431,16 @@ Element* List::evall_sort(LispE* lisp) {
             
             List complist;
             complist.append(first_element);
-            complist.append(null_);
-            complist.append(null_);
+            complist.append(l->index(0)->quoting(lisp));
+            complist.append(l->index(0)->quoting(lisp));
             if (complist.eval(lisp)->Boolean()) {
                 first_element->release();
                 second_element->release();
                 throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
             }
-            
+            complist.replacing(1, null_);
+            complist.replacing(2, null_);
+
             l->liste.sorting(lisp, &complist);
             first_element->release();
             u_link* it = ((LList*)second_element)->liste.begin();
@@ -9227,13 +9459,15 @@ Element* List::evall_sort(LispE* lisp) {
             
             List complist;
             complist.append(first_element);
-            complist.append(null_);
-            complist.append(null_);
+            complist.append(l->index(0)->quoting(lisp));
+            complist.append(l->index(0)->quoting(lisp));
             if (complist.eval(lisp)->Boolean()) {
                 first_element->release();
                 second_element->release();
                 throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
             }
+            complist.replacing(1, null_);
+            complist.replacing(2, null_);
             l->liste.sorting(lisp, &complist);
             first_element->release();
             return second_element;

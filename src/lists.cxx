@@ -398,9 +398,12 @@ Element* Pair::cdr(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 inline bool LIST::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
-    comparison->liste[1] = item->buffer[i];
-    comparison->liste[2] = item->buffer[j];
-    return comparison->eval_Boolean(lisp, instruction);
+    comparison->liste[1] = item->buffer[i]->quoting(lisp);
+    comparison->liste[2] = item->buffer[j]->quoting(lisp);
+    bool r = comparison->eval_Boolean(lisp, instruction);
+    comparison->liste[1]->release();
+    comparison->liste[2]->release();
+    return r;
 }
 
 void LIST::sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
@@ -513,7 +516,7 @@ Element* List::minimum(LispE* lisp) {
         return null_;
     Element* v = index(0);
     for (long i = 1; i < liste.size(); i++) {
-        if (v->more(lisp, liste[i]) == true_)
+        if (v->more(lisp, liste[i])->Boolean())
             v = liste[i];
     }
     return v->copying(false);
@@ -526,7 +529,7 @@ Element* LList::minimum(LispE* lisp) {
     u_link* it = liste.begin();
     it = it->next();
     for (;it != NULL; it = it->next()) {
-        if (v->more(lisp, it->value) == true_)
+        if (v->more(lisp, it->value)->Boolean())
             v = it->value;
     }
     return v->copying(false);
@@ -537,7 +540,7 @@ Element* List::maximum(LispE* lisp) {
         return null_;
     Element* v = index(0);
     for (long i = 1; i < liste.size(); i++) {
-        if (v->less(lisp, liste[i]) == true_)
+        if (v->less(lisp, liste[i])->Boolean())
             v = liste[i];
     }
     return v->copying(false);
@@ -550,7 +553,7 @@ Element* LList::maximum(LispE* lisp) {
     u_link* it = liste.begin();
     it = it->next();
     for (;it != NULL; it = it->next()) {
-        if (v->less(lisp, it->value) == true_)
+        if (v->less(lisp, it->value)->Boolean())
             v = it->value;
     }
     return v->copying(false);
@@ -562,10 +565,10 @@ Element* List::minmax(LispE* lisp) {
     Element* v_min = index(0);
     Element* v_max = v_min;
     for (long i = 1; i < liste.size(); i++) {
-        if (v_min->more(lisp, liste[i]) == true_)
+        if (v_min->more(lisp, liste[i])->Boolean())
             v_min = liste[i];
         else {
-            if (v_max->less(lisp, liste[i]) == true_)
+            if (v_max->less(lisp, liste[i])->Boolean())
                 v_max = liste[i];
         }
     }
@@ -583,14 +586,14 @@ Element* LList::minmax(LispE* lisp) {
     u_link* it = liste.begin();
     it = it->next();
     for (; it != NULL; it = it->next()) {
-        if (v_min->more(lisp, it->value) == true_)
+        if (v_min->more(lisp, it->value)->Boolean())
             v_min = it->value;
         else {
-            if (v_max->less(lisp, it->value) == true_)
+            if (v_max->less(lisp, it->value)->Boolean())
                 v_max = it->value;
         }
     }
-    List* l = lisp->provideList();
+    LList* l = new LList(liste.mark);
     l->append(v_min);
     l->append(v_max);
     return l;
@@ -1091,7 +1094,7 @@ Element* LList::thekeys(LispE* lisp) {
 
 long List::find_element(LispE* lisp, Element* valeur, long ix) {
     for (long i = ix; i < liste.size(); i++) {
-        if (liste[i]->equal(lisp, valeur) == true_)
+        if (liste[i]->equal(lisp, valeur)->Boolean())
             return i;
     }
     return -1;
@@ -1099,7 +1102,7 @@ long List::find_element(LispE* lisp, Element* valeur, long ix) {
 
 Element* List::search_element(LispE* lisp, Element* valeur, long ix) {
     for (long i = ix; i < liste.size(); i++) {
-        if (liste[i]->equal(lisp, valeur) == true_)
+        if (liste[i]->equal(lisp, valeur)->Boolean())
             return lisp->provideInteger(i);
     }
     return null_;
@@ -1109,7 +1112,7 @@ Element* LList::search_element(LispE* lisp, Element* valeur, long ix) {
     u_link*  it = at(ix);
     long i = 0;
     for (;it != NULL; it = it->next()) {
-        if (it->value->equal(lisp, valeur) == true_)
+        if (it->value->equal(lisp, valeur)->Boolean())
             return lisp->provideInteger(i);
         i++;
     }
@@ -1118,7 +1121,7 @@ Element* LList::search_element(LispE* lisp, Element* valeur, long ix) {
 
 bool List::check_element(LispE* lisp, Element* valeur) {
     for (long i = 0; i < liste.size(); i++) {
-        if (liste[i]->equal(lisp, valeur) == true_)
+        if (liste[i]->equal(lisp, valeur)->Boolean())
             return true;
     }
     return false;
@@ -1128,7 +1131,7 @@ bool LList::check_element(LispE* lisp, Element* valeur) {
     u_link*  it = liste.begin();
     long i = 0;
     for (;it != NULL; it = it->next()) {
-        if (it->value->equal(lisp, valeur) == true_)
+        if (it->value->equal(lisp, valeur)->Boolean())
             return true;
         i++;
     }
@@ -1138,7 +1141,7 @@ bool LList::check_element(LispE* lisp, Element* valeur) {
 Element* List::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
     long nb = 0;
     for (long i = 0; i < liste.size(); i++) {
-        if (liste[i]->equal(lisp, valeur) == true_) {
+        if (liste[i]->equal(lisp, valeur)->Boolean()) {
             replacing(i, remp->copying(false));
             nb++;
         }
@@ -1150,7 +1153,7 @@ Element* LList::replace_all_elements(LispE* lisp, Element* valeur, Element* remp
     u_link* a = liste.begin();
     long nb = 0;
     for (; a != NULL; a = a->next()) {
-        if (a->value->equal(lisp, valeur) == true_) {
+        if (a->value->equal(lisp, valeur)->Boolean()) {
             if (a->value != remp) {
                 a->value->decrement();
                 a->value = remp->copying(false);
@@ -1166,7 +1169,7 @@ Element* List::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     long sz = liste.size();
     for (long i = ix; i < sz; i++) {
-        if (liste[i]->equal(lisp, valeur) == true_) {
+        if (liste[i]->equal(lisp, valeur)->Boolean()) {
             l->liste.push_back(i);
         }
     }
@@ -1181,7 +1184,7 @@ Element* LList::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     u_link* a = at(ix);
     for (; a != NULL; a = a->next()) {
-        if (a->value->equal(lisp, valeur) == true_) {
+        if (a->value->equal(lisp, valeur)->Boolean()) {
             l->liste.push_back(ix);
         }
         ix++;
@@ -1197,7 +1200,7 @@ Element* List::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
     long sz = liste.size();
     for (long i = ix; i < sz; i++) {
-        if (liste[i]->equal(lisp, valeur) == true_) {
+        if (liste[i]->equal(lisp, valeur)->Boolean()) {
             nb++;
         }
     }
@@ -1208,7 +1211,7 @@ Element* LList::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
     u_link* a = at(ix);
     for (; a != NULL; a = a->next()) {
-        if (a->value->equal(lisp, valeur) == true_) {
+        if (a->value->equal(lisp, valeur)->Boolean()) {
             nb++;
         }
         ix++;
@@ -1454,7 +1457,7 @@ Element* LList::list_xor(LispE* lisp, Element* value) {
 
 Element* List::search_reverse(LispE* lisp, Element* valeur, long ix) {
     for (long i = liste.size() - 1; i >= ix; i--) {
-        if (liste[i]->equal(lisp, valeur) == true_)
+        if (liste[i]->equal(lisp, valeur)->Boolean())
             return lisp->provideInteger(i);
     }
     return minusone_;
@@ -1463,7 +1466,7 @@ Element* List::search_reverse(LispE* lisp, Element* valeur, long ix) {
 Element* LList::search_reverse(LispE* lisp, Element* valeur, long ix) {
     u_link* it = liste.b_at(ix);
     for (; it != NULL; it = it->previous()) {
-        if (it->value->equal(lisp, valeur) == true_)
+        if (it->value->equal(lisp, valeur)->Boolean())
             return lisp->provideInteger(ix);
         if (!ix)
             break;
@@ -3576,7 +3579,7 @@ Element* Integers::minmax(LispE* lisp) {
                 v_max = liste[i];
         }
     }
-    Floats* f = lisp->provideFloats();
+    Integers* f = lisp->provideIntegers();
     f->liste.push_back(v_min);
     f->liste.push_back(v_max);
     return f;
@@ -7189,5 +7192,133 @@ Element* Tenseur_float::reversion(LispE* lisp, Element* value, long pos, long ax
 
 Element* Tenseur_float::rotate(LispE* lisp, long axis) {
     return reversion(lisp, this, 0, axis, true);
+}
+
+
+Element* LList::next_iter(LispE* lisp, void* it) {
+    u_links* a = (u_links*)it;
+    if (a->first == NULL)
+        return emptyatom_;
+    Element* e = a->first->value;
+    a->first = a->first->next();
+    return e;
+}
+
+Element* LList::next_iter_exchange(LispE* lisp, void* it) {
+    u_links* a = (u_links*)it;
+    if (a->first == NULL)
+        return emptyatom_;
+    Element* e = a->first->value;
+    a->first = a->first->next();
+    return e;
+}
+
+
+Element* List::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    Element* e = liste[n[0]];
+    n[0]++;
+    return e;
+}
+
+Element* List::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    Element* e = liste[n[0]];
+    n[0]++;
+    return e;
+}
+
+Element* Shorts::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    short v = liste[n[0]];
+    n[0]++;
+    return new Short(v);
+}
+
+Element* Shorts::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    exchange_value.integer = liste[n[0]];
+    n[0]++;
+    return &exchange_value;
+}
+
+Element* Integers::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    long v = liste[n[0]];
+    n[0]++;
+    return lisp->provideInteger(v);
+}
+
+Element* Integers::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    exchange_value.integer = liste[n[0]];
+    n[0]++;
+    return &exchange_value;
+}
+
+Element* Floats::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    float v = liste[n[0]];
+    n[0]++;
+    return lisp->provideFloat(v);
+}
+
+Element* Floats::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    exchange_value.number = liste[n[0]];
+    n[0]++;
+    return &exchange_value;
+}
+
+Element* Numbers::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    double v = liste[n[0]];
+    n[0]++;
+    return lisp->provideNumber(v);
+}
+
+Element* Numbers::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    exchange_value.number = liste[n[0]];
+    n[0]++;
+    return &exchange_value;
+}
+
+Element* Strings::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    u_ustring v = liste[n[0]];
+    n[0]++;
+    return lisp->provideString(v);
+}
+
+Element* Strings::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == liste.size())
+        return emptyatom_;
+    exchange_value.content = liste[n[0]];
+    n[0]++;
+    return &exchange_value;
 }
 

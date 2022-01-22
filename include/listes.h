@@ -571,6 +571,19 @@ public:
         return (liste.size() > 1 && liste[0]->label() >= l_lambda && liste[0]->label() <= l_defpat);
     }
 
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
+    }
+
     bool check_arity(LispE* lisp, unsigned long arity) {
         if (isFunction()) {
             unsigned long arity_function;
@@ -1226,6 +1239,7 @@ public:
     Element* evall_ife(LispE* lisp);
     Element* evall_in(LispE* lisp);
     Element* evall_index(LispE* lisp);
+    Element* evall_index_zero(LispE* lisp);
     Element* evall_infix(LispE* lisp);
     Element* evall_innerproduct(LispE* lisp);
     Element* evall_input(LispE* lisp);
@@ -1325,6 +1339,7 @@ public:
     Element* evall_search(LispE* lisp);
     Element* evall_searchall(LispE* lisp);
     Element* evall_select(LispE* lisp);
+    Element* evall_sets(LispE* lisp);
     Element* evall_set(LispE* lisp);
     Element* evall_set_at(LispE* lisp);
     Element* evall_set_range(LispE* lisp);
@@ -1489,8 +1504,8 @@ public:
     }
     short label() {
         switch (liste[0]->type) {
-            case l_set:
-                return t_set;
+            case l_sets:
+                return t_sets;
             case l_setn:
                 return t_setn;
             default:
@@ -1756,6 +1771,19 @@ public:
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
+
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
+    }
 
     Element* rotate(LispE* lisp, long axis) {
         Floats* n = new Floats;
@@ -2206,6 +2234,19 @@ public:
     Element* maximum(LispE*);
     Element* minmax(LispE*);
 
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
+    }
+
     Element* rotate(LispE* lisp, long axis) {
         Numbers* n = new Numbers;
         for (long i = liste.size()-1; i >= 0; i--)
@@ -2646,6 +2687,19 @@ public:
         }
     }
 
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
+    }
+
     Element* check_member(LispE* lisp, Element* the_set);
     
     bool isContainer() {
@@ -3030,6 +3084,19 @@ public:
                 liste.push_back(e->index(i)->asInteger());
             }
         }
+    }
+
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
     }
 
     Element* check_member(LispE* lisp, Element* the_set);
@@ -4377,6 +4444,19 @@ public:
     
     Element* check_member(LispE* lisp, Element* the_set);
     
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
+    }
+
     void concatenate(LispE* lisp, Element* e) {
         if (!e->isList())
             liste.push_back(e->asUString(lisp));
