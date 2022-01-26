@@ -604,7 +604,8 @@ public:
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
-    
+    bool isequal(LispE* lisp, Element* value);
+
     virtual Element* fullcopy() {
         if (liste.marking)
             return liste.object;
@@ -1273,6 +1274,7 @@ public:
     Element* evall_lock(LispE* lisp);
     Element* evall_loop(LispE* lisp);
     Element* evall_loopcount(LispE* lisp);
+    Element* evall_compare(LispE* lisp);
     Element* evall_lower(LispE* lisp);
     Element* evall_lowerorequal(LispE* lisp);
     Element* evall_lubksb(LispE* lisp);
@@ -1361,6 +1363,7 @@ public:
     Element* evall_threadclear(LispE* lisp);
     Element* evall_threadretrieve(LispE* lisp);
     Element* evall_threadstore(LispE* lisp);
+    Element* evall_heap(LispE* lisp);
     Element* evall_throw(LispE* lisp);
     Element* evall_trace(LispE* lisp);
     Element* evall_transpose(LispE* lisp);
@@ -1838,7 +1841,8 @@ public:
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
-    
+    bool isequal(LispE* lisp, Element* value);
+
     virtual Element* fullcopy() {
         Floats* e = new Floats;
         e->liste = liste;
@@ -2300,6 +2304,8 @@ public:
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
+    bool isequal(LispE* lisp, Element* value);
+
     
     virtual Element* fullcopy() {
         Numbers* e = new Numbers;
@@ -2746,6 +2752,8 @@ public:
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
+    bool isequal(LispE* lisp, Element* value);
+
     
     virtual Element* fullcopy() {
         Shorts* e = new Shorts;
@@ -3145,6 +3153,8 @@ public:
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
+    bool isequal(LispE* lisp, Element* value);
+
     
     virtual Element* fullcopy() {
         Integers* e = new Integers;
@@ -4514,7 +4524,8 @@ public:
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
-    
+    bool isequal(LispE* lisp, Element* value);
+
     virtual Element* fullcopy() {
         Strings* e = new Strings();
         e->liste = liste;

@@ -15,6 +15,7 @@
 #include <math.h>
 #include <algorithm>
 
+
 Element* Dictionarypool::newInstance() {
     return lisp->provideDictionary();
 }

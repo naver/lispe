@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.22.8.26";
+static std::string version = "1.2022.1.26.13.14";
 string LispVersion() {
     return version;
 }
@@ -280,6 +280,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_multiloop, "mloop", P_ATLEASTFOUR, &List::multiloop);
     set_instruction(l_polyloop, "lloop", P_ATLEASTFOUR, &List::polyloop);
     set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE, &List::evall_loopcount);
+    set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare);
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower);
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal);
     set_instruction(l_maplist, "maplist", P_THREE, &List::evall_maplist);
@@ -362,6 +363,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_throw, "throw", P_TWO, &List::evall_throw);
     set_instruction(l_trace, "trace", P_ONE | P_TWO, &List::evall_trace);
     set_instruction(l_transpose, "transpose", P_TWO, &List::evall_transpose);
+    set_instruction(l_heap, "heap", P_ATLEASTTWO, &List::evall_heap);
     set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger);
     set_instruction(l_type, "type", P_TWO, &List::evall_type);
     set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
@@ -460,6 +462,7 @@ void Delegation::initialisation(LispE* lisp) {
     operators[l_equalonezero] = true;
     operators[l_different] = true;
     operators[l_lower] = true;
+    operators[l_compare] = true;
     operators[l_greater] = true;
     operators[l_lowerorequal] = true;
     operators[l_greaterorequal] = true;
@@ -476,6 +479,7 @@ void Delegation::initialisation(LispE* lisp) {
     comparators[l_equalonezero] = true;
     comparators[l_different] = true;
     comparators[l_lower] = true;
+    comparators[l_compare] = true;
     comparators[l_greater] = true;
     comparators[l_lowerorequal] = true;
     comparators[l_greaterorequal] = true;
@@ -541,7 +545,8 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_pattern] = U"pattern_";
     code_to_string[t_lambda] = U"lambda_";
     code_to_string[t_thread] = U"thread_";
-    
+    code_to_string[t_heap] = U"tree_";
+
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
 
@@ -635,6 +640,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_numbers);
     provideAtomType(t_integers);
     provideAtomType(t_list);
+    provideAtomType(t_heap);
     provideAtomType(t_llist);
     provideAtomType(t_matrix);
     provideAtomType(t_matrix_float);
@@ -2161,6 +2167,14 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
+
+
+
 
 
 

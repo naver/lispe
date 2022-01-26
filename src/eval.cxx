@@ -9,6 +9,7 @@
 //
 
 #include "lispe.h"
+#include"avl.h"
 #include <math.h>
 #include <algorithm>
 #include <thread>
@@ -155,6 +156,10 @@ bool Atome::isExecutable(LispE* lisp) {
 //------------------------------------------------------------------------------------------
 //null_ unifies with all
 bool Element::unify(LispE* lisp, Element* value, bool record) {
+    return (this == null_ || value == this);
+}
+
+bool Element::isequal(LispE* lisp, Element* value) {
     return (this == null_ || value == this);
 }
 
@@ -872,6 +877,214 @@ bool Integers::unify(LispE* lisp, Element* value, bool record) {
 }
 
 bool Strings::unify(LispE* lisp, Element* value, bool record) {
+    if (value == this)
+        return true;
+
+    long sz = liste.size();
+    long szvalue = value->size();
+    
+    if (szvalue != sz || !value->isList())
+        return false;
+
+    if (!sz)
+        return true;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] != value->index(i)->asUString(lisp)) {
+            return false;
+        }
+    }
+    return true;
+}
+//------------------------------------------------------------------------------------------
+bool List::isequal(LispE* lisp, Element* value) {
+    if (value == this)
+        return true;
+    
+    if (!value->isList())
+        return false;
+    
+    long szrules = liste.size();
+    if (!szrules)
+        return (value->isEmpty());
+
+    if (mark())
+        return (value == liste.object);
+    
+    setmark(true);
+    liste.object = value;
+    
+    long i = 0;
+
+    if (value->type == t_llist) {
+        LList* l = (LList*)value;
+        u_link* u = l->liste.begin();
+        
+        for (; u!=NULL && i < szrules; i++, u = u->next()) {
+            if (!u->value->isequal(lisp, liste[i])) {
+                setmark(false);
+                return false;
+            }
+        }
+        setmark(false);
+        return (u == NULL && i == szrules);
+    }
+        
+    long szvalue = value->size();
+    for (; i < szrules && i < szvalue; i++) {
+        if (!liste[i]->isequal(lisp, value->index(i))) {
+            setmark(false);
+            return false;
+        }
+    }
+    setmark(false);
+    return (i == szrules && i == szvalue);
+}
+
+bool LList::isequal(LispE* lisp, Element* value) {
+    if (value == this)
+        return true;
+    if (!value->isList())
+        return false;
+    
+    if (liste.empty())
+        return (value->isEmpty());
+
+    if (value->type == t_llist) {
+        LList* l = (LList*)value;
+        u_link* u;
+        u_link* u_l;
+        for (u = liste.begin(), u_l = l->liste.begin(); u != NULL && u_l != NULL; u = u->next(), u_l = u_l->next()) {
+            if (!u->value->isequal(lisp, u_l->value))
+                return false;
+        }
+        return (u == NULL && u_l == NULL);
+    }
+    
+    long szvalue = value->size();
+    long ivalue = 0;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    u_link* i_rule = liste.begin();
+    for (; i_rule != NULL && ivalue < szvalue; ivalue++, i_rule = i_rule->next()) {
+        if (!i_rule->value->isequal(lisp, value->index(ivalue)))
+            return false;
+    }
+    return (i_rule == NULL && ivalue == szvalue);
+}
+
+/*
+ This is the reason why we have a 'record' Boolean.
+ When we use unify in the context of a pattern function, then record is true, as Atom is then a variable name
+ When we use unify to compare structures, then record is false, and if there is no match, it is an error
+ */
+bool Atome::isequal(LispE* lisp, Element* value) {
+    //This is a case, when we record our value into the stack
+    return (value == this || lisp->checkAncestor(this, value));
+}
+
+bool Floats::isequal(LispE* lisp, Element* value) {
+    if (value == this)
+        return true;
+
+    long sz = liste.size();
+    long szvalue = value->size();
+    
+    if (szvalue != sz || !value->isList())
+        return false;
+
+    if (!sz)
+        return true;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] != value->index(i)->asFloat()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Numbers::isequal(LispE* lisp, Element* value) {
+    if (value == this)
+        return true;
+
+    long sz = liste.size();
+    long szvalue = value->size();
+    
+    if (szvalue != sz || !value->isList())
+        return false;
+
+    if (!sz)
+        return true;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] != value->index(i)->asNumber()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Shorts::isequal(LispE* lisp, Element* value) {
+    if (value == this)
+        return true;
+
+    long sz = liste.size();
+    long szvalue = value->size();
+    
+    if (szvalue != sz || !value->isList())
+        return false;
+
+    if (!sz)
+        return true;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] != value->index(i)->asShort()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Integers::isequal(LispE* lisp, Element* value) {
+    if (value == this)
+        return true;
+
+    long sz = liste.size();
+    long szvalue = value->size();
+    
+    if (szvalue != sz || !value->isList())
+        return false;
+
+    if (!sz)
+        return true;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] != value->index(i)->asInteger()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Strings::isequal(LispE* lisp, Element* value) {
     if (value == this)
         return true;
 
@@ -4561,7 +4774,7 @@ Element* List::evall_equalonezero(LispE* lisp) {
         l2 = liste[2]->eval(lisp);
         
         if (!l1->isList() || !l2->isList()) {
-            bool test = l1->unify(lisp, l2, false);
+            bool test = l1->isequal(lisp, l2);
             l1->release();
             l2->release();
             return numbools_[test];
@@ -4569,7 +4782,7 @@ Element* List::evall_equalonezero(LispE* lisp) {
         
         res = lisp->provideIntegers();
         for (long i = 0; i < l1->size() && i < l2->size(); i++) {
-            if (l1->index(i)->unify(lisp, l2->index(i), false))
+            if (l1->index(i)->isequal(lisp, l2->index(i)))
                 res->liste.push_back(1);
             else
                 res->liste.push_back(0);
@@ -5710,7 +5923,7 @@ Element* List::evall_different(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        test = first_element->unify(lisp, second_element, false);
+        test = first_element->isequal(lisp, second_element);
         first_element->release();
         second_element->release();
     }
@@ -5768,7 +5981,7 @@ Element* List::evall_equal(LispE* lisp) {
     try {
         first_element = liste[1]->eval(lisp);
         second_element = liste[2]->eval(lisp);
-        test = first_element->unify(lisp, second_element, false);
+        test = first_element->isequal(lisp, second_element);
         first_element->release();
         second_element->release();
     }
@@ -7267,6 +7480,38 @@ Element* List::evall_list(LispE* lisp) {
     return first_element;
 }
 
+Element* List::evall_heap(LispE* lisp) {
+    short listsize = liste.size();
+    Element* oper = liste[0];
+    List* compare = lisp->provideList();
+    Heap* tas = NULL;
+    Element* second_element = null_;
+
+
+    try {
+        oper = liste[1]->eval(lisp);
+        if (oper == null_ || oper->size() == 0)
+            oper = lisp->provideAtom(l_compare);
+        
+        compare->append(oper);
+        compare->append(null_);
+        compare->append(null_);
+        tas =  new Heap(compare);
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            tas->insert(lisp, second_element->copying(false));
+        }
+    }
+    catch (Error* err) {
+        compare->release();
+        if (tas != NULL)
+            tas->release();
+        throw err;
+    }
+
+    return tas;
+}
+
 
 Element* List::evall_llist(LispE* lisp) {
     short listsize = liste.size();
@@ -7318,30 +7563,35 @@ Element* List::evall_to_llist(LispE* lisp) {
 
     try {
         second_element = liste[1]->eval(lisp);
-        if (second_element->isSet()) {
-            first_element = new LList(&lisp->delegation->mark);
-            void* iter = second_element->begin_iter();
-            Element* next_value = second_element->next_iter(lisp, iter);
-            while (next_value != emptyatom_) {
-                if (second_element->check_element(lisp, next_value))
-                    first_element->push_front(next_value);
-                next_value = second_element->next_iter(lisp, iter);
-            }
-            second_element->clean_iter(iter);
+        if (second_element->type == t_heap) {
+            first_element = (LList*)((Heap*)second_element)->asLList(lisp);
         }
         else {
-            if (second_element->isList()) {
-                if (second_element->type == l_llist)
-                    return second_element;
-                
+            if (second_element->isSet()) {
                 first_element = new LList(&lisp->delegation->mark);
-                for (long i = second_element->size() - 1; i >= 0; i--) {
-                    first_element->push_front(second_element->index(i)->copying(false));
+                void* iter = second_element->begin_iter();
+                Element* next_value = second_element->next_iter(lisp, iter);
+                while (next_value != emptyatom_) {
+                    if (second_element->check_element(lisp, next_value))
+                        first_element->push_front(next_value);
+                    next_value = second_element->next_iter(lisp, iter);
                 }
+                second_element->clean_iter(iter);
             }
             else {
-                first_element = new LList(&lisp->delegation->mark);
-                first_element->push_front(second_element->copying(false));
+                if (second_element->isList()) {
+                    if (second_element->type == l_llist)
+                        return second_element;
+                    
+                    first_element = new LList(&lisp->delegation->mark);
+                    for (long i = second_element->size() - 1; i >= 0; i--) {
+                        first_element->push_front(second_element->index(i)->copying(false));
+                    }
+                }
+                else {
+                    first_element = new LList(&lisp->delegation->mark);
+                    first_element->push_front(second_element->copying(false));
+                }
             }
         }
         second_element->release();
@@ -7621,6 +7871,35 @@ Element* List::evall_loopcount(LispE* lisp) {
     return second_element;
 }
 
+Element* List::evall_compare(LispE* lisp) {
+    Element* first_element = null_;
+    Element* second_element = null_;
+    Element* test = true_;
+
+
+    try {
+        first_element = liste[1]->eval(lisp);
+        second_element = liste[2]->eval(lisp);
+        if (first_element->isequal(lisp, second_element))
+            test = zero_;
+        else {
+            test = first_element->less(lisp, second_element);
+            if (test->Boolean())
+                test = minusone_;
+            else
+                test = one_;
+        }
+        first_element->release();
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return test;
+}
 
 Element* List::evall_lower(LispE* lisp) {
     short listsize = liste.size();

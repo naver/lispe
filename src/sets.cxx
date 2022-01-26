@@ -12,6 +12,7 @@
 
 #include "lispe.h"
 #include "tools.h"
+#include "avl.h"
 #include <math.h>
 #include <algorithm>
 
@@ -1869,3 +1870,783 @@ void Setpool::release() {
         lisp->set_pool.push_back(this);
     }
 }
+
+
+
+Avl::Avl(Element* e) {
+    value = e;
+    value->increment();
+    same=NULL;
+    left=NULL;
+    right=NULL;
+    height=0;
+}
+
+void Avl::insertion(LispE* lisp, Avl** courant,Element* ajout, List* compare) {
+    long test;
+    if (*courant==NULL)
+        *courant= new Avl(ajout);
+    else {
+        compare->liste[2] = (*courant)->value->quoting(lisp);
+        test = compare->eval(lisp)->asInteger();
+        compare->liste[2]->release();
+        if (!test) {
+            Avl* dernier=*courant;
+            //On va chercher le dernier element de la liste
+            while (dernier->same!=NULL)
+                dernier=dernier->same;
+            dernier->same= new Avl(ajout);
+        }
+        else {
+            if (test < 0)
+                insertion(lisp, &(*courant)->left,ajout,compare);
+            else
+                insertion(lisp, &(*courant)->right,ajout,compare);
+            check_height(courant);
+        }
+    }
+}
+
+void Avl::tree_shape(Avl** courant,long& type) {
+    long hg,hd;
+    Avl* element;
+
+    element=*courant;
+    if (type<11 && element !=NULL) {
+        if (element->left !=NULL)
+            hg=(element->left)->height;
+        else
+            hg=-1;
+        if (element->right !=NULL)
+            hd=(element->right)->height;
+        else
+            hd=-1;
+      if (hg>hd) {
+          type=type*10+1;
+          tree_shape(&element->left,type);
+      }
+      else
+          if (hg<hd || (hg==hd && hd!=-1)) {
+              type=type*10+2;
+              tree_shape(&element->right,type);
+          }
+    }
+}
+
+void Avl::check_height(Avl** courant) {
+    long hd,hg,type;
+    Avl* element;
+
+    element=*courant;
+    if (element->left !=NULL)
+        hg=1+(element->left)->height;
+    else
+        hg=0;
+    if (element->right !=NULL)
+        hd=1+(element->right)->height;
+    else
+        hd=0;
+    if (hg==hd || hg==hd+1)
+        element->height=hg;
+    else
+        if (hd==hg+1)
+            element->height=hd;
+        else {
+            type=0;
+            if (hg>hd)
+                element->height=hg;
+        else
+                element->height=hd;
+            tree_shape(courant,type);
+            rebuilding(courant,type);
+        }
+}
+
+
+void Avl::rebuilding(Avl** courant,long type) {
+    Avl* element;
+    Avl* e;
+    Avl* eg;
+    Avl* ed;
+
+    element=*courant;
+    if (type>10) {
+        switch(type) {
+        case 11:
+            e=(element->left)->right;
+            (element->left)->right=element;
+            *courant=element->left;
+            ((*courant)->right)->left=e;
+            check_height(&(*courant)->right);
+            check_height(courant);
+            break;
+        case 12:
+            eg=((element->left)->right)->left;
+            ed=((element->left)->right)->right;
+            ((element->left)->right)->left=element->left;
+            ((element->left)->right)->right=element;
+            *courant=(element->left)->right;
+            ((*courant)->left)->right=eg;
+            ((*courant)->right)->left=ed;
+            check_height(&(*courant)->left);
+            check_height(&(*courant)->right);
+            check_height(courant);
+            break;
+        case 21:
+            eg=((element->right)->left)->left;
+            ed=((element->right)->left)->right;
+            ((element->right)->left)->right=element->right;
+            ((element->right)->left)->left=element;
+            *courant=(element->right)->left;
+            ((*courant)->left)->right=eg;
+            ((*courant)->right)->left=ed;
+            check_height(&(*courant)->left);
+            check_height(&(*courant)->right);
+            check_height(courant);
+            break;
+        case 22:
+            e=(element->right)->left;
+            (element->right)->left=element;
+            *courant=element->right;
+            ((*courant)->left)->right=e;
+            check_height(&(*courant)->left);
+            check_height(courant);
+        }
+    }
+}
+
+Element* Avl::search(LispE* lisp, Element* element, List* compare) {
+    Avl* e = this;
+    long test;
+    while (e != NULL) {
+        compare->liste[2] = e->value->quoting(lisp);
+        test = compare->eval(lisp)->asInteger();
+        compare->liste[2]->release();
+        if (!test) {
+            while (e != NULL) {
+                if (e->value->isequal(lisp, element))
+                    return e->value;
+                e = e->same;
+            }
+            return NULL;
+        }
+        
+        if (test < 0)
+            e = e->left;
+        else
+            e = e->right;
+    }
+    return NULL;
+}
+
+bool Avl::check(LispE* lisp, Element* element, List* compare) {
+    Avl* e = this;
+    long test;
+    while (e != NULL) {
+        compare->liste[2] = e->value->quoting(lisp);
+        test = compare->eval(lisp)->asInteger();
+        compare->liste[2]->release();
+        if (!test) {
+            while (e != NULL) {
+                if (e->value->isequal(lisp, element))
+                    return true;
+                e = e->same;
+            }
+            return false;
+        }
+        
+        if (test < 0)
+            e = e->left;
+        else
+            e = e->right;
+    }
+    return false;
+}
+
+bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare) {
+    Avl* parent = this;
+    Avl* e=this;
+    long test;
+    char origin = 0;
+    while (e != NULL) {
+        compare->liste[2] = e->value->quoting(lisp);
+        test = compare->eval(lisp)->asInteger();
+        compare->liste[2]->release();
+        if (!test) {
+            Avl* clean = e;
+            Avl* moving = e;
+            Avl* prec = NULL;
+            while (moving != NULL) {
+                if (current->isequal(lisp, moving->value)) {
+                    break;
+                }
+                prec = moving;
+                moving = moving->same;
+            }
+            if (moving == NULL)
+                return false;
+            bool change = false;
+            if (e->same == NULL) {
+                change = true;
+                if (e->left != NULL)
+                    moving = e->left;
+                else {
+                    if (e->right != NULL)
+                        moving = e->right;
+                    else
+                        moving = NULL;
+                }
+            }
+            else {
+                if (prec == NULL) {
+                    clean = e;
+                    moving = e->same;
+                    moving->left = e->left;
+                    moving->right = e->right;
+                }
+                else {
+                    prec->same = moving->same;
+                    clean = moving;
+                    moving = e;
+                }
+            }
+            
+            //we replace the current element with moving...
+            if (!origin) {
+                //This is the root of our tree
+                *root = moving;
+            }
+            else {
+                if (origin == -1)
+                    //It was the left node
+                    parent->left = moving;
+                else
+                    parent->right = moving;
+            }
+
+            if (change)
+                check_height(root);
+            
+            clean->value->decrement();
+            delete clean;
+            return true;
+        }
+        parent= e;
+        if (test < 0) {
+            origin = -1;
+            e=e->left;
+        }
+        else {
+            origin = 1;
+            e=e->right;
+        }
+    }
+    return false;
+
+}
+
+void Avl::pop_front(Avl** root) {
+    Avl* e = this;
+    if (e->left == NULL) {
+        if (same == NULL)
+            *root = right;
+        else {
+            *root = same;
+            same->right = right;
+        }
+
+        if (*root != NULL)
+            check_height(root);
+        e->value->decrement();
+        delete e;
+        return;
+    }
+    
+    while (e->left->left != NULL)
+        e = e->left;
+    Avl* a  = e->left;
+    
+    if (a->same != NULL) {
+        e->left = a->same;
+        a->same->right = a->right;
+    }
+    else {
+        e->left = a->right;
+        check_height(root);
+    }
+    
+    a->value->decrement();
+    delete a;
+}
+
+void Avl::pop_last(Avl** root) {
+    Avl* e = this;
+    if (e->right == NULL) {
+        if (same == NULL)
+            *root = left;
+        else {
+            *root = same;
+            same->left = left;
+        }
+        if (*root != NULL)
+            check_height(root);
+        e->value->decrement();
+        delete e;
+        return;
+    }
+    
+    while (e->right->right != NULL)
+        e = e->right;
+    
+    Avl* a  = e->right;
+    if (a->same != NULL) {
+        Avl* prec = NULL;
+        while (a->same != NULL) {
+            prec = a;
+            a = a->same;
+        }
+        prec->same = NULL;
+    }
+    else {
+        e->right = a->left;
+        check_height(root);
+    }
+
+    a->value->decrement();
+    delete a;
+}
+
+bool Avl::equal(LispE* lisp, Avl* avl, bool record) {
+    if (avl == NULL)
+        return false;
+    Avl* e = this;
+    Avl* a = avl;
+    
+    while (e != NULL && a!= NULL) {
+        if (e->value->unify(lisp, a->value, record) == false)
+            return false;
+        e = e->same;
+        a = a->same;
+    }
+    if (e != a)
+        return false;
+    if (left != NULL) {
+        if (!left->equal(lisp, avl->left, record))
+            return false;
+    }
+    else {
+        if (avl->left != NULL)
+            return false;
+    }
+    if (right != NULL)
+        return right->equal(lisp, avl->right, record);
+    if (avl->right == NULL)
+        return true;
+    return false;
+}
+
+bool Avl::isequal(LispE* lisp, Avl* avl) {
+    if (avl == NULL)
+        return false;
+    Avl* e = this;
+    Avl* a = avl;
+    
+    while (e != NULL && a!= NULL) {
+        if (e->value->isequal(lisp, a->value) == false)
+            return false;
+        e = e->same;
+        a = a->same;
+    }
+    if (e != a)
+        return false;
+    if (left != NULL) {
+        if (!left->isequal(lisp, avl->left))
+            return false;
+    }
+    else {
+        if (avl->left != NULL)
+            return false;
+    }
+    if (right != NULL)
+        return right->isequal(lisp, avl->right);
+    if (avl->right == NULL)
+        return true;
+    return false;
+}
+
+Element* Avl::element(LispE* lisp) {
+    if (same == NULL)
+        return value;
+    
+    List* l = lisp->provideList();
+    Avl* e = this;
+    while (e != NULL) {
+        l->append(e->value);
+        e = e->same;
+    }
+    return l;
+}
+
+Element* Avl::element() {
+    if (same == NULL)
+        return value;
+    List* l = new List();
+    Avl* e = this;
+    while (e != NULL) {
+        l->append(e->value);
+        e = e->same;
+    }
+    return l;
+}
+
+void Avl::flatten(List* l) {
+    if (left != NULL)
+        left->flatten(l);
+    element(l);
+    if (right != NULL)
+        right->flatten(l);
+
+}
+
+void Avl::flatten(List& l) {
+    if (left != NULL)
+        left->flatten(l);
+    element(l);
+    if (right != NULL)
+        right->flatten(l);
+}
+
+void Avl::to_list(LispE* lisp, List* l) {
+    if (left != NULL)
+        left->to_list(lisp, l);
+    element(l);
+    if (right != NULL)
+        right->to_list(lisp, l);
+}
+
+void Avl::to_llist(LispE* lisp, LList* l) {
+    if (right != NULL)
+        right->to_llist(lisp, l);
+    element(l);
+    if (left != NULL)
+        left->to_llist(lisp, l);
+}
+
+void Avl::jsonString(LispE* lisp, wstring& w) {
+    if (left != NULL) {
+        left->jsonString(lisp, w);
+        w += ',';
+    }
+    Avl* e = this;
+    while (e != NULL) {
+        if (e != this)
+            w += ',';
+        w += e->value->jsonString(lisp);
+        e = e->same;
+    }
+    if (right != NULL) {
+        w += ',';
+        right->jsonString(lisp, w);
+    }
+}
+
+void Avl::asString(LispE* lisp, wstring& w) {
+    if (left != NULL) {
+        left->asString(lisp, w);
+        w += ' ';
+    }
+    Avl* e = this;
+    while (e != NULL) {
+        if (e != this)
+            w += ' ';
+        w += e->value->asString(lisp);
+        e = e->same;
+    }
+    if (right != NULL) {
+        w += ' ';
+        right->asString(lisp, w);
+    }
+}
+
+void Avl::asUString(LispE* lisp, u_ustring& w) {
+    if (left != NULL) {
+        left->asUString(lisp, w);
+        w += ' ';
+    }
+    Avl* e = this;
+    while (e != NULL) {
+        if (e != this)
+            w += ' ';
+        w += e->value->asUString(lisp);
+        e = e->same;
+    }
+    if (right != NULL) {
+        w += ' ';
+        right->asUString(lisp, w);
+    }
+}
+
+
+Element* Avl::front(LispE* lisp) {
+    Avl* e = this;
+    while (e->left != NULL)
+        e = e->left;
+    return e->value;
+}
+
+Element* Avl::back(LispE* lisp) {
+    Avl* e = this;
+    while (e->right != NULL)
+        e = e->right;
+    if (lisp == NULL)
+        return e->element();
+    while (e->same != NULL)
+        e = e->same;
+    return e->value;
+}
+
+bool Heap::check_element(LispE* lisp, Element* element_value) {
+    if (root == NULL)
+        return false;
+    compare->liste[1] = element_value->quoting(lisp);
+    compare->liste[1]->increment();
+    bool res = root->check(lisp, element_value, compare);
+    compare->liste[1]->decrement();
+    compare->liste[1] = null_;
+    compare->liste[2] = null_;
+    return res;
+}
+
+Element* Heap::search_element(LispE* lisp, Element* element_value, long idx) {
+    if (root == NULL)
+        return null_;
+    compare->liste[1] = element_value->quoting(lisp);
+    compare->liste[1]->increment();
+    Element* res = root->search(lisp, element_value, compare);
+    compare->liste[1]->decrement();
+    compare->liste[1] = null_;
+    compare->liste[2] = null_;
+    if (res == NULL)
+        return null_;
+    return res;
+}
+
+Element* Heap::insert(LispE* lisp, Element* element, long idx) {
+    if (root == NULL) {
+        root = new Avl(element);
+        return this;
+    }
+    
+    compare->liste[1] = element->quoting(lisp);
+    compare->liste[1]->increment();
+    root->insertion(lisp, &root, element, compare);
+    compare->liste[1]->decrement();
+    compare->liste[1] = null_;
+    compare->liste[2] = null_;
+    return this;
+}
+
+Element* Heap::insert(LispE* lisp, Element* element) {
+    if (root == NULL) {
+        root = new Avl(element);
+        return this;
+    }
+    
+    compare->liste[1] = element->quoting(lisp);
+    compare->liste[1]->increment();
+    root->insertion(lisp, &root, element, compare);
+    compare->liste[1]->decrement();
+    compare->liste[1] = null_;
+    compare->liste[2] = null_;
+    return this;
+}
+
+bool Heap::remove(LispE* lisp, Element* element) {
+    if (root == NULL)
+        return false;
+    
+    compare->liste[1] = element->quoting(lisp);
+    compare->liste[1]->increment();
+    bool del = root->erase(lisp, &root, element, compare);
+    compare->liste[1]->decrement();
+    compare->liste[1] = null_;
+    compare->liste[2] = null_;
+    return del;
+}
+
+
+Element* Heap::car(LispE* lisp) {
+    if (root == NULL)
+        return null_;
+    return root->front(lisp);
+}
+
+Element* Heap::index(long i) {
+    if (root == NULL)
+        return NULL;
+    if (i == -1)
+        return root->back(NULL);
+    return root->traverse(i);
+}
+
+Element* Heap::protected_index(LispE* lisp, long i) {
+    if (root == NULL)
+        return null_;
+    
+    if (i == -1)
+        return root->back(lisp);
+    
+    Element* e = root->traverse(lisp, i);
+    if (e == NULL)
+        return null_;
+    return e;
+}
+
+Element* Heap::value_from_index(LispE* lisp, long i) {
+    if (i == -1)
+        return root->back(lisp);
+    return root->traverse(lisp, i);
+}
+
+Element* Heap::value_on_index(LispE* lisp, long i) {
+    if (root == NULL)
+        return null_;
+    if (i == -1)
+        return root->back(lisp);
+    Element* e = root->traverse(lisp, i);
+    if (e == NULL)
+        return null_;
+    return e;
+}
+
+Element* Heap::value_on_index(LispE* lisp, Element* idx) {
+    long i = idx->asInteger();
+    if (root == NULL)
+        return null_;
+    if (i == -1)
+        return root->back(lisp);
+    Element* e = root->traverse(lisp, i);
+    if (e == NULL)
+        return null_;
+    return e;
+}
+
+Element* Heap::protected_index(LispE* lisp, Element* k) {
+    long i = k->asInteger();
+    if (root == NULL)
+        throw new Error("Error: index out of bounds");
+    if (i == -1)
+        return root->back(lisp);
+    Element* e = root->traverse(lisp, i);
+    if (e == NULL)
+        throw new Error("Error: index out of bounds");
+    return e;
+}
+
+Element* Heap::asList(LispE* lisp) {
+    if (root == NULL)
+        return emptylist_;
+    List* l = lisp->provideList();
+    root->to_list(lisp, l);
+    return l;
+}
+
+Element* Heap::asLList(LispE* lisp) {
+    LList* l = new LList(&lisp->delegation->mark);
+    if (root == NULL)
+        return l;
+    root->to_llist(lisp, l);
+    return l;
+}
+
+wstring Heap::jsonString(LispE* lisp) {
+    wstring r;
+    if (root == NULL) {
+        r = L"[]";
+    }
+    else {
+        r = '[';
+        root->jsonString(lisp, r);
+        r += ']';
+    }
+    return r;
+}
+
+wstring Heap::asString(LispE* lisp) {
+    wstring r;
+    if (root == NULL) {
+        r = L"()";
+    }
+    else {
+        r = '(';
+        root->asString(lisp, r);
+        r = ')';
+    }
+    return r;
+}
+
+u_ustring Heap::asUString(LispE* lisp) {
+    u_ustring r;
+    if (root == NULL) {
+        r = U"()";
+    }
+    else {
+        r = '(';
+        root->asUString(lisp, r);
+        r += ')';
+    }
+    return r;
+}
+
+
+Element* Heap::next_iter(LispE* lisp, void* it) {
+    if (it == NULL)
+        return null_;
+    Element* e = ((Iter_tree*)it)->next();
+    if (e == NULL)
+        return null_;
+    return e->copying(false);
+}
+
+Element* Heap::next_iter_exchange(LispE* lisp, void* it) {
+    if (it == NULL)
+        return emptyatom_;
+    Element* e = ((Iter_tree*)it)->next();
+    if (e == NULL)
+        return emptyatom_;
+    return e;
+}
+
+
+bool Heap::egal(Element* e) {
+    return (e->type == t_heap && root == ((Heap*)e)->root);
+}
+
+Element* Heap::loop(LispE* lisp, short label, List* code) {
+    if (root == NULL)
+        return null_;
+    
+    long i_loop;
+    Iter_tree iter(root);
+    Element* e = null_;
+    lisp->recording(null_, label);
+    long sz = code->liste.size();
+    Element* element = iter.next();
+    while (element != NULL) {
+        lisp->replacingvalue(element, label);
+        _releasing(e);
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+        element = iter.next();
+    }
+    return e;
+}
+

@@ -42,7 +42,7 @@ typedef enum {
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
-    t_dictionary, t_dictionaryi, t_dictionaryn, t_data, t_maybe,
+    t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
     t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
     
     //System instructions
@@ -79,7 +79,7 @@ typedef enum {
     l_divideequal,l_modequal,
     l_concatenate, l_sum, l_product, l_stringf, l_size,
     l_and, l_or, l_xor, l_not, l_eq, l_neq,
-    l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max,
+    l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max, l_compare,
     
     l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank,
@@ -92,7 +92,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_to_llist, l_list, l_llist, l_cons, l_flatten, l_nconc, l_nconcn, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
+    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_flatten, l_nconc, l_nconcn, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_duplicate, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti, l_sets, 
     
@@ -434,6 +434,7 @@ public:
         return (i < value->size() && unify(lisp, value->index(i), record));
     }
     
+    virtual bool isequal(LispE* lisp, Element* value);
     virtual bool unify(LispE* lisp, Element* value, bool record);
     virtual Element* check_member(LispE*, Element* s) {
         return this;
@@ -672,6 +673,8 @@ public:
     }
 
     virtual bool egal(Element* e);
+    Element* lessegal(LispE* lisp, Element* e);
+    
     virtual Element* equal(LispE* lisp, Element* e);
     virtual Element* less(LispE* lisp, Element* e);
     virtual Element* lessorequal(LispE* lisp, Element* e);
@@ -851,6 +854,10 @@ public:
         return (value->label() == t_maybe);
     }
 
+    bool isequal(LispE* lisp, Element* value) {
+        return (value->label() == t_maybe);
+    }
+
     u_ustring asUString(LispE* lisp) {
         return message;
     }
@@ -953,6 +960,7 @@ public:
     void decrement() {}
 
     bool unify(LispE* lisp, Element* value, bool record);
+    bool isequal(LispE* lisp, Element* value);
     bool isExecutable(LispE* lisp);
     
 };
@@ -1264,6 +1272,10 @@ public:
         return (value == this || value->asFloat() == number);
     }
     
+    bool isequal(LispE* lisp, Element* value) {
+        return (value == this || value->asFloat() == number);
+    }
+
     bool isNumber() {
         return true;
     }
@@ -1406,6 +1418,10 @@ public:
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
+        return (value == this || value->asNumber() == number);
+    }
+    
+    bool isequal(LispE* lisp, Element* value) {
         return (value == this || value->asNumber() == number);
     }
     
@@ -1609,7 +1625,11 @@ public:
     bool unify(LispE* lisp, Element* value, bool record) {
         return (value == this || value->asInteger() == integer);
     }
-    
+
+    bool isequal(LispE* lisp, Element* value) {
+        return (value == this || value->asInteger() == integer);
+    }
+
     Element* reverse(LispE*, bool duplique = true);
     
     u_ustring asUString(LispE* lisp) {
@@ -1760,6 +1780,10 @@ public:
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
+        return (value == this || value->asInteger() == integer);
+    }
+    
+    bool isequal(LispE* lisp, Element* value) {
         return (value == this || value->asInteger() == integer);
     }
     
@@ -2008,6 +2032,10 @@ public:
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
+        return (value == this || value->compare_string(lisp, content));
+    }
+    
+    bool isequal(LispE* lisp, Element* value, bool record) {
         return (value == this || value->compare_string(lisp, content));
     }
     
@@ -2564,7 +2592,38 @@ public:
         marking = false;
         return true;
     }
+
+    bool isequal(LispE* lisp, Element* e) {
+        if (marking)
+            return (e == object);
+        
+        if (e == this)
+            return true;
+        
+        if (e->type != t_dictionary || e->size() != dictionary.size())
+            return false;
+
+        marking = true;
+        object = e;
+
+        Dictionary* d = (Dictionary*)e;
+        for (auto& a: dictionary) {
+            try {
+                if (!d->dictionary.at(a.first)->isequal(lisp, a.second)) {
+                    marking = false;
+                    return false;
+                }
+            }
+            catch (...) {
+                marking = false;
+                return false;
+            }
+        }
+        marking = false;
+        return true;
+    }
      
+
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
@@ -3043,7 +3102,37 @@ public:
         marking = false;
         return true;
     }
-    
+
+    bool isequal(LispE* lisp, Element* e) {
+        if (marking)
+            return (object == e);
+        
+        if (e == this)
+            return true;
+        
+        if (e->type != t_dictionaryn || e->size() != dictionary.size())
+            return false;
+        
+        marking =  true;
+        object = e;
+        
+        Dictionary_n* d = (Dictionary_n*)e;
+        for (auto& a: dictionary) {
+            try {
+                if (!d->dictionary.at(a.first)->isequal(lisp, a.second)) {
+                    marking = false;
+                    return false;
+                }
+            }
+            catch (...) {
+                marking = false;
+                return false;
+            }
+        }
+        
+        marking = false;
+        return true;
+    }
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
@@ -3446,6 +3535,37 @@ public:
         for (auto& a: dictionary) {
             try {
                 if (!d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
+                    marking = false;
+                    return false;
+                }
+            }
+            catch (...) {
+                marking = false;
+                return false;
+            }
+        }
+        
+        marking = false;
+        return true;
+    }
+    
+    bool isequal(LispE* lisp, Element* e) {
+        if (marking)
+            return (object == e);
+        
+        if (e == this)
+            return true;
+        
+        if (e->type != t_dictionaryi || e->size() != dictionary.size())
+            return false;
+        
+        marking =  true;
+        object = e;
+        
+        Dictionary_i* d = (Dictionary_i*)e;
+        for (auto& a: dictionary) {
+            try {
+                if (!d->dictionary.at(a.first)->isequal(lisp, a.second)) {
                     marking = false;
                     return false;
                 }
@@ -3924,6 +4044,16 @@ public:
         return ensemble == ((Set_s*)e)->ensemble;
     }
      
+    bool isequal(LispE* lisp, Element* e) {
+        if (e == this)
+            return true;
+        
+        if (e->type != t_sets)
+            return false;
+
+        return ensemble == ((Set_s*)e)->ensemble;
+    }
+     
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
@@ -4239,6 +4369,16 @@ public:
         return ensemble == ((Set_n*)e)->ensemble;
     }
      
+    bool isequal(LispE* lisp, Element* e) {
+        if (e == this)
+            return true;
+        
+        if (e->type != t_sets)
+            return false;
+
+        return ensemble == ((Set_n*)e)->ensemble;
+    }
+     
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
     
@@ -4512,6 +4652,16 @@ public:
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     bool unify(LispE* lisp, Element* e, bool record) {
+        if (e == this)
+            return true;
+        
+        if (e->type != t_sets)
+            return false;
+
+        return ensemble == ((Set_i*)e)->ensemble;
+    }
+     
+    bool isequal(LispE* lisp, Element* e) {
         if (e == this)
             return true;
         
@@ -4810,10 +4960,28 @@ public:
         if (e == this)
             return true;
         
-        if (e->type != t_sets)
+        if (e->type != t_sets || dictionary.size() != e->size())
             return false;
 
-        return dictionary == ((Set*)e)->dictionary;
+        for (auto& a: dictionary) {
+            if (((Set*)e)->dictionary.find(a.first) != ((Set*)e)->dictionary.end())
+                return false;
+        }
+        return true;
+    }
+     
+    bool isequal(LispE* lisp, Element* e) {
+        if (e == this)
+            return true;
+        
+        if (e->type != t_sets || dictionary.size() != e->size())
+            return false;
+
+        for (auto& a: dictionary) {
+            if (((Set*)e)->dictionary.find(a.first) != ((Set*)e)->dictionary.end())
+                return false;
+        }
+        return true;
     }
      
     bool egal(Element* e);

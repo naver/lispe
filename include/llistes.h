@@ -191,6 +191,13 @@ public:
         initialize(e);
         return e;
     }
+    
+    void reset_head() {
+        if (first == NULL)
+            return;
+        while (first->_previous != NULL)
+            first = first->_previous;
+    }
 
     //Here we do not reset the marks at the end
     //of the loop.
@@ -202,6 +209,38 @@ public:
             e = e->next_mark();
         }
         return e;
+    }
+    
+    void insertbefore(Element* v) {
+        if (first == NULL) {
+            first = new u_link(v);
+            first->inc(1);
+            return;
+        }
+        u_link* u = new u_link(v);
+        if (first->_previous != NULL) {
+            first->_previous->_next = u;
+            u->_previous = first->_previous;
+        }
+        first->_previous = u;
+        u->_next = first;
+        u->inc(1);
+    }
+    
+    void insertafter(Element* v) {
+        if (first == NULL) {
+            first = new u_link(v);
+            first->inc(1);
+            return;
+        }
+        u_link* u = new u_link(v);
+        if (first->_next != NULL) {
+            first->_next->_previous = u;
+            u->_next = first->_next;
+        }
+        u->_previous = first;
+        first->_next = u;
+        u->inc(1);
     }
     
     void insertbeforelast(Element* v) {
@@ -500,6 +539,16 @@ public:
         return liste.at_e(idx);
     }
 
+    void insert_before(Element* e) {
+        liste.insertbefore(e);
+        e->increment();
+    }
+
+    void insert_after(Element* e) {
+        liste.insertafter(e);
+        e->increment();
+    }
+
     void insertion(Element* e, long idx) {
         e->increment();
         liste.insert(idx, e);
@@ -536,7 +585,8 @@ public:
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
-    
+    bool isequal(LispE* lisp, Element* value);
+
     Element* fullcopy() {
         LList* l = new LList(liste.mark);
 
@@ -949,16 +999,12 @@ public:
     void storevalue(LispE*, u_ustring& v);
     
     void pop() {
-        Element* e = liste.back();
-        e->decrement();
         liste.pop_back();
     }
 
     bool removefirst() {
         if (!liste.size())
             return false;
-        Element* e = liste.front();
-        e->decrement();
         liste.pop_front();
         return true;
     }
@@ -966,8 +1012,6 @@ public:
     bool removelast() {
         if (!liste.size())
             return false;
-        Element* e = liste.back();
-        e->decrement();
         liste.pop_back();
         return true;
     }
