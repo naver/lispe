@@ -6577,181 +6577,6 @@ Element* List::evall_in(LispE* lisp) {
     return booleans_[res];
 }
 
-
-Element* List::evall_at_index(LispE* lisp) {
-    short listsize = liste.size();
-    Element* container = liste[1];
-    Element* value = null_;
-    Element* ix = null_;
-    Element* result = null_;
-
-
-    try {
-        container = container->eval(lisp);
-        switch (container->type) {
-            case t_matrix: {
-                Matrice* m = (Matrice*)container;
-                
-                long x, y;
-                evalAsInteger(2, lisp, x);
-                if (listsize >= 4) {
-                    evalAsInteger(3, lisp, y);
-                    if (x >= m->size_x || y >= m->size_y || x < 0 || y < 0) {
-                        throw new Error("Error: indexes out of bounds");
-                    }
-                    if (listsize == 5) {
-                        value = liste[4]->eval(lisp)->copying(false);
-                        result = m->index(x)->replace(lisp, y, value);
-                        value->release();
-                        return result;
-                    }
-                    result = m->index(x)->value_on_index(lisp, y);
-                }
-                else {
-                    if (x >= m->size_x || x < 0)
-                        throw new Error("Error: indexes out of bounds");
-                    result = m->index(x);
-                }
-                
-                result->increment();
-                container->release();
-                result->decrementkeep();
-                return result;
-            }
-            case t_matrix_float: {
-                Matrice_float* m = (Matrice_float*)container;
-                
-                long x, y;
-                evalAsInteger(2, lisp, x);
-                if (listsize >= 4) {
-                    evalAsInteger(3, lisp, y);
-                    if (x >= m->size_x || y >= m->size_y || x < 0 || y < 0) {
-                        throw new Error("Error: indexes out of bounds");
-                    }
-                    if (listsize == 5) {
-                        value = liste[4]->eval(lisp)->copying(false);
-                        result = m->index(x)->replace(lisp, y, value);
-                        value->release();
-                        return result;
-                    }
-                    result = m->index(x)->value_on_index(lisp, y);
-                }
-                else {
-                    if (x >= m->size_x || x < 0)
-                        throw new Error("Error: indexes out of bounds");
-                    result = m->index(x);
-                }
-                
-                result->increment();
-                container->release();
-                result->decrementkeep();
-                return result;
-            }
-            case t_tensor: {
-                Tenseur* m = (Tenseur*)container;
-                long i_dx;
-                result = m;
-                long i;
-                if (m->shape.size() == listsize - 3) {
-                    for (i = 2; i < listsize - 2; i++) {
-                        evalAsInteger(i, lisp, i_dx);
-                        if (i_dx < 0 || i_dx >= m->shape[i-2])
-                            throw new Error("Error: out of bounds indexes");
-                        result = result->index(i_dx);
-                    }
-                    evalAsInteger(i++, lisp, i_dx);
-                    value = liste[i]->eval(lisp);
-                    result->replacing(i_dx, value);
-                    return result;
-                }
-                
-                if (m->shape.size() < listsize - 2)
-                    throw new Error("Error: out of bounds indexes");
-                
-                for (i = 2; i < listsize - 1; i++) {
-                    evalAsInteger(i, lisp, i_dx);
-                    if (i_dx < 0 || i_dx >= m->shape[i-2])
-                        throw new Error("Error: out of bounds indexes");
-                    result = result->index(i_dx);
-                }
-                
-                evalAsInteger(i, lisp, i_dx);
-                if (i_dx < 0 || i_dx >= m->shape[i-2])
-                    throw new Error("Error: out of bounds indexes");
-                result = result->value_on_index(lisp, i_dx);
-                
-                result->increment();
-                container->release();
-                result->decrementkeep();
-                return result;
-            }
-            case t_tensor_float: {
-                Tenseur_float* m = (Tenseur_float*)container;
-                long i_dx;
-                result = m;
-                long i;
-                if (m->shape.size() == listsize - 3) {
-                    for (i = 2; i < listsize - 2; i++) {
-                        evalAsInteger(i, lisp, i_dx);
-                        if (i_dx < 0 || i_dx >= m->shape[i-2])
-                            throw new Error("Error: out of bounds indexes");
-                        result = result->index(i_dx);
-                    }
-                    evalAsInteger(i++, lisp, i_dx);
-                    value = liste[i]->eval(lisp);
-                    result->replacing(i_dx, value);
-                    return result;
-                }
-                
-                if (m->shape.size() < listsize - 2)
-                    throw new Error("Error: out of bounds indexes");
-                
-                for (i = 2; i < listsize - 1; i++) {
-                    evalAsInteger(i, lisp, i_dx);
-                    if (i_dx < 0 || i_dx >= m->shape[i-2])
-                        throw new Error("Error: out of bounds indexes");
-                    result = result->index(i_dx);
-                }
-                
-                evalAsInteger(i, lisp, i_dx);
-                if (i_dx < 0 || i_dx >= m->shape[i-2])
-                    throw new Error("Error: out of bounds indexes");
-                result = result->value_on_index(lisp, i_dx);
-                
-                result->increment();
-                container->release();
-                result->decrementkeep();
-                return result;
-            }
-        }
-        
-        if (listsize == 4) {
-            ix = liste[2]->eval(lisp);
-            value = liste[3]->eval(lisp)->copying(false);
-            result = container->replace(lisp, ix, value);
-            ix->release();
-            value->release();
-            return result;
-        }
-        
-        value = liste[2]->eval(lisp);
-        result = container->protected_index(lisp, value);
-        value->release();
-        result->increment();
-        container->release();
-        result->decrementkeep();
-    }
-    catch (Error* err) {
-        container->release();
-        value->release();
-        result->release();
-        ix->release();
-        throw err;
-    }
-
-    return result;
-}
-
 Element* List::evall_index(LispE* lisp) {
     short listsize = liste.size();
     Element* container = liste[1];
@@ -7482,14 +7307,16 @@ Element* List::evall_list(LispE* lisp) {
 
 Element* List::evall_heap(LispE* lisp) {
     short listsize = liste.size();
-    Element* oper = liste[0];
+    Element* oper = null_;
     List* compare = lisp->provideList();
     Heap* tas = NULL;
     Element* second_element = null_;
 
 
     try {
-        oper = liste[1]->eval(lisp);
+        if (listsize != 1)
+            oper = liste[1]->eval(lisp);
+        
         if (oper == null_ || oper->size() == 0)
             oper = lisp->provideAtom(l_compare);
         

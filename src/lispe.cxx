@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.27.10.26";
+static std::string version = "1.2022.1.27.15.51";
 string LispVersion() {
     return version;
 }
@@ -179,7 +179,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
-    set_instruction(l_at_index, "at", P_ATLEASTTHREE, &List::evall_at_index);
+    set_instruction(l_index, "at", P_ATLEASTTHREE, &List::evall_index);
     set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom);
     set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
     set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp);
@@ -248,7 +248,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if);
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife);
     set_instruction(l_in, "in", P_THREE, &List::evall_in);
-    set_instruction(l_index, "@", P_ATLEASTTHREE, &List::evall_index);
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
     set_instruction(l_insert, "insert", P_THREE | P_FOUR, &List::evall_insert);
@@ -363,7 +362,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_throw, "throw", P_TWO, &List::evall_throw);
     set_instruction(l_trace, "trace", P_ONE | P_TWO, &List::evall_trace);
     set_instruction(l_transpose, "transpose", P_TWO, &List::evall_transpose);
-    set_instruction(l_heap, "heap", P_ATLEASTTWO, &List::evall_heap);
+    set_instruction(l_heap, "heap", P_ATLEASTONE, &List::evall_heap);
     set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger);
     set_instruction(l_type, "type", P_TWO, &List::evall_type);
     set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
@@ -473,7 +472,6 @@ void Delegation::initialisation(LispE* lisp) {
     operators[l_xor] = true;
 
     operators[l_index] = true;
-    operators[l_at_index] = true;
 
     comparators[l_equal] = true;
     comparators[l_equalonezero] = true;
@@ -545,7 +543,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_pattern] = U"pattern_";
     code_to_string[t_lambda] = U"lambda_";
     code_to_string[t_thread] = U"thread_";
-    code_to_string[t_heap] = U"tree_";
+    code_to_string[t_heap] = U"heap_";
 
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
@@ -692,6 +690,14 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce _ as a substitute to nil
     w = U"_";
     string_to_code[w] = v_null;
+
+    //We introduce @ as a substitute to at
+    w = U"@";
+    string_to_code[w] = l_index;
+    
+    //We introduce @@ as a substitute to extract
+    w = U"@@";
+    string_to_code[w] = l_extract;
 
     w = U("§");
     string_to_code[w] = l_infix;
@@ -2167,6 +2173,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

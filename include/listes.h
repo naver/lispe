@@ -1166,7 +1166,6 @@ public:
     Element* evall_addr_(LispE* lisp);
     Element* evall_and(LispE* lisp);
     Element* evall_apply(LispE* lisp);
-    Element* evall_at_index(LispE* lisp);
     Element* evall_atomise(LispE* lisp);
     Element* evall_atomp(LispE* lisp);
     Element* evall_atoms(LispE* lisp);
