@@ -896,10 +896,11 @@ Element* List::multiloop(LispE* lisp) {
 Element* List::polyloop(LispE* lisp) {
     List* values = lisp->provideList();
     Element* e = null_;
-    long sz = size();
+    unsigned long sz;
     long var;
     long indexe = 0;
     long nbvars = liste[1]->size();
+    unsigned long nb = -1;
     
     short label;
     
@@ -907,10 +908,13 @@ Element* List::polyloop(LispE* lisp) {
         for (var = 0; var < nbvars; var++) {
             label = liste[1]->index(var)->label();
             lisp->recording(null_, label);
-            values->append(liste[var + 2]->eval(lisp));
+            e = liste[var + 2]->eval(lisp);
+            sz = e->size();
+            nb = nb<sz?nb:sz;
+            values->append(e);
         }
         
-        long nb = values->liste[0]->size();
+        sz = size();
         
         while (indexe < nb) {
             _releasing(e);

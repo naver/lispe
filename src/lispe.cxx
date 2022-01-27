@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.26.13.14";
+static std::string version = "1.2022.1.27.10.26";
 string LispVersion() {
     return version;
 }
@@ -223,7 +223,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different);
     set_instruction(l_divide, "/", P_ATLEASTTWO, &List::evall_divide);
     set_instruction(l_divideequal, "/=", P_ATLEASTTWO, &List::evall_divideequal);
-    set_instruction(l_duplicate, "duplicate", P_TWO, &List::evall_duplicate);
+    set_instruction(l_clone, "clone", P_TWO, &List::evall_clone);
     set_instruction(l_elapse, "elapse", P_ATLEASTONE, &List::evall_elapse);
     set_instruction(l_emptyp, "emptyp", P_TWO, &List::evall_emptyp);
     set_instruction(l_eq, "eq", P_ATLEASTTHREE, &List::evall_eq);
@@ -2167,6 +2167,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

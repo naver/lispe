@@ -5612,7 +5612,7 @@ Element* List::evall_cyclicp(LispE* lisp) {
 }
 
 
-Element* List::evall_duplicate(LispE* lisp) {
+Element* List::evall_clone(LispE* lisp) {
     Element* element = null_;
     Element* res;
 

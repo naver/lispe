@@ -1213,7 +1213,7 @@ public:
     Element* evall_different(LispE* lisp);
     Element* evall_divide(LispE* lisp);
     Element* evall_divideequal(LispE* lisp);
-    Element* evall_duplicate(LispE* lisp);
+    Element* evall_clone(LispE* lisp);
     Element* evall_elapse(LispE* lisp);
     Element* evall_emptyp(LispE* lisp);
     Element* evall_eq(LispE* lisp);
