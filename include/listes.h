@@ -683,11 +683,6 @@ public:
         return (!liste.empty());
     }
     
-    void increment() {
-        if (!is_protected())
-            status++;
-    }
-
     virtual void decrement() {
         if (is_protected())
             return;
@@ -700,11 +695,6 @@ public:
     }
     
 
-    void incrementstatus(uint16_t nb) {
-        if (!is_protected())
-            status += nb;
-    }
-
     virtual void decrementstatus(uint16_t nb) {
         if (is_protected())
             return;
@@ -714,13 +704,6 @@ public:
             liste.decrement();
             delete this;
         }
-    }
-    
-    //The status is decremented without destroying the element.
-    void decrementkeep() {
-        if (is_protected())
-            return;
-        status--;
     }
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
@@ -960,8 +943,12 @@ public:
     }
     
     Element* replace(LispE* lisp, long i, Element* e) {
-        if (i < 0)
-            throw new Error("Error: position does not exist");
+        if (i < 0) {
+            i += liste.size();
+            if (i < 0)
+                throw new Error("Error: index out of bounds");
+        }
+        
         if (i >= liste.size())
             liste.push_element(e);
         else {
@@ -2020,8 +2007,12 @@ public:
     }
     
     Element* replace(LispE* lisp, long i, Element* e) {
-        if (i < 0)
-            throw new Error("Error: position does not exist");
+        if (i < 0) {
+            i += liste.size();
+            if (i < 0)
+                throw new Error("Error: index out of bounds");
+        }
+        
         if (i >= liste.size())
             liste.push_back(e->asFloat());
         else {
@@ -2483,8 +2474,12 @@ public:
     }
     
     Element* replace(LispE* lisp, long i, Element* e) {
-        if (i < 0)
-            throw new Error("Error: position does not exist");
+        if (i < 0) {
+            i += liste.size();
+            if (i < 0)
+                throw new Error("Error: index out of bounds");
+        }
+        
         if (i >= liste.size())
             liste.push_back(e->asNumber());
         else {
@@ -2928,8 +2923,12 @@ public:
     }
     
     Element* replace(LispE* lisp, long i, Element* e) {
-        if (i < 0)
-            throw new Error("Error: position does not exist");
+        if (i < 0) {
+            i += liste.size();
+            if (i < 0)
+                throw new Error("Error: index out of bounds");
+        }
+        
         if (i >= liste.size())
             liste.push_back(e->asInteger());
         else {
@@ -3329,8 +3328,12 @@ public:
     }
     
     Element* replace(LispE* lisp, long i, Element* e) {
-        if (i < 0)
-            throw new Error("Error: position does not exist");
+        if (i < 0) {
+            i += liste.size();
+            if (i < 0)
+                throw new Error("Error: index out of bounds");
+        }
+        
         if (i >= liste.size())
             liste.push_back(e->asInteger());
         else {
@@ -4713,8 +4716,12 @@ public:
     }
     
     Element* replace(LispE* lisp, long i, Element* e) {
-        if (i < 0)
-            throw new Error("Error: position does not exist");
+        if (i < 0) {
+            i += liste.size();
+            if (i < 0)
+                throw new Error("Error: index out of bounds");
+        }
+        
         if (i >= liste.size())
             liste.push_back(e->asUString(NULL));
         else {

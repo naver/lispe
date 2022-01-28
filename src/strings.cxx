@@ -381,6 +381,8 @@ public:
 
         bool toconvert = lisp->get_variable(U"convert")->Boolean();
         b = lisp->get_variable(U"b")->asInteger();
+        if (b <= 1)
+            throw new Error("Error: cannot convert to this base");
         
         if (caracs.size() == 0) {
             w = U"0";
@@ -419,10 +421,9 @@ public:
         unsigned long v = 0;
         if (!toconvert) {
             //we convert a base 10 number into the local base
-            u_ustring res = lisp->get_variable(v_str)->asUString(lisp);
-            v = convertingfloathexa(res.c_str());
+            v = lisp->get_variable(v_str)->asInteger();
             long rest;
-            res = U"";
+            u_ustring res = U"";
             while (v) {
                 rest = v%b;
                 v /=b;

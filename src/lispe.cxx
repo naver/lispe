@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.27.15.51";
+static std::string version = "1.2022.1.28.16.39";
 string LispVersion() {
     return version;
 }
@@ -526,10 +526,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_matrix_float] = U"matrix_float";
     code_to_string[t_tensor] = U"tensor_";
     code_to_string[t_tensor_float] = U"tensor_float_";
-    code_to_string[t_pair] = U"pair_";
     code_to_string[t_data] = U"data_";
-    code_to_string[t_maybe] = U"maybe_";
-    code_to_string[t_error] = U"error_";
     code_to_string[t_dictionary] = U"dictionary_";
     code_to_string[t_dictionaryn] = U"dictionary_n_";
     code_to_string[t_dictionaryi] = U"dictionary_i_";
@@ -538,12 +535,17 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_seti] = U"set_i_";
     code_to_string[t_set] = U"set_";
     code_to_string[t_atom] = U"atom_";
+    code_to_string[t_heap] = U"heap_";
+
+    code_to_string[t_pair] = U"pair_";
+    code_to_string[t_maybe] = U"maybe_";
+    code_to_string[t_error] = U"error_";
+    
     code_to_string[t_function] = U"function_";
     code_to_string[t_library_function] = U"library_function_";
     code_to_string[t_pattern] = U"pattern_";
     code_to_string[t_lambda] = U"lambda_";
     code_to_string[t_thread] = U"thread_";
-    code_to_string[t_heap] = U"heap_";
 
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
@@ -685,6 +687,7 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_seti, _NULL), t_seti, v_null);
     recordingData(lisp->create_instruction(t_sets, _NULL), t_sets, v_null);
     recordingData(lisp->create_instruction(t_setn, _NULL), t_setn, v_null);
+    recordingData(lisp->create_instruction(t_heap, _NULL), t_heap, v_null);
     recordingData(lisp->create_instruction(t_atom, _NULL), t_atom, v_null);
 
     //We introduce _ as a substitute to nil
@@ -2173,6 +2176,11 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
 
 
 

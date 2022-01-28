@@ -746,12 +746,6 @@ public:
         }
     }
     
-
-    void incrementstatus(uint16_t nb) {
-        if (!is_protected())
-            status += nb;
-    }
-
     void decrementstatus(uint16_t nb) {
         if (is_protected())
             return;
@@ -761,13 +755,6 @@ public:
             liste.decrement();
             delete this;
         }
-    }
-    
-    //The status is decremented without destroying the element.
-    void decrementkeep() {
-        if (is_protected())
-            return;
-        status--;
     }
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);

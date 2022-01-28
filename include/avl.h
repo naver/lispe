@@ -164,15 +164,19 @@ class Avl {
 
 };
 
-class Iter_tree {
+class Iter_heap {
 public:
     List l;
     long size;
     long index;
     
-    Iter_tree(Avl* a) {
-        a->flatten(l);
-        size = l.size();
+    Iter_heap(Avl* a) {
+        if (a == NULL)
+            size = 0;
+        else {
+            a->flatten(l);
+            size = l.size();
+        }
         index = 0;
     }
     
@@ -228,6 +232,13 @@ public:
         root->pop_last(&root);
         return true;
     }
+    
+    Element* duplicate_constant(bool pair = false) {
+        if (status == s_constant) {
+            return fullcopy();
+        }
+        return this;
+    }
 
     Element* fullcopy() {
         Heap* tree = new Heap(compare);
@@ -259,6 +270,14 @@ public:
         return tree;
     }
 
+    bool Boolean() {
+        return (root != NULL);
+    }
+    
+    bool isEmpty() {
+        return (root == NULL);
+    }
+    
     Element* car(LispE*);
     
     Element* index(long i);
@@ -280,16 +299,7 @@ public:
         return true;
     }
 
-    bool unify(LispE* lisp, Element* value, bool record) {
-        if (value == this)
-            return true;
-        if (value->type != type)
-            return false;
-        Heap* a_value = (Heap*)value;
-        if (root == NULL)
-            return (a_value->root == NULL);
-        return root->equal(lisp, a_value->root, record);
-    }
+    bool unify(LispE* lisp, Element* value, bool record);
     
     bool isequal(LispE* lisp, Element* value) {
         if (value == this)
@@ -303,17 +313,14 @@ public:
     }
     
     void* begin_iter() {
-        if (root == NULL)
-            return NULL;
-        return new Iter_tree(root);
+        return new Iter_heap(root);
     }
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
 
     void clean_iter(void* it) {
-        if (it != NULL)
-            delete (Iter_tree*)it;
+        delete (Iter_heap*)it;
     }
 
     wstring jsonString(LispE* lisp);

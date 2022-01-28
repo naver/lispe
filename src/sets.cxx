@@ -2598,20 +2598,15 @@ u_ustring Heap::asUString(LispE* lisp) {
     return r;
 }
 
-
 Element* Heap::next_iter(LispE* lisp, void* it) {
-    if (it == NULL)
-        return null_;
-    Element* e = ((Iter_tree*)it)->next();
+    Element* e = ((Iter_heap*)it)->next();
     if (e == NULL)
-        return null_;
+        return emptyatom_;
     return e->copying(false);
 }
 
 Element* Heap::next_iter_exchange(LispE* lisp, void* it) {
-    if (it == NULL)
-        return emptyatom_;
-    Element* e = ((Iter_tree*)it)->next();
+    Element* e = ((Iter_heap*)it)->next();
     if (e == NULL)
         return emptyatom_;
     return e;
@@ -2627,7 +2622,7 @@ Element* Heap::loop(LispE* lisp, short label, List* code) {
         return null_;
     
     long i_loop;
-    Iter_tree iter(root);
+    Iter_heap iter(root);
     Element* e = null_;
     lisp->recording(null_, label);
     long sz = code->liste.size();
@@ -2650,3 +2645,37 @@ Element* Heap::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
+
+bool Heap::unify(LispE* lisp, Element* value, bool record) {
+    if (value->type != t_heap)
+        return false;
+
+    if (root == NULL)
+        return (value->isEmpty());
+
+    bool rec = true;
+
+    if (!record) {
+        if (value == this) {
+            return true;
+        }
+        rec = (lisp->extractlabel(car(lisp)) == v_null);
+    }
+    
+    Iter_heap irule(root);
+    Iter_heap ivalue(((Heap*)value)->root);
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    bool test = true;
+    Element* r = irule.next();
+    Element* v = ivalue.next();
+    while (r != NULL && v != NULL) {
+        test = (r == null_ || r->unify(lisp, v, rec));
+        rec = record;
+        r = irule.next();
+        v = ivalue.next();
+    }
+    return (test && r == NULL && v == NULL);
+}

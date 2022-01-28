@@ -1344,8 +1344,15 @@ Element* Element::replace(LispE* lisp, long i, Element* e) {
 }
 
 Element* String::replace(LispE* lisp, long i, Element* e) {
-    if (i < 0 || i >= content.size())
-        throw new Error("Error: cannot modify at this position");
+    if (i < 0) {
+        i += content.size();
+        if (i < 0)
+            throw new Error("Error: index out of bounds");
+    }
+    
+    if (i >= content.size())
+        throw new Error("Error: index out of bounds");
+    
     u_ustring c = content.substr(0, i);
     c += e->asUString(lisp);
     c += content.substr(i+1, content.size());

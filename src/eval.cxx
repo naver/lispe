@@ -293,7 +293,7 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
     
     long ksz = keyvalues.size();
     if (ksz == 0)
-        return (value->size() == 0);
+        return value->isEmpty();
     
     
     /*
@@ -413,7 +413,9 @@ bool Listargumentfunction::unify(LispE* lisp, Element* value, bool record) {
         err->release();
         return false;
     }
-    return value->Boolean();
+    bool test = value->Boolean();
+    value->release();
+    return test;
 }
 
 bool Listargumentdata::unify(LispE* lisp, Element* value, bool record) {
@@ -694,7 +696,7 @@ bool Listseparator::unify(LispE* lisp, Element* value, bool record) {
 bool List::unify(LispE* lisp, Element* value, bool record) {
     long szrules = liste.size();
     if (!szrules)
-        return (value->size() == 0);
+        return value->isEmpty();
 
     if (mark())
         return (value == liste.object);
@@ -737,7 +739,7 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
 
 bool LList::unify(LispE* lisp, Element* value, bool record) {
     if (liste.empty())
-        return (value->size() == 0);
+        return value->isEmpty();
 
     bool rec = true;
 
