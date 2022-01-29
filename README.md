@@ -22,7 +22,7 @@ We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) prec
 
 # Modern Functional Properties
 
-__LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.2-Data-Structures)
+__LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.7-Data-Structures)
 
 Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/naver/lispe/wiki/7.-Shell)
 
