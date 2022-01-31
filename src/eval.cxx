@@ -9981,7 +9981,10 @@ Element* List::evall_zip(LispE* lisp) {
                 if (szl != container->size())
                     throw new Error(L"Error: Lists should all have the same size in 'zip'");
             }
-            lists->append(container);
+            if (container->type == t_llist)
+                lists->append(new Iter_llist((LList*)container, szl));
+            else
+                lists->append(container);
             if (!thetype)
                 thetype = container->type;
             else {
@@ -10062,12 +10065,18 @@ Element* List::evall_zipwith(LispE* lisp) {
         if (!container->isList())
             throw new Error(L"Error: 'zipwith' only accepts lists as arguments");
         szl = container->size();
-        lists->append(container);
+        if (container->type == t_llist)
+            lists->append(new Iter_llist((LList*)container, szl));
+        else
+            lists->append(container);
         
         for (i = 3; i < listsize; i++) {
             container = liste[i]->eval(lisp);
             if (container->isList() && szl == container->size()) {
-                lists->append(container);
+                if (container->type == t_llist)
+                    lists->append(new Iter_llist((LList*)container, szl));
+                else
+                    lists->append(container);
                 container = null_;
             }
             else

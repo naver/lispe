@@ -1091,6 +1091,32 @@ public:
 
 };
 
+class Iter_llist : public Element {
+public:
+    vector<Element*> elements;
+    LList* reference;
+    Iter_llist(LList* l, long sz) : Element(t_llist) {
+        elements.reserve(sz);
+        reference = l;
+        u_link* e = l->liste.begin();
+        while (e != NULL) {
+            elements.push_back(e->value);
+            e = e->next();
+        }
+    }
+    
+    Element* index(long idx) {
+        return elements[idx];
+    }
+
+    Element* value_on_index(LispE* lisp, long i);
+
+    ~Iter_llist() {
+        reference->release();
+    }
+};
+
+
 #endif
 
 

@@ -1562,13 +1562,23 @@ Element* List::value_on_index(LispE* lisp, long i) {
 }
 
 Element* LList::value_on_index(LispE* lisp, long i) {
-    Element* e = null_;
     if (i >= 0) {
-        e = at_e(i)->copying(false);
+        Element* e = at_e(i)->copying(false);
         if (e == NULL)
             return null_;
+        return e;
     }
-    return e;
+    return null_;
+}
+
+Element* Iter_llist::value_on_index(LispE* lisp, long i) {
+    if (i >= 0) {
+        Element* e = elements[i]->copying(false);
+        if (e == NULL)
+            return null_;
+        return e;
+    }
+    return null_;
 }
 
 Element* List::value_from_index(LispE* lisp, long i) {
