@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.28.16.39";
+static std::string version = "1.2022.1.30.10.48";
 string LispVersion() {
     return version;
 }
@@ -701,6 +701,10 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce @@ as a substitute to extract
     w = U"@@";
     string_to_code[w] = l_extract;
+
+    //We introduce set@@ as a substitute to setrange
+    w = U"set@@";
+    string_to_code[w] = l_set_range;
 
     w = U("§");
     string_to_code[w] = l_infix;
@@ -2176,6 +2180,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
