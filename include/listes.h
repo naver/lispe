@@ -2140,7 +2140,7 @@ public:
         exchange_value.provide = true;
     }
 
-    Floatspool(LispE* l, Floats* f, long pos) : Floats(f, pos) {
+    Floatspool(LispE* l, Floats* f, long pos) : lisp(l), Floats(f, pos) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
@@ -2605,7 +2605,7 @@ public:
         exchange_value.provide = true;
     }
 
-    Numberspool(LispE* l, Numbers* f, long pos) : Numbers(f, pos) {
+    Numberspool(LispE* l, Numbers* f, long pos) : lisp(l), Numbers(f, pos) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
@@ -3475,7 +3475,7 @@ public:
         exchange_value.provide = true;
     }
 
-    Integerspool(LispE* l, Integers* f, long pos) : Integers(f, pos) {
+    Integerspool(LispE* l, Integers* f, long pos) : lisp(l), Integers(f, pos) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }

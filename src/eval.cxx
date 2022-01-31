@@ -7542,7 +7542,7 @@ Element* List::evall_nconcn(LispE* lisp) {
         }
         else {
             if (second_element->isList())
-                first_element = second_element->fullcopy();
+                first_element = second_element->copyatom(1);
             else
                 throw new Error("Error: first element is not a list");
         }
