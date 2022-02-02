@@ -824,7 +824,7 @@ void jag_editor::displaygo(bool full) {
             break;
         case x_write:
 			clearline();
-            cout << back << "Name:" << convert(line);
+            cout << back << "File:" << convert(line);
             break;
         case x_delete:
         case x_copy:
@@ -2047,10 +2047,14 @@ void jag_editor::ls(string cmd, string path, vector<wstring>& paths) {
         wstring name;
         wstring path;
         if (checkcmd) {
-            if (pos == -1)
-                return false;
-            root = line.substr(0, pos);
-            path = line.substr(pos, line.size());
+            if (pos == -1) {
+                checkcmd = false;
+                path = line;
+            }
+            else {
+                root = line.substr(0, pos);
+                path = line.substr(pos, line.size());
+            }
         }
         else
             path = line;
@@ -2164,10 +2168,14 @@ void jag_editor::ls(string cmd, string path, vector<wstring>& paths) {
         wstring name;
         wstring path;
         if (checkcmd) {
-            if (pos == -1)
-                return false;
-            root = line.substr(0, pos);
-            path = line.substr(pos, line.size());
+            if (pos == -1) {
+                checkcmd = false;
+                path = line;
+            }
+            else {
+                root = line.substr(0, pos);
+                path = line.substr(pos, line.size());
+            }
         }
         else
             path = line;
