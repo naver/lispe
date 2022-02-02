@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.1.31.18.55";
+static std::string version = "1.2022.2.1.18.0";
 string LispVersion() {
     return version;
 }
@@ -69,6 +69,27 @@ static u_ustring U(string x) {
     s_utf8_to_unicode(u, USTR(x), x.size());
     return u;
 }
+//------------------------------------------------------------
+void Listswitch::build(LispE* lisp) {
+    u_ustring key;
+    for (long i = 2; i < size(); i++) {
+        if (liste[i]->type != t_list || !liste[i]->size())
+            throw new Error("Error: wrong 'switch statement'");
+        
+        if (liste[i]->index(0)->isString() || liste[i]->index(0)->isNumber()) {
+            key = liste[i]->index(0)->asUString(lisp);
+            cases[key] = (List*)liste[i];
+        }
+        else {
+            if (liste[i]->index(0) == true_) {
+                default_value = (List*)liste[i];
+            }
+            else
+                throw new Error("Error: Unknown statement");
+        }
+    }
+}
+
 //------------------------------------------------------------
 
 Delegation::Delegation() {
@@ -255,6 +276,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_shorts, "shorts", P_ATLEASTONE, &List::evall_shorts);
     set_instruction(l_integers, "integers", P_ATLEASTONE, &List::evall_integers);
     set_instruction(l_irange, "irange", P_THREE | P_FOUR, &List::evall_irange);
+    set_instruction(l_irangein, "irangein", P_THREE | P_FOUR, &List::evall_irangein);
     set_instruction(l_join, "join", P_TWO | P_THREE, &List::evall_join);
     set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE, &List::evall_key);
     set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE, &List::evall_keyi);
@@ -326,6 +348,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE, &List::evall_pushlast);
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
     set_instruction(l_range, "range", P_FOUR, &List::evall_range);
+    set_instruction(l_rangein, "rangein", P_FOUR, &List::evall_rangein);
     set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark);
     set_instruction(l_return, "return", P_ONE | P_TWO , &List::evall_return);
     set_instruction(l_replaceall, "replaceall", P_FOUR, &List::evall_replaceall);
@@ -353,6 +376,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_sort, "sort", P_THREE, &List::evall_sort);
     set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp);
     set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings);
+    set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
     set_instruction(l_sum, "sum", P_TWO, &List::evall_sum);
     set_instruction(l_tensor, "tensor", P_ATLEASTTWO, &List::evall_tensor);
     set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO, &List::evall_tensor_float);
@@ -425,6 +449,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_member, "member", P_THREE, &List::evall_member);
     set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
     
+
     //Operators
     operators[l_bitnot] = true;
     operators[l_bitand] = true;
@@ -755,6 +780,7 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U("⍉");
     string_to_code[w] = l_transpose;
+
 
     w = U("⌽");
     string_to_code[w] = l_reverse;
@@ -1584,6 +1610,10 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     else
                                         lm = new List_basic_execute((Listincode*)e, delegation->evals[lab]);
                                     break;
+                                case l_switch:
+                                    lm = new Listswitch((Listincode*)e);
+                                    ((Listswitch*)lm)->build(this);
+                                    break;
                                 case l_mod:
                                 case l_modequal:
                                 case l_divide:
@@ -2180,6 +2210,8 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
 
 
 

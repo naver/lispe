@@ -2211,28 +2211,42 @@ Element* List::evall_apply(LispE* lisp) {
     Element* function = liste[1];
     Element* arguments = null_;
     Element* result = null_;
+    List* largs = emptylist_;
+    List* l = emptylist_;
+    
+    bool ev = lisp->evaluating;
 
 
     try {
         //(apply func l)
         arguments = liste[2]->eval(lisp);
-        if (arguments->type != t_list)
+        if (!arguments->isList())
             throw new Error("Error: arguments to 'apply' should be given as a list");
 
+        largs = (List*)arguments->asList(lisp);
         function = function->eval(lisp);
-        List* l = lisp->provideList();
+        l = lisp->provideList();
         l->append(function);
-        l->extend((List*)arguments);
+        l->extend(largs);
         
+        lisp->evaluating = true;
         result = l->eval(lisp);
+        lisp->evaluating = ev;
+        
         function->release();
+        if (largs != arguments)
+            largs->release();
         arguments->release();
         l->release();
     }
     catch (Error* err) {
+        lisp->evaluating = ev;
         function->release();
+        if (largs != arguments)
+            largs->release();
         arguments->release();
         result->release();
+        l->release();
         throw err;
     }
 
@@ -9591,6 +9605,86 @@ Element* List::evall_stringp(LispE* lisp) {
     return booleans_[test];
 }
 
+//This version does handle an internal dictionary, we need
+//to check each key against our current value
+//This version is called when an eval is applied to a list.
+Element* List::evall_switch(LispE* lisp) {
+    u_ustring key;
+    Element* e = null_;
+    List* code = NULL;
+    long i;
+    
+    e = liste[1]->eval(lisp);
+    key = e->asUString(lisp);
+    _releasing(e);
+    
+    for (i = 2; i < size(); i++) {
+        if (!liste[i]->isList() || !liste[i]->size())
+            throw new Error("Error: wrong 'switch statement'");
+        
+        if (liste[i]->index(0)->isString() || liste[i]->index(0)->isNumber()) {
+            if (key == liste[i]->index(0)->asUString(lisp)) {
+                code = (List*)liste[i];
+                break;
+            }
+        }
+        else {
+            if (liste[i]->index(0) == true_) {
+                code = (List*)liste[i];
+                break;
+            }
+        }
+    }
+    
+    if (code == NULL) {
+        u_ustring msg = U"Error: Unknown 'switch' key: '";
+        msg += key;
+        msg += U"'";
+        throw new Error(msg);
+    }
+
+    long sz = code->liste.size();
+    for (long i = 1; i < sz; i++) {
+        _releasing(e);
+        e = code->liste[i]->eval(lisp);
+    }
+
+    return e;
+}
+    
+Element* Listswitch::eval(LispE* lisp) {
+    lisp->delegation->set_context(line, fileidx);
+    if (lisp->trace)
+        lisp->trace_and_context(this);
+    
+    List* code = NULL;
+    
+    Element* e = liste[1]->eval(lisp);
+    u_ustring key = e->asUString(lisp);
+    _releasing(e);
+    
+    try {
+        code = cases.at(key);
+    }
+    catch(...) {
+        code = default_value;
+    }
+    
+    if (code == NULL) {
+        u_ustring msg = U"Error: Unknown 'switch' key: '";
+        msg += key;
+        msg += U"'";
+        throw new Error(msg);
+    }
+    
+    
+    long sz = code->liste.size();
+    for (long i = 1; i < sz; i++) {
+        _releasing(e);
+        e = code->liste[i]->eval(lisp);
+    }
+    return e;
+}
 
 Element* List::evall_threadclear(LispE* lisp) {
 
@@ -10383,3 +10477,5 @@ Element* List::evall_debug_function(LispE* lisp) {
     return evall_set_at(lisp);
 }
 #endif
+
+

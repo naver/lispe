@@ -1238,6 +1238,7 @@ public:
     Element* evall_iota(LispE* lisp);
     Element* evall_iota0(LispE* lisp);
     Element* evall_irange(LispE* lisp);
+    Element* evall_irangein(LispE* lisp);
     Element* evall_join(LispE* lisp);
     Element* evall_key(LispE* lisp);
     Element* evall_keyi(LispE* lisp);
@@ -1312,6 +1313,7 @@ public:
     Element* evall_pushlast(LispE* lisp);
     Element* evall_quote(LispE* lisp);
     Element* evall_range(LispE* lisp);
+    Element* evall_rangein(LispE* lisp);
     Element* evall_rank(LispE* lisp);
     Element* evall_reduce(LispE* lisp);
     Element* evall_replaceall(LispE* lisp);
@@ -1344,6 +1346,7 @@ public:
     Element* evall_stringp(LispE* lisp);
     Element* evall_strings(LispE* lisp);
     Element* evall_sum(LispE* lisp);
+    Element* evall_switch(LispE* lisp);
     Element* evall_tensor(LispE* lisp);
     Element* evall_tensor_float(LispE* lisp);
     Element* evall_threadclear(LispE* lisp);
@@ -1576,6 +1579,23 @@ public:
         return true;
     }
 };
+
+class Listswitch : public Listincode {
+public:
+    std::unordered_map<u_ustring, List*> cases;
+    List* default_value;
+    Listswitch(Listincode* l) : Listincode(l) {
+        default_value = NULL;
+    }
+    
+    //We traverse the structure, which should be of the form:
+    //(switch action
+    //("str" code)
+    //(true code)
+    void build(LispE* lisp);
+    Element* eval(LispE*);
+};
+
 
 class Listbreak : public Element {
 public:

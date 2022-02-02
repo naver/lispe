@@ -105,6 +105,15 @@ Element* List::evall_range(LispE* lisp) {
     return range(lisp, init, limit, inc);
 }
 
+Element* List::evall_rangein(LispE* lisp) {
+
+    double init, limit, inc;
+    evalAsNumber(1, lisp, init);
+    evalAsNumber(2, lisp, limit);
+    evalAsNumber(3, lisp, inc);
+    return range(lisp, init, limit + inc, inc);
+}
+
 Element* List::evall_irange(LispE* lisp) {
     long sz  = liste.size();
     
@@ -117,6 +126,26 @@ Element* List::evall_irange(LispE* lisp) {
         if (init == (long)init && inc == (long)inc)
             return new InfiniterangeInteger(init, inc, bound);
         return new InfiniterangeNumber(init, inc, bound);
+    }
+    
+    evalAsNumber(2, lisp, inc);
+    if (init == (long)init && inc == (long)inc)
+        return new InfiniterangeInteger(init, inc);
+    return new InfiniterangeNumber(init, inc);
+}
+
+Element* List::evall_irangein(LispE* lisp) {
+    long sz  = liste.size();
+    
+    double init, inc;
+    evalAsNumber(1, lisp, init);
+    if (sz == 4) {
+        double bound;
+        evalAsNumber(2, lisp, bound);
+        evalAsNumber(3, lisp, inc);
+        if (init == (long)init && inc == (long)inc)
+            return new InfiniterangeInteger(init, inc, bound + inc);
+        return new InfiniterangeNumber(init, inc, bound + inc);
     }
     
     evalAsNumber(2, lisp, inc);

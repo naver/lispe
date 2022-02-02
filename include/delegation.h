@@ -517,6 +517,14 @@ public:
         code_to_string[instruction_code] = n;
     }
 
+    inline void set_pure_instruction(short instruction_code, string name,  unsigned long arity) {
+        instructions[instruction_code] = name;
+        arities[instruction_code] = arity;
+        u_ustring n;
+        s_utf8_to_unicode(n, USTR(name), name.size());
+        code_to_string[instruction_code] = n;
+    }
+
     inline void clear_breakpoints() {
         breakpoints.clear();
     }

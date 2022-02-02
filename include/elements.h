@@ -59,7 +59,7 @@ typedef enum {
     l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib, l_self,l_label,
     l_setq, l_setg, l_index, l_at_index, l_set_at, l_extract, l_set_range,
     l_block, l_elapse,
-    l_if, l_ife,  l_ncheck, l_check, l_cond, l_select,
+    l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
     l_catch, l_throw, l_maybe,
     
     //Check values
@@ -100,7 +100,7 @@ typedef enum {
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
     
     l_mark, l_resetmark,
-    l_while, l_loop, l_loopcount, l_range, l_irange, l_multiloop, l_polyloop,
+    l_while, l_loop, l_loopcount, l_range, l_rangein, l_irange, l_irangein, l_multiloop, l_polyloop,
     l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
     l_apply, l_maplist, l_filterlist, l_droplist, l_takelist, l_mapping, l_checking, l_folding,
