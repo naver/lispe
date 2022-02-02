@@ -5036,8 +5036,8 @@ Element* List::evall_scan(LispE* lisp) {
         
         call->append(op);
         call->append(null_);
-        Element* e;
-        call->liste[1] = l1->value_on_index(lisp, (long)0);
+        Element* e = l1->value_on_index(lisp, (long)0);
+        call->liste[1] = e;
         res->append(call->liste[1]);
         methodEval met = lisp->delegation->evals[op->type];
         if (!monadic) {
@@ -5046,8 +5046,10 @@ Element* List::evall_scan(LispE* lisp) {
                 call->liste[2] = l1->index(i);
                 e = (call->*met)(lisp);
                 res->append(e);
-                call->liste[1] = e;
+                call->liste[1]->release();
+                call->liste[1] = e->quoting(lisp);
             }
+            call->liste[1]->release();
         }
         else {
             for (long i = 1; i < sz; i++) {
@@ -5303,8 +5305,10 @@ Element* List::evall_backscan(LispE* lisp) {
                 call->liste[2] = l1->index(i);
                 e = (call->*met)(lisp);
                 res->append(e);
-                call->liste[1] = e;
+                call->liste[1]->release();
+                call->liste[1] = e->quoting(lisp);
             }
+            call->liste[1]->release();
         }
         else {
             for (long i = sz-1; i >= 0; i--) {
@@ -10459,6 +10463,9 @@ Element* List::evalt_list(LispE* lisp) {
             return eval(lisp);
         
         first_element = first_element->eval(lisp);
+        if (!first_element->size())
+            return first_element;
+        
         //Execution of a lambda a priori, otherwise it's an error
         second_element = evalfunction(lisp, first_element);
         first_element->release();
