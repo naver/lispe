@@ -196,7 +196,7 @@ public:
     uint32_t mark;
     
     std::atomic<bool> endtrace;
-    
+    bool trace_on;
     
     Delegation();
     

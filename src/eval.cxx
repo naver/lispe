@@ -5037,8 +5037,8 @@ Element* List::evall_scan(LispE* lisp) {
         call->append(op);
         call->append(null_);
         Element* e = l1->value_on_index(lisp, (long)0);
-        call->liste[1] = e;
-        res->append(call->liste[1]);
+        res->append(e);
+        call->liste[1] = e->quoting(lisp);
         methodEval met = lisp->delegation->evals[op->type];
         if (!monadic) {
             call->append(null_);
@@ -5294,10 +5294,10 @@ Element* List::evall_backscan(LispE* lisp) {
         
         bool monadic = op->check_arity(lisp, P_TWO);
 
-        Element* e;
         sz--;
-        call->liste[1] = l1->value_on_index(lisp, sz);
-        res->append(call->liste[1]);
+        Element* e = l1->value_on_index(lisp, sz);
+        res->append(e);
+        call->liste[1] = e->quoting(lisp);
         methodEval met = lisp->delegation->evals[op->type];
         if (!monadic) {
             call->append(null_);
@@ -10316,7 +10316,7 @@ Element* List::eval_call_function(LispE* lisp) {
         short label = body->index(0)->label();
         char tr = debug_next;
         if (label == l_defun || label == l_defpat || label == l_lambda) {
-                    if (lisp->trace == debug_inside_function)
+            if (lisp->trace == debug_inside_function)
                 lisp->stop_at_next_line(debug_next);
             else {
                 if (lisp->trace == debug_next) {
@@ -10341,25 +10341,29 @@ Element* List::eval_call_function(LispE* lisp) {
 Element* Listincode::eval_call_function(LispE* lisp) {
     Element* body = liste[0]->eval(lisp);
 
-    if (lisp->trace) {
-        //We also retrieve its label (which is l_defun or l_defpat or...)
-        short label = body->index(0)->label();
-        char tr = debug_next;
-        if (label == l_defun || label == l_defpat || label == l_lambda) {
-                    if (lisp->trace == debug_inside_function)
-                lisp->stop_at_next_line(debug_next);
-            else {
-                if (lisp->trace == debug_next) {
-                    lisp->trace = debug_none;
+    if (lisp->delegation->trace_on) {
+        if (lisp->trace) {
+            //We also retrieve its label (which is l_defun or l_defpat or...)
+            short label = body->index(0)->label();
+            char tr = debug_next;
+            if (label == l_defun || label == l_defpat || label == l_lambda) {
+                if (lisp->trace == debug_inside_function)
+                    lisp->stop_at_next_line(debug_next);
+                else {
+                    if (lisp->trace == debug_next) {
+                        lisp->trace = debug_none;
+                    }
                 }
             }
+            
+            body = evalfunction(lisp, body);
+            
+            if (lisp->trace != debug_goto)
+                lisp->stop_at_next_line(tr);
+            return body;
         }
-        
-        body = evalfunction(lisp, body);
-        
-        if (lisp->trace != debug_goto)
-            lisp->stop_at_next_line(tr);
-        return body;
+        else
+            return evalfunction(lisp, body);
     }
 
     if (lisp->threaded())
@@ -10396,25 +10400,29 @@ Element* Listincode::eval_call_function(LispE* lisp) {
 Element* Listincode::eval_call_self(LispE* lisp) {
     Element* body = lisp->called();
 
-    if (lisp->trace) {
-        //We also retrieve its label (which is l_defun or l_defpat or...)
-        short label = body->index(0)->label();
-        char tr = debug_next;
-        if (label == l_defun || label == l_defpat || label == l_lambda) {
-                    if (lisp->trace == debug_inside_function)
-                lisp->stop_at_next_line(debug_next);
-            else {
-                if (lisp->trace == debug_next) {
-                    lisp->trace = debug_none;
+    if (lisp->delegation->trace_on) {
+        if (lisp->trace) {
+            //We also retrieve its label (which is l_defun or l_defpat or...)
+            short label = body->index(0)->label();
+            char tr = debug_next;
+            if (label == l_defun || label == l_defpat || label == l_lambda) {
+                if (lisp->trace == debug_inside_function)
+                    lisp->stop_at_next_line(debug_next);
+                else {
+                    if (lisp->trace == debug_next) {
+                        lisp->trace = debug_none;
+                    }
                 }
             }
+            
+            body = evalfunction(lisp, body);
+            
+            if (lisp->trace != debug_goto)
+                lisp->stop_at_next_line(tr);
+            return body;
         }
-        
-        body = evalfunction(lisp, body);
-        
-        if (lisp->trace != debug_goto)
-            lisp->stop_at_next_line(tr);
-        return body;
+        else
+            return evalfunction(lisp, body);
     }
 
     if (lisp->threaded())

@@ -208,11 +208,13 @@ public:
     
     void stop_at_next_line(char tr) {
         if (delegation->endtrace) {
-            trace = 0;
+            trace = debug_none;
+            delegation->trace_on = false;
             delegation->next_stop = false;
             return;
         }
         trace = tr;
+        delegation->trace_on = true;
         delegation->next_stop = true;
     }
     

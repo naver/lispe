@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.2.19.25";
+static std::string version = "1.2022.2.3.10.7";
 string LispVersion() {
     return version;
 }
@@ -103,6 +103,7 @@ Delegation::Delegation() {
     
     error_message = NULL;
     endtrace = false;
+    trace_on = false;
     add_to_listing = false;
     stop_execution = 0;
     allfiles["main"] = 0;
@@ -943,6 +944,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
 
     isThread = true;
     trace = lisp->trace;
+
     lisp->hasThread = true;
     lisp->nbjoined++;
 
@@ -2210,6 +2212,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

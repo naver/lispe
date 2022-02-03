@@ -1086,7 +1086,6 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
                 lispe = master_lisp;
                 lispe->stop();
                 lispe->stop_trace();
-                lispe->trace = debug_none;
                 lispe->releasing_trace_lock();
                 line = L"";
                 continue;
