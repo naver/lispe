@@ -92,7 +92,14 @@ public:
         _previous = e;
         e->inc(status);
     }
-  
+
+    //we insert it after...
+    void push(u_link* e) {
+        e->_previous = this;
+        _next = e;
+        e->inc(status);
+    }
+
 };
 
 class u_links {
@@ -341,10 +348,10 @@ public:
     }
 
     u_link* at(long i) {
-        if (!i)
-            return first;
-        
         u_link* c = begin();
+        if (!i)
+            return c;
+                
         while (c != NULL && i) {
             c = c->next();
             i--;
@@ -366,9 +373,7 @@ public:
             e = e->previous();
             i--;
         }
-        if (e != NULL)
-            return e->value;
-        return NULL;
+        return (e == NULL)?NULL:e->value;
     }
 
     Element* at_e(long i) {
@@ -383,9 +388,7 @@ public:
             c = c->next();
             i--;
         }
-        if (c != NULL)
-            return c->value;
-        return NULL;
+        return (c == NULL)?NULL:c->value;
     }
 
     void erase(u_link* e) {
@@ -614,7 +617,7 @@ public:
         return l;
     }
     
-    Element* copyatom(uint16_t s) {
+    Element* copyatom(LispE* lisp, uint16_t s) {
         if (status < s)
             return this;
 
@@ -629,7 +632,7 @@ public:
         u_link* tail = NULL;
 
         for (; a != NULL; a = a->previous()) {
-            l->push_front(a->value->copyatom(s));
+            l->push_front(a->value->copyatom(lisp, s));
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
@@ -909,6 +912,10 @@ public:
     bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
     void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
+
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
 
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);

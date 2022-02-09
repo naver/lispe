@@ -282,7 +282,6 @@ Element* List::composing(LispE* lisp, bool docompose) {
     
     first_element = liste[1];
     
-    element = null_;
     if (labeltype == l_for) {
         element = liste[2];
         _iterator = liste[1];

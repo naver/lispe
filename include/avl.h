@@ -206,6 +206,10 @@ public:
     }
     
     
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
+
     bool remove(LispE* lisp, Element* e);
     Element* insert(LispE* lisp, Element* e, long idx);
     Element* insert(LispE* lisp, Element* e);
@@ -248,7 +252,7 @@ public:
         return tree;
     }
     
-    Element* copyatom(uint16_t s) {
+    Element* copyatom(LispE* lisp, uint16_t s) {
         if (status < s)
             return this;
         

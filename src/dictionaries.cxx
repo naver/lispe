@@ -41,7 +41,7 @@ Element* Dictionarypool::fullcopy() {
     return d;
 }
 
-Element* Dictionarypool::copyatom(uint16_t s) {
+Element* Dictionarypool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
     
@@ -202,7 +202,7 @@ Element* Dictionary_npool::copying(bool duplicate) {
     return d;
 }
 
-Element* Dictionary_npool::copyatom(uint16_t s) {
+Element* Dictionary_npool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
     
@@ -305,7 +305,7 @@ Element* Dictionary_ipool::copying(bool duplicate) {
     return d;
 }
 
-Element* Dictionary_ipool::copyatom(uint16_t s) {
+Element* Dictionary_ipool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
     

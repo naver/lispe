@@ -26,7 +26,8 @@
 #define debug_next 2
 #define debug_inside_function 3
 //------------------------------------------------------------
-
+typedef short (LispE::*checkEval)(List*, long);
+//------------------------------------------------------------
 string LispVersion();
 //------------------------------------------------------------
 // The main class to handle the Lisp Interpreter
@@ -41,6 +42,8 @@ class LispE {
 
 public:
     Element* _BOOLEANS[2];
+    
+    checkEval checkstates[4];
 
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
@@ -65,6 +68,8 @@ public:
     
     vecte<Returnpool*> return_pool;
 
+    //------------------------------------------
+    
     unordered_map<wstring, Element*> pools;
     vector<Element*> vpools;
     
@@ -79,6 +84,7 @@ public:
 
     List* current_thread;
     List* current_body;
+    List* void_function;
     LispE* thread_ancestor;
     
     Element* n_null;
@@ -98,6 +104,7 @@ public:
     bool preparingthread;
     
     LispE() {
+        updatecreator();
         initpools(this);
         preparingthread = false;
         evaluating = false;
@@ -136,6 +143,10 @@ public:
         cleaning();
     }
     
+    //------------------------------------------
+    void updatecreator();
+    //------------------------------------------
+
     void set_true_as_true() {
         _BOOLEANS[0] = n_null;
         _BOOLEANS[1] = n_true;
@@ -456,19 +467,24 @@ public:
         throw new Error(msg);
     }
     
-    inline short checkState(List* l) {
-        (
-         (
-          l->size() &&
-          (
-           !evaluating ||
-           delegation->checkArity(l->liste.get0(), l->size()) ||
-           sendError(U"Error: wrong number of arguments")
-           )
-          ) ||
-         sendError()
-         );
+    inline short check_empty(List* l, long sz) {
+        return l_emptylist;
+    }
+    
+    inline short check_straight(List* l, long sz) {
         return l->liste.get0();
+    }
+    
+    inline short check_arity(List* l, long sz) {
+        short lb = l->liste.get0();
+        if (delegation->checkArity(lb, sz))
+            return lb;
+        
+        throw new Error(U"Error: wrong number of arguments");
+    }
+
+    inline short checkState(List* l, long sz) {
+        return (this->*checkstates[(evaluating + 1)*bool(sz)])(l, sz);
     }
 
     inline void trace_and_context(List* e) {
@@ -701,16 +717,6 @@ public:
         return checkDataStructure(e->label());
     }
     
-    inline Element* getDataStructure(short label) {
-        if (!delegation->data_pool.check(label)) {
-            u_ustring msg = U"Error: Unbounded atom: '";
-            msg += delegation->code_to_string[label];
-            msg += U"'";
-            throw new Error(msg);
-        }
-        return delegation->data_pool.at(label);
-    }
-    
     Element* generate_macro(Element* code);
 
     inline Element* recordingMacro(Element* e, short label) {
@@ -776,42 +782,6 @@ public:
         execution_stack.push_back(s);
     }
     
-    inline Element* getElementFromStack(Stackelement* current, short label) {
-        if (current->variables.check(label))
-            return current->variables.at(label);
-        return execution_stack.vecteur[0]->variables.search(label);
-    }
-    
-    inline Element* get(u_ustring name) {
-        short label = encode(name);
-        Element* e = getElementFromStack(execution_stack.back(), label);
-        if (e == NULL) {
-            if (delegation->function_pool.check(label))
-                return delegation->function_pool.at(label);
-            
-            u_ustring err = U"Error: unknown label: '";
-            err += name;
-            err += U"'";
-            throw new Error(err);
-        }
-        return e;
-    }
-
-    inline Element* get(string name) {
-        short label = encode(name);
-        Element* e = getElementFromStack(execution_stack.back(), label);
-        if (e == NULL) {
-            if (delegation->function_pool.check(label))
-                return delegation->function_pool.at(label);
-            
-            string err = "Error: unknown label: '";
-            err += name;
-            err += "'";
-            throw new Error(err);
-        }
-        return e;
-    }
-
     inline Element* exchangestackfunction(Element* f) {
         return execution_stack.back()->exchange(f);
     }
@@ -844,34 +814,62 @@ public:
         return execution_stack.back()->variables.at(label);
     }
 
-    inline Element* get(short label) {
-        if (execution_stack.back()->variables.check(label))
-            return execution_stack.back()->variables.at(label);
-        
-        if (execution_stack.vecteur[0]->variables.check(label))
-            return execution_stack.vecteur[0]->variables.at(label);
-        
-        if (delegation->function_pool.check(label))
-            return delegation->function_pool.at(label);
-        
-        if (delegation->data_pool.check(label))
-            return delegation->data_pool.at(label);
-        
-        u_ustring name = delegation->code_to_string[label];
-        u_ustring err = U"Error: unknown label: '";
-        err += name;
+    inline bool unboundAtomError(short label) {
+        u_ustring err = U"Error: Unbound atom: '";
+        err += delegation->code_to_string[label];
         err += U"'";
         throw new Error(err);
     }
+    
 
+    inline Element* getDataStructure(short label) {
+        Element* res;
+        delegation->data_pool.search(label, &res) ||
+        unboundAtomError(label);
+        return res;
+    }
     
     inline Element* getvalue(short label) {
-        Element* e = getElementFromStack(execution_stack.back(), label);
-        if (e == NULL)
-            return n_null;
-        return e;
+        Element* res = n_null;
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res);
+        return res;
     }
 
+    inline Element* get(u_ustring name) {
+        short label = encode(name);
+        Element* res;
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->function_pool.search(label, &res) ||
+        unboundAtomError(label);
+
+        return res;
+    }
+
+    inline Element* get(string name) {
+        short label = encode(name);
+        Element* res;
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->function_pool.search(label, &res) ||
+        unboundAtomError(label);
+
+        return res;
+    }
+
+
+    inline Element* get(short label) {
+        Element* res;
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        delegation->function_pool.search(label, &res) ||
+        delegation->data_pool.search(label, &res) ||
+        unboundAtomError(label);
+        
+        return res;
+    }
+    
     inline Element* checkLabel(short label) {
         return execution_stack.back()->get(label);
     }
@@ -1127,7 +1125,7 @@ public:
     inline String* provideString() {
         return string_pool.last?string_pool.backpop():new Stringpool(this);
     }
-
+    
     Element* provideString(wstring& c);
     Element* provideString(string& c);
     Element* provideString(wchar_t c);

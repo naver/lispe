@@ -199,16 +199,6 @@ public:
 		return vecteur[pos];
 	}
     
-    inline bool operator ==(vecte<Z>& v) {
-        if (sz != v.sz)
-            return false;
-        for (long i = 0; i < sz; i++) {
-            if (vecteur[i] != v.vecteur[i])
-                return false;
-        }
-        return true;
-    }
-
     void operator =(vecte<Z>& t) {
         if (sz < t.sz) {
             sz = t.sz;
@@ -307,35 +297,41 @@ public:
 	}
 
 	inline long search(Z v) {
-        for (long i = 0; i< last; i++) {
-            if (vecteur[i] == v)
-                return i;
-        }
-		return -1;
+        long i = 0;
+        for (; i< last && v != vecteur[i]; i++) {}
+        return (i == last)?-1:i;
 	}
 
     inline bool check(Z v) {
-        for (long i = 0; i< last; i++) {
-            if (vecteur[i] == v)
-                return true;
-        }
-        return false;
+        long i = 0;
+        for (; i< last && v != vecteur[i]; i++) {}
+        return (i != last);
     }
     
     inline bool checkanderase(Z v) {
-        for (long i = 0; i < last; i++) {
-            if (vecteur[i] == v) {
-                last--;
-                while (i < last) {
-                    vecteur[i] = vecteur[i + 1];
-                    i++;
-                }
-                return true;
+        long i = 0;
+        for (; i< last && v != vecteur[i]; i++) {}
+        
+        if (i != last) {
+            last--;
+            while (i < last) {
+                vecteur[i] = vecteur[i + 1];
+                i++;
             }
+            return true;
         }
         return false;
     }
     
+    inline bool operator ==(vecte<Z>& v) {
+        if (last != v.last)
+            return false;
+
+        long i = 0;
+        for (; i< last && v.vecteur[i] == vecteur[i]; i++) {}
+        return (i == last);
+    }
+
     inline void to_vector(vector<Z>& v) {
         for (long i = 0; i < last; i++)
             v.push_back(vecteur[i]);
@@ -641,25 +637,27 @@ public:
         items->padding(nb + home, v);
     }
     
+    inline long search(Z v, long i) {
+        i += home;
+        for (; i< items->last && v != items->buffer[i]; i++) {}
+        return (i == items->last)?-1:i-home;
+    }
 
     inline bool check(Z v) {
-        for (long i = home; i< items->last; i++) {
-            if (items->buffer[i] == v)
-                return true;
-        }
-        return false;
+        long i = home;
+        for (; i< items->last && v != items->buffer[i]; i++) {}
+        return (i != items->last);
     }
 
     inline bool operator ==(vecte_a<Z>& v) {
         if (size() != v.size())
             return false;
-        for (long i = home; i < size(); i++) {
-            if (items->buffer[home+i] != v[i])
-                return false;
-        }
-        return true;
+        
+        long i = home;
+        for (; i < items->last && v[i] == items->buffer[i]; i++) {}
+        return (i == items->last);
     }
-
+    
     inline void to_vector(vector<Z>& v) {
         for (long i = home; i < size(); i++) {
             v.push_back(items->buffer[home+i]);
@@ -939,22 +937,25 @@ public:
         items->atlast(val);
     }
 
+    inline long search(Z v, long i) {
+        i += home;
+        for (; i< items->last && v != items->buffer[i]; i++) {}
+        return (i == items->last)?-1:i-home;
+    }
+
     inline bool check(Z v) {
-        for (long i = home; i< items->last; i++) {
-            if (items->buffer[i] == v)
-                return true;
-        }
-        return false;
+        long i = home;
+        for (; i< items->last && v != items->buffer[i]; i++) {}
+        return (i != items->last);
     }
 
     inline bool operator ==(vecte_n<Z>& v) {
         if (size() != v.size())
             return false;
-        for (long i = home; i < size(); i++) {
-            if (items->buffer[home+i] != v[i])
-                return false;
-        }
-        return true;
+        
+        long i = home;
+        for (; i < items->last && v[i] == items->buffer[i]; i++) {}
+        return (i == items->last);
     }
 
     inline void to_vector(vector<Z>& v) {

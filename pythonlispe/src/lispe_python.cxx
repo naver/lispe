@@ -805,7 +805,7 @@ public:
 
 extern "C" {
 Exporting bool InitialisationModule(LispE* lisp) {
-    wstring w = L"_python";
+    wstring w = L"python_";
     short type_python = lisp->encode(w);
     lisp->extension("deflib python()", new Pythonmethod(lisp, python_new, type_python));
     lisp->extension("deflib python_run(py code)", new Pythonmethod(lisp, python_run, type_python));

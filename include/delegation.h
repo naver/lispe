@@ -120,6 +120,7 @@ public:
 
     binSet number_types;
     
+    //------------------------------------------
     unordered_map<u_ustring, short> string_to_code;
     unordered_map<short, vector<short> > data_descendant;
     unordered_map<short, unordered_map<short, vector<Element*> > > method_pool;
@@ -149,6 +150,7 @@ public:
     void* reading_string_function_object;
     
     Element* _NUMERICAL_BOOLEANS[2];
+    Element* _COMPARE_BOOLEANS[3];
     
     Atome* _ERROR;
     Atome* _TERMINAL;
@@ -158,9 +160,9 @@ public:
     Atome* _EMPTYATOM;
     Atome* _LISTSEPARATOR;
     Atome* _DEFPAT;
-    Atome* _DICO_KEYI;
-    Atome* _DICO_KEYN;
-    Atome* _DICO_KEY;
+    Atome* _DICO_INTEGER;
+    Atome* _DICO_NUMBER;
+    Atome* _DICO_STRING;
     Atome* _SET_NUMBERS;
     Atome* _SET_INTEGERS;
     Atome* _SET_STRINGS;
@@ -307,6 +309,8 @@ public:
     bool isEndTrace() {
         return endtrace;
     }
+    
+    void updatecreator();
     
     short encode(string& str) {
         u_ustring s;
@@ -673,8 +677,7 @@ public:
         throw err;
     }
     
-    Element* atomise(u_ustring& a, bool tobelocked) {
-        List* liste = new List;
+    void atomise(u_ustring& a, List* liste, bool tobelocked) {
         Element* e;
         lock.locking(tobelocked);
         for (long i = 0; i < a.size(); i++) {
@@ -682,7 +685,6 @@ public:
             liste->append(e);
         }
         lock.unlocking(tobelocked);
-        return liste;
     }
 
     ThreadLock* getlock(u_ustring& w) {

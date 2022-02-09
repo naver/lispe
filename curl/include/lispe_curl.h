@@ -50,6 +50,9 @@ public:
     string toString(LispE* lisp) {
         return data;
     }
+    
+    Element* protected_index(LispE*, Element* k);
+    Element* extraction(LispE* lisp, List* l);
 };
 
 typedef enum {curl_curl, curl_passwrd, curl_proxy, curl_url, curl_options, curl_execute } curl_type;
@@ -60,7 +63,7 @@ public:
     short idcurl;
     
     Lispe_curl_function(LispE* lisp, curl_type c) : curltype(c), Element(l_lib) {
-        wstring nom = L"curl";
+        wstring nom = L"curl_";
         idcurl = lisp->encode(nom);
     }
 

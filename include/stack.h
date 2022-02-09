@@ -15,11 +15,14 @@ class LispE;
 #include "vecte.h"
 #include "mapbin.h"
 
+const short n_variables = 4;
+const short f_variables = n_variables - 1;
+
 class Stackelement {
 public:
     
     binHash<Element*> variables;
-    vecte<short> names;
+    vecte<short> names[n_variables];
     Element* function;
 
     Stackelement() {
@@ -46,7 +49,7 @@ public:
         variables[label] = e;
         if (e->status != s_constant) {
             e->increment();
-            names.push_back(label);
+            names[label&f_variables].push_back(label);
         }
         return true;
     }
@@ -57,7 +60,7 @@ public:
         variables[label] = e;
         if (e->status != s_constant) {
             e->increment();
-            names.push_back(label);
+            names[label&f_variables].push_back(label);
         }
         return true;
     }
@@ -87,7 +90,7 @@ public:
         variables[label] = e;
         if (e->status != s_constant) {
             e->increment();
-            names.push_back(label);
+            names[label&f_variables].push_back(label);
         }
     }
     
@@ -98,11 +101,11 @@ public:
             
             e = e->duplicate_constant();
 
-            if (names.check(label)) {
+            if (names[label&f_variables].check(label)) {
                 if (e->status != s_constant)
                     e->increment();
                 else
-                    names.erase(label);
+                    names[label&f_variables].erase(label);
                 variables.at(label)->decrement();
                 variables.put(label, e);
                 return;
@@ -117,7 +120,7 @@ public:
         
         if (e->status != s_constant) {
             e->increment();
-            names.push_back(label);
+            names[label&f_variables].push_back(label);
         }
     }
 
@@ -128,11 +131,11 @@ public:
             
             e = e->duplicate_constant();
 
-            if (names.check(label)) {
+            if (names[label&f_variables].check(label)) {
                 if (e->status != s_constant)
                     e->increment();
                 else
-                    names.erase(label);
+                    names[label&f_variables].erase(label);
                 variables.at(label)->decrement();
                 variables.put(label, e);
                 return e;
@@ -147,7 +150,7 @@ public:
         
         if (e->status != s_constant) {
             e->increment();
-            names.push_back(label);
+            names[label&f_variables].push_back(label);
         }
         return e;
     }
@@ -159,11 +162,11 @@ public:
             
             e = e->duplicate_constant();
 
-            if (names.check(label)) {
+            if (names[label&f_variables].check(label)) {
                 if (e->status != s_constant)
                     e->increment();
                 else
-                    names.erase(label);
+                    names[label&f_variables].erase(label);
                 variables.at(label)->decrement();
                 variables.put(label, e);
                 return;
@@ -178,7 +181,7 @@ public:
         
         if (e->status != s_constant) {
             e->increment();
-            names.push_back(label);
+            names[label&f_variables].push_back(label);
         }
     }
 
@@ -189,11 +192,11 @@ public:
         
         e = e->duplicate_constant();
         
-        if (names.check(label)) {
+        if (names[label&f_variables].check(label)) {
             if (e->status != s_constant)
                 e->increment();
             else
-                names.erase(label);
+                names[label&f_variables].erase(label);
             variables.at(label)->decrement();
             variables.put(label, e);
             return;
@@ -203,7 +206,7 @@ public:
         
         if (e->status != s_constant) {
             e->increment();
-            names.push_back(label);
+            names[label&f_variables].push_back(label);
         }
     }
 
@@ -212,14 +215,14 @@ public:
     }
     
     void remove(short label) {
-        if (names.checkanderase(label)) {
+        if (names[label&f_variables].checkanderase(label)) {
             variables.at(label)->decrement();
         }
         variables.erase(label);
     }
 
     void remove(short label, Element* keep) {
-        if (names.checkanderase(label)) {
+        if (names[label&f_variables].checkanderase(label)) {
             Element* local = variables.at(label);
             if (local == keep)
                 local->decrementkeep();
@@ -243,23 +246,28 @@ public:
     }
     
     void clear() {
-        for (short i = 0; i < names.last; i++) {
-            variables.at(names.vecteur[i])->decrement();
+        for (short label = 0; label < n_variables; label++) {
+            for (short i = 0; i < names[label&f_variables].last; i++) {
+                variables.at(names[label&f_variables].vecteur[i])->decrement();
+            }
+            names[label&f_variables].clear();
         }
         variables.clear();
-        names.clear();
         function = NULL;
     }
 
     void clear(Element* keep) {
         Element* e;
-        for (short i = 0; i < names.last; i++) {
-            e = variables.at(names.vecteur[i]);
-            if (e != keep)
-                e->decrement();
+        for (short label = 0; label < n_variables; label++) {
+            for (short i = 0; i < names[label&f_variables].last; i++) {
+                e = variables.at(names[label&f_variables].vecteur[i]);
+                if (e != keep)
+                    e->decrement();
+            }
+            names[label&f_variables].clear();
         }
+        
         variables.clear();
-        names.clear();
         function = NULL;
     }
 
@@ -288,8 +296,11 @@ public:
     }
     
     ~Stackelement() {
-        for (short i = 0; i < names.last; i++)
-            variables.at(names.vecteur[i])->decrement();
+        for (short label = 0; label < n_variables; label++) {
+            for (short i = 0; i < names[label&f_variables].last; i++)
+                variables.at(names[label&f_variables].vecteur[i])->decrement();
+            names[label&f_variables].clear();
+        }
     }
 };
 

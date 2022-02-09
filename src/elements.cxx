@@ -34,6 +34,10 @@ void binSetIter::set(binSet& b) {
 }
 
 //------------------------------------------------------------------------------------------
+Returnpool::Returnpool(LispE* l) : lisp(l), Element(l_return) {
+    value = null_;
+}
+//------------------------------------------------------------------------------------------
 Element* Element::quoting(LispE* lisp) {
     List* l = lisp->provideList();
     l->append(quote_);
@@ -54,7 +58,161 @@ short Element::function_label() {
     throw new Error("Error: Not a function or a data structure");
 }
 //------------------------------------------------------------------------------------------
+Element* Float::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    return lisp->provideFloat(number);
+}
 
+
+Element* Number::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    return lisp->provideNumber(number);
+}
+
+
+Element* Integer::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    return lisp->provideInteger(integer);
+}
+
+Element* String::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    return lisp->provideString(content);
+}
+
+Element* Dictionary::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+
+    Dictionary* d = lisp->provideDictionary();
+    Element* e;
+    for (auto& a: dictionary) {
+        e = a.second->copying(false);
+        d->dictionary[a.first] = e;
+        e->increment();
+    }
+    return d;
+}
+
+Element* Dictionary_n::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+
+    Dictionary_n* d = lisp->provideDictionary_n();
+    Element* e;
+    for (auto& a: dictionary) {
+        e = a.second->copying(false);
+        d->dictionary[a.first] = e;
+        e->increment();
+    }
+    return d;
+}
+
+Element* Dictionary_i::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+
+    Dictionary_i* d = lisp->provideDictionary_i();
+    Element* e;
+    for (auto& a: dictionary) {
+        e = a.second->copying(false);
+        d->dictionary[a.first] = e;
+        e->increment();
+    }
+    return d;
+}
+
+Element* Set_s::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+
+    Set_s* st = lisp->provideSet_s();
+    st->ensemble = ensemble;
+    return st;
+}
+
+Element* Set_i::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+
+    Set_i* st = lisp->provideSet_i();
+    st->ensemble = ensemble;
+    return st;
+}
+
+Element* Set_n::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+
+    Set_n* st = lisp->provideSet_n();
+    st->ensemble = ensemble;
+    return st;
+}
+
+Element* Set::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+
+    Set* st = lisp->provideSet();
+    st->dictionary = dictionary;
+    for (auto& a : st->dictionary)
+        a.second->increment();
+    return st;
+}
+
+Element* List::copyatom(LispE* lisp, uint16_t s) {
+    if (liste.shared(status) < s)
+        return this;
+
+    List* l = lisp->provideList();
+    for (long i = 0; i < liste.size(); i++) {
+        l->append(liste[i]->copyatom(lisp, s));
+    }
+    release();
+    return l;
+}
+
+Element* Floats::copyatom(LispE* lisp, uint16_t s) {
+    if (liste.shared(status) < s)
+        return this;
+    
+    Floats* f = lisp->provideFloats(this);
+    release();
+    return f;
+}
+
+Element* Numbers::copyatom(LispE* lisp, uint16_t s) {
+    if (liste.shared(status) < s)
+        return this;
+
+    Numbers* n = lisp->provideNumbers(this);
+    release();
+    return n;
+}
+
+Element* Integers::copyatom(LispE* lisp, uint16_t s) {
+    if (liste.shared(status) < s)
+        return this;
+
+    Integers* i = lisp->provideIntegers(this);
+    release();
+    return i;
+}
+
+Element* Strings::copyatom(LispE* lisp, uint16_t s) {
+    if (liste.shared(status) < s)
+        return this;
+
+    Strings* sl = lisp->provideStrings(this);
+    release();
+    return sl;
+}
+
+//------------------------------------------------------------------------------------------
 void Floatpool::decrement() {
     if (is_protected())
         return;
@@ -185,7 +343,7 @@ Element* Floatpool::fullcopy() {
     return lisp->provideFloat(number);
 }
 
-Element* Floatpool::copyatom(uint16_t s) {
+Element* Floatpool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
     return lisp->provideFloat(number);
@@ -210,7 +368,7 @@ Element* Numberpool::fullcopy() {
     return lisp->provideNumber(number);
 }
 
-Element* Numberpool::copyatom(uint16_t s) {
+Element* Numberpool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
     return lisp->provideNumber(number);
@@ -235,7 +393,7 @@ Element* Integerpool::fullcopy() {
     return lisp->provideInteger(integer);
 }
 
-Element* Integerpool::copyatom(uint16_t s) {
+Element* Integerpool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
     return lisp->provideInteger(integer);
@@ -267,8 +425,8 @@ Element* Constfloat::fullcopy() {
     return lisp->provideFloat(number);
 }
 
-Element* Constfloat::copyatom(uint16_t s) {
-    return (provide)?lisp->provideFloat(number):new Float(number);
+Element* Constfloat::copyatom(LispE* lsp, uint16_t s) {
+    return lsp->provideFloat(number);
 }
 
 Element* Constfloat::duplicate_constant(bool pair) {
@@ -287,8 +445,8 @@ Element* Constnumber::fullcopy() {
     return lisp->provideNumber(number);
 }
 
-Element* Constnumber::copyatom(uint16_t s) {
-    return (provide)?lisp->provideNumber(number):new Number(number);
+Element* Constnumber::copyatom(LispE* lsp, uint16_t s) {
+    return lsp->provideNumber(number);
 }
 
 Element* Constnumber::duplicate_constant(bool pair) {
@@ -301,8 +459,8 @@ Element* Constinteger::fullcopy() {
     return lisp->provideInteger(integer);
 }
 
-Element* Constinteger::copyatom(uint16_t s) {
-    return (provide)?lisp->provideInteger(integer):new Integer(integer);
+Element* Constinteger::copyatom(LispE* lsp, uint16_t s) {
+    return lsp->provideInteger(integer);
 }
 
 Element* Constinteger::duplicate_constant(bool pair) {
@@ -319,7 +477,7 @@ Element* Constshort::fullcopy() {
     return new Short(integer);
 }
 
-Element* Constshort::copyatom(uint16_t s) {
+Element* Constshort::copyatom(LispE* lsp, uint16_t s) {
     return new Short(integer);
 }
 
@@ -343,8 +501,8 @@ Element* Conststring::fullcopy() {
     return lisp->provideString(content);
 }
 
-Element* Conststring::copyatom(uint16_t s) {
-    return (provide)?lisp->provideString(content):new String(content);
+Element* Conststring::copyatom(LispE* lsp, uint16_t s) {
+    return lsp->provideString(content);
 }
 
 Element* Conststring::duplicate_constant(bool pair) {
@@ -357,7 +515,7 @@ Element* Stringpool::fullcopy() {
     return lisp->provideString(content);
 }
 
-Element* Stringpool::copyatom(uint16_t s) {
+Element* Stringpool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
     return lisp->provideString(content);
@@ -657,12 +815,12 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
     }
     else {
         if (type == t_float || type == t_number)
-            keycmd = lisp->delegation->_DICO_KEYN;
+            keycmd = lisp->delegation->_DICO_NUMBER;
         else {
             if (type == t_short || type == t_integer)
-                keycmd = lisp->delegation->_DICO_KEYI;
+                keycmd = lisp->delegation->_DICO_INTEGER;
             else
-                keycmd = lisp->delegation->_DICO_KEY;
+                keycmd = lisp->delegation->_DICO_STRING;
         }
         
         //We generate: (key k v k' v' k" v"...)
@@ -995,6 +1153,33 @@ Element* s_count(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
 //------------------------------------------------------------------------------------------
 Element* Element::insert(LispE* lisp, Element* e, long ix) {
     return null_;
+}
+
+void String::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        content += value->asUString(lisp);
+        value->release();
+    }
+}
+
+void String::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        content.insert(0, value->asUString(lisp));
+        value->release();
+    }
+}
+
+void String::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        content += value->asUString(lisp);
+        value->release();
+    }
 }
 
 Element* String::insert(LispE* lisp, Element* e, long ix) {
@@ -1498,6 +1683,10 @@ Element* Element::less(LispE* lisp, Element* e) {
     return false_;
 }
 
+Element* Element::compare(LispE* lisp, Element* e) {
+    return null_;
+}
+
 Element* Element::lessorequal(LispE* lisp, Element* e){
     return false_;
 }
@@ -1512,6 +1701,12 @@ Element* Element::moreorequal(LispE* lisp, Element* e) {
 
 Element* String::less(LispE* lisp, Element* e) {
     return booleans_[content < e->asUString(lisp)];
+}
+
+Element* String::compare(LispE* lisp, Element* e) {
+    u_ustring v = e->asUString(lisp);
+    short test = (content == v) + (content < v) * 2;
+    return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
 Element* String::lessorequal(LispE* lisp, Element* e){
@@ -1530,8 +1725,20 @@ Element* Number::less(LispE* lisp, Element* e) {
     return booleans_[number < e->asNumber()];
 }
 
+Element* Number::compare(LispE* lisp, Element* e) {
+    double v = e->asNumber();
+    short test = (number == v) + (number < v) * 2;
+    return lisp->delegation->_COMPARE_BOOLEANS[test];
+}
+
 Element* Float::less(LispE* lisp, Element* e) {
     return booleans_[number < e->asFloat()];
+}
+
+Element* Float::compare(LispE* lisp, Element* e) {
+    float v = e->asFloat();
+    short test = (number == v) + (number < v) * 2;
+    return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
 Element* Float::lessorequal(LispE* lisp, Element* e){
@@ -1562,8 +1769,20 @@ Element* Integer::less(LispE* lisp, Element* e) {
     return booleans_[integer < e->asInteger()];
 }
 
+Element* Integer::compare(LispE* lisp, Element* e) {
+    long v = e->asInteger();
+    short test = (integer == v) + (integer < v) * 2;
+    return lisp->delegation->_COMPARE_BOOLEANS[test];
+}
+
 Element* Short::less(LispE* lisp, Element* e) {
     return booleans_[integer < e->asShort()];
+}
+
+Element* Short::compare(LispE* lisp, Element* e) {
+    short v = e->asShort();
+    short test = (integer == v) + (integer < v) * 2;
+    return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
 Element* Short::lessorequal(LispE* lisp, Element* e) {

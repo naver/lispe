@@ -281,6 +281,20 @@ wstring Lispe_curl::asString(LispE* lisp) {
     s_utf8_to_unicode(res, USTR(data), data.size());
     return res;
 }
+
+Element* Lispe_curl::protected_index(LispE* lisp, Element* ix) {
+    Element* s = lisp->provideString(data);
+    Element* r = s->protected_index(lisp, ix);
+    s->release();
+    return r;
+}
+
+Element* Lispe_curl::extraction(LispE* lisp, List* liste) {
+    Element* s = lisp->provideString(data);
+    Element* r = s->extraction(lisp, liste);
+    s->release();
+    return r;
+}
 //-------------------------------------------------------------------------------------------
 Element* Lispe_curl_function::MethodProxy(LispE* lisp) {
     //In our example, we have only two parameters

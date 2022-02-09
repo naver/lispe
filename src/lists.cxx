@@ -85,13 +85,13 @@ Element* Listpool::fullcopy() {
     return liste.object;
 }
 
-Element* Listpool::copyatom(uint16_t s) {
+Element* Listpool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
     List* l = lisp->provideList();
     for (long i = 0; i < liste.size(); i++) {
-        l->append(liste[i]->copyatom(s));
+        l->append(liste[i]->copyatom(lisp, s));
     }
     release();
     return l;
@@ -186,7 +186,7 @@ Element* Floatspool::copying(bool duplicate) {
     return lisp->provideFloats(this);
 }
 
-Element* Floatspool::copyatom(uint16_t s) {
+Element* Floatspool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
@@ -242,7 +242,7 @@ Element* Numberspool::copying(bool duplicate) {
     return lisp->provideNumbers(this);
 }
 
-Element* Numberspool::copyatom(uint16_t s) {
+Element* Numberspool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
@@ -310,7 +310,7 @@ Element* Integerspool::copying(bool duplicate) {
     return lisp->provideIntegers(this);
 }
 
-Element* Integerspool::copyatom(uint16_t s) {
+Element* Integerspool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
@@ -374,7 +374,7 @@ Element* Stringspool::copying(bool duplicate) {
     return lisp->provideStrings(this);
 }
 
-Element* Stringspool::copyatom(uint16_t s) {
+Element* Stringspool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
@@ -1097,49 +1097,37 @@ Element* LList::thekeys(LispE* lisp) {
 }
 
 long List::find_element(LispE* lisp, Element* valeur, long ix) {
-    for (long i = ix; i < liste.size(); i++) {
-        if (liste[i]->equal(lisp, valeur)->Boolean())
-            return i;
-    }
-    return -1;
+    long i = ix;
+    long sz = liste.size();
+    for (; i < sz && !liste[i]->equal(lisp, valeur)->Boolean(); i++) {}
+    return (i == sz)?-1:i;
 }
 
 Element* List::search_element(LispE* lisp, Element* valeur, long ix) {
-    for (long i = ix; i < liste.size(); i++) {
-        if (liste[i]->equal(lisp, valeur)->Boolean())
-            return lisp->provideInteger(i);
-    }
-    return null_;
+    long i = ix;
+    long sz = liste.size();
+    for (; i < sz && !liste[i]->equal(lisp, valeur)->Boolean(); i++) {}
+    return (i == sz)?null_:lisp->provideInteger(i);
 }
 
 Element* LList::search_element(LispE* lisp, Element* valeur, long ix) {
     u_link*  it = at(ix);
-    long i = 0;
-    for (;it != NULL; it = it->next()) {
-        if (it->value->equal(lisp, valeur)->Boolean())
-            return lisp->provideInteger(i);
-        i++;
-    }
-    return null_;
+    for (;it != NULL && !it->value->equal(lisp, valeur)->Boolean(); it = it->next()) {}
+    
+    return (it == NULL)?null_:it->value;
 }
 
 bool List::check_element(LispE* lisp, Element* valeur) {
-    for (long i = 0; i < liste.size(); i++) {
-        if (liste[i]->equal(lisp, valeur)->Boolean())
-            return true;
-    }
-    return false;
+    long i = 0;
+    long sz = liste.size();
+    for (; i < sz  && !liste[i]->equal(lisp, valeur)->Boolean(); i++) {}
+    return (i != sz);
 }
 
 bool LList::check_element(LispE* lisp, Element* valeur) {
     u_link*  it = liste.begin();
-    long i = 0;
-    for (;it != NULL; it = it->next()) {
-        if (it->value->equal(lisp, valeur)->Boolean())
-            return true;
-        i++;
-    }
-    return false;
+    for (;it != NULL && !it->value->equal(lisp, valeur)->Boolean(); it = it->next()) {}
+    return (it != NULL);
 }
 
 Element* List::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
@@ -1715,6 +1703,8 @@ Element* List::extraction(LispE* lisp, List* l) {
     Element* e_from = l->liste[2];
     Element* e;
     
+    long sz = size();
+
     long from = 0;
     long firstisString = -1;
     short nxt = 3;
@@ -1791,7 +1781,7 @@ Element* List::extraction(LispE* lisp, List* l) {
         case t_number:
             from = e_from->asInteger();
             if (from < 0)
-                from = size() + from;
+                from = sz + from;
             break;
         default:
             e->release();
@@ -1802,7 +1792,7 @@ Element* List::extraction(LispE* lisp, List* l) {
     e->release();
     e_from->release();
     
-    if (from < 0 || from >= size())
+    if (from < 0 || from >= sz)
         return emptylist_;
     
     if (nxt == l->size()) {
@@ -1887,7 +1877,7 @@ Element* List::extraction(LispE* lisp, List* l) {
             else {
                 if (upto <= 0) {
                     //We start from the end...
-                    upto = size() + upto;
+                    upto = sz + upto;
                 }
             }
             break;
@@ -1902,8 +1892,10 @@ Element* List::extraction(LispE* lisp, List* l) {
     if (upto <= from)
         return emptylist_;
     
-    if (upto > size())
-        upto = size();
+    //In this case, we use extraction as a multiple cdr...
+    if (upto >= sz)
+        return new Listpool(lisp, this, from);
+
     l = lisp->provideList();
     for (;from < upto; from++)
         l->append(liste[from]->copying(false));
@@ -2106,11 +2098,15 @@ Element* LList::extraction(LispE* lisp, List* l) {
     if (upto <= from)
         return emptylist_;
     
-    if (upto > sz)
-        upto = sz;
+    //Equivalent to multiple cdr
+    if (upto >= sz) {
+        u_link* it = liste.at(from);
+        return new LList(this, it);
+    }
+        
     
     LList* ll = new LList(liste.mark);
-    u_link*  it = liste.at(upto - 1);
+    u_link* it = liste.at(upto - 1);
     for (;it != NULL && upto != from; it = it->previous(), upto--) {
         ll->push_front(it->value->copying(false));
     }
@@ -3018,21 +3014,12 @@ Element* Numbers::thekeys(LispE* lisp) {
 }
 
 Element* Numbers::search_element(LispE* lisp, Element* valeur, long ix) {
-    double v = valeur->asNumber();
-    for (long i = ix; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return lisp->provideInteger(i);
-    }
-    return null_;
+    long pos = liste.search(valeur->asNumber(), ix);
+    return (pos == -1)?null_:lisp->provideInteger(pos);
 }
 
 bool Numbers::check_element(LispE* lisp, Element* valeur) {
-    double v = valeur->asNumber();
-    for (long i = 0; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return true;
-    }
-    return false;
+    return liste.check(valeur->asNumber());
 }
 
 Element* Numbers::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
@@ -3296,41 +3283,45 @@ bool Numbers::egal(Element* e) {
 }
 
 Element* Numbers::extraction(LispE* lisp, List* l) {
-    long depuis;
-    l->evalAsInteger(2, lisp, depuis);
-    if (depuis >= 0) {
-        if (depuis >= liste.size())
+    long from;
+    long sz = liste.size();
+    l->evalAsInteger(2, lisp, from);
+    if (from >= 0) {
+        if (from >= sz)
             return emptylist_;
     }
     else {
         //We start from the end...
-        depuis = liste.size() + depuis;
-        if (depuis < 0)
+        from = sz + from;
+        if (from < 0)
             return emptylist_;
     }
     if (l->size() == 3) {
         //On returns only one element
-        return lisp->provideNumber(liste[depuis]);
+        return lisp->provideNumber(liste[from]);
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
-        if (upto >= liste.size())
-            upto = liste.size();
+    if (upto > 0) {
+        if (upto >= sz)
+            upto = sz;
     }
     else {
         //We start from the end...
-        upto = liste.size() + upto;
+        upto = sz + upto;
         if (upto < 0)
             return emptylist_;
     }
-    if (upto < depuis) {
+    if (upto < from) {
         return emptylist_;
     }
     
+    if (upto == sz)
+        return lisp->provideNumbers(this, from);
+    
     Numbers* n = lisp->provideNumbers();
-    for (;depuis < upto; depuis++) {
-        n->liste.push_back(liste[depuis]);
+    for (;from < upto; from++) {
+        n->liste.push_back(liste[from]);
     }
     return n;
 }
@@ -3360,7 +3351,7 @@ Element* Numbers::replace_in(LispE* lisp, List* l) {
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
+    if (upto > 0) {
         if (upto >= liste.size())
             upto = liste.size();
     }
@@ -3735,21 +3726,12 @@ Element* Integers::thekeys(LispE* lisp) {
 }
 
 Element* Integers::search_element(LispE* lisp, Element* valeur, long ix) {
-    long v = valeur->asInteger();
-    for (long i = ix; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return lisp->provideInteger(i);
-    }
-    return null_;
+    long pos = liste.search(valeur->asInteger(), ix);
+    return (pos == -1)?null_:lisp->provideInteger(pos);
 }
 
 bool Integers::check_element(LispE* lisp, Element* valeur) {
-    long v = valeur->asInteger();
-    for (long i = 0; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return true;
-    }
-    return false;
+    return liste.check(valeur->asInteger());
 }
 
 Element* Integers::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
@@ -4011,41 +3993,47 @@ bool Integers::egal(Element* e) {
 }
 
 Element* Integers::extraction(LispE* lisp, List* l) {
-    long depuis;
-    l->evalAsInteger(2, lisp, depuis);
-    if (depuis >= 0) {
-        if (depuis >= liste.size())
+    long from;
+    long sz = liste.size();
+    
+    l->evalAsInteger(2, lisp, from);
+    if (from >= 0) {
+        if (from >= sz)
             return emptylist_;
     }
     else {
         //We start from the end...
-        depuis = liste.size() + depuis;
-        if (depuis < 0)
+        from = sz + from;
+        if (from < 0)
             return emptylist_;
     }
     if (l->size() == 3) {
         //On returns only one element
-        return lisp->provideInteger(liste[depuis]);
+        return lisp->provideInteger(liste[from]);
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
-        if (upto >= liste.size())
-            upto = liste.size();
+    if (upto > 0) {
+        if (upto >= sz)
+            upto = sz;
     }
     else {
         //We start from the end...
-        upto = liste.size() + upto;
+        upto = sz + upto;
         if (upto < 0)
             return emptylist_;
     }
-    if (upto < depuis) {
+    if (upto < from) {
         return emptylist_;
     }
     
+    //In this case we use it as a multiple cdr
+    if (upto == sz)
+        return lisp->provideIntegers(this, from);
+    
     Integers* n = lisp->provideIntegers();
-    for (;depuis < upto; depuis++) {
-        n->liste.push_back(liste[depuis]);
+    for (;from < upto; from++) {
+        n->liste.push_back(liste[from]);
     }
     return n;
 }
@@ -4075,7 +4063,7 @@ Element* Integers::replace_in(LispE* lisp, List* l) {
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
+    if (upto > 0) {
         if (upto >= liste.size())
             upto = liste.size();
     }
@@ -4442,21 +4430,12 @@ Element* Strings::thekeys(LispE* lisp) {
 }
 
 Element* Strings::search_element(LispE* lisp, Element* valeur, long ix) {
-    u_ustring v = valeur->asUString(lisp);
-    for (long i = ix; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return lisp->provideInteger(i);
-    }
-    return null_;
+    long pos = liste.search(valeur->asUString(lisp), ix);
+    return (pos == -1)?null_:lisp->provideInteger(pos);
 }
 
 bool Strings::check_element(LispE* lisp, Element* valeur) {
-    u_ustring v = valeur->asUString(lisp);
-    for (long i = 0; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return true;
-    }
-    return false;
+    return liste.check(valeur->asUString(lisp));
 }
 
 Element* Strings::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
@@ -4743,6 +4722,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
     
     Element* e_from = l->liste[2];
     Element* e;
+    long sz = liste.size();
     
     long from = 0;
     long firstisString = -1;
@@ -4820,7 +4800,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         case t_number:
             from = e_from->asInteger();
             if (from < 0)
-                from = size() + from;
+                from = sz + from;
             break;
         default:
             e->release();
@@ -4831,7 +4811,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
     e->release();
     e_from->release();
     
-    if (from < 0 || from >= size())
+    if (from < 0 || from >= sz)
         return emptylist_;
     
     if (nxt == l->size()) {
@@ -4916,7 +4896,7 @@ Element* Strings::extraction(LispE* lisp, List* l) {
             else {
                 if (upto <= 0) {
                     //We start from the end...
-                    upto = size() + upto;
+                    upto = sz + upto;
                 }
             }
             break;
@@ -4931,8 +4911,9 @@ Element* Strings::extraction(LispE* lisp, List* l) {
     if (upto <= from)
         return emptylist_;
     
-    if (upto > size())
-        upto = size();
+    if (upto >= sz)
+        return new Stringspool(lisp, this, from);
+        
     Strings* n = lisp->provideStrings();
     for (;from < upto; from++) {
         n->liste.push_back(liste[from]);
@@ -5503,21 +5484,12 @@ Element* Shorts::thekeys(LispE* lisp) {
 }
 
 Element* Shorts::search_element(LispE* lisp, Element* valeur, long ix) {
-    short v = valeur->asShort();
-    for (long i = ix; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return lisp->provideInteger(i);
-    }
-    return null_;
+    long pos = liste.search(valeur->asShort(), ix);
+    return (pos == -1)?null_:lisp->provideInteger(pos);
 }
 
 bool Shorts::check_element(LispE* lisp, Element* valeur) {
-    short v = valeur->asShort();
-    for (long i = 0; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return true;
-    }
-    return false;
+    return liste.check(valeur->asShort());
 }
 
 Element* Shorts::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
@@ -5781,41 +5753,46 @@ bool Shorts::egal(Element* e) {
 }
 
 Element* Shorts::extraction(LispE* lisp, List* l) {
-    long depuis;
-    l->evalAsInteger(2, lisp, depuis);
-    if (depuis >= 0) {
-        if (depuis >= liste.size())
+    long from;
+    long sz = liste.size();
+    
+    l->evalAsInteger(2, lisp, from);
+    if (from >= 0) {
+        if (from >= sz)
             return emptylist_;
     }
     else {
         //We start from the end...
-        depuis = liste.size() + depuis;
-        if (depuis < 0)
+        from = sz + from;
+        if (from < 0)
             return emptylist_;
     }
     if (l->size() == 3) {
         //On returns only one element
-        return new Short(liste[depuis]);
+        return new Short(liste[from]);
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
-        if (upto >= liste.size())
-            upto = liste.size();
+    if (upto > 0) {
+        if (upto >= sz)
+            upto = sz;
     }
     else {
         //We start from the end...
-        upto = liste.size() + upto;
+        upto = sz + upto;
         if (upto < 0)
             return emptylist_;
     }
-    if (upto < depuis) {
+    if (upto < from) {
         return emptylist_;
     }
     
+    if (upto == sz)
+        return new Shorts(this, from);
+    
     Shorts* n = new Shorts();
-    for (;depuis < upto; depuis++) {
-        n->liste.push_back(liste[depuis]);
+    for (;from < upto; from++) {
+        n->liste.push_back(liste[from]);
     }
     return n;
 }
@@ -5845,7 +5822,7 @@ Element* Shorts::replace_in(LispE* lisp, List* l) {
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
+    if (upto > 0) {
         if (upto >= liste.size())
             upto = liste.size();
     }
@@ -6237,21 +6214,12 @@ Element* Floats::thekeys(LispE* lisp) {
 }
 
 Element* Floats::search_element(LispE* lisp, Element* valeur, long ix) {
-    float v = valeur->asFloat();
-    for (long i = ix; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return lisp->provideInteger(i);
-    }
-    return null_;
+    long pos = liste.search(valeur->asFloat(), ix);
+    return (pos == -1)?null_:lisp->provideInteger(pos);
 }
 
 bool Floats::check_element(LispE* lisp, Element* valeur) {
-    float v = valeur->asFloat();
-    for (long i = 0; i < liste.size(); i++) {
-        if (liste[i] == v)
-            return true;
-    }
-    return false;
+    return liste.check(valeur->asFloat());
 }
 
 Element* Floats::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
@@ -6516,41 +6484,45 @@ bool Floats::egal(Element* e) {
 }
 
 Element* Floats::extraction(LispE* lisp, List* l) {
-    long depuis;
-    l->evalAsInteger(2, lisp, depuis);
-    if (depuis >= 0) {
-        if (depuis >= liste.size())
+    long sz = liste.size();
+    long from;
+    l->evalAsInteger(2, lisp, from);
+    if (from >= 0) {
+        if (from >= sz)
             return emptylist_;
     }
     else {
         //We start from the end...
-        depuis = liste.size() + depuis;
-        if (depuis < 0)
+        from = sz + from;
+        if (from < 0)
             return emptylist_;
     }
     if (l->size() == 3) {
         //On returns only one element
-        return lisp->provideFloat(liste[depuis]);
+        return lisp->provideFloat(liste[from]);
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
-        if (upto >= liste.size())
-            upto = liste.size();
+    if (upto > 0) {
+        if (upto >= sz)
+            upto = sz;
     }
     else {
         //We start from the end...
-        upto = liste.size() + upto;
+        upto = sz + upto;
         if (upto < 0)
             return emptylist_;
     }
-    if (upto < depuis) {
+    if (upto < from) {
         return emptylist_;
     }
     
+    if (upto == sz)
+        return lisp->provideFloats(this, from);
+    
     Floats* n = lisp->provideFloats();
-    for (;depuis < upto; depuis++) {
-        n->liste.push_back(liste[depuis]);
+    for (;from < upto; from++) {
+        n->liste.push_back(liste[from]);
     }
     return n;
 }
@@ -6580,7 +6552,7 @@ Element* Floats::replace_in(LispE* lisp, List* l) {
     }
     long upto;
     l->evalAsInteger(3, lisp, upto);
-    if (upto >= 0) {
+    if (upto > 0) {
         if (upto >= liste.size())
             upto = liste.size();
     }
@@ -7335,4 +7307,226 @@ Element* Strings::next_iter_exchange(LispE* lisp, void* it) {
     n[0]++;
     return &exchange_value;
 }
+
+
+
+void Element::push_element(LispE* lisp, List* l) {
+    throw new Error("Error: cannot push in this kind of elements");
+}
+
+void Element::push_element_front(LispE* lisp, List* l) {
+    throw new Error("Error: cannot push in this kind of elements");
+}
+
+void Element::push_element_back(LispE* lisp, List* l) {
+    throw new Error("Error: cannot push in this kind of elements");
+}
+
+
+void List::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        append(value->copying(false));
+        value->release();
+    }
+}
+
+void List::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        insert(lisp, value->copying(false), 0);
+        value->release();
+    }
+}
+
+void List::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        append(value->copying(false));
+        value->release();
+    }
+}
+
+void LList::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        push_front(value->copying(false));
+        value->release();
+    }
+}
+
+void LList::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        push_front(value->copying(false));
+        value->release();
+    }
+}
+
+void LList::push_element_back(LispE* lisp, List* l) {
+    Element* value = l->liste[2]->eval(lisp);
+
+    u_link* current = liste.last_raw();
+    u_link* u = new u_link(value->copying(false));
+    u->value->increment();
+    value->release();
+    if (current == NULL) {
+        liste.first = u;
+        u->inc(1);
+    }
+    else
+        current->push(u);
+
+    for (long i = 3; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        current = u;
+        u = new u_link(value->copying(false));
+        u->value->increment();
+        value->release();
+        current->push(u);
+    }
+}
+
+void Integers::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asInteger());
+        value->release();
+    }
+}
+
+void Integers::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.insert(0, value->asInteger());
+        value->release();
+    }
+}
+
+void Integers::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asInteger());
+        value->release();
+    }
+}
+
+void Numbers::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asNumber());
+        value->release();
+    }
+}
+
+void Numbers::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.insert(0, value->asNumber());
+        value->release();
+    }
+}
+
+void Numbers::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asNumber());
+        value->release();
+    }
+}
+
+void Floats::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asFloat());
+        value->release();
+    }
+}
+
+void Floats::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.insert(0, value->asFloat());
+        value->release();
+    }
+}
+
+void Floats::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asFloat());
+        value->release();
+    }
+}
+
+void Shorts::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asShort());
+        value->release();
+    }
+}
+
+void Shorts::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.insert(0, value->asShort());
+        value->release();
+    }
+}
+
+void Shorts::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asShort());
+        value->release();
+    }
+}
+
+void Strings::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asUString(lisp));
+        value->release();
+    }
+}
+
+void Strings::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.insert(0, value->asUString(lisp));
+        value->release();
+    }
+}
+
+void Strings::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        liste.push_back(value->asUString(lisp));
+        value->release();
+    }
+}
+
+
+
 

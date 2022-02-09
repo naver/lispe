@@ -621,7 +621,7 @@ public:
     short id_port;
 
     Socket(LispE* lisp, socket_action a, short ty) : action(a), Element(ty) {
-        u_ustring w = U"socket";
+        u_ustring w = U"socket_";
         type_socket_element = lisp->encode(w);
         
         w = U"socketClientId";
@@ -823,7 +823,7 @@ bool Socket::rootsocket = false;
 
 
 void moduleSocket(LispE* lisp) {
-    u_ustring w = U"socketmethods";
+    u_ustring w = U"socketmethods_";
     short idsocket = lisp->encode(w);
         
     lisp->extension("deflib socket_create(port nbclients (hostname))", new Socket(lisp, sock_create, idsocket));

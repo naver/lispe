@@ -362,6 +362,32 @@ public:
         indexes[i] |= binVal64[r];
     }
 
+    void push_back(uint16_t r) {
+        if (base == -1) {
+            base = r >> binBits;
+            r &= binMin;
+            indexes[0] |= binVal64[r];
+            return;
+        }
+        
+        uint16_t i = r >> binBits;
+        r &= binMin;
+        if (i < base) {
+            insert(i);
+            indexes[0] |= binVal64[r];
+            return;
+        }
+
+        i -= base;
+        if (i >= tsize) {
+            resize(i + (i >> 1) + 1);
+            indexes[i] |= binVal64[r];
+            return;
+        }
+        
+        indexes[i] |= binVal64[r];
+    }
+
     bool& operator [](uint16_t r) {
         if (base == -1) {
             base = r >> binBits;
@@ -522,6 +548,12 @@ template <class Z> class binHash {
         return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
     }
 
+    inline bool search(uint16_t r, Z* e) {
+        int16_t i = (r >> binBits) - base;
+        r &= binMin;
+        *e = (i >= 0 && i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
+        return *e;
+    }
 
     iterator find(uint16_t r) {
         if (base == -1)

@@ -1246,10 +1246,10 @@ public:
     short l_rgx;
     
     RegularExpressionConstructor(LispE* lisp, rgx r) : reg(r), Element(l_lib, s_constant) {
-        u_ustring wrgx = U"rgx";
+        u_ustring wrgx = U"rgx_";
 #ifdef POSIXREGEX
         if (r >= prgx_rgx)
-            wrgx = U"prgx";
+            wrgx = U"prgx_";
 #endif
         l_rgx = lisp->encode(wrgx);
     }

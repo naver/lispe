@@ -410,7 +410,7 @@ extern "C" {
 Exporting bool InitialisationModule(LispE* lisp) {
     //We first create the body of the function
 
-    wstring w = L"xml";
+    wstring w = L"xml_";
     short identifier = lisp->encode(w);
 
     lisp->extension("deflib xml_load (pathname)", new Lispe_xml(lisp, xml_load, identifier));

@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.3.10.7";
+static std::string version = "1.2022.2.9.14.24";
 string LispVersion() {
     return version;
 }
@@ -29,6 +29,13 @@ extern "C" {
     const char* lispversion() {
         return version.c_str();
     }
+}
+
+//------------------------------------------------------------------------------------------
+void LispE::updatecreator() {
+    checkstates[0] = &LispE::check_empty;
+    checkstates[1] = &LispE::check_straight;
+    checkstates[2] = &LispE::check_arity;
 }
 
 //------------------------------------------------------------------------------------------
@@ -189,6 +196,8 @@ void Delegation::initialisation(LispE* lisp) {
     evals[t_data] = &List::evalt_data;
     evals[t_list] = &List::evalt_list;
 
+
+
     // Here is the predefined list of instructions, with their name and arity
     //Important the instruction is counted into the arity. Hence (consp e) is P_TWO.
 
@@ -198,6 +207,9 @@ void Delegation::initialisation(LispE* lisp) {
 #ifdef MAX_STACK_SIZE_ENABLED
     set_instruction(l_set_max_stack_size, "_max_stack_size", P_ONE | P_TWO, &List::evall_set_max_stack_size);
 #endif
+
+    set_instruction(l_void, "%__void__%", P_FULL, &List::evall_void);
+    set_instruction(l_emptylist, "%__empty__%", P_ONE, &List::evall_emptylist);
 
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
@@ -242,6 +254,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
+    set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTHREE, &List::evall_dictionary);
+    set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryi);
+    set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryn);
     set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different);
     set_instruction(l_divide, "/", P_ATLEASTTWO, &List::evall_divide);
     set_instruction(l_divideequal, "/=", P_ATLEASTTWO, &List::evall_divideequal);
@@ -451,6 +466,11 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
     
 
+    //The void function
+    lisp->void_function = new Listincode;
+    lisp->void_function->liste.push_raw(provideAtomOrInstruction(l_void));
+    lisp->garbaging(lisp->void_function);
+
     //Operators
     operators[l_bitnot] = true;
     operators[l_bitand] = true;
@@ -604,9 +624,9 @@ void Delegation::initialisation(LispE* lisp) {
     _EMPTYATOM = (Atome*)lisp->provideAtomOrInstruction(v_emptyatom);
     _DEFPAT = (Atome*)lisp->provideAtomOrInstruction(l_defpat);
 
-    _DICO_KEY = (Atome*)lisp->provideAtomOrInstruction(l_key);
-    _DICO_KEYI = (Atome*)lisp->provideAtomOrInstruction(l_keyi);
-    _DICO_KEYN = (Atome*)lisp->provideAtomOrInstruction(l_keyn);
+    _DICO_STRING = (Atome*)lisp->provideAtomOrInstruction(l_dictionary);
+    _DICO_INTEGER = (Atome*)lisp->provideAtomOrInstruction(l_dictionaryi);
+    _DICO_NUMBER = (Atome*)lisp->provideAtomOrInstruction(l_dictionaryn);
 
     _SET_STRINGS = (Atome*)lisp->provideAtomOrInstruction(l_sets);
     _SET_NUMBERS = (Atome*)lisp->provideAtomOrInstruction(l_setn);
@@ -636,6 +656,11 @@ void Delegation::initialisation(LispE* lisp) {
     _ONE = lisp->provideConstinteger(1);
     _TWO = lisp->provideConstinteger(2);
     _MINUSONE = lisp->provideConstinteger(-1);
+    
+    
+    _COMPARE_BOOLEANS[0] = _ONE;
+    _COMPARE_BOOLEANS[1] = _ZERO;
+    _COMPARE_BOOLEANS[2] = _MINUSONE;
     
     
     _NUMERICAL_BOOLEANS[0] = _ZERO;
@@ -850,6 +875,7 @@ void Delegation::initialisation(LispE* lisp) {
     number_types.push(t_tensor_float);
     number_types.push(t_seti);
     number_types.push(t_setn);
+    
 }
 
 void LispE::cleaning() {
@@ -920,12 +946,14 @@ void LispE::cleaning() {
         }
         __indexes.clear();
         if (errors.size())
-            cerr << errors.size() << endl;
+            cerr << "%Errors: " << errors.size() << endl;
 #endif
     }
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) {
+    void_function = lisp->void_function;
+    updatecreator();
     preparingthread = false;
     evaluating = false;
     delegation = lisp->delegation;
@@ -1555,6 +1583,32 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     e->eval(this);
                                     continue;
                                 }
+                                case l_setq:
+                                case l_set_at:
+                                case l_setg:
+                                case l_plusequal:
+                                case l_minusequal:
+                                case l_multiplyequal:
+                                case l_powerequal:
+                                case l_leftshiftequal:
+                                case l_rightshiftequal:
+                                case l_bitandequal:
+                                case l_bitandnotequal:
+                                case l_bitorequal:
+                                case l_bitxorequal:
+                                case l_divideequal:
+                                case l_modequal:
+                                    if (e->index(1)->label() < l_final) {
+                                        wstring msg = L"Error: Invalid variable name: '";
+                                        msg += e->index(1)->asString(this);
+                                        msg += L"' (keyword)";
+                                        throw new Error(msg);
+                                    }
+                                    break;
+                                case l_if:
+                                    if (e->size() == 3)
+                                        e->append(void_function);
+                                    break;
                                 case l_link:
                                     e->eval(this);
                                     removefromgarbage(e);
@@ -1783,7 +1837,9 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
 }
 
 Element* LispE::atomise(u_ustring a) {
-    return delegation->atomise(a, threaded());
+    List* l = provideList();
+    delegation->atomise(a, l, threaded());
+    return l;
 }
 
 List* LispE::create_instruction(short label,
@@ -2212,6 +2268,21 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

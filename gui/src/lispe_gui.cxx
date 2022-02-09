@@ -1965,15 +1965,15 @@ wstring Lispe_gui::asString(LispE* lisp) {
 extern "C" {
 Exporting bool InitialisationModule(LispE* lisp) {
     //We first create the body of the function
-    u_ustring nom = U"fltk_gui";
+    u_ustring nom = U"fltk_gui_";
     short fltk_gui = lisp->encode(nom);
-    nom = U"fltk_widget";
+    nom = U"fltk_widget_";
     short fltk_widget = lisp->encode(nom);
     
-    nom = U"fltk_bitmap";
+    nom = U"fltk_bitmap_";
     fltk_type_bitmap = lisp->encode(nom);
     
-    nom = U"fltk_gif_image";
+    nom = U"fltk_gif_image_";
     fltk_type_gif = lisp->encode(nom);
 
     lisp->storing_global(U"FL_FOREGROUND_COLOR", lisp->provideInteger(FL_FOREGROUND_COLOR));

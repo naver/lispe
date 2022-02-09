@@ -1556,7 +1556,7 @@ Element* Float::divide_direct(LispE* lisp, Element* e) {
 
 Element* Float::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->plus(lisp, this);
         release();
         return n;
@@ -1583,7 +1583,7 @@ Element* Float::minus(LispE* lisp, Element* e) {
 
 Element* Float::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->multiply(lisp, this);
         release();
         return n;
@@ -1672,7 +1672,7 @@ Element* Float::bit_and_not(LispE* lisp, Element* e)  {
 
 Element* Float::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_and(lisp, this);
         release();
         return n;
@@ -1690,7 +1690,7 @@ Element* Float::bit_and(LispE* lisp, Element* e)  {
 
 Element* Float::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_or(lisp, this);
         release();
         return n;
@@ -1707,7 +1707,7 @@ Element* Float::bit_or(LispE* lisp, Element* e)  {
 
 Element* Float::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_xor(lisp, this);
         release();
         return n;
@@ -1848,7 +1848,7 @@ Element* Number::divide_direct(LispE* lisp, Element* e) {
 
 Element* Number::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->plus(lisp, this);
         release();
         return n;
@@ -1875,7 +1875,7 @@ Element* Number::minus(LispE* lisp, Element* e) {
 
 Element* Number::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->multiply(lisp, this);
         release();
         return n;
@@ -1964,7 +1964,7 @@ Element* Number::bit_and_not(LispE* lisp, Element* e)  {
 
 Element* Number::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_and(lisp, this);
         release();
         return n;
@@ -1982,7 +1982,7 @@ Element* Number::bit_and(LispE* lisp, Element* e)  {
 
 Element* Number::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_or(lisp, this);
         release();
         return n;
@@ -1999,7 +1999,7 @@ Element* Number::bit_or(LispE* lisp, Element* e)  {
 
 Element* Number::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_xor(lisp, this);
         release();
         return n;
@@ -2048,7 +2048,7 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
 
 Element* Integer::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->plus(lisp, this);
         release();
         return n;
@@ -2099,7 +2099,7 @@ Element* Integer::minus(LispE* lisp, Element* e) {
 
 Element* Integer::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->multiply(lisp, this);
         release();
         return n;
@@ -2210,7 +2210,7 @@ Element* Integer::bit_not(LispE* lisp)  {
 
 Element* Integer::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_and(lisp, this);
         release();
         return n;
@@ -2237,7 +2237,7 @@ Element* Integer::bit_and_not(LispE* lisp, Element* e)  {
 
 Element* Integer::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_or(lisp, this);
         release();
         return n;
@@ -2251,7 +2251,7 @@ Element* Integer::bit_or(LispE* lisp, Element* e)  {
 
 Element* Integer::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_xor(lisp, this);
         release();
         return n;
@@ -2293,7 +2293,7 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
 
 Element* Short::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->plus(lisp, this);
         release();
         return n;
@@ -2344,7 +2344,7 @@ Element* Short::minus(LispE* lisp, Element* e) {
 
 Element* Short::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->multiply(lisp, this);
         release();
         return n;
@@ -2373,29 +2373,33 @@ Element* Short::divide_direct(LispE* lisp, Element* e) {
             float v =  ((Float*)e)->number;
             if (!v)
                 throw new Error("Error: division by zero");
+            float vv = (float)integer;
             release();
-            return lisp->provideFloat(((float)integer)/v);
+            return lisp->provideFloat(vv/v);
         }
         case t_number: {
             double v =  ((Number*)e)->number;
             if (!v)
                 throw new Error("Error: division by zero");
+            double vv = (double)integer;
             release();
-            return lisp->provideNumber(((double)integer)/v);
+            return lisp->provideNumber(vv/v);
         }
         case t_integer: {
             double v =  ((Integer*)e)->integer;
             if (!v)
                 throw new Error("Error: division by zero");
+            double vv = (double)integer;
             release();
-            return lisp->provideNumber(((double)integer)/v);
+            return lisp->provideNumber(vv/v);
         }
         case t_short: {
             double v =  ((Short*)e)->integer;
             if (!v)
                 throw new Error("Error: division by zero");
+            float vv = (float)integer;
             release();
-            return lisp->provideNumber(((double)integer)/v);
+            return lisp->provideFloat(vv/v);
         }
         default:
             return divide(lisp, e);
@@ -2411,8 +2415,9 @@ Element* Short::divide(LispE* lisp, Element* e) {
     double v =  e->checkNumber(lisp);
     if (!v)
         throw new Error("Error: division by zero");
+    double vv = (double)integer;
     release();
-    return lisp->provideNumber((double)integer/v);
+    return lisp->provideNumber(vv/v);
 }
 
 
@@ -2455,7 +2460,7 @@ Element* Short::bit_not(LispE* lisp)  {
 
 Element* Short::bit_and(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_and(lisp, this);
         release();
         return n;
@@ -2482,7 +2487,7 @@ Element* Short::bit_and_not(LispE* lisp, Element* e)  {
 
 Element* Short::bit_or(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_or(lisp, this);
         release();
         return n;
@@ -2496,7 +2501,7 @@ Element* Short::bit_or(LispE* lisp, Element* e)  {
 
 Element* Short::bit_xor(LispE* lisp, Element* e)  {
     if (e->isList()) {
-        Element* n = e->copyatom(1);
+        Element* n = e->copyatom(lisp, 1);
         n = n->bit_xor(lisp, this);
         release();
         return n;
@@ -7698,7 +7703,7 @@ Element* List::evall_bitand(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_and(lisp, u->value);
@@ -7711,7 +7716,7 @@ Element* List::evall_bitand(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_and(lisp, lst->index(i));
                         }
@@ -7722,7 +7727,7 @@ Element* List::evall_bitand(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_and(lisp, second_element);
@@ -7782,7 +7787,7 @@ Element* List::evall_bitandnot(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_and_not(lisp, u->value);
@@ -7795,7 +7800,7 @@ Element* List::evall_bitandnot(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_and_not(lisp, lst->index(i));
                         }
@@ -7806,7 +7811,7 @@ Element* List::evall_bitandnot(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_and_not(lisp, second_element);
@@ -7865,7 +7870,7 @@ Element* List::evall_bitor(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_or(lisp, u->value);
@@ -7878,7 +7883,7 @@ Element* List::evall_bitor(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_or(lisp, lst->index(i));
                         }
@@ -7889,7 +7894,7 @@ Element* List::evall_bitor(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_or(lisp, second_element);
@@ -7947,7 +7952,7 @@ Element* List::evall_bitxor(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_xor(lisp, u->value);
@@ -7960,7 +7965,7 @@ Element* List::evall_bitxor(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_xor(lisp, lst->index(i));
                         }
@@ -7971,7 +7976,7 @@ Element* List::evall_bitxor(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->bit_xor(lisp, second_element);
@@ -8029,7 +8034,7 @@ Element* List::evall_divide(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->divide_direct(lisp, u->value);
@@ -8042,7 +8047,7 @@ Element* List::evall_divide(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->divide_direct(lisp, lst->index(i));
                         }
@@ -8053,7 +8058,7 @@ Element* List::evall_divide(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->divide_direct(lisp, second_element);
@@ -8111,7 +8116,7 @@ Element* List::evall_minus(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->minus_direct(lisp, u->value);
@@ -8124,7 +8129,7 @@ Element* List::evall_minus(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->minus_direct(lisp, lst->index(i));
                         }
@@ -8135,7 +8140,7 @@ Element* List::evall_minus(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->minus_direct(lisp, second_element);
@@ -8194,7 +8199,7 @@ Element* List::evall_mod(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->mod(lisp, u->value);
@@ -8207,7 +8212,7 @@ Element* List::evall_mod(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->mod(lisp, lst->index(i));
                         }
@@ -8218,7 +8223,7 @@ Element* List::evall_mod(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->mod(lisp, second_element);
@@ -8277,7 +8282,7 @@ Element* List::evall_multiply(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->multiply_direct(lisp, u->value);
@@ -8290,7 +8295,7 @@ Element* List::evall_multiply(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->multiply_direct(lisp, lst->index(i));
                         }
@@ -8301,7 +8306,7 @@ Element* List::evall_multiply(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->multiply_direct(lisp, second_element);
@@ -8428,7 +8433,7 @@ Element* List::evall_plus(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->plus_direct(lisp, u->value);
@@ -8441,7 +8446,7 @@ Element* List::evall_plus(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->plus_direct(lisp, lst->index(i));
                         }
@@ -8452,7 +8457,7 @@ Element* List::evall_plus(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->plus_direct(lisp, second_element);
@@ -8512,7 +8517,7 @@ Element* List::evall_leftshift(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->leftshift(lisp, u->value);
@@ -8525,7 +8530,7 @@ Element* List::evall_leftshift(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->leftshift(lisp, lst->index(i));
                         }
@@ -8536,7 +8541,7 @@ Element* List::evall_leftshift(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->leftshift(lisp, second_element);
@@ -8595,7 +8600,7 @@ Element* List::evall_rightshift(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->rightshift(lisp, u->value);
@@ -8608,7 +8613,7 @@ Element* List::evall_rightshift(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->rightshift(lisp, lst->index(i));
                         }
@@ -8619,7 +8624,7 @@ Element* List::evall_rightshift(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->rightshift(lisp, second_element);
@@ -8678,7 +8683,7 @@ Element* List::evall_power(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->power(lisp, u->value);
@@ -8691,7 +8696,7 @@ Element* List::evall_power(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->power(lisp, lst->index(i));
                         }
@@ -8702,7 +8707,7 @@ Element* List::evall_power(LispE* lisp) {
             lst->release();
         }
         else {
-            first_element = first_element->copyatom(1);
+            first_element = first_element->copyatom(lisp, 1);
             if (listsize == 3) {
                 second_element = liste[2]->eval(lisp);
                 first_element = first_element->power(lisp, second_element);
@@ -8736,7 +8741,7 @@ Element* List_power2::eval(LispE* lisp) {
     Element* first_element = liste[0];
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(1);
+        first_element = liste[1]->eval(lisp)->copyatom(lisp, 1);
     }
     catch (Error* err) {
         first_element->release();
@@ -8770,7 +8775,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -8787,7 +8792,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -8808,7 +8813,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_and(lisp, u->value);
@@ -8821,7 +8826,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_and(lisp, lst->index(i));
                         }
@@ -8886,7 +8891,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -8903,7 +8908,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -8924,7 +8929,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_and_not(lisp, u->value);
@@ -8937,7 +8942,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_and_not(lisp, lst->index(i));
                         }
@@ -9002,7 +9007,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9019,7 +9024,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9040,7 +9045,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_or(lisp, u->value);
@@ -9053,7 +9058,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_or(lisp, lst->index(i));
                         }
@@ -9120,7 +9125,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9137,7 +9142,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9158,7 +9163,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->bit_xor(lisp, u->value);
@@ -9171,7 +9176,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->bit_xor(lisp, lst->index(i));
                         }
@@ -9236,7 +9241,7 @@ Element* List::evall_divideequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9253,7 +9258,7 @@ Element* List::evall_divideequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9274,7 +9279,7 @@ Element* List::evall_divideequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->divide_direct(lisp, u->value);
@@ -9287,7 +9292,7 @@ Element* List::evall_divideequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->divide_direct(lisp, lst->index(i));
                         }
@@ -9352,7 +9357,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9369,7 +9374,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9390,7 +9395,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->leftshift(lisp, u->value);
@@ -9403,7 +9408,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->leftshift(lisp, lst->index(i));
                         }
@@ -9468,7 +9473,7 @@ Element* List::evall_minusequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9485,7 +9490,7 @@ Element* List::evall_minusequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9506,7 +9511,7 @@ Element* List::evall_minusequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->minus_direct(lisp, u->value);
@@ -9519,7 +9524,7 @@ Element* List::evall_minusequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->minus_direct(lisp, lst->index(i));
                         }
@@ -9584,7 +9589,7 @@ Element* List::evall_modequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9601,7 +9606,7 @@ Element* List::evall_modequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9622,7 +9627,7 @@ Element* List::evall_modequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->mod(lisp, u->value);
@@ -9635,7 +9640,7 @@ Element* List::evall_modequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->mod(lisp, lst->index(i));
                         }
@@ -9701,7 +9706,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9718,7 +9723,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9739,7 +9744,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->multiply_direct(lisp, u->value);
@@ -9752,7 +9757,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->multiply_direct(lisp, lst->index(i));
                         }
@@ -9817,7 +9822,7 @@ Element* List::evall_plusequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -9834,7 +9839,7 @@ Element* List::evall_plusequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9861,7 +9866,7 @@ Element* List::evall_plusequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->plus_direct(lisp, u->value);
@@ -9874,7 +9879,7 @@ Element* List::evall_plusequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->plus_direct(lisp, lst->index(i));
                         }
@@ -9956,7 +9961,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
 
 
     try {
-        first_element = first_element->eval(lisp)->copyatom(s_constant);
+        first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -9977,7 +9982,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->rightshift(lisp, u->value);
@@ -9990,7 +9995,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->rightshift(lisp, lst->index(i));
                         }
@@ -10055,7 +10060,7 @@ Element* List::evall_powerequal(LispE* lisp) {
                     first_element = liste[1]->index(i)->eval(lisp);
                     exec->append(first_element);
                 }
-                first_element = exec->evall_index_zero(lisp)->copyatom(s_constant);
+                first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
             }
             catch(Error* err) {
                 exec->release();
@@ -10072,7 +10077,7 @@ Element* List::evall_powerequal(LispE* lisp) {
 
     try {
         if (label != -1)
-            first_element = first_element->eval(lisp)->copyatom(s_constant);
+            first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2 && first_element->isList()) {
             lst = first_element;
             switch (lst->type) {
@@ -10093,7 +10098,7 @@ Element* List::evall_powerequal(LispE* lisp) {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
                     if (u != NULL) {
-                        first_element = u->value->copyatom(1);
+                        first_element = u->value->copyatom(lisp, 1);
                         u = u->next();
                         while (u != NULL) {
                             first_element = first_element->power(lisp, u->value);
@@ -10106,7 +10111,7 @@ Element* List::evall_powerequal(LispE* lisp) {
                     first_element = zero_;
                     listsize = lst->size();
                     if (listsize) {
-                        first_element = lst->index(0)->copyatom(1);
+                        first_element = lst->index(0)->copyatom(lisp, 1);
                         for (i = 1; i < listsize; i++) {
                             first_element = first_element->power(lisp, lst->index(i));
                         }
@@ -10155,7 +10160,7 @@ Element* List::evall_powerequal2(LispE* lisp) {
     short label;
 
     try {
-        first_element = liste[1]->eval(lisp)->copyatom(s_constant);
+        first_element = liste[1]->eval(lisp)->copyatom(lisp, s_constant);
         first_element = first_element->multiply_direct(lisp, first_element);
         label = liste[1]->label();
         if (label > l_final)

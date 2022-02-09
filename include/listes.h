@@ -618,17 +618,7 @@ public:
         return liste.object;
     }
     
-    virtual Element* copyatom(uint16_t s) {
-        if (liste.shared(status) < s)
-            return this;
-
-        List* l = new List;
-        for (long i = 0; i < liste.size(); i++) {
-            l->append(liste[i]->copyatom(s));
-        }
-        release();
-        return l;
-    }
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
 
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
@@ -898,6 +888,10 @@ public:
         return buffer;
     }
     
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
+
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
@@ -1196,12 +1190,16 @@ public:
     Element* evall_defpat(LispE* lisp);
     Element* evall_defun(LispE* lisp);
     Element* evall_determinant(LispE* lisp);
+    Element* evall_dictionary(LispE* lisp);
+    Element* evall_dictionaryi(LispE* lisp);
+    Element* evall_dictionaryn(LispE* lisp);
     Element* evall_different(LispE* lisp);
     Element* evall_divide(LispE* lisp);
     Element* evall_divideequal(LispE* lisp);
     Element* evall_clone(LispE* lisp);
     Element* evall_elapse(LispE* lisp);
     Element* evall_emptyp(LispE* lisp);
+    Element* evall_emptylist(LispE* lisp);
     Element* evall_eq(LispE* lisp);
     Element* evall_equal(LispE* lisp);
     Element* evall_equalonezero(LispE* lisp);
@@ -1361,6 +1359,7 @@ public:
     Element* evall_unique(LispE* lisp);
     Element* evall_use(LispE* lisp);
     Element* evall_values(LispE* lisp);
+    Element* evall_void(LispE* lisp);
     Element* evall_wait(LispE* lisp);
     Element* evall_waiton(LispE* lisp);
     Element* evall_while(LispE* lisp);
@@ -1447,7 +1446,7 @@ public:
     void rawrelease();
     Element* newInstance();
     Element* fullcopy();
-    Element* copyatom(uint16_t s);
+    Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
 
 };
@@ -1863,14 +1862,7 @@ public:
         return new Floats(this);
     }
     
-    virtual Element* copyatom(uint16_t s) {
-        if (liste.shared(status) < s)
-            return this;
-        
-        Floats* f = new Floats(this);
-        release();
-        return f;
-    }
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
 
 
     Element* unique(LispE* lisp);
@@ -2001,6 +1993,10 @@ public:
         return buffer;
     }
     
+
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
 
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
@@ -2196,7 +2192,7 @@ public:
     
     void release();
     Element* fullcopy();
-    Element* copyatom(uint16_t s);
+    Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
 };
 
@@ -2331,14 +2327,7 @@ public:
         return new Numbers(this);
     }
     
-    virtual Element* copyatom(uint16_t s) {
-        if (liste.shared(status) < s)
-            return this;
-
-        Numbers* n = new Numbers(this);
-        release();
-        return n;
-    }
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
 
 
     Element* unique(LispE* lisp);
@@ -2469,6 +2458,9 @@ public:
         return buffer;
     }
     
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
 
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
@@ -2662,7 +2654,7 @@ public:
     
     void release();
     Element* fullcopy();
-    Element* copyatom(uint16_t s);
+    Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
 
 };
@@ -2919,6 +2911,10 @@ public:
         return buffer;
     }
 
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
+
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
@@ -3038,7 +3034,7 @@ public:
             liste.clear();
     }
     
-    virtual Element* copyatom(uint16_t s) {
+    virtual Element* copyatom(LispE* lisp, uint16_t s) {
         if (liste.shared(status) < s)
             return this;
 
@@ -3324,6 +3320,10 @@ public:
         return buffer;
     }
 
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
+
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
@@ -3443,15 +3443,8 @@ public:
             liste.clear();
     }
     
-    virtual Element* copyatom(uint16_t s) {
-        if (liste.shared(status) < s)
-            return this;
-
-        Integers* i = new Integers(this);
-        release();
-        return i;
-    }
-
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
+    
     Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
     Element* bit_and_not(LispE* l, Element* e);
@@ -3529,7 +3522,7 @@ public:
     
     void release();
     Element* fullcopy();
-    Element* copyatom(uint16_t s);
+    Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
 
 };
@@ -4712,6 +4705,10 @@ public:
         liste.push_back(w);
     }
     
+    void push_element(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
+
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
@@ -4830,12 +4827,7 @@ public:
             liste.clear();
     }
     
-    virtual Element* copyatom(uint16_t s) {
-        if (liste.shared(status) < s)
-            return this;
-
-        return new Strings(this);
-    }
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
 
     Element* plus(LispE* l, Element* e);
 
@@ -4858,6 +4850,11 @@ public:
         exchange_value.provide = true;
     }
 
+    Stringspool(LispE* l, Strings* s, long pos) : lisp(l), Strings(s, pos) {
+        exchange_value.lisp = l;
+        exchange_value.provide = true;
+    }
+
     inline Stringspool* set(Strings* i) {
         liste = i->liste;
         return this;
@@ -4870,7 +4867,7 @@ public:
     
     void release();
     Element* fullcopy();
-    Element* copyatom(uint16_t s);
+    Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
 
 };

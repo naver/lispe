@@ -404,7 +404,7 @@ public:
     
     Dateitem(LispE* lisp, time_t t) : Element(l_lib) {
         the_time = t;
-        u_ustring d(U"date");
+        u_ustring d(U"date_");
         type = lisp->encode(d);
     }
     
@@ -1066,13 +1066,13 @@ void moduleSysteme(LispE* lisp) {
 
     //------------------------------------------
 
-    u_ustring w = U"chrono";
+    u_ustring w = U"chrono_";
     short identifier = lisp->encode(w);
     lisp->extension("deflib chrono ()", new Chrono(lisp, identifier));
     
     //------------------------------------------
 
-    w = U"date";
+    w = U"date_";
     identifier =  lisp->encode(w);
     lisp->extension("deflib date ()", new Date(lisp, identifier,  date_raw));
     
@@ -1090,7 +1090,7 @@ void moduleSysteme(LispE* lisp) {
     lisp->extension("deflib setdate (y (m -1) (d -1) (H -1) (M -1) (S -1))", new Date(lisp, identifier,  date_setdate));
     //------------------------------------------
 
-    w = U"file";
+    w = U"file_";
     identifier = lisp->encode(w);
     lisp->extension("deflib file (path (mode 'r))", new Streamoperation(lisp, file_open, identifier));
     lisp->extension("deflib file_close (stream)", new Streamoperation(lisp, file_close, identifier));
