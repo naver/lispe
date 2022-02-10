@@ -126,10 +126,12 @@ public:
     u_links(u_links& l, u_link* e) {
         mark = l.mark;
         first = e;
-        initialize(e);
-        while (e != NULL) {
-            e->inc(1);
-            e = e->next();
+        if (e != NULL) {
+            initialize(e);
+            while (e != NULL) {
+                e->inc(1);
+                e = e->next();
+            }
         }
     }
 

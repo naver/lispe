@@ -1174,6 +1174,7 @@ public:
     Element* evall_concatenate(LispE* lisp);
     Element* evall_cond(LispE* lisp);
     Element* evall_cons(LispE* lisp);
+    Element* evall_consb(LispE* lisp);
     Element* evall_consp(LispE* lisp);
     Element* evall_converttoatom(LispE* lisp);
     Element* evall_converttointeger(LispE* lisp);

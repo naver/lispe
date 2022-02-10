@@ -5535,6 +5535,58 @@ Element* List::evall_cons(LispE* lisp) {
     return third_element;
 }
 
+Element* List::evall_consb(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    if (first_element == emptylist_)
+        first_element = null_;
+    
+    Element* second_element = null_;
+    Element* third_element;
+
+
+    try {
+        //merging an element into the next list
+        second_element = liste[2]->eval(lisp);
+        if (first_element == null_ || first_element == emptylist_) {
+            third_element = lisp->provideList();
+            third_element->append(second_element);
+            return third_element;
+        }
+
+        if (!first_element->isList()) {
+            if (second_element->isList()) {
+                third_element = lisp->provideList();
+                third_element->append(first_element);
+                void* iter = second_element->begin_iter();
+                Element* nxt  = second_element->next_iter_exchange(lisp, iter);
+                while (nxt != NULL) {
+                    third_element->append(nxt);
+                    nxt = second_element->next_iter_exchange(lisp, iter);
+                }
+                second_element->clean_iter(iter);
+            }
+            else {
+                third_element = new Pair();
+                third_element->append(first_element);
+                third_element->append(second_element);
+            }
+        }
+        else {
+            third_element = first_element->copyatom(lisp, 1);
+            third_element->append(second_element);
+        }
+
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+
+    return third_element;
+}
+
 
 Element* List::evall_consp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
