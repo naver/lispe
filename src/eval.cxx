@@ -6431,19 +6431,18 @@ Element* List::evall_set_at(LispE* lisp) {
     Element* result = container;
 
     short listsize = liste.size();
-    Element* ix = null_;
-    Element* value;
+	Element* value = null_;
+	Element* ix;
 
 
     try {
-        for (long i = 2; i < listsize - 2; i++) {
+		value = liste[listsize - 1]->eval(lisp)->copying(false);
+		for (long i = 2; i < listsize - 2; i++) {
             ix = liste[i]->eval(lisp);
             result = result->protected_index(lisp, ix);
-            ix->release();
+			ix->release();
         }
-        ix = null_;
         ix = liste[listsize-2]->eval(lisp);
-        value = liste[listsize-1]->eval(lisp)->copying(false);
         result->replace(lisp, ix, value);
         value->release();
         ix->release();
@@ -6456,8 +6455,8 @@ Element* List::evall_set_at(LispE* lisp) {
             container->release();
     }
     catch (Error* err) {
+		value->release();
         container->release();
-        ix->release();
         if (container != result)
             result->release();
         throw err;
