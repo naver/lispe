@@ -34,7 +34,7 @@
 #include "directorylisting.h"
 
 typedef enum {sys_command, sys_ls, sys_setenv, sys_getenv, sys_isdirectory, sys_fileinfo, sys_realpath} systeme;
-typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write, file_writeln} file_command;
+typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write, file_writeln, file_getstruct} file_command;
 typedef enum {date_setdate, date_year, date_month, date_day, date_hour, date_minute, date_second, date_yearday, date_raw, date_weekday } tempus;
 
 /*
@@ -146,7 +146,60 @@ public:
         
         return lisp->provideString(res);
     }
-   
+
+    Element* getstruct(LispE* lisp, wstring& o, wstring& c) {
+        if (mode != file_read)
+            throw new Error ("Error: expecting 'stream' to be in 'open' mode");
+        
+        wstring res;
+        res = getchar();
+        while (res != o && !myfile.eof())
+            res = getchar();
+        
+        if (myfile.eof()) {
+            mode = file_open;
+            return null_;
+        }
+        
+        //We extract a full-fledge structure...
+        //Which could contain embeddings...
+        long count = 1;
+        wstring str = res;
+        
+        res = getchar();
+        if (res == c)
+            count--;
+
+        while (count && !myfile.eof()) {
+            if (res == o)
+                count++;
+            str += res;
+            if (res == L"\"") {
+                res = getchar();
+                while (res != L"\"" && !myfile.eof()) {
+                    str += res;
+                    if (res == L"\\") {
+                        res = getchar();
+                        str += getchar();
+                    }
+                    res = getchar();
+                }
+                str += res;
+            }
+            res = getchar();
+            if (res == c)
+                count--;
+        }
+        
+        if (myfile.eof()) {
+            mode = file_open;
+            return null_;
+        }
+
+        str += c;
+        return lisp->provideString(str);
+    }
+
     Element* readlist(LispE* lisp) {
         if (mode != file_read)
             throw new Error ("Error: expecting 'stream' to be in 'open' mode");
@@ -342,6 +395,12 @@ public:
                 long nb = lisp->get_variable(U"nb")->asInteger();
                 return ((Stream*)a_stream)->read(lisp, nb);
             }
+            case file_getstruct: {
+                Element* a_stream = getstream(lisp);
+                wstring o = lisp->get_variable(U"open")->asString(lisp);
+                wstring c = lisp->get_variable(U"close")->asString(lisp);
+                return ((Stream*)a_stream)->getstruct(lisp, o, c);
+            }
             case file_readline: {
                 Element* a_stream = getstream(lisp);
                 return ((Stream*)a_stream)->readline(lisp);
@@ -386,6 +445,8 @@ public:
                 return L"Write a string to a file";
             case file_writeln:
                 return L"Write a string to a file and add a Carriage Return at the end";
+            case file_getstruct:
+                return L"Read an embedded structure in the file that starts at openning character 'o' and stops at closing character 'c'.";
         }
 		return L"";
     }
@@ -1096,6 +1157,7 @@ void moduleSysteme(LispE* lisp) {
     lisp->extension("deflib file_close (stream)", new Streamoperation(lisp, file_close, identifier));
     lisp->extension("deflib file_eof (stream)", new Streamoperation(lisp, file_eof, identifier));
     lisp->extension("deflib file_read (stream (nb -1))", new Streamoperation(lisp, file_read, identifier));
+    lisp->extension("deflib file_getstruct (stream open close)", new Streamoperation(lisp, file_getstruct, identifier));
     lisp->extension("deflib file_readlist (stream)", new Streamoperation(lisp, file_readlist, identifier));
     lisp->extension("deflib file_readline (stream)", new Streamoperation(lisp, file_readline, identifier));
     lisp->extension("deflib file_getchar (stream)", new Streamoperation(lisp, file_getchar, identifier));

@@ -158,8 +158,8 @@ void lispe_editor::displaythehelp(long i) {
         cerr << "   \t\t- " << m_redital << "q:" << m_current << " quit" << endl << endl;
     }
 
-    if (!i || i == 5) {
-        cerr << "   - " << m_redbold << "5. System:" << m_current << endl;
+    if (!i || i == 4) {
+        cerr << "   - " << m_redbold << "4. System:" << m_current << endl;
         cerr << "   \t- " << m_redbold << "!unix:" << m_current << " what follows the " << m_redital << "'!'" << m_current << " will be executed as a Unix command (ex: "<< m_redital << "!ls" << m_current << ")" << endl;
         cerr << "   \t- " << m_redbold << "!vs=unix:" << m_current << " what follows the " << m_redital << "'='" << m_current << " will be executed as a Unix command ("
              << m_redital << "!vs=ls" << m_current << ")" << endl;
