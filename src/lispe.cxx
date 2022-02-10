@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.10.9.20";
+static std::string version = "1.2022.2.10.10.2";
 string LispVersion() {
     return version;
 }
@@ -297,7 +297,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE, &List::evall_key);
     set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE, &List::evall_keyi);
     set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE, &List::evall_keyn);
-    set_instruction(l_keys, "containerkeys", P_TWO, &List::evall_keys);
+    set_instruction(l_keys, "keys@", P_TWO, &List::evall_keys);
     set_instruction(l_label, "label", P_THREE, &List::evall_label);
     set_instruction(l_lambda, "lambda", P_ATLEASTTHREE, &List::evall_lambda);
     set_instruction(l_last, "last", P_TWO, &List::evall_last);
@@ -407,7 +407,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_type, "type", P_TWO, &List::evall_type);
     set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
     set_instruction(l_use, "use", P_TWO, &List::evall_use);
-    set_instruction(l_values, "containervalues", P_TWO, &List::evall_values);
+    set_instruction(l_values, "values@", P_TWO, &List::evall_values);
     set_instruction(l_wait, "wait", P_ONE, &List::evall_wait);
     set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton);
     set_instruction(l_while, "while", P_ATLEASTTHREE, &List::evall_while);
@@ -756,6 +756,14 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce set@@ as a substitute to setrange
     w = U"set@@";
     string_to_code[w] = l_set_range;
+
+    //We introduce containerkeys as a substitute to keys@
+    w = U"containerkeys";
+    string_to_code[w] = l_keys;
+
+    //We introduce containervalues as a substitute to values@
+    w = U"containervalues";
+    string_to_code[w] = l_values;
 
     w = U("§");
     string_to_code[w] = l_infix;
@@ -2268,6 +2276,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
