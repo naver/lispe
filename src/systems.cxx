@@ -178,10 +178,8 @@ public:
                 res = getchar();
                 while (res != L"\"" && !myfile.eof()) {
                     str += res;
-                    if (res == L"\\") {
-                        res = getchar();
+                    if (res == L"\\")
                         str += getchar();
-                    }
                     res = getchar();
                 }
                 str += res;
