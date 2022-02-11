@@ -248,7 +248,7 @@ void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
 
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base,
     str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
-    str_format, str_padding, str_fill,
+    str_format, str_padding, str_fill, str_getstruct,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
     str_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
 
@@ -357,6 +357,64 @@ public:
         return lisp->provideString(value);
     }
 
+    Element* getstruct(LispE* lisp) {
+        u_ustring value =  lisp->get_variable(v_str)->asUString(lisp);
+        u_ustring s_open = lisp->get_variable(U"open")->asUString(lisp);
+        u_ustring s_close = lisp->get_variable(U"close")->asUString(lisp);
+        long i = lisp->get_variable(U"pos")->asInteger();
+        
+        u_uchar o = s_open[0];
+        u_uchar c = s_close[0];
+        
+        
+        long sz = value.size();
+        while (i < sz && value[i] != o) i++;
+        
+        if (i == sz)
+            return null_;
+        
+        long initial = i;
+        
+        //We extract a full-fledge structure...
+        //Which could contain embeddings...
+        long count = 1;
+        
+        if (value[++i] == c) {
+            u_ustring str = s_open + s_close;
+            List* l = lisp->provideList();
+            l->append(lisp->provideString(str));
+            l->append(lisp->provideInteger(initial));
+            l->append(lisp->provideInteger(i+1));
+            return l;
+        }
+
+        while (count && i < sz) {
+            if (value[i] == o)
+                count++;
+            if (value[i] == '"') {
+                i++;
+                while (i < sz && value[i] != '"') {
+                    if (value[i] == '\\')
+                        i++;
+                    i++;
+                }
+            }
+            if (value[++i] == c)
+                count--;
+        }
+        
+        if (i == sz)
+            return null_;
+
+        i++;
+        u_ustring str = value.substr(initial, i - initial);
+        List* l = lisp->provideList();
+        l->append(lisp->provideString(str));
+        l->append(lisp->provideInteger(initial));
+        l->append(lisp->provideInteger(i));
+        return l;
+    }
+    
     Element* methodFill(LispE* lisp) {
         long nb = lisp->get_variable(v_nb)->asInteger();
         u_ustring sval;
@@ -476,8 +534,12 @@ public:
         switch (met) {
             case str_remplace: {
                 u_ustring cherche;
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
-                Element* end = lisp->get_variable(U"index");
+                Element* end =  lisp->get_variable(v_str);
+                if (end->type != t_string)
+                    throw new Error("Error: cannot apply 'replace' to this type of object");
+                u_ustring strvalue = end->asUString(lisp);
+                
+                end = lisp->get_variable(U"index");
                 if (end == null_) {
                     cherche = lisp->get_variable(v_fnd)->asUString(lisp);
                     u_ustring remplacement = lisp->get_variable(v_rep)->asUString(lisp);
@@ -659,6 +721,8 @@ public:
             
                 return result;
             }
+            case str_getstruct:
+                return getstruct(lisp);
             case str_split: {
                 u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 Element* u_find = lisp->get_variable(v_fnd);
@@ -924,6 +988,8 @@ public:
                 return L"(editdistance str strbis): compute the Levenshtein distance between str and strbis";
             case str_base:
                 return L"(convert_in_base str b (convert_from): convert str into b or from base b according to convert_from";
+            case str_getstruct:
+                return L"(getstruct str open close (pos)): extracts a sub-string from an 'open' chararacter to a 'close' character starting at 'pos'";
         }
 		return L"";
     }
@@ -952,6 +1018,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib ngrams (str nb)", new Stringmethod(lisp, str_ngrams));
     lisp->extension("deflib right (str nb)", new Stringmethod(lisp, str_right));
     lisp->extension("deflib middle (str pos nb)", new Stringmethod(lisp, str_middle));
+    lisp->extension("deflib getstruct (str open close (pos 0))", new Stringmethod(lisp, str_getstruct));
     lisp->extension("deflib tokenize (str)", new Stringmethod(lisp, str_tokenize_lispe));
     lisp->extension("deflib tokenizee (str)", new Stringmethod(lisp, str_tokenize_empty));
     lisp->extension("deflib split (str (fnd))", new Stringmethod(lisp, str_split));

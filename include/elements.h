@@ -512,6 +512,12 @@ public:
         return (int)asInteger();
     }
     
+    virtual void setvalue(double v) {}
+    virtual void setvalue(long v) {}
+    virtual void setvalue(float v) {}
+    virtual void setvalue(short v) {}
+    virtual void setvalue(u_ustring& v) {}
+    
     virtual bool Boolean() {
         return true;
     }
@@ -1272,6 +1278,9 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
+    void setvalue(float v) {number = v;}
+
+    
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(number == value->asFloat());
     }
@@ -1418,6 +1427,8 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
+    void setvalue(double v) {number = v;}
+
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(number == value->asNumber());
     }
@@ -1620,6 +1631,9 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
+    void setvalue(short v) { integer = v;}
+
+    
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(integer == value->asInteger());
     }
@@ -1778,6 +1792,9 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
+    
+    void setvalue(long v) { integer = v;}
+
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(integer == value->asInteger());
     }
@@ -2005,6 +2022,10 @@ public:
     }
     String(u_ustring c, uint16_t s) : Element(t_string, s) {
         content = c;
+    }
+
+    void setvalue(u_ustring& v) {
+        content = v;
     }
 
     bool isString() {

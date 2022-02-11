@@ -362,25 +362,20 @@ Element* Set_s::next_iter_exchange(LispE* lisp, void* it) {
     return &exchange_value;
 }
 
-Element* Set_s::search_element(LispE* lisp, Element* valeur, long ix) {
-    u_ustring k = valeur->asUString(lisp);
-    if (ensemble.find(k) == ensemble.end())
-        return null_;
-    return true_;
+Element* Set_s::search_element(LispE* lisp, Element* a_value, long ix) {
+    return (ensemble.find(a_value->asUString(lisp)) == ensemble.end())?null_:a_value;
 }
 
-bool Set_s::check_element(LispE* lisp, Element* valeur) {
-    return (ensemble.find(valeur->asUString(lisp)) != ensemble.end());
+bool Set_s::check_element(LispE* lisp, Element* a_value) {
+    return (ensemble.find(a_value->asUString(lisp)) != ensemble.end());
 }
 
 Element* Set_s::checkkey(LispE* lisp, Element* e) {
-    if (ensemble.find(e->asUString(lisp)) == ensemble.end())
-        return null_;
-    return true_;
+    return (ensemble.find(e->asUString(lisp)) == ensemble.end())?null_:true_;
 }
 
-Element* Set_s::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
-    u_ustring keyvalue = valeur->asUString(lisp);
+Element* Set_s::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
+    u_ustring keyvalue = a_value->asUString(lisp);
     if (ensemble.find(keyvalue) != ensemble.end()) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asUString(lisp));
@@ -389,17 +384,17 @@ Element* Set_s::replace_all_elements(LispE* lisp, Element* valeur, Element* remp
     return zero_;
 }
 
-Element* Set_s::search_all_elements(LispE* lisp, Element* valeur, long ix) {
+Element* Set_s::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     Strings* l = lisp->provideStrings();
-    u_ustring keyvalue = valeur->asUString(lisp);
+    u_ustring keyvalue = a_value->asUString(lisp);
     if (ensemble.find(keyvalue) == ensemble.end())
         return emptylist_;
     l->liste.push_back(keyvalue);
     return l;
 }
 
-Element* Set_s::count_all_elements(LispE* lisp, Element* valeur, long ix) {
-    u_ustring keyvalue = valeur->asUString(lisp);
+Element* Set_s::count_all_elements(LispE* lisp, Element* a_value, long ix) {
+    u_ustring keyvalue = a_value->asUString(lisp);
     if (ensemble.find(keyvalue) == ensemble.end())
         return zero_;
     return one_;
@@ -503,13 +498,8 @@ Element* Set_s::list_xor(LispE* lisp, Element* value) {
     return s;
 }
 
-Element* Set_s::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    Strings* l = lisp->provideStrings();
-    u_ustring keyvalue = valeur->asUString(lisp);
-    if (ensemble.find(keyvalue) == ensemble.end())
-        return emptylist_;
-    l->liste.push_back(keyvalue);
-    return l;
+Element* Set_s::search_reverse(LispE* lisp, Element* a_value, long ix) {
+    return (ensemble.find(a_value->asUString(lisp)) == ensemble.end())?null_:a_value;
 }
 
 Element* Set_s::protected_index(LispE* lisp, long i) {
@@ -675,8 +665,8 @@ Element* Set_i::next_iter_exchange(LispE* lisp, void* it) {
     return &exchange_value;
 }
 
-bool Set_i::check_element(LispE* lisp, Element* valeur) {
-    return (ensemble.find(valeur->asInteger()) != ensemble.end());
+bool Set_i::check_element(LispE* lisp, Element* a_value) {
+    return (ensemble.find(a_value->asInteger()) != ensemble.end());
 }
 
 Element* Set_i::list_and(LispE* lisp, Element* value) {
@@ -914,21 +904,16 @@ Element* Set_i::thevalues(LispE* lisp) {
     return keys;
 }
 
-Element* Set_i::search_element(LispE* lisp, Element* valeur, long ix) {
-    long k = valeur->asInteger();
-    if (ensemble.find(k) == ensemble.end())
-        return null_;
-    return true_;
+Element* Set_i::search_element(LispE* lisp, Element* a_value, long ix) {
+    return (ensemble.find(a_value->asInteger()) == ensemble.end())?null_:a_value;
 }
 
 Element* Set_i::checkkey(LispE* lisp, Element* e) {
-    if (ensemble.find(e->asInteger()) == ensemble.end())
-        return null_;
-    return true_;
+    return (ensemble.find(e->asInteger()) == ensemble.end())?null_:true_;
 }
 
-Element* Set_i::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
-    long keyvalue = valeur->asInteger();
+Element* Set_i::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
+    long keyvalue = a_value->asInteger();
     if (ensemble.find(keyvalue) != ensemble.end()) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asInteger());
@@ -937,29 +922,24 @@ Element* Set_i::replace_all_elements(LispE* lisp, Element* valeur, Element* remp
     return zero_;
 }
 
-Element* Set_i::search_all_elements(LispE* lisp, Element* valeur, long ix) {
+Element* Set_i::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     Numbers* l = lisp->provideNumbers();
-    long keyvalue = valeur->asInteger();
+    long keyvalue = a_value->asInteger();
     if (ensemble.find(keyvalue) == ensemble.end())
         return emptylist_;
     l->liste.push_back(keyvalue);
     return l;
 }
 
-Element* Set_i::count_all_elements(LispE* lisp, Element* valeur, long ix) {
-    long keyvalue = valeur->asInteger();
+Element* Set_i::count_all_elements(LispE* lisp, Element* a_value, long ix) {
+    long keyvalue = a_value->asInteger();
     if (ensemble.find(keyvalue) == ensemble.end())
         return zero_;
     return one_;
 }
 
-Element* Set_i::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    Numbers* l = lisp->provideNumbers();
-    long keyvalue = valeur->asInteger();
-    if (ensemble.find(keyvalue) == ensemble.end())
-        return emptylist_;
-    l->liste.push_back(keyvalue);
-    return l;
+Element* Set_i::search_reverse(LispE* lisp, Element* a_value, long ix) {
+    return (ensemble.find(a_value->asInteger()) == ensemble.end())?null_:a_value;
 }
 
 Element* Set_i::protected_index(LispE* lisp, long i) {
@@ -1178,25 +1158,20 @@ Element* Set_n::next_iter_exchange(LispE* lisp, void* it) {
     return &exchange_value;
 }
 
-Element* Set_n::search_element(LispE* lisp, Element* valeur, long ix) {
-    double k = valeur->asNumber();
-    if (ensemble.find(k) == ensemble.end())
-        return null_;
-    return true_;
+Element* Set_n::search_element(LispE* lisp, Element* a_value, long ix) {
+    return (ensemble.find(a_value->asNumber()) == ensemble.end())?null_:a_value;
 }
 
-bool Set_n::check_element(LispE* lisp, Element* valeur) {
-    return (ensemble.find(valeur->asNumber()) != ensemble.end());
+bool Set_n::check_element(LispE* lisp, Element* a_value) {
+    return (ensemble.find(a_value->asNumber()) != ensemble.end());
 }
 
 Element* Set_n::checkkey(LispE* lisp, Element* e) {
-    if (ensemble.find(e->asNumber()) == ensemble.end())
-        return null_;
-    return true_;
+    return (ensemble.find(e->asNumber()) == ensemble.end())?null_:true_;
 }
 
-Element* Set_n::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
-    double keyvalue = valeur->asNumber();
+Element* Set_n::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
+    double keyvalue = a_value->asNumber();
     if (ensemble.find(keyvalue) != ensemble.end()) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asNumber());
@@ -1205,17 +1180,17 @@ Element* Set_n::replace_all_elements(LispE* lisp, Element* valeur, Element* remp
     return zero_;
 }
 
-Element* Set_n::search_all_elements(LispE* lisp, Element* valeur, long ix) {
+Element* Set_n::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     Numbers* l = lisp->provideNumbers();
-    double keyvalue = valeur->asNumber();
+    double keyvalue = a_value->asNumber();
     if (ensemble.find(keyvalue) == ensemble.end())
         return emptylist_;
     l->liste.push_back(keyvalue);
     return l;
 }
 
-Element* Set_n::count_all_elements(LispE* lisp, Element* valeur, long ix) {
-    double keyvalue = valeur->asNumber();
+Element* Set_n::count_all_elements(LispE* lisp, Element* a_value, long ix) {
+    double keyvalue = a_value->asNumber();
     if (ensemble.find(keyvalue) == ensemble.end())
         return zero_;
     return one_;
@@ -1319,13 +1294,8 @@ Element* Set_n::list_xor(LispE* lisp, Element* value) {
     return s;
 }
 
-Element* Set_n::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    Numbers* l = lisp->provideNumbers();
-    double keyvalue = valeur->asNumber();
-    if (ensemble.find(keyvalue) == ensemble.end())
-        return emptylist_;
-    l->liste.push_back(keyvalue);
-    return l;
+Element* Set_n::search_reverse(LispE* lisp, Element* a_value, long ix) {
+    return (ensemble.find(a_value->asNumber()) == ensemble.end())?null_:a_value;
 }
 
 Element* Set_n::protected_index(LispE* lisp, long i) {
@@ -1555,14 +1525,13 @@ Element* Set::next_iter_exchange(LispE* lisp, void* it) {
     return r;
 }
 
-Element* Set::search_element(LispE* lisp, Element* valeur, long ix) {
-    if (dictionary.find(valeur->asUString(lisp)) == dictionary.end())
-        return null_;
-    return true_;
+Element* Set::search_element(LispE* lisp, Element* a_value, long ix) {
+    u_ustring keyvalue = a_value->asUString(lisp);
+    return (dictionary.find(keyvalue) == dictionary.end())?null_:dictionary[keyvalue];
 }
 
-bool Set::check_element(LispE* lisp, Element* valeur) {
-    return (dictionary.find(valeur->asUString(lisp)) != dictionary.end());
+bool Set::check_element(LispE* lisp, Element* a_value) {
+    return (dictionary.find(a_value->asUString(lisp)) != dictionary.end());
 }
 
 Element* Set::checkkey(LispE* lisp, Element* e) {
@@ -1571,8 +1540,8 @@ Element* Set::checkkey(LispE* lisp, Element* e) {
     return true_;
 }
 
-Element* Set::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
-    u_ustring keyvalue = valeur->asUString(lisp);
+Element* Set::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
+    u_ustring keyvalue = a_value->asUString(lisp);
     if (dictionary.find(keyvalue) != dictionary.end()) {
         dictionary[keyvalue]->decrement();
         dictionary.erase(keyvalue);
@@ -1583,17 +1552,17 @@ Element* Set::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) 
     return zero_;
 }
 
-Element* Set::search_all_elements(LispE* lisp, Element* valeur, long ix) {
+Element* Set::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     List* l = lisp->provideList();
-    u_ustring keyvalue = valeur->asUString(lisp);
+    u_ustring keyvalue = a_value->asUString(lisp);
     if (dictionary.find(keyvalue) == dictionary.end())
         return emptylist_;
     l->append(dictionary[keyvalue]->copying(false));
     return l;
 }
 
-Element* Set::count_all_elements(LispE* lisp, Element* valeur, long ix) {
-    u_ustring keyvalue = valeur->asUString(lisp);
+Element* Set::count_all_elements(LispE* lisp, Element* a_value, long ix) {
+    u_ustring keyvalue = a_value->asUString(lisp);
     if (dictionary.find(keyvalue) == dictionary.end())
         return zero_;
     return one_;
@@ -1698,13 +1667,9 @@ Element* Set::list_xor(LispE* lisp, Element* value) {
     return s;
 }
 
-Element* Set::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    List* l = lisp->provideList();
-    u_ustring keyvalue = valeur->asUString(lisp);
-    if (dictionary.find(keyvalue) == dictionary.end())
-        return emptylist_;
-    l->append(dictionary[keyvalue]->copying(false));
-    return l;
+Element* Set::search_reverse(LispE* lisp, Element* a_value, long ix) {
+    u_ustring keyvalue = a_value->asUString(lisp);
+    return (dictionary.find(keyvalue) == dictionary.end())?null_:dictionary[keyvalue];
 }
 
 Element* Set::protected_index(LispE* lisp, long i) {
@@ -2533,9 +2498,7 @@ Element* Heap::search_element(LispE* lisp, Element* element_value, long idx) {
     compare->liste[1]->decrement();
     compare->liste[1] = null_;
     compare->liste[2] = null_;
-    if (res == NULL)
-        return null_;
-    return res;
+    return (res == NULL)?null_:res;
 }
 
 Element* Heap::insert(LispE* lisp, Element* element, long idx) {

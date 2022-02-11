@@ -579,7 +579,7 @@ Element* Dictionary::search_reverse(LispE* lisp, Element* valeur, long ix) {
             return lisp->provideString(keyvalue);
         }
     }
-    return emptystring_;
+    return null_;
 }
 
 Element* Dictionary::reverse(LispE* lisp, bool duplicate) {
@@ -889,7 +889,7 @@ Element* Dictionary_i::search_reverse(LispE* lisp, Element* valeur, long ix) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
     }
-    return minusone_;
+    return null_;
 }
 
 Element* Dictionary_i::reverse(LispE* lisp, bool duplicate) {
@@ -1172,7 +1172,7 @@ Element* Dictionary_n::search_reverse(LispE* lisp, Element* valeur, long ix) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
     }
-    return minusone_;
+    return null_;
 }
 
 Element* Dictionary_n::reverse(LispE* lisp, bool duplicate) {

@@ -1253,9 +1253,7 @@ Element* Element::search_element(LispE* lisp, Element* valeur, long ix) {
 Element* String::search_element(LispE* lisp, Element* valeur, long ix) {
     u_ustring val = valeur->asUString(lisp);
     ix =  content.find(val, ix);
-    if (ix == -1)
-        return null_;
-    return lisp->provideInteger(ix);
+    return (ix == -1)?null_:lisp->provideInteger(ix);
 }
 
 //------------------------------------------------------------------------------------------
@@ -1371,13 +1369,13 @@ Element* String::list_xor(LispE* lisp, Element* value) {
 
 //------------------------------------------------------------------------------------------
 Element* Element::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    return minusone_;
+    return null_;
 }
 
 Element* String::search_reverse(LispE* lisp, Element* valeur, long ix) {
     u_ustring val = valeur->asUString(lisp);
     ix =  content.rfind(val, content.size() - ix);
-    return lisp->provideInteger(ix);
+    return (ix == -1)?null_:lisp->provideInteger(ix);
 }
 
 //------------------------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 #ifndef vecte_h
 #define vecte_h
 
+class List;
 
 template <class Z> class vecte {
 public:
@@ -467,6 +468,96 @@ public:
         buffer[last++] = val;
     }
 
+    long counting(long home, Z v) {
+        long count = 0;
+        for (long i = home; i < last; i++)
+            count += (buffer[i] == v);
+        return count;
+    }
+
+    void plus(long home, Z v) {
+        for (long i = home; i < last; i++)
+            buffer[i] += v;
+    }
+
+    void minus(long home, Z v) {
+        for (long i = home; i < last; i++)
+            buffer[i] -= v;
+    }
+
+    void multiply(long home, Z v) {
+        for (long i = home; i < last; i++)
+            buffer[i] *= v;
+    }
+
+    void divide(long home, Z v) {
+        for (long i = home; i < last; i++)
+            buffer[i] /= v;
+    }
+
+    Z sum(long home) {
+        buffer[sz] = 0;
+        for (long i = home; i < last; i++)
+            buffer[sz] += buffer[i];
+        return buffer[sz];
+    }
+
+    Z product(long home) {
+        if (last == home)
+            return 0;
+        buffer[sz] = buffer[home];
+        for (long i = home + 1; i < last && buffer[sz]; i++)
+            buffer[sz] *= buffer[i];
+        return buffer[sz];
+    }
+
+    inline void minvalue(Z& v, Z m) {
+        v = (v<m)?v:m;
+    }
+
+    inline void maxvalue(Z& v, Z m) {
+        v = (v>m)?v:m;
+    }
+
+    Z mini(long home) {
+        if (last == home)
+            return 0;
+        buffer[sz] = buffer[home];
+        for (long i = home + 1; i < last; i++)
+            minvalue(buffer[sz], buffer[i]);
+        return buffer[sz];
+    }
+
+    Z maxi(long home) {
+        if (last == home)
+            return 0;
+        buffer[sz] = buffer[home];
+        for (long i = home + 1; i < last; i++)
+            maxvalue(buffer[sz], buffer[i]);
+        return buffer[sz];
+    }
+
+    bool minmax(long home, Z& m, Z& M) {
+        if (last == home)
+            return false;
+        m = buffer[home];
+        M = m;
+        for (long i = home + 1; i < last; i++) {
+            minvalue(m, buffer[i]);
+            maxvalue(M, buffer[i]);
+        }
+        return true;
+    }
+
+    long replaceall(long home, Z test, Z value) {
+        long nb = 0;
+        for (long i = home; i < last; i++) {
+            nb += (buffer[i] == test);
+            buffer[i] = (buffer[i] == test)?value:buffer[i];
+        }
+        return nb;
+    }
+        
     ~item_a() {
         free(buffer);
     }
@@ -643,6 +734,13 @@ public:
         return (i == items->last)?-1:i-home;
     }
 
+    inline long search_back(Z v, long ix) {
+        long i = items->last - 1;
+        ix += home;
+        for (; i >= ix && v != items->buffer[i]; i--) {}
+        return (i < ix)?-1:i-home;
+    }
+
     inline bool check(Z v) {
         long i = home;
         for (; i< items->last && v != items->buffer[i]; i++) {}
@@ -663,12 +761,68 @@ public:
             v.push_back(items->buffer[home+i]);
         }
     }
+    
+    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
+    void values_sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
+    
+    Z sum() {
+        return items->sum(home);
+    }
+
+    Z product() {
+        return items->product(home);
+    }
+    
+    Z mini() {
+        return items->mini(home);
+    }
+
+    Z maxi() {
+        return items->maxi(home);
+    }
+    
+    bool minmax(Z& m, Z& M) {
+        return items->minmax(home, m, M);
+    }
+    
+    long count(Z v) {
+        return items->counting(home, v);
+    }
+
+    long replaceall(Z test, Z value) {
+        return items->replaceall(home, test, value);
+    }
+    
+    void plus(Z v) {
+        items->plus(home, v);
+    }
+
+    void minus(Z v) {
+        items->minus(home, v);
+    }
+
+    void multiply(Z v) {
+        items->multiply(home, v);
+    }
+
+    void divide(Z v) {
+        items->divide(home, v);
+    }
+
+    void searchall(vecte_a<long>& indexes, Z v, long ix) {
+        for (long i = home + ix; i < items->last; i++) {
+            if (items->buffer[i] == v)
+                indexes.push_back(i - home);
+        }
+    }
+    
 };
 
 //We use the new method here. The alloc cannot work for strings...
 template <class Z> class item_n {
 public:
     Z* buffer;
+    Z vnull;
     long last;
     long sz;
     long status;
@@ -779,6 +933,71 @@ public:
         resize(last);
         //sinon on ajoute l'element en queue...
         buffer[last++] = val;
+    }
+
+    void plus(long home, Z& v) {
+        for (long i = home; i < last; i++)
+            buffer[i] += v;
+    }
+
+    long counting(long home, Z& v) {
+        long count = 0;
+        for (long i = home; i < last; i++)
+            count += (buffer[i] == v);
+        return count;
+    }
+
+    Z sum(long home) {
+        buffer[sz] = vnull;
+        for (long i = home; i < last; i++)
+            buffer[sz] += buffer[i];
+        return buffer[sz];
+    }
+
+    inline void minvalue(Z& v, Z m) {
+        v = (v<m)?v:m;
+    }
+
+    inline void maxvalue(Z& v, Z m) {
+        v = (v>m)?v:m;
+    }
+
+    Z mini(long home) {
+        if (last == home)
+            return vnull;
+        buffer[sz] = buffer[home];
+        for (long i = home + 1; i < last; i++)
+            minvalue(buffer[sz], buffer[i]);
+        return buffer[sz];
+    }
+
+    Z maxi(long home) {
+        buffer[sz] = vnull;
+        for (long i = home; i < last; i++)
+            maxvalue(buffer[sz], buffer[i]);
+        return buffer[sz];
+    }
+
+    long replaceall(long home, Z& test, Z& value) {
+        long nb = 0;
+        for (long i = home; i < last; i++) {
+            nb += (buffer[i] == test);
+            buffer[i] = (buffer[i] == test)?value:buffer[i];
+        }
+        return nb;
+    }
+
+    bool minmax(long home, Z& m, Z& M) {
+        if (last == home)
+            return false;
+        
+        m = buffer[home];
+        M = m;
+        for (long i = home + 1; i < last; i++) {
+            minvalue(m, buffer[i]);
+            maxvalue(M, buffer[i]);
+        }
+        return true;
     }
 
     ~item_n() {
@@ -937,13 +1156,20 @@ public:
         items->atlast(val);
     }
 
-    inline long search(Z v, long i) {
+    inline long search(Z& v, long i) {
         i += home;
         for (; i< items->last && v != items->buffer[i]; i++) {}
         return (i == items->last)?-1:i-home;
     }
 
-    inline bool check(Z v) {
+    inline long search_back(Z& v, long ix) {
+        long i = items->last - 1;
+        ix += home;
+        for (; i >= ix && v != items->buffer[i]; i--) {}
+        return (i < ix)?-1:i-home;
+    }
+
+    inline bool check(Z& v) {
         long i = home;
         for (; i< items->last && v != items->buffer[i]; i++) {}
         return (i != items->last);
@@ -961,6 +1187,44 @@ public:
     inline void to_vector(vector<Z>& v) {
         for (long i = home; i < size(); i++) {
             v.push_back(items->buffer[home+i]);
+        }
+    }
+
+    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
+    void values_sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
+
+    Z sum() {
+        return items->sum(home);
+    }
+
+    Z mini() {
+        return items->mini(home);
+    }
+
+    Z maxi() {
+        return items->maxi(home);
+    }
+
+    bool minmax(Z& m, Z& M) {
+        return items->minmax(home, m, M);
+    }
+    
+    long count(Z& v) {
+        return items->counting(home, v);
+    }
+
+    void plus(Z& v) {
+        items->plus(home, v);
+    }
+
+    long replaceall(Z& test, Z& value) {
+        return items->replaceall(home, test, value);
+    }
+
+    void searchall(vecte_a<long>& indexes, Z& v, long ix) {
+        for (long i = home + ix; i < items->last; i++) {
+            if (items->buffer[i] == v)
+                indexes.push_back(i - home);
         }
     }
 

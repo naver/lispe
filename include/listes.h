@@ -1777,6 +1777,7 @@ public:
     Element* invert_sign(LispE* lisp);
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
+    
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
@@ -2133,8 +2134,6 @@ public:
     Element* divide_direct(LispE* lisp, Element* e);
 
 
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -2595,8 +2594,6 @@ public:
     Element* divide_direct(LispE* lisp, Element* e);
 
 
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -3064,8 +3061,6 @@ public:
     Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
 
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -3466,8 +3461,6 @@ public:
     Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
 
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -4832,8 +4825,6 @@ public:
 
     Element* plus(LispE* l, Element* e);
 
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
 
 };

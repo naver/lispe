@@ -37,7 +37,7 @@ if ostype == b"Darwin":
         print("No Python 3.x version found")
 
     ostype = subprocess.Popen(["uname", "-a"], stdout=subprocess.PIPE).stdout.read()
-    if b"arm64" in ostype:
+    if b"arm64" in ostype.lower():
        f.write("PLATFORM = macarm\n")
        f.write("FLTKVERSION=-DFLTK14\n")
        f.write("COPTION = -Ofast\n")
