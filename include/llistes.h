@@ -694,7 +694,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     bool checkShape(long depth, vecte<long>& sz) {
         if (size() != sz[depth])

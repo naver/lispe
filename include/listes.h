@@ -203,7 +203,7 @@ public:
     long home;
     bool marking;
     bool usermarking;
-
+    
     LIST(LIST& l, long pos) {
         object = NULL;
         marking = false;
@@ -258,7 +258,7 @@ public:
         return !item->status;
     }
     
-    short shared(long status) {
+    uint16_t shared(uint16_t status) {
         return status + (item->status != 0);
     }
     
@@ -492,9 +492,10 @@ public:
 
     LIST liste;
     char terminal;
+    char quoted;
     
-    List() : terminal(0), liste(8), Element(t_list) {}
-    List(uint16_t s) : terminal(0), liste(1), Element(t_list, s) {}
+    List() : terminal(0), quoted(0), liste(8), Element(t_list) {}
+    List(uint16_t s) : terminal(0), quoted(0), liste(1), Element(t_list, s) {}
     
     //In all other case, we "borrow" the ITEM object to create a LIST object that will
     //share the same content. No copy or duplication is necessary.
@@ -502,12 +503,27 @@ public:
     //to correctly assess when it can be safely deleted.
     //When a CDR is called, it will share this list's item, but with a different "home" value.
     //The "home value" in a LIST object defines where it starts in the internal buffer of ITEM
-    List(List* l, long p) : terminal(0), liste(l->liste, p), Element(t_list) {}
+    List(List* l, long p) : terminal(0), quoted(0), liste(l->liste, p), Element(t_list) {}
 
     bool isContainer() {
         return true;
     }
     
+    char unquoting() {
+        char q = quoted;
+        quoted = 0;
+        return q;
+    }
+    
+    Element* quoting() {
+        quoted = 3;
+        return this;
+    }
+    
+    void setquoted(char q) {
+        quoted = q;
+    }
+
     void setterminal(char v = 1) {
         terminal |= v;
     }
@@ -641,7 +657,6 @@ public:
         return e;
     }
     
-    Element* quoted(LispE*);
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
 
@@ -651,7 +666,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    virtual Element* duplicate_constant(bool pair = false);
+    virtual Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     virtual bool isList() {
         return true;
@@ -1311,6 +1326,9 @@ public:
     Element* evall_pushfirst(LispE* lisp);
     Element* evall_pushlast(LispE* lisp);
     Element* evall_quote(LispE* lisp);
+    Element* evall_quoted(LispE* lisp) {
+        return this;
+    }
     Element* evall_range(LispE* lisp);
     Element* evall_rangein(LispE* lisp);
     Element* evall_rank(LispE* lisp);
@@ -1323,6 +1341,7 @@ public:
     Element* evall_rho(LispE* lisp);
     Element* evall_rightshift(LispE* lisp);
     Element* evall_rightshiftequal(LispE* lisp);
+    Element* evall_root(LispE* lisp);
     Element* evall_rotate(LispE* lisp);
     Element* evall_scan(LispE* lisp);
     Element* evall_search(LispE* lisp);
@@ -1644,6 +1663,79 @@ public:
 };
 
 
+class List_divide2 : public List {
+public:
+    List_divide2(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_plus2 : public List {
+public:
+    List_plus2(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_minus2 : public List {
+public:
+    List_minus2(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_multiply2 : public List {
+public:
+    List_multiply2(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_divide3 : public List {
+public:
+    List_divide3(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_plus3 : public List {
+public:
+    List_plus3(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_minus3 : public List {
+public:
+    List_minus3(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_multiply3 : public List {
+public:
+    List_multiply3(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_dividen : public List {
+public:
+    List_dividen(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_plusn : public List {
+public:
+    List_plusn(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_minusn : public List {
+public:
+    List_minusn(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_multiplyn : public List {
+public:
+    List_multiplyn(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+
 class List_power2 : public List {
 public:
     List_power2(List* l) : List(l, 0) {}
@@ -1873,7 +1965,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     bool isList() {
         return true;
@@ -2336,7 +2428,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     bool isList() {
         return true;
@@ -2781,7 +2873,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     bool isList() {
         return true;
@@ -3188,7 +3280,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     bool isList() {
         return true;
@@ -3616,7 +3708,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
+    Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
             return new Matrice_float(this);
         return this;
@@ -3795,7 +3887,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
+    Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
             return new Matrice(this);
         return this;
@@ -3950,7 +4042,7 @@ public:
     
     Element* loop(LispE* lisp, short label,  List* code);
     
-    Element* duplicate_constant(bool pair = false) {
+    Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
             return new Tenseur_float(this);
         return this;
@@ -4224,7 +4316,7 @@ public:
     
     Element* loop(LispE* lisp, short label,  List* code);
     
-    Element* duplicate_constant(bool pair = false) {
+    Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
             return new Tenseur(this);
         return this;
@@ -4557,7 +4649,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     bool isList() {
         return true;

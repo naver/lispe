@@ -27,6 +27,7 @@
 #define debug_inside_function 3
 //------------------------------------------------------------
 typedef short (LispE::*checkEval)(List*, long);
+typedef short (LispE::*checkBasicEval)(Listincode*);
 //------------------------------------------------------------
 string LispVersion();
 //------------------------------------------------------------
@@ -44,6 +45,7 @@ public:
     Element* _BOOLEANS[2];
     
     checkEval checkstates[4];
+    checkBasicEval checkbasicstates[4];
 
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
@@ -105,7 +107,7 @@ public:
     
     LispE() {
         updatecreator();
-        initpools(this);
+        initpools();
         preparingthread = false;
         evaluating = false;
         id_thread = 0;
@@ -126,11 +128,15 @@ public:
         n_one = delegation->_ONE;
     }
     
-    inline void initpools(LispE* lisp) {
-        for (long i = 0; i < 50; i++) {
-            number_pool.push_back(new Numberpool(lisp, 0));
-            integer_pool.push_back(new Integerpool(lisp, 0));
-            numbers_pool.push_back(new Numberspool(lisp));
+    inline void initpools() {
+        for (long i = 0; i < 100; i++) {
+            list_pool.push_back(new Listpool(this));
+            number_pool.push_back(new Numberpool(this, 0));
+            integer_pool.push_back(new Integerpool(this, 0));
+            string_pool.push_back(new Stringpool(this));
+            strings_pool.push_back(new Stringspool(this));
+            numbers_pool.push_back(new Numberspool(this));
+            integers_pool.push_back(new Integerspool(this));
         }
     }
     inline bool checkArity(List* l) {
@@ -467,14 +473,17 @@ public:
         throw new Error(msg);
     }
     
+    //0
     inline short check_empty(List* l, long sz) {
         return l_emptylist;
     }
     
+    //1
     inline short check_straight(List* l, long sz) {
         return l->liste.get0();
     }
     
+    //2
     inline short check_arity(List* l, long sz) {
         short lb = l->liste.get0();
         if (delegation->checkArity(lb, sz))
@@ -483,12 +492,49 @@ public:
         throw new Error(U"Error: wrong number of arguments");
     }
 
-    inline short checkState(List* l, long sz) {
-        return (this->*checkstates[(evaluating + 1)*bool(sz)])(l, sz);
+    //3
+    inline short check_quoted(List* l, long sz) {
+        return l_quoted;
     }
 
-    inline void trace_and_context(List* e) {
+    inline short checkState(List* l, long sz) {
+        delegation->checkExecution();
+        return (this->*checkstates[((evaluating + 1)*bool(sz))|l->quoted])(l, sz);
+    }
+
+
+    //0
+    inline short check_basic_straight(Listincode* l) {
+        return l->liste.get0();
+    }
+
+    //1
+    inline short check_basic_trace(Listincode* l) {
+        trace_and_context(l);
+        return l->liste.get0();
+    }
+
+    //3
+    inline short check_basic_quoted(Listincode* l) {
+        return l_quoted;
+    }
+    
+    inline short checkBasicState(Listincode* l) {
+        delegation->checkExecution();
+        return (this->*checkbasicstates[bool(trace)|l->quoted])(l);
+    }
+
+    inline void checkPureState(Listincode* l) {
+        delegation->checkExecution();
+        if (trace) {
+            trace_and_context(l);
+        }
+    }
+    
+    inline void trace_and_context(Listincode* e) {
         //in the case of a goto, we only take into account breakpoints
+        delegation->set_context(e->line, e->fileidx);
+
         if (trace == debug_goto)
             delegation->next_stop = false;
         
@@ -737,7 +783,7 @@ public:
     }
     
     inline void recording(Element* e, short label) {
-        execution_stack.back()->recording(e, label);
+        execution_stack.back()->recording(e->duplicate_constant(this), label);
     }
 
     inline void record_argument(Element* e, short label) {
@@ -745,27 +791,27 @@ public:
     }
 
     inline void replacingvalue(Element* e, short label) {
-        execution_stack.back()->replacingvalue(e, label);
+        execution_stack.back()->replacingvalue(e->duplicate_constant(this), label);
     }
 
     inline Element* recording_variable(Element* e, short label) {
-        return execution_stack.back()->recording_variable(e, label);
+        return execution_stack.back()->recording_variable(e->duplicate_constant(this), label);
     }
 
     inline void storing_variable(Element* e, short label) {
-        execution_stack.back()->storing_variable(e, label);
+        execution_stack.back()->storing_variable(e->duplicate_constant(this), label);
     }
 
     inline void storing_global(Element* e, short label) {
-        execution_stack[0]->storing_variable(e, label);
+        execution_stack[0]->storing_variable(e->duplicate_constant(this), label);
     }
 
     inline void storing_global(wstring label, Element* e) {
-        execution_stack[0]->storing_variable(e, delegation->encode(label));
+        execution_stack[0]->storing_variable(e->duplicate_constant(this), delegation->encode(label));
     }
 
     inline void storing_global(u_ustring label, Element* e) {
-        execution_stack[0]->storing_variable(e, delegation->encode(label));
+        execution_stack[0]->storing_variable(e->duplicate_constant(this), delegation->encode(label));
     }
 
     inline void removefromstack(short label) {

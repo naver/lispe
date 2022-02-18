@@ -191,6 +191,7 @@ public:
 
     long i_current_line;
     long i_current_file;
+    bool context_is_error;
     short stop_execution;
 
     bool next_stop;
@@ -875,15 +876,34 @@ public:
         }
         return e;
     }
-    
-    inline void set_context(long l, long f) {
+
+    inline void checkExecution() {
         if (stop_execution)
             throw _THEEND;
-        
-        i_current_line = l;
-        i_current_file = f;
     }
     
+    inline void reset_context() {
+        context_is_error = false;
+        i_current_line = -1;
+        i_current_file = -1;
+    }
+    
+    
+    inline void set_context(long l, long f) {
+        if (!context_is_error) {
+            i_current_line = l;
+            i_current_file = f;
+        }
+    }
+
+    inline void set_error_context(long l, long f) {
+        if (!context_is_error) {
+            context_is_error = true;
+            i_current_line = l;
+            i_current_file = f;
+        }
+    }
+
     ~Delegation();
 };
 

@@ -38,13 +38,6 @@ Returnpool::Returnpool(LispE* l) : lisp(l), Element(l_return) {
     value = null_;
 }
 //------------------------------------------------------------------------------------------
-Element* Element::quoting(LispE* lisp) {
-    List* l = lisp->provideList();
-    l->append(quote_);
-    l->append(this);
-    return l;
-}
-//------------------------------------------------------------------------------------------
 Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
     last = false;
     type = l_irank;
@@ -172,6 +165,9 @@ Element* List::copyatom(LispE* lisp, uint16_t s) {
     for (long i = 0; i < liste.size(); i++) {
         l->append(liste[i]->copyatom(lisp, s));
     }
+    //The release here needs a bit of explanation
+    //the current list could be a cdr on a new list
+    //which means that shared would return a value > 1
     release();
     return l;
 }
@@ -429,8 +425,8 @@ Element* Constfloat::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideFloat(number);
 }
 
-Element* Constfloat::duplicate_constant(bool pair) {
-    return (provide)?lisp->provideFloat(number):new Float(number);
+Element* Constfloat::duplicate_constant(LispE* lisp, bool pair) {
+    return lisp->provideFloat(number);
 }
 
 Element* Constnumber::copying(bool duplicate) {
@@ -449,8 +445,8 @@ Element* Constnumber::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideNumber(number);
 }
 
-Element* Constnumber::duplicate_constant(bool pair) {
-    return (provide)?lisp->provideNumber(number):new Number(number);
+Element* Constnumber::duplicate_constant(LispE* lisp, bool pair) {
+    return lisp->provideNumber(number);
 }
 
 Element* Constinteger::fullcopy() {
@@ -463,8 +459,8 @@ Element* Constinteger::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideInteger(integer);
 }
 
-Element* Constinteger::duplicate_constant(bool pair) {
-    return (provide)?lisp->provideInteger(integer):new Integer(integer);
+Element* Constinteger::duplicate_constant(LispE* lisp, bool pair) {
+    return lisp->provideInteger(integer);
 }
 
 Element* Constinteger::copying(bool duplicate) {
@@ -481,7 +477,7 @@ Element* Constshort::copyatom(LispE* lsp, uint16_t s) {
     return new Short(integer);
 }
 
-Element* Constshort::duplicate_constant(bool pair) {
+Element* Constshort::duplicate_constant(LispE* lisp, bool pair) {
     return new Short(integer);
 }
 
@@ -505,8 +501,8 @@ Element* Conststring::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideString(content);
 }
 
-Element* Conststring::duplicate_constant(bool pair) {
-    return (provide)?lisp->provideString(content):new String(content);
+Element* Conststring::duplicate_constant(LispE* lisp, bool pair) {
+    return lisp->provideString(content);
 }
 
 Element* Stringpool::fullcopy() {

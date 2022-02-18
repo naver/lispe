@@ -521,26 +521,26 @@ bool Dictionary::check_element(LispE* lisp, Element* valeur) {
 }
 
 Element* Dictionary::checkkey(LispE* lisp, Element* e) {
-    try {
-        return dictionary.at(e->asUString(lisp));
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(e->asUString(lisp));
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Dictionary::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    if (remp->equal(lisp, valeur))
+        return zero_;
+
     long nb = 0;
+    Element* novel = remp->copying(false);
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
-            if (a.second != remp) {
-                a.second->decrement();
-                a.second = remp->copying(false);
-                a.second->increment();
-                nb++;
-            }
+            a.second->decrement();
+            a.second = novel;
+            novel->increment();
+            nb++;
         }
     }
+    if (novel != remp)
+        novel->release();
     return lisp->provideInteger(nb);
 }
 
@@ -602,41 +602,25 @@ Element* Dictionary::reverse(LispE* lisp, bool duplicate) {
 }
 
 Element* Dictionary::value_on_index(u_ustring& k, LispE* lisp) {
-    try {
-        return dictionary.at(k)->copying(false);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary::value_on_index(wstring& u, LispE* lisp) {
     u_pstring k = _w_to_u(u);
-    try {
-        return dictionary.at(k)->copying(false);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary::protected_index(LispE* lisp, u_ustring& k) {
-    try {
-        return dictionary.at(k);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Dictionary::value_on_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
-    try {
-        return dictionary.at(k)->copying(false);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary::protected_index(LispE* lisp, Element* ix) {
@@ -672,9 +656,38 @@ bool Dictionary::egal(Element* e) {
     return ((e->type == t_dictionary && e->size() == 0 && dictionary.size() == 0) || e == this);
 }
 
-Element* Dictionary::duplicate_constant(bool pair) {
+Element* Dictionary::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
-        Dictionary* d = (Dictionary*)newInstance();
+        Dictionary* d = lisp->provideDictionary();
+        Element* e;
+        for (auto& a: dictionary) {
+            e = a.second->copying(false);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+    return this;
+}
+
+
+Element* Dictionary_i::duplicate_constant(LispE* lisp, bool pair) {
+    if (status == s_constant) {
+        Dictionary_i* d = lisp->provideDictionary_i();
+        Element* e;
+        for (auto& a: dictionary) {
+            e = a.second->copying(false);
+            d->dictionary[a.first] = e;
+            e->increment();
+        }
+        return d;
+    }
+    return this;
+}
+
+Element* Dictionary_n::duplicate_constant(LispE* lisp, bool pair) {
+    if (status == s_constant) {
+        Dictionary_n* d = lisp->provideDictionary_n();
         Element* e;
         for (auto& a: dictionary) {
             e = a.second->copying(false);
@@ -839,26 +852,26 @@ bool Dictionary_i::check_element(LispE* lisp, Element* valeur) {
 }
 
 Element* Dictionary_i::checkkey(LispE* lisp, Element* e) {
-    try {
-        return dictionary.at(e->asInteger());
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(e->asInteger());
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Dictionary_i::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    if (remp->equal(lisp, valeur))
+        return zero_;
+    
     long nb = 0;
+    Element* novel = remp->copying(false);
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
-            if (a.second != remp) {
-                a.second->decrement();
-                a.second = remp->copying(false);
-                a.second->increment();
-                nb++;
-            }
+            a.second->decrement();
+            a.second = novel;
+            novel->increment();
+            nb++;
         }
     }
+    if (novel != remp)
+        novel->release();
     return lisp->provideInteger(nb);
 }
 
@@ -911,30 +924,18 @@ Element* Dictionary_i::reverse(LispE* lisp, bool duplicate) {
 }
 
 Element* Dictionary_i::value_on_index(long k, LispE* lisp) {
-    try {
-        return dictionary.at(k)->copying(false);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary_i::protected_index(LispE* lisp, long k) {
-    try {
-        return dictionary.at(k);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Dictionary_i::value_on_index(LispE* lisp, Element* ix) {
-    try {
-        return dictionary.at(ix->checkNumber(lisp))->copying(false);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(ix->checkNumber(lisp));
+    return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary_i::protected_index(LispE* lisp, Element* ix) {
@@ -1122,26 +1123,26 @@ bool Dictionary_n::check_element(LispE* lisp, Element* valeur) {
 }
 
 Element* Dictionary_n::checkkey(LispE* lisp, Element* e) {
-    try {
-        return dictionary.at(e->asNumber());
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(e->asNumber());
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Dictionary_n::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    if (remp->equal(lisp, valeur))
+        return zero_;
+
     long nb = 0;
+    Element* novel = remp->copying(false);
     for (auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
-            if (a.second != remp) {
-                a.second->decrement();
-                a.second = remp->copying(false);
-                a.second->increment();
-                nb++;
-            }
+            a.second->decrement();
+            a.second = novel;
+            novel->increment();
+            nb++;
         }
     }
+    if (novel != remp)
+        novel->release();
     return lisp->provideInteger(nb);
 }
 
@@ -1194,30 +1195,18 @@ Element* Dictionary_n::reverse(LispE* lisp, bool duplicate) {
 }
 
 Element* Dictionary_n::value_on_index(double k, LispE* lisp) {
-    try {
-        return dictionary.at(k)->copying(false);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary_n::protected_index(LispE* lisp, double k) {
-    try {
-        return dictionary.at(k);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Dictionary_n::value_on_index(LispE* lisp, Element* ix) {
-    try {
-        return dictionary.at(ix->checkNumber(lisp))->copying(false);
-    }
-    catch (...) {
-        return null_;
-    }
+    auto it = dictionary.find(ix->checkNumber(lisp));
+    return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary_n::protected_index(LispE* lisp, Element* ix) {

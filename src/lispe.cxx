@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.11.16.8";
+static std::string version = "1.2022.2.18.11.35";
 string LispVersion() {
     return version;
 }
@@ -36,6 +36,11 @@ void LispE::updatecreator() {
     checkstates[0] = &LispE::check_empty;
     checkstates[1] = &LispE::check_straight;
     checkstates[2] = &LispE::check_arity;
+    checkstates[3] = &LispE::check_quoted;
+    
+    checkbasicstates[0] = &LispE::check_basic_straight;
+    checkbasicstates[1] = &LispE::check_basic_trace;
+    checkbasicstates[3] = &LispE::check_basic_quoted;
 }
 
 //------------------------------------------------------------------------------------------
@@ -210,6 +215,9 @@ void Delegation::initialisation(LispE* lisp) {
 
     set_instruction(l_void, "%__void__%", P_FULL, &List::evall_void);
     set_instruction(l_emptylist, "%__empty__%", P_ONE, &List::evall_emptylist);
+    set_instruction(l_quoted, "%__quote__%", P_ONE, &List::evall_quoted);
+    set_instruction(l_root, "__root__", P_ATLEASTONE, &List::evall_root);
+
 
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
@@ -1662,18 +1670,55 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                         */
                         if (delegation->instructions.check(lab)) {
                             Element* lm = NULL;
+                            long nbarguments = e->size();
                             switch (lab) {
                                 case l_break:
-                                    if (e->size() != 1)
+                                    if (nbarguments != 1)
                                         throw new Error("Error: break does not take any arguments");
                                     removefromgarbage(e);
                                     e = &delegation->_BREAKEVAL;
                                     break;
                                 case l_power:
-                                    if (e->size() == 3 && e->index(2)->equalvalue((long)2))
+                                    if (nbarguments == 3 && e->index(2)->equalvalue((long)2))
                                         lm = new List_power2((List*)e);
                                     else
                                         lm = new List_basic_execute((Listincode*)e, delegation->evals[lab]);
+                                    break;
+                                case l_divide:
+                                    if (nbarguments == 2)
+                                        lm = new List_divide2((List*)e);
+                                    else
+                                        if (nbarguments == 3)
+                                            lm = new List_divide3((List*)e);
+                                        else
+                                            lm = new List_dividen((List*)e);
+                                    break;
+                                case l_plus:
+                                    if (nbarguments == 2)
+                                        lm = new List_plus2((List*)e);
+                                    else
+                                        if (nbarguments == 3)
+                                            lm = new List_plus3((List*)e);
+                                        else
+                                            lm = new List_plusn((List*)e);
+                                    break;
+                                case l_minus:
+                                    if (nbarguments == 2)
+                                        lm = new List_minus2((List*)e);
+                                    else
+                                        if (nbarguments == 3)
+                                            lm = new List_minus3((List*)e);
+                                        else
+                                            lm = new List_minusn((List*)e);
+                                    break;
+                                case l_multiply:
+                                    if (nbarguments == 2)
+                                        lm = new List_multiply2((List*)e);
+                                    else
+                                        if (nbarguments == 3)
+                                            lm = new List_multiply3((List*)e);
+                                        else
+                                            lm = new List_multiplyn((List*)e);
                                     break;
                                 case l_switch:
                                     lm = new Listswitch((Listincode*)e);
@@ -1681,7 +1726,6 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     break;
                                 case l_mod:
                                 case l_modequal:
-                                case l_divide:
                                 case l_divideequal:
                                     lm = new List_execute((Listincode*)e, delegation->evals[lab]);
                                     break;
@@ -1694,7 +1738,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             
                             if (lm != NULL) {
                                 garbaging(lm);
-                                if (!delegation->checkArity(lab, e->size())) {
+                                if (!delegation->checkArity(lab, nbarguments)) {
                                     wstring err = L"Error: Wrong number of argument for: '";
                                     err += delegation->asString(lab);
                                     throw new Error(err);
@@ -1939,7 +1983,7 @@ Element* LispE::load(string pathname) {
         delegation->entrypoints[delegation->i_current_file] = tree;
 
         current_path();
-
+        delegation->reset_context();
         return tree->eval(this);
     }
     catch(Error* err) {
@@ -1951,7 +1995,7 @@ Element* LispE::load(string pathname) {
 Element* LispE::compile(string& code) {
     clearStop();
     //A little trick to compile code sequences
-    code = "(block " + code + ")";
+    code = "(__root__ " + code + ")";
     Tokenizer parse;
     lisp_code retour = segmenting(code, parse);
     List courant;
@@ -2074,6 +2118,7 @@ Element* LispE::execute(string code, string pathname) {
         Element* tree = compile(code);
         delegation->entrypoints[delegation->i_current_file] = tree;
         current_path();
+        delegation->reset_context();
         return tree->eval(this);
     }
     catch(Error* err) {
@@ -2277,6 +2322,11 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
 
 
 

@@ -468,47 +468,76 @@ public:
         buffer[last++] = val;
     }
 
-    long counting(long home, Z v) {
+    inline long counting(long home, Z v) {
         long count = 0;
         for (long i = home; i < last; i++)
             count += (buffer[i] == v);
         return count;
     }
 
-    void plus(long home, Z v) {
+    inline void plus(long home, long home_n, Z* n,  long nb) {
+        home--;
+        home_n--;
+        while (nb) {
+            buffer[home+nb] += n[home_n + nb];
+            nb--;
+        }
+    }
+
+    inline void minus(long home, long home_n, Z* n,  long nb) {
+        home--;
+        home_n--;
+        while (nb) {
+            buffer[home+nb] -= n[home_n + nb];
+            nb--;
+        }
+    }
+
+    inline void multiply(long home, long home_n, Z* n,  long nb) {
+        home--;
+        home_n--;
+        while (nb) {
+            buffer[home+nb] *= n[home_n + nb];
+            nb--;
+        }
+    }
+
+    inline void plus(long home, Z v) {
         for (long i = home; i < last; i++)
             buffer[i] += v;
     }
 
-    void minus(long home, Z v) {
+    inline void minus(long home, Z v) {
         for (long i = home; i < last; i++)
             buffer[i] -= v;
     }
 
-    void multiply(long home, Z v) {
+    inline void multiply(long home, Z v) {
         for (long i = home; i < last; i++)
             buffer[i] *= v;
     }
 
-    void divide(long home, Z v) {
+    inline void divide(long home, Z v) {
         for (long i = home; i < last; i++)
             buffer[i] /= v;
     }
 
-    Z sum(long home) {
-        buffer[sz] = 0;
+    inline Z sum(long home) {
+        Z& s = buffer[sz];
+        s = 0;
         for (long i = home; i < last; i++)
-            buffer[sz] += buffer[i];
-        return buffer[sz];
+            s += buffer[i];
+        return s;
     }
 
-    Z product(long home) {
+    inline Z product(long home) {
         if (last == home)
             return 0;
-        buffer[sz] = buffer[home];
-        for (long i = home + 1; i < last && buffer[sz]; i++)
-            buffer[sz] *= buffer[i];
-        return buffer[sz];
+        Z& p = buffer[sz];
+        p = buffer[home];
+        for (long i = home + 1; i < last && p; i++)
+            p *= buffer[i];
+        return p;
     }
 
     inline void minvalue(Z& v, Z m) {
@@ -519,25 +548,27 @@ public:
         v = (v>m)?v:m;
     }
 
-    Z mini(long home) {
+    inline Z mini(long home) {
         if (last == home)
             return 0;
-        buffer[sz] = buffer[home];
+        Z& m = buffer[sz];
+        m = buffer[home];
         for (long i = home + 1; i < last; i++)
-            minvalue(buffer[sz], buffer[i]);
-        return buffer[sz];
+            minvalue(m, buffer[i]);
+        return m;
     }
 
-    Z maxi(long home) {
+    inline Z maxi(long home) {
         if (last == home)
             return 0;
-        buffer[sz] = buffer[home];
+        Z& M = buffer[sz];
+        M = buffer[home];
         for (long i = home + 1; i < last; i++)
-            maxvalue(buffer[sz], buffer[i]);
-        return buffer[sz];
+            maxvalue(M, buffer[i]);
+        return M;
     }
 
-    bool minmax(long home, Z& m, Z& M) {
+    inline bool minmax(long home, Z& m, Z& M) {
         if (last == home)
             return false;
         m = buffer[home];
@@ -549,7 +580,7 @@ public:
         return true;
     }
 
-    long replaceall(long home, Z test, Z value) {
+    inline long replaceall(long home, Z test, Z value) {
         long nb = 0;
         for (long i = home; i < last; i++) {
             nb += (buffer[i] == test);
@@ -616,7 +647,7 @@ public:
         items->buffer[pos + home] = val;
     }
 
-    short shared(long status) {
+    uint16_t shared(uint16_t status) {
         return status + (items->status != 0);
     }
 
@@ -632,7 +663,7 @@ public:
         return e;
     }
 
-    long size() {
+    inline long size() {
         return items->last - home;
     }
 
@@ -698,14 +729,16 @@ public:
         
     void operator =(vecte_a<Z>& z) {
         items->last = home;
-        for (long i = 0; i < z.size(); i++)
-            push_back(z[i]);
+        items->reserve(z.items->sz);
+        for (long i = z.home; i < z.items->last; i++)
+            items->buffer[items->last++] = z.items->buffer[i];
     }
 
     void operator =(vecte<Z>& z) {
         items->last = home;
+        items->reserve(z.size());
         for (long i = 0; i < z.size(); i++)
-            push_back(z[i]);
+            items->buffer[items->last++] = z[i];
     }
 
     inline bool empty() {
@@ -748,12 +781,12 @@ public:
     }
 
     inline bool operator ==(vecte_a<Z>& v) {
-        if (size() != v.size())
-            return false;
-        
-        long i = home;
-        for (; i < items->last && v[i] == items->buffer[i]; i++) {}
-        return (i == items->last);
+        if (v.items != items && size() == v.size()) {
+            long i = home;
+            for (; i < items->last && v[i] == items->buffer[i]; i++) {}
+            return (i == items->last);
+        }
+        return (v.items == items && v.home == home);
     }
     
     inline void to_vector(vector<Z>& v) {
@@ -793,6 +826,18 @@ public:
         return items->replaceall(home, test, value);
     }
     
+    void plus(vecte_a<Z>& n, long nb) {
+        items->plus(home, n.home, n.items->buffer, nb);
+    }
+
+    void minus(vecte_a<Z>& n, long nb) {
+        items->minus(home, n.home, n.items->buffer, nb);
+    }
+
+    void multiply(vecte_a<Z>& n, long nb) {
+        items->multiply(home, n.home, n.items->buffer, nb);
+    }
+
     void plus(Z v) {
         items->plus(home, v);
     }
@@ -948,10 +993,11 @@ public:
     }
 
     Z sum(long home) {
-        buffer[sz] = vnull;
+        Z& s = buffer[sz];
+        s = vnull;
         for (long i = home; i < last; i++)
-            buffer[sz] += buffer[i];
-        return buffer[sz];
+            s += buffer[i];
+        return s;
     }
 
     inline void minvalue(Z& v, Z m) {
@@ -965,17 +1011,23 @@ public:
     Z mini(long home) {
         if (last == home)
             return vnull;
-        buffer[sz] = buffer[home];
+        
+        Z& m = buffer[sz];
+        m = buffer[home];
         for (long i = home + 1; i < last; i++)
-            minvalue(buffer[sz], buffer[i]);
-        return buffer[sz];
+            minvalue(m, buffer[i]);
+        return m;
     }
 
     Z maxi(long home) {
-        buffer[sz] = vnull;
-        for (long i = home; i < last; i++)
-            maxvalue(buffer[sz], buffer[i]);
-        return buffer[sz];
+        if (last == home)
+            return vnull;
+
+        Z& M = buffer[sz];
+        M = buffer[home];
+        for (long i = home + 1; i < last; i++)
+            maxvalue(M, buffer[i]);
+        return M;
     }
 
     long replaceall(long home, Z& test, Z& value) {
@@ -1054,7 +1106,7 @@ public:
         items->buffer[pos + home] = val;
     }
 
-    short shared(long status) {
+    uint16_t shared(uint16_t status) {
         return status + (items->status != 0);
     }
 
@@ -1070,7 +1122,7 @@ public:
         return e;
     }
 
-    long size() {
+    inline long size() {
         return items->last - home;
     }
 
@@ -1140,10 +1192,11 @@ public:
         
     void operator =(vecte_n<Z>& z) {
         items->last = home;
-        for (long i = 0; i < z.size(); i++)
-            push_back(z[i]);
+        items->reserve(z.items->sz);
+        for (long i = z.home; i < z.items->last; i++)
+            items->buffer[items->last++] = z.items->buffer[i];
     }
-
+    
     inline bool empty() {
         return (home == items->last);
     }
@@ -1176,12 +1229,12 @@ public:
     }
 
     inline bool operator ==(vecte_n<Z>& v) {
-        if (size() != v.size())
-            return false;
-        
-        long i = home;
-        for (; i < items->last && v[i] == items->buffer[i]; i++) {}
-        return (i == items->last);
+        if (v.items != items && size() == v.size()) {
+            long i = home;
+            for (; i < items->last && v[i] == items->buffer[i]; i++) {}
+            return (i == items->last);
+        }
+        return (v.items == items && v.home == home);
     }
 
     inline void to_vector(vector<Z>& v) {

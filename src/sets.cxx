@@ -16,6 +16,35 @@
 #include <math.h>
 #include <algorithm>
 
+Element* Set_s::duplicate_constant(LispE* lisp, bool pair) {
+    if (status == s_constant) {
+        return lisp->provideSet_s(this);
+    }
+    return this;
+}
+
+Element* Set_i::duplicate_constant(LispE* lisp, bool pair) {
+    if (status == s_constant) {
+        return lisp->provideSet_i(this);
+    }
+    return this;
+}
+
+Element* Set_n::duplicate_constant(LispE* lisp, bool pair) {
+    if (status == s_constant) {
+        return lisp->provideSet_n(this);
+    }
+    return this;
+}
+
+Element* Set::duplicate_constant(LispE* lisp, bool pair) {
+    if (status == s_constant) {
+        return lisp->provideSet(this);
+    }
+    return this;
+}
+
+
 Element* Set_spool::copyatom(LispE* lsp, uint16_t s) {
     if (status < s)
         return this;
@@ -1527,24 +1556,24 @@ Element* Set::next_iter_exchange(LispE* lisp, void* it) {
 
 Element* Set::search_element(LispE* lisp, Element* a_value, long ix) {
     u_ustring keyvalue = a_value->asUString(lisp);
-    return (dictionary.find(keyvalue) == dictionary.end())?null_:dictionary[keyvalue];
+    auto it = dictionary.find(keyvalue);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 bool Set::check_element(LispE* lisp, Element* a_value) {
-    return (dictionary.find(a_value->asUString(lisp)) != dictionary.end());
+    return (dictionary.count(a_value->asUString(lisp)));
 }
 
 Element* Set::checkkey(LispE* lisp, Element* e) {
-    if (dictionary.find(e->asUString(lisp)) == dictionary.end())
-        return null_;
-    return true_;
+    auto it = dictionary.find(e->asUString(lisp));
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Set::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
     u_ustring keyvalue = a_value->asUString(lisp);
-    if (dictionary.find(keyvalue) != dictionary.end()) {
-        dictionary[keyvalue]->decrement();
-        dictionary.erase(keyvalue);
+    auto it = dictionary.find(keyvalue);
+    if (it != dictionary.end()) {
+        it->second->decrement();
         dictionary[keyvalue] = remp;
         remp->increment();
         return one_;
@@ -1555,17 +1584,16 @@ Element* Set::replace_all_elements(LispE* lisp, Element* a_value, Element* remp)
 Element* Set::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     List* l = lisp->provideList();
     u_ustring keyvalue = a_value->asUString(lisp);
-    if (dictionary.find(keyvalue) == dictionary.end())
+    auto it = dictionary.find(keyvalue);
+    if (it == dictionary.end())
         return emptylist_;
-    l->append(dictionary[keyvalue]->copying(false));
+    l->append(it->second->copying(false));
     return l;
 }
 
 Element* Set::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     u_ustring keyvalue = a_value->asUString(lisp);
-    if (dictionary.find(keyvalue) == dictionary.end())
-        return zero_;
-    return one_;
+    return (dictionary.count(keyvalue))?one_:zero_;
 }
 
 Element* Set::list_and(LispE* lisp, Element* value) {
@@ -1669,7 +1697,8 @@ Element* Set::list_xor(LispE* lisp, Element* value) {
 
 Element* Set::search_reverse(LispE* lisp, Element* a_value, long ix) {
     u_ustring keyvalue = a_value->asUString(lisp);
-    return (dictionary.find(keyvalue) == dictionary.end())?null_:dictionary[keyvalue];
+    auto it = dictionary.find(keyvalue);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Set::protected_index(LispE* lisp, long i) {
@@ -1708,36 +1737,33 @@ Element* Set::value_from_index(LispE* lisp, long i) {
 
 Element* Set::value_on_index(wstring& w, LispE* lisp) {
     u_pstring k = _w_to_u(w);
-    if (dictionary.find(k) == dictionary.end())
-        return null_;
-    return dictionary[k];
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Set::value_on_index(u_ustring& k, LispE* lisp) {
-    if (dictionary.find(k) == dictionary.end())
-        return null_;
-    return dictionary[k];
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Set::protected_index(LispE* lisp, u_ustring& k) {
-    if (dictionary.find(k) == dictionary.end())
-        return null_;
-    return dictionary[k];
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Set::value_on_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
-    if (dictionary.find(k) == dictionary.end())
-        return null_;
-    return dictionary[k];
+    auto it = dictionary.find(k);
+    return (it == dictionary.end())?null_:it->second;
 }
 
 Element* Set::protected_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
-    if (dictionary.find(k) == dictionary.end())
+    auto it = dictionary.find(k);
+    if (it == dictionary.end())
         throw new Error("Error: index out of bounds");
     
-    return dictionary[k];
+    return it->second;
 }
 
 Element* Set::join_in_list(LispE* lisp, u_ustring& sep) {
@@ -1959,9 +1985,8 @@ void Avl::insertion(LispE* lisp, Avl** courant,Element* ajout, List* compare) {
     if (*courant==NULL)
         *courant= new Avl(ajout);
     else {
-        compare->liste[2] = (*courant)->value->quoting(lisp);
+        compare->liste[2] = (*courant)->value->quoting();
         test = compare->eval(lisp)->asInteger();
-        compare->liste[2]->release();
         if (!test) {
             Avl* dernier=*courant;
             //On va chercher le dernier element de la liste
@@ -2091,9 +2116,8 @@ Element* Avl::search(LispE* lisp, Element* element, List* compare) {
     Avl* e = this;
     long test;
     while (e != NULL) {
-        compare->liste[2] = e->value->quoting(lisp);
+        compare->liste[2] = e->value->quoting();
         test = compare->eval(lisp)->asInteger();
-        compare->liste[2]->release();
         if (!test) {
             while (e != NULL) {
                 if (e->value->isequal(lisp, element))
@@ -2115,9 +2139,8 @@ bool Avl::check(LispE* lisp, Element* element, List* compare) {
     Avl* e = this;
     long test;
     while (e != NULL) {
-        compare->liste[2] = e->value->quoting(lisp);
+        compare->liste[2] = e->value->quoting();
         test = compare->eval(lisp)->asInteger();
-        compare->liste[2]->release();
         if (!test) {
             while (e != NULL) {
                 if (e->value->isequal(lisp, element))
@@ -2141,9 +2164,8 @@ bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare) {
     long test;
     char origin = 0;
     while (e != NULL) {
-        compare->liste[2] = e->value->quoting(lisp);
+        compare->liste[2] = e->value->quoting();
         test = compare->eval(lisp)->asInteger();
-        compare->liste[2]->release();
         if (!test) {
             Avl* clean = e;
             Avl* moving = e;
@@ -2480,7 +2502,7 @@ Element* Avl::back(LispE* lisp) {
 bool Heap::check_element(LispE* lisp, Element* element_value) {
     if (root == NULL)
         return false;
-    compare->liste[1] = element_value->quoting(lisp);
+    compare->liste[1] = element_value->quoting();
     compare->liste[1]->increment();
     bool res = root->check(lisp, element_value, compare);
     compare->liste[1]->decrement();
@@ -2492,7 +2514,7 @@ bool Heap::check_element(LispE* lisp, Element* element_value) {
 Element* Heap::search_element(LispE* lisp, Element* element_value, long idx) {
     if (root == NULL)
         return null_;
-    compare->liste[1] = element_value->quoting(lisp);
+    compare->liste[1] = element_value->quoting();
     compare->liste[1]->increment();
     Element* res = root->search(lisp, element_value, compare);
     compare->liste[1]->decrement();
@@ -2507,7 +2529,7 @@ Element* Heap::insert(LispE* lisp, Element* element, long idx) {
         return this;
     }
     
-    compare->liste[1] = element->quoting(lisp);
+    compare->liste[1] = element->quoting();
     compare->liste[1]->increment();
     root->insertion(lisp, &root, element, compare);
     compare->liste[1]->decrement();
@@ -2522,7 +2544,7 @@ Element* Heap::insert(LispE* lisp, Element* element) {
         return this;
     }
     
-    compare->liste[1] = element->quoting(lisp);
+    compare->liste[1] = element->quoting();
     compare->liste[1]->increment();
     root->insertion(lisp, &root, element, compare);
     compare->liste[1]->decrement();
@@ -2563,7 +2585,7 @@ bool Heap::remove(LispE* lisp, Element* element) {
     if (root == NULL)
         return false;
     
-    compare->liste[1] = element->quoting(lisp);
+    compare->liste[1] = element->quoting();
     compare->liste[1]->increment();
     bool del = root->erase(lisp, &root, element, compare);
     compare->liste[1]->decrement();

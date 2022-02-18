@@ -45,7 +45,7 @@ public:
         if (variables.check(label))
             return variables.at(label)->unify(lisp,e, false);
         
-        e = e->duplicate_constant();
+        e = e->duplicate_constant(lisp);
         variables[label] = e;
         if (e->status != s_constant) {
             e->increment();
@@ -86,7 +86,6 @@ public:
 
     //record a function argument in the stack
     void record_argument(Element* e, short label) {
-        e = e->duplicate_constant();
         variables[label] = e;
         if (e->status != s_constant) {
             e->increment();
@@ -99,8 +98,6 @@ public:
             if (variables.at(label) == e)
                 return;
             
-            e = e->duplicate_constant();
-
             if (names[label&f_variables].check(label)) {
                 if (e->status != s_constant)
                     e->increment();
@@ -114,7 +111,6 @@ public:
             variables.put(label, e);
         }
         else {
-            e = e->duplicate_constant();
             variables[label] = e;
         }
         
@@ -129,8 +125,6 @@ public:
             if (variables.at(label) == e)
                 return e;
             
-            e = e->duplicate_constant();
-
             if (names[label&f_variables].check(label)) {
                 if (e->status != s_constant)
                     e->increment();
@@ -144,7 +138,6 @@ public:
             variables.put(label, e);
         }
         else {
-            e = e->duplicate_constant();
             variables[label] = e;
         }
         
@@ -160,8 +153,6 @@ public:
             if (variables.at(label) == e)
                 return;
             
-            e = e->duplicate_constant();
-
             if (names[label&f_variables].check(label)) {
                 if (e->status != s_constant)
                     e->increment();
@@ -175,7 +166,6 @@ public:
             variables.put(label, e);
         }
         else {
-            e = e->duplicate_constant();
             variables[label] = e;
         }
         
@@ -189,9 +179,7 @@ public:
     void replacingvalue(Element* e, short label) {
         if (variables.at(label) == e)
             return;
-        
-        e = e->duplicate_constant();
-        
+                
         if (names[label&f_variables].check(label)) {
             if (e->status != s_constant)
                 e->increment();

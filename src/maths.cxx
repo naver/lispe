@@ -156,417 +156,6 @@ Element* List::evall_irangein(LispE* lisp) {
 
 
 
-//------------------------------------------------------------------------------------------
-
-typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf} math;
-
-
-long gcd_math(long a, long b)
-{
-    // Everything divides 0
-    if (a == 0)
-       return b;
-    if (b == 0)
-       return a;
-    // base case
-    if (a == b)
-        return a;
-    // a is greater
-    if (a > b)
-        return gcd_math(a-b, b);
-    return gcd_math(a, b-a);
-}
-
-long hcf_math(long x, long y) {
-  return (!y)?x:hcf_math(y, x%y);
-}
-
-/*
- Tout d'abord on crée une nouvelle dérivation de Element
- On implante alors les méthodes "eval" et "commeChaine"
- Cette extension exporte la majorité des opérateurs mathématique
- */
-
-class Math : public Element {
-public:
-    math m;
-    short v_val;
-    Math(LispE* lisp, math s) : m(s), Element(l_lib) {
-        //We chose val as variable name everywhere
-        // we recover his code to speed up processing ...
-        u_ustring val = U"val";
-        v_val = lisp->encode(val);
-    }
-    
-    Element* eval(LispE* lisp) {
-        //eval is either: command, setenv or getenv...
-        double v;
-        switch (m) {
-            case math_fabs: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = fabs(v);
-                return lisp->provideNumber(v);
-            }
-            case math_acos: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = acos(v);
-                return lisp->provideNumber(v);
-            }
-            case math_acosh: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = acosh(v);
-                return lisp->provideNumber(v);
-            }
-            case math_asin: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = asin(v);
-                return lisp->provideNumber(v);
-            }
-            case math_asinh: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = asinh(v);
-                return lisp->provideNumber(v);
-            }
-            case math_atan: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = atan(v);
-                return lisp->provideNumber(v);
-            }
-            case math_atanh: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = atanh(v);
-                return lisp->provideNumber(v);
-            }
-            case math_cbrt: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = cbrt(v);
-                return lisp->provideNumber(v);
-            }
-            case math_cos: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = cos(v);
-                return lisp->provideNumber(v);
-            }
-            case math_cosh: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = cosh(v);
-                return lisp->provideNumber(v);
-            }
-            case math_erf: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = erf(v);
-                return lisp->provideNumber(v);
-            }
-            case math_erfc: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = erfc(v);
-                return lisp->provideNumber(v);
-            }
-            case math_exp: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = exp(v);
-                return lisp->provideNumber(v);
-            }
-            case math_exp2: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = exp2(v);
-                return lisp->provideNumber(v);
-            }
-            case math_expm1: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = expm1(v);
-                return lisp->provideNumber(v);
-            }
-            case math_floor: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = floor(v);
-                return lisp->provideNumber(v);
-            }
-            case math_gcd: {
-                long v = lisp->get_variable(v_val)->asInteger();
-                long vv = lisp->get_variable(U"vaal")->asInteger();
-                return lisp->provideInteger(gcd_math(v,vv));
-            }
-            case math_hcf: {
-                long v = lisp->get_variable(v_val)->asInteger();
-                long vv = lisp->get_variable(U"vaal")->asInteger();
-                return lisp->provideInteger(hcf_math(v,vv));
-            }
-            case math_lgamma: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = lgamma(v);
-                return lisp->provideNumber(v);
-            }
-            case math_log: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = log(v);
-                return lisp->provideNumber(v);
-            }
-            case math_log10: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = log10(v);
-                return lisp->provideNumber(v);
-            }
-            case math_log1p: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = log1p(v);
-                return lisp->provideNumber(v);
-            }
-            case math_log2: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = log2(v);
-                return lisp->provideNumber(v);
-            }
-            case math_logb: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = logb(v);
-                return lisp->provideNumber(v);
-            }
-            case math_nearbyint: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = nearbyint(v);
-                return lisp->provideNumber(v);
-            }
-            case math_rint: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = rint(v);
-                return lisp->provideNumber(v);
-            }
-            case math_round: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = round(v);
-                return lisp->provideNumber(v);
-            }
-            case math_sin: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = sin(v);
-                return lisp->provideNumber(v);
-            }
-            case math_sinh: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = sinh(v);
-                return lisp->provideNumber(v);
-            }
-            case math_sqrt: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = sqrt(v);
-                return lisp->provideNumber(v);
-            }
-            case math_tan: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = tan(v);
-                return lisp->provideNumber(v);
-            }
-            case math_tanh: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = tanh(v);
-                return lisp->provideNumber(v);
-            }
-            case math_tgamma: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = tgamma(v);
-                return lisp->provideNumber(v);
-            }
-            case math_trunc: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = trunc(v);
-                return lisp->provideNumber(v);
-            }
-            case math_radian: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = M_PI*(v / 180);
-                return lisp->provideNumber(v);
-            }
-            case math_degree: {
-                v = lisp->get_variable(v_val)->asNumber();
-                v = (v * 180) / M_PI;
-                return lisp->provideNumber(v);
-            }
-        }
-		return zero_;
-    }
-    
-    //We use this instruction to return a description of the instruction
-    //in effect, just do: (print getenv) to get this information
-    wstring asString(LispE* lisp) {
-        switch (m) {
-            case math_fabs: {
-                return L"compute the absolute value of a float type number";
-            }
-            case math_acos: {
-                return L"compute the arc cosine";
-            }
-            case math_acosh: {
-                return L"compute the hyperbolic arc cosine";
-            }
-            case math_asin: {
-                return L"compute the arc sine";
-            }
-            case math_asinh: {
-                return L"compute the hyperbolic sine arc";
-            }
-            case math_atan: {
-                return L"compute the arc tangent";
-            }
-            case math_atanh: {
-                return L"compute the hyperbolic arc tangent";
-            }
-            case math_cbrt: {
-                return L"compute the cubic root";
-            }
-            case math_cos: {
-                return L"compute the cosine";
-            }
-            case math_cosh: {
-                return L"compute the hyperbolic cosine";
-            }
-            case math_erf: {
-                return L"compute the error function";
-            }
-            case math_erfc: {
-                return L"compute the complementary error function";
-            }
-            case math_exp: {
-                return L"returns the high e to the required power";
-            }
-            case math_exp2: {
-                return L"returns 2 high to the required power";
-            }
-            case math_expm1: {
-                return L"Returns high e to the required power minus 1";
-            }
-            case math_floor: {
-                return L"returns the nearest lower integer";
-            }
-            case math_gcd:
-                return L"return Greater Common Divison";
-            case math_hcf:
-                return L"return Higher Common Factor";
-            case math_lgamma: {
-                return L"compute the natural logarithm of the absolute value of the gamma function";
-            }
-            case math_log: {
-                return L"compute the natural logarithm (in base e)";
-            }
-            case math_log10: {
-                return L"compute the decimal logarithm (base 10)";
-            }
-            case math_log1p: {
-                return L"compute the natural logarithm (base e) of 1 plus the given number";
-            }
-            case math_log2: {
-                return L"compute the binary logarithm (base 2)";
-            }
-            case math_logb: {
-                return L"extracts the exponent of a number";
-            }
-            case math_nearbyint: {
-                return L"returns the nearest integer using the current rounding method";
-            }
-            case math_rint: {
-                return L"returns the nearest integer using current rounding method with exception if the result is different";
-            }
-            case math_round: {
-                return L"returns the nearest integer, following the rounding rules";
-            }
-            case math_sin: {
-                return L"compute the sine";
-            }
-            case math_sinh: {
-                return L"compute the hyperbolic sine";
-            }
-            case math_sqrt: {
-                return L"compute the square root";
-            }
-            case math_tan: {
-                return L"compute the tangent";
-            }
-            case math_tanh: {
-                return L"compute the hyperbolic tangent";
-            }
-            case math_tgamma: {
-                return L"compute the gamma function";
-            }
-            case math_trunc: {
-                return L"returns the nearest integer whose absolute value is smaller";
-            }
-            case math_radian: {
-                return L"convert a value in 'degree' into 'radian'";
-            }
-            case math_degree: {
-                return L"convert a value in 'radian' into 'degree'";
-            }
-        }
-		return L"";
-    }
-};
-
-
-//We are also going to implement the body of the call
-void moduleMaths(LispE* lisp) {
-    //We first create the body of the function
-    lisp->extension("deflib fabs (val)", new Math(lisp, math_fabs));
-    lisp->extension("deflib acos (val)", new Math(lisp, math_acos));
-    lisp->extension("deflib acosh (val)", new Math(lisp, math_acosh));
-    lisp->extension("deflib asin (val)", new Math(lisp, math_asin));
-    lisp->extension("deflib asinh (val)", new Math(lisp, math_asinh));
-    lisp->extension("deflib atan (val)", new Math(lisp, math_atan));
-    lisp->extension("deflib atanh (val)", new Math(lisp, math_atanh));
-    lisp->extension("deflib cbrt (val)", new Math(lisp, math_cbrt));
-    lisp->extension("deflib ∛ (val)", new Math(lisp, math_cbrt));
-    lisp->extension("deflib cos (val)", new Math(lisp, math_cos));
-    lisp->extension("deflib cosh (val)", new Math(lisp, math_cosh));
-    lisp->extension("deflib erf (val)", new Math(lisp, math_erf));
-    lisp->extension("deflib erfc (val)", new Math(lisp, math_erfc));
-    lisp->extension("deflib exp (val)", new Math(lisp, math_exp));
-    lisp->extension("deflib exp2 (val)", new Math(lisp, math_exp2));
-    lisp->extension("deflib expm1 (val)", new Math(lisp, math_expm1));
-    lisp->extension("deflib floor (val)", new Math(lisp, math_floor));
-    lisp->extension("deflib gcd (val vaal)", new Math(lisp, math_gcd));
-    lisp->extension("deflib hcf (val vaal)", new Math(lisp, math_hcf));
-    lisp->extension("deflib lgamma (val)", new Math(lisp, math_lgamma));
-    lisp->extension("deflib log (val)", new Math(lisp, math_log));
-    lisp->extension("deflib log10 (val)", new Math(lisp, math_log10));
-    lisp->extension("deflib log1p (val)", new Math(lisp, math_log1p));
-    lisp->extension("deflib log2 (val)", new Math(lisp, math_log2));
-    lisp->extension("deflib logb (val)", new Math(lisp, math_logb));
-    lisp->extension("deflib nearbyint (val)", new Math(lisp, math_nearbyint));
-    lisp->extension("deflib rint (val)", new Math(lisp, math_rint));
-    lisp->extension("deflib round (val)", new Math(lisp, math_round));
-    lisp->extension("deflib sin (val)", new Math(lisp, math_sin));
-    lisp->extension("deflib sinh (val)", new Math(lisp, math_sinh));
-    lisp->extension("deflib sqrt (val)", new Math(lisp, math_sqrt));
-    lisp->extension("deflib √ (val)", new Math(lisp, math_sqrt));
-    lisp->extension("deflib tan (val)", new Math(lisp, math_tan));
-    lisp->extension("deflib tanh (val)", new Math(lisp, math_tanh));
-    lisp->extension("deflib tgamma (val)", new Math(lisp, math_tgamma));
-    lisp->extension("deflib trunc (val)", new Math(lisp, math_trunc));
-    lisp->extension("deflib radian (val)", new Math(lisp, math_radian));
-    lisp->extension("deflib degree (val)", new Math(lisp, math_degree));
-
-    u_ustring nom = U"_pi";
-    Element* value = lisp->provideNumber(M_PI);
-    lisp->recordingunique(value, lisp->encode(nom));
-    nom = U"π";
-    lisp->recordingunique(value, lisp->encode(nom));
-    
-    nom = U"_tau";
-    value = lisp->provideNumber(2 * M_PI);
-    lisp->recordingunique(value, lisp->encode(nom));
-    nom = U"τ";
-    lisp->recordingunique(value, lisp->encode(nom));
-    
-    nom = U"_e";
-    value = lisp->provideNumber(M_E);
-    lisp->recordingunique(value, lisp->encode(nom));
-    nom = U"ℯ";
-    lisp->recordingunique(value, lisp->encode(nom));
-    
-    nom = U"_phi";
-    value = lisp->provideNumber(M_GOLDEN);
-    lisp->recordingunique(value, lisp->encode(nom));
-
-}
 //------ Matrix operations ------------------------
 union double32 {
 public:
@@ -3102,9 +2691,7 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
             }
 #endif
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] += n->liste[i];
-            }
+            liste.plus(n->liste, szl);
             return this;
         }
         case t_integers:
@@ -3205,9 +2792,7 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
             }
 #endif
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] -= n->liste[i];
-            }
+            liste.minus(n->liste, szl);
             return this;
         }
         case t_numbers:
@@ -3309,9 +2894,7 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
 #endif
 
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] *= n->liste[i];
-            }
+            liste.multiply(n->liste, szl);
             return this;
         }
         case t_numbers:
@@ -3526,6 +3109,10 @@ Element* Floats::plus(LispE* lisp, Element* e) {
     }
 
     if (e->isList()) {
+        if (e->type == type) {
+            liste.plus(((Floats*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -3561,6 +3148,11 @@ Element* Floats::minus(LispE* lisp, Element* e) {
     }
 
     if (e->isList()) {
+        if (e->type == type) {
+            liste.minus(((Floats*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
+
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -3591,6 +3183,11 @@ Element* Floats::multiply(LispE* lisp, Element* e) {
     }
 
     if (e->isList()) {
+        if (e->type == type) {
+            liste.multiply(((Floats*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
+
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -3985,9 +3582,7 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
             }
 #endif
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] += n->liste[i];
-            }
+            liste.plus(n->liste, szl);
             return this;
         }
         case t_floats:
@@ -4090,9 +3685,7 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
             }
 #endif
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] -= n->liste[i];
-            }
+            liste.minus(n->liste, szl);
             return this;
         }
         case t_floats:
@@ -4195,9 +3788,7 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
 #endif
 
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] *= n->liste[i];
-            }
+            liste.multiply(n->liste, szl);
             return this;
         }
         case t_floats:
@@ -4415,6 +4006,11 @@ Element* Numbers::plus(LispE* lisp, Element* e) {
     }
 
     if (e->isList()) {
+        if (e->type == type) {
+            liste.plus(((Numbers*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
+
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -4451,6 +4047,10 @@ Element* Numbers::minus(LispE* lisp, Element* e) {
     }
 
     if (e->isList()) {
+        if (e->type == type) {
+            liste.minus(((Numbers*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -4482,6 +4082,11 @@ Element* Numbers::multiply(LispE* lisp, Element* e) {
     }
 
     if (e->isList()) {
+        if (e->type == type) {
+            liste.multiply(((Numbers*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
+
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -4891,9 +4496,7 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             }
 #endif
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] += n->liste[i];
-            }
+            liste.plus(n->liste, szl);
             return this;
         }
         case t_number:
@@ -4990,9 +4593,7 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             }
 #endif
             szl = lmin(szl, i);
-            for (i = 0; i < szl; i++) {
-                liste[i] -= n->liste[i];
-            }
+            liste.minus(n->liste, szl);
             return this;
         }
         case t_number:
@@ -5069,9 +4670,7 @@ Element* Integers::multiply_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_integers:
-            for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste[i] *= ((Integers*)e)->liste[i];
-            }
+            liste.multiply(((Integers*)e)->liste, lmin(liste.size(), e->size()));
             return this;
         case t_number:
         case t_short:
@@ -5187,6 +4786,10 @@ Element* Integers::plus(LispE* lisp, Element* e) {
         return lisp->provideInteger(liste.sum());
     
     if (e->isList()) {
+        if (e->type == type) {
+            liste.plus(((Integers*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -5222,6 +4825,10 @@ Element* Integers::minus(LispE* lisp, Element* e) {
     
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
+        if (e->type == type) {
+            liste.minus(((Integers*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -5252,6 +4859,10 @@ Element* Integers::multiply(LispE* lisp, Element* e) {
     
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
+        if (e->type == type) {
+            liste.multiply(((Integers*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -5629,9 +5240,7 @@ Element* Shorts::plus_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_shorts: {
-            for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste[i] += ((Shorts*)e)->liste[i];
-            }
+            liste.plus(((Shorts*)e)->liste, lmin(liste.size(), e->size()));
             return this;
         }
         case t_integers: {
@@ -5688,9 +5297,7 @@ Element* Shorts::minus_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_shorts: {
-            for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste[i] -= ((Shorts*)e)->liste[i];
-            }
+            liste.minus(((Shorts*)e)->liste, lmin(liste.size(), e->size()));
             return this;
         }
         case t_integers: {
@@ -5750,9 +5357,7 @@ Element* Shorts::multiply_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_shorts: {
-            for (long i = 0; i < liste.size() && i < e->size(); i++) {
-                liste[i] *= ((Shorts*)e)->liste[i];
-            }
+            liste.multiply(((Shorts*)e)->liste, lmin(liste.size(), e->size()));
             return this;
         }
         case t_integers:
@@ -5875,6 +5480,10 @@ Element* Shorts::plus(LispE* lisp, Element* e) {
     }
     
     if (e->isList()) {
+        if (e->type == type) {
+            liste.plus(((Shorts*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -5910,6 +5519,10 @@ Element* Shorts::minus(LispE* lisp, Element* e) {
     
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
+        if (e->type == type) {
+            liste.minus(((Shorts*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
         if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
@@ -5940,7 +5553,11 @@ Element* Shorts::multiply(LispE* lisp, Element* e) {
     
     //Two cases either e is a number or it is a list...
     if (e->isList()) {
-        if (e->size() && e->index(0)->isList()) {
+        if (e->type == type) {
+            liste.multiply(((Shorts*)e)->liste, lmin(liste.size(), e->size()));
+            return this;
+        }
+       if (e->size() && e->index(0)->isList()) {
             Element* result = lisp->provideList();
             try {
                 for (long i = 0; i < e->size() && i < size(); i++) {
@@ -7591,15 +7208,27 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
 
 
 Element* List::evall_bitand(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_and(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '&' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -7644,22 +7273,12 @@ Element* List::evall_bitand(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->bit_and(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
-
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_and(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -7675,15 +7294,26 @@ Element* List::evall_bitand(LispE* lisp) {
 }
 
 Element* List::evall_bitandnot(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_and_not(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '&~' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -7728,21 +7358,12 @@ Element* List::evall_bitandnot(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->bit_and_not(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_and_not(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -7758,15 +7379,26 @@ Element* List::evall_bitandnot(LispE* lisp) {
 }
 
 Element* List::evall_bitor(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_or(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '|' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -7811,21 +7443,12 @@ Element* List::evall_bitor(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->bit_or(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_or(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -7840,15 +7463,26 @@ Element* List::evall_bitor(LispE* lisp) {
 }
 
 Element* List::evall_bitxor(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_xor(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '^' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -7893,21 +7527,12 @@ Element* List::evall_bitxor(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->bit_xor(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_xor(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -7922,15 +7547,26 @@ Element* List::evall_bitxor(LispE* lisp) {
 }
 
 Element* List::evall_divide(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->divide_direct(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '/' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -7975,21 +7611,12 @@ Element* List::evall_divide(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->divide_direct(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->divide_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8003,16 +7630,137 @@ Element* List::evall_divide(LispE* lisp) {
     return first_element;
 }
 
+Element* List_dividen::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    
+    short listsize = liste.size();
+    Element* second_element = null_;
+    
+    try {
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->divide_direct(lisp, second_element);
+            if (first_element != second_element)
+                _releasing(second_element);
+        }
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
+
+
+Element* List_divide2::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    if (!first_element->isList())
+        throw new Error("Error: cannot apply '/' to one elemeent");
+    
+    Element* lst = first_element;
+        
+    try {
+        switch (lst->type) {
+            case t_strings:
+                throw new Error("Error: cannot apply '/' to a string");
+            case t_floats:
+            case t_shorts:
+            case t_integers:
+            case t_numbers:
+                if (!lst->size()) {
+                    first_element->release();
+                    return zero_;
+                }
+                lst = lst->divide(lisp, NULL);
+                first_element->release();
+                return lst;
+            case t_llist: {
+                first_element = zero_;
+                u_link* u = ((LList*)lst)->liste.begin();
+                if (u != NULL) {
+                    first_element = u->value->copyatom(lisp, 1);
+                    u = u->next();
+                    while (u != NULL) {
+                        first_element = first_element->divide_direct(lisp, u->value);
+                        u = u->next();
+                    }
+                }
+                lst->release();
+                break;
+            }
+            case t_list: {
+                first_element = zero_;
+                long listsize = lst->size();
+                if (listsize) {
+                    first_element = lst->index(0)->copyatom(lisp, 1);
+                    for (long i = 1; i < listsize; i++) {
+                        first_element = first_element->divide_direct(lisp, lst->index(i));
+                    }
+                }
+                lst->release();
+                break;
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != first_element)
+            lst->release();
+        first_element->release();
+        throw err;
+    }
+    return first_element;
+}
+
+Element* List_divide3::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+
+    Element* second_element = null_;
+    
+    try {
+        second_element = liste[2]->eval(lisp);
+        first_element = first_element->divide_direct(lisp, second_element);
+        if (first_element != second_element)
+            second_element->release();
+        
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+
+        first_element->release();
+        throw err;
+    }
+    return first_element;
+}
+
+
 Element* List::evall_minus(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->minus_direct(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8054,24 +7802,15 @@ Element* List::evall_minus(LispE* lisp) {
                 }
             }
             lst->release();
+            return first_element;
         }
-        else {
-            first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->minus_direct(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
-            for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
-                second_element = liste[i]->eval(lisp);
-                first_element = first_element->minus_direct(lisp, second_element);
-            }
+                
+        first_element = first_element->copyatom(lisp, 1);
+        for (i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->minus_direct(lisp, second_element);
             if (first_element != second_element)
-                second_element->release();
+                _releasing(second_element);
         }
     }
     catch (Error* err) {
@@ -8086,16 +7825,134 @@ Element* List::evall_minus(LispE* lisp) {
     return first_element;
 }
 
+Element* List_minusn::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    
+    short listsize = liste.size();
+    Element* second_element = null_;
+    
+    try {
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->minus_direct(lisp, second_element);
+            if (first_element != second_element)
+                _releasing(second_element);
+        }
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
+Element* List_minus2::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    if (!first_element->isList())
+        throw new Error("Error: cannot apply '-' to one elemeent");
+
+    Element* lst = first_element;
+    
+    try {
+        switch (lst->type) {
+            case t_strings:
+                throw new Error("Error: cannot apply '-' to a string");
+            case t_floats:
+            case t_shorts:
+            case t_integers:
+            case t_numbers:
+                if (!lst->size()) {
+                    first_element->release();
+                    return zero_;
+                }
+                lst = lst->minus(lisp, NULL);
+                first_element->release();
+                return lst;
+            case t_llist: {
+                first_element = zero_;
+                u_link* u = ((LList*)lst)->liste.begin();
+                if (u != NULL) {
+                    first_element = u->value->copyatom(lisp, 1);
+                    u = u->next();
+                    while (u != NULL) {
+                        first_element = first_element->minus_direct(lisp, u->value);
+                        u = u->next();
+                    }
+                }
+                lst->release();
+                break;
+            }
+            case t_list: {
+                first_element = zero_;
+                long listsize = lst->size();
+                if (listsize) {
+                    first_element = lst->index(0)->copyatom(lisp, 1);
+                    for (long i = 1; i < listsize; i++) {
+                        first_element = first_element->minus_direct(lisp, lst->index(i));
+                    }
+                }
+                lst->release();
+                break;
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != first_element)
+            lst->release();
+        first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+Element* List_minus3::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    Element* second_element = null_;
+    
+    try {
+        second_element = liste[2]->eval(lisp);
+        first_element = first_element->minus_direct(lisp, second_element);
+        if (first_element != second_element)
+            second_element->release();
+        
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
 Element* List::evall_mod(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->mod(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '%' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8140,21 +7997,12 @@ Element* List::evall_mod(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->mod(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->mod(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8170,15 +8018,27 @@ Element* List::evall_mod(LispE* lisp) {
 }
 
 Element* List::evall_multiply(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->multiply_direct(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '*' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8232,22 +8092,12 @@ Element* List::evall_multiply(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->multiply_direct(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
-
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->multiply_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8262,13 +8112,128 @@ Element* List::evall_multiply(LispE* lisp) {
     return first_element;
 }
 
+Element* List_multiplyn::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    
+    short listsize = liste.size();
+    Element* second_element = null_;
+    
+    try {
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->multiply_direct(lisp, second_element);
+            if (first_element != second_element)
+                _releasing(second_element);
+        }
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
+Element* List_multiply2::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    if (!first_element->isList())
+        throw new Error("Error: cannot apply '*' to one elemeent");
+
+    Element* lst = first_element;
+        
+    try {
+        switch (lst->type) {
+            case t_strings:
+                throw new Error("Error: cannot apply '*' to a string");
+            case t_floats: {
+                float v = ((Floats*)lst)->liste.product();
+                first_element->release();
+                return v?lisp->provideFloat(v):zero_;
+            }
+            case t_shorts: {
+                short v = ((Shorts*)lst)->liste.product();
+                first_element->release();
+                return v?new Short(v):zero_;
+            }
+            case t_integers: {
+                long v = ((Integers*)lst)->liste.product();
+                first_element->release();
+                return v?lisp->provideInteger(v):zero_;
+            }
+            case t_numbers: {
+                double v = ((Numbers*)lst)->liste.product();
+                first_element->release();
+                return v?lisp->provideNumber(v):zero_;
+            }
+            case t_llist: {
+                first_element = zero_;
+                u_link* u = ((LList*)lst)->liste.begin();
+                if (u != NULL) {
+                    first_element = u->value->copyatom(lisp, 1);
+                    u = u->next();
+                    while (u != NULL) {
+                        first_element = first_element->multiply_direct(lisp, u->value);
+                        u = u->next();
+                    }
+                }
+                lst->release();
+                break;
+            }
+            case t_list: {
+                first_element = zero_;
+                long listsize = lst->size();
+                if (listsize) {
+                    first_element = lst->index(0)->copyatom(lisp, 1);
+                    for (long i = 1; i < listsize; i++) {
+                        first_element = first_element->multiply_direct(lisp, lst->index(i));
+                    }
+                }
+                lst->release();
+                break;
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != first_element)
+            lst->release();
+        first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+Element* List_multiply3::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    Element* second_element = null_;
+        
+    try {
+        second_element = liste[2]->eval(lisp);
+        first_element = first_element->multiply_direct(lisp, second_element);
+        if (first_element != second_element)
+            second_element->release();
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+
 Element* List::evall_listand(LispE* lisp) {
-    Element* first_element = liste[1];
+    Element* first_element = liste[1]->eval(lisp);
     Element* second_element = liste[2];
     Element* result;
     
     try {
-        first_element = first_element->eval(lisp);
         second_element = second_element->eval(lisp);
         result = first_element->list_and(lisp, second_element);
         first_element->release();
@@ -8283,12 +8248,11 @@ Element* List::evall_listand(LispE* lisp) {
 }
 
 Element* List::evall_listor(LispE* lisp) {
-    Element* first_element = liste[1];
+    Element* first_element = liste[1]->eval(lisp);
     Element* second_element = liste[2];
     Element* result;
     
     try {
-        first_element = first_element->eval(lisp);
         second_element = second_element->eval(lisp);
         result = first_element->list_or(lisp, second_element);
         first_element->release();
@@ -8303,12 +8267,11 @@ Element* List::evall_listor(LispE* lisp) {
 }
 
 Element* List::evall_listxor(LispE* lisp) {
-    Element* first_element = liste[1];
+    Element* first_element = liste[1]->eval(lisp);
     Element* second_element = liste[2];
     Element* result;
     
     try {
-        first_element = first_element->eval(lisp);
         second_element = second_element->eval(lisp);
         result = first_element->list_xor(lisp, second_element);
         first_element->release();
@@ -8324,15 +8287,26 @@ Element* List::evall_listxor(LispE* lisp) {
 
 
 Element* List::evall_plus(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->plus_direct(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '+' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings: {
@@ -8389,21 +8363,12 @@ Element* List::evall_plus(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->plus_direct(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->plus_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8418,17 +8383,148 @@ Element* List::evall_plus(LispE* lisp) {
     return first_element;
 }
 
+Element* List_plusn::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    
+    short listsize = liste.size();
+    Element* second_element = null_;
+    
+    try {
+        for (long i = 2; i < listsize; i++) {
+            second_element = liste[i]->eval(lisp);
+            first_element = first_element->plus_direct(lisp, second_element);
+            if (first_element != second_element)
+                _releasing(second_element);
+        }
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
+Element* List_plus2::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    if (!first_element->isList())
+        throw new Error("Error: cannot apply '+' to one elemeent");
+
+    Element* lst = first_element;
+    
+    try {
+        switch (lst->type) {
+            case t_strings: {
+                u_ustring v = ((Strings*)lst)->liste.sum();
+                first_element->release();
+                return (v == U"")?emptystring_:lisp->provideString(v);
+            }
+            case t_floats: {
+                float v = ((Floats*)lst)->liste.sum();
+                first_element->release();
+                return v?lisp->provideFloat(v):zero_;
+            }
+            case t_shorts: {
+                short v = ((Shorts*)lst)->liste.sum();
+                first_element->release();
+                return v?new Short(v):zero_;
+            }
+            case t_integers: {
+                long v = ((Integers*)lst)->liste.sum();
+                first_element->release();
+                return v?lisp->provideInteger(v):zero_;
+            }
+            case t_numbers: {
+                double v = ((Numbers*)lst)->liste.sum();
+                first_element->release();
+                return v?lisp->provideNumber(v):zero_;
+            }
+            case t_llist: {
+                first_element = zero_;
+                u_link* u = ((LList*)lst)->liste.begin();
+                if (u != NULL) {
+                    first_element = u->value->copyatom(lisp, 1);
+                    u = u->next();
+                    while (u != NULL) {
+                        first_element = first_element->plus_direct(lisp, u->value);
+                        u = u->next();
+                    }
+                }
+                lst->release();
+                break;
+            }
+            case t_list: {
+                first_element = zero_;
+                long listsize = lst->size();
+                if (listsize) {
+                    first_element = lst->index(0)->copyatom(lisp, 1);
+                    for (long i = 1; i < listsize; i++) {
+                        first_element = first_element->plus_direct(lisp, lst->index(i));
+                    }
+                }
+                lst->release();
+                break;
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != first_element)
+            lst->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
+Element* List_plus3::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+
+    Element* second_element = null_;
+    
+    try {
+        second_element = liste[2]->eval(lisp);
+        first_element = first_element->plus_direct(lisp, second_element);
+        if (first_element != second_element)
+            second_element->release();
+        
+    }
+    catch (Error* err) {
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
 
 Element* List::evall_leftshift(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->leftshift(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '<<' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8473,21 +8569,12 @@ Element* List::evall_leftshift(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->leftshift(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->leftshift(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8503,15 +8590,26 @@ Element* List::evall_leftshift(LispE* lisp) {
 }
 
 Element* List::evall_rightshift(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->rightshift(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '>>' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8556,21 +8654,12 @@ Element* List::evall_rightshift(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->rightshift(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->rightshift(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8586,15 +8675,26 @@ Element* List::evall_rightshift(LispE* lisp) {
 }
 
 Element* List::evall_power(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+
     short listsize = liste.size();
     Element* lst = this;
-    Element* first_element = liste[1];
     Element* second_element = null_;
     long i;
         
     try {
-        first_element = first_element->eval(lisp);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->power(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '^^' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8639,21 +8739,12 @@ Element* List::evall_power(LispE* lisp) {
         }
         else {
             first_element = first_element->copyatom(lisp, 1);
-            if (listsize == 3) {
-                second_element = liste[2]->eval(lisp);
-                first_element = first_element->power(lisp, second_element);
-                if (first_element != second_element)
-                    second_element->release();
-                return first_element;
-            }
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->power(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8669,17 +8760,24 @@ Element* List::evall_power(LispE* lisp) {
 }
 
 Element* List_power2::eval(LispE* lisp) {
-    Element* first_element = liste[0];
+    Element* e = liste[1]->eval(lisp)->copyatom(lisp, 1);
 
-    try {
-        first_element = liste[1]->eval(lisp)->copyatom(lisp, 1);
+    switch (e->type) {
+        case t_float:
+            ((Float*)e)->number *= ((Float*)e)->number;
+            return e;
+        case t_number:
+            ((Number*)e)->number *= ((Number*)e)->number;
+            return e;
+        case t_integer:
+            ((Integer*)e)->integer *= ((Integer*)e)->integer;
+            return e;
+        case t_short:
+            ((Short*)e)->integer *= ((Short*)e)->integer;
+            return e;
+        default:
+            return e->multiply_direct(lisp, e);
     }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element->multiply_direct(lisp, first_element);
 }
 
 
@@ -8724,7 +8822,9 @@ Element* List::evall_bitandequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '&' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8739,7 +8839,9 @@ Element* List::evall_bitandequal(LispE* lisp) {
                     }
                     lst = lst->bit_and(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -8751,6 +8853,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -8762,20 +8865,18 @@ Element* List::evall_bitandequal(LispE* lisp) {
                             first_element = first_element->bit_and(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_and(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8791,7 +8892,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -8840,7 +8941,9 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '&~' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8855,7 +8958,9 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
                     }
                     lst = lst->bit_and_not(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -8867,6 +8972,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -8878,20 +8984,18 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
                             first_element = first_element->bit_and_not(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_and_not(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -8907,7 +9011,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -8956,7 +9060,9 @@ Element* List::evall_bitorequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '|' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -8971,7 +9077,9 @@ Element* List::evall_bitorequal(LispE* lisp) {
                     }
                     lst = lst->bit_or(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -8983,6 +9091,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -8994,20 +9103,18 @@ Element* List::evall_bitorequal(LispE* lisp) {
                             first_element = first_element->bit_or(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_or(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9023,7 +9130,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9074,7 +9181,9 @@ Element* List::evall_bitxorequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '^' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9089,7 +9198,9 @@ Element* List::evall_bitxorequal(LispE* lisp) {
                     }
                     lst = lst->bit_xor(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9101,6 +9212,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9112,20 +9224,18 @@ Element* List::evall_bitxorequal(LispE* lisp) {
                             first_element = first_element->bit_xor(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->bit_xor(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9141,7 +9251,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9190,7 +9300,9 @@ Element* List::evall_divideequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '/' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9205,7 +9317,9 @@ Element* List::evall_divideequal(LispE* lisp) {
                     }
                     lst = lst->divide(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9217,6 +9331,7 @@ Element* List::evall_divideequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9228,20 +9343,18 @@ Element* List::evall_divideequal(LispE* lisp) {
                             first_element = first_element->divide_direct(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->divide_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9257,7 +9370,7 @@ Element* List::evall_divideequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9306,7 +9419,9 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '<<' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9321,7 +9436,9 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
                     }
                     lst = lst->leftshift(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9333,6 +9450,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9344,20 +9462,18 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
                             first_element = first_element->leftshift(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->leftshift(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9373,7 +9489,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9422,7 +9538,9 @@ Element* List::evall_minusequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9437,7 +9555,9 @@ Element* List::evall_minusequal(LispE* lisp) {
                     }
                     lst = lst->minus(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9449,6 +9569,7 @@ Element* List::evall_minusequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9460,20 +9581,18 @@ Element* List::evall_minusequal(LispE* lisp) {
                             first_element = first_element->minus_direct(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->minus_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9489,7 +9608,7 @@ Element* List::evall_minusequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9538,7 +9657,9 @@ Element* List::evall_modequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '%' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9553,7 +9674,9 @@ Element* List::evall_modequal(LispE* lisp) {
                     }
                     lst = lst->mod(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9565,6 +9688,7 @@ Element* List::evall_modequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9576,20 +9700,18 @@ Element* List::evall_modequal(LispE* lisp) {
                             first_element = first_element->mod(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->mod(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9605,7 +9727,7 @@ Element* List::evall_modequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9655,7 +9777,9 @@ Element* List::evall_multiplyequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '*' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9670,7 +9794,9 @@ Element* List::evall_multiplyequal(LispE* lisp) {
                     }
                     lst = lst->multiply(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9682,6 +9808,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9693,20 +9820,18 @@ Element* List::evall_multiplyequal(LispE* lisp) {
                             first_element = first_element->multiply_direct(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->multiply_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9722,7 +9847,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9771,7 +9896,9 @@ Element* List::evall_plusequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '+' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9792,7 +9919,9 @@ Element* List::evall_plusequal(LispE* lisp) {
                     }
                     lst = lst->plus(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9804,6 +9933,7 @@ Element* List::evall_plusequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9815,20 +9945,18 @@ Element* List::evall_plusequal(LispE* lisp) {
                             first_element = first_element->plus_direct(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->plus_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9844,7 +9972,7 @@ Element* List::evall_plusequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -9893,7 +10021,9 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
 
     try {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '>>' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -9908,7 +10038,9 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
                     }
                     lst = lst->rightshift(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -9920,6 +10052,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -9931,20 +10064,18 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
                             first_element = first_element->rightshift(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->rightshift(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -9960,7 +10091,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -10009,7 +10140,9 @@ Element* List::evall_powerequal(LispE* lisp) {
     try {
         if (label != -1)
             first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
-        if (listsize == 2 && first_element->isList()) {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '^^' to one element");
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
@@ -10024,7 +10157,9 @@ Element* List::evall_powerequal(LispE* lisp) {
                     }
                     lst = lst->power(lisp, NULL);
                     first_element->release();
-                    return lst;
+                    first_element = lst;
+                    lst = this;
+                    break;
                 case t_llist: {
                     first_element = zero_;
                     u_link* u = ((LList*)lst)->liste.begin();
@@ -10036,6 +10171,7 @@ Element* List::evall_powerequal(LispE* lisp) {
                             u = u->next();
                         }
                     }
+                    lst->release();
                     break;
                 }
                 case t_list: {
@@ -10047,20 +10183,18 @@ Element* List::evall_powerequal(LispE* lisp) {
                             first_element = first_element->power(lisp, lst->index(i));
                         }
                     }
+                    lst->release();
                     break;
                 }
             }
-            lst->release();
         }
         else {
             for (i = 2; i < listsize; i++) {
-                if (first_element != second_element)
-                    _releasing(second_element);
                 second_element = liste[i]->eval(lisp);
                 first_element = first_element->power(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
             }
-            if (first_element != second_element)
-                second_element->release();
         }
     }
     catch (Error* err) {
@@ -10076,7 +10210,7 @@ Element* List::evall_powerequal(LispE* lisp) {
     }
 
     if (exec != NULL) {
-        exec->append(first_element->quoting(lisp));
+        exec->append(first_element->quoting());
         exec->evall_set_at(lisp);
         first_element->increment();
         exec->release();
@@ -10108,161 +10242,149 @@ Element* List::evall_powerequal2(LispE* lisp) {
 //------------------------------------------------------------------------------------------
 
 Element* List::evall_sum(LispE* lisp) {
-    Element* first_element = liste[1];
+    Element* first_element = liste[1]->eval(lisp);
     
-    try {
-        first_element = first_element->eval(lisp);
-        switch (first_element->type) {
-            case t_floats: {
-                float v = ((Floats*)first_element)->liste.sum();
-                first_element->release();
-                return v?lisp->provideFloat(v):zero_;
-            }
-            case t_numbers: {
-                double v = ((Numbers*)first_element)->liste.sum();
-                first_element->release();
-                first_element->release();
-                return v?lisp->provideNumber(v):zero_;
-            }
-            case t_shorts: {
-                short v = ((Shorts*)first_element)->liste.sum();
-                first_element->release();
-                return v?new Short(v):zero_;
-            }
-            case t_integers: {
-                long v = ((Integers*)first_element)->liste.sum();
-                first_element->release();
-                return v?lisp->provideInteger(v):zero_;
-            }
-            case t_strings: {
-                u_ustring v = ((Strings*)first_element)->liste.sum();
-                first_element->release();
-                return (v == U"")?emptystring_:lisp->provideString(v);
-            }
-            case t_list: {
-                double v = 0;
-                List* lst = (List*)first_element;
-                long listsize = lst->size();
-                for (long i = 0; i < listsize; i++) {
-                    v += lst->liste[i]->checkNumber(lisp);
-                }
-                first_element->release();
-                return lisp->provideNumber(v);
-            }
-            case t_llist: {
-                double v = 0;
-                LList* lst = (LList*)first_element;
-                for (u_link* a = lst->liste.begin(); a != NULL; a = a->next())
-                    v += a->value->checkNumber(lisp);
-                first_element->release();
-                return lisp->provideNumber(v);
-            }
-            case t_seti: {
-                long v = 0;
-                Set_i* lst = (Set_i*)first_element;
-                for (auto& a: lst->ensemble)
-                    v += a;
-                first_element->release();
-                return lisp->provideInteger(v);
-            }
-            case t_setn: {
-                double v = 0;
-                Set_n* lst = (Set_n*)first_element;
-                for (auto& a: lst->ensemble)
-                    v += a;
-                first_element->release();
-                return lisp->provideNumber(v);
-            }
+    switch (first_element->type) {
+        case t_floats: {
+            float v = ((Floats*)first_element)->liste.sum();
+            first_element->release();
+            return v?lisp->provideFloat(v):zero_;
         }
+        case t_numbers: {
+            double v = ((Numbers*)first_element)->liste.sum();
+            first_element->release();
+            return v?lisp->provideNumber(v):zero_;
+        }
+        case t_shorts: {
+            short v = ((Shorts*)first_element)->liste.sum();
+            first_element->release();
+            return v?new Short(v):zero_;
+        }
+        case t_integers: {
+            long v = ((Integers*)first_element)->liste.sum();
+            first_element->release();
+            return v?lisp->provideInteger(v):zero_;
+        }
+        case t_strings: {
+            u_ustring v = ((Strings*)first_element)->liste.sum();
+            first_element->release();
+            return (v == U"")?emptystring_:lisp->provideString(v);
+        }
+        case t_list: {
+            double v = 0;
+            List* lst = (List*)first_element;
+            long listsize = lst->size();
+            for (long i = 0; i < listsize; i++) {
+                v += lst->liste[i]->checkNumber(lisp);
+            }
+            first_element->release();
+            return lisp->provideNumber(v);
+        }
+        case t_llist: {
+            double v = 0;
+            LList* lst = (LList*)first_element;
+            for (u_link* a = lst->liste.begin(); a != NULL; a = a->next())
+                v += a->value->checkNumber(lisp);
+            first_element->release();
+            return lisp->provideNumber(v);
+        }
+        case t_seti: {
+            long v = 0;
+            Set_i* lst = (Set_i*)first_element;
+            for (auto& a: lst->ensemble)
+                v += a;
+            first_element->release();
+            return lisp->provideInteger(v);
+        }
+        case t_setn: {
+            double v = 0;
+            Set_n* lst = (Set_n*)first_element;
+            for (auto& a: lst->ensemble)
+                v += a;
+            first_element->release();
+            return lisp->provideNumber(v);
+        }
+        default:
+            first_element->release();
+            throw new Error("Error: expecting a container as argument");
     }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-    throw new Error("Error: expecting a list as argument");
 }
 
 Element* List::evall_product(LispE* lisp) {
-    Element* first_element = liste[1];
-    try {
-        first_element = first_element->eval(lisp);
-        switch (first_element->type) {
-            case t_floats: {
-                float v = ((Floats*)first_element)->liste.product();
-                first_element->release();
-                return v?lisp->provideFloat(v):zero_;
-            }
-            case t_numbers: {
-                double v = ((Numbers*)first_element)->liste.product();
-                first_element->release();
-                first_element->release();
-                return v?lisp->provideNumber(v):zero_;
-            }
-            case t_shorts: {
-                short v = ((Shorts*)first_element)->liste.product();
-                first_element->release();
-                return v?new Short(v):zero_;
-            }
-            case t_integers: {
-                long v = ((Integers*)first_element)->liste.product();
-                first_element->release();
-                return v?lisp->provideInteger(v):zero_;
-            }
-            case t_list: {
-                double v = 1;
-                List* lst = (List*)first_element;
-                long listsize = lst->size();
-                for (long i = 0; i < listsize && v; i++)
-                    v *= lst->liste[i]->checkNumber(lisp);
-                first_element->release();
-                return lisp->provideNumber(v);
-            }
-            case t_llist: {
-                double v = 1;
-                LList* lst = (LList*)first_element;
-                for (u_link* a = lst->liste.begin(); a != NULL && v; a = a->next())
-                    v *= a->value->checkNumber(lisp);
-                first_element->release();
-                return lisp->provideNumber(v);
-            }
-            case t_seti: {
-                long v = 1;
-                Set_i* lst = (Set_i*)first_element;
-                for (auto& a: lst->ensemble)
-                    v *= a;
-                first_element->release();
-                return lisp->provideInteger(v);
-            }
-            case t_setn: {
-                double v = 1;
-                Set_n* lst = (Set_n*)first_element;
-                for (auto& a: lst->ensemble)
-                    v *= a;
-                first_element->release();
-                return lisp->provideNumber(v);
-            }
+    Element* first_element = liste[1]->eval(lisp);
+    switch (first_element->type) {
+        case t_floats: {
+            float v = ((Floats*)first_element)->liste.product();
+            first_element->release();
+            return v?lisp->provideFloat(v):zero_;
         }
+        case t_numbers: {
+            double v = ((Numbers*)first_element)->liste.product();
+            first_element->release();
+            return v?lisp->provideNumber(v):zero_;
+        }
+        case t_shorts: {
+            short v = ((Shorts*)first_element)->liste.product();
+            first_element->release();
+            return v?new Short(v):zero_;
+        }
+        case t_integers: {
+            long v = ((Integers*)first_element)->liste.product();
+            first_element->release();
+            return v?lisp->provideInteger(v):zero_;
+        }
+        case t_list: {
+            double v = 1;
+            List* lst = (List*)first_element;
+            long listsize = lst->size();
+            for (long i = 0; i < listsize && v; i++)
+                v *= lst->liste[i]->checkNumber(lisp);
+            first_element->release();
+            return lisp->provideNumber(v);
+        }
+        case t_llist: {
+            double v = 1;
+            LList* lst = (LList*)first_element;
+            for (u_link* a = lst->liste.begin(); a != NULL && v; a = a->next())
+                v *= a->value->checkNumber(lisp);
+            first_element->release();
+            return lisp->provideNumber(v);
+        }
+        case t_seti: {
+            long v = 1;
+            Set_i* lst = (Set_i*)first_element;
+            for (auto& a: lst->ensemble)
+                v *= a;
+            first_element->release();
+            return lisp->provideInteger(v);
+        }
+        case t_setn: {
+            double v = 1;
+            Set_n* lst = (Set_n*)first_element;
+            for (auto& a: lst->ensemble)
+                v *= a;
+            first_element->release();
+            return lisp->provideNumber(v);
+        }
+        default:
+            first_element->release();
+            throw new Error("Error: expecting a container as argument");
     }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-    
-    throw new Error("Error: expecting a list as argument");
 }
 
 //------------------------------------------------------------------------------------------
 
 Element* List::evall_invert(LispE* lisp) {
-    Element* element = null_;
-    Element* Y = null_;
+    Element* element = liste[1]->eval(lisp);
+    if (element->type != t_matrix) {
+        element->release();
+        throw new Error("Error: 'invert' can only be applied to matrices");
+    }
+    
+    Element* Y;
     Element* res;
-
+    
     try {
-        element = liste[1]->eval(lisp);
-        if (element->type != t_matrix)
-            throw new Error("Error: 'invert' can only be applied to matrices");
-
         if (liste.size() == 3) {
             Y = liste[2]->eval(lisp);
             if (Y->type != t_matrix)
@@ -10277,19 +10399,17 @@ Element* List::evall_invert(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        Y->release();
         throw err;
     }
     return res;
 }
 
 Element* List::evall_solve(LispE* lisp) {
-    Element* element = null_;
-    Element* Y = null_;
+    Element* element = liste[1]->eval(lisp);
+    Element* Y;
     Element* res;
 
     try {
-        element = liste[1]->eval(lisp);
         Y = liste[2]->eval(lisp);
         if (element->type != t_matrix || Y->type != t_matrix)
             throw new Error("Error: solve can only be applied to matrices");
@@ -10299,7 +10419,6 @@ Element* List::evall_solve(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        Y->release();
         throw err;
     }
     return res;
@@ -10307,20 +10426,23 @@ Element* List::evall_solve(LispE* lisp) {
 
 
 Element* List::evall_determinant(LispE* lisp) {
-    Element* element = null_;
+    Element* element = liste[1]->eval(lisp);
+    if (element->type != t_matrix) {
+        element->release();
+        throw new Error("Error: We can only compute the determinant of a matrix");
+    }
+
     double det = 0;
     
     try {
-        element = liste[1]->eval(lisp);
-        if (element->type != t_matrix)
-            throw new Error("Error: We can only compute the determinant of a matrix");
         det = ((Matrice*)element)->determinant();
-        element->release();
     }
     catch (Error* err) {
         element->release();
         throw err;
     }
+    
+    element->release();
     return lisp->provideNumber(det);
 }
 
@@ -10367,3 +10489,414 @@ Element* List::evall_lubksb(LispE* lisp) {
     return Y;
 }
 
+//------------------------------------------------------------------------------------------
+
+typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf} math;
+
+
+long gcd_math(long a, long b)
+{
+    // Everything divides 0
+    if (a == 0)
+       return b;
+    if (b == 0)
+       return a;
+    // base case
+    if (a == b)
+        return a;
+    // a is greater
+    if (a > b)
+        return gcd_math(a-b, b);
+    return gcd_math(a, b-a);
+}
+
+long hcf_math(long x, long y) {
+  return (!y)?x:hcf_math(y, x%y);
+}
+
+/*
+ Tout d'abord on crée une nouvelle dérivation de Element
+ On implante alors les méthodes "eval" et "commeChaine"
+ Cette extension exporte la majorité des opérateurs mathématique
+ */
+
+class Math : public Element {
+public:
+    math m;
+    short v_val;
+    Math(LispE* lisp, math s) : m(s), Element(l_lib) {
+        //We chose val as variable name everywhere
+        // we recover his code to speed up processing ...
+        u_ustring val = U"val";
+        v_val = lisp->encode(val);
+    }
+    
+    Element* eval(LispE* lisp) {
+        //eval is either: command, setenv or getenv...
+        double v;
+        switch (m) {
+            case math_fabs: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = fabs(v);
+                return lisp->provideNumber(v);
+            }
+            case math_acos: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = acos(v);
+                return lisp->provideNumber(v);
+            }
+            case math_acosh: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = acosh(v);
+                return lisp->provideNumber(v);
+            }
+            case math_asin: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = asin(v);
+                return lisp->provideNumber(v);
+            }
+            case math_asinh: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = asinh(v);
+                return lisp->provideNumber(v);
+            }
+            case math_atan: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = atan(v);
+                return lisp->provideNumber(v);
+            }
+            case math_atanh: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = atanh(v);
+                return lisp->provideNumber(v);
+            }
+            case math_cbrt: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = cbrt(v);
+                return lisp->provideNumber(v);
+            }
+            case math_cos: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = cos(v);
+                return lisp->provideNumber(v);
+            }
+            case math_cosh: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = cosh(v);
+                return lisp->provideNumber(v);
+            }
+            case math_erf: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = erf(v);
+                return lisp->provideNumber(v);
+            }
+            case math_erfc: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = erfc(v);
+                return lisp->provideNumber(v);
+            }
+            case math_exp: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = exp(v);
+                return lisp->provideNumber(v);
+            }
+            case math_exp2: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = exp2(v);
+                return lisp->provideNumber(v);
+            }
+            case math_expm1: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = expm1(v);
+                return lisp->provideNumber(v);
+            }
+            case math_floor: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = floor(v);
+                return lisp->provideNumber(v);
+            }
+            case math_gcd: {
+                long v = lisp->get_variable(v_val)->asInteger();
+                long vv = lisp->get_variable(U"vaal")->asInteger();
+                return lisp->provideInteger(gcd_math(v,vv));
+            }
+            case math_hcf: {
+                long v = lisp->get_variable(v_val)->asInteger();
+                long vv = lisp->get_variable(U"vaal")->asInteger();
+                return lisp->provideInteger(hcf_math(v,vv));
+            }
+            case math_lgamma: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = lgamma(v);
+                return lisp->provideNumber(v);
+            }
+            case math_log: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = log(v);
+                return lisp->provideNumber(v);
+            }
+            case math_log10: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = log10(v);
+                return lisp->provideNumber(v);
+            }
+            case math_log1p: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = log1p(v);
+                return lisp->provideNumber(v);
+            }
+            case math_log2: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = log2(v);
+                return lisp->provideNumber(v);
+            }
+            case math_logb: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = logb(v);
+                return lisp->provideNumber(v);
+            }
+            case math_nearbyint: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = nearbyint(v);
+                return lisp->provideNumber(v);
+            }
+            case math_rint: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = rint(v);
+                return lisp->provideNumber(v);
+            }
+            case math_round: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = round(v);
+                return lisp->provideNumber(v);
+            }
+            case math_sin: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = sin(v);
+                return lisp->provideNumber(v);
+            }
+            case math_sinh: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = sinh(v);
+                return lisp->provideNumber(v);
+            }
+            case math_sqrt: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = sqrt(v);
+                return lisp->provideNumber(v);
+            }
+            case math_tan: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = tan(v);
+                return lisp->provideNumber(v);
+            }
+            case math_tanh: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = tanh(v);
+                return lisp->provideNumber(v);
+            }
+            case math_tgamma: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = tgamma(v);
+                return lisp->provideNumber(v);
+            }
+            case math_trunc: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = trunc(v);
+                return lisp->provideNumber(v);
+            }
+            case math_radian: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = M_PI*(v / 180);
+                return lisp->provideNumber(v);
+            }
+            case math_degree: {
+                v = lisp->get_variable(v_val)->asNumber();
+                v = (v * 180) / M_PI;
+                return lisp->provideNumber(v);
+            }
+        }
+        return zero_;
+    }
+    
+    //We use this instruction to return a description of the instruction
+    //in effect, just do: (print getenv) to get this information
+    wstring asString(LispE* lisp) {
+        switch (m) {
+            case math_fabs: {
+                return L"compute the absolute value of a float type number";
+            }
+            case math_acos: {
+                return L"compute the arc cosine";
+            }
+            case math_acosh: {
+                return L"compute the hyperbolic arc cosine";
+            }
+            case math_asin: {
+                return L"compute the arc sine";
+            }
+            case math_asinh: {
+                return L"compute the hyperbolic sine arc";
+            }
+            case math_atan: {
+                return L"compute the arc tangent";
+            }
+            case math_atanh: {
+                return L"compute the hyperbolic arc tangent";
+            }
+            case math_cbrt: {
+                return L"compute the cubic root";
+            }
+            case math_cos: {
+                return L"compute the cosine";
+            }
+            case math_cosh: {
+                return L"compute the hyperbolic cosine";
+            }
+            case math_erf: {
+                return L"compute the error function";
+            }
+            case math_erfc: {
+                return L"compute the complementary error function";
+            }
+            case math_exp: {
+                return L"returns the high e to the required power";
+            }
+            case math_exp2: {
+                return L"returns 2 high to the required power";
+            }
+            case math_expm1: {
+                return L"Returns high e to the required power minus 1";
+            }
+            case math_floor: {
+                return L"returns the nearest lower integer";
+            }
+            case math_gcd:
+                return L"return Greater Common Divison";
+            case math_hcf:
+                return L"return Higher Common Factor";
+            case math_lgamma: {
+                return L"compute the natural logarithm of the absolute value of the gamma function";
+            }
+            case math_log: {
+                return L"compute the natural logarithm (in base e)";
+            }
+            case math_log10: {
+                return L"compute the decimal logarithm (base 10)";
+            }
+            case math_log1p: {
+                return L"compute the natural logarithm (base e) of 1 plus the given number";
+            }
+            case math_log2: {
+                return L"compute the binary logarithm (base 2)";
+            }
+            case math_logb: {
+                return L"extracts the exponent of a number";
+            }
+            case math_nearbyint: {
+                return L"returns the nearest integer using the current rounding method";
+            }
+            case math_rint: {
+                return L"returns the nearest integer using current rounding method with exception if the result is different";
+            }
+            case math_round: {
+                return L"returns the nearest integer, following the rounding rules";
+            }
+            case math_sin: {
+                return L"compute the sine";
+            }
+            case math_sinh: {
+                return L"compute the hyperbolic sine";
+            }
+            case math_sqrt: {
+                return L"compute the square root";
+            }
+            case math_tan: {
+                return L"compute the tangent";
+            }
+            case math_tanh: {
+                return L"compute the hyperbolic tangent";
+            }
+            case math_tgamma: {
+                return L"compute the gamma function";
+            }
+            case math_trunc: {
+                return L"returns the nearest integer whose absolute value is smaller";
+            }
+            case math_radian: {
+                return L"convert a value in 'degree' into 'radian'";
+            }
+            case math_degree: {
+                return L"convert a value in 'radian' into 'degree'";
+            }
+        }
+        return L"";
+    }
+};
+
+
+//We are also going to implement the body of the call
+void moduleMaths(LispE* lisp) {
+    //We first create the body of the function
+    lisp->extension("deflib fabs (val)", new Math(lisp, math_fabs));
+    lisp->extension("deflib acos (val)", new Math(lisp, math_acos));
+    lisp->extension("deflib acosh (val)", new Math(lisp, math_acosh));
+    lisp->extension("deflib asin (val)", new Math(lisp, math_asin));
+    lisp->extension("deflib asinh (val)", new Math(lisp, math_asinh));
+    lisp->extension("deflib atan (val)", new Math(lisp, math_atan));
+    lisp->extension("deflib atanh (val)", new Math(lisp, math_atanh));
+    lisp->extension("deflib cbrt (val)", new Math(lisp, math_cbrt));
+    lisp->extension("deflib ∛ (val)", new Math(lisp, math_cbrt));
+    lisp->extension("deflib cos (val)", new Math(lisp, math_cos));
+    lisp->extension("deflib cosh (val)", new Math(lisp, math_cosh));
+    lisp->extension("deflib erf (val)", new Math(lisp, math_erf));
+    lisp->extension("deflib erfc (val)", new Math(lisp, math_erfc));
+    lisp->extension("deflib exp (val)", new Math(lisp, math_exp));
+    lisp->extension("deflib exp2 (val)", new Math(lisp, math_exp2));
+    lisp->extension("deflib expm1 (val)", new Math(lisp, math_expm1));
+    lisp->extension("deflib floor (val)", new Math(lisp, math_floor));
+    lisp->extension("deflib gcd (val vaal)", new Math(lisp, math_gcd));
+    lisp->extension("deflib hcf (val vaal)", new Math(lisp, math_hcf));
+    lisp->extension("deflib lgamma (val)", new Math(lisp, math_lgamma));
+    lisp->extension("deflib log (val)", new Math(lisp, math_log));
+    lisp->extension("deflib log10 (val)", new Math(lisp, math_log10));
+    lisp->extension("deflib log1p (val)", new Math(lisp, math_log1p));
+    lisp->extension("deflib log2 (val)", new Math(lisp, math_log2));
+    lisp->extension("deflib logb (val)", new Math(lisp, math_logb));
+    lisp->extension("deflib nearbyint (val)", new Math(lisp, math_nearbyint));
+    lisp->extension("deflib rint (val)", new Math(lisp, math_rint));
+    lisp->extension("deflib round (val)", new Math(lisp, math_round));
+    lisp->extension("deflib sin (val)", new Math(lisp, math_sin));
+    lisp->extension("deflib sinh (val)", new Math(lisp, math_sinh));
+    lisp->extension("deflib sqrt (val)", new Math(lisp, math_sqrt));
+    lisp->extension("deflib √ (val)", new Math(lisp, math_sqrt));
+    lisp->extension("deflib tan (val)", new Math(lisp, math_tan));
+    lisp->extension("deflib tanh (val)", new Math(lisp, math_tanh));
+    lisp->extension("deflib tgamma (val)", new Math(lisp, math_tgamma));
+    lisp->extension("deflib trunc (val)", new Math(lisp, math_trunc));
+    lisp->extension("deflib radian (val)", new Math(lisp, math_radian));
+    lisp->extension("deflib degree (val)", new Math(lisp, math_degree));
+
+    u_ustring nom = U"_pi";
+    Element* value = lisp->provideNumber(M_PI);
+    lisp->recordingunique(value, lisp->encode(nom));
+    nom = U"π";
+    lisp->recordingunique(value, lisp->encode(nom));
+    
+    nom = U"_tau";
+    value = lisp->provideNumber(2 * M_PI);
+    lisp->recordingunique(value, lisp->encode(nom));
+    nom = U"τ";
+    lisp->recordingunique(value, lisp->encode(nom));
+    
+    nom = U"_e";
+    value = lisp->provideNumber(M_E);
+    lisp->recordingunique(value, lisp->encode(nom));
+    nom = U"ℯ";
+    lisp->recordingunique(value, lisp->encode(nom));
+    
+    nom = U"_phi";
+    value = lisp->provideNumber(M_GOLDEN);
+    lisp->recordingunique(value, lisp->encode(nom));
+
+}

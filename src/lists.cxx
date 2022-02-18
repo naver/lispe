@@ -19,11 +19,9 @@
 //Pools methods
 //--------------------------------------------------------------------------------
 void Listpool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status) {
+        quoted = 0;
         liste.decrement();
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -31,11 +29,9 @@ void Listpool::decrement() {
 }
 
 void Listpool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status) {
+        quoted = 0;
         liste.decrement();
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -44,6 +40,7 @@ void Listpool::decrementstatus(uint16_t nb) {
 
 void Listpool::release() {
     if (!status) {
+        quoted = 0;
         liste.decrement();
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -52,6 +49,7 @@ void Listpool::release() {
 
 void Listpool::release(Element* e) {
     if (!status) {
+        quoted = 0;
         liste.decrement(e);
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -60,6 +58,7 @@ void Listpool::release(Element* e) {
 
 void Listpool::rawrelease() {
     if (!status) {
+        quoted = 0;
         liste.clear();
         liste.decrement();
         lisp->list_pool.push_back(this);
@@ -118,10 +117,7 @@ Element* Listpool::copying(bool duplicate) {
 }
 
 void Numberspool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status) {
         liste.clear();
         lisp->numbers_pool.push_back(this);
@@ -129,10 +125,7 @@ void Numberspool::decrement() {
 }
 
 void Floatspool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status) {
         liste.clear();
         lisp->floats_pool.push_back(this);
@@ -140,10 +133,7 @@ void Floatspool::decrement() {
 }
 
 void Floatspool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status) {
         liste.clear();
         lisp->floats_pool.push_back(this);
@@ -196,10 +186,7 @@ Element* Floatspool::copyatom(LispE* lsp, uint16_t s) {
 }
 
 void Numberspool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status) {
         liste.clear();
         lisp->numbers_pool.push_back(this);
@@ -252,10 +239,7 @@ Element* Numberspool::copyatom(LispE* lsp, uint16_t s) {
 }
 
 void Integerspool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status) {
         lisp->integers_pool.push_back(this);
         liste.clear();
@@ -263,10 +247,7 @@ void Integerspool::decrement() {
 }
 
 void Integerspool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status) {
         lisp->integers_pool.push_back(this);
         liste.clear();
@@ -320,10 +301,7 @@ Element* Integerspool::copyatom(LispE* lsp, uint16_t s) {
 }
 
 void Stringspool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status) {
         lisp->strings_pool.push_back(this);
         liste.clear();
@@ -331,10 +309,7 @@ void Stringspool::decrement() {
 }
 
 void Stringspool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status) {
         lisp->strings_pool.push_back(this);
         liste.clear();
@@ -398,8 +373,8 @@ Element* Pair::cdr(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 inline bool LIST::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
-    comparison->liste[1] = item->buffer[i]->quoting(lisp);
-    comparison->liste[2] = item->buffer[j]->quoting(lisp);
+    comparison->liste[1] = item->buffer[i]->quoting();
+    comparison->liste[2] = item->buffer[j]->quoting();
     bool r = comparison->eval_Boolean(lisp, instruction);
     comparison->liste[1]->release();
     comparison->liste[2]->release();
@@ -816,7 +791,7 @@ Element* List::loop(LispE* lisp, short label, List* code) {
     Element* element;
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element = liste[i]->copying(false);
+        element = liste[i]->copyatom(lisp, 1);
         lisp->replacingvalue(element, label);
         _releasing(e);
         //We then execute our instructions
@@ -919,7 +894,7 @@ Element* List::polyloop(LispE* lisp) {
         while (indexe < nb) {
             _releasing(e);
             for (var = 0; var < nbvars; var++) {
-                e = values->liste[var]->value_from_index(lisp, indexe);
+                e = values->liste[var]->index(indexe);
                 label = liste[1]->index(var)->label();
                 lisp->replacingvalue(e, label);
             }
@@ -954,7 +929,7 @@ Element* List::insert(LispE* lisp, Element* e, long ix) {
         throw new Error("Error: Wrong index in 'insert'");
     
     e = e->copying(false);
-    List* l = (List*)duplicate_constant();
+    List* l = (List*)duplicate_constant(lisp);
     l->liste.insert(ix, e);
     return l;
 }
@@ -964,7 +939,7 @@ Element* LList::insert(LispE* lisp, Element* e, long ix) {
         throw new Error("Error: Wrong index in 'insert'");
     
     e = e->copying(false);
-    LList* l = (LList*)duplicate_constant();
+    LList* l = (LList*)duplicate_constant(lisp);
     l->insertion(e, ix);
     return l;
 }
@@ -2590,13 +2565,13 @@ Element* LList::replace_in(LispE* lisp, List* l) {
     return ll;
 }
 
-Element* List::duplicate_constant(bool pair) {
+Element* List::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
         List* l;
         if (pair)
             l =  new Pair();
         else
-            l = (List*)newInstance();
+            l = lisp->provideList();
         for (long i = 0; i < liste.size(); i++) {
             l->append(liste[i]->copying(false));
         }
@@ -2605,7 +2580,7 @@ Element* List::duplicate_constant(bool pair) {
     return this;
 }
 
-Element* LList::duplicate_constant(bool pair) {
+Element* LList::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant)
         return back_duplicate();
     return this;
@@ -3036,7 +3011,7 @@ Element* Numbers::insert(LispE* lisp, Element* e, long ix) {
     if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
-    Numbers* l = (Numbers*)duplicate_constant();
+    Numbers* l = (Numbers*)duplicate_constant(lisp);
     l->liste.insert(ix, e->asNumber());
     return l;
 }
@@ -3425,9 +3400,9 @@ Element* Numbers::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Numbers::duplicate_constant(bool pair) {
+Element* Numbers::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
-        Numbers* l = (Numbers*)newInstance();
+        Numbers* l = lisp->provideNumbers();
         l->liste = liste;
         return l;
     }
@@ -3625,7 +3600,7 @@ Element* Integers::insert(LispE* lisp, Element* e, long ix) {
     if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
-    Integers* l = (Integers*)duplicate_constant();
+    Integers* l = (Integers*)duplicate_constant(lisp);
     l->liste.insert(ix, e->asInteger());
     return l;
 }
@@ -4014,9 +3989,9 @@ Element* Integers::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Integers::duplicate_constant(bool pair) {
+Element* Integers::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
-        Integers* l = (Integers*)newInstance();
+        Integers* l = lisp->provideIntegers();
         l->liste = liste;
         return l;
     }
@@ -4209,7 +4184,7 @@ Element* Strings::insert(LispE* lisp, Element* e, long ix) {
     if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
-    Strings* l = (Strings*)duplicate_constant();
+    Strings* l = (Strings*)duplicate_constant(lisp);
     l->liste.insert(ix, e->asUString(lisp));
     return l;
 }
@@ -4941,9 +4916,9 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Strings::duplicate_constant(bool pair) {
+Element* Strings::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
-        Strings* l = (Strings*)newInstance();
+        Strings* l = lisp->provideStrings();
         l->liste = liste;
         return l;
     }
@@ -5144,7 +5119,7 @@ Element* Shorts::insert(LispE* lisp, Element* e, long ix) {
     if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
-    Shorts* l = (Shorts*)duplicate_constant();
+    Shorts* l = (Shorts*)duplicate_constant(lisp);
     l->liste.insert(ix, e->asInteger());
     return l;
 }
@@ -5535,7 +5510,7 @@ Element* Shorts::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Shorts::duplicate_constant(bool pair) {
+Element* Shorts::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
         Shorts* l = new Shorts;
         l->liste = liste;
@@ -5752,7 +5727,7 @@ Element* Floats::insert(LispE* lisp, Element* e, long ix) {
     if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
     
-    Floats* l = (Floats*)duplicate_constant();
+    Floats* l = (Floats*)duplicate_constant(lisp);
     l->liste.insert(ix, e->asFloat());
     return l;
 }
@@ -6142,9 +6117,9 @@ Element* Floats::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Floats::duplicate_constant(bool pair) {
+Element* Floats::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
-        Floats* l = (Floats*)newInstance();
+        Floats* l = lisp->provideFloats();
         l->liste = liste;
         return l;
     }

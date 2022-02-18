@@ -58,19 +58,19 @@ typedef enum {
     l_sleep, l_wait,
     l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_lib, l_self,l_label,
     l_setq, l_setg, l_index, l_at_index, l_set_at, l_extract, l_set_range,
-    l_block, l_elapse,
+    l_block, l_root, l_elapse,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
     l_catch, l_throw, l_maybe,
     
     //Check values
     l_atomp, l_numberp, l_consp, l_emptyp, l_zerop, l_nullp, l_stringp,
-    l_quote, l_emptylist,
+    l_quote, l_quoted, l_emptylist,
     //Numerical operations
     l_sign, l_signp, l_minus_plus,
-    l_plus, l_minus, l_multiply, l_power,
+    l_plus, l_minus, l_multiply, l_divide,
     l_leftshift, l_rightshift,
     l_bitand, l_bitor, l_bitxor, l_bitandnot,
-    l_bitnot, l_divide, l_mod,
+    l_bitnot, l_power, l_mod,
     l_listand, l_listor, l_listxor,
     
     l_plusequal, l_minusequal, l_multiplyequal,  l_powerequal,
@@ -241,39 +241,33 @@ public:
         return (status & s_protect);
     }
 
+    inline bool not_protected() {
+        return !(status & s_protect);
+    }
+
     virtual void increment() {
-        if (!is_protected())
-            status++;
+        status += not_protected();
     }
 
     virtual void decrement() {
-        if (is_protected())
-            return;
-        
-        status--;
+        status -= not_protected();
         if (!status)
             delete this;
     }
 
     virtual void incrementstatus(uint16_t nb) {
-        if (!is_protected())
-            status += nb;
+        status += nb * not_protected();
     }
     
     virtual void decrementstatus(uint16_t nb) {
-        if (is_protected())
-            return;
-        
-        status -= nb;
+        status -= nb * not_protected();
         if (!status)
             delete this;
     }
     
     //The status is decremented without destroying the element.
     virtual void decrementkeep() {
-        if (is_protected())
-            return;
-        status--;
+        status -= not_protected();
     }
 
     virtual void garbaging_values(LispE*) {}
@@ -393,7 +387,7 @@ public:
     virtual Element* rank(LispE* lisp, vecte<long>&);
     
     //We only duplicate constant containers...
-    virtual Element* duplicate_constant(bool pair = false) {
+    virtual Element* duplicate_constant(LispE* lisp, bool pair = false) {
         return this;
     }
     
@@ -457,7 +451,13 @@ public:
      but must not modify a value stored in the garbage collector from the compilation.
      */
         
-    virtual Element* quoting(LispE*);
+    virtual Element* quoting() {
+        return this;
+    }
+    
+    virtual char unquoting() { return 0;}
+    
+    virtual void setquoted(char q) {}
     
     void prettyfying(LispE* lisp, string& code);
     string prettify(LispE* lisp);
@@ -1263,10 +1263,6 @@ public:
         return (v == number);
     }
 
-    Element* quoting(LispE*) {
-        return this;
-    }
-
     Element* invert_sign(LispE* lisp);
     Element* reverse(LispE*, bool duplique = true);
     
@@ -1410,10 +1406,6 @@ public:
     
     bool equalvalue(double v) {
         return (v == number);
-    }
-
-    Element* quoting(LispE*) {
-        return this;
     }
 
     Element* invert_sign(LispE* lisp);
@@ -1570,7 +1562,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
 };
 
 class Constnumber : public Numberpool {
@@ -1601,7 +1593,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
 };
 
 class Short : public Element {
@@ -1613,10 +1605,6 @@ public:
     }
     
     Short(short d, uint16_t s) : integer(d), Element(t_short, s) {}
-
-    Element* quoting(LispE*) {
-        return this;
-    }
 
     bool equalvalue(short n) {
         return (integer == n);
@@ -1774,10 +1762,6 @@ public:
     }
     
     Integer(long d, uint16_t s) : integer(d), Element(t_integer, s) {}
-
-    Element* quoting(LispE*) {
-        return this;
-    }
 
     bool equalvalue(long n) {
         return (integer == n);
@@ -1971,7 +1955,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
 };
 
 class Constshort : public Short {
@@ -1995,7 +1979,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
 };
 
 class String : public Element {
@@ -2030,10 +2014,6 @@ public:
 
     bool isString() {
         return true;
-    }
-    
-    Element* quoting(LispE*) {
-        return this;
     }
     
     void push_element(LispE* lisp, List* l);
@@ -2257,7 +2237,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
 };
 
 class InfiniterangeNumber : public Element {
@@ -2533,7 +2513,7 @@ public:
 
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false);
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -2587,13 +2567,8 @@ public:
 
         Dictionary* d = (Dictionary*)e;
         for (auto& a: dictionary) {
-            try {
-                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
-                    marking = false;
-                    return false;
-                }
-            }
-            catch (...) {
+            if (!dictionary.count(a.first) ||
+                !d->dictionary[a.first]->unify(lisp, a.second, record)) {
                 marking = false;
                 return false;
             }
@@ -2617,13 +2592,8 @@ public:
 
         Dictionary* d = (Dictionary*)e;
         for (auto& a: dictionary) {
-            try {
-                if (!d->dictionary.at(a.first)->isequal(lisp, a.second)) {
-                    marking = false;
-                    return false;
-                }
-            }
-            catch (...) {
+            if (!dictionary.count(a.first) ||
+                !d->dictionary.at(a.first)->isequal(lisp, a.second)) {
                 marking = false;
                 return false;
             }
@@ -2753,29 +2723,24 @@ public:
     void recording(string& c, Element* e) {
         u_ustring k;
         s_utf8_to_unicode(k, USTR(c), c.size());
-        try {
-            Element* a = dictionary.at(k);
-            a->decrement();
-            dictionary[k] = e;
+        auto it = dictionary.find(k);
+        if (it != dictionary.end()) {
+            it->second->decrement();
+            it->second = e;
         }
-        catch (...) {
+        else
             dictionary[k] = e;
-        }
         e->increment();
     }
     
     void recording(u_ustring& k, Element* e) {
-        try {
-            Element* a = dictionary.at(k);
-            if (a == e)
-                return;
-
-            a->decrement();
-            dictionary[k] = e;
+        auto it = dictionary.find(k);
+        if (it != dictionary.end()) {
+            it->second->decrement();
+            it->second = e;
         }
-        catch (...) {
+        else
             dictionary[k] = e;
-        }
         e->increment();
     }
 
@@ -2796,27 +2761,23 @@ public:
 
     bool remove(wstring& w) {
         u_pstring k = _w_to_u(w);
-        try {
-            Element* e = dictionary.at(k);
-            dictionary.erase(k);
-            e->decrement();
-            return true;
-        }
-        catch (...) {
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
             return false;
-        }
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        return true;
     }
 
     bool remove(u_ustring& k) {
-        try {
-            Element* e = dictionary.at(k);
-            dictionary.erase(k);
-            e->decrement();
-            return true;
-        }
-        catch (...) {
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
             return false;
-        }
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        return true;
     }
 
 };
@@ -3016,19 +2977,7 @@ public:
 
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
-        if (status == s_constant) {
-            Dictionary_n* d = new Dictionary_n;
-            Element* e;
-            for (auto& a: dictionary) {
-                e = a.second->copying(false);
-                d->dictionary[a.first] = e;
-                e->increment();
-            }
-            return d;
-        }
-        return this;
-    }
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -3061,7 +3010,7 @@ public:
         
         marking = true;
         
-        status-=nb;
+        status -= nb;
         if (!status) {
             delete this;
         }
@@ -3084,18 +3033,13 @@ public:
         
         Dictionary_n* d = (Dictionary_n*)e;
         for (auto& a: dictionary) {
-            try {
-                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
-                    marking = false;
-                    return false;
-                }
-            }
-            catch (...) {
+            if (!dictionary.count(a.first) ||
+                !d->dictionary[a.first]->unify(lisp, a.second, record)) {
                 marking = false;
                 return false;
             }
         }
-        
+
         marking = false;
         return true;
     }
@@ -3115,18 +3059,13 @@ public:
         
         Dictionary_n* d = (Dictionary_n*)e;
         for (auto& a: dictionary) {
-            try {
-                if (!d->dictionary.at(a.first)->isequal(lisp, a.second)) {
-                    marking = false;
-                    return false;
-                }
-            }
-            catch (...) {
+            if (!dictionary.count(a.first) ||
+                !d->dictionary.at(a.first)->isequal(lisp, a.second)) {
                 marking = false;
                 return false;
             }
         }
-        
+
         marking = false;
         return true;
     }
@@ -3252,16 +3191,13 @@ public:
     Element* protected_index(LispE*, Element* k);
     
     void recording(double  k, Element* e) {
-        try {
-            Element* a = dictionary.at(k);
-            if (a == e)
-                return;
-            a->decrement();
-            dictionary[k] = e;
+        auto it = dictionary.find(k);
+        if (it != dictionary.end()) {
+            it->second->decrement();
+            it->second = e;
         }
-        catch (...) {
+        else
             dictionary[k] = e;
-        }
         e->increment();
     }
     
@@ -3279,16 +3215,14 @@ public:
         return remove(d);
     }
 
-    bool remove(double d) {
-        try {
-            Element* e = dictionary.at(d);
-            dictionary.erase(d);
-            e->decrement();
-            return true;
-        }
-        catch (...) {
+    bool remove(double k) {
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
             return false;
-        }
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        return true;
     }
     
     //bool traverse(LispE*, Dictionary_as_list*);
@@ -3450,19 +3384,7 @@ public:
 
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
-        if (status == s_constant) {
-            Dictionary_i* d = new Dictionary_i;
-            Element* e;
-            for (auto& a: dictionary) {
-                e = a.second->copying(false);
-                d->dictionary[a.first] = e;
-                e->increment();
-            }
-            return d;
-        }
-        return this;
-    }
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -3518,18 +3440,12 @@ public:
         
         Dictionary_i* d = (Dictionary_i*)e;
         for (auto& a: dictionary) {
-            try {
-                if (!d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
-                    marking = false;
-                    return false;
-                }
-            }
-            catch (...) {
+            if (!dictionary.count(a.first) ||
+                !d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
                 marking = false;
                 return false;
             }
         }
-        
         marking = false;
         return true;
     }
@@ -3549,13 +3465,8 @@ public:
         
         Dictionary_i* d = (Dictionary_i*)e;
         for (auto& a: dictionary) {
-            try {
-                if (!d->dictionary.at(a.first)->isequal(lisp, a.second)) {
-                    marking = false;
-                    return false;
-                }
-            }
-            catch (...) {
+            if (!dictionary.count(a.first) ||
+                !d->dictionary.at(a.first)->isequal(lisp, a.second)) {
                 marking = false;
                 return false;
             }
@@ -3687,16 +3598,13 @@ public:
     Element* protected_index(LispE*, Element* k);
     
     void recording(long k, Element* e) {
-        try {
-            Element* a = dictionary.at(k);
-            if (a == e)
-                return;
-            a->decrement();
-            dictionary[k] = e;
+        auto it = dictionary.find(k);
+        if (it != dictionary.end()) {
+            it->second->decrement();
+            it->second = e;
         }
-        catch (...) {
+        else
             dictionary[k] = e;
-        }
         e->increment();
     }
     
@@ -3714,16 +3622,14 @@ public:
         return remove(d);
     }
 
-    bool remove(long d) {
-        try {
-            Element* e = dictionary.at(d);
-            dictionary.erase(d);
-            e->decrement();
-            return true;
-        }
-        catch (...) {
+    bool remove(long k) {
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
             return false;
-        }
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        return true;
     }
     
     //bool traverse(LispE*, Dictionary_as_list*);
@@ -4010,12 +3916,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
-        if (status == s_constant) {
-            return new Set_s(ensemble);
-        }
-        return this;
-    }
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -4309,12 +4210,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
-        if (status == s_constant) {
-            return new Set_n(ensemble);
-        }
-        return this;
-    }
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -4590,12 +4486,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
-        if (status == s_constant) {
-            return new Set_i(ensemble);
-        }
-        return this;
-    }
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -4879,12 +4770,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(bool pair = false) {
-        if (status == s_constant) {
-            return new Set(dictionary);
-        }
-        return this;
-    }
+    Element* duplicate_constant(LispE* lisp, bool pair = false);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -5062,34 +4948,34 @@ public:
 
     bool remove(LispE* lisp, Element* e) {
         u_ustring k =  e->asUString(lisp);
-        if (dictionary.find(k) == dictionary.end())
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
             return false;
-        else {
-            dictionary[k]->decrement();
-            dictionary.erase(k);
-            return true;
-        }
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        return true;
     }
 
     bool remove(wstring& w) {
         u_pstring k = _w_to_u(w);
-        if (dictionary.find(k) == dictionary.end())
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
             return false;
-        else {
-            dictionary[k]->decrement();
-            dictionary.erase(k);
-            return true;
-        }
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        return true;
     }
 
     bool remove(u_ustring& k) {
-        if (dictionary.find(k) == dictionary.end())
+        auto it = dictionary.find(k);
+        if (it == dictionary.end())
             return false;
-        else {
-            dictionary[k]->decrement();
-            dictionary.erase(k);
-            return true;
-        }
+        
+        it->second->decrement();
+        dictionary.erase(k);
+        return true;
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);

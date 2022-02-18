@@ -215,7 +215,7 @@ public:
 class binSet {
 public:
     uint64_t* indexes;
-    int16_t tsize;
+    uint16_t tsize;
     int16_t base;
     
     bool table;
@@ -249,14 +249,14 @@ public:
     }
 
     inline bool check(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r & binMin]));
+        uint16_t i = (r >> binBits) - base;
+        return (i < tsize && (indexes[i] & binVal64[r & binMin]));
     }
 
     inline bool checkanderase(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        if (i >= 0 && i < tsize && (indexes[i] & binVal64[r])) {
+        if (i < tsize && (indexes[i] & binVal64[r])) {
             indexes[i] &= ~binVal64[r];
             return true;
         }
@@ -272,9 +272,9 @@ public:
     }
 
     void erase(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        if (i >= 0 && i < tsize && indexes[i])
+        if (i < tsize && indexes[i])
             indexes[i] &= ~binVal64[r];
     }
     
@@ -461,7 +461,7 @@ template <class Z> class binHash {
     public:
     Z** table;
     uint64_t* indexes;
-    int16_t tsize;
+    uint16_t tsize;
     int16_t base;
 
     typedef binIter<short, Z> iterator;
@@ -511,8 +511,8 @@ template <class Z> class binHash {
     }
 
     inline bool check(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r & binMin]));
+        uint16_t i = (r >> binBits) - base;
+        return (i < tsize && (indexes[i] & binVal64[r & binMin]));
     }
 
     void put(uint16_t r, Z a) {
@@ -528,12 +528,6 @@ template <class Z> class binHash {
         return table[i][r];
     }
 
-    inline bool check(uint16_t label, int16_t& i, int16_t& r) {
-        i = (label >> binBits) - base;
-        r = label & binMin;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]));
-    }
-
     bool empty() {
         for (int16_t i = 0; i < tsize; i++) {
             if (indexes[i])
@@ -543,15 +537,15 @@ template <class Z> class binHash {
     }
 
     inline Z search(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
+        return (i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
     }
 
     inline bool search(uint16_t r, Z* e) {
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        *e = (i >= 0 && i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
+        *e = (i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
         return *e;
     }
 
@@ -559,24 +553,18 @@ template <class Z> class binHash {
         if (base == -1)
             return iterator();
 
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        if (i >= 0 && i < tsize && (indexes[i] & binVal64[r]))
+        if (i < tsize && (indexes[i] & binVal64[r]))
             return iterator(table, indexes, tsize, i, r);
         
         return iterator();
     }
 
-    bool get(uint16_t p, short& i, uint16_t& r) {
-        i = (p >> binBits) - base;
-        r = p & binMin;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]));
-    }
-
     void erase(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        if (i >= 0 && i < tsize && indexes[i])
+        if (i < tsize && indexes[i])
             indexes[i] &= ~binVal64[r];
     }
     
@@ -792,7 +780,7 @@ template <class Z> class binHashe {
 public:
     Z** table;
     uint64_t* indexes;
-    int16_t tsize;
+    uint16_t tsize;
     int16_t base;
 
     typedef binIter<short, Z> iterator;
@@ -843,15 +831,10 @@ public:
     }
     
     inline bool check(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r & binMin]));
+        uint16_t i = (r >> binBits) - base;
+        return (i < tsize && (indexes[i] & binVal64[r & binMin]));
     }
     
-    inline bool check(short i, short r) {
-        i -= base;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]));
-    }
-
     bool empty() {
         for (int16_t i = 0; i < tsize; i++) {
             if (indexes[i])
@@ -861,33 +844,27 @@ public:
     }
     
     inline Z search(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
+        return (i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
     }
     
     iterator find(uint16_t r) {
         if (base == -1)
             return iterator();
         
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        if (i >= 0 && i < tsize && (indexes[i] & binVal64[r]))
+        if (i < tsize && (indexes[i] & binVal64[r]))
             return iterator(table, indexes, tsize, i, r);
         
         return iterator();
     }
     
-    bool get(uint16_t p, short& i, uint16_t& r) {
-        i = (p >> binBits) - base;
-        r = p & binMin;
-        return (i >= 0 && i < tsize && (indexes[i] & binVal64[r]));
-    }
-    
     void erase(uint16_t r) {
-        int16_t i = (r >> binBits) - base;
+        uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        if (i >= 0 && i < tsize && indexes[i])
+        if (i < tsize && indexes[i])
             indexes[i] &= ~binVal64[r];
     }
     
