@@ -34,7 +34,7 @@
 #include "directorylisting.h"
 
 typedef enum {sys_command, sys_ls, sys_setenv, sys_getenv, sys_isdirectory, sys_fileinfo, sys_realpath} systeme;
-typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write, file_writeln, file_getstruct} file_command;
+typedef enum {file_open, file_close, file_eof, file_read, file_readline, file_readlist, file_getchar, file_write, file_writeln, file_seek, file_tell, file_getstruct} file_command;
 typedef enum {date_setdate, date_year, date_month, date_day, date_hour, date_minute, date_second, date_yearday, date_raw, date_weekday } tempus;
 
 /*
@@ -55,14 +55,16 @@ public:
     std::fstream myfile;
     file_command mode;
     bool signature;
+    bool open;
     
     Stream(short idstream) : Element(idstream) {
         mode = file_open;
         signature = false;
+        open = false;
     }
     
     ~Stream() {
-        if (mode != file_open)
+        if (open)
             myfile.close();
     }
     
@@ -93,6 +95,7 @@ public:
             throw new Error(msg);
         }
         readsignature();
+        open = true;
         return this;
     }
 
@@ -105,6 +108,7 @@ public:
             msg += path;
             throw new Error(msg);
         }
+        open = true;
         return this;
     }
     
@@ -117,12 +121,33 @@ public:
             msg += path;
             throw new Error(msg);
         }
+        open = true;
         return this;
     }
     
+    Element* seek(LispE* lisp, long nb, long off) {
+        if (!open)
+            throw new Error ("Error: 'stream' is not opened");
+        if (!off)
+            myfile.seekg(nb, std::ios_base::beg);
+        else
+            if (off == 1)
+                myfile.seekg(nb, std::ios_base::cur);
+            else
+                myfile.seekg(nb, std::ios_base::end);
+        return true_;
+    }
+
+    Element* tell(LispE* lisp) {
+        if (!open)
+            throw new Error ("Error: 'stream' is not opened");
+        
+        return lisp->provideInteger(myfile.tellg());
+    }
+
     Element* read(LispE* lisp, long nb) {
-        if (mode != file_read)
-            throw new Error ("Error: expecting 'stream' to be in 'open' mode");
+        if (!open || mode != file_read)
+            throw new Error ("Error: expecting 'stream' to be in 'read' mode");
         
         if (nb == -1) {
             string ch = "";
@@ -131,6 +156,7 @@ public:
                 getline(myfile, ln);
                 ch += ln + "\n";
             }
+            open = false;
             myfile.close();
             mode = file_open;
             return lisp->provideString(ch);
@@ -148,8 +174,8 @@ public:
     }
 
     Element* getstruct(LispE* lisp, wstring& o, wstring& c) {
-        if (mode != file_read)
-            throw new Error ("Error: expecting 'stream' to be in 'open' mode");
+        if (!open || mode != file_read)
+            throw new Error ("Error: expecting 'stream' to be in 'read' mode");
         
         wstring res;
         res = getchar();
@@ -199,8 +225,8 @@ public:
     }
 
     Element* readlist(LispE* lisp) {
-        if (mode != file_read)
-            throw new Error ("Error: expecting 'stream' to be in 'open' mode");
+        if (!open || mode != file_read)
+            throw new Error ("Error: expecting 'stream' to be in 'read' mode");
         
         Strings* l = lisp->provideStrings();
         string ch = "";
@@ -209,6 +235,7 @@ public:
             getline(myfile, ln);
             l->append(ln);
         }
+        open = false;
         myfile.close();
         mode = file_open;
         return l;
@@ -216,8 +243,8 @@ public:
 
 
     Element* readline(LispE* lisp) {
-        if (mode != file_read)
-            throw new Error ("Error: expecting 'stream' to be in 'open' mode");
+        if (!open || mode != file_read)
+            throw new Error ("Error: expecting 'stream' to be in 'read' mode");
         
         if (myfile.eof()) {
             mode = file_open;
@@ -282,14 +309,14 @@ public:
     }
        
     Element* get(LispE* lisp) {
-        if (mode != file_read)
-            throw new Error ("Error: expecting 'stream' to be in 'open' mode");
+        if (!open || mode != file_read)
+            throw new Error ("Error: expecting 'stream' to be in 'read' mode");
         
         return lisp->provideString(getchar());
     }
-    
+
     Element* write(LispE* lisp, Element* line) {
-        if (mode != file_write)
+        if (!open || mode != file_write)
             throw new Error ("Error: expecting 'stream' to be in 'write' mode");
         
         string ch = line->toString(lisp);
@@ -300,7 +327,7 @@ public:
     }
     
     Element* writeln(LispE* lisp, Element* line) {
-        if (mode != file_write)
+        if (!open || mode != file_write)
             throw new Error ("Error: expecting 'stream' to be in 'write' mode");
         
         string ch = line->toString(lisp);
@@ -311,15 +338,16 @@ public:
     }
     
     Element* close(LispE* lisp) {
-        if (mode == file_open)
+        if (!open || mode == file_open)
             return false_;
+        open = false;
         myfile.close();
         mode = file_open;
         return true_;
     }
     
     Element* eof(LispE* lisp) {
-        if (mode == file_read) {
+        if (!open || mode == file_read) {
             if (myfile.eof()) {
                 mode = file_open;
                 return true_;
@@ -411,6 +439,16 @@ public:
                 Element* a_stream = getstream(lisp);
                 return ((Stream*)a_stream)->get(lisp);
             }
+            case file_seek: {
+                Element* a_stream = getstream(lisp);
+                long nb = lisp->get_variable(U"nb")->asInteger();
+                long off = lisp->get_variable(U"off")->asInteger();
+                return ((Stream*)a_stream)->seek(lisp, nb, off);
+            }
+            case file_tell: {
+                Element* a_stream = getstream(lisp);
+                return ((Stream*)a_stream)->tell(lisp);
+            }
             case file_write:{
                 Element* a_stream = getstream(lisp);
                 return ((Stream*)a_stream)->write(lisp, lisp->get_variable(U"str"));
@@ -443,6 +481,10 @@ public:
                 return L"Write a string to a file";
             case file_writeln:
                 return L"Write a string to a file and add a Carriage Return at the end";
+            case file_seek:
+                return L"Positions the head within the file at position 'nb'. 'off' can be 0(beginning), 1(current) or 2(end)";
+            case file_tell:
+                return L"Returns the position within the file of the head";
             case file_getstruct:
                 return L"Read an embedded structure in the file that starts at openning character 'o' and stops at closing character 'c'.";
         }
@@ -1159,6 +1201,8 @@ void moduleSysteme(LispE* lisp) {
     lisp->extension("deflib file_readlist (stream)", new Streamoperation(lisp, file_readlist, identifier));
     lisp->extension("deflib file_readline (stream)", new Streamoperation(lisp, file_readline, identifier));
     lisp->extension("deflib file_getchar (stream)", new Streamoperation(lisp, file_getchar, identifier));
+    lisp->extension("deflib file_seek (stream nb (off 0))", new Streamoperation(lisp, file_seek, identifier));
+    lisp->extension("deflib file_tell (stream)", new Streamoperation(lisp, file_tell, identifier));
     lisp->extension("deflib file_write (stream str)", new Streamoperation(lisp, file_write, identifier));
     lisp->extension("deflib file_writeln (stream str)", new Streamoperation(lisp, file_writeln, identifier));
 }
