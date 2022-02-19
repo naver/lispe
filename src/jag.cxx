@@ -278,6 +278,7 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     colors.push_back(m_blue);
     colors.push_back(m_gray);
     colors.push_back(m_green);
+    colors.push_back(m_yellow);
 
     poscommand = 0;
     option = x_none;

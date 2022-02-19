@@ -273,6 +273,12 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
                     sub += colors[2];
                     add = true;
                 }
+                else {
+                    if (isegment > 0 && segments->tokens[isegment-1] == U"(") {
+                        sub += colors[5];
+                        add = true;
+                    }
+                }
                 break;
             default:
                 add = false;
@@ -968,8 +974,10 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
 
     arguments = args;
 
-    if (darkmode)
+    if (darkmode) {
         colors[2] = m_blueblack;
+        colors[5] = m_dark_yellow;
+    }
 
     localhelp << m_red << "^c/q" << m_current << ":cmd line " << m_red << "^xq" << m_current << ":quit";
 
