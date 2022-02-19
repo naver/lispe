@@ -10898,5 +10898,7 @@ void moduleMaths(LispE* lisp) {
     nom = U"_phi";
     value = lisp->provideNumber(M_GOLDEN);
     lisp->recordingunique(value, lisp->encode(nom));
+    nom = U"ϕ";
+    lisp->recordingunique(value, lisp->encode(nom));
 
 }

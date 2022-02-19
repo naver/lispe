@@ -192,6 +192,10 @@ void lispe_editor::initlisp(bool reinitialize, bool setpath) {
     }
 }
 
+bool checkOtherCases(u_ustring& u) {
+    return (u == U"_current" || u == U"_args" || u == U"_pi" || u == U"_e" || u == U"_tau" || u == U"_phi" || u == U"π" || u ==U"τ" || u == U"ℯ" || u == U"ϕ");
+}
+
 
 string lispe_editor::coloringline(string line, long current_pos, bool thread) {
     if (line == "")
@@ -260,8 +264,12 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
                 sub += colors[0];
                 add = true;
                 break;
+            case l_cadr:
+                sub += colors[2];
+                add = true;
+                break;
             case t_atom: //methods
-                if (lispe->is_instruction(segments->tokens[isegment])) {
+                if (lispe->is_instruction(segments->tokens[isegment]) || checkOtherCases(segments->tokens[isegment])) {
                     sub += colors[2];
                     add = true;
                 }
