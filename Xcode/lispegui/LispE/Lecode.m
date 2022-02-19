@@ -311,9 +311,13 @@ BOOL dark = false;
         if (cr == YES) {
             if (suivant.location > 0) {
                 //it could be a cariage return
-                suivant.location -= 1;
                 suivant = [letexte paragraphRangeForRange: suivant];
                 limite += suivant.length;
+                if (suivant.location > 0) {
+                    suivant.location--;
+                    suivant = [letexte paragraphRangeForRange: suivant];
+                    limite += suivant.length;
+                }
                 //[letexte getCharacters:test range:suivant];
             }
         }

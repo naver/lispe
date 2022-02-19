@@ -579,7 +579,7 @@ public:
 extern "C" {
 Exporting bool InitialisationModule(LispE* lisp) {
     //We first create the body of the function
-    wstring w = L"sqlite";
+    wstring w = L"sqlite_";
     short sql_type = lisp->encode(w);
     w = L"sqlitev";
     short sql_type_var = lisp->encode(w);

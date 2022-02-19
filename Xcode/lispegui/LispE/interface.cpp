@@ -257,10 +257,24 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
                     if (lispe != NULL && lispe->delegation->is_basic_atom(tampon) != -1)
                         infos.append(t_atom, current_i, i);
                     else {
-                        if (current_i > 0 && code[current_i-1] == '(')
-                            infos.append(l_defpat, current_i, i);
-                        else
-                            infos.append(v_null, current_i, i);
+                        bool ok = false;
+                        if (tampon[0] == 'c' && tampon.back() == 'r') {
+                            ok = true;
+                            for (long ii = 1; ii < tampon.size() - 1; ii++) {
+                                if (tampon[ii] != 'a' && tampon[ii] != 'd') {
+                                    ok = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (ok)
+                            infos.append(t_atom, current_i, i);
+                        else {
+                            if (current_i > 0 && code[current_i-1] == '(')
+                                infos.append(l_defpat, current_i, i);
+                            else
+                                infos.append(v_null, current_i, i);
+                        }
                     }
                 }
                 
@@ -418,9 +432,7 @@ extern "C" {
     }
 
     char Gotoend(void) {
-        lispe->stop();
         lispe->stop_trace();
-        lispe->trace = debug_none;
         lispe->releasing_trace_lock();
         return 1;
     }
@@ -609,6 +621,10 @@ extern "C" {
             displaybuffer += res->toString(lispe);
             displaybuffer += "\n";
             res->release();
+        }
+        catch(Error* x) {
+            displaybuffer = x->toString(lispe);
+            delete x;
         }
         catch (void* x) {
             displaybuffer = "\nUnknown Error...\n";

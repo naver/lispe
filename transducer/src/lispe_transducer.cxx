@@ -392,7 +392,7 @@ extern "C" {
 Exporting bool InitialisationModule(LispE* lisp) {
     //We first create the body of the function
     inittableutf8(lisp->handlingutf8);
-    wstring w = L"automaton";
+    wstring w = L"automaton_";
     short type_automaton = lisp->encode(w);
     lisp->extension("deflib transducer((filename))", new Lispe_transducer(type_automaton, trans_trans));
     lisp->extension("deflib transducer_load (trans filename)", new Lispe_transducer(type_automaton, trans_load));

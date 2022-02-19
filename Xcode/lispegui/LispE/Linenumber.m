@@ -177,14 +177,14 @@ void clearallbreakpoints(void);
 
 - (void)numerolignes {
     
-    NSTextView* textecode=(NSTextView*)[self clientView];
+    //NSTextView* textecode=(NSTextView*)[self clientView];
     NSScrollView* lecode=[self scrollView];
-    NSLayoutManager            *layoutManager;
-    NSTextContainer            *container;
+    //NSLayoutManager            *layoutManager;
+    //NSTextContainer            *container;
     NSRect                    visibleRect;
     
-    layoutManager = [textecode layoutManager];
-    container = [textecode textContainer];
+    //layoutManager = [textecode layoutManager];
+    //container = [textecode textContainer];
     visibleRect = [[lecode contentView] bounds];
     //NSRange glyphRange = [layoutManager glyphRangeForBoundingRect:visibleRect inTextContainer:container];
     //NSRange range = [layoutManager characterRangeForGlyphRange:glyphRange actualGlyphRange:NULL];
