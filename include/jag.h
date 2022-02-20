@@ -714,6 +714,7 @@ public:
         displaylist(poslines[0]);
         movetoline(currentline);
         movetoposition();
+        line = lines[pos];
     }
 
     void processredos();
