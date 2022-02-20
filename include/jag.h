@@ -451,7 +451,7 @@ public:
 
 typedef enum { x_none, x_goto, x_find, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_copyingselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
 
-typedef enum {java_type, lisp_type, python_type, tamgu_type} file_types;
+typedef enum {no_type, java_type, lisp_type, python_type, tamgu_type} file_types;
 
 class Jag_automaton;
 
@@ -552,7 +552,10 @@ public:
                 if (thecurrentfilename.find(".tmg") != -1)
                     filetype = tamgu_type;
                 else
-                    filetype = java_type;
+                    if (thecurrentfilename.find(".java") != -1)
+                        filetype = java_type;
+                    else
+                        filetype = no_type;
             }
         }
     }

@@ -259,7 +259,7 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     tooglehelp = false;
     regularexpressionfind = false;
     rgx = NULL;
-    filetype = java_type;
+    filetype = no_type;
 
 #ifdef POSIXREGEX
     posixrgx = NULL;
