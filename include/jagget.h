@@ -300,6 +300,18 @@ public:
         return false;
     }
     
+    bool checkMouseup(string& mousectrl) {
+        string mouse_up;
+        mouse_up = 27;
+        mouse_up += '[';
+        mouse_up += 35;
+        
+        if (mouse_status && mousectrl.size() >= 6 && mousectrl.back() == 'M') {
+            return (mousectrl.find(mouse_up) != -1);
+        }
+        return false;
+    }
+
     bool isClickMouseUp(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
         if (mouse_status && mousectrl.size() >= 6 && mousectrl[0] == 27 && mousectrl[1] == '[' && mousectrl[2] == 'M') {
@@ -425,6 +437,19 @@ bool isClickFirstMouseDown(vector<int>& vect, string& mousectrl) {
     return false;
 }
 
+bool checkMouseup(string& mousectrl) {
+    string mouse_up;
+    mouse_up = 27;
+    mouse_up += '[';
+    mouse_up += "35";
+    
+    
+    if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M') {
+        return (mousectrl.find(mouse_up) != -1);
+    }
+    return false;
+}
+
 bool isClickMouseUp(vector<int>& vect, string& mousectrl) {
     int action, mxcursor, mycursor;
     if (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[') {
@@ -485,7 +510,7 @@ bool mouseTracking(string& mousectrl, int& mxcursor, int& mycursor) {
     return false;
 }
 
-bool isMouseAction(string mousectrl) {
+bool isMouseAction(string& mousectrl) {
     return (mouse_status && mousectrl.size() >= 8 && mousectrl.back() == 'M' && mousectrl[0] == 27 && mousectrl[1] == '[');
 }
 

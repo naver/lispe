@@ -22,7 +22,7 @@
 
 #include "jag.h"
 
-static string version = "0.99 build 11";
+static string version = "0.99 build 12";
 
 #ifndef WIN32
 static void handle_ctrl_c(int theSignal) {
@@ -94,3 +94,4 @@ int main(int argc, char *argv[]) {
 
     JAGEDITOR->launchterminal(darkmode, false, args);
 }
+

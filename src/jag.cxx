@@ -3081,9 +3081,8 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         if (endofstring && !lines.eol(pos))
             endofstring--;
 
-        mousectrl = getch();
 
-        int mxcursor, mycursor;
+        int mxcursor = 0, mycursor;
         long l, r;
         computeposition(location[1], pos);
         if (location[1] < endofstring)
@@ -3099,27 +3098,38 @@ void jag_editor::handlemousectrl(string& mousectrl) {
         long posnext = pos;
         r = l;
 
-		resetselection();
 
+        resetselection();
         selected_firstline = currentline;
-        while (mouseTracking(mousectrl, mxcursor, cursor_y)) {
-            if (cursor_y != mycursor)
-                unselectlines(pos, posnext, l, r);
-            double_click = 0;
+
+        if (!checkMouseup(mousectrl)) {
+            mousectrl = getch();
+
+            while (mouseTracking(mousectrl, mxcursor, cursor_y)) {
+                if (cursor_y != mycursor)
+                    unselectlines(pos, posnext, l, r);
+                double_click = 0;
+                if (mxcursor >= poslines.size())
+                    mxcursor = (int)poslines.size();
+                
+                posnext = poslines[mxcursor - 1];
+                computeposition(cursor_y, posnext);
+                
+                if (cursor_y < 0)
+                    cursor_y = 0;
+                mycursor = cursor_y;
+                r = cursor_y;
+                selectlines(pos, posnext, l, r);
+                mousectrl = getch();
+            }
+        }
+        else {
+            mxcursor = location[0];
             if (mxcursor >= poslines.size())
                 mxcursor = (int)poslines.size();
 
-            posnext = poslines[mxcursor - 1];
-            computeposition(cursor_y, posnext);
-
-            if (cursor_y < 0)
-                cursor_y = 0;
-            mycursor = cursor_y;
-            r = cursor_y;
-            selectlines(pos, posnext, l, r);
-            mousectrl = getch();
         }
-
+        
         //a simple click
 #ifdef WIN32
         if (location[0] == mxcursor && location[1] == mycursor) {
