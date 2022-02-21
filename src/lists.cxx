@@ -689,55 +689,31 @@ void LList::append(LispE* lisp, long v) {
     append(lisp->provideInteger(v));
 }
 
-Element* List::storeRank(LispE* lisp, Element* current, vecte<long>& shape, vecte<long>& positions, long idx) {
-    long nb = shape.size() - idx;
+Element* List::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx) {
     long p_idx = -1;
     if (idx < positions.size())
         p_idx = positions[idx];
     
+    
     long i;
     if (p_idx == -1) {
-        //If nb == 2, then it is a matrix
-        //If nb == 1, then it is a vector
-        if (nb == 1)
+        if (idx == shape.size() - 1)
             return current;
-        
-        List* m = lisp->provideList();
 
-        if (nb == 2) {
-            Element* result;
-            Element* ref = current->index(0);
-            if (ref->isValueList()) {
-                for (long j = 0; j < shape[idx+1]; j++) {
-                    result = ref->newInstance();
-                    for (i = 0; i < shape[idx]; i++) {
-                        result->append(current->index(i)->index(j));
-                    }
-                    m->append(result);
-                }
-            }
-            else {
-                for (long j = 0; j < shape[idx+1]; j++) {
-                    result = ref->newInstance();
-                    for (i = 0; i < shape[idx]; i++) {
-                        result->append(current->index(i)->index(j)->copying(false));
-                    }
-                    m->append(result);
-                }
-            }
+        Element* r;
+        for (i = 0; i < shape[idx]; i++) {
+            r = storeRank(lisp, result, current->index(i),shape,  positions, idx+1);
+            if (r != result)
+                result->append(r);
         }
-        else {
-            for (i = 0; i < shape[idx]; i++) {
-                m->append(storeRank(lisp, current->index(i), shape, positions, idx+1));
-            }
-        }
-        return m;
+        return result;
     }
     
-    if (nb == 1)
-        return current->index(p_idx)->copying(false);
+    if (idx == positions.size() - 1)
+        return current->index(p_idx);
     
-    return storeRank(lisp, current->index(p_idx), shape, positions, idx+1);
+    return storeRank(lisp, result, current->index(p_idx), shape, positions, idx+1);
+
 }
 
 Element* List::rank(LispE* lisp, vecte<long>& positions) {
@@ -757,7 +733,12 @@ Element* List::rank(LispE* lisp, vecte<long>& positions) {
     while (positions.size() > 1 && positions.back() < 0)
         positions.pop_back();
 
-    return storeRank(lisp, this, shape, positions, 0);
+    Element* result = lisp->provideList();
+    Element* res = storeRank(lisp, result, this, shape, positions, 0);
+    if (res != result)
+        result->release();
+    
+    return res;
 }
 
 Element* LList::loop(LispE* lisp, short label, List* code) {
@@ -6443,43 +6424,29 @@ Element* Tenseur::transposed(LispE* lisp) {
     return transposed_matrix;
 }
 
-Element* Tenseur::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
-    long nb = shape.size() - idx;
+Element* Tenseur::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx) {
     long p_idx = -1;
     if (idx < positions.size())
         p_idx = positions[idx];
-    
+        
     long i;
     if (p_idx == -1) {
-        //If nb == 2, then it is a matrix
-        //If nb == 1, then it is a vector
-        if (nb == 1)
-            return lisp->provideNumbers((Numbers*)current);
-        
-        List* m = lisp->provideList();
+        if (current->type == t_numbers)
+            return current;
 
-        if (nb == 2) {
-            Numbers* result;
-            for (long j = 0; j < shape[idx+1]; j++) {
-                result = lisp->provideNumbers();
-                for (i = 0; i < shape[idx]; i++) {
-                    result->liste.push_back(current->index(i)->index(j)->asNumber());
-                }
-                m->append(result);
-            }
+        Element* r;
+        for (i = 0; i < shape[idx]; i++) {
+            r = storeRank(lisp, result, current->index(i), positions, idx+1);
+            if (r != result)
+                result->append(r);
         }
-        else {
-            for (i = 0; i < shape[idx]; i++) {
-                m->append(storeRank(lisp, current->index(i), positions, idx+1));
-            }
-        }
-        return m;
+        return result;
     }
     
-    if (nb == 1)
+    if (idx == positions.size() - 1)
         return current->index(p_idx);
     
-    return storeRank(lisp, current->index(p_idx), positions, idx+1);
+    return storeRank(lisp, result, current->index(p_idx), positions, idx+1);
 }
 
 Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
@@ -6497,7 +6464,11 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
             throw new Error("Error: indexes out of bounds");
     }
     
-    Element* res = storeRank(lisp, this, positions, 0);
+    Element* result = lisp->provideList();
+    Element* res = storeRank(lisp, result, this, positions, 0);
+    if (result != res)
+        result->release();
+    
     if (res->type == t_numbers)
         return res;
     
@@ -6597,45 +6568,31 @@ Element* Tenseur_float::transposed(LispE* lisp) {
     return transposed_matrix;
 }
 
-Element* Tenseur_float::storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx) {
-    long nb = shape.size() - idx;
+Element* Tenseur_float::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx) {
     long p_idx = -1;
     if (idx < positions.size())
         p_idx = positions[idx];
     
+    
     long i;
     if (p_idx == -1) {
-        //If nb == 2, then it is a matrix
-        //If nb == 1, then it is a vector
-        if (nb == 1)
-            return lisp->provideFloats((Floats*)current);
-        
-        List* m = lisp->provideList();
+        if (current->type == t_floats)
+            return current;
 
-        if (nb == 2) {
-            Floats* result;
-            for (long j = 0; j < shape[idx+1]; j++) {
-                result = lisp->provideFloats();
-                for (i = 0; i < shape[idx]; i++) {
-                    result->liste.push_back(current->index(i)->index(j)->asFloat());
-                }
-                m->append(result);
-            }
+        Element* r;
+        for (i = 0; i < shape[idx]; i++) {
+            r = storeRank(lisp, result, current->index(i), positions, idx+1);
+            if (r != result)
+                result->append(r);
         }
-        else {
-            for (i = 0; i < shape[idx]; i++) {
-                m->append(storeRank(lisp, current->index(i), positions, idx+1));
-            }
-        }
-        return m;
+        return result;
     }
     
-    if (nb == 1)
+    if (idx == positions.size() - 1)
         return current->index(p_idx);
     
-    return storeRank(lisp, current->index(p_idx), positions, idx+1);}
-
-
+    return storeRank(lisp, result, current->index(p_idx), positions, idx+1);
+}
 
 Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
@@ -6651,8 +6608,11 @@ Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
         if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
             throw new Error("Error: indexes out of bounds");
     }
+    Element* result = lisp->provideList();
+    Element* res = storeRank(lisp, result, this, positions, 0);
+    if (res != result)
+        result->release();
     
-    Element* res = storeRank(lisp, this, positions, 0);
     if (res->type == t_floats)
         return res;
     

@@ -574,7 +574,7 @@ public:
             liste.insert(sz-1, e);
     }
 
-    Element* storeRank(LispE* lisp, Element* current, vecte<long>& shape, vecte<long>& positions, long idx);
+    Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
 
     short label(long i) {
@@ -4052,7 +4052,7 @@ public:
         return new Tenseur_float(this);
     }
 
-    Element* storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx);
+    Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
     void build(LispE* lisp, long isz, Element* res, float n);
@@ -4326,7 +4326,7 @@ public:
         return new Tenseur(this);
     }
 
-    Element* storeRank(LispE* lisp, Element* current, vecte<long>& positions, long idx);
+    Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
     void build(LispE* lisp, long isz, Element* res, double n);
