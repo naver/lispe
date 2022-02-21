@@ -928,6 +928,44 @@ Element* String::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
+
+void* Rankloop::begin_iter() {
+    i_nxt = 0;
+    return null_;
+}
+
+Element* Rankloop::next_iter(LispE* lisp, void* iter) {
+    if (i_nxt == max_iterator)
+        return emptyatom_;
+    
+    Element* rank;
+    if (last)
+        rank = lst->rank(lisp, positions);
+    else {
+        positions.push_back(i_nxt);
+        rank = lst->rank(lisp, positions);
+        positions.pop_back();
+    }
+    i_nxt++;
+    return rank;
+}
+
+Element* Rankloop::next_iter_exchange(LispE* lisp, void* iter)  {
+    if (i_nxt == max_iterator)
+        return emptyatom_;
+    
+    Element* rank;
+    if (last)
+        rank = lst->rank(lisp, positions);
+    else {
+        positions.push_back(i_nxt);
+        rank = lst->rank(lisp, positions);
+        positions.pop_back();
+    }
+    i_nxt++;
+    return rank;
+}
+
 Element* Rankloop::loop(LispE* lisp, short label, List* code) {
     long i_loop;
     Element* e = null_;

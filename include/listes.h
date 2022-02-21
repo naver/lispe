@@ -596,7 +596,7 @@ public:
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
 
-    void clean_iter(void* it) {
+    virtual void clean_iter(void* it) {
         delete (long*)it;
     }
 
@@ -4965,6 +4965,7 @@ public:
     long max_iterator;
     Element* index_value;
     bool last;
+    long i_nxt;
     
     Rankloop(LispE* lp, List* l);
     
@@ -4983,6 +4984,11 @@ public:
     long size() {
         return max_iterator;
     }
+    
+    void* begin_iter();
+    void clean_iter(void* it) {}
+    Element* next_iter(LispE* lisp, void* iter);
+    Element* next_iter_exchange(LispE* lisp, void* iter);
 
     Element* index(long i) {
         index_value->decrement();
