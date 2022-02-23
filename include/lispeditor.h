@@ -591,6 +591,27 @@ public:
         }
     }
     
+    void backtoconsole() {
+        lastline = poslines[0];
+        currentline = poslines.back();
+
+        mouseoff();
+        editmode = false;
+        movetolastline();
+        clearline();
+        string l = m_red;
+        l += "console";
+        l += m_current;
+        prefix = "<>";
+        printline(pos+1, l);
+        cout << endl;
+        clearline();
+        printline(pos+1);
+                
+        line = L"";
+        posinstring = 0;
+    }
+    
     void clear() {
         pos = lines.size();
         if (!editmode) {
@@ -609,7 +630,7 @@ public:
             movetolastline();
             clearline();
             string l = m_red;
-            l += "exit editor";
+            l += "console";
             l += m_current;
             prefix = "<>";
             printline(pos+1, l);
@@ -697,7 +718,7 @@ public:
                 return true;
             case 17:
                 if (emode()) {
-                    clear();
+                    backtoconsole();
                     return true;
                 }
                 return checkaction(buff, first, last, true);
