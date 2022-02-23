@@ -94,12 +94,14 @@ public:
     }
 };
 
+typedef enum {no_type, clike_type, lisp_type, python_type, tamgu_type} file_types;
 
 class editor_lines {
 public:
     jag_editor* jag;
     vector<wstring> lines;
     vector<char> status;
+    vector<char> longlines;
     vector<long> numeros;
     hmap<long, bool> checks;
 
@@ -118,7 +120,200 @@ public:
     bool updatesize();
 
     long indent(long p);
+    
+    //we check if we have spaces from the start of the string and on
+    void checkspace(long pos, long l, char code) {
+        for (long i = 0; i < pos; i++) {
+            if (lines[l][i] > 32) {
+                longlines.push_back(0);
+                return;
+            }
+        }
+        longlines.push_back(code);
+    }
 
+    void detectlisp() {
+        char l_strings = 0;
+        char l_comments = 0;
+        long pos;
+        
+        for (long i = 0; i < lines.size(); i++) {
+            if (lines[i].find(L";;") != -1) {
+                if (l_comments) {
+                    longlines.push_back(2);
+                    l_comments = 0;
+                }
+                else {
+                    l_comments = 2;
+                    longlines.push_back(l_comments);
+                }
+                continue;
+            }
+            
+            if (l_comments) {
+                longlines.push_back(l_comments);
+                continue;
+            }
+            
+            pos = lines[i].find(L"«");
+            if (pos != -1) {
+                if (lines[i].find(L"»") == -1) {
+                    l_strings = 1;
+                    checkspace(pos, i, l_strings);
+                }
+                else
+                    longlines.push_back(0);
+            }
+            else {
+                if (lines[i].find(L"»") != -1) {
+                    longlines.push_back(l_strings);
+                    l_strings = 0;
+                }
+                else {
+                    pos = lines[i].find(L"`");
+                    if (pos != -1 && lines[i].find(L"`", pos + 1) == -1) {
+                        if (l_strings) {
+                            longlines.push_back(1);
+                            l_strings = 0;
+                        }
+                        else {
+                            l_strings = 1;
+                            checkspace(pos, i, l_strings);
+                        }
+                    }
+                    else
+                        longlines.push_back(l_strings);
+                }
+            }
+        }
+    }
+    
+    void detectpython() {
+        char l_strings = 0;
+        long pos;
+
+        for (long i = 0; i < lines.size(); i++) {
+            pos = lines[i].find(L"'''");
+            if (pos != -1 && lines[i].find(L"'''", pos + 1) == -1) {
+                if (l_strings) {
+                    longlines.push_back(1);
+                    l_strings = 0;
+                }
+                else {
+                    l_strings = 1;
+                    checkspace(pos, i, l_strings);
+                }
+            }
+            else {
+                pos = lines[i].find(L"\"\"\"");
+                if (pos != -1 && lines[i].find(L"\"\"\"", pos + 1) == -1) {
+                    if (l_strings) {
+                        longlines.push_back(1);
+                        l_strings = 0;
+                    }
+                    else {
+                        l_strings = 1;
+                        checkspace(pos, i, l_strings);
+                    }
+                }
+                else
+                    longlines.push_back(l_strings);
+            }
+        }
+    }
+    
+    void detectclike() {
+        char l_comments = 0;
+        long pos;
+        for (long i = 0; i < lines.size(); i++) {
+            pos = lines[i].find(L"/*");
+            if (pos != -1) {
+                if (lines[i].find(L"*/") == -1) {
+                    l_comments = 2;
+                    checkspace(pos, i, l_comments);
+                }
+                else
+                    longlines.push_back(0);
+            }
+            else {
+                if (lines[i].find(L"*/") != -1) {
+                    longlines.push_back(l_comments);
+                    l_comments = 0;
+                }
+                else
+                    longlines.push_back(l_comments);
+            }
+        }
+    }
+    
+    void detecttamgu() {
+        char l_strings = 0;
+        char l_comments = 0;
+        long pos;
+        
+        for (long i = 0; i < lines.size(); i++) {
+            if (lines[i].find(L"/@") != -1) {
+                if (lines[i].find(L"@/") == -1) {
+                    l_comments = 2;
+                    longlines.push_back(l_comments);
+                }
+                else
+                    longlines.push_back(0);
+            }
+            else {
+                if (lines[i].find(L"@/") != -1) {
+                    longlines.push_back(l_comments);
+                    l_comments = 0;
+                }
+                else {
+                    if (l_comments)
+                        longlines.push_back(l_comments);
+                    else {
+                        pos = lines[i].find(L"@\"");
+                        if (pos != -1) {
+                            if (lines[i].find(L"\"@") == -1) {
+                                l_strings = 1;
+                                checkspace(pos, i, l_strings);
+                            }
+                            else
+                                longlines.push_back(0);
+                        }
+                        else {
+                            if (lines[i].find(L"\"@") != -1) {
+                                longlines.push_back(l_strings);
+                                l_strings = 0;
+                            }
+                            else
+                                longlines.push_back(l_strings);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    void detectlongstrings(file_types ftype) {
+        longlines.clear();
+        switch (ftype) {
+            case lisp_type:
+                detectlisp();
+                break;
+            case python_type:
+                detectpython();
+                break;
+            case tamgu_type:
+                detecttamgu();
+                break;
+            case clike_type:
+                detectclike();
+                break;
+            default:
+                for (long i = 0; i < lines.size(); i++)
+                    longlines.push_back(0);
+        }
+    }
+
+    
     void numbers() {
         long nb = 0;
         numeros.clear();
@@ -451,7 +646,6 @@ public:
 
 typedef enum { x_none, x_goto, x_find, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_copyingselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
 
-typedef enum {no_type, java_type, lisp_type, python_type, tamgu_type} file_types;
 
 class Jag_automaton;
 
@@ -508,12 +702,11 @@ public:
     bool tooglehelp;
     bool updateline;
     bool noprefix;
+    bool previous_noprefix;
 	bool insertaline;
     bool taskel;
     bool moveup;
-    
-    bool longcomment;
-    
+        
     Au_automate* rgx;
 
 #ifdef POSIXREGEX
@@ -552,8 +745,12 @@ public:
                 if (thecurrentfilename.find(".tmg") != -1)
                     filetype = tamgu_type;
                 else
-                    if (thecurrentfilename.find(".java") != -1)
-                        filetype = java_type;
+                    if (thecurrentfilename.find(".java") != -1 ||
+                        thecurrentfilename.find(".cpp") != -1 ||
+                        thecurrentfilename.find(".cxx") != -1 ||
+                        thecurrentfilename.find(".hpp") != -1 ||
+                        thecurrentfilename.find(".h") != -1)
+                        filetype = clike_type;
                     else
                         filetype = no_type;
             }
@@ -670,7 +867,8 @@ public:
     }
     
     void setnoprefix() {
-        noprefix = 1-noprefix;
+        noprefix = 1 - noprefix;
+        previous_noprefix = noprefix;
         if (noprefix) {
             prefix = "";
             wprefix = L"";
@@ -1046,7 +1244,8 @@ public:
     //This section handles combined commands introduced with Ctrl-x
     virtual bool checkcommand(char);
     void handlecommands();
-
+    virtual void stopExecution() {}
+    
     //This a case of copy/paste within the editor, we need to remove the prefixes
     //This is the main method that launches the terminal
     virtual void launchterminal(bool darkmode, char loadedcode, vector<string>& args);

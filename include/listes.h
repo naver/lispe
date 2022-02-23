@@ -574,6 +574,7 @@ public:
             liste.insert(sz-1, e);
     }
 
+    void buildList(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx, long axis);
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
 

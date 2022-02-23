@@ -3613,7 +3613,10 @@ Element* List::evall_rank(LispE* lisp) {
             _releasing(e);
         }
         
-        lst = element->rank(lisp,positions);
+        while (positions.size() > 1 && positions.back() < 0)
+            positions.pop_back();
+
+        lst = element->rank(lisp, positions);
         element->release();
         if (lst == NULL)
             return emptylist_;
@@ -3656,6 +3659,9 @@ Element* List::evall_irank(LispE* lisp) {
         if (shape.size() < r->positions.size())
             throw new Error("Error: cannot loop with 'irank' with these indexes");
         
+        while (r->positions.size() > 1 && r->positions.back() < 0)
+            r->positions.pop_back();
+
         if (shape.size() == r->positions.size()) {
             r->max_iterator = 1;
             r->last = true;
@@ -3726,7 +3732,7 @@ Element* List::evall_reduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Floats*)l1)->liste[j]);
                             nb--;
                         }
@@ -3749,7 +3755,7 @@ Element* List::evall_reduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Numbers*)l1)->liste[j]);
                             nb--;
                         }
@@ -3772,7 +3778,7 @@ Element* List::evall_reduce(LispE* lisp) {
                             delete res;
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Shorts*)l1)->liste[j]);
                             nb--;
                         }
@@ -3795,7 +3801,7 @@ Element* List::evall_reduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Integers*)l1)->liste[j]);
                             nb--;
                         }
@@ -3818,7 +3824,7 @@ Element* List::evall_reduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Strings*)l1)->liste[j]);
                             nb--;
                         }
@@ -3842,7 +3848,7 @@ Element* List::evall_reduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->append(l1->index(j));
                             nb--;
                         }
@@ -4051,7 +4057,7 @@ Element* List::evall_backreduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Floats*)l1)->liste[j]);
                             nb--;
                         }
@@ -4074,7 +4080,7 @@ Element* List::evall_backreduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Numbers*)l1)->liste[j]);
                             nb--;
                         }
@@ -4097,7 +4103,7 @@ Element* List::evall_backreduce(LispE* lisp) {
                             delete res;
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Shorts*)l1)->liste[j]);
                             nb--;
                         }
@@ -4120,7 +4126,7 @@ Element* List::evall_backreduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Integers*)l1)->liste[j]);
                             nb--;
                         }
@@ -4143,7 +4149,7 @@ Element* List::evall_backreduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->liste.push_back(((Strings*)l1)->liste[j]);
                             nb--;
                         }
@@ -4166,7 +4172,7 @@ Element* List::evall_backreduce(LispE* lisp) {
                             res->release();
                             throw new Error("Error: List size mismatch");
                         }
-                        while (nb) {
+                        while (nb > 0) {
                             res->append(l1->index(j));
                             nb--;
                         }
@@ -4994,7 +5000,7 @@ Element* List::evall_scan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Floats*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5022,7 +5028,7 @@ Element* List::evall_scan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Numbers*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5050,7 +5056,7 @@ Element* List::evall_scan(LispE* lisp) {
                                 delete res;
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Shorts*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5078,7 +5084,7 @@ Element* List::evall_scan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Integers*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5106,7 +5112,7 @@ Element* List::evall_scan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Strings*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5133,7 +5139,7 @@ Element* List::evall_scan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->append(l1->index(j));
                                 nb--;
                             }
@@ -5310,7 +5316,7 @@ Element* List::evall_backscan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Floats*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5338,7 +5344,7 @@ Element* List::evall_backscan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Numbers*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5366,7 +5372,7 @@ Element* List::evall_backscan(LispE* lisp) {
                                 delete res;
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Shorts*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5394,7 +5400,7 @@ Element* List::evall_backscan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Integers*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5422,7 +5428,7 @@ Element* List::evall_backscan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->liste.push_back(((Strings*)l1)->liste[j]);
                                 nb--;
                             }
@@ -5449,7 +5455,7 @@ Element* List::evall_backscan(LispE* lisp) {
                                 res->release();
                                 throw new Error("Error: List size mismatch");
                             }
-                            while (nb) {
+                            while (nb > 0) {
                                 res->append(l1->index(j));
                                 nb--;
                             }

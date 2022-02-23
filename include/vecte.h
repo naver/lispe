@@ -56,6 +56,10 @@ public:
         vecteur[pos] = v;
     }
 
+    inline void setlast(Z val) {
+        vecteur[last-1] = val;
+    }
+
 	inline long size() {
 		return last;
 	}
@@ -478,7 +482,7 @@ public:
     inline void plus(long home, long home_n, Z* n,  long nb) {
         home--;
         home_n--;
-        while (nb) {
+        while (nb > 0) {
             buffer[home+nb] += n[home_n + nb];
             nb--;
         }
@@ -487,7 +491,7 @@ public:
     inline void minus(long home, long home_n, Z* n,  long nb) {
         home--;
         home_n--;
-        while (nb) {
+        while (nb > 0) {
             buffer[home+nb] -= n[home_n + nb];
             nb--;
         }
@@ -496,7 +500,7 @@ public:
     inline void multiply(long home, long home_n, Z* n,  long nb) {
         home--;
         home_n--;
-        while (nb) {
+        while (nb > 0) {
             buffer[home+nb] *= n[home_n + nb];
             nb--;
         }

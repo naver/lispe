@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.21.18.0";
+static std::string version = "1.2022.2.23.12.17";
 string LispVersion() {
     return version;
 }
@@ -1048,6 +1048,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         stops[171] = true;
     }
 
+    short string_end;
     long sz = code.size();
     long i, current_i;
     int nb_parentheses = 0;
@@ -1062,6 +1063,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     string current_line;
     string tampon;
     for (i = 0; i < sz; i++) {
+        string_end = 187;
         current_i = i;
         c = getonechar(USTR(code), i);
         switch (c) {
@@ -1120,37 +1122,6 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 if (add == true)
                     current_line += c;
                 continue;
-            case '\'':
-                if (add == true)
-                    current_line += c;
-                infos.append(c, l_quote, line_number, i, i+1);
-                break;
-            case '`': { // a string containing what we want...
-                idx = i + 1;
-                tampon = "";
-                long ln = 0;
-                while (idx < sz && code[idx] != '`') {
-                    if (code[idx] == '\n')
-                        ln++;
-                    idx++;
-                }
-                if (idx == sz)
-                    return e_error_string;
-
-                tampon = code.substr(i+1, idx-i-1);
-                if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
-                else
-                    infos.append(tampon, t_string, line_number, i, idx);
-                if (add == true) {
-                    current_line += "`";
-                    current_line += tampon;
-                    current_line += "`";
-                }
-                i = idx;
-                line_number += ln;
-                break;
-            }
             case '"': {
                 idx = i + 1;
                 tampon = "";
@@ -1237,58 +1208,44 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 i += idx - 1;
                 break;
             }
-            case 171: {
-                //This is a «, we look for the next: »
-                //(ord «test»)
-                idx = i + 1;
-                nxt = getonechar(USTR(code), idx);
-                idx++;
-                while (idx < sz && nxt != 187) {
-                    nxt = getonechar(USTR(code), idx);
-                    idx++;
-                }
-                if (idx == sz)
-                    return e_error_string;
-
-                tampon = code.substr(i+1, idx-i-3);
-                if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
-                else
-                    infos.append(tampon, t_string, line_number, i, idx);
-
-                if (add == true) {
-                    current_line += "«";
-                    current_line += tampon;
-                    current_line += "»";
-                }
-                i = idx-1;
+            case '\'':
+                if (add == true)
+                    current_line += c;
+                infos.append(c, l_quote, line_number, i, i+1);
                 break;
-            }
-            case 8220: {
-                //(ord “test”)
+            case '`':
+                string_end = '`';
+            case 171: { // a string containing what we want... either «» or ``
                 idx = i + 1;
-                nxt = getonechar(USTR(code), idx);
-                idx++;
-                while (idx < sz && nxt != 8221) {
-                    nxt = getonechar(USTR(code), idx);
+                tampon = "";
+                long ln = 0;
+                while (idx < sz && code[idx] != string_end) {
+                    if (code[idx] == '\n')
+                        ln++;
                     idx++;
                 }
-                if (idx == sz)
+                if (idx == sz && add)
                     return e_error_string;
 
-                tampon = code.substr(i+1, idx-i-4);
-
+                tampon = code.substr(i+1, idx-i-1);
                 if (tampon == "")
                     infos.append(tampon, t_emptystring, line_number, i, idx);
                 else
                     infos.append(tampon, t_string, line_number, i, idx);
-
                 if (add == true) {
-                    current_line += "“";
-                    current_line += tampon;
-                    current_line += "”";
+                    if (string_end == 187) {
+                        current_line += "«";
+                        current_line += tampon;
+                        current_line += "»";
+                    }
+                    else {
+                        current_line += "`";
+                        current_line += tampon;
+                        current_line += "`";
+                    }
                 }
-                i = idx-1;
+                i = idx;
+                line_number += ln;
                 break;
             }
             default: {
@@ -2322,6 +2279,8 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
 
 
 

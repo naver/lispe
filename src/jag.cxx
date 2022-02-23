@@ -244,7 +244,6 @@ void resizewindow(int theSignal) {
 jag_editor::jag_editor() : lines(this), jag_get(true) {
 
 	insertaline = false;
-    longcomment = false;
     
     moveup = false;
 
@@ -256,6 +255,7 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     double_click = 0;
 
     noprefix = false;
+    previous_noprefix = false;
     tooglehelp = false;
     regularexpressionfind = false;
     rgx = NULL;
@@ -273,12 +273,12 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
 #ifndef WIN32
     signal(SIGWINCH, resizewindow);
 #endif
-    colors.push_back(m_red);
-    colors.push_back(m_dore);
-    colors.push_back(m_blue);
-    colors.push_back(m_gray);
-    colors.push_back(m_green);
-    colors.push_back(m_yellow);
+    colors.push_back(m_red); //0
+    colors.push_back(m_dore); //1
+    colors.push_back(m_blue); //2
+    colors.push_back(m_gray); //3
+    colors.push_back(m_green); //4
+    colors.push_back(m_yellow); //5
 
     poscommand = 0;
     option = x_none;
@@ -898,7 +898,7 @@ void jag_editor::displaylist(long beg) {
     option = x_none;
 
     modified = false;
-
+    lines.detectlongstrings(filetype);
     if (!lines.updatesize()) {
         if (poslines.size() && beg == poslines[0] && currentline && insertaline) {
             Scrolldown();
@@ -906,7 +906,6 @@ void jag_editor::displaylist(long beg) {
         }
     }
 
-    longcomment = false;
 	poslines.clear();
 
     stringstream blk;

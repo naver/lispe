@@ -689,38 +689,59 @@ void LList::append(LispE* lisp, long v) {
     append(lisp->provideInteger(v));
 }
 
-Element* List::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx) {
-    long p_idx = -1;
-    if (idx < positions.size())
-        p_idx = positions[idx];
-    
-    
-    long i;
-    if (p_idx == -1) {
-        if (idx == shape.size() - 1)
-            return current;
-
-        Element* r;
-        for (i = 0; i < shape[idx]; i++) {
-            r = storeRank(lisp, result, current->index(i),shape,  positions, idx+1);
-            if (r != result)
-                result->append(r);
+void List::buildList(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx, long axis) {
+    if (axis < idx) {
+        for (idx = positions.last-1; idx >= 0; idx--) {
+            current = current->index(positions[idx]);
         }
-        return result;
+        result->append(current->duplicate_constant(lisp));
+        return;
     }
     
-    if (idx == positions.size() - 1)
-        return current->index(p_idx);
-    
-    return storeRank(lisp, result, current->index(p_idx), shape, positions, idx+1);
+    positions.push_back(0);
+    for (long i = 0; i < shape[axis]; i++) {
+        positions.setlast(i);
+        buildList(lisp, result, current, shape, positions, idx, axis - 1);
+    }
+    positions.pop_back();
+}
 
+Element* List::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx) {
+    long axis = idx;
+
+    //first we search for our first actual axis...
+    while (axis < positions.size() && positions[axis] == -1) axis++;
+
+    if (axis == idx) {
+        //It is a direct value...
+        if (idx == positions.size() - 1)
+            return current->index(positions[idx])->duplicate_constant(lisp);
+        
+        return storeRank(lisp, result, current->index(positions[idx]), shape, positions, idx+1);
+    }
+    
+    //otherwise, this is an axis
+    vecte<long> paths;
+    if (axis < positions.size()) {
+        long p_idx = positions[axis];
+        paths.push_back(p_idx);
+        buildList(lisp, result, current, shape, paths, idx, axis - 1);
+        return result;
+    }
+
+    
+    paths.push_back(0);
+    Element* r;
+    for (long i = 0; i < shape[axis]; i++) {
+        paths.setlast(i);
+        r = lisp->provideList();
+        result->append(r);
+        buildList(lisp, r, current, shape, paths, idx, axis - 1);
+    }
+    return result;
 }
 
 Element* List::rank(LispE* lisp, vecte<long>& positions) {
-    //We get rid of the final negative values (useless)
-    while (positions.size() > 1 && positions.back() < 0)
-        positions.pop_back();
-    
     vecte<long> shape;
     getShape(shape);
     if (!checkShape(0, shape))
@@ -729,9 +750,6 @@ Element* List::rank(LispE* lisp, vecte<long>& positions) {
     short sz = positions.size();
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
-
-    while (positions.size() > 1 && positions.back() < 0)
-        positions.pop_back();
 
     Element* result = lisp->provideList();
     Element* res = storeRank(lisp, result, this, shape, positions, 0);
@@ -6425,28 +6443,38 @@ Element* Tenseur::transposed(LispE* lisp) {
 }
 
 Element* Tenseur::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx) {
-    long p_idx = -1;
-    if (idx < positions.size())
-        p_idx = positions[idx];
-        
-    long i;
-    if (p_idx == -1) {
-        if (current->type == t_numbers)
-            return current;
+    long axis = idx;
 
-        Element* r;
-        for (i = 0; i < shape[idx]; i++) {
-            r = storeRank(lisp, result, current->index(i), positions, idx+1);
-            if (r != result)
-                result->append(r);
-        }
-        return result;
+    //first we search for our first actual axis...
+    while (axis < positions.size() && positions[axis] == -1) axis++;
+
+    if (axis == idx) {
+        //It is a direct value...
+        if (idx == positions.size() - 1)
+            return current->index(positions[idx])->duplicate_constant(lisp);
+        
+        return storeRank(lisp, result, current->index(positions[idx]), positions, idx+1);
     }
     
-    if (idx == positions.size() - 1)
-        return current->index(p_idx);
+    //otherwise, this is an axis
+    vecte<long> paths;
+    if (axis < positions.size()) {
+        long p_idx = positions[axis];
+        paths.push_back(p_idx);
+        buildList(lisp, result, current, shape, paths, idx, axis - 1);
+        return result;
+    }
+
     
-    return storeRank(lisp, result, current->index(p_idx), positions, idx+1);
+    paths.push_back(0);
+    Element* r;
+    for (long i = 0; i < shape[axis]; i++) {
+        paths.setlast(i);
+        r = lisp->provideList();
+        result->append(r);
+        buildList(lisp, r, current, shape, paths, idx, axis - 1);
+    }
+    return result;
 }
 
 Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
@@ -6455,9 +6483,6 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
 
-    while (positions.size() > 1 && positions.back() < 0)
-        positions.pop_back();
-    
     //Check positions
     for (long i = 0; i < sz; i++) {
         if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
@@ -6469,11 +6494,8 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
     if (result != res)
         result->release();
     
-    if (res->type == t_numbers)
+    if (res->type == t_numbers || res->type == t_number)
         return res;
-    
-    if (res->type == t_number)
-        return lisp->provideFloat(res->asNumber());
     
     //We steal the ITEM structure of res
     //which is a very fast operation
@@ -6569,29 +6591,38 @@ Element* Tenseur_float::transposed(LispE* lisp) {
 }
 
 Element* Tenseur_float::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx) {
-    long p_idx = -1;
-    if (idx < positions.size())
-        p_idx = positions[idx];
-    
-    
-    long i;
-    if (p_idx == -1) {
-        if (current->type == t_floats)
-            return current;
+    long axis = idx;
 
-        Element* r;
-        for (i = 0; i < shape[idx]; i++) {
-            r = storeRank(lisp, result, current->index(i), positions, idx+1);
-            if (r != result)
-                result->append(r);
-        }
-        return result;
+    //first we search for our first actual axis...
+    while (axis < positions.size() && positions[axis] == -1) axis++;
+
+    if (axis == idx) {
+        //It is a direct value...
+        if (idx == positions.size() - 1)
+            return current->index(positions[idx])->duplicate_constant(lisp);
+        
+        return storeRank(lisp, result, current->index(positions[idx]), positions, idx+1);
     }
     
-    if (idx == positions.size() - 1)
-        return current->index(p_idx);
+    //otherwise, this is an axis
+    vecte<long> paths;
+    if (axis < positions.size()) {
+        long p_idx = positions[axis];
+        paths.push_back(p_idx);
+        buildList(lisp, result, current, shape, paths, idx, axis - 1);
+        return result;
+    }
+
     
-    return storeRank(lisp, result, current->index(p_idx), positions, idx+1);
+    paths.push_back(0);
+    Element* r;
+    for (long i = 0; i < shape[axis]; i++) {
+        paths.setlast(i);
+        r = lisp->provideList();
+        result->append(r);
+        buildList(lisp, r, current, shape, paths, idx, axis - 1);
+    }
+    return result;
 }
 
 Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
@@ -6599,9 +6630,6 @@ Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     short sz = positions.size();
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
-
-    while (positions.size() > 1 && positions.back() < 0)
-        positions.pop_back();
 
     //Check positions
     for (long i = 0; i < sz; i++) {
@@ -6613,11 +6641,8 @@ Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     if (res != result)
         result->release();
     
-    if (res->type == t_floats)
+    if (res->type == t_floats || res->type == t_float)
         return res;
-    
-    if (res->type == t_float)
-        return lisp->provideFloat(res->asFloat());
     
     //We steal the ITEM structure of res
     //which is a very fast operation

@@ -38,7 +38,7 @@
 /*
  Some utility functions to manipulate strings
  Essentially:
- 
+
  numeric conversions (including hexadecimal)
  utf8/unicode conversion
  utf8 string traversal (taking into account multi-byte characters)
@@ -256,7 +256,7 @@ static wchar_t codingtable[] = { 65,97,2,66,98,2,67,99,2,68,100,2,69,101,2,70,10
 
 /*
  Some explanations:
- 
+
  Emojis characters can be simply one unicode character such as: 😀 (0x1F600) or a sequence of unicode characters: 👋🏼 (0x1F44B, 0x1F3FC)
  We keep our emojis in two tables:
  One table with the emoji code associated to its definition in English. If the emoji is a sequence, then this code is the first element of the sequence
@@ -491,7 +491,7 @@ bool Chaine_UTF8::s_is_emoji(string& s) {
             i = p;
             continue;
         }
-        
+
         if (check_comp) {
             p = i;
             if (c_is_emojicomp(USTR(s), p)) {
@@ -509,16 +509,16 @@ bool Chaine_UTF8::u_is_emoji(u_ustring& s) {
         return false;
     long lg = s.size();
     bool check_comp = false;
-    
+
     u_uchar c;
-    
+
     for (long i = 0; i < lg; i++) {
         c = getonewchar(s, i);
         if (c_is_emoji(c)) {
             check_comp = true;
             continue;
         }
-        
+
         if (check_comp) {
             if (c_is_emojicomp(c))
                 continue;
@@ -586,7 +586,7 @@ string cs_unicode_to_utf8(UWCHAR code) {
         utf[3] = 0;
         return utf;
     }
-    
+
     utf[0] = 0xF0 | (code >> 18);
     utf[1] = 0x80 | ((code >> 12) & 0x3f);
     utf[2] = 0x80 | ((code >> 6) & 0x3f);
@@ -615,7 +615,7 @@ unsigned char c_unicode_to_utf8(UWCHAR code, unsigned char* utf) {
         utf[3] = 0;
         return 3;
     }
-    
+
     utf[0] = 0xF0 | (code >> 18);
     utf[1] = 0x80 | ((code >> 12) & 0x3f);
     utf[2] = 0x80 | ((code >> 6) & 0x3f);
@@ -645,7 +645,7 @@ string c_unicode_to_utf8(UWCHAR code) {
         utf[3] = 0;
         return utf;
     }
-    
+
     utf[0] = 0xF0 | (code >> 18);
     utf[1] = 0x80 | ((code >> 12) & 0x3f);
     utf[2] = 0x80 | ((code >> 6) & 0x3f);
@@ -657,29 +657,29 @@ string c_unicode_to_utf8(UWCHAR code) {
 char c_test_utf8(unsigned char* utf) {
     if (utf == NULL || !(utf[0] & 0x0080))
         return 0;
-    
+
     if ((utf[0] & 0xF0)== 0xF0) {
         if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80)
             return 3;
         return 0;
     }
-    
+
     if ((utf[0] & 0xE0)== 0xE0) {
         if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80)
             return 2;
         return 0;
     }
-    
+
     if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80)
         return 1;
-    
+
     return 0;
 }
 
 void c_chars_get_next(unsigned char* m, char* str, long& i) {
     long nb = c_test_utf8(m + i);
     str[0] = (char)m[i];
-    
+
     switch (nb) {
         case 0:
             str[1] = 0;
@@ -726,8 +726,8 @@ Chaine_UTF8::Chaine_UTF8() {
     long i;
     int maxtable;
     for (maxtable = 0; codingtable[maxtable] != 0; maxtable++);
-    
-    
+
+
     for (i = 0; i < maxtable; i += 3) {
         unicode = codingtable[i];
         wchar_t equ = codingtable[i + 1];
@@ -736,7 +736,7 @@ Chaine_UTF8::Chaine_UTF8() {
         xse.clear();
         c_unicode_to_utf8(unicode, xs.ustr);
         c_unicode_to_utf8(equ, xse.ustr);
-        
+
         if (type == 1) {
             utf8codemin[unicode] = equ;
         }
@@ -746,13 +746,13 @@ Chaine_UTF8::Chaine_UTF8() {
             }
         }
     }
-    
+
     i = 0;
     while (ponctuations[i] != 0) {
         punctuations[ponctuations[i]] = true;
         i++;
     }
-    
+
     //emoji
     string code;
     UWCHAR c;
@@ -765,7 +765,7 @@ Chaine_UTF8::Chaine_UTF8() {
             emojis[c] = temojis[i + 1];
         i++;
     }
-    
+
     i = 0;
     min_emojicomp = 0xFFFFF;;
     while (temojiscomplement[i]) {
@@ -774,7 +774,7 @@ Chaine_UTF8::Chaine_UTF8() {
         emojiscomplement[c] = true;
         i++;
     }
-    
+
     wconsonants[208] = 68;
     wconsonants[104] = 104;
     wconsonants[264] = 67;
@@ -920,7 +920,7 @@ Chaine_UTF8::Chaine_UTF8() {
     wconsonants[116] = 116;
     wconsonants[118] = 118;
     wconsonants[119] = 119;
-    
+
     wvowels[194] = 65;
     wvowels[200] = 69;
     wvowels[277] = 101;
@@ -1059,10 +1059,10 @@ Chaine_UTF8::Chaine_UTF8() {
 
 unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
     code = utf[0];
-    
+
     if (!(utf[0] & 0x0080))
         return 0;
-    
+
     //....
     if ((utf[0] & 0xF0)== 0xF0) {
         if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80) {
@@ -1074,7 +1074,7 @@ unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
         }
         return 0;
     }
-    
+
     if ((utf[0] & 0xE0)== 0xE0) {
         if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80) {
             code = (utf[0] & 0xF) << 12;
@@ -1084,38 +1084,38 @@ unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
         }
         return 0;
     }
-    
+
     if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80) {
         code = (utf[0] & 0x1F) << 6;
         code |= (utf[1] & 0x3F);
         return 1;
     }
-    
+
     return 0;
 }
 
 //--------------------------------------------------------------------
 bool c_is_hexa(wchar_t code) {
     static const char hexas[]= {'a','b','c','d','e','f','A','B','C','D','E','F'};
-    
+
     if (c_is_digit(code))
         return true;
-    
+
     if (code <= 'f' && strchr(hexas,(char)code))
         return true;
-    
+
     return false;
 }
 //--------------------------------------------------------------------
 string jsonstring(string value) {
     if (value == "")
         return "\"\"";
-    
+
     string res;
-    
+
     if (value.find("\\") != -1)
         value = s_replacingstring(value, "\\", "\\\\");
-    
+
     if (value.find("\"") != -1) {
         value = s_replacingstring(value, "\"", "\\\"");
     }
@@ -1128,12 +1128,12 @@ string jsonstring(string value) {
 wstring wjsonstring(wstring value) {
     if (value == L"")
         return L"\"\"";
-    
+
     wstring res;
-    
+
     if (value.find(L"\\") != -1)
         value = s_wreplacestring(value, L"\\", L"\\\\");
-    
+
     if (value.find(L"\"") != -1) {
         value = s_wreplacestring(value, L"\"", L"\\\"");
     }
@@ -1238,7 +1238,7 @@ bool Chaine_UTF8::u_is_upper(u_ustring& s) {
 bool Chaine_UTF8::u_is_lower(u_ustring& s) {
     if (s == U"")
         return false;
-    
+
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
         if (c_is_alpha(s[i]) != 1)
@@ -1261,7 +1261,7 @@ bool Chaine_UTF8::s_is_upper(wstring& s) {
 bool Chaine_UTF8::s_is_lower(wstring& s) {
     if (s == L"")
         return false;
-    
+
     long lg = s.size();
     for (long i = 0; i < lg; i++) {
         if (c_is_alpha(s[i]) != 1)
@@ -1364,7 +1364,7 @@ bool s_is_digit(string& str) {
         if (str[i] == '.' || str[i] == ',') {
             if (!digit)
                 return false;
-            
+
             if (str[i] == '.') {
                 if (dot)
                     return false;
@@ -1377,13 +1377,13 @@ bool s_is_digit(string& str) {
             countdigits = 0;
             continue;
         }
-        
+
         if (str[i]<48 || str[i]>57)
             return false;
         countdigits++;
         digit = true;
     }
-    
+
     if (!digit)
         return false;
     return true;
@@ -1405,7 +1405,7 @@ wstring& s_trim(wstring& strvalue) {
         if (strvalue[d]>32)
             break;
     }
-    
+
     for (f = strvalue.size() - 1; f >= 0; f--) {
         if (strvalue[f] > 32)
             break;
@@ -1425,7 +1425,7 @@ wstring& s_trimleft(wstring& strvalue) {
         if (strvalue[d]>32)
             break;
     }
-    
+
     long lg = f - d + 1;
     if (lg >= 1)
         strvalue = strvalue.substr(d, lg);
@@ -1436,12 +1436,12 @@ wstring& s_trimleft(wstring& strvalue) {
 
 wstring& s_trimright(wstring& strvalue) {
     long d = 0, f;
-    
+
     for (f = strvalue.size() - 1; f >= 0; f--) {
         if (strvalue[f] > 32)
             break;
     }
-    
+
     long lg = f - d + 1;
     if (lg >= 1)
         strvalue = strvalue.substr(d, lg);
@@ -1455,7 +1455,7 @@ string& s_trim(string& strvalue) {
         if ((uchar)strvalue[d]>32)
             break;
     }
-    
+
     for (f = strvalue.size() - 1; f >= 0; f--) {
         if ((uchar)strvalue[f] > 32)
             break;
@@ -1475,7 +1475,7 @@ string& s_trimleft(string& strvalue) {
         if ((uchar)strvalue[d]>32)
             break;
     }
-    
+
     long lg = f - d + 1;
     if (lg >= 1)
         strvalue = strvalue.substr(d, lg);
@@ -1486,12 +1486,12 @@ string& s_trimleft(string& strvalue) {
 
 string& s_trimright(string& strvalue) {
     long d = 0, f;
-    
+
     for (f = strvalue.size() - 1; f >= 0; f--) {
         if ((uchar)strvalue[f] > 32)
             break;
     }
-    
+
     long lg = f - d + 1;
     if (lg >= 1)
         strvalue = strvalue.substr(d, lg);
@@ -1502,14 +1502,14 @@ string& s_trimright(string& strvalue) {
 //------------------------------------------------------------------------
 long getindex(unsigned char* contenu, long lg, long i) {
     long x = 0;
-    
+
     long nb;
     while (i > 0 && x < lg) {
         nb = c_test_utf8(contenu + x);
         x += nb + 1;
         i--;
     }
-    
+
     return x;
 }
 
@@ -1517,13 +1517,13 @@ long size_c(unsigned char* contenu, long sz) {
     long i = 0;
     long size = i;
     long nb;
-    
+
     while (i < sz) {
         nb = c_test_utf8(contenu + i);
         i += nb + 1;
         ++size;
     }
-    
+
     return size;
 }
 
@@ -1534,38 +1534,38 @@ long size_c(string& s) {
 string s_left(string& s, long nb) {
     if (nb <= 0)
         return "";
-    
+
     long lg = s.size();
     nb = getindex(USTR(s), lg, nb);
     if (nb >= lg)
         return s;
-    
+
     return s.substr(0, nb);
 }
 string s_right(string& s, long nb) {
     if (nb <= 0)
         return "";
-    
+
     long lg = s.size();
-    
+
     long l = size_c(USTR(s), lg) - nb;
-    
+
     if (l <= 0)
         return s;
-    
+
     l = getindex(USTR(s), lg, l);
     return s.substr(l, lg);
 }
 
 string s_middle(string& s, long l, long nb) {
     long lg = s.size();
-    
+
     uchar* contenu = USTR(s);
-    
+
     long i = getindex(contenu, lg, l);
     if (i >= lg)
         return "";
-    
+
     nb += l;
     nb = getindex(contenu, lg, nb);
     return s.substr(i, nb - i);
@@ -1574,48 +1574,48 @@ string s_middle(string& s, long l, long nb) {
 wstring s_wleft(wstring& s, long nb) {
     if (nb <= 0)
         return L"";
-    
+
     long lg = s.size();
     if (nb >= lg)
         return s;
-    
+
     return s.substr(0, nb);
 }
 
 wstring s_wright(wstring& s, long nb) {
     if (nb <= 0)
         return L"";
-    
+
     long lg = s.size();
-    
+
     long l = lg - nb;
-    
+
     if (l <= 0)
         return s;
-    
+
     return s.substr(l, lg);
 }
 
 wstring s_wmiddle(wstring& s, long l, long nb) {
     long lg = s.size();
-    
+
     if (l >= lg)
         return L"";
-    
+
     return s.substr(l, nb);
 }
 
 //------------------------------------------------------------------------
 string s_replacingstring(string& s, string reg, string rep) {
     string neo;
-    
+
     long gsz = reg.size();
     if (!gsz)
         return s;
-    
+
     long rsz = s.size();
     long from = 0;
-    
+
     long foundHere;
     while ((foundHere = s.find(reg, from)) != string::npos) {
         if (foundHere != from)
@@ -1630,14 +1630,14 @@ string s_replacingstring(string& s, string reg, string rep) {
 
 wstring s_wreplacestring(wstring& s, wstring reg, wstring rep) {
     wstring neo;
-    
+
     long gsz = reg.size();
     if (!gsz)
         return s;
-    
+
     long rsz = s.size();
     long from = 0;
-    
+
     long foundHere;
     while ((foundHere = s.find(reg, from)) != string::npos) {
         if (foundHere != from)
@@ -1653,47 +1653,47 @@ wstring s_wreplacestring(wstring& s, wstring reg, wstring rep) {
 //------------------------------------------------------------------------
 /*
  A little bit of explanation for hexadecimal conversion:
- 
+
  v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3) ) + ((c & 64) >> 6);
- 
+
  a) First, each 'digit' in an hexadecimal expression corresponds to 4 bits, hence (v << 4)
  b) digits are based on: 0011 0000, the bits 4,5 are set to 1, the last four bits are used to store the actual value
  c) uppercase letter are based on: 0100 0000, the bit 6 is set 1
  d) lowercase letter are based on: 0110 0000, the bits 6 and 5 are set to 1
- 
+
  c & 0xF will remove the upper bits from the equation
  If the bit 6 is set to 1, this is a letter: A,B,C,D,E or a,b,c,d,e
- 
+
  Let's convert 'B': 66 or 0100 0010
  We expect 11 as a value for 'B'
  c & 0xF        is  0000 0010   ; this is the 2nd letter in the alphabet
  (c & 64)>>3    is  0000 1000   ; its value is its position in the alphabet + 9
  union =        is  0000 1010   ; hence, we first add 8
- 
+
  (c & 64)>>1    is  0000 0001   ; then we add 1
  we add:            0000 1011   --> 11
- 
+
  Let's convert 'c': 99 or 0110 0011
  We expect 12 as a value for 'c'
  c & 0xF        is  0000 0011   ; this is the 3rd letter in the alphabet
  (c & 64)>>3    is  0000 1000   ; its value is its position in the alphabet + 9
  union =        is  0000 1011   ; hence, we first add 8
- 
+
  (c & 64)>>1    is  0000 0001   ; then we add 1
  we add:            0000 1100   --> 12
- 
+
  Let's convert '4': 50 or 0011 0100
  c & 0xF        is  0000 0100
  (c & 64)>>3    is  0000 0000   ; as it is not a letter, 6th bit is 0
  union =        is  0000 0100   ; nothing happens here
- 
+
  (c & 64)>>1    is  0000 0000   ; same we add 0
  we add:            0000 0100   --> 4
- 
+
  This calculus might seem a bit to much compared to a check on the characters.
  However, in most out-of-order processors, it makes sense as it removes any
  need for a test and is then much faster...
- 
+
  */
 
 double conversiontofloathexa(const char* s, int sign) {
@@ -1703,9 +1703,9 @@ double conversiontofloathexa(const char* s, int sign) {
         v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
         c = *s++;
     }
-    
+
     double res = v;
-    
+
     if (c == '.') {
         uchar mantissa = 0;
         v = 0;
@@ -1715,11 +1715,11 @@ double conversiontofloathexa(const char* s, int sign) {
             c = *s++;
             mantissa += 4;
         }
-        
+
         res += (double)v/(double)(1 << mantissa);
     }
-    
-    
+
+
     if ((c &0xDF) == 'P') {
         bool sgn = false;
         if (*s == '-') {
@@ -1730,7 +1730,7 @@ double conversiontofloathexa(const char* s, int sign) {
             if (*s == '+')
                 ++s;
         }
-        
+
         v = *s++ & 15;
         while (isadigit(*s)) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
@@ -1740,9 +1740,9 @@ double conversiontofloathexa(const char* s, int sign) {
             res *= 1 / (double)v;
         else
             res *= v;
-        
+
     }
-    
+
     return res*sign;
 }
 
@@ -1751,9 +1751,9 @@ double convertingfloathexa(const char* s) {
     //End of string...
     if (*s ==0 )
         return 0;
-    
+
     int sign = 1;
-    
+
     //Sign
     if (*s=='-') {
         sign = -1;
@@ -1762,12 +1762,12 @@ double convertingfloathexa(const char* s) {
     else
         if (*s=='+')
             ++s;
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         return conversiontofloathexa(s, sign);
     }
-    
+
     long v;
     if (isadigit(*s)) {
         v = *s++ & 15;
@@ -1779,9 +1779,9 @@ double convertingfloathexa(const char* s) {
     }
     else
         return 0;
-    
+
     double res = v;
-    
+
     if (*s=='.') {
         ++s;
         if (isadigit(*s)) {
@@ -1796,7 +1796,7 @@ double convertingfloathexa(const char* s) {
         else
             return res*sign;
     }
-    
+
     if ((*s &0xDF) == 'E') {
         ++s;
         long sgn = 1;
@@ -1808,12 +1808,12 @@ double convertingfloathexa(const char* s) {
             if (*s == '+')
                 ++s;
         }
-        
+
         if (isadigit(*s)) {
             v = *s++ & 15;
             while (isadigit(*s))
                 v = (v << 3) + (v << 1) + (*s++ & 15);
-            
+
             res *= power10(v*sgn);
         }
     }
@@ -1824,15 +1824,15 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
     long v = 0;
     uchar c = *s++;
     l++;
-    
+
     while (digitaction[c]) {
         v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
         c = *s++;
         l++;
     }
-    
+
     double res = v;
-    
+
     if (c == '.') {
         uchar mantissa = 0;
         v = 0;
@@ -1846,8 +1846,8 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
         }
         res += (double)v/(double)(1 << mantissa);
     }
-    
-    
+
+
     if ((c &0xDF) == 'P') {
         bool sgn = false;
         if (*s == '-') {
@@ -1861,7 +1861,7 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
                 ++l;
             }
         }
-        
+
         v = *s++ & 15;
         l++;
         while (isadigit(*s)) {
@@ -1873,9 +1873,9 @@ double conversiontofloathexa(const char* s, int sign, long& l) {
             res *= 1 / (double)v;
         else
             res *= v;
-        
+
     }
-    
+
     return res*sign;
 }
 
@@ -1884,9 +1884,9 @@ double convertingfloathexa(const char* s, long& l) {
     //End of string...
     if (*s ==0 )
         return 0;
-    
+
     int sign = 1;
-    
+
     //Sign
     if (*s=='-') {
         sign = -1;
@@ -1898,13 +1898,13 @@ double convertingfloathexa(const char* s, long& l) {
             ++s;
             l++;
         }
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         l++;
         return conversiontofloathexa(s, sign, l);
     }
-    
+
     long v;
     if (isadigit(*s)) {
         v = *s++ & 15;
@@ -1918,9 +1918,9 @@ double convertingfloathexa(const char* s, long& l) {
     }
     else
         return 0;
-    
+
     double res = v;
-    
+
     if (*s=='.') {
         ++s;
         l++;
@@ -1938,7 +1938,7 @@ double convertingfloathexa(const char* s, long& l) {
         else
             return res*sign;
     }
-    
+
     if ((*s &0xDF) == 'E') {
         ++s;
         l++;
@@ -1954,7 +1954,7 @@ double convertingfloathexa(const char* s, long& l) {
                 ++l;
             }
         }
-        
+
         if (isadigit(*s)) {
             v = *s++ & 15;
             l++;
@@ -1962,7 +1962,7 @@ double convertingfloathexa(const char* s, long& l) {
                 v = (v << 3) + (v << 1) + (*s++ & 15);
                 l++;
             }
-            
+
             res *= power10(v*sgn);
         }
     }
@@ -1972,13 +1972,13 @@ double convertingfloathexa(const char* s, long& l) {
 void noconversiontofloathexa(const char* s, int sign, short& l) {
     uchar c = *s++;
     l++;
-    
+
     while (digitaction[c]) {
         c = *s++;
         l++;
     }
-    
-    
+
+
     if (c == '.') {
         c = *s++;
         l++;
@@ -1987,8 +1987,8 @@ void noconversiontofloathexa(const char* s, int sign, short& l) {
             l++;
         }
     }
-    
-    
+
+
     if ((c &0xDF) == 'P') {
         if (*s == '-') {
             ++s;
@@ -2000,7 +2000,7 @@ void noconversiontofloathexa(const char* s, int sign, short& l) {
                 ++l;
             }
         }
-        
+
         s++;
         l++;
         while (isadigit(*s)) {
@@ -2015,9 +2015,9 @@ void noconvertingfloathexa(const char* s, short& l) {
     //End of string...
     if (*s ==0 )
         return;
-    
+
     int sign = 1;
-    
+
     //Sign
     if (*s=='-') {
         sign = -1;
@@ -2029,14 +2029,14 @@ void noconvertingfloathexa(const char* s, short& l) {
             ++s;
             l++;
         }
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         l++;
         noconversiontofloathexa(s, sign, l);
         return;
     }
-    
+
     if (isadigit(*s)) {
         s++;
         l++;
@@ -2049,7 +2049,7 @@ void noconvertingfloathexa(const char* s, short& l) {
     }
     else
         return;
-    
+
     if (*s=='.') {
         ++s;
         l++;
@@ -2064,7 +2064,7 @@ void noconvertingfloathexa(const char* s, short& l) {
         else
             return;
     }
-    
+
     if ((*s &0xDF) == 'E') {
         ++s;
         l++;
@@ -2078,7 +2078,7 @@ void noconvertingfloathexa(const char* s, short& l) {
                 ++l;
             }
         }
-        
+
         if (isadigit(*s)) {
             s++;
             l++;
@@ -2097,8 +2097,8 @@ void noconversiontofloathexa(wchar_t* s, int sign, long& l) {
         c = *s++;
         l++;
     }
-    
-    
+
+
     if (c == '.') {
         c = *s++;
         l++;
@@ -2107,8 +2107,8 @@ void noconversiontofloathexa(wchar_t* s, int sign, long& l) {
             l++;
         }
     }
-    
-    
+
+
     if ((c &0xDF) == 'P') {
         if (*s == '-') {
             ++s;
@@ -2120,7 +2120,7 @@ void noconversiontofloathexa(wchar_t* s, int sign, long& l) {
                 ++l;
             }
         }
-        
+
         s++;
         l++;
         while (isadigit(*s)) {
@@ -2135,9 +2135,9 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
     //End of string...
     if (*s ==0 )
         return;
-    
+
     int sign = 1;
-    
+
     //Sign
     if (*s=='-') {
         sign = -1;
@@ -2149,14 +2149,14 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
             ++s;
             l++;
         }
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         l++;
         noconversiontofloathexa(s, sign, l);
         return;
     }
-    
+
     if (isadigit(*s)) {
         s++;
         l++;
@@ -2169,7 +2169,7 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
     }
     else
         return;
-    
+
     if (*s=='.') {
         ++s;
         l++;
@@ -2184,7 +2184,7 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
         else
             return;
     }
-    
+
     if ((*s &0xDF) == 'E') {
         ++s;
         l++;
@@ -2198,7 +2198,7 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
                 ++l;
             }
         }
-        
+
         if (isadigit(*s)) {
             s++;
             l++;
@@ -2212,10 +2212,10 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
 
 long convertinginteger(string& number) {
     long ipos=0;
-    
+
     while (number[ipos]<=32) ++ipos;
-    
-    
+
+
     int sign = 1;
     if (number[ipos] == '-') {
         ++ipos;
@@ -2224,13 +2224,13 @@ long convertinginteger(string& number) {
     else
         if (number[ipos] == '+')
             ++ipos;
-    
+
     long v = 0;
-    
+
     uchar c = number[ipos++];
     if (number.size() == ipos)
         return (c - 48);
-    
+
     if (c == '0' || number[ipos] == 'x') {
         ipos++;
         c = number[ipos++];
@@ -2255,10 +2255,10 @@ long convertinginteger(string& number) {
 
 long convertinginteger(u_ustring& number) {
     long ipos=0;
-    
+
     while (number[ipos]<=32) ++ipos;
-    
-    
+
+
     int sign = 1;
     if (number[ipos] == '-') {
         ++ipos;
@@ -2267,13 +2267,13 @@ long convertinginteger(u_ustring& number) {
     else
         if (number[ipos] == '+')
             ++ipos;
-    
+
     long v = 0;
-    
+
     uchar c = number[ipos++];
     if (number.size() == ipos)
         return (c - 48);
-    
+
     if (c == '0' || number[ipos] == 'x') {
         ipos++;
         c = number[ipos++];
@@ -2297,10 +2297,10 @@ long convertinginteger(u_ustring& number) {
 }
 long convertinginteger(wstring& number) {
     long ipos=0;
-    
+
     while (number[ipos]<=32) ++ipos;
-    
-    
+
+
     int sign = 1;
     if (number[ipos] == '-') {
         ++ipos;
@@ -2309,13 +2309,13 @@ long convertinginteger(wstring& number) {
     else
         if (number[ipos] == '+')
             ++ipos;
-    
+
     long v = 0;
-    
+
     uchar c = number[ipos++];
     if (number.size() == ipos)
         return (c - 48);
-    
+
     if (c == '0' || number[ipos] == 'x') {
         ipos++;
         c = number[ipos++];
@@ -2342,15 +2342,15 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
     long v = 0;
     wchar_t c = *s++;
     l++;
-    
+
     while (digitaction[c]) {
         v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
         c = *s++;
         l++;
     }
-    
+
     double res = v;
-    
+
     if (c == '.') {
         uchar mantissa = 0;
         v = 0;
@@ -2364,8 +2364,8 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
         }
         res += (double)v/(double)(1 << mantissa);
     }
-    
-    
+
+
     if ((c &0xDF) == 'P') {
         bool sgn = false;
         if (*s == '-') {
@@ -2379,7 +2379,7 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
                 ++l;
             }
         }
-        
+
         v = *s++ & 15;
         l++;
         while (isadigit(*s)) {
@@ -2391,9 +2391,9 @@ double convertingtofloathexa(wchar_t* s, int sign, long& l) {
             res *= 1 / (double)v;
         else
             res *= v;
-        
+
     }
-    
+
     return res*sign;
 }
 
@@ -2402,9 +2402,9 @@ double convertingfloathexa(wchar_t* s, long& l) {
     //End of string...
     if (*s ==0 )
         return 0;
-    
+
     int sign = 1;
-    
+
     //Sign
     if (*s=='-') {
         sign = -1;
@@ -2416,13 +2416,13 @@ double convertingfloathexa(wchar_t* s, long& l) {
             ++s;
             l++;
         }
-    
+
     if (*s=='0' && s[1]=='x') {
         s+=2;
         l++;
         return convertingtofloathexa(s, sign, l);
     }
-    
+
     long v;
     if (isadigit(*s)) {
         v = *s++ & 15;
@@ -2436,9 +2436,9 @@ double convertingfloathexa(wchar_t* s, long& l) {
     }
     else
         return 0;
-    
+
     double res = v;
-    
+
     if (*s=='.') {
         ++s;
         l++;
@@ -2456,7 +2456,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
         else
             return res*sign;
     }
-    
+
     if ((*s &0xDF) == 'E') {
         ++s;
         l++;
@@ -2472,7 +2472,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
                 ++l;
             }
         }
-        
+
         if (isadigit(*s)) {
             v = *s++ & 15;
             l++;
@@ -2480,7 +2480,7 @@ double convertingfloathexa(wchar_t* s, long& l) {
                 v = (v << 3) + (v << 1) + (*s++ & 15);
                 l++;
             }
-            
+
             res *= power10(v*sgn);
         }
     }
@@ -2532,24 +2532,24 @@ void s_unicode_to_utf8(string& s, wstring& str) {
     long sz = str.size();
     if (!sz)
         return;
-    
+
     long szo = 1 + (sz << 1);
     char* neo = new char[szo];
     neo[0] = 0;
     long nb;
-    
+
     while (i < sz) {
         if (str[i] < 0x0080 && ineo < szo-1) {
             neo[ineo++] = (char)str[i];
             i++;
             continue;
         }
-        
+
         nb = c_unicode_to_utf8(str[i], (uchar*)inter);
         neo = concatstrings(neo,inter,ineo, szo, nb);
         i++;
     }
-    
+
     neo[ineo] = 0;
     s += neo;
     delete[] neo;
@@ -2563,14 +2563,14 @@ void s_utf8_to_unicode_clean(wstring& w, unsigned char* str , long sz) {
 void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
     if (!sz)
         return;
-    
+
     long ineo = 0;
     wchar_t* neo = new wchar_t[sz+1];
     neo[0] = 0;
-    
+
     UWCHAR c;
     uchar nb;
-    
+
 #ifdef WIN32
     UWCHAR c16;
     while (sz--) {
@@ -2582,7 +2582,7 @@ void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
                 neo[ineo++] = (wchar_t)c;
                 continue;
             }
-            
+
             c_unicode_to_utf16(c16, c);
             neo[ineo++] = (wchar_t)(c16 >> 16);
             neo[ineo++] = (wchar_t)(c16 & 0xFFFF);
@@ -2604,7 +2604,7 @@ void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
         ++str;
     }
 #endif
-    
+
     neo[ineo] = 0;
     w += neo;
     delete[] neo;
@@ -2629,7 +2629,7 @@ void s_split(string& s, string& splitter, vector<string>& vs, bool keepblanks) {
         else
             break;
     }
-    
+
     sub = s.substr(pos, s.size() - pos);
     if (keepblanks)
         vs.push_back(sub);
@@ -2657,7 +2657,7 @@ void s_split(wstring& s, wstring& splitter, vector<wstring>& vs, bool keepblanks
         else
             break;
     }
-    
+
     if (pos < s.size()) {
         sub = s.substr(pos, s.size() - pos);
         if (keepblanks)
@@ -2685,7 +2685,7 @@ static const char _checkingmore[] = {'\n', '\\', '/', '(', ')', '<', '>','=',';'
 
 void split_container(unsigned char* src, long lensrc, vector<long>& pos, bool forindent) {
     uchar c;
-    
+
     for (long e = 0; e < lensrc; e++) {
         c = src[e];
         if (forindent && strchr(_checkingmore, c))
@@ -2705,10 +2705,10 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
     static vector<long> pos;
     pos.clear();
     string token;
-    
+
     long szstr = codestr.size();
     split_container(USTR(codestr), szstr, pos, true);
-    
+
     long sz = pos.size();
     long r = 0;
     long i = 0;
@@ -2716,19 +2716,19 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
     long counterlisp = 0;
     long p;
     long finalblank = 0;
-    
+
     short addspace = 0;
     short checkspace = 0;
     short iparenthesis = 0;
     short nbblanks = 0;
     short l;
-    
+
     bool locallisp = false;
     bool beginning = true;
     bool consumeblanks = true;
-    
+
     uchar c = 0;
-    
+
     counterlisp = 0;
     i = 0;
     string line;
@@ -2744,7 +2744,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 r++;
                 continue;
             }
-            
+
             //this is a line beginning, we need to remove the blanks first
             if (consumeblanks) {
                 nbblanks++;
@@ -2752,7 +2752,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
             }
             continue;
         }
-        
+
         if (python && nbblanks < iblank)
             iblank = nbblanks;
 
@@ -2778,7 +2778,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                         checkspace = 1;
                         break;
                 }
-                
+
                 //we need to insert our blanks before...
                 if (addspace)
                     iblank += blanksize*addspace;
@@ -2791,12 +2791,12 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 consumeblanks = false;
             }
         }
-        
+
         if (i != pos[r] + 1) {
             if (c < 'A') {
                 continue;
             }
-            
+
             p = i;
             while (codestr[p] > 32 && p < pos[r]) p++;
             c = codestr[p];
@@ -2820,7 +2820,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                                 //extra space missing
                                 finalblank = blanksize;
                             }
-                            
+
                             checkspace = 2;
                             addspace++;
                         }
@@ -2831,7 +2831,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
             i = p;
             continue;
         }
-        
+
         r++;
         if (python) {
             if (strchr(";[](){}/:", (char)c) != NULL) {
@@ -2841,7 +2841,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 continue;
             }
         }
-        
+
         switch (c) {
             case ';':
                 if (checkspace == 2) {
@@ -3042,7 +3042,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
             }
         }
     }
-    
+
     if (consumeblanks) {
         switch (checkspace) {
             case 0:
@@ -3061,7 +3061,7 @@ long IndentationCode(string& codestr, bool lisp, bool python) {
                 checkspace = 1;
                 break;
         }
-        
+
         //we need to insert our blanks before...
         if (addspace)
             iblank += blanksize*addspace;
@@ -3084,10 +3084,10 @@ long VirtualIndentation(string& codestr, bool lisp, bool python) {
 
 Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
     string token;
-    
+
     uchar* codestr = USTR(str);
     char* blanks;
-    
+
     vector<long> pos;
     long szstr = str.size();
     long r = 0;
@@ -3096,20 +3096,20 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
     long iblank = 0;
     long iparenthesis = 0;
     long ligne = 0;
-    
+
     short l;
     short addspace = 0;
     short checkspace = 0;
-    
+
     bool locallisp = false;
     bool consumeblanks = true;
     bool beginning = true;
-    
+
     uchar c;
-    
+
     split_container(codestr, szstr, pos, true);
     sz = pos.size();
-    
+
     for (i = 0; i < sz; i++) {
         c = codestr[pos[i]];
         if (strchr("({[",c)) {
@@ -3121,18 +3121,18 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
             if (strchr(")]}",c))
                 counterlisp--;
     }
-    
+
     p += 10;
     p *= blanksize;
     string _blanks(p, ' ');
     blanks = STR(_blanks);
-    
+
     counterlisp = 0;
     i = 0;
-    
+
     while (r < sz) {
         c = codestr[i++];
-        
+
         if (c <= 32) {
             //here we have a CR, the next line should see its white characters being replaced with out indentation pack
             if (c == '\n') {
@@ -3148,7 +3148,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
             codeindente += c;
             continue;
         }
-        
+
         beginning = false;
         if (consumeblanks) {
             beginning = true;
@@ -3171,7 +3171,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                         checkspace = 1;
                         break;
                 }
-                
+
                 //we need to insert our blanks before...
                 if (addspace)
                     iblank += blanksize*addspace;
@@ -3184,13 +3184,13 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 consumeblanks = false;
             }
         }
-                
+
         if (i != pos[r] + 1) {
             if (c < 'A') {
                 codeindente += c;
                 continue;
             }
-            
+
             p = i;
             while (codestr[p] > 32 && p < pos[r]) p++;
             c = codestr[p];
@@ -3221,7 +3221,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                                 string space(blanksize, ' ');
                                 codeindente += space;
                             }
-                            
+
                             checkspace = 2;
                             addspace++;
                         }
@@ -3232,7 +3232,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
             i = p;
             continue;
         }
-        
+
         r++;
         switch (c) {
             case ';':
@@ -3485,7 +3485,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
                 checkspace = 6;
         }
     }
-    
+
     for (;i < szstr; i++) {
         codeindente += codestr[i];
     }
@@ -3495,7 +3495,7 @@ Exporting void IndentationCode(string& str, string& codeindente, bool lisp) {
 void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bool python) {
     if (python)
         return;
-    
+
     long bl = blanksize;
     if (blancs)
         blanksize = blancs;
@@ -3504,7 +3504,7 @@ void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bo
     blanksize = bl;
     if (codeindente.find("/@") != string::npos || codeindente.find("@\"") != string::npos)
         cr_normalise(codeindente);
-    
+
     s_trimright(codeindente);
     codeindente += "\n";
 }
@@ -3520,19 +3520,19 @@ void NormalizeFileName(char* fileName, char* buffer, long buffersz) {
     while (vari) {
         char* reper = getenv(vari + 1);
         char* pt = strchr(vari + 1, '/');
-        
+
         if (pt != NULL)
             *pt = 0;
-        
+
         //We copy the part preceding the variable
         long lvar = vari - buffer;
         long lnom = strlen(fileName);
         memcpy(fileName + lnom, buffer, lvar);
         fileName[lvar + lnom] = 0;
-        
+
         if (reper != NULL)
             strcat_s(fileName, buffersz, reper);
-        
+
         if (pt != NULL) {
             *pt = '/';
             static char inter[1000];
@@ -3543,7 +3543,7 @@ void NormalizeFileName(char* fileName, char* buffer, long buffersz) {
             buffer[0] = 0;
         vari = strchr(buffer, '$');
     }
-    
+
     strcat_s(fileName, buffersz, buffer);
     char localpath[4096];
 #ifdef WIN32
@@ -3557,11 +3557,11 @@ void NormalizeFileName(char* fileName, char* buffer, long buffersz) {
 string NormalizePathname(string n) {
     if (n == "")
         return "";
-    
+
     char buff[4096];
     char name[4096];
     strcpy_s(name, 4096, STR(n));
-    
+
     NormalizeFileName(buff, name, 4096);
     return buff;
 }
@@ -3569,7 +3569,7 @@ string NormalizePathname(string n) {
 
 void split_container(wchar_t* src, long lensrc, vector<long>& pos) {
     wchar_t c;
-    
+
     for (long e = 0; e < lensrc; e++) {
         c = src[e];
         if (strchr(_tocheck, (uchar)c))
@@ -3579,10 +3579,10 @@ void split_container(wchar_t* src, long lensrc, vector<long>& pos) {
 
 void replacemetas(wstring& sub) {
     static wstring search(L"\\");
-    
+
     if (sub.find(search) == -1)
         return;
-    
+
     wstring thestr;
     long sz = sub.size();
     for (long i=0;i<sz;i++) {
@@ -3599,7 +3599,7 @@ void replacemetas(wstring& sub) {
                     break;
                 default:
                     thestr+=sub[i];
-                    
+
             }
         }
         else
@@ -3617,19 +3617,19 @@ Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code) {
         res = code;
         return false;
     }
-    
+
     //00000000 000uuuuu xxxxxxyy yyyyyyyy
     //110110ww    wwxxxxxx    110111yy    yyyyyyyy
-    
+
     //wwww is uuuu-1
     //We need to provide 4 bytes...
     //The first byte should by 1101 1000 which is 0xD800
     u_uchar r = 0xD800 | ((code & 0xFC00) >> 10) | ((((code & 0x1F0000) >> 16) - 1) << 6);
-    
+
     //The xxxxx are the six bytes on the right of byte 1
     //the yyyyy
     res = (r << 16) | 0xDC00 | (code & 0x3FF);
-    
+
     return true;
 }
 
@@ -3638,14 +3638,14 @@ Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second) {
         r |= code & 0x3FF;
         return false;
     }
-    
+
     //if the first byte is  0xD8000000 then it is a four bytes coding
     if ((code & 0xFF00) == 0xD800) {
         //first we extract w
         r = ((((code & 0x03C0) >> 6) + 1) << 16) | ((code & 0x3F) << 10);
         return true;
     }
-    
+
     //else r is code...
     r = code;
     return false;
@@ -3770,12 +3770,12 @@ class Segmentingtype {
 public:
     vector<jag_code> types;
     vector<long> positions;
-    
+
     void clear() {
         types.clear();
         positions.clear();
     }
-    
+
     void append(jag_code t, long posbeg, long posend) {
         types.push_back(t);
         positions.push_back(posbeg);
@@ -3785,7 +3785,7 @@ public:
 
 void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
     long idx;
-    
+
     long sz = code.size();
     long i, current_i;
     //The first line of the code is 1
@@ -3797,10 +3797,12 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
     string tampon;
     bool point = false;
     infos.clear();
-    
+    short string_end;
+
     for (i = 0; i < sz; i++) {
         current_i = i;
         c = getonechar(USTR(code), i);
+        string_end = 187;
         switch (c) {
             case 27: {//if it is an escape character
                 //We might have a color definition
@@ -3809,7 +3811,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                     //we are looking for the final 'm'
                     while (idx < sz && code[idx] != 'm')
                         idx++;
-                    
+
                     if (idx != sz)
                         i = idx;
                 }
@@ -3844,7 +3846,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                         }
                     }
                     else {
-                        if (filetype == java_type && code[idx] == '/') {
+                        if (filetype == clike_type && code[idx] == '/') {
                             idx++;
                             infos.append(jt_finalcomment, last_i, idx);
                             i = idx;
@@ -3854,7 +3856,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 break;
             case '/':
                 point = false;
-                if (filetype == java_type) {
+                if (filetype == clike_type) {
                     idx = i + 1;
                     if (code[idx] == '/' || code[idx] == '*') {
                         idx++;
@@ -3881,7 +3883,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 break;
             case '*':
                 point = false;
-                if (filetype == java_type) {
+                if (filetype == clike_type) {
                     idx = i + 1;
                     if (code[idx] == '/') {
                         idx++;
@@ -3903,7 +3905,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 break;
             case '#': //comments (we accept both with ; and #)
                 point = false;
-                if (filetype == lisp_type || filetype == python_type) {
+                if (filetype == lisp_type || filetype == python_type || filetype == no_type) {
                     idx = i;
                     while (idx < sz && code[idx] != '\n') idx++;
                     infos.append(jt_comment, i, idx);
@@ -3927,7 +3929,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 idx = i + 1;
                 tampon = "";
                 while (idx < sz && code[idx] != '\'') {
-                    c = (uchar)code[idx];                   
+                    c = (uchar)code[idx];
                     if (c == '\\') {
                         idx++;
                         switch (code[idx]) {
@@ -3943,33 +3945,32 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                                 tampon += '\t';
                                 idx++;
                                 continue;
-                                
+
                         }
                     }
                     tampon += code[idx];
                     idx++;
                 }
-                
+
                 if (idx == sz) {
                     continue;
                 }
-                
+
                 if (tampon == "")
                     infos.append(jt_emptystring, i, idx);
                 else
                     infos.append(jt_string, i, idx);
                 i = idx;
                 break;            }
-            case '`': { // a string containing what we want...
+            case '`':
+                string_end = '`';
+            case 171: { // a string containing what we want...
                 point = false;
                 if (filetype == lisp_type) {
                     idx = i + 1;
                     tampon = "";
-                    while (idx < sz && code[idx] != '`') {
+                    while (idx < sz && code[idx] != string_end) {
                         idx++;
-                    }
-                    if (idx == sz) {
-                        continue;
                     }
                     tampon = code.substr(i+1, idx-i-1);
                     if (tampon == "")
@@ -4065,13 +4066,13 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                     nxt = getonechar(USTR(code), idx);
                     idx++;
                 }
-                
+
                 if ((i - current_i) <= 1) {
                     tampon = c;
                 }
                 else
                     tampon = code.substr(current_i, i - current_i);
-                
+
                 lc = tampon[0];
 
                 if (point)
@@ -4080,7 +4081,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                     if (is_keyword(tampon))
                         infos.append(jt_keyword, current_i, i);
                 }
-                
+
                 if (i != current_i)
                     i--;
                 point = false;
@@ -4103,7 +4104,7 @@ bool check_string(editor_lines& lines, string& line, long currentline, wstring o
         }
         pos--;
     }
-    
+
     //We are in a long comment
     if (pos != -1) {
         while (pos < lines.size() && lines[pos].find(cl) == -1)
@@ -4122,166 +4123,62 @@ string coloring_line(editor_lines& lines, long currentline,
     static Segmentingtype segments;
     string sub = line;
     s_trim(sub);
-    
+
     if (sub == "")
         return line;
-    
+
     string root = "";
-    
+
     long pos = currentline;
-    if (filetype == java_type || filetype == tamgu_type) {
-        if (filetype == java_type) {
-            if (sub == "*/") {
+
+    
+    pos = currentline;
+    
+    if (pos >= 0 && pos < lines.size()) {
+        char long_line = lines.longlines[pos];
+        if (long_line == 1) {
+            line = colors[0] + line + m_current;
+            return line;
+        }
+        else {
+            if (long_line == 2) {
                 line = colors[4] + line + m_current;
                 return line;
             }
-            if (check_string(lines, line, currentline, L"/*", L"*/", colors[4]))
-                return line;
-        }
-        else {
-            if (filetype == tamgu_type) {
-                if (sub == "@/") {
-                    line = colors[4] + line + m_current;
-                    return line;
-                }
-                if (sub == "\"@") {
-                    line = colors[0] + line + m_current;
-                    return line;
-                }
-                
-                if (line.find("\"@") == -1 && line.find("@\"") == -1) {
-                    if (check_string(lines, line, currentline, L"@\"", L"\"@", colors[0]))
-                        return line;
-                }
-                if (check_string(lines, line, currentline, L"/@", L"@/", colors[4]))
-                    return line;
-            }
         }
     }
-    else {
-        if (filetype == python_type) {
-            if (sub.find("\"\"\"") != -1 || sub.find("'''") != -1) {
-                line = colors[0] + line + m_current;
-                return line;
-            }
 
-            long ipos;
-            pos = 0;
-            long nb_simple = 0;
-            long nb_double = 0;
-            //We check if we are in a long comment
-            while (pos <= currentline) {
-                ipos = lines[pos].find(L"\"\"\"");
-                if (ipos == -1) {
-                    ipos = lines[pos].find(L"'''");
-                    while (ipos != -1) {
-                        nb_simple++;
-                        ipos = lines[pos].find(L"'''", ipos + 3);
-                    }
-                }
-                else {
-                    while (ipos != -1) {
-                        nb_double++;
-                        ipos = lines[pos].find(L"\"\"\"", ipos + 3);
-                    }
-                }
-                pos++;
-            }
-            
-            //We are in a long comment
-            if ((nb_simple % 2) == 1) {
-                while (pos < lines.size() && lines[pos].find(L"'''") == -1)
-                    pos++;
-                if (pos >= currentline) {
-                    line = colors[0] + line + m_current;
-                    return line;
-                }
-            }
-            //We are in a long comment
-            if ((nb_double % 2) == 1) {
-                while (pos < lines.size() && lines[pos].find(L"\"\"\"") == -1)
-                    pos++;
-                if (pos >= currentline) {
-                    line = colors[0] + line + m_current;
-                    return line;
-                }
-            }
-        }
-        if (sub[0] == '#' || sub[0] == ';') {
+    if (filetype == python_type || filetype == no_type) {
+        if (sub[0] == '#') {
             line = colors[4] + line + m_current;
             return line;
         }
     }
-    
-    pos = currentline;
-    if (pos > 0 && lines.Status(pos) == concat_line) {
-        bool q = false;
-        if (lines[pos].find(L'"') != -1) {
-            q = true;
-            long nb = std::count(lines[pos-1].begin(), lines[pos-1].end(), '"');
-            if ((nb % 2) == 1) {
-                nb = line.find("\"");
-                if (nb != -1) {
-                    nb++;
-                    root = colors[0] + line.substr(0, nb);
-                    root += m_current;
-                    line = line.substr(nb,line.size());
-                }
+    else {
+        if (filetype == lisp_type) {
+            if (sub[0] == '#' || sub[0] == ';') {
+                line = colors[4] + line + m_current;
+                return line;
             }
         }
         else {
-            if (lines[pos].find(L'\'') != -1) {
-                q = true;
-                if (evaluate_quotes(lines[pos-1])) {
-                    long nb = line.find("\"");
-                    if (nb != -1) {
-                        nb++;
-                        root = colors[0] + line.substr(0, nb);
-                        root += m_current;
-                        line = line.substr(nb,line.size());
-                    }
-                }
+            if (sub[0] == '/' && sub[1] == '/') {
+                line = colors[4] + line + m_current;
+                return line;
             }
-        }
-        pos--;
-        while (pos > 0 && lines.Status(pos) == concat_line) pos--;
-        
-        if (pos && lines[pos].size()) {
-            long i = 0;
-            while (lines[pos][i] && lines[pos][i] <= 32) i++;
-            wchar_t c = lines[pos][i];
-            if (c == '/' || c == '#' || c == ';') {
-                switch (filetype) {
-                    case java_type:
-                    case tamgu_type:
-                        if (c == '/' && lines[pos][1] == '/') {
-                            line = colors[4] + line + m_current;
-                            return line;
-                        }
-                        break;
-                    case python_type:
-                        if (c == '#') {
-                            line = colors[4] + line + m_current;
-                            return line;
-                        }
-                        break;
-                    case lisp_type:
-                        if (c == '#' || c == ';') {
-                            line = colors[4] + line + m_current;
-                            return line;
-                        }
-                        break;
-                }
+            if (sub[0] == '#' && (sub[1] == 'e' || sub[1] == 'i')) {
+                line = colors[2] + line + m_current;
+                return line;
             }
         }
     }
-
+    
     string substring;
-    
+
     char add = false;
-    
+
     tokenize_line(line, segments, filetype);
-    
+
     long left, right = -1;
     for (long isegment = segments.types.size() - 1, ipos = segments.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
         left = segments.positions[ipos-1];
@@ -4337,11 +4234,11 @@ string coloring_line(editor_lines& lines, long currentline,
             default:
                 add = false;
         }
-        
+
         if (add) {
             if (add == 2)
                 break;
-            
+
             if (right > left)
                 sub += line.substr(left, right-left);
             sub += m_current;
@@ -4349,9 +4246,9 @@ string coloring_line(editor_lines& lines, long currentline,
                 sub += line.substr(right, line.size() - right);
             line = sub;
         }
-        
+
     }
-        
+
     if (root != "")
         line = root + line;
     return line;
@@ -4420,3 +4317,4 @@ Exporting u_ustring _w_to_u(wstring& w) {
 	return u;
 }
 #endif
+

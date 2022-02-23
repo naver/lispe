@@ -76,7 +76,6 @@ class lispe_editor : public jag_editor {
     
     
     bool editmode;
-    
 
     
 public:
@@ -106,7 +105,6 @@ public:
     bool displaying_local_variables;
 
     lispe_editor() {
-        longcomment = false;
         selected_x = -1;
         selected_y = -1;
         selected_pos = -1;
@@ -288,52 +286,7 @@ public:
         }
     }
 
-    //We detect long commented lines or long strings
-    void scanforlonglines() {
-        longstrings.clear();
-        //We check for comments and long lines
-        long r;
-        for (long i = 0; i < lines.size(); i++) {
-            if (lines[i].find(L"//") != -1) {
-                longstrings.push_back(l_com_one);
-                continue;
-            }
-            
-            r = lines[i].find(L"/@");
-            if (r != -1) {
-                longstrings.push_back(l_com);
-                if (lines[i].find(L"@/", r) != -1)
-                    continue;
-                i++;
-                while (i < lines.size() && lines[i].find(L"@/") == -1) {
-                    longstrings.push_back(l_com);
-                    i++;
-                }
-                longstrings.push_back(l_com);
-                continue;
-            }
-            
-            r = lines[i].find(L"@\"");
-            if (r != -1) {
-                if (lines[i].find(L"\"@", r) != -1) {
-                    longstrings.push_back(l_str);
-                    continue;
-                }
-                
-                longstrings.push_back((r+1)*-1);
-                i++;
-                while (i < lines.size() && lines[i].find(L"\"@") == -1) {
-                    longstrings.push_back(l_str);
-                    i++;
-                }
-                longstrings.push_back(l_str);
-                continue;
-            }
 
-            longstrings.push_back(0);
-        }
-    }
-    
     void displaylist(long beg, long end) {
         if (!lines.size()) {
             clearline();
@@ -347,12 +300,8 @@ public:
         if (beg < 0)
             beg = 0;
         
-        if (modified) {
-            scanforlonglines();
-            modified = false;
-        }
-
-        longcomment = false;
+        lines.detectlongstrings(filetype);
+        modified = false;
 
         if (emode()) {
             x_option g = option;
@@ -632,6 +581,16 @@ public:
         return true;
     }
     
+    void stopExecution() {
+        if (lispe != NULL) {
+            if (debugmode && lispe->checking_trace_lock())
+                lispe->releasing_trace_lock();
+            
+            lispe->stop();
+            debugmode = false;
+        }
+    }
+    
     void clear() {
         pos = lines.size();
         if (!editmode) {
@@ -659,13 +618,7 @@ public:
             printline(pos+1);
         }
 
-        if (lispe != NULL) {
-            if (debugmode && lispe->checking_trace_lock())
-                lispe->releasing_trace_lock();
-            
-            lispe->stop();
-            debugmode = false;
-        }
+        stopExecution();
         
         fflush(stdout);
         line = L"";

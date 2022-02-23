@@ -19,7 +19,7 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 
 
 //-------------------------------------------------------------------------------------------
-#ifdef DEBUG
+#ifdef DEBUGG
 //Minimale version without the internal editor
 int main(int argc, char *argv[]) {
     LispE lisp;

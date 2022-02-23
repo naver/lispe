@@ -201,7 +201,20 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
     if (line == "")
         return line;
 
-
+    if (current_pos >= 0 && current_pos < lines.longlines.size()) {
+        char long_line = lines.longlines[current_pos];
+        if (long_line == 1) {
+            line = colors[0] + line + m_current;
+            return line;
+        }
+        else {
+            if (long_line == 2) {
+                line = colors[4] + line + m_current;
+                return line;
+            }
+        }
+    }
+    
     string root;
     if (current_pos > 0 && lines.Status(current_pos) == concat_line) {
         bool q = false;
@@ -233,10 +246,8 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
 
     string sub = line;
     s_trimleft(sub);
-    if (sub[0] == ';' || sub[0] == '#' || longcomment) {
-        line = m_green + line + m_current;
-        if (sub[1] == ';')
-            longcomment = 1 - longcomment;
+    if (sub[0] == ';' || sub[0] == '#') {
+        line = colors[4] + line + m_current;
         return line;
     }
 
@@ -257,11 +268,19 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
         right = segments->positions[ipos];
         sub = line.substr(0, left);
         add = false;
+        if (isegment > 0 && segments->types[isegment - 1] == l_quote) {
+            sub += colors[3];
+            add = true;
+        }
         switch (segments->types[isegment]) {
             case t_emptystring:
             case t_string:
                 right += 1;
                 sub += colors[0];
+                add = true;
+                break;
+            case l_quote:
+                sub += colors[3];
                 add = true;
                 break;
             case l_cadr:
@@ -309,6 +328,7 @@ bool lispe_editor::checkcommand(char c) {
         case 'r':
             if (emode()) {
                 lastline = poslines[0];
+                previous_noprefix = noprefix;
                 if (lines.size()) {
                     bool dsp = true;
                     handle_ctrl_c(0);
@@ -330,6 +350,7 @@ bool lispe_editor::checkcommand(char c) {
         case 'd':
             if (emode()) {
                 lastline = poslines[0];
+                previous_noprefix = noprefix;
                 if (lines.size()) {
                     bool dsp = true;
                     handle_ctrl_c(0);
@@ -504,6 +525,8 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             return pos;
        case cmd_edit:
 		   mouseon();
+            noprefix = previous_noprefix;
+            
 #ifndef WIN32
             signal(SIGWINCH, resizewindow);
             selected_x = -1;
@@ -1000,6 +1023,8 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
 		LispSetCode(codes[0]);
 	}
 
+    previous_noprefix = false;
+
     switch (noinit) {
         case 1:
             prefix = "<>";
@@ -1024,6 +1049,8 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             //switch to edit mode
             pos = 0;
             line = L"edit";
+            noprefix = true;
+            previous_noprefix = true;
             pos = handlingcommands(pos, dsp);
             break;
         case 4:
