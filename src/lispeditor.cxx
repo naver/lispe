@@ -13,7 +13,7 @@
 
 
 using std::stringstream;
-
+string paste_from_clipboard();
 //--------------------------------------
 //This is a stub definition to give jag a value
 string coloring_line(editor_lines& lines, long currentline, string& line, vector<string>& colors, file_types) {
@@ -1075,7 +1075,11 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
     wstring code;
     wstring b;
     string buffer;
-    string buff;
+
+    string buff = paste_from_clipboard();
+    copybuffer = wconvert(buff);
+    kbuffer = copybuffer;
+    buff = "";
 
     long first = 0, last;
 

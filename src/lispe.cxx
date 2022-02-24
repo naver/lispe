@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.24.9.49";
+static std::string version = "1.2022.2.24.11.13";
 string LispVersion() {
     return version;
 }
@@ -308,7 +308,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE, &List::evall_keyn);
     set_instruction(l_keys, "keys@", P_TWO, &List::evall_keys);
     set_instruction(l_label, "label", P_THREE, &List::evall_label);
-    set_instruction(l_lambda, "lambda", P_ATLEASTTHREE, &List::evall_lambda);
+    set_instruction(l_lambda, "λ", P_ATLEASTTHREE, &List::evall_lambda);
     set_instruction(l_last, "last", P_TWO, &List::evall_last);
     set_instruction(l_leftshift, "<<", P_ATLEASTTHREE, &List::evall_leftshift);
     set_instruction(l_leftshiftequal, "<<=", P_ATLEASTTWO, &List::evall_leftshiftequal);
@@ -791,7 +791,7 @@ void Delegation::initialisation(LispE* lisp) {
     w = U"\\";
     string_to_code[w] = l_lambda;
 	//( (λ(x) (+ x 10)) 20)
-    w = U("λ");
+    w = U("lambda");
     string_to_code[w] = l_lambda;
     
     w = U"//";
@@ -2278,6 +2278,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

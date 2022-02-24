@@ -644,7 +644,7 @@ public:
 //--------------------------------------------------------------------------------
 
 
-typedef enum { x_none, x_goto, x_find, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_copying, x_copyingselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
+typedef enum { x_none, x_goto, x_find, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_paste, x_pasteselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
 
 
 class Jag_automaton;
@@ -1019,7 +1019,7 @@ public:
             case x_copy:
             case x_cut:
             case x_deleting:
-            case x_copying:
+            case x_paste:
             case x_cutting:
             case x_load:
                 s = st.str();
