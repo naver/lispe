@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.23.12.17";
+static std::string version = "1.2022.2.24.9.49";
 string LispVersion() {
     return version;
 }
@@ -1579,10 +1579,6 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                         throw new Error(msg);
                                     }
                                     break;
-                                case l_if:
-                                    if (e->size() == 3)
-                                        e->append(void_function);
-                                    break;
                                 case l_link:
                                     e->eval(this);
                                     removefromgarbage(e);
@@ -1597,6 +1593,9 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     else
                                         break;
                                 }
+                                case l_if:
+                                    if (e->size() == 3)
+                                        e->append(void_function);
                                 default: {
                                     if (lab >= l_map && lab <= l_scanr1) {
                                         Element* inter = e->composing(this, docompose);
@@ -2279,6 +2278,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
