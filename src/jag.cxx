@@ -30,6 +30,52 @@ void ResetWindowsConsole();
 void Getscreensizes(bool);
 bool checkresize();
 void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
+string paste_from_clipboard() {
+	return "";
+}
+void copy_to_clipboard(string buffer) {}
+#else
+void quoted_string(string& value) {
+    if (value == "")
+        return;
+    
+    value = s_replacingstring(value, "\\", "\\\\");
+    value = s_replacingstring(value, "\"", "\\\"");
+    value = s_replacingstring(value, "\\t", "\\\\t");
+    value = s_replacingstring(value, "\\n", "\\\\n");
+    value = s_replacingstring(value, "\\r", "\\\\r");
+    
+}
+
+string exec_command(const char* cmd) {
+	FILE* pipe = popen(cmd, "r");
+
+    if (!pipe)
+        return "";
+    
+    char buffer[256];
+    string result = "";
+    while(!feof(pipe))
+    {
+        if(fgets(buffer, 256, pipe) != NULL)
+        {
+            result += buffer;
+        }
+    }
+	pclose(pipe);
+    return result;
+}
+
+string paste_from_clipboard() {
+    return exec_command("pbpaste");
+}
+
+void copy_to_clipboard(string buffer) {
+    quoted_string(buffer);
+    stringstream cmd;
+    cmd << "echo \"" << STR(buffer) << "\" | pbcopy";
+    exec_command(cmd.str().c_str());
+}
 #endif
 
 Chaine_UTF8 special_characters;
@@ -830,8 +876,8 @@ void jag_editor::displaygo(bool full) {
         case x_delete:
         case x_copy:
         case x_cut:
-        case x_copying:
-        case x_copyingselect:
+        case x_paste:
+        case x_pasteselect:
         case x_deleting:
         case x_cutting:
         case x_load:
@@ -1730,6 +1776,7 @@ bool jag_editor::evaluateescape(string& buff) {
     if (buff == (char*)alt_x) {
         if (selected_pos == pos) {
             copybuffer = kbuffer;
+            copy_to_clipboard(convert(copybuffer));
             kbuffer = L"";
             deleteselection();
             line = lines[pos];
@@ -1740,6 +1787,7 @@ bool jag_editor::evaluateescape(string& buff) {
     if (buff == (char*)alt_c) {
         if (selected_pos == pos) {
             copybuffer = kbuffer;
+            copy_to_clipboard(convert(copybuffer));
             kbuffer = L"";
             currentline += selected_posnext-selected_pos;
             pos = selected_posnext;
@@ -2415,7 +2463,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     st << line << "  to:";
                     line = L"";
                     displayonlast(false);
-                    option = x_copying;
+                    option = x_paste;
                     return true;
                 case x_cut: //cut (9)
                     first = convertinginteger(line) - 1;
@@ -2424,7 +2472,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     displayonlast(false);
                     option = x_cutting;
                     return true;
-                case x_copying: //the pasting
+                case x_paste: //the pasting
                     copybuffer = L"";
                     if (line == L"$")
                         last = lines.size();
@@ -2439,7 +2487,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     option = x_none;
                     displayonlast(true);
                     return true;
-                case x_copyingselect:
+                case x_pasteselect:
                     copybuffer = kbuffer;
                     line = lines[poslines[currentline]];
                     option = x_none;
@@ -3237,9 +3285,14 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
     bool inbuffer = false;
 
     bool instring = false;
-    string buff;
     long first = 0, last;
 
+    string buff = paste_from_clipboard();
+    copybuffer = wconvert(buff);
+    kbuffer = copybuffer;
+    
+    buff = "";
+    
     while (1) {
         buff = getch();
 
@@ -3250,11 +3303,32 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
 			}
 		}
 
-        if (checkaction(buff, first, last))
+        if (selected_pos != -1 && buff[0] != 24)
+            unselectlines(selected_pos, selected_posnext, selected_x, selected_y);
+
+        if (checkaction(buff, first, last)) {
+            double_click = 0;
+            if (buff[0] != 24) {
+                selected_x = -1;
+                selected_y = -1;
+                selected_pos = -1;
+            }
             continue;
+        }
 
         if (option == x_exitprint)
             return;
+
+        if (selected_pos == pos) {
+            //We are going to replace a sequence of characters
+            //we delete it first
+            deleteselection();
+        }
+
+        double_click = 0;
+        selected_x = -1;
+        selected_y = -1;
+        selected_pos = -1;
 
         if (inbuffer) {
             buffer += buff;
@@ -3432,10 +3506,15 @@ void jag_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
     }
 }
 
+bool lmin(long p, long sz) {
+	return p < sz ? p : sz;
+}
+
 long jag_editor::size_upto(wstring& s, long p) {
     long pref = prefixego() + 1;
     long pos = pref;
     UWCHAR c;
+	p = lmin(p, s.size());
     for (long i = 0; i < p; i++) {
         c = getonewchar(s, i);
         if (special_characters.c_is_emojicomp(c))
