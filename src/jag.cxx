@@ -30,8 +30,12 @@ void ResetWindowsConsole();
 void Getscreensizes(bool);
 bool checkresize();
 void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
+string paste_from_clipboard() {
+	return "";
+}
+void copy_to_clipboard(string buffer) {}
 #else
-Exporting void quoted_string(string& value) {
+void quoted_string(string& value) {
     if (value == "")
         return;
     
@@ -44,7 +48,8 @@ Exporting void quoted_string(string& value) {
 }
 
 string exec_command(const char* cmd) {
-    FILE* pipe = popen(cmd, "r");
+	FILE* pipe = popen(cmd, "r");
+
     if (!pipe)
         return "";
     
@@ -57,7 +62,7 @@ string exec_command(const char* cmd) {
             result += buffer;
         }
     }
-    pclose(pipe);
+	pclose(pipe);
     return result;
 }
 
@@ -72,7 +77,6 @@ void copy_to_clipboard(string buffer) {
     exec_command(cmd.str().c_str());
 }
 #endif
-
 
 Chaine_UTF8 special_characters;
 
@@ -3502,10 +3506,15 @@ void jag_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
     }
 }
 
+bool lmin(long p, long sz) {
+	return p < sz ? p : sz;
+}
+
 long jag_editor::size_upto(wstring& s, long p) {
     long pref = prefixego() + 1;
     long pos = pref;
     UWCHAR c;
+	p = lmin(p, s.size());
     for (long i = 0; i < p; i++) {
         c = getonewchar(s, i);
         if (special_characters.c_is_emojicomp(c))
