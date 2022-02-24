@@ -30,11 +30,9 @@ void ResetWindowsConsole();
 void Getscreensizes(bool);
 bool checkresize();
 void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
-string paste_from_clipboard() {
-	return "";
-}
-void copy_to_clipboard(string buffer) {}
-#else
+#endif
+
+#ifdef APPLE
 void quoted_string(string& value) {
     if (value == "")
         return;
@@ -76,6 +74,11 @@ void copy_to_clipboard(string buffer) {
     cmd << "echo \"" << STR(buffer) << "\" | pbcopy";
     exec_command(cmd.str().c_str());
 }
+#else
+string paste_from_clipboard() {
+    return "";
+}
+void copy_to_clipboard(string buffer) {}
 #endif
 
 Chaine_UTF8 special_characters;
@@ -423,6 +426,16 @@ void jag_editor::getcursor() {
     ycursor = getycursor();
 }
 
+inline void move_right(long sc) {
+    m_right[2] = localn999[sc][0];
+    m_right[3] = localn999[sc][1];
+    m_right[4] = localn999[sc][2];
+    cout << m_right;
+    m_right[2] = '0';
+    m_right[3] = '0';
+    m_right[4] = '1';
+}
+
 void jag_editor::movetoposition() {
     long sc;
     if (emode())
@@ -433,13 +446,7 @@ void jag_editor::movetoposition() {
     if (!sc)
         return;
 
-	m_right[2] = localn999[sc][0];
-	m_right[3] = localn999[sc][1];
-	m_right[4] = localn999[sc][2];
-	cout << m_right;
-    m_right[2] = '0';
-	m_right[3] = '0';
-	m_right[4] = '1';
+    move_right(sc);
 }
 
 void jag_editor::movetobeginning() {
@@ -447,13 +454,8 @@ void jag_editor::movetobeginning() {
     cout << back;
     if (!sc)
         return;
-	m_right[2] = localn999[sc][0];
-	m_right[3] = localn999[sc][1];
-	m_right[4] = localn999[sc][2];
-	cout << m_right;
-	m_right[2] = '0';
-	m_right[3] = '0';
-	m_right[4] = '1';
+
+    move_right(sc);
 }
 
 void jag_editor::movetoend(bool remove) {
@@ -471,13 +473,8 @@ void jag_editor::movetoend(bool remove) {
         return;
 
     cout << back;
-	m_right[2] = localn999[sc][0];
-	m_right[3] = localn999[sc][1];
-	m_right[4] = localn999[sc][2];
-	cout << m_right;
-	m_right[2] = '0';
-	m_right[3] = '0';
-	m_right[4] = '1';
+
+    move_right(sc);
 }
 
 void jag_editor::movetolastline() {
@@ -3506,15 +3503,10 @@ void jag_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
     }
 }
 
-bool lmin(long p, long sz) {
-	return p < sz ? p : sz;
-}
-
 long jag_editor::size_upto(wstring& s, long p) {
     long pref = prefixego() + 1;
     long pos = pref;
     UWCHAR c;
-	p = lmin(p, s.size());
     for (long i = 0; i < p; i++) {
         c = getonewchar(s, i);
         if (special_characters.c_is_emojicomp(c))
