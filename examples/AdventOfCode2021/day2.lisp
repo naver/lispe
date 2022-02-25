@@ -3,7 +3,7 @@
 ;Author: Claude Roux
 ;Description: Sous-marin
 
-(setq instructions (fread (+ _current "codes_day2.txt")))
+(setq instructions (fread (+ _current "data/codes_day2.txt")))
 
 (setq depth 0)
 (setq x 0)
@@ -63,4 +63,5 @@
 )
 
 (println 'part1 (* x depth))
+
 

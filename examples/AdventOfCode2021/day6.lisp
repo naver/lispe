@@ -3,7 +3,7 @@
 ;Author: Claude Roux
 ;Description: Lanternfishes
 
-(setq thefishes  (fread (+ _current "codes_day6.txt")))
+(setq thefishes  (fread (+ _current "data/codes_day6.txt")))
 
 (defun generation(fishes gn) 
    (loop i (irange 0 gn 1)
@@ -37,4 +37,5 @@
    )
    (println 'Taille nb)
 )
+
 

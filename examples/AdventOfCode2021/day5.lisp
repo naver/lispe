@@ -3,7 +3,7 @@
 ;Description: Hydrothermal
 
 
-(setq lignes (fread (+ _current "codes_day5.txt")))
+(setq lignes (fread (+ _current "data/codes_day5.txt")))
   
 (setq coords
    (maplist
@@ -81,5 +81,6 @@
 )
 
 (println 'part2 (size (filterlist (\(x) (>= x 2)) (flatten plan))))
+
 
 

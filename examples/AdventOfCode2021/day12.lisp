@@ -2,7 +2,7 @@
 ;Author: Claude Roux
 ;Description: Jour 12
 
-(setq initiale (fread (+ _current "codes_day12.txt")))
+(setq initiale (fread (+ _current "data/codes_day12.txt")))
 
 (setq codes (maplist 'trim (split (trim initiale) "\n")))
 
@@ -55,4 +55,5 @@
 (setq alls 0)
 (traverse "start" (set) alls true)
 (println 'part2 alls)
+
 

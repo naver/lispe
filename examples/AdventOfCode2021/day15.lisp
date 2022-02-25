@@ -4,7 +4,7 @@
 ;Description: Jour15 bis
 
 
-(setq lacarte (fread (+ _current "codes_day15.txt")))
+(setq lacarte (fread (+ _current "data/codes_day15.txt")))
 (setq carte (maplist (\(x) (integers (split (trim x) ""))) (split (trim lacarte) "\n")))
 (setq dm (rho carte))
 (setq dmx (- (@ dm 0) 1))
@@ -134,6 +134,7 @@
 (setq dmy (- (@ dm 1) 1))
 
 (println 'part2 (calcul_risque carte))
+
 
 
 

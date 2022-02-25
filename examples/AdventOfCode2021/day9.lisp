@@ -3,7 +3,7 @@
 ;Author: Claude Roux
 ;Description: Risk Level
 
-(setq heightmap (fread (+ _current "codes_day9.txt")))
+(setq heightmap (fread (+ _current "data/codes_day9.txt")))
 
 (setq carte (maplist 'trim (split (trim heightmap) "\n")))
 (setq carte (matrix (maplist (\(x) (integers (split x ""))) carte)))
@@ -79,6 +79,7 @@
 )
 
 (println 'part2 (* (extract (sort '> v) 0 3)))
+
 
 
 

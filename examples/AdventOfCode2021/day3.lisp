@@ -4,7 +4,7 @@
 ;Description: sous-marin gamma/epsilon
 
 
-(setq code (fread (+ _current "codes_day3.txt")))
+(setq code (fread (+ _current "data/codes_day3.txt")))
 
 
 (defmacro nb0(x) (- (size x) (sum x)))
@@ -45,6 +45,7 @@
 (setq r (calcul '< codes))
 (setq v (calcul '>= codes))
 (println 'part2 (* r v))
+
 
 
 

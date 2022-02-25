@@ -3,7 +3,7 @@
 ;Author: Claude Roux
 ;Description: Day 11
 
-(setq lescodes  (fread (+ _current "codes_day11.txt")))
+(setq lescodes  (fread (+ _current "data/codes_day11.txt")))
 
 
 (defun ventile(code x y)
@@ -95,4 +95,5 @@
 (setq codes sauve)
 (setq taille (rho codes))
 (compute 1000 2)
+
 

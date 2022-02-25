@@ -5,7 +5,7 @@
 
 
 
-(setq codes (fread (+ _current "codes_day14.txt")))
+(setq codes (fread (+ _current "data/codes_day14.txt")))
 
 (setq règles (key))
 (maplist 
@@ -47,6 +47,7 @@
 
 (println 'part1 (- (flip (minmax (values@ (build_polymer 10 code))))))
 (println 'part2 (- (flip (minmax (values@ (build_polymer 40 code))))))
+
 
 
 

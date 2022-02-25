@@ -3,7 +3,7 @@
 ;Description: Bingo
 
 
-(setq codes (fread (+ _current "codes_day4.txt")))
+(setq codes (fread (+ _current "data/codes_day4.txt")))
 
 (setq codes (split codes "\n"))
 (setq letirage (car codes))
@@ -108,4 +108,5 @@
 (compute 1)
 ; we have already identified the maximum step...
 (compute 100)
+
 

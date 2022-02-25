@@ -7,7 +7,7 @@
 ; codes_complets_syntaxe.txt 
 ; codes_syntaxe_simples.txt
 
-(setq codes (fread (+ _current "codes_day10.txt")))
+(setq codes (fread (+ _current "data/codes_day10.txt")))
 (setq codes (maplist (\(x) (split x "")) (maplist 'trim (split (trim codes) "\n"))))
 
 (setq equivalence {"(":")" "{":"}" "[":"]" "<":">"})
@@ -55,5 +55,6 @@
 
 (setq res (sort '< (maplist 'compte ajouts)))
 (println 'part2 (@ res (/ (size res) 2)))
+
 
 

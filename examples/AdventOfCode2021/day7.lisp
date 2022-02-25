@@ -5,7 +5,7 @@
 
 
 
-(setq r (fread (+ _current "codes_day7.txt")))
+(setq r (fread (+ _current "data/codes_day7.txt")))
 
 (setq crabes (integers (split r ",")))
 
@@ -40,6 +40,7 @@
 
 (setq mini (min res2))
 (println mini " position: " (find res2 mini))
+
 
 
 

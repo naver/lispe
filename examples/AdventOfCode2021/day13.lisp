@@ -4,7 +4,7 @@
 ; This code should be executed in a terminal for better display
 
 
-(setq values (fread (+ _current "codes_day13.txt")))
+(setq values (fread (+ _current "data/codes_day13.txt")))
 
 (setq positions (trim (@@ values 0 "fold")))
 (setq instructions (split (trim (@@ values +"fold" 0)) "\n"))
@@ -78,5 +78,6 @@
    )
    (println (trimright ligne))
 )
+
 
 
