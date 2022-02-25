@@ -56,7 +56,7 @@ clean:
 	rm -Rf objs
 	rm -Rf bin
 
-libs:
+libs: liblispe
 	$(MAKE) -C curl clean all
 	$(MAKE) -C xml clean all
 	$(MAKE) -C sqlite clean all
