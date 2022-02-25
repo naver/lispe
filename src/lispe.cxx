@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.24.11.13";
+static std::string version = "1.2022.2.25.16.40";
 string LispVersion() {
     return version;
 }
@@ -1518,6 +1518,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     e = delegation->_EMPTYLIST;
                 }
                 else {
+                    bool equal_op_list = false;
                     e = new Listincode(parse.lines[index], delegation->i_current_file);
                     garbaging(e);
                     abstractSyntaxTree(e, parse, index, quoting);
@@ -1560,6 +1561,13 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                 case l_setq:
                                 case l_set_at:
                                 case l_setg:
+                                    if (e->size() > 1 && e->index(1)->label() < l_final) {
+                                        wstring msg = L"Error: Invalid variable name: '";
+                                        msg += e->index(1)->asString(this);
+                                        msg += L"' (keyword)";
+                                        throw new Error(msg);
+                                    }
+                                    break;
                                 case l_plusequal:
                                 case l_minusequal:
                                 case l_multiplyequal:
@@ -1572,11 +1580,23 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                 case l_bitxorequal:
                                 case l_divideequal:
                                 case l_modequal:
-                                    if (e->index(1)->label() < l_final) {
-                                        wstring msg = L"Error: Invalid variable name: '";
-                                        msg += e->index(1)->asString(this);
-                                        msg += L"' (keyword)";
-                                        throw new Error(msg);
+                                    if (e->size() > 1) {
+                                        Element* nxt = e->index(1);
+                                        if (nxt->label() < l_final) {
+                                            if (nxt->isList()) {
+                                                if (nxt->size() < 2 || nxt->index(0)->label() != l_index) {
+                                                    wstring msg = L"Error: Expecting an index access with 'at'";
+                                                    throw new Error(msg);
+                                                }
+                                                equal_op_list = true;
+                                            }
+                                            else {
+                                                wstring msg = L"Error: Invalid variable name: '";
+                                                msg += e->index(1)->asString(this);
+                                                msg += L"' (keyword)";
+                                                throw new Error(msg);
+                                            }
+                                        }
                                     }
                                     break;
                                 case l_link:
@@ -1638,7 +1658,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     if (nbarguments == 3 && e->index(2)->equalvalue((long)2))
                                         lm = new List_power2((List*)e);
                                     else
-                                        lm = new List_basic_execute((Listincode*)e, delegation->evals[lab]);
+                                        lm = new List_execute((Listincode*)e, delegation->evals[lab]);
                                     break;
                                 case l_divide:
                                     if (nbarguments == 2)
@@ -1676,20 +1696,36 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                         else
                                             lm = new List_multiplyn((List*)e);
                                     break;
+                                case l_divideequal:
+                                    if (equal_op_list)
+                                        lm = new List_divideequal_list((List*)e);
+                                    else
+                                        lm = new List_divideequal_var((List*)e);
+                                    break;
+                                case l_plusequal:
+                                    if (equal_op_list)
+                                        lm = new List_plusequal_list((List*)e);
+                                    else
+                                        lm = new List_plusequal_var((List*)e);
+                                    break;
+                                case l_minusequal:
+                                    if (equal_op_list)
+                                        lm = new List_minusequal_list((List*)e);
+                                    else
+                                        lm = new List_minusequal_var((List*)e);
+                                    break;
+                                case l_multiplyequal:
+                                    if (equal_op_list)
+                                        lm = new List_multiplyequal_list((List*)e);
+                                    else
+                                        lm = new List_multiplyequal_var((List*)e);
+                                    break;
                                 case l_switch:
                                     lm = new Listswitch((Listincode*)e);
                                     ((Listswitch*)lm)->build(this);
                                     break;
-                                case l_mod:
-                                case l_modequal:
-                                case l_divideequal:
-                                    lm = new List_execute((Listincode*)e, delegation->evals[lab]);
-                                    break;
                                 default:
-                                    if (lab >= l_atomp && lab <= l_max)
-                                        lm = new List_basic_execute((Listincode*)e, delegation->evals[lab]);
-                                    else
-                                        lm = new List_execute((Listincode*)e, delegation->evals[lab]);
+                                    lm = new List_execute((Listincode*)e, delegation->evals[lab]);
                             }
                             
                             if (lm != NULL) {
@@ -2278,6 +2314,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

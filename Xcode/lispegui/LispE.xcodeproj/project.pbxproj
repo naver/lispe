@@ -613,6 +613,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DPOSIXREGEX",
+					"-DAPPLE",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "NAVER-labs.lispe";
 				PRODUCT_NAME = LispE;
@@ -642,6 +643,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DPOSIXREGEX",
+					"-DAPPLE",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "NAVER-labs.lispe";
 				PRODUCT_NAME = LispE;

@@ -40,10 +40,10 @@ if ostype == b"Darwin":
     if b"arm64" in ostype.lower():
        f.write("PLATFORM = macarm\n")
        f.write("FLTKVERSION=-DFLTK14\n")
-       f.write("COPTION = -Ofast\n")
+       f.write("COPTION = -Ofast -DAPPLE\n")
     else:
        f.write("PLATFORM = macos\n")
-       f.write("COPTION = -Ofast -DINTELINTRINSICS -mavx2\n")
+       f.write("COPTION = -Ofast -DAPPLE -DINTELINTRINSICS -mavx2\n")
     f.write("LIBFLTK = -Llibs/$(PLATFORM) -lfltk -lfltk_images -framework Cocoa")
     exit(-1)
 
@@ -113,8 +113,8 @@ def selectionBoost():
     f=open("Makefile.in", "w")
     f.write("COPTION = -O3\n")
     f.write("PLATFORM=linux\n")
-    f.write("# If mouse does not work, decomment next line and recompile")
-    f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100")
+    f.write("# If mouse does not work, decomment next line and recompile\n")
+    f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100\n")
     [pathlib, includepath, namelib, vide] = cherchelib("libcurl")
     f.write("REGEX = -DPOSIXREGEX -DBOOSTPOSIXREGEX -I"+includepath+"\n")
     f.write("LIBBOOST = "+pathboost+" "+nameboost+"\n")

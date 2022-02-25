@@ -34,6 +34,7 @@ const char* crgx=NULL;
 extern BOOL nouveau;
 BOOL dark = false;
 
+
 @implementation Lecode
 
 -(void)awakeFromNib {
@@ -306,7 +307,7 @@ BOOL dark = false;
     //unichar test[1000];
     
     if (currentrange.length != 0) {
-        suivant = [letexte paragraphRangeForRange: [self selectedRange]];
+        suivant = currentrange;
         limite = suivant.location + suivant.length;
         if (cr == YES) {
             if (suivant.location > 0) {
@@ -323,7 +324,7 @@ BOOL dark = false;
         }
     }
     else {
-        suivant.location=0;
+        suivant.location = 0;
         suivant.length = longueur;
     }
         
@@ -334,12 +335,11 @@ BOOL dark = false;
     if (dark) {
         defaultcolor = [NSColor whiteColor];
     }
-
     
     for (long i = 0; tobecolored[i]!=-1; i+=3) {
         trouve.location=tobecolored[i+1];
         trouve.length=tobecolored[i+2];
-        
+
         switch (tobecolored[i]) {
             case 1: //string ""
                 [self setTextColor: couleurchaine range:trouve];
@@ -363,6 +363,7 @@ BOOL dark = false;
                 [self setTextColor: defaultcolor range:trouve];
         }
     }
+    
     deletion(tobecolored);
 }
 

@@ -9380,6 +9380,188 @@ Element* List::evall_divideequal(LispE* lisp) {
     return lisp->recording_variable(first_element, label);
 }
 
+Element* List_divideequal_list::eval(LispE* lisp) {
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+    List* exec = lisp->provideList();
+    exec->append(liste[1]->index(0));
+    exec->append(liste[1]->index(1));
+    listsize = liste[1]->size();
+    try {
+        for (i = 2; i < listsize; i++) {
+            first_element = liste[1]->index(i)->eval(lisp);
+            exec->append(first_element);
+        }
+        first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
+    }
+    catch(Error* err) {
+        exec->release();
+        throw err;
+    }
+    
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '/' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '/' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->divide(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->divide_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->divide_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->divide_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        exec->release();
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    exec->append(first_element->quoting());
+    exec->evall_set_at(lisp);
+    first_element->increment();
+    exec->release();
+    first_element->decrementkeep();
+    return first_element;
+}
+
+Element* List_divideequal_var::eval(LispE* lisp) {
+    short label = liste[1]->label();
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '/' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '/' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->divide(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->divide_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->divide_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->divide_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    return lisp->recording_variable(first_element, label);
+}
+
 Element* List::evall_leftshiftequal(LispE* lisp) {
     List* exec = NULL;
     short label = liste[1]->label();
@@ -9615,6 +9797,189 @@ Element* List::evall_minusequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
+    return lisp->recording_variable(first_element, label);
+}
+
+Element* List_minusequal_list::eval(LispE* lisp) {
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+    List* exec = lisp->provideList();
+    exec->append(liste[1]->index(0));
+    exec->append(liste[1]->index(1));
+    listsize = liste[1]->size();
+    try {
+        for (i = 2; i < listsize; i++) {
+            first_element = liste[1]->index(i)->eval(lisp);
+            exec->append(first_element);
+        }
+        first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
+    }
+    catch(Error* err) {
+        exec->release();
+        throw err;
+    }
+    
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '-' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '-' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->minus(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->minus_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->minus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->minus_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        exec->release();
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    exec->append(first_element->quoting());
+    exec->evall_set_at(lisp);
+    first_element->increment();
+    exec->release();
+    first_element->decrementkeep();
+    return first_element;
+}
+
+Element* List_minusequal_var::eval(LispE* lisp) {
+    short label = liste[1]->label();
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+    
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '-' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '-' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->minus(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->minus_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->minus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->minus_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
     return lisp->recording_variable(first_element, label);
 }
 
@@ -9857,6 +10222,189 @@ Element* List::evall_multiplyequal(LispE* lisp) {
     return lisp->recording_variable(first_element, label);
 }
 
+Element* List_multiplyequal_list::eval(LispE* lisp) {
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+    List* exec = lisp->provideList();
+    exec->append(liste[1]->index(0));
+    exec->append(liste[1]->index(1));
+    listsize = liste[1]->size();
+    try {
+        for (i = 2; i < listsize; i++) {
+            first_element = liste[1]->index(i)->eval(lisp);
+            exec->append(first_element);
+        }
+        first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
+    }
+    catch(Error* err) {
+        exec->release();
+        throw err;
+    }
+    
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '*' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '*' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->multiply(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->multiply_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->multiply_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->multiply_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        exec->release();
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    exec->append(first_element->quoting());
+    exec->evall_set_at(lisp);
+    first_element->increment();
+    exec->release();
+    first_element->decrementkeep();
+    return first_element;
+}
+
+Element* List_multiplyequal_var::eval(LispE* lisp) {
+    short label = liste[1]->label();
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '*' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '*' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->multiply(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->multiply_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->multiply_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->multiply_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    return lisp->recording_variable(first_element, label);
+}
+
+
 Element* List::evall_plusequal(LispE* lisp) {
     List* exec = NULL;
     short label = liste[1]->label();
@@ -9979,6 +10527,201 @@ Element* List::evall_plusequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
+    return lisp->recording_variable(first_element, label);
+}
+
+Element* List_plusequal_list::eval(LispE* lisp) {
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+    List* exec = lisp->provideList();
+    exec->append(liste[1]->index(0));
+    exec->append(liste[1]->index(1));
+    listsize = liste[1]->size();
+    try {
+        for (i = 2; i < listsize; i++) {
+            first_element = liste[1]->index(i)->eval(lisp);
+            exec->append(first_element);
+        }
+        first_element = exec->evall_index_zero(lisp)->copyatom(lisp, s_constant);
+    }
+    catch(Error* err) {
+        exec->release();
+        throw err;
+    }
+
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '+' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return emptystring_;
+                    }
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->plus_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->plus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->plus_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        exec->release();
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
+    exec->append(first_element->quoting());
+    exec->evall_set_at(lisp);
+    first_element->increment();
+    exec->release();
+    first_element->decrementkeep();
+    return first_element;
+}
+
+Element* List_plusequal_var::eval(LispE* lisp) {
+    short label = liste[1]->label();
+    long i;
+    short listsize;
+    Element* first_element = liste[1];
+
+
+    listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+
+    try {
+        first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '+' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return emptystring_;
+                    }
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->plus(lisp, NULL);
+                    first_element->release();
+                    first_element = lst;
+                    lst = this;
+                    break;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->plus_direct(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->plus_direct(lisp, lst->index(i));
+                        }
+                    }
+                    lst->release();
+                    break;
+                }
+            }
+        }
+        else {
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->plus_direct(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+
     return lisp->recording_variable(first_element, label);
 }
 

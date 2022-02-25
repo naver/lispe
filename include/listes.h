@@ -1647,14 +1647,6 @@ public:
 //-------------------------------------------------------
 // Direct call to basic operations
 //-------------------------------------------------------
-class List_basic_execute : public Listincode {
-public:
-    methodEval method;
-    
-    List_basic_execute(Listincode* l, methodEval m) : method(m), Listincode(l) {}
-    Element* eval(LispE* lisp);
-};
-
 class List_execute : public Listincode {
 public:
     methodEval method;
@@ -1743,6 +1735,54 @@ public:
     Element* eval(LispE*);
 };
 
+
+class List_divideequal_var : public List {
+public:
+    List_divideequal_var(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_plusequal_var : public List {
+public:
+    List_plusequal_var(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_minusequal_var : public List {
+public:
+    List_minusequal_var(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_multiplyequal_var : public List {
+public:
+    List_multiplyequal_var(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_divideequal_list : public List {
+public:
+    List_divideequal_list(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_plusequal_list : public List {
+public:
+    List_plusequal_list(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_minusequal_list : public List {
+public:
+    List_minusequal_list(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
+
+class List_multiplyequal_list : public List {
+public:
+    List_multiplyequal_list(List* l) : List(l, 0) {}
+    Element* eval(LispE*);
+};
 
 class Pair : public List {
 public:

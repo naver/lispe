@@ -2096,32 +2096,6 @@ Element* Listincode::eval(LispE* lisp) {
     }
 }
 
-Element* List_basic_execute::eval(LispE* lisp) {
-    try {
-        lisp->checkPureState(this);
-        return (this->*method)(lisp);
-    }
-    catch(Error* err) {
-        lisp->delegation->set_error_context(line, fileidx);
-        
-        if (err != lisp->delegation->_THEEND)
-            throw err;
-
-        if (lisp->checkLispState()) {
-            if (lisp->isthreadError()) {
-                if (!lisp->isThread)
-                    lisp->delegation->throwError();
-                return null_;
-            }
-            if (lisp->hasStopped())
-                throw lisp->delegation->_THEEND;
-            return null_;
-        }
-        return eval_error(lisp);
-    }
-}
-
-
 Element* List_execute::eval(LispE* lisp) {
     try {
         lisp->checkPureState(this);
