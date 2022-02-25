@@ -2453,33 +2453,39 @@ Element* List::evall_maplist(LispE* lisp) {
                 lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
-            switch (e->type) {
-                case t_string:
-                    container = lisp->provideStrings();
-                    break;
-                case t_integer:
-                    container = lisp->provideIntegers();
-                    break;
-                case t_float:
-                    container = lisp->provideFloats();
-                    break;
-                case t_number:
-                    container = lisp->provideNumbers();
-                    break;
-                default:
-                    container = lisp->provideList();
-            }
-            e = e->copying(false);
-            container->append(e);
-            e->release();
-            nxt = element->next_iter_exchange(lisp, iter);
-            while (nxt != emptyatom_) {
-                lisp->replacingvalue(nxt, label);
-                e = eval_lambda_min(lisp, (List*)op);
+            if (e->type == l_return)
+                container = emptylist_;
+            else {
+                switch (e->type) {
+                    case t_string:
+                        container = lisp->provideStrings();
+                        break;
+                    case t_integer:
+                        container = lisp->provideIntegers();
+                        break;
+                    case t_float:
+                        container = lisp->provideFloats();
+                        break;
+                    case t_number:
+                        container = lisp->provideNumbers();
+                        break;
+                    default:
+                        container = lisp->provideList();
+                }
                 e = e->copying(false);
                 container->append(e);
                 e->release();
                 nxt = element->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    lisp->replacingvalue(nxt, label);
+                    e = eval_lambda_min(lisp, (List*)op);
+                    if (e->type == l_return)
+                        break;
+                    e = e->copying(false);
+                    container->append(e);
+                    e->release();
+                    nxt = element->next_iter_exchange(lisp, iter);
+                }
             }
             element->clean_iter(iter);
             if (call->size())
@@ -2632,16 +2638,7 @@ Element* List::evall_filterlist(LispE* lisp) {
                 lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
-            if (e->Boolean()) {
-                e->release();
-                e = element->index(0)->copying(false);
-                result->append(e);
-            }
-            e->release();
-            nxt = element->next_iter_exchange(lisp, iter);
-            while (nxt != emptyatom_) {
-                lisp->replacingvalue(nxt, label);
-                e = call->eval_lambda_min(lisp, (List*)op);
+            if (e->type != l_return) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
@@ -2649,6 +2646,19 @@ Element* List::evall_filterlist(LispE* lisp) {
                 }
                 e->release();
                 nxt = element->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    lisp->replacingvalue(nxt, label);
+                    e = call->eval_lambda_min(lisp, (List*)op);
+                    if (e->type == l_return)
+                        break;
+                    if (e->Boolean()) {
+                        e->release();
+                        e = nxt->copying(false);
+                        result->append(e);
+                    }
+                    e->release();
+                    nxt = element->next_iter_exchange(lisp, iter);
+                }
             }
             element->clean_iter(iter);
             if (call->size())
@@ -2785,30 +2795,34 @@ Element* List::evall_takelist(LispE* lisp) {
                 lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
-            if (e->Boolean()) {
-                e->release();
-                e = element->index(0)->copying(false);
-                result->append(e);
-            }
-            else
-                listsz = 0; //we force to stop now...
-            
-            e->release();
-            nxt = element->next_iter_exchange(lisp, iter);
-            while (nxt != emptyatom_) {
-                lisp->replacingvalue(nxt, label);
-                e = call->eval_lambda_min(lisp, (List*)op);
+            if (e->type != l_return) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
                     result->append(e);
                 }
-                else {
-                    e->release();
-                    break;
-                }
+                else
+                    listsz = 0; //we force to stop now...
+                
                 e->release();
                 nxt = element->next_iter_exchange(lisp, iter);
+                while (nxt != emptyatom_) {
+                    lisp->replacingvalue(nxt, label);
+                    e = call->eval_lambda_min(lisp, (List*)op);
+                    if (e->type == l_return)
+                        break;
+                    if (e->Boolean()) {
+                        e->release();
+                        e = nxt->copying(false);
+                        result->append(e);
+                    }
+                    else {
+                        e->release();
+                        break;
+                    }
+                    e->release();
+                    nxt = element->next_iter_exchange(lisp, iter);
+                }
             }
             element->clean_iter(iter);
             if (call->size())
@@ -2952,19 +2966,8 @@ Element* List::evall_droplist(LispE* lisp) {
                 lisp->recording(nxt, label);
             
             e = eval_lambda_min(lisp, (List*)op);
-            if (e->Boolean()) {
-                e->release();
-                e = element->index(0)->copying(false);
-                result->append(e);
-                add = true;
-            }
-            e->release();
-            nxt = element->next_iter_exchange(lisp, iter);
-
-            while (nxt != emptyatom_) {
-                lisp->replacingvalue(nxt, label);
-                e = call->eval_lambda_min(lisp, (List*)op);
-                if (add || e->Boolean()) {
+            if (e->type != l_return) {
+                if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
                     result->append(e);
@@ -2972,6 +2975,21 @@ Element* List::evall_droplist(LispE* lisp) {
                 }
                 e->release();
                 nxt = element->next_iter_exchange(lisp, iter);
+                
+                while (nxt != emptyatom_) {
+                    lisp->replacingvalue(nxt, label);
+                    e = call->eval_lambda_min(lisp, (List*)op);
+                    if (e->type == l_return)
+                        break;
+                    if (add || e->Boolean()) {
+                        e->release();
+                        e = nxt->copying(false);
+                        result->append(e);
+                        add = true;
+                    }
+                    e->release();
+                    nxt = element->next_iter_exchange(lisp, iter);
+                }
             }
             element->clean_iter(iter);
             if (call->size())
@@ -3880,14 +3898,17 @@ Element* List::evall_reduce(LispE* lisp) {
                 rarg2 = call->liste.back();
             
             element = eval_lambda_min(lisp, (List*)op);
-            lisp->replacingvalue(element, arg1);
-            
-            for (long i = 2; i < l1->size(); i++) {
-                lisp->replacingvalue(l1->index(i), arg2);
-                element = eval_lambda_min(lisp, (List*)op);
+            if (element->type != l_return) {
                 lisp->replacingvalue(element, arg1);
+                
+                for (long i = 2; i < l1->size(); i++) {
+                    lisp->replacingvalue(l1->index(i), arg2);
+                    element = eval_lambda_min(lisp, (List*)op);
+                    if (element->type == l_return)
+                        break;
+                    lisp->replacingvalue(element, arg1);
+                }
             }
-
             element->increment();
             
             if (rarg1 != NULL)
@@ -4208,14 +4229,18 @@ Element* List::evall_backreduce(LispE* lisp) {
                 rarg2 = call->liste.back();
             
             element = eval_lambda_min(lisp, (List*)op);
-            lisp->replacingvalue(element, arg1);
-            
-            for (long i = 2; i < l1->size(); i++) {
-                lisp->replacingvalue(l1->index(i), arg2);
-                element = eval_lambda_min(lisp, (List*)op);
+            if (element->type != l_return) {
                 lisp->replacingvalue(element, arg1);
+                
+                for (long i = 2; i < l1->size(); i++) {
+                    lisp->replacingvalue(l1->index(i), arg2);
+                    element = eval_lambda_min(lisp, (List*)op);
+                    if (element->type == l_return)
+                        break;
+                    lisp->replacingvalue(element, arg1);
+                }
             }
-
+            
             element->increment();
             
             if (rarg1 != NULL)
@@ -5181,6 +5206,8 @@ Element* List::evall_scan(LispE* lisp) {
             for (long i = 1; i < sz; i++) {
                 lisp->replacingvalue(l1->index(i), arg2);
                 e = eval_lambda_min(lisp, (List*)op);
+                if (e->type == l_return)
+                    break;
                 e = e->copying(false);
                 res->append(e);
                 lisp->replacingvalue(e, arg1);
@@ -5498,6 +5525,8 @@ Element* List::evall_backscan(LispE* lisp) {
             for (long i = sz-1; i >= 0; i--) {
                 lisp->replacingvalue(l1->index(i), arg2);
                 e = eval_lambda_min(lisp, (List*)op);
+                if (e->type == l_return)
+                    break;
                 e = e->copying(false);
                 res->append(e);
                 lisp->replacingvalue(e, arg1);
@@ -9907,33 +9936,38 @@ Element* List::evall_zipwith(LispE* lisp) {
             
             value = null_;
             value = eval_lambda_min(lisp, (List*)function);
-            switch (value->type) {
-                case t_string:
-                    container = lisp->provideStrings();
-                    break;
-                case t_integer:
-                    container = lisp->provideIntegers();
-                    break;
-                case t_float:
-                    container = lisp->provideFloats();
-                    break;
-                case t_number:
-                    container = lisp->provideNumbers();
-                    break;
-                default:
-                    container = lisp->provideList();
-            }
-            container->append(value);
-            value->release();
-
-            for (j = 1; j < szl; j++) {
-                for (i = 0; i < lsz; i++)
-                    lisp->replacingvalue(lists->liste[i]->index(j), params->liste[i]->label());
-                value = eval_lambda_min(lisp, (List*)function);
+            if (value->type == l_return)
+                container = emptylist_;
+            else {
+                switch (value->type) {
+                    case t_string:
+                        container = lisp->provideStrings();
+                        break;
+                    case t_integer:
+                        container = lisp->provideIntegers();
+                        break;
+                    case t_float:
+                        container = lisp->provideFloats();
+                        break;
+                    case t_number:
+                        container = lisp->provideNumbers();
+                        break;
+                    default:
+                        container = lisp->provideList();
+                }
                 container->append(value);
                 value->release();
+                
+                for (j = 1; j < szl; j++) {
+                    for (i = 0; i < lsz; i++)
+                        lisp->replacingvalue(lists->liste[i]->index(j), params->liste[i]->label());
+                    value = eval_lambda_min(lisp, (List*)function);
+                    if (value->type == l_return)
+                        break;
+                    container->append(value);
+                    value->release();
+                }
             }
-            
             for (i = 0; i < call->size(); i+=2) {
                 lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
             }
