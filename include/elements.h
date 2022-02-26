@@ -4989,10 +4989,7 @@ public:
     }
     
     virtual void decrement() {
-        if (is_protected())
-            return;
-        
-        status--;
+        status -= not_protected();
         if (!status) {
             for (auto& a: dictionary)
                 a.second->release();

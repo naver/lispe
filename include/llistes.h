@@ -741,10 +741,7 @@ public:
     }
     
     void decrement() {
-        if (is_protected())
-            return;
-        
-        status--;
+        status -= not_protected();
         if (!status) {
             liste.decrement();
             delete this;
@@ -752,10 +749,7 @@ public:
     }
     
     void decrementstatus(uint16_t nb) {
-        if (is_protected())
-            return;
- 
-        status -= nb;
+        status -= nb * not_protected();
         if (!status) {
             liste.decrement();
             delete this;

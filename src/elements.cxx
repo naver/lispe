@@ -210,19 +210,13 @@ Element* Strings::copyatom(LispE* lisp, uint16_t s) {
 
 //------------------------------------------------------------------------------------------
 void Floatpool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status)
         lisp->float_pool.push_back(this);
 }
 
 void Floatpool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status)
         lisp->float_pool.push_back(this);
 }
@@ -233,19 +227,13 @@ void Floatpool::release() {
 }
 
 void Numberpool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status)
         lisp->number_pool.push_back(this);
 }
 
 void Numberpool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status)
         lisp->number_pool.push_back(this);
 }
@@ -256,19 +244,13 @@ void Numberpool::release() {
 }
 
 void Returnpool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status)
         lisp->return_pool.push_back(this);
 }
 
 void Returnpool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status)
         lisp->return_pool.push_back(this);
 }
@@ -279,20 +261,14 @@ void Returnpool::release() {
 }
 
 void Integerpool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status) {
         lisp->integer_pool.push_back(this);
     }
 }
 
 void Integerpool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status) {
         lisp->integer_pool.push_back(this);
     }
@@ -305,10 +281,7 @@ void Integerpool::release() {
 }
 
 void Stringpool::decrement() {
-    if (is_protected())
-        return;
-    
-    status--;
+    status -= not_protected();
     if (!status) {
         content = U"";
         lisp->string_pool.push_back(this);
@@ -316,10 +289,7 @@ void Stringpool::decrement() {
 }
 
 void Stringpool::decrementstatus(uint16_t nb) {
-    if (is_protected())
-        return;
-    
-    status -= nb;
+    status -= nb * not_protected();
     if (!status) {
         content = U"";
         lisp->string_pool.push_back(this);

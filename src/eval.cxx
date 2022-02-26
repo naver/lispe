@@ -2237,40 +2237,29 @@ Element* List::evall_atoms(LispE* lisp) {
 }
 
 Element* List::evall_bitnot(LispE* lisp) {
-    Element* e = null_;
-    Element* first_element = liste[1];
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    Element* e;
         
     try {
-        first_element = first_element->eval(lisp);
-        first_element = first_element->copyatom(lisp, 1);
         e = first_element->bit_not(lisp);
-        first_element->release();
     }
     catch (Error* err) {
         first_element->release();
         throw err;
     }
 
+    if (e != first_element)
+        first_element->release();
+    
     return e;
 }
 
 Element* List::evall_addr_(LispE* lisp) {
-    Element* element = liste[1];
-    uint64_t addr;
-        
-    try {
-        element = element->eval(lisp);
-        addr = (uint64_t)element;
-        element->release();
-        element = lisp->provideInteger(addr);
-    }
-    catch (Error* err) {
-        element->release();
-        throw err;
-    }
-
-    return element;
-
+    Element* element = liste[1]->eval(lisp);
+    uint64_t addr = (uint64_t)element;
+    element->release();
+    return lisp->provideInteger(addr);
 }
 
 
