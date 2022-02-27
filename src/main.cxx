@@ -225,8 +225,8 @@ int main(int argc, char *argv[]) {
             cout << "        - lispe " << coloring<< "program -a execute 'program' with _args containing the output of the 'pipe'"<< endl << endl;
             cout << m_red << "    Execution of 'code' on a pipe output: ls -al | lisp -p '(+ l2 l3)'" << m_current << endl;
             cout << "    lispe -pb/-pe/-p 'code' arg1 arg2:"<< endl;
-            cout << "        - '-pb' " << coloring << "allows to execute an initial code (must be placed before '-p')" << m_current << endl;
-            cout << "        - '-pe' " << coloring << "allows to execute a final code (must be placed before '-p')" << m_current << endl;
+            cout << "        - '-pb' " << coloring << "makes it possible to execute an initial code (must be placed before '-p')" << m_current << endl;
+            cout << "        - '-pe' " << coloring << "makes it possible to execute a final code (must be placed before '-p')" << m_current << endl;
             cout << m_red << "        The lines are automatically cut along the spaces into variables:" << m_current << endl;
             cout << "            - accu1, accu2,..., accu9: " << coloring << "Nine accumulators (= 0 at startup)" << m_current << endl;
             cout << "            - ln: " << coloring << "is the number of fields" << m_current << endl;
