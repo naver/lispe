@@ -185,6 +185,8 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
 int main(int argc, char *argv[]) {
     vector<string> arguments;
 
+    const char* coloring = m_blue;
+    
     string args;
     string code;
     string file_name;
@@ -219,24 +221,24 @@ int main(int argc, char *argv[]) {
             cout << "    lispe -e program arg1 arg2"<< endl<< endl;
             cout << m_red << "    The entire pipe is stored in '_args'" << m_current << endl;
             cout << "    lispe -a:"<< endl;
-            cout << "        - lispe -a:" << m_blue << "gives back the hand in the interactive interpreter"<< endl;
-            cout << "        - lispe " << m_blue<< "program -a execute 'program' with _args containing the output of the 'pipe'"<< endl << endl;
+            cout << "        - lispe -a:" << coloring << "gives back the hand in the interactive interpreter"<< endl;
+            cout << "        - lispe " << coloring<< "program -a execute 'program' with _args containing the output of the 'pipe'"<< endl << endl;
             cout << m_red << "    Execution of 'code' on a pipe output: ls -al | lisp -p '(+ l2 l3)'" << m_current << endl;
             cout << "    lispe -pb/-pe/-p 'code' arg1 arg2:"<< endl;
-            cout << "        - '-pb' " << m_blue << "allows to execute an initial code (must be placed before '-p')" << m_current << endl;
-            cout << "        - '-pe' " << m_blue << "allows to execute a final code (must be placed before '-p')" << m_current << endl;
+            cout << "        - '-pb' " << coloring << "allows to execute an initial code (must be placed before '-p')" << m_current << endl;
+            cout << "        - '-pe' " << coloring << "allows to execute a final code (must be placed before '-p')" << m_current << endl;
             cout << m_red << "        The lines are automatically cut along the spaces into variables:" << m_current << endl;
-            cout << "            - accu1, accu2,..., accu9: " << m_blue << "Nine accumulators (= 0 at startup)" << m_current << endl;
-            cout << "            - ln: " << m_blue << "is the number of fields" << m_current << endl;
-            cout << "            - ll: " << m_blue << "is the list of fields" << m_current << endl;
-            cout << "            - l0: " << m_blue << "is the full line" << m_current << endl;
-            cout << "            - l1, l2, l3...: " << m_blue << "each variable corresponds to a field in the split line" << m_current << endl << endl;
+            cout << "            - accu1, accu2,..., accu9: " << coloring << "Nine accumulators (= 0 at startup)" << m_current << endl;
+            cout << "            - ln: " << coloring << "is the number of fields" << m_current << endl;
+            cout << "            - ll: " << coloring << "is the list of fields" << m_current << endl;
+            cout << "            - l0: " << coloring << "is the full line" << m_current << endl;
+            cout << "            - l1, l2, l3...: " << coloring << "each variable corresponds to a field in the split line" << m_current << endl << endl;
             cout << m_red << "    Execution of program file on a pipe output: ls -al | lisp -P file" << m_current << endl;
             cout << "    lispe -P program.lisp arg1 arg2:"<< endl;
-            cout << "        - '-P' "<< m_blue << "has the same variables as '-p'. m_current" << m_current << endl;
-            cout << "        - '-P' 'program.lisp' " << m_blue << "must contain the function: (defun runpipe()...)" << m_current << endl << endl;
-            cout << "    lispe -r 'rgx': "<< m_blue << "Condition (posix regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
-            cout << "    lispe -R 'rgx': " << m_blue << "Condition (internal regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
+            cout << "        - '-P' "<< coloring << "has the same variables as '-p'. m_current" << m_current << endl;
+            cout << "        - '-P' 'program.lisp' " << coloring << "must contain the function: (defun runpipe()...)" << m_current << endl << endl;
+            cout << "    lispe -r 'rgx': "<< coloring << "Condition (posix regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
+            cout << "    lispe -R 'rgx': " << coloring << "Condition (internal regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
             cout << endl << endl;
             return -1;
         }
@@ -256,6 +258,7 @@ int main(int argc, char *argv[]) {
 
         if (args == "-b") {
             darkmode = true;
+            coloring = m_blueblack;
             continue;
         }
         
