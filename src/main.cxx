@@ -247,6 +247,17 @@ int main(int argc, char *argv[]) {
             return -1;
         }
             
+        if (args == "-mg") {
+            if (i >= argc - 1) {
+                cerr << "Missing code for option '-mg'" << endl;
+                exit(-1);
+            }
+            long v = convertingfloathexa(argv[++i]);
+            if (v >= 0)
+                margin_value_reference = v;
+            continue;
+        }
+        
         //Lecture du pipe dans args
         if (args == "-a") {
             while (!std::cin.eof()) {
@@ -333,6 +344,7 @@ int main(int argc, char *argv[]) {
 
         if (args == "-d") {
             JAGEDITOR = new lispe_editor();
+            JAGEDITOR->setnoprefix();
             string a_file_name;
             string line;
             if (i < argc - 1) {
@@ -370,6 +382,7 @@ int main(int argc, char *argv[]) {
 
         if (args == "-e") {
             JAGEDITOR = new lispe_editor();
+            JAGEDITOR->setnoprefix();
             string a_file_name;
             if (i < argc - 1) {
                 i++;
@@ -407,6 +420,7 @@ int main(int argc, char *argv[]) {
     }
     
     JAGEDITOR = new lispe_editor();
+    JAGEDITOR->setnoprefix();
     JAGEDITOR->launchterminal(darkmode, 2, arguments);
 }
 #endif

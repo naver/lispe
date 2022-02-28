@@ -26,7 +26,6 @@
 #define l_com 2
 #define l_com_one 3
 
-
 #define openMode std::ios::in|std::ios::binary
 
 #include "jagget.h"
@@ -532,7 +531,7 @@ public:
         lines[p] = line;
     }
 
-    void refactoring(long p);
+    bool refactoring(long p);
 
 
 };
@@ -874,11 +873,9 @@ public:
             wprefix = L"";
             prefixsize = 0;
             margin = 2;
-            spacemargin = 1;
         }
         else {
-            margin = 10;
-            spacemargin = 9;
+            margin = margin_value_reference;
             prefix = ">>";
             wprefix = L">>";
             setprefixesize(lines.size());
@@ -1086,6 +1083,9 @@ public:
     }
 
     void displaylist(long beg);
+    virtual void displaylist(long beg, long end) {
+        displaylist(beg);
+    }
 
     virtual void printline(long n, string l) {
         if (noprefix)

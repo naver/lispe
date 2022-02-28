@@ -34,6 +34,8 @@ using std::endl;
 using std::vector;
 
 //--------------------------------------------------------------------------------
+extern long margin_value_reference;
+//--------------------------------------------------------------------------------
 
 #ifdef PASDECOULEUR
 const char m_current[] = {0,0};
@@ -179,7 +181,6 @@ public:
     
     long row_size, col_size;
     long margin;
-    long spacemargin;
     
     int nbclicks;
     

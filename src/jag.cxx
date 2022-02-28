@@ -314,7 +314,7 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     posixrgx = NULL;
 #endif
 
-    prefixsize = 1;
+    prefixsize = 0;
 
     xcursor = 0;
     ycursor = 0;
@@ -588,7 +588,7 @@ void jag_editor::deletechar(bool left) {
     long sz = line.size();
     bool last = false;
     if (posinstring >= sz - 1) {
-            //We need to known if we are in the middle of a large string across more than one line...
+            //We need to know if we are in the middle of a large string across more than one line...
         if (!emode())
             last = true;
         else {
@@ -625,12 +625,33 @@ void jag_editor::deletechar(bool left) {
 
             tobesaved = true;
 			lines[pos] = line;
-			//clearline();
 
-            if (lines.Status(pos))
-                lines.refactoring(pos);
-            clearline();
-            printline(pos+1, line, -1);
+            if (lines.Status(pos)) {
+                if (lines.refactoring(pos)) {
+                    displaylist(poslines[0]);
+                    movetoline(currentline);
+                }
+                else {
+                    clearline();
+                    long p = pos + 1;
+                    if (lines.Status(pos) == concat_line)
+                        printline(-1, lines[pos], -1);
+                    else
+                        printline(p, lines[pos], -1);
+                    long cl = currentline + 1;
+                    while (lines.Status(p) == concat_line) {
+                        movetoline(cl++);
+                        clearline();
+                        printline(-1, lines[p], -1);
+                        p++;
+                    }
+                    movetoline(currentline);
+                }
+            }
+            else {
+                clearline();
+                printline(pos+1, line, -1);
+            }
 		}
         else {
 			posinstring = pins;
@@ -3371,6 +3392,7 @@ void editor_lines::setcode(wstring& code, bool clean) {
     status.clear();
     lines.clear();
     numeros.clear();
+    longlines.clear();
 
     jag->vsplit(code, L"\n", buff);
     jag->setprefixesize(buff.size());
@@ -3609,7 +3631,7 @@ void editor_lines::undo(wstring& l, long p, char a) {
     jag->undo(l,p,a);
 }
 
-void editor_lines::refactoring(long pos) {
+bool editor_lines::refactoring(long pos) {
     long p = pos;
         //First we look for the first line of our group
     if (Status(p) == concat_line) {
@@ -3620,12 +3642,12 @@ void editor_lines::refactoring(long pos) {
     long first = p;
     wstring baseline = lines[p++];
 
-        //It was not at the beginning of a line, we concatenate our block
+    //It was not at the beginning of a line, we concatenate our block
     while (Status(p) == concat_line)
         baseline += lines[p++];
 
     if (baseline == L"") {
-        return;
+        return false;
     }
 
     //We then clean all these lines...
@@ -3646,13 +3668,16 @@ void editor_lines::refactoring(long pos) {
         first++;
     }
 
+    bool delete_line = false;
     while (first < p) {
+        delete_line = true;
         jag->undo(lines[first], first, u_del_linked);
         erase(first);
         p--;
     }
 
     numbers();
+    return delete_line;
 }
 
 char editor_lines::updatestatus(long pos) {

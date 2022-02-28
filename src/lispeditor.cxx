@@ -1023,8 +1023,6 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
 		LispSetCode(codes[0]);
 	}
 
-    previous_noprefix = false;
-
     switch (noinit) {
         case 1:
             prefix = "<>";
@@ -1049,8 +1047,6 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             //switch to edit mode
             pos = 0;
             line = L"edit";
-            noprefix = true;
-            previous_noprefix = true;
             pos = handlingcommands(pos, dsp);
             break;
         case 4:

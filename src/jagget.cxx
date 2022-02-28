@@ -25,6 +25,9 @@
 #include "tools.h"
 
 //------------------------------------------------------------------------------------
+long margin_value_reference = 3;
+//------------------------------------------------------------------------------------
+
 static const short _getbuffsize = 128;
 char m_scrollmargin[] = { 27, 91, '0', '0', '0', ';', '0', '0','0', 'r', 0 };
 static char m_deletechar[] = { 27, 91, '1', 'P', 0 };
@@ -88,6 +91,9 @@ void jag_get::initialisation() {
 
 jag_get::jag_get(bool inside) {
     initialized = false;
+    row_size = -1;
+    col_size = -1;
+    margin = margin_value_reference;
 
     if (inside) {
         main_handler = this;
@@ -95,10 +101,6 @@ jag_get::jag_get(bool inside) {
     }
     
     inside_editor = inside;
-    row_size = -1;
-    col_size = -1;
-    margin = 10;
-    spacemargin = 9;
     mouse_status = false;
 	nbclicks = 0;
 
