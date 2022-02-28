@@ -1104,8 +1104,14 @@ public:
     virtual void printline(long n, wstring& l, long i) {
         if (noprefix)
             cout << back << coloringline(l, i);
-        else
-            cout << back << m_dore << prefixstring(n) << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l, i);
+        else {
+            if (n == -1) {
+                string space(prefixe(), ' ');
+                cout << back << space << coloringline(l, i);
+            }
+            else
+                cout << back << m_dore << prefixstring(n) << m_current << m_lightgray << std::setw(prefixsize) << n << "> " << m_current << coloringline(l, i);
+        }
     }
 
         //------------------------------------------------------------------------------------------------
