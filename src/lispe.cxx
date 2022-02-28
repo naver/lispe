@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.26.12.4";
+static std::string version = "1.2022.2.28.11.28";
 string LispVersion() {
     return version;
 }
@@ -1603,6 +1603,14 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     e->eval(this);
                                     removefromgarbage(e);
                                     continue;
+                                case l_if:
+                                    if (e->size() == 3)
+                                        e->append(void_function);
+
+                                    //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
+                                    if (topfunction && topfunction <= courant->size())
+                                        e->setterminal();
+                                    break;
                                 case l_infix: {
                                     Element* inter = ((Listincode*)e)->eval_infix(this);
                                     if (inter != e) {
@@ -1613,9 +1621,6 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     else
                                         break;
                                 }
-                                case l_if:
-                                    if (e->size() == 3)
-                                        e->append(void_function);
                                 default: {
                                     if (lab >= l_map && lab <= l_scanr1) {
                                         Element* inter = e->composing(this, docompose);
@@ -2314,6 +2319,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
