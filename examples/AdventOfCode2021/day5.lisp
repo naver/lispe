@@ -4,7 +4,7 @@
 
 
 (setq lignes (fread (+ _current "data/codes_day5.txt")))
-  
+
 (setq coords
    (maplist
       (\(x) (list (integers (split (@ x 0) ",")) (integers (split (@ x 1) ","))))
@@ -18,6 +18,8 @@
 (setq c_max (+ 1 (max (flatten coords))))
 
 (setq plan (rho c_max c_max (floats 0)))
+
+(setq ii 0)
 
 (maplist
    (\(e)

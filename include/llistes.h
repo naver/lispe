@@ -514,7 +514,7 @@ public:
         return true;
     }
 
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     
     Element* loop(LispE* lisp, short label,  List* code);
 
@@ -1045,7 +1045,8 @@ public:
     Element* check_member(LispE*, Element* the_set);
     
     Element* insert(LispE* lisp, Element* e, long idx);
-
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
+    
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
     //list...

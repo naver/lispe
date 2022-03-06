@@ -625,12 +625,10 @@ Element* Dictionary::value_on_index(LispE* lisp, Element* ix) {
 
 Element* Dictionary::protected_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
-    try {
-        return dictionary.at(k);
-    }
-    catch (...) {
+    auto it = dictionary.find(k);
+    if (it == dictionary.end())
         throw new Error("Error: index out of bounds");
-    }
+    return it->second;
 }
 
 Element* Dictionary::join_in_list(LispE* lisp, u_ustring& sep) {
@@ -934,17 +932,17 @@ Element* Dictionary_i::protected_index(LispE* lisp, long k) {
 }
 
 Element* Dictionary_i::value_on_index(LispE* lisp, Element* ix) {
-    auto it = dictionary.find(ix->checkNumber(lisp));
+    long v = ix->checkInteger(lisp);
+    auto it = dictionary.find(v);
     return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary_i::protected_index(LispE* lisp, Element* ix) {
-    try {
-        return dictionary.at(ix->checkNumber(lisp));
-    }
-    catch (...) {
+    long v = ix->checkInteger(lisp);
+    auto it = dictionary.find(v);
+    if (it == dictionary.end())
         throw new Error("Error: index out of bounds");
-    }
+    return it->second;
 }
 
 Element* Dictionary_i::join_in_list(LispE* lisp, u_ustring& sep) {
@@ -1205,17 +1203,17 @@ Element* Dictionary_n::protected_index(LispE* lisp, double k) {
 }
 
 Element* Dictionary_n::value_on_index(LispE* lisp, Element* ix) {
-    auto it = dictionary.find(ix->checkNumber(lisp));
+    double v = ix->checkNumber(lisp);
+    auto it = dictionary.find(v);
     return (it == dictionary.end())?null_:it->second->copying(false);
 }
 
 Element* Dictionary_n::protected_index(LispE* lisp, Element* ix) {
-    try {
-        return dictionary.at(ix->checkNumber(lisp));
-    }
-    catch (...) {
+    double v = ix->checkNumber(lisp);
+    auto it = dictionary.find(v);
+    if (it == dictionary.end())
         throw new Error("Error: index out of bounds");
-    }
+    return it->second;
 }
 
 Element* Dictionary_n::join_in_list(LispE* lisp, u_ustring& sep) {

@@ -53,7 +53,7 @@ public:
     vecte<long> stacktype;
     //vector<long> cpos;
     
-    Chaine_UTF8* access;
+    UTF8_Handler* access;
 
     short table[255];
 

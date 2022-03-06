@@ -121,11 +121,10 @@ static void timeout_callback(void *data) {
 
     LispE* lisp = doublewnd->lisp;
 
-    List* call = lisp->provideList();
+    List* call = lisp->provideCall(wnd->function, 2);
 
-    call->append(wnd->function);
-    call->append(wnd);
-    call->append(wnd->object);
+    call->in_quote(1, wnd);
+    call->in_quote(2, wnd->object);
 
     Element* res = null_;
     try {
@@ -157,10 +156,9 @@ static void fltk_callback(Fl_Widget *w, void *data) {
     LispE* lisp = widget->lisp;
     
     if (func != NULL) {
-        List* call = lisp->provideList();
-        call->append(func);
-        call->append(widget);
-        call->append(widget->object);
+        List* call = lisp->provideCall(func, 2);
+        call->in_quote(1, widget);
+        call->in_quote(2, widget->object);
         Element* res = lisp->delegation->_NULL;
         try {
             res = call->eval(lisp);
@@ -185,10 +183,9 @@ static void fltk_close_callback(Fl_Widget *w, void *data) {
     LispE* lisp = widget->lisp;
     
     if (func != NULL) {
-        List* call = lisp->provideList();
-        call->append(func);
-        call->append(widget);
-        call->append(widget->object);
+        List* call = lisp->provideCall(func, 2);
+        call->in_quote(1, widget);
+        call->in_quote(2, widget->object);
         Element* res = lisp->delegation->_NULL;
         try {
             res = call->eval(widget->lisp);
@@ -1528,10 +1525,9 @@ void Doublewindow::draw() {
 
     if (fltk_window->check()) {
         fl_color(FL_BLACK); //we set FL_BLACK as the default color, it can be modified with drawcolor in the code...
-        List* call = lisp->provideList();
-        call->append(fltk_window->function);
-        call->append(fltk_window);
-        call->append(fltk_window->object);
+        List* call = lisp->provideCall(fltk_window->function, 2);
+        call->in_quote(1, fltk_window);
+        call->in_quote(2, fltk_window->object);
         Element* res = null_;
         try {
             res = call->eval(lisp);

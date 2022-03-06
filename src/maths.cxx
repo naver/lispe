@@ -456,8 +456,8 @@ void LList::build(LispE* lisp, vecte<long>& shape, long isz, LList* res, LList* 
 void List::combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
     if (!l1->isList() && !l2->isList()) {
         if (isz1.size() && isz2.size()) {
-            action->liste[1] = l1;
-            action->liste[2] = l2;
+            action->in_quote(1, l1);
+            action->in_quote(2, l2);
             Element* e = action->eval(lisp);
             Element* r = this;
             long i;
@@ -1054,16 +1054,16 @@ short Element::checkShort(LispE* lisp) {
 Element* Float::plus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
-            number += ((Float*)e)->number;
+            content += ((Float*)e)->content;
             return this;
         case t_number:
-            number += ((Number*)e)->number;
+            content += ((Number*)e)->content;
             return this;
         case t_short:
-            number += ((Short*)e)->integer;
+            content += ((Short*)e)->content;
             return this;
         case t_integer:
-            number += ((Integer*)e)->integer;
+            content += ((Integer*)e)->content;
             return this;
         default:
             return plus(lisp, e);
@@ -1073,16 +1073,16 @@ Element* Float::plus_direct(LispE* lisp, Element* e) {
 Element* Float::minus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
-            number -= ((Float*)e)->number;
+            content -= ((Float*)e)->content;
             return this;
         case t_number:
-            number -= ((Number*)e)->number;
+            content -= ((Number*)e)->content;
             return this;
         case t_integer:
-            number -= ((Integer*)e)->integer;
+            content -= ((Integer*)e)->content;
             return this;
         case t_short:
-            number -= ((Short*)e)->integer;
+            content -= ((Short*)e)->content;
             return this;
         default:
             return minus(lisp, e);
@@ -1092,16 +1092,16 @@ Element* Float::minus_direct(LispE* lisp, Element* e) {
 Element* Float::multiply_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
-            number *= ((Float*)e)->number;
+            content *= ((Float*)e)->content;
             return this;
         case t_number:
-            number *= ((Number*)e)->number;
+            content *= ((Number*)e)->content;
             return this;
         case t_integer:
-            number *= ((Integer*)e)->integer;
+            content *= ((Integer*)e)->content;
             return this;
         case t_short:
-            number *= ((Short*)e)->integer;
+            content *= ((Short*)e)->content;
             return this;
         default:
             return multiply(lisp, e);
@@ -1111,31 +1111,31 @@ Element* Float::multiply_direct(LispE* lisp, Element* e) {
 Element* Float::divide_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float: {
-            double v = ((Float*)e)->number;
+            double v = ((Float*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         case t_number: {
-            double v = ((Number*)e)->number;
+            double v = ((Number*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         case t_integer: {
-            double v = ((Integer*)e)->integer;
+            double v = ((Integer*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         case t_short: {
-            double v = ((Short*)e)->integer;
+            double v = ((Short*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         default:
@@ -1151,10 +1151,10 @@ Element* Float::plus(LispE* lisp, Element* e) {
         return n;
     }
     if (status != s_constant) {
-        number += e->checkFloat(lisp);
+        content += e->checkFloat(lisp);
         return this;
     }
-    return lisp->provideFloat(number+e->checkFloat(lisp));
+    return lisp->provideFloat(content+e->checkFloat(lisp));
 }
 
 Element* Float::minus(LispE* lisp, Element* e) {
@@ -1164,10 +1164,10 @@ Element* Float::minus(LispE* lisp, Element* e) {
         return n->minus(lisp, e);
     }
     if (status != s_constant) {
-        number -= e->checkFloat(lisp);
+        content -= e->checkFloat(lisp);
         return this;
     }
-    return lisp->provideFloat(number-e->checkFloat(lisp));
+    return lisp->provideFloat(content-e->checkFloat(lisp));
 }
 
 Element* Float::multiply(LispE* lisp, Element* e) {
@@ -1178,10 +1178,10 @@ Element* Float::multiply(LispE* lisp, Element* e) {
         return n;
     }
     if (status != s_constant) {
-        number *= e->checkFloat(lisp);
+        content *= e->checkFloat(lisp);
         return this;
     }
-    return lisp->provideFloat(number*e->checkFloat(lisp));
+    return lisp->provideFloat(content*e->checkFloat(lisp));
 }
 
 Element* Float::divide(LispE* lisp, Element* e) {
@@ -1194,10 +1194,10 @@ Element* Float::divide(LispE* lisp, Element* e) {
     if (!v)
         throw new Error("Error: division by zero");
     if (status != s_constant) {
-        number /= v;
+        content /= v;
         return this;
     }
-    return lisp->provideFloat(number/v);
+    return lisp->provideFloat(content/v);
 }
 
 Element* Float::mod(LispE* lisp, Element* e) {
@@ -1212,10 +1212,10 @@ Element* Float::mod(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
 
     if (status != s_constant) {
-        number = (long)number % v;
+        content = (long)content % v;
         return this;
     }
-    return lisp->provideFloat((long)number%v);
+    return lisp->provideFloat((long)content%v);
 }
 
 Element* Float::power(LispE* lisp, Element* e) {
@@ -1225,17 +1225,17 @@ Element* Float::power(LispE* lisp, Element* e) {
         return n->power(lisp, e);
     }
     if (status != s_constant) {
-        number = pow(number, e->checkFloat(lisp));
+        content = pow(content, e->checkFloat(lisp));
         return this;
     }
-    return lisp->provideFloat(pow(number, e->checkFloat(lisp)));
+    return lisp->provideFloat(pow(content, e->checkFloat(lisp)));
 }
 
 Element* Float::bit_not(LispE* lisp)  {
-    double32 d(number);
+    double32 d(content);
     d.bits = ~d.bits;
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
     release();
@@ -1249,10 +1249,10 @@ Element* Float::bit_and_not(LispE* lisp, Element* e)  {
         release();
         return n->bit_and_not(lisp, e);
     }
-    double32 d(number);
+    double32 d(content);
     d.bits &= ~e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1266,10 +1266,10 @@ Element* Float::bit_and(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    double32 d(number);
+    double32 d(content);
     d.bits &= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1284,10 +1284,10 @@ Element* Float::bit_or(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    double32 d(number);
+    double32 d(content);
     d.bits |= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1301,10 +1301,10 @@ Element* Float::bit_xor(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    double32 d(number);
+    double32 d(content);
     d.bits ^= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1317,10 +1317,10 @@ Element* Float::leftshift(LispE* lisp, Element* e)  {
         release();
         return n->leftshift(lisp, e);
     }
-    double32 d(number);
+    double32 d(content);
     d.bits <<= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1333,10 +1333,10 @@ Element* Float::rightshift(LispE* lisp, Element* e)  {
         release();
         return n->rightshift(lisp, e);
     }
-    double32 d(number);
+    double32 d(content);
     d.bits >>= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1346,16 +1346,16 @@ Element* Float::rightshift(LispE* lisp, Element* e)  {
 Element* Number::plus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
-            number += ((Float*)e)->number;
+            content += ((Float*)e)->content;
             return this;
         case t_number:
-            number += ((Number*)e)->number;
+            content += ((Number*)e)->content;
             return this;
         case t_integer:
-            number += ((Integer*)e)->integer;
+            content += ((Integer*)e)->content;
             return this;
         case t_short:
-            number += ((Short*)e)->integer;
+            content += ((Short*)e)->content;
             return this;
         default:
             return plus(lisp, e);
@@ -1365,16 +1365,16 @@ Element* Number::plus_direct(LispE* lisp, Element* e) {
 Element* Number::minus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
-            number -= ((Float*)e)->number;
+            content -= ((Float*)e)->content;
             return this;
         case t_number:
-            number -= ((Number*)e)->number;
+            content -= ((Number*)e)->content;
             return this;
         case t_integer:
-            number -= ((Integer*)e)->integer;
+            content -= ((Integer*)e)->content;
             return this;
         case t_short:
-            number -= ((Short*)e)->integer;
+            content -= ((Short*)e)->content;
             return this;
         default:
             return minus(lisp, e);
@@ -1384,16 +1384,16 @@ Element* Number::minus_direct(LispE* lisp, Element* e) {
 Element* Number::multiply_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
-            number *= ((Float*)e)->number;
+            content *= ((Float*)e)->content;
             return this;
         case t_number:
-            number *= ((Number*)e)->number;
+            content *= ((Number*)e)->content;
             return this;
         case t_integer:
-            number *= ((Integer*)e)->integer;
+            content *= ((Integer*)e)->content;
             return this;
         case t_short:
-            number *= ((Short*)e)->integer;
+            content *= ((Short*)e)->content;
             return this;
         default:
             return multiply(lisp, e);
@@ -1403,31 +1403,31 @@ Element* Number::multiply_direct(LispE* lisp, Element* e) {
 Element* Number::divide_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float: {
-            double v = ((Float*)e)->number;
+            double v = ((Float*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         case t_number: {
-            double v = ((Number*)e)->number;
+            double v = ((Number*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         case t_integer: {
-            double v = ((Integer*)e)->integer;
+            double v = ((Integer*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         case t_short: {
-            double v = ((Short*)e)->integer;
+            double v = ((Short*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            number /= v;
+            content /= v;
             return this;
         }
         default:
@@ -1443,10 +1443,10 @@ Element* Number::plus(LispE* lisp, Element* e) {
         return n;
     }
     if (status != s_constant) {
-        number += e->checkNumber(lisp);
+        content += e->checkNumber(lisp);
         return this;
     }
-    return lisp->provideNumber(number+e->checkNumber(lisp));
+    return lisp->provideNumber(content+e->checkNumber(lisp));
 }
 
 Element* Number::minus(LispE* lisp, Element* e) {
@@ -1456,10 +1456,10 @@ Element* Number::minus(LispE* lisp, Element* e) {
         return n->minus(lisp, e);
     }
     if (status != s_constant) {
-        number -= e->checkNumber(lisp);
+        content -= e->checkNumber(lisp);
         return this;
     }
-    return lisp->provideNumber(number-e->checkNumber(lisp));
+    return lisp->provideNumber(content-e->checkNumber(lisp));
 }
 
 Element* Number::multiply(LispE* lisp, Element* e) {
@@ -1470,10 +1470,10 @@ Element* Number::multiply(LispE* lisp, Element* e) {
         return n;
     }
     if (status != s_constant) {
-        number *= e->checkNumber(lisp);
+        content *= e->checkNumber(lisp);
         return this;
     }
-    return lisp->provideNumber(number*e->checkNumber(lisp));
+    return lisp->provideNumber(content*e->checkNumber(lisp));
 }
 
 Element* Number::divide(LispE* lisp, Element* e) {
@@ -1486,10 +1486,10 @@ Element* Number::divide(LispE* lisp, Element* e) {
     if (!v)
         throw new Error("Error: division by zero");
     if (status != s_constant) {
-        number /= v;
+        content /= v;
         return this;
     }
-    return lisp->provideNumber(number/v);
+    return lisp->provideNumber(content/v);
 }
 
 Element* Number::mod(LispE* lisp, Element* e) {
@@ -1504,10 +1504,10 @@ Element* Number::mod(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
 
     if (status != s_constant) {
-        number = (long)number % v;
+        content = (long)content % v;
         return this;
     }
-    return lisp->provideNumber((long)number%v);
+    return lisp->provideNumber((long)content%v);
 }
 
 Element* Number::power(LispE* lisp, Element* e) {
@@ -1517,17 +1517,17 @@ Element* Number::power(LispE* lisp, Element* e) {
         return n->power(lisp, e);
     }
     if (status != s_constant) {
-        number = pow(number, e->checkNumber(lisp));
+        content = pow(content, e->checkNumber(lisp));
         return this;
     }
-    return lisp->provideNumber(pow(number, e->checkNumber(lisp)));
+    return lisp->provideNumber(pow(content, e->checkNumber(lisp)));
 }
 
 Element* Number::bit_not(LispE* lisp)  {
-    double64 d(number);
+    double64 d(content);
     d.bits = ~d.bits;
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
     release();
@@ -1541,10 +1541,10 @@ Element* Number::bit_and_not(LispE* lisp, Element* e)  {
         release();
         return n->bit_and_not(lisp, e);
     }
-    double64 d(number);
+    double64 d(content);
     d.bits &= ~e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1558,10 +1558,10 @@ Element* Number::bit_and(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    double64 d(number);
+    double64 d(content);
     d.bits &= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1576,10 +1576,10 @@ Element* Number::bit_or(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    double64 d(number);
+    double64 d(content);
     d.bits |= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1593,10 +1593,10 @@ Element* Number::bit_xor(LispE* lisp, Element* e)  {
         release();
         return n;
     }
-    double64 d(number);
+    double64 d(content);
     d.bits ^= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1609,10 +1609,10 @@ Element* Number::leftshift(LispE* lisp, Element* e)  {
         release();
         return n->leftshift(lisp, e);
     }
-    double64 d(number);
+    double64 d(content);
     d.bits <<= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1625,10 +1625,10 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
         release();
         return n->rightshift(lisp, e);
     }
-    double64 d(number);
+    double64 d(content);
     d.bits >>= e->checkInteger(lisp);
     if (status != s_constant) {
-        number = d.v;
+        content = d.v;
         return this;
     }
 
@@ -1644,22 +1644,22 @@ Element* Integer::plus(LispE* lisp, Element* e) {
     }
 
     if (e->type == t_float) {
-        float v = (float)integer + e->checkFloat(lisp);
+        float v = (float)content + e->checkFloat(lisp);
         release();
         return lisp->provideFloat(v);
     }
 
     if (e->type == t_number) {
-        double v = (double)integer + e->checkNumber(lisp);
+        double v = (double)content + e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer += e->checkInteger(lisp);
+        content += e->checkInteger(lisp);
         return this;
     }
         
-    return lisp->provideInteger(integer+e->checkInteger(lisp));
+    return lisp->provideInteger(content+e->checkInteger(lisp));
 }
 
 Element* Integer::minus(LispE* lisp, Element* e) {
@@ -1669,21 +1669,21 @@ Element* Integer::minus(LispE* lisp, Element* e) {
         return n->minus(lisp, e);
     }
     if (e->type == t_float) {
-        float v = (float)integer - e->checkFloat(lisp);
+        float v = (float)content - e->checkFloat(lisp);
         release();
         return lisp->provideFloat(v);
     }
 
     if (e->type == t_number) {
-        double v = (double)integer - e->checkNumber(lisp);
+        double v = (double)content - e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer -= e->checkInteger(lisp);
+        content -= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer-e->checkInteger(lisp));
+    return lisp->provideInteger(content-e->checkInteger(lisp));
 }
 
 Element* Integer::multiply(LispE* lisp, Element* e) {
@@ -1694,52 +1694,52 @@ Element* Integer::multiply(LispE* lisp, Element* e) {
         return n;
     }
     if (e->type == t_float) {
-        float v = (float)integer * e->checkFloat(lisp);
+        float v = (float)content * e->checkFloat(lisp);
         release();
         return lisp->provideFloat(v);
     }
 
     if (e->type == t_number) {
-        double v = (double)integer * e->checkNumber(lisp);
+        double v = (double)content * e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer *= e->asInteger();
+        content *= e->asInteger();
         return this;
     }
-    return lisp->provideInteger(integer*e->asInteger());
+    return lisp->provideInteger(content*e->asInteger());
 }
 
 Element* Integer::divide_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float: {
-            float v =  ((Float*)e)->number;
+            float v =  ((Float*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
             release();
-            return lisp->provideFloat(((float)integer)/v);
+            return lisp->provideFloat(((float)content)/v);
         }
         case t_number: {
-            double v =  ((Number*)e)->number;
+            double v =  ((Number*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
             release();
-            return lisp->provideNumber(((double)integer)/v);
+            return lisp->provideNumber(((double)content)/v);
         }
         case t_integer: {
-            double v =  ((Integer*)e)->integer;
+            double v =  ((Integer*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
             release();
-            return lisp->provideNumber(((double)integer)/v);
+            return lisp->provideNumber(((double)content)/v);
         }
         case t_short: {
-            double v =  ((Short*)e)->integer;
+            double v =  ((Short*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
             release();
-            return lisp->provideNumber(((double)integer)/v);
+            return lisp->provideNumber(((double)content)/v);
         }
         default:
             return divide(lisp, e);
@@ -1756,7 +1756,7 @@ Element* Integer::divide(LispE* lisp, Element* e) {
     if (!v)
         throw new Error("Error: division by zero");
     release();
-    return lisp->provideNumber((double)integer/v);
+    return lisp->provideNumber((double)content/v);
 }
 
 
@@ -1771,29 +1771,29 @@ Element* Integer::mod(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     
     if (status != s_constant) {
-        integer %= v;
+        content %= v;
         return this;
     }
-    return lisp->provideInteger(integer%v);
+    return lisp->provideInteger(content%v);
 }
 
 Element* Integer::power(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), integer);
+        Numbers* n = new Numbers(e->size(), content);
         return n->power(lisp, e);
     }
-    double v = pow((double)integer, e->checkNumber(lisp));
+    double v = pow((double)content, e->checkNumber(lisp));
     release();
     return lisp->provideNumber(v);
 }
 
 Element* Integer::bit_not(LispE* lisp)  {
     if (status != s_constant) {
-        integer = ~integer;
+        content = ~content;
         return this;
     }
     release();
-    return lisp->provideInteger(~integer);
+    return lisp->provideInteger(~content);
 }
 
 
@@ -1805,10 +1805,10 @@ Element* Integer::bit_and(LispE* lisp, Element* e)  {
         return n;
     }
     if (status != s_constant) {
-        integer &= e->checkInteger(lisp);
+        content &= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer&e->checkInteger(lisp));
+    return lisp->provideInteger(content&e->checkInteger(lisp));
 }
 
 Element* Integer::bit_and_not(LispE* lisp, Element* e)  {
@@ -1818,10 +1818,10 @@ Element* Integer::bit_and_not(LispE* lisp, Element* e)  {
         return n->bit_and_not(lisp, e);
     }
     if (status != s_constant) {
-        integer &= ~e->checkInteger(lisp);
+        content &= ~e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer&~e->checkInteger(lisp));
+    return lisp->provideInteger(content&~e->checkInteger(lisp));
 }
 
 Element* Integer::bit_or(LispE* lisp, Element* e)  {
@@ -1832,10 +1832,10 @@ Element* Integer::bit_or(LispE* lisp, Element* e)  {
         return n;
     }
     if (status != s_constant) {
-        integer |= e->checkInteger(lisp);
+        content |= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer|e->checkInteger(lisp));
+    return lisp->provideInteger(content|e->checkInteger(lisp));
 }
 
 Element* Integer::bit_xor(LispE* lisp, Element* e)  {
@@ -1846,10 +1846,10 @@ Element* Integer::bit_xor(LispE* lisp, Element* e)  {
         return n;
     }
     if (status != s_constant) {
-        integer ^= e->checkInteger(lisp);
+        content ^= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer^e->checkInteger(lisp));
+    return lisp->provideInteger(content^e->checkInteger(lisp));
 }
 
 
@@ -1860,10 +1860,10 @@ Element* Integer::leftshift(LispE* lisp, Element* e)  {
         return n->leftshift(lisp, e);
     }
     if (status != s_constant) {
-        integer <<= e->checkInteger(lisp);
+        content <<= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer<<e->checkInteger(lisp));
+    return lisp->provideInteger(content<<e->checkInteger(lisp));
 }
 
 
@@ -1874,10 +1874,10 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
         return n->rightshift(lisp, e);
     }
     if (status != s_constant) {
-        integer >>= e->checkInteger(lisp);
+        content >>= e->checkInteger(lisp);
         return this;
     }
-    return lisp->provideInteger(integer>>e->checkInteger(lisp));
+    return lisp->provideInteger(content>>e->checkInteger(lisp));
 }
 
 Element* Short::plus(LispE* lisp, Element* e) {
@@ -1889,22 +1889,22 @@ Element* Short::plus(LispE* lisp, Element* e) {
     }
 
     if (e->type == t_float) {
-        float v = (float)integer + e->checkFloat(lisp);
+        float v = (float)content + e->checkFloat(lisp);
         release();
         return lisp->provideFloat(v);
     }
 
     if (e->type == t_number) {
-        double v = (double)integer + e->checkNumber(lisp);
+        double v = (double)content + e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer += e->checkShort(lisp);
+        content += e->checkShort(lisp);
         return this;
     }
         
-    return new Short(integer+e->checkShort(lisp));
+    return new Short(content+e->checkShort(lisp));
 }
 
 Element* Short::minus(LispE* lisp, Element* e) {
@@ -1914,21 +1914,21 @@ Element* Short::minus(LispE* lisp, Element* e) {
         return n->minus(lisp, e);
     }
     if (e->type == t_float) {
-        float v = (float)integer - e->checkFloat(lisp);
+        float v = (float)content - e->checkFloat(lisp);
         release();
         return lisp->provideFloat(v);
     }
 
     if (e->type == t_number) {
-        double v = (double)integer - e->checkNumber(lisp);
+        double v = (double)content - e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer -= e->checkShort(lisp);
+        content -= e->checkShort(lisp);
         return this;
     }
-    return new Short(integer-e->checkShort(lisp));
+    return new Short(content-e->checkShort(lisp));
 }
 
 Element* Short::multiply(LispE* lisp, Element* e) {
@@ -1939,54 +1939,54 @@ Element* Short::multiply(LispE* lisp, Element* e) {
         return n;
     }
     if (e->type == t_float) {
-        float v = (float)integer * e->checkFloat(lisp);
+        float v = (float)content * e->checkFloat(lisp);
         release();
         return lisp->provideFloat(v);
     }
 
     if (e->type == t_number) {
-        double v = (double)integer * e->checkNumber(lisp);
+        double v = (double)content * e->checkNumber(lisp);
         release();
         return lisp->provideNumber(v);
     }
     if (status != s_constant) {
-        integer *= e->asInteger();
+        content *= e->asInteger();
         return this;
     }
-    return new Short(integer*e->asInteger());
+    return new Short(content*e->asInteger());
 }
 
 Element* Short::divide_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float: {
-            float v =  ((Float*)e)->number;
+            float v =  ((Float*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            float vv = (float)integer;
+            float vv = (float)content;
             release();
             return lisp->provideFloat(vv/v);
         }
         case t_number: {
-            double v =  ((Number*)e)->number;
+            double v =  ((Number*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            double vv = (double)integer;
+            double vv = (double)content;
             release();
             return lisp->provideNumber(vv/v);
         }
         case t_integer: {
-            double v =  ((Integer*)e)->integer;
+            double v =  ((Integer*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            double vv = (double)integer;
+            double vv = (double)content;
             release();
             return lisp->provideNumber(vv/v);
         }
         case t_short: {
-            double v =  ((Short*)e)->integer;
+            double v =  ((Short*)e)->content;
             if (!v)
                 throw new Error("Error: division by zero");
-            float vv = (float)integer;
+            float vv = (float)content;
             release();
             return lisp->provideFloat(vv/v);
         }
@@ -2004,7 +2004,7 @@ Element* Short::divide(LispE* lisp, Element* e) {
     double v =  e->checkNumber(lisp);
     if (!v)
         throw new Error("Error: division by zero");
-    double vv = (double)integer;
+    double vv = (double)content;
     release();
     return lisp->provideNumber(vv/v);
 }
@@ -2021,29 +2021,29 @@ Element* Short::mod(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     
     if (status != s_constant) {
-        integer %= v;
+        content %= v;
         return this;
     }
-    return new Short(integer%v);
+    return new Short(content%v);
 }
 
 Element* Short::power(LispE* lisp, Element* e) {
     if (e->isList()) {
-        Numbers* n = new Numbers(e->size(), integer);
+        Numbers* n = new Numbers(e->size(), content);
         return n->power(lisp, e);
     }
-    double v = pow((double)integer, e->checkNumber(lisp));
+    double v = pow((double)content, e->checkNumber(lisp));
     release();
     return lisp->provideNumber(v);
 }
 
 Element* Short::bit_not(LispE* lisp)  {
     if (status != s_constant) {
-        integer = ~integer;
+        content = ~content;
         return this;
     }
     release();
-    return new Short(~integer);
+    return new Short(~content);
 }
 
 
@@ -2055,10 +2055,10 @@ Element* Short::bit_and(LispE* lisp, Element* e)  {
         return n;
     }
     if (status != s_constant) {
-        integer &= e->checkShort(lisp);
+        content &= e->checkShort(lisp);
         return this;
     }
-    return new Short(integer&e->checkShort(lisp));
+    return new Short(content&e->checkShort(lisp));
 }
 
 Element* Short::bit_and_not(LispE* lisp, Element* e)  {
@@ -2068,10 +2068,10 @@ Element* Short::bit_and_not(LispE* lisp, Element* e)  {
         return n->bit_and_not(lisp, e);
     }
     if (status != s_constant) {
-        integer &= ~e->checkShort(lisp);
+        content &= ~e->checkShort(lisp);
         return this;
     }
-    return new Short(integer&~e->checkShort(lisp));
+    return new Short(content&~e->checkShort(lisp));
 }
 
 Element* Short::bit_or(LispE* lisp, Element* e)  {
@@ -2082,10 +2082,10 @@ Element* Short::bit_or(LispE* lisp, Element* e)  {
         return n;
     }
     if (status != s_constant) {
-        integer |= e->checkShort(lisp);
+        content |= e->checkShort(lisp);
         return this;
     }
-    return new Short(integer|e->checkShort(lisp));
+    return new Short(content|e->checkShort(lisp));
 }
 
 Element* Short::bit_xor(LispE* lisp, Element* e)  {
@@ -2096,10 +2096,10 @@ Element* Short::bit_xor(LispE* lisp, Element* e)  {
         return n;
     }
     if (status != s_constant) {
-        integer ^= e->checkShort(lisp);
+        content ^= e->checkShort(lisp);
         return this;
     }
-    return new Short(integer^e->checkShort(lisp));
+    return new Short(content^e->checkShort(lisp));
 }
 
 
@@ -2110,10 +2110,10 @@ Element* Short::leftshift(LispE* lisp, Element* e)  {
         return n->leftshift(lisp, e);
     }
     if (status != s_constant) {
-        integer <<= e->checkShort(lisp);
+        content <<= e->checkShort(lisp);
         return this;
     }
-    return new Short(integer<<e->checkShort(lisp));
+    return new Short(content<<e->checkShort(lisp));
 }
 
 
@@ -2124,10 +2124,10 @@ Element* Short::rightshift(LispE* lisp, Element* e)  {
         return n->rightshift(lisp, e);
     }
     if (status != s_constant) {
-        integer >>= e->checkShort(lisp);
+        content >>= e->checkShort(lisp);
         return this;
     }
-    return new Short(integer>>e->checkShort(lisp));
+    return new Short(content>>e->checkShort(lisp));
 }
 
 Element* LList::bit_not(LispE* l) {
@@ -8764,16 +8764,16 @@ Element* List_power2::eval(LispE* lisp) {
 
     switch (e->type) {
         case t_float:
-            ((Float*)e)->number *= ((Float*)e)->number;
+            ((Float*)e)->content *= ((Float*)e)->content;
             return e;
         case t_number:
-            ((Number*)e)->number *= ((Number*)e)->number;
+            ((Number*)e)->content *= ((Number*)e)->content;
             return e;
         case t_integer:
-            ((Integer*)e)->integer *= ((Integer*)e)->integer;
+            ((Integer*)e)->content *= ((Integer*)e)->content;
             return e;
         case t_short:
-            ((Short*)e)->integer *= ((Short*)e)->integer;
+            ((Short*)e)->content *= ((Short*)e)->content;
             return e;
         default:
             return e->multiply_direct(lisp, e);

@@ -52,29 +52,20 @@ short Element::function_label() {
 }
 //------------------------------------------------------------------------------------------
 Element* Float::copyatom(LispE* lisp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideFloat(number);
+    return (status < s)?this:lisp->provideFloat(content);
 }
 
-
 Element* Number::copyatom(LispE* lisp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideNumber(number);
+    return (status < s)?this:lisp->provideNumber(content);
 }
 
 
 Element* Integer::copyatom(LispE* lisp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideInteger(integer);
+    return (status < s)?this:lisp->provideInteger(content);
 }
 
 Element* String::copyatom(LispE* lisp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideString(content);
+    return (status < s)?this:lisp->provideString(content);
 }
 
 Element* Dictionary::copyatom(LispE* lisp, uint16_t s) {
@@ -209,6 +200,29 @@ Element* Strings::copyatom(LispE* lisp, uint16_t s) {
 }
 
 //------------------------------------------------------------------------------------------
+void Quotedpool::release() {
+    if (!status) {
+        value->decrement();
+        lisp->quoted_pool.push_back(this);
+    }
+}
+
+void Quotedpool::decrement() {
+    status -= not_protected();
+    if (!status) {
+        value->decrement();
+        lisp->quoted_pool.push_back(this);
+    }
+}
+
+void Quotedpool::decrementstatus(uint16_t nb) {
+    status -= nb * not_protected();
+    if (!status) {
+        value->decrement();
+        lisp->quoted_pool.push_back(this);
+    }
+}
+
 void Floatpool::decrement() {
     status -= not_protected();
     if (!status)
@@ -305,14 +319,12 @@ void Stringpool::release() {
 
 Element* Floatpool::fullcopy() {
     if (lisp->preparingthread)
-        return new Number(number);
-    return lisp->provideFloat(number);
+        return new Number(content);
+    return lisp->provideFloat(content);
 }
 
 Element* Floatpool::copyatom(LispE* lsp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideFloat(number);
+    return (status < s)?this:lsp->provideFloat(content);
 }
 
 Element* Floatpool::copying(bool duplicate) {
@@ -321,23 +333,21 @@ Element* Floatpool::copying(bool duplicate) {
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
     if (lisp->preparingthread)
-        return new Float(number);
+        return new Float(content);
     
     if (!status)
         return this;
-    return lisp->provideFloat(number);
+    return lisp->provideFloat(content);
 }
 
 Element* Numberpool::fullcopy() {
     if (lisp->preparingthread)
-        return new Number(number);
-    return lisp->provideNumber(number);
+        return new Number(content);
+    return lisp->provideNumber(content);
 }
 
 Element* Numberpool::copyatom(LispE* lsp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideNumber(number);
+    return (status < s)?this:lsp->provideNumber(content);
 }
 
 Element* Numberpool::copying(bool duplicate) {
@@ -346,23 +356,21 @@ Element* Numberpool::copying(bool duplicate) {
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
     if (lisp->preparingthread)
-        return new Number(number);
+        return new Number(content);
     
     if (!status)
         return this;
-    return lisp->provideNumber(number);
+    return lisp->provideNumber(content);
 }
 
 Element* Integerpool::fullcopy() {
     if (lisp->preparingthread)
-        return new Integer(integer);
-    return lisp->provideInteger(integer);
+        return new Integer(content);
+    return lisp->provideInteger(content);
 }
 
 Element* Integerpool::copyatom(LispE* lsp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideInteger(integer);
+    return (status < s)?this:lsp->provideInteger(content);
 }
 
 Element* Integerpool::copying(bool duplicate) {
@@ -371,88 +379,88 @@ Element* Integerpool::copying(bool duplicate) {
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
     if (lisp->preparingthread)
-        return new Integer(integer);
+        return new Integer(content);
     
     if (!status)
         return this;
     
-    return lisp->provideInteger(integer);
+    return lisp->provideInteger(content);
 }
 
 Element* Constfloat::copying(bool duplicate) {
     if (!provide || lisp->preparingthread)
-        return new Number(number);
-    return lisp->provideFloat(number);
+        return new Number(content);
+    return lisp->provideFloat(content);
 }
 
 Element* Constfloat::fullcopy() {
     if (!provide || lisp->preparingthread)
-        return new Number(number);
-    return lisp->provideFloat(number);
+        return new Number(content);
+    return lisp->provideFloat(content);
 }
 
 Element* Constfloat::copyatom(LispE* lsp, uint16_t s) {
-    return lsp->provideFloat(number);
+    return lsp->provideFloat(content);
 }
 
 Element* Constfloat::duplicate_constant(LispE* lisp, bool pair) {
-    return lisp->provideFloat(number);
+    return lisp->provideFloat(content);
 }
 
 Element* Constnumber::copying(bool duplicate) {
     if (!provide || lisp->preparingthread)
-        return new Number(number);
-    return lisp->provideNumber(number);
+        return new Number(content);
+    return lisp->provideNumber(content);
 }
 
 Element* Constnumber::fullcopy() {
     if (!provide || lisp->preparingthread)
-        return new Number(number);
-    return lisp->provideNumber(number);
+        return new Number(content);
+    return lisp->provideNumber(content);
 }
 
 Element* Constnumber::copyatom(LispE* lsp, uint16_t s) {
-    return lsp->provideNumber(number);
+    return lsp->provideNumber(content);
 }
 
 Element* Constnumber::duplicate_constant(LispE* lisp, bool pair) {
-    return lisp->provideNumber(number);
+    return lisp->provideNumber(content);
 }
 
 Element* Constinteger::fullcopy() {
     if (!provide || lisp->preparingthread)
-        return new Integer(integer);
-    return lisp->provideInteger(integer);
+        return new Integer(content);
+    return lisp->provideInteger(content);
 }
 
 Element* Constinteger::copyatom(LispE* lsp, uint16_t s) {
-    return lsp->provideInteger(integer);
+    return lsp->provideInteger(content);
 }
 
 Element* Constinteger::duplicate_constant(LispE* lisp, bool pair) {
-    return lisp->provideInteger(integer);
+    return lisp->provideInteger(content);
 }
 
 Element* Constinteger::copying(bool duplicate) {
     if (!provide || lisp->preparingthread)
-        return new Integer(integer);
-    return lisp->provideInteger(integer);
+        return new Integer(content);
+    return lisp->provideInteger(content);
 }
 
 Element* Constshort::fullcopy() {
-    return new Short(integer);
+    return new Short(content);
 }
 
 Element* Constshort::copyatom(LispE* lsp, uint16_t s) {
-    return new Short(integer);
+    return new Short(content);
 }
 
 Element* Constshort::duplicate_constant(LispE* lisp, bool pair) {
-    return new Short(integer);
+    return new Short(content);
 }
 
 Element* Constshort::copying(bool duplicate) {
-    return new Short(integer);
+    return new Short(content);
 }
 
 Element* Conststring::copying(bool duplicate) {
@@ -482,9 +490,7 @@ Element* Stringpool::fullcopy() {
 }
 
 Element* Stringpool::copyatom(LispE* lsp, uint16_t s) {
-    if (status < s)
-        return this;
-    return lisp->provideString(content);
+    return (status < s)?this:lsp->provideString(content);
 }
 
 Element* Stringpool::copying(bool duplicate) {
@@ -722,34 +728,34 @@ Element* Element::invert_sign(LispE* lisp) {
 
 Element* Float::invert_sign(LispE* lisp) {
     if (!status) {
-        number *= -1;
+        content *= -1;
         return this;
     }
-    return lisp->provideFloat(number * -1);
+    return lisp->provideFloat(content * -1);
 }
 
 Element* Number::invert_sign(LispE* lisp) {
     if (!status) {
-        number *= -1;
+        content *= -1;
         return this;
     }
-    return lisp->provideNumber(number * -1);
+    return lisp->provideNumber(content * -1);
 }
 
 Element* Short::invert_sign(LispE* lisp) {
     if (!status) {
-        integer *= -1;
+        content *= -1;
         return this;
     }
-    return new Short(integer * -1);
+    return new Short(content * -1);
 }
 
 Element* Integer::invert_sign(LispE* lisp) {
     if (!status) {
-        integer *= -1;
+        content *= -1;
         return this;
     }
-    return lisp->provideInteger(integer * -1);
+    return lisp->provideInteger(content * -1);
 }
 
 //------------------------------------------------------------------------------------------
@@ -1159,6 +1165,10 @@ Element* Element::insert(LispE* lisp, Element* e, long ix) {
     return null_;
 }
 
+Element* Element::insert_with_compare(LispE*, Element* e, List& comparison) {
+    throw new Error("Error: insertion impossible");
+}
+
 void String::push_element(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
@@ -1199,6 +1209,82 @@ Element* String::insert(LispE* lisp, Element* e, long ix) {
         }
     }
     return lisp->provideString(res);
+}
+
+
+
+Element* String::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    if (!end) {
+        content += e->asUString(lisp);
+        return this;
+    }
+
+    String* ct = lisp->provideString();
+    
+    comparison.in_quote(2, ct);
+    
+    Element* test = NULL;
+    
+    if (end < 3) {
+        ct->content = content[0];
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            insertion(e, 0);
+        else {
+            if (end == 2) {
+                ct->content = content[1];
+                test = comparison.eval(lisp);
+                if (test->Boolean()) {
+                    insertion(e , 1);
+                    return this;
+                }
+            }
+            append(e);
+        }
+        return this;
+    }
+    
+    end--;
+    long begin = 0;
+    long i = 0;
+    
+    //then we compare by dichotomy
+    while ((end-begin) > 1) {
+        i = begin + ((end - begin) >> 1);
+        ct->content = content[i];
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            end = i;
+        else
+            begin = i;
+    }
+    
+    if (test->Boolean()) {
+        if (i == begin)
+            insertion(e, i);
+        else {
+            ct->content = content[begin];
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, begin);
+            else
+                insertion(e, end);
+        }
+    }
+    else {
+        if (i == end)
+            insertion(e, i + 1);
+        else {
+            ct->content = content[end];
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, end);
+            else
+                insertion(e, end + 1);
+        }
+    }
+    return this;
 }
 
 Element* String::rotate(bool left) {
@@ -1388,19 +1474,19 @@ Element* Element::reverse(LispE* lisp, bool duplicate) {
 }
 
 Element* Float::reverse(LispE* lisp, bool duplicate) {
-    return lisp->provideFloat(number*-1);
+    return lisp->provideFloat(content*-1);
 }
 
 Element* Number::reverse(LispE* lisp, bool duplicate) {
-    return lisp->provideNumber(number*-1);
+    return lisp->provideNumber(content*-1);
 }
 
 Element* Short::reverse(LispE* lisp, bool duplicate) {
-    return new Short(integer*-1);
+    return new Short(content*-1);
 }
 
 Element* Integer::reverse(LispE* lisp, bool duplicate) {
-    return lisp->provideInteger(integer*-1);
+    return lisp->provideInteger(content*-1);
 }
 
 Element* String::reverse(LispE* lisp, bool duplicate) {
@@ -1633,19 +1719,19 @@ Element* String::equal(LispE* lisp, Element* e) {
 }
 
 Element* Number::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->isNumber() && number == e->asNumber())];
+    return booleans_[(e->isNumber() && content == e->asNumber())];
 }
 
 Element* Float::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->isNumber() && number == e->asFloat())];
+    return booleans_[(e->isNumber() && content == e->asFloat())];
 }
 
 Element* Short::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->isNumber() && integer == e->asShort())];
+    return booleans_[(e->isNumber() && content == e->asShort())];
 }
 
 Element* Integer::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->isNumber() && integer == e->asInteger())];
+    return booleans_[(e->isNumber() && content == e->asInteger())];
 }
 
 bool Element::egal(Element* e) {
@@ -1665,19 +1751,19 @@ bool String::egal(Element* e) {
 }
 
 bool Number::egal(Element* e) {
-    return (e->isNumber() && number == e->asNumber());
+    return (e->isNumber() && content == e->asNumber());
 }
 
 bool Float::egal(Element* e) {
-    return (e->isNumber() && number == e->asFloat());
+    return (e->isNumber() && content == e->asFloat());
 }
 
 bool Short::egal(Element* e) {
-    return (e->isNumber() && integer == e->asShort());
+    return (e->isNumber() && content == e->asShort());
 }
 
 bool Integer::egal(Element* e) {
-    return (e->isNumber() && integer == e->asInteger());
+    return (e->isNumber() && content == e->asInteger());
 }
 
 //------------------------------------------------------------------------------------------
@@ -1724,91 +1810,91 @@ Element* String::moreorequal(LispE* lisp, Element* e) {
 }
 
 Element* Number::less(LispE* lisp, Element* e) {
-    return booleans_[number < e->asNumber()];
+    return booleans_[content < e->asNumber()];
 }
 
 Element* Number::compare(LispE* lisp, Element* e) {
     double v = e->asNumber();
-    short test = (number == v) + (number < v) * 2;
+    short test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
 Element* Float::less(LispE* lisp, Element* e) {
-    return booleans_[number < e->asFloat()];
+    return booleans_[content < e->asFloat()];
 }
 
 Element* Float::compare(LispE* lisp, Element* e) {
     float v = e->asFloat();
-    short test = (number == v) + (number < v) * 2;
+    short test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
 Element* Float::lessorequal(LispE* lisp, Element* e){
-    return booleans_[number <= e->asFloat()];
+    return booleans_[content <= e->asFloat()];
 }
 
 Element* Number::lessorequal(LispE* lisp, Element* e){
-    return booleans_[number <= e->asNumber()];
+    return booleans_[content <= e->asNumber()];
 }
 
 Element* Float::more(LispE* lisp, Element* e) {
-    return booleans_[number > e->asFloat()];
+    return booleans_[content > e->asFloat()];
 }
 
 Element* Number::more(LispE* lisp, Element* e) {
-    return booleans_[number > e->asNumber()];
+    return booleans_[content > e->asNumber()];
 }
 
 Element* Float::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[number >= e->asFloat()];
+    return booleans_[content >= e->asFloat()];
 }
 
 Element* Number::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[number >= e->asNumber()];
+    return booleans_[content >= e->asNumber()];
 }
 
 Element* Integer::less(LispE* lisp, Element* e) {
-    return booleans_[integer < e->asInteger()];
+    return booleans_[content < e->asInteger()];
 }
 
 Element* Integer::compare(LispE* lisp, Element* e) {
     long v = e->asInteger();
-    short test = (integer == v) + (integer < v) * 2;
+    short test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
 Element* Short::less(LispE* lisp, Element* e) {
-    return booleans_[integer < e->asShort()];
+    return booleans_[content < e->asShort()];
 }
 
 Element* Short::compare(LispE* lisp, Element* e) {
     short v = e->asShort();
-    short test = (integer == v) + (integer < v) * 2;
+    short test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
 Element* Short::lessorequal(LispE* lisp, Element* e) {
-    return booleans_[integer <= e->asShort()];
+    return booleans_[content <= e->asShort()];
 }
 
 Element* Integer::lessorequal(LispE* lisp, Element* e){
-    return booleans_[integer <= e->asInteger()];
+    return booleans_[content <= e->asInteger()];
 }
 
 Element* Integer::more(LispE* lisp, Element* e) {
-    return booleans_[integer > e->asInteger()];
+    return booleans_[content > e->asInteger()];
 }
 
 Element* Integer::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[integer >= e->asInteger()];
+    return booleans_[content >= e->asInteger()];
 }
 
 Element* Short::more(LispE* lisp, Element* e) {
-    return booleans_[integer > e->asShort()];
+    return booleans_[content > e->asShort()];
 }
 
 Element* Short::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[integer >= e->asShort()];
+    return booleans_[content >= e->asShort()];
 }
 
 //------------------------------------------------------------------------------------------
@@ -2311,8 +2397,7 @@ void Listincode::protecting(bool protection, LispE* lisp) {
 //------------------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------------------
-Element* Element::asList(LispE* lisp) {
-    List* l =  lisp->provideList();
+Element* Element::asList(LispE* lisp, List* l) {
     l->append(copying(false));
     return l;
 }

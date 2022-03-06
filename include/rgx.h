@@ -102,7 +102,7 @@ public:
 
 class Au_meta : public Au_any {
 public:
-    static Chaine_UTF8* met;
+    static UTF8_Handler* met;
     
     wchar_t action;
     

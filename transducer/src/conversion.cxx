@@ -19,7 +19,7 @@ void concat_char_convert_utf16(wstring& res, TRANSCHAR code);
 
 #define isadigit(c) c >= '0' && c <= '9'
 
-static Chaine_UTF8* handlingutf8;
+static UTF8_Handler* handlingutf8;
 
 static const char _tocheck[] = {'"', '\'', '@', ':', ',','-', '+','0','1','2','3','4','5', '6','7','8', '9','[',']','{', '}', 0};
 static const char _checkingmore[] = {'\n', '/', '(', ')', '<', '>','=',';', 0};
@@ -538,7 +538,7 @@ void conversionpostochar(wstring& w, long& b, long& e) {
 
 //-----------------------------------------------------------------------------------------
 
-Exporting void inittableutf8(Chaine_UTF8* h) {
+Exporting void inittableutf8(UTF8_Handler* h) {
     static bool init = false;
     handlingutf8 = h;
     if (init)

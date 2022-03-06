@@ -45,7 +45,8 @@ using std::wsregex_iterator;
 
 
 //--------------------------------------------------------------------
-Chaine_UTF8* Au_meta::met = new Chaine_UTF8;
+extern UTF8_Handler special_characters;
+UTF8_Handler* Au_meta::met = &special_characters;
 //--------------------------------------------------------------------
 #define au_error -1
 #define au_stop -2

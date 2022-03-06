@@ -188,6 +188,11 @@ public:
         }
     }
 
+    inline void setAndQuote(long i, Element* v) {
+        ((Quoted*)buffer[i])->requoting(v);
+    }
+
+
     ~ITEM() {
         free(buffer);
     }
@@ -235,6 +240,10 @@ public:
 
     inline void reserve(long sz) {
         item->reserve(sz);
+    }
+    
+    inline void swap(long i, long j) {
+        item->swap(i + home, j + home);
     }
     
     inline void put(long pos, Element* val) {
@@ -359,6 +368,10 @@ public:
             cout << item->buffer[i]->toString(lisp);
         }
         cout << ")" << endl;
+    }
+    
+    inline void setAndQuote(long i, Element* v) {
+        item->setAndQuote(home + i, v);
     }
     
     bool compare(LispE*, List* compare, short instruction, long i, long j);
@@ -492,10 +505,9 @@ public:
 
     LIST liste;
     char terminal;
-    char quoted;
     
-    List() : terminal(0), quoted(0), liste(8), Element(t_list) {}
-    List(uint16_t s) : terminal(0), quoted(0), liste(1), Element(t_list, s) {}
+    List() : terminal(0), liste(8), Element(t_list) {}
+    List(uint16_t s) : terminal(0), liste(1), Element(t_list, s) {}
     
     //In all other case, we "borrow" the ITEM object to create a LIST object that will
     //share the same content. No copy or duplication is necessary.
@@ -503,32 +515,21 @@ public:
     //to correctly assess when it can be safely deleted.
     //When a CDR is called, it will share this list's item, but with a different "home" value.
     //The "home value" in a LIST object defines where it starts in the internal buffer of ITEM
-    List(List* l, long p) : terminal(0), quoted(0), liste(l->liste, p), Element(t_list) {}
+    List(List* l, long p) : terminal(0), liste(l->liste, p), Element(t_list) {}
 
     bool isContainer() {
         return true;
     }
     
-    char unquoting() {
-        char q = quoted;
-        quoted = 0;
-        return q;
-    }
-    
     Element* quoting() {
-        quoted = 3;
-        return this;
+        return new Quoted(this);
     }
     
-    void setquoted(char q) {
-        quoted = q;
-    }
-
     void setterminal(char v = 1) {
         terminal |= v;
     }
     
-    Element* asList(LispE* lisp) {
+    Element* asList(LispE* lisp, List* l) {
         return this;
     }
     
@@ -558,6 +559,10 @@ public:
         return liste.back();
     }
 
+    void swap(long i, long j) {
+        liste.swap(i, j);
+    }
+    
     void insertion(Element* e, long idx) {
         liste.insert(idx, e);
     }
@@ -713,6 +718,10 @@ public:
     
     virtual Element* index(long i) {
         return liste[i];
+    }
+    
+    inline void in_quote(long i, Element* v) {
+        liste.setAndQuote(i, v);
     }
     
     Element* minimum(LispE*);
@@ -1115,7 +1124,8 @@ public:
     virtual Element* check_member(LispE*, Element* the_set);
     
     Element* insert(LispE* lisp, Element* e, long idx);
-
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
+    
     void sameSizeNoTerminalArguments(LispE* lisp, Element* body, List* parameters);
     void differentSizeNoTerminalArguments(LispE* lisp, Element* body, List* parameters, long nbarguments, long defaultarguments);
 
@@ -1147,6 +1157,18 @@ public:
 #ifdef MAX_STACK_SIZE_ENABLED
     Element* evall_set_max_stack_size(LispE* lisp);
 #endif
+
+    Element* reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz);
+    Element* backreduce_with_list(LispE* lisp, Element* l1, Element* op, long sz);
+
+    Element* scan_with_list(LispE* lisp, Element* l1, Element* op, long sz);
+    Element* backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz);
+
+    Element* reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz);
+    Element* backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz);
+
+    Element* scan_lambda(LispE* lisp, Element* l1, Element* op, long sz);
+    Element* backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz);
 
     virtual Element* eval_call_function(LispE* lisp);
     
@@ -1877,7 +1899,7 @@ public:
         return new Floats;
     }
 
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     
     void reserve(long sz) {
         liste.reserve(sz);
@@ -2021,12 +2043,12 @@ public:
     Element* replace_in(LispE* lisp, List*);
     
     Element* index(long i) {
-        exchange_value.number = liste[i];
+        exchange_value.content = liste[i];
         return &exchange_value;
     }
     
     Element* last() {
-        exchange_value.number = liste.back();
+        exchange_value.content = liste.back();
         return &exchange_value;
     }
 
@@ -2231,7 +2253,7 @@ public:
     }
 
     Element* insert(LispE* lisp, Element* e, long idx);
-
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
 
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
@@ -2347,7 +2369,7 @@ public:
         return (depth < sz.size() && sz[depth] == size());
     }
 
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     
     Element* newInstance(Element* v) {
         return new Numbers(liste.size(), v->asNumber());
@@ -2484,12 +2506,12 @@ public:
     Element* replace_in(LispE* lisp, List*);
     
     Element* index(long i) {
-        exchange_value.number = liste[i];
+        exchange_value.content = liste[i];
         return &exchange_value;
     }
     
     Element* last() {
-        exchange_value.number = liste.back();
+        exchange_value.content = liste.back();
         return &exchange_value;
     }
 
@@ -2691,7 +2713,7 @@ public:
     }
 
     Element* insert(LispE* lisp, Element* e, long idx);
-
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
 
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
@@ -2808,7 +2830,7 @@ public:
         return (depth < sz.size() && sz[depth] == size());
     }
 
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
         return new Shorts(liste.size(), v->asInteger());
@@ -2863,7 +2885,7 @@ public:
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
-        liste.insert(idx, e->asInteger());
+        liste.insert(idx, e->asShort());
     }
     
     void swap(long i, long j) {
@@ -2929,12 +2951,12 @@ public:
     Element* replace_in(LispE* lisp, List*);
     
     Element* index(long i) {
-        exchange_value.integer = liste[i];
+        exchange_value.content = liste[i];
         return &exchange_value;
     }
     
     Element* last() {
-        exchange_value.integer = liste.back();
+        exchange_value.content = liste.back();
         return &exchange_value;
     }
 
@@ -3150,7 +3172,8 @@ public:
     }
 
     Element* insert(LispE* lisp, Element* e, long idx);
-
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
+    
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
     //list...
@@ -3215,7 +3238,7 @@ public:
         return (depth < sz.size() && sz[depth] == size());
     }
 
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
         return new Integers(liste.size(), v->asInteger());
@@ -3336,12 +3359,12 @@ public:
     Element* replace_in(LispE* lisp, List*);
     
     Element* index(long i) {
-        exchange_value.integer = liste[i];
+        exchange_value.content = liste[i];
         return &exchange_value;
     }
     
     Element* last() {
-        exchange_value.integer = liste.back();
+        exchange_value.content = liste.back();
         return &exchange_value;
     }
 
@@ -3557,7 +3580,8 @@ public:
     }
 
     Element* insert(LispE* lisp, Element* e, long idx);
-
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
+    
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
     //list...
@@ -3763,8 +3787,8 @@ public:
 
     void combine(LispE* lisp, long isz1, long isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
-            action->liste[1] = l1;
-            action->liste[2] = l2;
+            action->in_quote(1, l1);
+            action->in_quote(2, l2);
             Element* e = action->eval(lisp);
             liste[isz1]->replacing(isz2, e);
             e->release();
@@ -3942,8 +3966,8 @@ public:
 
     void combine(LispE* lisp, long isz1, long isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
-            action->liste[1] = l1;
-            action->liste[2] = l2;
+            action->in_quote(1, l1);
+            action->in_quote(2, l2);
             Element* e = action->eval(lisp);
             liste[isz1]->replacing(isz2, e);
             e->release();
@@ -4159,8 +4183,8 @@ public:
     void combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             if (isz1.size() && isz2.size()) {
-                action->liste[1] = l1;
-                action->liste[2] = l2;
+                action->in_quote(1, l1);
+                action->in_quote(2, l2);
                 Element* e = action->eval(lisp);
                 Element* r = this;
                 long i;
@@ -4433,8 +4457,8 @@ public:
     void combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             if (isz1.size() && isz2.size()) {
-                action->liste[1] = l1;
-                action->liste[2] = l2;
+                action->in_quote(1, l1);
+                action->in_quote(2, l2);
                 Element* e = action->eval(lisp);
                 Element* r = this;
                 long i;
@@ -4570,7 +4594,7 @@ public:
     
     Strings(Strings* s) : liste(s->liste), exchange_value(U""), Element(t_strings) {}
     
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     
     virtual Element* newInstance() {
         return new Strings;
@@ -4939,6 +4963,7 @@ public:
     }
 
     Element* insert(LispE* lisp, Element* e, long idx);
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
 
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the

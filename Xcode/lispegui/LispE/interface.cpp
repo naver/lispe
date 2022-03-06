@@ -23,6 +23,8 @@
 
 #define openMode std::ios::in|std::ios::binary
 
+//------------------------------------------------------------------------------------------------UTF8
+static UTF8_Handler special_characters;
 //------------------------------------------------------------------------------------------------DEBUG
 static string displaybuffer;
 static string current_code;
@@ -75,8 +77,6 @@ public:
         positions.push_back(posend+drift);
     }
 };
-
-static Chaine_UTF8 special_characters;
 
 void tokenize_line(wstring& code, Segmentingtype& infos) {
     static uchar stops[172];
@@ -391,7 +391,7 @@ extern "C" {
     int Compilecode(const char* cde, const char* filename, char console) {
         Initlispelibspath();
         if (lispe == NULL) {
-            lispe = new LispE;
+            lispe = new LispE(&special_characters);
             lispe->delegation->display_string_function = sendresult;
             lispe->delegation->reading_string_function = &ProcMacEditor;
             windowmode = false;
@@ -586,7 +586,7 @@ extern "C" {
         running = true;
 
         if (lispe == NULL) {
-            lispe = new LispE;
+            lispe = new LispE(&special_characters);
             lispe->delegation->display_string_function = sendresult;
             lispe->delegation->reading_string_function = &ProcMacEditor;
             windowmode = false;
@@ -679,7 +679,7 @@ extern "C" {
         infos.clear();
         
         if (lispe == NULL) {
-            lispe = new LispE;
+            lispe = new LispE(&special_characters);
             lispe->delegation->display_string_function = sendresult;
             lispe->delegation->reading_string_function = &ProcMacEditor;
             windowmode = false;

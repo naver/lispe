@@ -49,10 +49,10 @@ using std::ostringstream;
 
 union double64 {
 public:
-    
+
     uint64_t bits;
     double v;
-    
+
     double64(double d) {
         v = d;
     }
@@ -60,10 +60,10 @@ public:
 
 union float32 {
 public:
-    
+
     uint32_t bits;
     float v;
-    
+
     float32(float f) {
         v = f;
     }
@@ -99,7 +99,7 @@ union w_u_char {
     w_u_char() {
         c = 0;
     }
-    
+
     //little endian
     void invert() {
         uchar c = cc[0];
@@ -125,7 +125,7 @@ union w_u_char {
 
 //--------------------- Main Initialization, to be launched before using any of the following methods...
 class LispE;
-Exporting void inittableutf8(Chaine_UTF8* h);
+Exporting void inittableutf8(UTF8_Handler* h);
 
 //--------------------- Trimming strings
 Exporting string& Trim(string& chaine);
@@ -398,7 +398,7 @@ public:
         c_chars_get_next((unsigned char*)c_str(), e, bytepos);
         if (e[0]=='\n')
             line++;
-        
+
         return e;
     }
 
@@ -447,7 +447,7 @@ public:
         for (long u = 0; u < nx.size(); u++)
             s[bytepos+u] = nx[u];
     }
-    
+
 	void following() {
 		charpos++;
 		bytepos += 1 + c_test_utf8((unsigned char*)c_str() + bytepos);
@@ -508,7 +508,7 @@ public:
 	wchar_t code(size_t i) {
 		return c_char_index_code(*this, i);
 	}
-    
+
     string trim() {
         return Trim(*this);
     }
@@ -727,11 +727,11 @@ class Fast_String {
     long ineo;
 
     public:
-    
+
     uchar* neo;
-    
+
     Fast_String(long l) : lenneo(l), ineo(0), neo(new uchar[l]) {}
-    
+
     ~Fast_String() {
         delete[] neo;
     }
@@ -741,7 +741,7 @@ class Fast_String {
         memcpy(neo, neo+from, ineo);
         neo[ineo] = 0;
     }
-    
+
     inline void substr(uchar* val, long from, long to) {
         ineo = to-from;
         if (ineo >= lenneo) {
@@ -753,7 +753,7 @@ class Fast_String {
         memcpy(neo, val+from, ineo);
         neo[ineo] = 0;
     }
-    
+
     inline void set(string& ctn) {
         ineo = ctn.size();
         if (ineo >= lenneo) {
@@ -777,12 +777,12 @@ class Fast_String {
         memcpy(neo,ctn, ineo);
         neo[ineo] = 0;
     }
-    
+
     inline void reset(long i) {
         ineo = i;
         neo[ineo] = 0;
     }
-    
+
     inline void add(uchar* ctn, long size_ctn) {
         if ((ineo + size_ctn) >= lenneo) {
             lenneo += size_ctn;
@@ -796,7 +796,7 @@ class Fast_String {
         ineo += size_ctn;
         neo[ineo] = 0;
     }
-    
+
     inline void add(uchar c) {
         if ((ineo + 1) >= lenneo) {
             lenneo <<= 1;
@@ -811,19 +811,19 @@ class Fast_String {
     inline long size() {
         return ineo;
     }
-    
+
     inline char* str() {
         return (char*)neo;
     }
-    
+
     inline uchar operator[](long i) {
         return neo[i];
     }
-    
+
     inline uchar get(long i) {
         return neo[i];
     }
-    
+
     inline void downsize(long sz) {
         if (sz < lenneo) {
             delete[] neo;
@@ -838,14 +838,14 @@ class Fast_String {
         ineo = 0;
         neo[0]=0;
     }
-    
+
     inline void signature() {
         if (neo[0] == 239 && neo[1] == 187 && neo[2] == 191) {
             ineo -= 3;
             memcpy(neo, neo + 3, ineo);
         }
     }
-    
+
     inline wstring& latintounicode(wstring& ws) {
         sc_utf8_to_unicode(ws, neo, ineo);
         return ws;
@@ -853,10 +853,4 @@ class Fast_String {
 };
 
 #endif
-
-
-
-
-
-
 

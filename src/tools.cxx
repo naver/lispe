@@ -570,7 +570,7 @@ static UWCHAR temojiscomplement[] = {
     0xFE0F, 0};
 
 
-long Chaine_UTF8::c_bytetocharposition(unsigned char* contenu, long charpos) {
+long UTF8_Handler::c_bytetocharposition(unsigned char* contenu, long charpos) {
     long i = 0;
     long sz = 0;
     long nb;
@@ -591,7 +591,7 @@ long Chaine_UTF8::c_bytetocharposition(unsigned char* contenu, long charpos) {
 
 
 
-long Chaine_UTF8::getonchar(u_ustring& w, long position) {
+long UTF8_Handler::getonchar(u_ustring& w, long position) {
     long i = 0;
     long nb = 0;
     u_uchar c;
@@ -629,7 +629,7 @@ UWCHAR getonechar(unsigned char* s, long& i) {
 }
 #endif
 
-u_ustring Chaine_UTF8::u_insert_sep(u_ustring& s, u_ustring sep) {
+u_ustring UTF8_Handler::u_insert_sep(u_ustring& s, u_ustring sep) {
     u_ustring res;
     long lg = s.size();
     long i = 0;
@@ -643,7 +643,7 @@ u_ustring Chaine_UTF8::u_insert_sep(u_ustring& s, u_ustring sep) {
 
 
 
-UWCHAR Chaine_UTF8::getachar(u_ustring& s, long& i) {
+UWCHAR UTF8_Handler::getachar(u_ustring& s, long& i) {
     UWCHAR res;
     try {
         emojis.at(s[i]);
@@ -657,7 +657,7 @@ UWCHAR Chaine_UTF8::getachar(u_ustring& s, long& i) {
     return res;
 }
 
-void Chaine_UTF8::getchar(u_ustring& s, u_ustring& res,  long& i, long sz) {
+void UTF8_Handler::getchar(u_ustring& s, u_ustring& res,  long& i, long sz) {
     if (emojis.find(s[i]) != emojis.end()) {
         res = s[i++];
         while (i < sz && c_is_emojicomp(s[i])) {
@@ -668,7 +668,7 @@ void Chaine_UTF8::getchar(u_ustring& s, u_ustring& res,  long& i, long sz) {
         res = s[i++];
 }
 
-void Chaine_UTF8::getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz) {
+void UTF8_Handler::getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz) {
     if (emojis.find(s[i]) != emojis.end()) {
         res += s[i++];
         while (i < sz && c_is_emojicomp(s[i])) {
@@ -682,23 +682,23 @@ void Chaine_UTF8::getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz) 
 //------------------------------------------------------------------------
 // EMOJIS
 //------------------------------------------------------------------------
-bool Chaine_UTF8::c_is_emoji(UWCHAR c) {
+bool UTF8_Handler::c_is_emoji(UWCHAR c) {
     return ((uint32_t)c >= min_emoji && emojis.find(c) != emojis.end());
 }
 
-bool Chaine_UTF8::c_is_emojicomp(UWCHAR c) {
+bool UTF8_Handler::c_is_emojicomp(UWCHAR c) {
     return ((uint32_t)c >= min_emojicomp && emojiscomplement.find(c) != emojiscomplement.end());
 }
 
-bool Chaine_UTF8::c_is_emoji(unsigned char* m, long& i) {
+bool UTF8_Handler::c_is_emoji(unsigned char* m, long& i) {
     return c_is_emoji(getonechar(m, i));
 }
 
-bool Chaine_UTF8::c_is_emojicomp(unsigned char* m, long& i) {
+bool UTF8_Handler::c_is_emojicomp(unsigned char* m, long& i) {
     return c_is_emojicomp(getonechar(m, i));
 }
 
-bool Chaine_UTF8::s_is_emoji(string& s) {
+bool UTF8_Handler::s_is_emoji(string& s) {
     if (s == "")
         return false;
     long lg = s.size();
@@ -724,7 +724,7 @@ bool Chaine_UTF8::s_is_emoji(string& s) {
     return true;
 }
 
-bool Chaine_UTF8::u_is_emoji(u_ustring& s) {
+bool UTF8_Handler::u_is_emoji(u_ustring& s) {
     if (s == U"")
         return false;
     long lg = s.size();
@@ -748,12 +748,12 @@ bool Chaine_UTF8::u_is_emoji(u_ustring& s) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_emoji(wstring& w) {
+bool UTF8_Handler::s_is_emoji(wstring& w) {
     u_pstring s =  _w_to_u(w);
     return u_is_emoji(s);
 }
 
-string Chaine_UTF8::emoji_description(string& s) {
+string UTF8_Handler::emoji_description(string& s) {
     if (s.size() == 0)
         return "";
     UWCHAR c;
@@ -763,25 +763,25 @@ string Chaine_UTF8::emoji_description(string& s) {
     return "";
 }
 
-string Chaine_UTF8::emoji_description(u_ustring& s) {
+string UTF8_Handler::emoji_description(u_ustring& s) {
     if (s.size() != 0 && emojis.find(s[0]) != emojis.end())
         return emojis.at(s[0]);
     return "";
 }
 
-string Chaine_UTF8::emoji_description(wstring& w) {
+string UTF8_Handler::emoji_description(wstring& w) {
     u_pstring s =  _w_to_u(w);
     return emoji_description(s);
 }
 
 
-string Chaine_UTF8::emoji_description(UWCHAR c) {
+string UTF8_Handler::emoji_description(UWCHAR c) {
     if (emojis.find(c) != emojis.end())
         return emojis.at(c);
     return "";
 }
 
-void Chaine_UTF8::l_emojis(map<UWCHAR, string>& dico) {
+void UTF8_Handler::l_emojis(map<UWCHAR, string>& dico) {
     for (auto& it : emojis)
         dico[it.first] = it.second;
 }
@@ -939,7 +939,7 @@ union bulongchar {
     }
 };
 
-Chaine_UTF8::Chaine_UTF8() : emojiscomplement(true) {    
+UTF8_Handler::UTF8_Handler() : emojiscomplement(true) {    
     wchar_t unicode;
     bulongchar xs;
     bulongchar xse;
@@ -1389,15 +1389,15 @@ Exporting u_ustring ujsonstring(u_ustring value) {
 
 //--------------------------------------------------------------------
 
-bool Chaine_UTF8::c_is_punctuation(u_uchar c) {
+bool UTF8_Handler::c_is_punctuation(u_uchar c) {
     return punctuations.check(c);
 }
 
-bool Chaine_UTF8::c_is_punctuation(wchar_t c) {
+bool UTF8_Handler::c_is_punctuation(wchar_t c) {
     return punctuations.check(c);
 }
 
-bool Chaine_UTF8::u_is_punctuation(u_ustring& str) {
+bool UTF8_Handler::u_is_punctuation(u_ustring& str) {
     for (long i = 0; i < str.size(); i++) {
         if (!c_is_punctuation(str[i]))
             return false;
@@ -1405,7 +1405,7 @@ bool Chaine_UTF8::u_is_punctuation(u_ustring& str) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_punctuation(wstring& str) {
+bool UTF8_Handler::s_is_punctuation(wstring& str) {
     for (long i = 0; i < str.size(); i++) {
         if (!c_is_punctuation(str[i]))
             return false;
@@ -1414,41 +1414,41 @@ bool Chaine_UTF8::s_is_punctuation(wstring& str) {
 }
 
 
-char Chaine_UTF8::c_is_alpha(unsigned char* m, long& i) {
+char UTF8_Handler::c_is_alpha(unsigned char* m, long& i) {
     UWCHAR v;
     i += c_utf8_to_unicode(m + i, v);
     return (utf8codemin.check(v) + ((char)utf8codemaj.check(v) << 1));
 }
 
-char Chaine_UTF8::c_is_alpha(u_uchar v) {
+char UTF8_Handler::c_is_alpha(u_uchar v) {
     return (utf8codemin.check(v) + (2 * (char)utf8codemaj.check(v)));
 }
 
-char Chaine_UTF8::c_is_alpha(wchar_t v) {
+char UTF8_Handler::c_is_alpha(wchar_t v) {
     return (utf8codemin.check(v) + (2 * (char)utf8codemaj.check(v)));
 }
 
 
 
-char Chaine_UTF8::is_a_valid_letter(unsigned char* m, long& i) {
+char UTF8_Handler::is_a_valid_letter(unsigned char* m, long& i) {
     if (m[i] == '_' || isadigit(m[i]))
         return 1;
     return c_is_alpha(m, i);
 }
 
-char Chaine_UTF8::is_a_valid_letter(UWCHAR c) {
+char UTF8_Handler::is_a_valid_letter(UWCHAR c) {
     if (c == '_' || isadigit(c))
         return 1;
     return c_is_alpha(c);
 }
 
-char Chaine_UTF8::is_a_valid_letter(wstring& m, long& i) {
+char UTF8_Handler::is_a_valid_letter(wstring& m, long& i) {
     if (m[i] == '_' || isadigit(m[i]))
         return 1;
     return c_is_alpha(m[i]);
 }
 
-bool Chaine_UTF8::u_is_alpha(u_ustring& s) {
+bool UTF8_Handler::u_is_alpha(u_ustring& s) {
     if (s == U"")
         return false;
     long lg = s.size();
@@ -1459,7 +1459,7 @@ bool Chaine_UTF8::u_is_alpha(u_ustring& s) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_alpha(wstring& s) {
+bool UTF8_Handler::s_is_alpha(wstring& s) {
     if (s == L"")
         return false;
     long lg = s.size();
@@ -1471,7 +1471,7 @@ bool Chaine_UTF8::s_is_alpha(wstring& s) {
 }
 
 
-bool Chaine_UTF8::u_is_upper(u_ustring& s) {
+bool UTF8_Handler::u_is_upper(u_ustring& s) {
     if (s == U"")
         return false;
     long lg = s.size();
@@ -1482,7 +1482,7 @@ bool Chaine_UTF8::u_is_upper(u_ustring& s) {
     return true;
 }
 
-bool Chaine_UTF8::u_is_lower(u_ustring& s) {
+bool UTF8_Handler::u_is_lower(u_ustring& s) {
     if (s == U"")
         return false;
     
@@ -1494,7 +1494,7 @@ bool Chaine_UTF8::u_is_lower(u_ustring& s) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_upper(wstring& s) {
+bool UTF8_Handler::s_is_upper(wstring& s) {
     if (s == L"")
         return false;
     long lg = s.size();
@@ -1505,7 +1505,7 @@ bool Chaine_UTF8::s_is_upper(wstring& s) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_lower(wstring& s) {
+bool UTF8_Handler::s_is_lower(wstring& s) {
     if (s == L"")
         return false;
     
@@ -1517,32 +1517,32 @@ bool Chaine_UTF8::s_is_lower(wstring& s) {
     return true;
 }
 
-u_uchar Chaine_UTF8::uc_to_lower(u_uchar c) {
+u_uchar UTF8_Handler::uc_to_lower(u_uchar c) {
     if (utf8codemaj.check(c))
         return utf8codemaj.at(c);
     return c;
 }
 
-u_uchar Chaine_UTF8::uc_to_upper(u_uchar c) {
+u_uchar UTF8_Handler::uc_to_upper(u_uchar c) {
     if (utf8codemin.check(c))
         return utf8codemin.at(c);
     return c;
 }
 
-wchar_t Chaine_UTF8::c_to_lower(wchar_t c) {
+wchar_t UTF8_Handler::c_to_lower(wchar_t c) {
     if (utf8codemaj.check(c))
         return utf8codemaj.at(c);
     return c;
 }
 
-wchar_t Chaine_UTF8::c_to_upper(wchar_t c) {
+wchar_t UTF8_Handler::c_to_upper(wchar_t c) {
     if (utf8codemin.check(c))
         return utf8codemin.at(c);
     return c;
 }
 
 
-string Chaine_UTF8::u_to_lower(string& u) {
+string UTF8_Handler::u_to_lower(string& u) {
 	u_ustring res;
 	u_ustring s;
 	s_utf8_to_unicode(s, USTR(u), u.size());
@@ -1554,7 +1554,7 @@ string Chaine_UTF8::u_to_lower(string& u) {
 	return r;
 }
 
-wstring Chaine_UTF8::s_to_lower(wstring& s) {
+wstring UTF8_Handler::s_to_lower(wstring& s) {
     wstring res;
     long lg = s.size();
     for (long i = 0; i < lg; i++)
@@ -1562,14 +1562,14 @@ wstring Chaine_UTF8::s_to_lower(wstring& s) {
     return res;
 }
 
-wstring Chaine_UTF8::s_to_upper(wstring& s) {
+wstring UTF8_Handler::s_to_upper(wstring& s) {
     wstring res;
     long lg = s.size();
     for (long i = 0; i < lg; i++)
         res += (wchar_t)c_to_upper(s[i]);
     return res;
 }
-u_ustring Chaine_UTF8::u_to_lower(u_ustring& s) {
+u_ustring UTF8_Handler::u_to_lower(u_ustring& s) {
     u_ustring res;
     long lg = s.size();
     for (long i = 0; i < lg; i++)
@@ -1577,7 +1577,7 @@ u_ustring Chaine_UTF8::u_to_lower(u_ustring& s) {
     return res;
 }
 
-u_ustring Chaine_UTF8::u_to_upper(u_ustring& s) {
+u_ustring UTF8_Handler::u_to_upper(u_ustring& s) {
     u_ustring res;
     long lg = s.size();
     for (long i = 0; i < lg; i++)
@@ -1592,7 +1592,7 @@ bool c_is_space(u_uchar code) {
     return false;
 }
 
-bool Chaine_UTF8::s_is_space(string& str) {
+bool UTF8_Handler::s_is_space(string& str) {
     static unsigned char spaces[] = { 9, 10, 13, 32, 160 };
     long lg = str.size();
     uchar* contenu = USTR(str);
@@ -1605,7 +1605,7 @@ bool Chaine_UTF8::s_is_space(string& str) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_space(u_ustring& str) {
+bool UTF8_Handler::s_is_space(u_ustring& str) {
     long lg = str.size();
     u_uchar code;
     for (long i = 0; i < lg; i++) {
@@ -1626,7 +1626,7 @@ bool Chaine_UTF8::s_is_space(u_ustring& str) {
     return true;
 }
 
-bool Chaine_UTF8::s_is_space(wstring& str) {
+bool UTF8_Handler::s_is_space(wstring& str) {
     long lg = str.size();
     u_uchar code;
     for (long i = 0; i < lg; i++) {

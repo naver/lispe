@@ -68,6 +68,8 @@ public:
     
     vecte<Listpool*> list_pool;
     
+    vecte<Quotedpool*> quoted_pool;
+    
     vecte<Returnpool*> return_pool;
 
     //------------------------------------------
@@ -82,7 +84,7 @@ public:
     //Delegation is a class that records any data
     //related to compilation
     Delegation* delegation;
-    Chaine_UTF8* handlingutf8;
+    UTF8_Handler* handlingutf8;
 
     List* current_thread;
     List* current_body;
@@ -102,14 +104,15 @@ public:
     char trace;
     bool isThread;
     bool hasThread;
-    bool evaluating;
+    bool check_arity_on_fly;
     bool preparingthread;
+    bool clean_utf8;
     
-    LispE() {
+    LispE(UTF8_Handler* hnd = NULL) {
         updatecreator();
         initpools();
         preparingthread = false;
-        evaluating = false;
+        check_arity_on_fly = false;
         id_thread = 0;
         max_stack_size = 10000;
         trace = debug_none;
@@ -120,7 +123,14 @@ public:
         nbjoined = 0;
         current_thread = NULL;
         current_body = NULL;
-        handlingutf8 = new Chaine_UTF8;
+        if (hnd == NULL) {
+            handlingutf8 = new UTF8_Handler;
+            clean_utf8 = true;
+        }
+        else {
+            handlingutf8 = hnd;
+            clean_utf8 = false;
+        }
         delegation->initialisation(this);
         n_null = delegation->_NULL;
         n_true = delegation->_TRUE;
@@ -130,6 +140,7 @@ public:
     
     inline void initpools() {
         for (long i = 0; i < 100; i++) {
+            quoted_pool.push_back(new Quotedpool(this));
             list_pool.push_back(new Listpool(this));
             number_pool.push_back(new Numberpool(this, 0));
             integer_pool.push_back(new Integerpool(this, 0));
@@ -140,7 +151,7 @@ public:
         }
     }
     inline bool checkArity(List* l) {
-        return (!evaluating || delegation->checkArity(l->liste[0]->type, l->size()));
+        return (!check_arity_on_fly || delegation->checkArity(l->liste[0]->type, l->size()));
     }
     
     LispE(LispE*, List* function, List* body);
@@ -492,14 +503,9 @@ public:
         throw new Error(U"Error: wrong number of arguments");
     }
 
-    //3
-    inline short check_quoted(List* l, long sz) {
-        return l_quoted;
-    }
-
     inline short checkState(List* l, long sz) {
         delegation->checkExecution();
-        return (this->*checkstates[((evaluating + 1)*bool(sz))|l->quoted])(l, sz);
+        return (this->*checkstates[((check_arity_on_fly + 1)*bool(sz))])(l, sz);
     }
 
 
@@ -514,14 +520,9 @@ public:
         return l->liste.get0();
     }
 
-    //3
-    inline short check_basic_quoted(Listincode* l) {
-        return l_quoted;
-    }
-    
     inline short checkBasicState(Listincode* l) {
         delegation->checkExecution();
-        return (this->*checkbasicstates[bool(trace)|l->quoted])(l);
+        return (this->*checkbasicstates[bool(trace)])(l);
     }
 
     inline void checkPureState(Listincode* l) {
@@ -1037,15 +1038,26 @@ public:
         }
     }
 
-    inline List* provideList() {
-        return list_pool.last?list_pool.backpop(): new Listpool(this);
+    inline Quoted* quoted() {
+        return quoted_pool.last?quoted_pool.backpop()->set(n_null):new Quotedpool(this, n_null);
     }
 
-    inline List* provideQuoted(Element* e) {
-        List* l = list_pool.last?list_pool.backpop(): new Listpool(this);
-        l->append(delegation->_QUOTE);
-        l->append(e);
-        return l;
+    inline Quoted* quoted(Element* v) {
+        return quoted_pool.last?quoted_pool.backpop()->set(v):new Quotedpool(this, v);
+    }
+
+    inline List* provideCall(Element* op, long nb) {
+        List* call = list_pool.last?list_pool.backpop(): new Listpool(this);
+        call->append(op);
+        while (nb) {
+            call->append(quoted());
+            nb--;
+        }
+        return call;
+    }
+    
+    inline List* provideList() {
+        return list_pool.last?list_pool.backpop(): new Listpool(this);
     }
 
     inline Dictionary* provideDictionary() {

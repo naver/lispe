@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.2.28.11.28";
+static std::string version = "1.2022.3.4.13.46";
 string LispVersion() {
     return version;
 }
@@ -36,11 +36,9 @@ void LispE::updatecreator() {
     checkstates[0] = &LispE::check_empty;
     checkstates[1] = &LispE::check_straight;
     checkstates[2] = &LispE::check_arity;
-    checkstates[3] = &LispE::check_quoted;
     
     checkbasicstates[0] = &LispE::check_basic_straight;
     checkbasicstates[1] = &LispE::check_basic_trace;
-    checkbasicstates[3] = &LispE::check_basic_quoted;
 }
 
 //------------------------------------------------------------------------------------------
@@ -521,6 +519,7 @@ void Delegation::initialisation(LispE* lisp) {
     operators[l_lowerorequal] = true;
     operators[l_greaterorequal] = true;
     operators[l_concatenate] = true;
+    operators[l_compare] = true;
 
     operators[l_or] = true;
     operators[l_and] = true;
@@ -537,6 +536,7 @@ void Delegation::initialisation(LispE* lisp) {
     comparators[l_lowerorequal] = true;
     comparators[l_greaterorequal] = true;
     comparators[l_concatenate] = true;
+    comparators[l_compare] = true;
 
     assignors[l_equal] = true;
     assignors[l_bitandequal] = true;
@@ -921,6 +921,8 @@ void LispE::cleaning() {
     strings_pool.cleaning();
 
     list_pool.cleaning();
+    
+    quoted_pool.cleaning();
 
     dictionary_pool.cleaning();
     dictionaryi_pool.cleaning();
@@ -951,9 +953,11 @@ void LispE::cleaning() {
             delete a;
     }
 
+    if (clean_utf8)
+        delete handlingutf8;
+
     if (!isThread) {
         delete delegation;
-        delete handlingutf8;
 #ifdef MACDEBUG
         vector<Element*> errors;
         for (auto& a: __indexes) {
@@ -972,7 +976,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
     void_function = lisp->void_function;
     updatecreator();
     preparingthread = false;
-    evaluating = false;
+    check_arity_on_fly = false;
     delegation = lisp->delegation;
 
     _BOOLEANS[0] = delegation->_NULL;
@@ -985,6 +989,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
 
     thread_ancestor = lisp;
 
+    clean_utf8 = false;
     handlingutf8 = lisp->handlingutf8;
 
     isThread = true;
@@ -2319,178 +2324,6 @@ void LispE::current_path() {
         e->release();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

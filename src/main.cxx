@@ -15,9 +15,8 @@ FILE _iob[] = { *stdin, *stdout, *stderr };
 extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 #endif
 
-
-
-
+//-------------------------------------------------------------------------------------------
+extern UTF8_Handler special_characters;
 //-------------------------------------------------------------------------------------------
 #ifdef DEBUGG
 //Minimale version without the internal editor
@@ -64,7 +63,7 @@ int main(int argc, char *argv[]) {
 }
 #else
 void execute_pipe(string& code, string& codeinitial, string& codefinal, string& rgx, bool with_file) {
-    LispE lisp;
+    LispE lisp(&special_characters);
     Element* e;
     
     if (codeinitial != "") {
@@ -410,7 +409,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (file_name != "") {
-        LispE lisp;
+        LispE lisp(&special_characters);
         lisp.arguments(arguments);
         string the_file = file_name;
         Element* e = lisp.load(the_file);

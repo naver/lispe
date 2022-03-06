@@ -32,17 +32,22 @@ bool checkresize();
 void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 #endif
 
+//--------------------------------------------------------
+UTF8_Handler special_characters;
+//--------------------------------------------------------
+
+
 #ifdef APPLE
 void quoted_string(string& value) {
     if (value == "")
         return;
-    
+
     value = s_replacingstring(value, "\\", "\\\\");
     value = s_replacingstring(value, "\"", "\\\"");
     value = s_replacingstring(value, "\\t", "\\\\t");
     value = s_replacingstring(value, "\\n", "\\\\n");
     value = s_replacingstring(value, "\\r", "\\\\r");
-    
+
 }
 
 string exec_command(const char* cmd) {
@@ -50,7 +55,7 @@ string exec_command(const char* cmd) {
 
     if (!pipe)
         return "";
-    
+
     char buffer[256];
     string result = "";
     while(!feof(pipe))
@@ -81,7 +86,6 @@ string paste_from_clipboard() {
 void copy_to_clipboard(string buffer) {}
 #endif
 
-Chaine_UTF8 special_characters;
 
 using std::stringstream;
 
@@ -293,7 +297,7 @@ void resizewindow(int theSignal) {
 jag_editor::jag_editor() : lines(this), jag_get(true) {
 
 	insertaline = false;
-    
+
     moveup = false;
 
     selected_x = -1;
@@ -3176,10 +3180,10 @@ void jag_editor::handlemousectrl(string& mousectrl) {
                 double_click = 0;
                 if (mxcursor >= poslines.size())
                     mxcursor = (int)poslines.size();
-                
+
                 posnext = poslines[mxcursor - 1];
                 computeposition(cursor_y, posnext);
-                
+
                 if (cursor_y < 0)
                     cursor_y = 0;
                 mycursor = cursor_y;
@@ -3194,7 +3198,7 @@ void jag_editor::handlemousectrl(string& mousectrl) {
                 mxcursor = (int)poslines.size();
 
         }
-        
+
         //a simple click
 #ifdef WIN32
         if (location[0] == mxcursor && location[1] == mycursor) {
@@ -3275,7 +3279,6 @@ string jag_editor::coloringline(wstring& w, long i) {
 
 //This is the main method that launches the terminal
 void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& args) {
-
     arguments = args;
 
     if (darkmode)
@@ -3308,9 +3311,9 @@ void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& 
     string buff = paste_from_clipboard();
     copybuffer = wconvert(buff);
     kbuffer = copybuffer;
-    
+
     buff = "";
-    
+
     while (1) {
         buff = getch();
 

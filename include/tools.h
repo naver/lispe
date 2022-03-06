@@ -186,7 +186,7 @@ Exporting char c_test_utf8(unsigned char* utf);
 //--------------------------------------------------------------------
 Exporting bool c_is_hexa(wchar_t code);
 //------------------------------------------------------------------------------------
-class Chaine_UTF8 {
+class UTF8_Handler {
 public:
     binHash<u_uchar> utf8codemin;
     binHash<u_uchar> utf8codemaj;
@@ -327,7 +327,7 @@ public:
         return v;
     }
 
-    Chaine_UTF8();
+    UTF8_Handler();
 };
 
 //------------------------------------------------------------

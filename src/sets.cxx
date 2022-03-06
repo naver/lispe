@@ -598,7 +598,6 @@ Element* Set_s::protected_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
     if (ensemble.find(k) == ensemble.end())
         throw new Error("Error: index out of bounds");
-    
     return lisp->provideString(k);
 }
 
@@ -666,8 +665,7 @@ Element* Set_s::plus(LispE* lisp, Element* e) {
     return res;
 }
 
-Element* Set_s::asList(LispE* lisp) {
-    List* l = lisp->provideList();
+Element* Set_s::asList(LispE* lisp, List* l) {
     u_ustring v;
     for (auto& a: ensemble) {
         v = a;
@@ -689,7 +687,7 @@ Element* Set_i::next_iter_exchange(LispE* lisp, void* it) {
     std::set<long>::iterator* n = (std::set<long>::iterator*)it;
     if (*n == ensemble.end())
         return emptyatom_;
-    exchange_value.integer = **n;
+    exchange_value.content = **n;
     (*n)++;
     return &exchange_value;
 }
@@ -704,7 +702,7 @@ Element* Set_i::list_and(LispE* lisp, Element* value) {
     
     Set_i* s = lisp->provideSet_i();
     for (auto& a: ensemble) {
-        exchange_value.integer = a;
+        exchange_value.content = a;
         if (value->check_element(lisp, &exchange_value))
             s->add(a);
     }
@@ -796,8 +794,7 @@ Element* Set_i::list_xor(LispE* lisp, Element* value) {
     return s;
 }
 
-Element* Set_i::asList(LispE* lisp) {
-    List* l = lisp->provideList();
+Element* Set_i::asList(LispE* lisp, List* l) {
     for (auto& a: ensemble) {
         l->append(lisp->provideInteger(a));
     }
@@ -1182,7 +1179,7 @@ Element* Set_n::next_iter_exchange(LispE* lisp, void* it) {
     std::set<double>::iterator* n = (std::set<double>::iterator*)it;
     if (*n == ensemble.end())
         return emptyatom_;
-    exchange_value.number = **n;
+    exchange_value.content = **n;
     (*n)++;
     return &exchange_value;
 }
@@ -1231,7 +1228,7 @@ Element* Set_n::list_and(LispE* lisp, Element* value) {
     
     Set_n* s = lisp->provideSet_n();
     for (auto& a: ensemble) {
-        exchange_value.number = a;
+        exchange_value.content = a;
         if (value->check_element(lisp, &exchange_value))
             s->add(a);
     }
@@ -1396,8 +1393,7 @@ bool Set_n::egal(Element* e) {
     return (e->type == t_setn && ensemble == ((Set_n*)e)->ensemble);
 }
 
-Element* Set_n::asList(LispE* lisp) {
-    List* l = lisp->provideList();
+Element* Set_n::asList(LispE* lisp, List* l) {
     for (auto& a: ensemble) {
         l->append(lisp->provideNumber(a));
     }
@@ -1787,8 +1783,7 @@ bool Set::egal(Element* e) {
     return (e->type == t_sets && dictionary == ((Set*)e)->dictionary);
 }
 
-Element* Set::asList(LispE* lisp) {
-    List* l = lisp->provideList();
+Element* Set::asList(LispE* lisp, List* l) {
     for (auto& a: dictionary) {
         l->append(a.second->copying(false));
     }
@@ -1985,7 +1980,7 @@ void Avl::insertion(LispE* lisp, Avl** courant,Element* ajout, List* compare) {
     if (*courant==NULL)
         *courant= new Avl(ajout);
     else {
-        compare->liste[2] = (*courant)->value->quoting();
+        compare->in_quote(2, (*courant)->value);
         test = compare->eval(lisp)->asInteger();
         if (!test) {
             Avl* dernier=*courant;
@@ -2114,10 +2109,10 @@ void Avl::rebuilding(Avl** courant,long type) {
 
 Element* Avl::search(LispE* lisp, Element* element, List* compare) {
     Avl* e = this;
-    long test;
+    short test;
     while (e != NULL) {
-        compare->liste[2] = e->value->quoting();
-        test = compare->eval(lisp)->asInteger();
+        compare->in_quote(2, e->value);
+        test = compare->eval(lisp)->asShort();
         if (!test) {
             while (e != NULL) {
                 if (e->value->isequal(lisp, element))
@@ -2137,10 +2132,10 @@ Element* Avl::search(LispE* lisp, Element* element, List* compare) {
 
 bool Avl::check(LispE* lisp, Element* element, List* compare) {
     Avl* e = this;
-    long test;
+    short test;
     while (e != NULL) {
-        compare->liste[2] = e->value->quoting();
-        test = compare->eval(lisp)->asInteger();
+        compare->in_quote(2, e->value);
+        test = compare->eval(lisp)->asShort();
         if (!test) {
             while (e != NULL) {
                 if (e->value->isequal(lisp, element))
@@ -2161,11 +2156,11 @@ bool Avl::check(LispE* lisp, Element* element, List* compare) {
 bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare) {
     Avl* parent = this;
     Avl* e=this;
-    long test;
+    short test;
     char origin = 0;
     while (e != NULL) {
-        compare->liste[2] = e->value->quoting();
-        test = compare->eval(lisp)->asInteger();
+        compare->in_quote(2, e->value);
+        test = compare->eval(lisp)->asShort();
         if (!test) {
             Avl* clean = e;
             Avl* moving = e;
@@ -2502,24 +2497,20 @@ Element* Avl::back(LispE* lisp) {
 bool Heap::check_element(LispE* lisp, Element* element_value) {
     if (root == NULL)
         return false;
-    compare->liste[1] = element_value->quoting();
-    compare->liste[1]->increment();
+    compare->in_quote(1, element_value);
     bool res = root->check(lisp, element_value, compare);
-    compare->liste[1]->decrement();
-    compare->liste[1] = null_;
-    compare->liste[2] = null_;
+    compare->in_quote(1, null_);
+    compare->in_quote(2, null_);
     return res;
 }
 
 Element* Heap::search_element(LispE* lisp, Element* element_value, long idx) {
     if (root == NULL)
         return null_;
-    compare->liste[1] = element_value->quoting();
-    compare->liste[1]->increment();
+    compare->in_quote(1, element_value);
     Element* res = root->search(lisp, element_value, compare);
-    compare->liste[1]->decrement();
-    compare->liste[1] = null_;
-    compare->liste[2] = null_;
+    compare->in_quote(1, null_);
+    compare->in_quote(2, null_);
     return (res == NULL)?null_:res;
 }
 
@@ -2529,12 +2520,10 @@ Element* Heap::insert(LispE* lisp, Element* element, long idx) {
         return this;
     }
     
-    compare->liste[1] = element->quoting();
-    compare->liste[1]->increment();
+    compare->in_quote(1, element);
     root->insertion(lisp, &root, element, compare);
-    compare->liste[1]->decrement();
-    compare->liste[1] = null_;
-    compare->liste[2] = null_;
+    compare->in_quote(1, null_);
+    compare->in_quote(2, null_);
     return this;
 }
 
@@ -2544,12 +2533,10 @@ Element* Heap::insert(LispE* lisp, Element* element) {
         return this;
     }
     
-    compare->liste[1] = element->quoting();
-    compare->liste[1]->increment();
+    compare->in_quote(1, element);
     root->insertion(lisp, &root, element, compare);
-    compare->liste[1]->decrement();
-    compare->liste[1] = null_;
-    compare->liste[2] = null_;
+    compare->in_quote(1, null_);
+    compare->in_quote(2, null_);
     return this;
 }
 
@@ -2585,12 +2572,10 @@ bool Heap::remove(LispE* lisp, Element* element) {
     if (root == NULL)
         return false;
     
-    compare->liste[1] = element->quoting();
-    compare->liste[1]->increment();
+    compare->in_quote(1, element);
     bool del = root->erase(lisp, &root, element, compare);
-    compare->liste[1]->decrement();
-    compare->liste[1] = null_;
-    compare->liste[2] = null_;
+    compare->in_quote(1, null_);
+    compare->in_quote(2, null_);
     return del;
 }
 
@@ -2663,10 +2648,9 @@ Element* Heap::protected_index(LispE* lisp, Element* k) {
     return e;
 }
 
-Element* Heap::asList(LispE* lisp) {
+Element* Heap::asList(LispE* lisp, List* l) {
     if (root == NULL)
-        return emptylist_;
-    List* l = lisp->provideList();
+        return l;
     root->to_list(lisp, l);
     return l;
 }

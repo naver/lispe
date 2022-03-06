@@ -47,7 +47,7 @@ using std::wsregex_iterator;
 static Au_automatons* gAutomatons = NULL;
 
 //--------------------------------------------------------------------
-Chaine_UTF8* Au_meta::met = NULL;
+UTF8_Handler* Au_meta::met = NULL;
 //--------------------------------------------------------------------
 #define au_error -1
 #define au_stop -2

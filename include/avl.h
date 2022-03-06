@@ -215,7 +215,7 @@ public:
     Element* insert(LispE* lisp, Element* e);
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     Element* asLList(LispE* lisp);
     void flatten(LispE*, List* l) {
         if (root == NULL)

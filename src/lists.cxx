@@ -21,7 +21,6 @@
 void Listpool::decrement() {
     status -= not_protected();
     if (!status) {
-        quoted = 0;
         liste.decrement();
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -31,7 +30,6 @@ void Listpool::decrement() {
 void Listpool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
-        quoted = 0;
         liste.decrement();
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -40,7 +38,6 @@ void Listpool::decrementstatus(uint16_t nb) {
 
 void Listpool::release() {
     if (!status) {
-        quoted = 0;
         liste.decrement();
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -49,7 +46,6 @@ void Listpool::release() {
 
 void Listpool::release(Element* e) {
     if (!status) {
-        quoted = 0;
         liste.decrement(e);
         liste.clear();
         lisp->list_pool.push_back(this);
@@ -58,7 +54,6 @@ void Listpool::release(Element* e) {
 
 void Listpool::rawrelease() {
     if (!status) {
-        quoted = 0;
         liste.clear();
         liste.decrement();
         lisp->list_pool.push_back(this);
@@ -373,12 +368,9 @@ Element* Pair::cdr(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 inline bool LIST::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
-    comparison->liste[1] = item->buffer[i]->quoting();
-    comparison->liste[2] = item->buffer[j]->quoting();
-    bool r = comparison->eval_Boolean(lisp, instruction);
-    comparison->liste[1]->release();
-    comparison->liste[2]->release();
-    return r;
+    comparison->in_quote(1, item->buffer[i]);
+    comparison->in_quote(2, item->buffer[j]);
+    return comparison->eval_Boolean(lisp, instruction);
 }
 
 void LIST::sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
@@ -440,9 +432,9 @@ void LIST::sorting(LispE* lisp, List* comparison, short instruction, long rmin, 
     }
     
     pivot = rmin - 1;
-    comparison->liste[2] = item->buffer[rmax];
+    comparison->in_quote(2, item->buffer[rmax]);
     for (j = rmin; j < rmax; j++) {
-        comparison->liste[1] = item->buffer[j];
+        comparison->in_quote(1, item->buffer[j]);
         if (comparison->eval_Boolean(lisp, instruction)) {
             pivot++;
             item->swap(pivot,j);
@@ -628,7 +620,7 @@ Element* List::transposed(LispE* lisp) {
     for (i = 0; i < sz[1]; i++) {
         e = liste[i];
         for (long j = 0; j < sz[0]; j++) {
-            tenseur->index(j)->replacing(i, e->index(j)->copying(false));
+            tenseur->index(j)->replacing(i, e->index(j));
         }
     }
     
@@ -1593,7 +1585,7 @@ Element* LList::protected_index(LispE* lisp, Element* ix) {
         i = liste.size() + i;
     
     if (i >= 0) {
-        ix = at_e(i)->copying(false);
+        ix = at_e(i);
         if (ix == NULL)
             throw new Error("Error: index out of bounds");
     }
@@ -2585,8 +2577,7 @@ Element* LList::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* LList::asList(LispE* lisp) {
-    List* l =  lisp->provideList();
+Element* LList::asList(LispE* lisp, List* l) {
     for (u_link* a = liste.begin(); a != NULL; a = a->next())
         l->append(a->value);
     return l;
@@ -2892,8 +2883,8 @@ void Numbers::sorting(LispE* lisp, List* comparison) {
     comparison->liste[1] = &n1;
     comparison->liste[2] = &n2;
     
-    n1.number = liste[0];
-    n2.number = liste[0];
+    n1.content = liste[0];
+    n2.content = liste[0];
     if (comparison->eval(lisp)->Boolean())
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
@@ -3408,8 +3399,7 @@ Element* Numbers::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* Numbers::asList(LispE* lisp) {
-    List* l =  lisp->provideList();
+Element* Numbers::asList(LispE* lisp, List* l) {
     for (long i = 0; i < liste.size(); i++)
         l->append(lisp->provideNumber(liste[i]));
     return l;
@@ -3485,8 +3475,8 @@ void Integers::sorting(LispE* lisp, List* comparison) {
     Constinteger n2(0);
     comparison->liste[1] = &n1;
     comparison->liste[2] = &n2;
-    n1.integer = liste[0];
-    n2.integer = liste[0];
+    n1.content = liste[0];
+    n2.content = liste[0];
     if (comparison->eval(lisp)->Boolean())
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
@@ -3997,8 +3987,7 @@ Element* Integers::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* Integers::asList(LispE* lisp) {
-    List* l =  lisp->provideList();
+Element* Integers::asList(LispE* lisp, List* l) {
     for (long i = 0; i < liste.size(); i++)
         l->append(lisp->provideInteger(liste[i]));
     return l;
@@ -4924,8 +4913,7 @@ Element* Strings::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* Strings::asList(LispE* lisp) {
-    List* l =  lisp->provideList();
+Element* Strings::asList(LispE* lisp, List* l) {
     for (long i = 0; i < liste.size(); i++)
         l->append(lisp->provideString(liste[i]));
     return l;
@@ -5004,8 +4992,8 @@ void Shorts::sorting(LispE* lisp, List* comparison) {
     Constshort n2(0);
     comparison->liste[1] = &n1;
     comparison->liste[2] = &n2;
-    n1.integer = liste[0];
-    n2.integer = liste[0];
+    n1.content = liste[0];
+    n2.content = liste[0];
     if (comparison->eval(lisp)->Boolean())
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
@@ -5518,8 +5506,7 @@ Element* Shorts::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* Shorts::asList(LispE* lisp) {
-    List* l =  lisp->provideList();
+Element* Shorts::asList(LispE* lisp, List* l) {
     for (long i = 0; i < liste.size(); i++)
         l->append(new Short(liste[i]));
     return l;
@@ -5598,8 +5585,8 @@ void Floats::sorting(LispE* lisp, List* comparison) {
     comparison->liste[1] = &n1;
     comparison->liste[2] = &n2;
     
-    n1.number = liste[0];
-    n2.number = liste[0];
+    n1.content = liste[0];
+    n2.content = liste[0];
     if (comparison->eval(lisp)->Boolean())
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
@@ -6125,8 +6112,7 @@ Element* Floats::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* Floats::asList(LispE* lisp) {
-    List* l =  lisp->provideList();
+Element* Floats::asList(LispE* lisp, List* l) {
     for (long i = 0; i < liste.size(); i++)
         l->append(lisp->provideFloat(liste[i]));
     return l;
@@ -6757,7 +6743,7 @@ Element* Shorts::next_iter_exchange(LispE* lisp, void* it) {
     long* n = (long*)it;
     if (n[0] == liste.size())
         return emptyatom_;
-    exchange_value.integer = liste[n[0]];
+    exchange_value.content = liste[n[0]];
     n[0]++;
     return &exchange_value;
 }
@@ -6775,7 +6761,7 @@ Element* Integers::next_iter_exchange(LispE* lisp, void* it) {
     long* n = (long*)it;
     if (n[0] == liste.size())
         return emptyatom_;
-    exchange_value.integer = liste[n[0]];
+    exchange_value.content = liste[n[0]];
     n[0]++;
     return &exchange_value;
 }
@@ -6793,7 +6779,7 @@ Element* Floats::next_iter_exchange(LispE* lisp, void* it) {
     long* n = (long*)it;
     if (n[0] == liste.size())
         return emptyatom_;
-    exchange_value.number = liste[n[0]];
+    exchange_value.content = liste[n[0]];
     n[0]++;
     return &exchange_value;
 }
@@ -6811,7 +6797,7 @@ Element* Numbers::next_iter_exchange(LispE* lisp, void* it) {
     long* n = (long*)it;
     if (n[0] == liste.size())
         return emptyatom_;
-    exchange_value.number = liste[n[0]];
+    exchange_value.content = liste[n[0]];
     n[0]++;
     return &exchange_value;
 }
@@ -7053,6 +7039,453 @@ void Strings::push_element_back(LispE* lisp, List* l) {
     }
 }
 
+//------------------------------------------------------------------------------------------------------------
+Element* List::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    if (!end) {
+        append(e);
+        return this;
+    }
+            
+    Element* test = NULL;
 
+    if (end < 3) {
+        comparison.in_quote(2, liste[0]);
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            insertion(e, 0);
+        else {
+            if (end == 2) {
+                comparison.in_quote(2, liste[1]);
+                test = comparison.eval(lisp);
+                if (test->Boolean()) {
+                    insertion(e , 1);
+                    return this;
+                }
+            }
+            append(e);
+        }
+        return this;
+    }
+    
+    end--;
+    long begin = 0;
+    long i = 0;
+    
+    //then we compare by dichotomy
+    while ((end-begin) > 1) {
+        i = begin + ((end - begin) >> 1);
+        comparison.in_quote(2, liste[i]);
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            end = i;
+        else
+            begin = i;
+    }
 
+    if (test->Boolean()) {
+        if (i == begin)
+            insertion(e, i);
+        else {
+            comparison.in_quote(2, liste[begin]);
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, begin);
+            else
+                insertion(e, end);
+        }
+    }
+    else {
+        if (i == end)
+            insertion(e, i + 1);
+        else {
+            comparison.in_quote(2, liste[end]);
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, end);
+            else
+                insertion(e, end + 1);
+        }
+    }
+    return this;
+}
+
+Element* Numbers::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    if (!end) {
+        append(e);
+        return this;
+    }
+        
+    Element* test = NULL;
+
+    if (end < 3) {
+        comparison.in_quote(2, index(0));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            insertion(e, 0);
+        else {
+            if (end == 2) {
+                comparison.in_quote(2, index(1));
+                test = comparison.eval(lisp);
+                if (test->Boolean()) {
+                    insertion(e , 1);
+                    return this;
+                }
+            }
+            append(e);
+        }
+        return this;
+    }
+    
+    end--;
+    long begin = 0;
+    long i = 0;
+    
+    //then we compare by dichotomy
+    while ((end-begin) > 1) {
+        i = begin + ((end - begin) >> 1);
+        comparison.in_quote(2, index(i));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            end = i;
+        else
+            begin = i;
+    }
+
+    if (test->Boolean()) {
+        if (i == begin)
+            insertion(e, i);
+        else {
+            comparison.in_quote(2, index(begin));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, begin);
+            else
+                insertion(e, end);
+        }
+    }
+    else {
+        if (i == end)
+            insertion(e, i + 1);
+        else {
+            comparison.in_quote(2, index(end));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, end);
+            else
+                insertion(e, end + 1);
+        }
+    }
+    return this;
+}
+
+Element* Floats::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    if (!end) {
+        append(e);
+        return this;
+    }
+        
+    Element* test = NULL;
+
+    if (end < 3) {
+        comparison.in_quote(2, index(0));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            insertion(e, 0);
+        else {
+            if (end == 2) {
+                comparison.in_quote(2, index(1));
+                test = comparison.eval(lisp);
+                if (test->Boolean()) {
+                    insertion(e , 1);
+                    return this;
+                }
+            }
+            append(e);
+        }
+        return this;
+    }
+    
+    end--;
+    long begin = 0;
+    long i = 0;
+    
+    //then we compare by dichotomy
+    while ((end-begin) > 1) {
+        i = begin + ((end - begin) >> 1);
+        comparison.in_quote(2, index(i));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            end = i;
+        else
+            begin = i;
+    }
+
+    if (test->Boolean()) {
+        if (i == begin)
+            insertion(e, i);
+        else {
+            comparison.in_quote(2, index(begin));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, begin);
+            else
+                insertion(e, end);
+        }
+    }
+    else {
+        if (i == end)
+            insertion(e, i + 1);
+        else {
+            comparison.in_quote(2, index(end));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, end);
+            else
+                insertion(e, end + 1);
+        }
+    }
+    return this;
+}
+
+Element* Integers::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    if (!end) {
+        append(e);
+        return this;
+    }
+        
+    
+    Element* test = NULL;
+
+    if (end < 3) {
+        comparison.in_quote(2, index(0));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            insertion(e, 0);
+        else {
+            if (end == 2) {
+                comparison.in_quote(2, index(1));
+                test = comparison.eval(lisp);
+                if (test->Boolean()) {
+                    insertion(e , 1);
+                    return this;
+                }
+            }
+            append(e);
+        }
+        return this;
+    }
+    
+    end--;
+    long begin = 0;
+    long i = 0;
+    
+    //then we compare by dichotomy
+    while ((end-begin) > 1) {
+        i = begin + ((end - begin) >> 1);
+        comparison.in_quote(2, index(i));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            end = i;
+        else
+            begin = i;
+    }
+
+    if (test->Boolean()) {
+        if (i == begin)
+            insertion(e, i);
+        else {
+            comparison.in_quote(2, index(begin));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, begin);
+            else
+                insertion(e, end);
+        }
+    }
+    else {
+        if (i == end)
+            insertion(e, i + 1);
+        else {
+            comparison.in_quote(2, index(end));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, end);
+            else
+                insertion(e, end + 1);
+        }
+    }
+    return this;
+}
+
+Element* Shorts::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    if (!end) {
+        append(e);
+        return this;
+    }
+        
+    Element* test = NULL;
+
+    if (end < 3) {
+        comparison.in_quote(2, index(0));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            insertion(e, 0);
+        else {
+            if (end == 2) {
+                comparison.in_quote(2, index(1));
+                test = comparison.eval(lisp);
+                if (test->Boolean()) {
+                    insertion(e , 1);
+                    return this;
+                }
+            }
+            append(e);
+        }
+        return this;
+    }
+    
+    end--;
+    long begin = 0;
+    long i = 0;
+    
+    //then we compare by dichotomy
+    while ((end-begin) > 1) {
+        i = begin + ((end - begin) >> 1);
+        comparison.in_quote(2, index(i));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            end = i;
+        else
+            begin = i;
+    }
+
+    if (test->Boolean()) {
+        if (i == begin)
+            insertion(e, i);
+        else {
+            comparison.in_quote(2, index(begin));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, begin);
+            else
+                insertion(e, end);
+        }
+    }
+    else {
+        if (i == end)
+            insertion(e, i + 1);
+        else {
+            comparison.in_quote(2, index(end));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, end);
+            else
+                insertion(e, end + 1);
+        }
+    }
+    return this;
+}
+
+Element* Strings::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    if (!end) {
+        append(e);
+        return this;
+    }
+        
+    Element* test = NULL;
+
+    if (end < 3) {
+        comparison.in_quote(2, index(0));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            insertion(e, 0);
+        else {
+            if (end == 2) {
+                comparison.in_quote(2, index(1));
+                test = comparison.eval(lisp);
+                if (test->Boolean()) {
+                    insertion(e , 1);
+                    return this;
+                }
+            }
+            append(e);
+        }
+        return this;
+    }
+    
+    end--;
+    long begin = 0;
+    long i = 0;
+    
+    //then we compare by dichotomy
+    while ((end-begin) > 1) {
+        i = begin + ((end - begin) >> 1);
+        comparison.in_quote(2, index(i));
+        test = comparison.eval(lisp);
+        if (test->Boolean())
+            end = i;
+        else
+            begin = i;
+    }
+
+    if (test->Boolean()) {
+        if (i == begin)
+            insertion(e, i);
+        else {
+            comparison.in_quote(2, index(begin));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, begin);
+            else
+                insertion(e, end);
+        }
+    }
+    else {
+        if (i == end)
+            insertion(e, i + 1);
+        else {
+            comparison.in_quote(2, index(end));
+            test = comparison.eval(lisp);
+            if (test->Boolean())
+                insertion(e, end);
+            else
+                insertion(e, end + 1);
+        }
+    }
+    return this;
+}
+
+Element* LList::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+
+    Element* test;
+    u_link* last = NULL;
+    u_link* u;
+    
+    for (u = liste.begin(); u != NULL; u = u->next()) {
+        last = u;
+        comparison.in_quote(2, u->value);
+        test = comparison.eval(lisp);
+        if (test->Boolean()) {
+            u_link* l = new u_link(e);
+            u->insert(l);
+            return this;
+        }
+    }
+        
+    u = new u_link(e);
+    if (last == NULL) {
+        liste.first = u;
+        u->inc(1);
+    }
+    else
+        last->push(u);
+        
+    return this;
+}
 

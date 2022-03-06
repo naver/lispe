@@ -27,21 +27,24 @@ public:
         widget = NULL;
         object = null_;
         function = NULL;
-        if (o != null_ && o != NULL) {
-            object = lisp->provideList();
-            object->append(lisp->provideAtom(l_quote));
-            object->append(o);
-            lisp->garbaging(object);
+        if (o != NULL) {
+            object = o;
+            object->increment();
         }
 
-        if (f != null_ && f != NULL)
+        if (f != null_ && f != NULL) {
             function = f;
+            function->increment();
+        }
         
         //In case an error occurs, we use this mechanism to ensure a clean
         //deletion of FLTK objects
     }
     
     ~Fltk_widget() {
+        if (function != NULL)
+            function->decrement();
+        object->decrement();
         if (widget != NULL)
             delete widget;
     }

@@ -92,7 +92,8 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_flatten, l_nconc, l_nconcn, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
+    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_flatten, l_nconc, l_nconcn,
+    l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti, l_sets,
     l_dictionary, l_dictionaryi, l_dictionaryn,
@@ -292,10 +293,12 @@ public:
         return reverse(lisp, true);
     }
 
-    virtual Element* asList(LispE* lisp);
+    virtual Element* asList(LispE* lisp, List* l);
     
     virtual void concatenate(LispE* lisp, Element* e) {}
 
+    virtual void swap(long, long) {}
+    
     virtual Element* last_element(LispE* lisp);
     virtual Element* last() {
         return this;
@@ -455,10 +458,6 @@ public:
         return this;
     }
     
-    virtual char unquoting() { return 0;}
-    
-    virtual void setquoted(char q) {}
-    
     void prettyfying(LispE* lisp, string& code);
     string prettify(LispE* lisp);
     
@@ -526,6 +525,7 @@ public:
     
     virtual void append(Element* e) {}
     virtual Element* insert(LispE*, Element* e, long idx);
+    virtual Element* insert_with_compare(LispE*, Element* e, List& comparison);
     virtual void insertion(Element* e, long idx) {}
     virtual void front(Element* e) {}
     virtual void beforelast(Element* e) {}
@@ -882,6 +882,71 @@ public:
     bool egal(Element* e);
 };
 
+class Quoted : public Element {
+public:
+    Element* value;
+    
+    Quoted() : Element(l_quote) {
+        value = NULL;
+    }
+    
+    Quoted(Element* v) : Element(l_quote) {
+        value = v;
+        value->increment();
+    }
+        
+    Element* eval(LispE*) {
+        return value;
+    }
+    
+    void requoting(Element* v) {
+        value->decrement();
+        value = v;
+        value->increment();
+    }
+    
+    virtual void release() {
+        if (!status) {
+            value->decrement();
+            delete this;
+        }
+    }
+
+    virtual void decrement() {
+        status -= not_protected();
+        if (!status) {
+            value->decrement();
+            delete this;
+        }
+    }
+
+    virtual void decrementstatus(uint16_t nb) {
+        status -= nb * not_protected();
+        if (!status) {
+            value->decrement();
+            delete this;
+        }
+    }
+};
+
+class Quotedpool : public Quoted {
+public:
+    LispE* lisp;
+    
+    Quotedpool(LispE* l) : lisp(l) {}
+    Quotedpool(LispE* l, Element* v) : lisp(l), Quoted(v) {}
+
+    Quoted* set(Element* v) {
+        value = v;
+        value->increment();
+        return this;
+    }
+    
+    void decrement();
+    void release();
+    void decrementstatus(uint16_t nb);
+};
+
 class Atome : public Element {
 public:
     u_ustring name;
@@ -891,6 +956,10 @@ public:
     Atome(short a, uint16_t s, u_ustring w) : name(w), atome(a), Element(t_atom, s) {}
 
     Element* transformargument(LispE* lisp);
+
+    Element* quoting() {
+        return new Quoted(this);
+    }
     
     bool garbageable() {
         return false;
@@ -1252,15 +1321,15 @@ public:
 class Float : public Element {
 public:
   
-    float number;
+    float content;
     Float(float d) : Element(t_float) {
-        number = d;
+        content = d;
     }
     
-    Float(float d, uint16_t s) : number(d), Element(t_float, s) {}
+    Float(float d, uint16_t s) : content(d), Element(t_float, s) {}
     
     bool equalvalue(float v) {
-        return (v == number);
+        return (v == content);
     }
 
     Element* invert_sign(LispE* lisp);
@@ -1274,19 +1343,19 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
-    void setvalue(float v) {number = v;}
+    void setvalue(float v) {content = v;}
 
     
     char check_match(LispE* lisp, Element* value) {
-        return check_ok*(number == value->asFloat());
+        return check_ok*(content == value->asFloat());
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
-        return (value == this || value->asFloat() == number);
+        return (value == this || value->asFloat() == content);
     }
     
     bool isequal(LispE* lisp, Element* value) {
-        return (value == this || value->asFloat() == number);
+        return (value == this || value->asFloat() == content);
     }
 
     bool isNumber() {
@@ -1294,55 +1363,55 @@ public:
     }
     
     double checkNumber(LispE* lisp) {
-        return number;
+        return content;
     }
     
     long checkInteger(LispE* lisp) {
-        return number;
+        return content;
     }
     
     short checkShort(LispE* lisp) {
-        return number;
+        return content;
     }
     
     float checkFloat(LispE* lisp) {
-        return number;
+        return content;
     }
     
     wstring asString(LispE* lisp) {
-        return convertToWString(number);
+        return convertToWString(content);
     }
 
     string toString(LispE* lisp) {
-        return convertToString(number);
+        return convertToString(content);
     }
 
     double asNumber() {
-        return number;
+        return content;
     }
 
     float asFloat() {
-        return number;
+        return content;
     }
 
     short asShort() {
-        return (short)number;
+        return (short)content;
     }
 
     long asInteger() {
-        return (long)number;
+        return (long)content;
     }
 
     int asInt() {
-        return (int)number;
+        return (int)content;
     }
 
     bool Boolean() {
-        return (number);
+        return (content);
     }
     
     virtual Element* fullcopy() {
-        return new Float(number);
+        return new Float(content);
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
@@ -1351,7 +1420,7 @@ public:
         if (!status)
             return this;
         
-        return new Float(number);
+        return new Float(content);
     }
     
     Element* bit_not(LispE* l);
@@ -1381,7 +1450,7 @@ public:
     Floatpool(float d) : lisp(NULL), Float(d, s_constant) {}
     
     inline Floatpool* set(float d) {
-        number = d;
+        content = d;
         return this;
     }
     
@@ -1397,15 +1466,15 @@ public:
 class Number : public Element {
 public:
   
-    double number;
+    double content;
     Number(double d) : Element(t_number) {
-        number = d;
+        content = d;
     }
     
-    Number(double d, uint16_t s) : number(d), Element(t_number, s) {}
+    Number(double d, uint16_t s) : content(d), Element(t_number, s) {}
     
     bool equalvalue(double v) {
-        return (v == number);
+        return (v == content);
     }
 
     Element* invert_sign(LispE* lisp);
@@ -1419,18 +1488,18 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
-    void setvalue(double v) {number = v;}
+    void setvalue(double v) {content = v;}
 
     char check_match(LispE* lisp, Element* value) {
-        return check_ok*(number == value->asNumber());
+        return check_ok*(content == value->asNumber());
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
-        return (value == this || value->asNumber() == number);
+        return (value == this || value->asNumber() == content);
     }
     
     bool isequal(LispE* lisp, Element* value) {
-        return (value == this || value->asNumber() == number);
+        return (value == this || value->asNumber() == content);
     }
     
     bool isNumber() {
@@ -1438,51 +1507,51 @@ public:
     }
     
     double checkNumber(LispE* lisp) {
-        return number;
+        return content;
     }
     
     long checkInteger(LispE* lisp) {
-        return number;
+        return content;
     }
     
     short checkShort(LispE* lisp) {
-        return number;
+        return content;
     }
     
     wstring asString(LispE* lisp) {
-        return convertToWString(number);
+        return convertToWString(content);
     }
 
     string toString(LispE* lisp) {
-        return convertToString(number);
+        return convertToString(content);
     }
 
     double asNumber() {
-        return number;
+        return content;
     }
 
     float asFloat() {
-        return number;
+        return content;
     }
 
     short asShort() {
-        return (short)number;
+        return (short)content;
     }
 
     long asInteger() {
-        return (long)number;
+        return (long)content;
     }
     
     int asInt() {
-        return (int)number;
+        return (int)content;
     }
 
     bool Boolean() {
-        return (number);
+        return (content);
     }
     
     virtual Element* fullcopy() {
-        return new Number(number);
+        return new Number(content);
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
@@ -1491,7 +1560,7 @@ public:
         if (!status)
             return this;
         
-        return new Number(number);
+        return new Number(content);
     }
     
     Element* bit_not(LispE* l);
@@ -1521,7 +1590,7 @@ public:
     Numberpool(double d) : lisp(NULL), Number(d, s_constant) {}
     
     inline Numberpool* set(double d) {
-        number = d;
+        content = d;
         return this;
     }
     
@@ -1599,15 +1668,15 @@ public:
 class Short : public Element {
 public:
  
-    short integer;
+    short content;
     Short(short d) : Element(t_short) {
-        integer = d;
+        content = d;
     }
     
-    Short(short d, uint16_t s) : integer(d), Element(t_short, s) {}
+    Short(short d, uint16_t s) : content(d), Element(t_short, s) {}
 
     bool equalvalue(short n) {
-        return (integer == n);
+        return (content == n);
     }
     
     Element* invert_sign(LispE* lisp);
@@ -1619,33 +1688,33 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
-    void setvalue(short v) { integer = v;}
+    void setvalue(short v) { content = v;}
 
     
     char check_match(LispE* lisp, Element* value) {
-        return check_ok*(integer == value->asInteger());
+        return check_ok*(content == value->asInteger());
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
-        return (value == this || value->asInteger() == integer);
+        return (value == this || value->asInteger() == content);
     }
 
     bool isequal(LispE* lisp, Element* value) {
-        return (value == this || value->asInteger() == integer);
+        return (value == this || value->asInteger() == content);
     }
 
     Element* reverse(LispE*, bool duplique = true);
     
     u_ustring asUString(LispE* lisp) {
-        return convertToUString((long)integer);
+        return convertToUString((long)content);
     }
 
     wstring asString(LispE* lisp) {
-        return convertToWString((long)integer);
+        return convertToWString((long)content);
     }
 
     string toString(LispE* lisp) {
-        return convertToString((long)integer);
+        return convertToString((long)content);
     }
 
     bool isInteger() {
@@ -1657,49 +1726,49 @@ public:
     }
     
     double checkNumber(LispE* lisp) {
-        return integer;
+        return content;
     }
     
     long checkInteger(LispE* lisp) {
-        return integer;
+        return content;
     }
     
     short checkShort(LispE* lisp) {
-        return integer;
+        return content;
     }
 
     double asNumber() {
-        return integer;
+        return content;
     }
     
     float asFloat() {
-        return integer;
+        return content;
     }
 
     short asShort() {
-        return integer;
+        return content;
     }
 
     long asInteger() {
-        return integer;
+        return content;
     }
     
     int asInt() {
-        return (int)integer;
+        return (int)content;
     }
 
     bool Boolean() {
-        return (integer);
+        return (content);
     }
     
     Element* fullcopy() {
-        return new Short(integer);
+        return new Short(content);
     }
 
     Element* copyatom(LispE* lisp, uint16_t s) {
         if (status < s)
             return this;
-        return new Short(integer);
+        return new Short(content);
     }
 
     // There is a difference between the two copies
@@ -1708,7 +1777,7 @@ public:
         if (!status)
             return this;
         
-        return new Short(integer);
+        return new Short(content);
     }
     
     Element* bit_not(LispE* l);
@@ -1727,7 +1796,7 @@ public:
 
     Element* plus_direct(LispE* lisp, Element* e) {
         if (e->type == t_short) {
-            integer += ((Short*)e)->integer;
+            content += ((Short*)e)->content;
             return this;
         }
         return plus(lisp, e);
@@ -1735,7 +1804,7 @@ public:
     
     Element* minus_direct(LispE* lisp, Element* e) {
         if (e->type == t_short) {
-            integer -= ((Short*)e)->integer;
+            content -= ((Short*)e)->content;
             return this;
         }
         return minus(lisp, e);
@@ -1743,7 +1812,7 @@ public:
     
     Element* multiply_direct(LispE* lisp, Element* e) {
         if (e->type == t_short) {
-            integer *= ((Short*)e)->integer;
+            content *= ((Short*)e)->content;
             return this;
         }
         return multiply(lisp, e);
@@ -1756,15 +1825,15 @@ public:
 class Integer : public Element {
 public:
  
-    long integer;
+    long content;
     Integer(long d) : Element(t_integer) {
-        integer = d;
+        content = d;
     }
     
-    Integer(long d, uint16_t s) : integer(d), Element(t_integer, s) {}
+    Integer(long d, uint16_t s) : content(d), Element(t_integer, s) {}
 
     bool equalvalue(long n) {
-        return (integer == n);
+        return (content == n);
     }
     
     Element* invert_sign(LispE* lisp);
@@ -1777,32 +1846,32 @@ public:
     Element* moreorequal(LispE* lisp, Element* e);
     
     
-    void setvalue(long v) { integer = v;}
+    void setvalue(long v) { content = v;}
 
     char check_match(LispE* lisp, Element* value) {
-        return check_ok*(integer == value->asInteger());
+        return check_ok*(content == value->asInteger());
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
-        return (value == this || value->asInteger() == integer);
+        return (value == this || value->asInteger() == content);
     }
     
     bool isequal(LispE* lisp, Element* value) {
-        return (value == this || value->asInteger() == integer);
+        return (value == this || value->asInteger() == content);
     }
     
     Element* reverse(LispE*, bool duplique = true);
     
     u_ustring asUString(LispE* lisp) {
-        return convertToUString(integer);
+        return convertToUString(content);
     }
 
     wstring asString(LispE* lisp) {
-        return convertToWString(integer);
+        return convertToWString(content);
     }
 
     string toString(LispE* lisp) {
-        return convertToString(integer);
+        return convertToString(content);
     }
 
     bool isInteger() {
@@ -1814,43 +1883,43 @@ public:
     }
     
     double checkNumber(LispE* lisp) {
-        return integer;
+        return content;
     }
     
     long checkInteger(LispE* lisp) {
-        return integer;
+        return content;
     }
 
     short checkShort(LispE* lisp) {
-        return integer;
+        return content;
     }
 
     double asNumber() {
-        return integer;
+        return content;
     }
     
     float asFloat() {
-        return integer;
+        return content;
     }
 
     short asShort() {
-        return integer;
+        return content;
     }
 
     long asInteger() {
-        return integer;
+        return content;
     }
     
     int asInt() {
-        return (int)integer;
+        return (int)content;
     }
 
     bool Boolean() {
-        return (integer);
+        return (content);
     }
     
     virtual Element* fullcopy() {
-        return new Integer(integer);
+        return new Integer(content);
     }
 
     virtual Element* copyatom(LispE* lisp, uint16_t s);
@@ -1861,7 +1930,7 @@ public:
         if (!status)
             return this;
         
-        return new Integer(integer);
+        return new Integer(content);
     }
     
     Element* bit_not(LispE* l);
@@ -1880,7 +1949,7 @@ public:
 
     Element* plus_direct(LispE* lisp, Element* e) {
         if (e->type == t_integer) {
-            integer += ((Integer*)e)->integer;
+            content += ((Integer*)e)->content;
             return this;
         }
         return plus(lisp, e);
@@ -1888,7 +1957,7 @@ public:
     
     Element* minus_direct(LispE* lisp, Element* e) {
         if (e->type == t_integer) {
-            integer -= ((Integer*)e)->integer;
+            content -= ((Integer*)e)->content;
             return this;
         }
         return minus(lisp, e);
@@ -1896,7 +1965,7 @@ public:
     
     Element* multiply_direct(LispE* lisp, Element* e) {
         if (e->type == t_integer) {
-            integer *= ((Integer*)e)->integer;
+            content *= ((Integer*)e)->content;
             return this;
         }
         return multiply(lisp, e);
@@ -1913,7 +1982,7 @@ public:
     Integerpool(long d) : lisp(NULL), Integer(d, s_constant) {}
 
     inline Integerpool* set(long d) {
-        integer = d;
+        content = d;
         return this;
     }
 
@@ -2074,7 +2143,15 @@ public:
     Element* list_or(LispE*, Element* value);
 
     Element* insert(LispE* lisp, Element* e, long idx);
-
+    void insertion(Element* e, long idx) {
+        if (idx >= content.size())
+            content += e->asUString(NULL);
+        else
+            content.insert(idx, e->asUString(NULL));
+    }
+            
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
+    
     bool equalvalue(u_ustring& v) {
         return (v == content);
     }
@@ -3878,7 +3955,7 @@ public:
         return new Set_s();
     }
     
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
 
     void* begin_iter() {
         return new std::set<u_ustring>::iterator(ensemble.begin());
@@ -4170,7 +4247,7 @@ public:
         return new Set_n();
     }
 
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     
     void* begin_iter() {
         return new std::set<double>::iterator(ensemble.begin());
@@ -4299,12 +4376,12 @@ public:
     Element* index(long i) {
         for (auto& a: ensemble) {
             if (i <= 0) {
-                exchange_value.number = a;
+                exchange_value.content = a;
                 return &exchange_value;
             }
             i--;
         }
-        exchange_value.number = 0;
+        exchange_value.content = 0;
         return &exchange_value;
     }
 
@@ -4442,7 +4519,7 @@ public:
         return ensemble.empty();
     }
 
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
     
     Element* newInstance() {
         return new Set_i();
@@ -4575,12 +4652,12 @@ public:
     Element* index(long i) {
         for (auto& a: ensemble) {
             if (i <= 0) {
-                exchange_value.integer = a;
+                exchange_value.content = a;
                 return &exchange_value;
             }
             i--;
         }
-        exchange_value.integer = 0;
+        exchange_value.content = 0;
         return &exchange_value;
     }
 
@@ -4732,7 +4809,7 @@ public:
         return new Set();
     }
     
-    Element* asList(LispE* lisp);
+    Element* asList(LispE* lisp, List* l);
 
     void* begin_iter() {
         return new std::unordered_map<u_ustring, Element*>::iterator(dictionary.begin());

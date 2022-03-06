@@ -52,7 +52,7 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
 void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor, bool full);
 void lispe_displaystring(string& code, void*);
 
-extern Chaine_UTF8 special_characters;
+extern UTF8_Handler special_characters;
 
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ void lispe_editor::displaythehelp(long i) {
 
 void lispe_editor::initlisp(bool reinitialize, bool setpath) {
     if (lispe == NULL) {
-        lispe = new LispE;
+        lispe = new LispE(&special_characters);
         lispe->arguments(arguments);
         if (setpath)
             lispe->set_pathname(thecurrentfilename);
@@ -185,7 +185,7 @@ void lispe_editor::initlisp(bool reinitialize, bool setpath) {
     if (reinitialize) {
         if (lispe != NULL)
             delete lispe;
-        lispe = new LispE;
+        lispe = new LispE(&special_characters);
         lispe->arguments(arguments);
         if (setpath)
             lispe->set_pathname(thecurrentfilename);
@@ -993,6 +993,7 @@ void lispe_editor::clean_breakpoints(long idline) {
 }
 
 void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& args) {
+    Au_meta::met = &special_characters;
     clearscreen();
 
     arguments = args;

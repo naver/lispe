@@ -90,14 +90,19 @@
    )
 
    (setg finalement (@ risque_cumulé (laclef (integers dmx dmy))))
-    finalement
+   finalement
 )
 
 (setq finalement 0)
 (println 'part1 (calcul_risque carte))
 
 (defmacro nouveau(c)
-   (maplist (\(v) (maplist (\(x) (if (eq x 10) 1 x)) v)) (+ c 1))
+   (maplist 
+      (\(v) 
+         (maplist 
+            (\(x) (if (eq x 10) 1 x)) v)) 
+      (+ c 1)
+   )
 )
 
 (defun étend(c cc)
@@ -133,14 +138,7 @@
 (setq dmx (- (@ dm 0) 1))
 (setq dmy (- (@ dm 1) 1))
 
-(println 'part2 (calcul_risque carte))
-
-
-
-
-
-
-
+(println 'part2 (elapse (calcul_risque carte)))
 
 
 
