@@ -41,7 +41,7 @@
 
 class LispE;
 class Element;
-
+class Emojis;
 //------------------------------------------------------------------------------------
 
 #define STR(x) (char*)x.c_str()
@@ -162,26 +162,45 @@ u_ustring& u_trimleft(u_ustring& strvalue);
 u_ustring& u_trimright(u_ustring& strvalue);
 
 Exporting void c_chars_get_next(unsigned char* m, char* str, size_t& i);
+Exporting void c_unicode_to_utf16(wstring& w, u_uchar c);
 Exporting bool c_char_index_insert(string& s, string c, long i);
+Exporting void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz);
 Exporting void s_utf8_to_unicode(wstring& s, unsigned char* str, long sz);
 Exporting void s_utf8_to_unicode(u_ustring& s, unsigned char* str, long sz);
 Exporting void s_utf8_to_unicode_clean(wstring& s, unsigned char* str, long sz);
 Exporting unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code);
-Exporting void s_unicode_to_utf8(string& s, wstring& str);
-Exporting void s_unicode_to_utf8(string& s, u_ustring& str);
+
+Exporting void s_utf16_to_utf8(string& s, wchar_t* str, long sz);
+Exporting void s_utf16_to_utf8(string& s, wstring& str);
+Exporting void s_utf16_to_utf8_clean(string& s, wstring& str);
+
 Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz);
+Exporting void s_unicode_to_utf8(string& s, wstring& str);
 Exporting void s_unicode_to_utf8_clean(string& s, wstring& str);
+
+Exporting void s_unicode_to_utf8(string& s, u_ustring& str);
 Exporting bool s_is_utf8(unsigned char* contenu, long longueur);
 Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second);
 Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code);
 Exporting bool c_utf16(u_uchar code);
+Exporting char* unicode_2_utf8(long code, char* utf);
 
 Exporting char c_test_utf8(unsigned char* utf);
 
 #define c_is_digit(c) (c >= '0' && c <= '9')
 
+#ifdef WIN32
+inline UWCHAR getonewchar(wstring& s, long& i) {
+    UWCHAR c;
+    if (c_utf16_to_unicode(c, s[i], false))
+        c_utf16_to_unicode(c, s[++i], true);
+    return c;
+}
+Exporting void concat_to_wstring(wstring& res, UWCHAR code);
+#else
 #define getonewchar(w, i) w[i]
 #define concat_to_wstring(res, code) res += code
+#endif
 
 //--------------------------------------------------------------------
 Exporting bool c_is_hexa(wchar_t code);
@@ -194,8 +213,27 @@ public:
     binHash<u_uchar> wvowels;
     binHash<u_uchar> wconsonants;
     
-    unordered_map<u_uchar, string> emojis;
-    unordered_map<u_uchar, bool> emojiscomplement;
+    Emojis* emojis_characters;
+    
+    bool scan_emoji(unsigned char* u, long& i);
+    bool get_emoji(unsigned char* u, string& res, long& i);
+    bool store_emoji(unsigned char* u, string& res, long& i);
+
+    bool scan_emoji(string& u, long& i);
+    bool get_emoji(string& u, string& res, long& i);
+    bool store_emoji(string& u, string& res, long& i);
+
+    bool scan_emoji(wstring& u, long& i);
+    bool get_emoji(wstring& u, wstring& res, long& i);
+    bool store_emoji(wstring& u, wstring& res, long& i);
+
+    bool scan_emoji16(wstring& u, long& i);
+    bool get_emoji16(wstring& u, wstring& res, long& i);
+    bool store_emoji16(wstring& u, wstring& res, long& i);
+
+    bool scan_emoji(u_ustring& u, long& i);
+    bool get_emoji(u_ustring& u, u_ustring& res, long& i);
+    bool store_emoji(u_ustring& u, u_ustring& res, long& i);
 
     bool c_is_punctuation(u_uchar str);
     bool c_is_punctuation(wchar_t str);
@@ -210,6 +248,7 @@ public:
     bool s_is_alpha(wstring& s);
     
     long c_bytetocharposition(unsigned char* contenu, long charpos);
+    long c_bytetoutf16position(unsigned char* contenu, long charpos);
     
     char c_is_alpha(u_uchar);
     char c_is_alpha(wchar_t);
@@ -238,24 +277,21 @@ public:
     void getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz);
     UWCHAR getachar(u_ustring& s, long& i);
 
-    void l_emojis(map<UWCHAR, string>& dico);
-    string emoji_description(UWCHAR c);
     bool c_is_emojicomp(UWCHAR c);
     bool c_is_emoji(UWCHAR c);
     long getonchar(wstring& w, long position);
     long getonchar(u_ustring& w, long position);
 
-    string emoji_description(u_ustring& s);
-    string emoji_description(wstring& s);
-    string emoji_description(string& s);
     bool u_is_emoji(u_ustring& s);
     bool s_is_emoji(wstring& s);
     bool s_is_emoji(string& s);
     bool c_is_emojicomp(unsigned char* m, long& i);
     bool c_is_emoji(unsigned char* m, long& i);
     
-    uint32_t min_emoji;
     uint32_t min_emojicomp;
+    
+    long size_w(u_ustring& w);
+    long size_utf16(wstring& s);
     
     bool c_is_upper(u_uchar c) {
         char ty = c_is_alpha(c);
@@ -328,6 +364,7 @@ public:
     }
 
     UTF8_Handler();
+    ~UTF8_Handler();
 };
 
 //------------------------------------------------------------

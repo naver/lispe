@@ -2475,7 +2475,7 @@ public:
     
     ~Dictionary() {
         //There might be some left over
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
     }
     
@@ -2531,7 +2531,7 @@ public:
             return;
         marking = true;
         usermarking = false;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             a.second->resetusermark();
         }
         marking = false;
@@ -2563,7 +2563,7 @@ public:
         Dictionary* d = new Dictionary;
         object = d;
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->fullcopy();
             d->dictionary[a.first] = e;
             e->increment();
@@ -2578,7 +2578,7 @@ public:
         
         Dictionary* d = new Dictionary;
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
             e->increment();
@@ -2643,7 +2643,7 @@ public:
         object = e;
 
         Dictionary* d = (Dictionary*)e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!dictionary.count(a.first) ||
                 !d->dictionary[a.first]->unify(lisp, a.second, record)) {
                 marking = false;
@@ -2668,7 +2668,7 @@ public:
         object = e;
 
         Dictionary* d = (Dictionary*)e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!dictionary.count(a.first) ||
                 !d->dictionary.at(a.first)->isequal(lisp, a.second)) {
                 marking = false;
@@ -2699,7 +2699,7 @@ public:
                 status = s_destructible;
         }
         
-        for (auto& a: dictionary)
+        for (const auto& a: dictionary)
             a.second->protecting(protection, lisp);
     }
     
@@ -2714,7 +2714,7 @@ public:
         wstring tampon(L"{");
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L",";
             }
@@ -2742,7 +2742,7 @@ public:
         wstring tampon(L"{");
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L" ";
             }
@@ -2770,7 +2770,7 @@ public:
         u_ustring tampon(U"{");
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += U" ";
             }
@@ -2938,7 +2938,7 @@ public:
     
     ~Dictionary_n() {
         //There might be some left over
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
     }
 
@@ -2983,7 +2983,7 @@ public:
             return;
         marking = true;
         usermarking = false;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             a.second->resetusermark();
         }
         marking = false;
@@ -3026,7 +3026,7 @@ public:
         Dictionary_n* d = new Dictionary_n;
         object = d;
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->fullcopy();
             d->dictionary[a.first] = e;
             e->increment();
@@ -3042,7 +3042,7 @@ public:
         
         Dictionary_n* d = new Dictionary_n;
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
             e->increment();
@@ -3109,7 +3109,7 @@ public:
         object = e;
         
         Dictionary_n* d = (Dictionary_n*)e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!dictionary.count(a.first) ||
                 !d->dictionary[a.first]->unify(lisp, a.second, record)) {
                 marking = false;
@@ -3135,7 +3135,7 @@ public:
         object = e;
         
         Dictionary_n* d = (Dictionary_n*)e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!dictionary.count(a.first) ||
                 !d->dictionary.at(a.first)->isequal(lisp, a.second)) {
                 marking = false;
@@ -3163,7 +3163,7 @@ public:
                 status = s_destructible;
         }
         
-        for (auto& a: dictionary)
+        for (const auto& a: dictionary)
             a.second->protecting(protection, lisp);
     }
     
@@ -3181,7 +3181,7 @@ public:
         tampon += L"{";
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L",";
             }
@@ -3212,7 +3212,7 @@ public:
         tampon += L"{";
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L" ";
             }
@@ -3241,7 +3241,7 @@ public:
         tampon += U"{";
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += U" ";
             }
@@ -3345,7 +3345,7 @@ public:
     
     ~Dictionary_i() {
         //There might be some left over
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
     }
 
@@ -3401,7 +3401,7 @@ public:
             return;
         marking = true;
         usermarking = false;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             a.second->resetusermark();
         }
         marking = false;
@@ -3433,7 +3433,7 @@ public:
         Dictionary_i* d = new Dictionary_i;
         object = d;
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->fullcopy();
             d->dictionary[a.first] = e;
             e->increment();
@@ -3449,7 +3449,7 @@ public:
         
         Dictionary_i* d = new Dictionary_i;
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
             e->increment();
@@ -3516,7 +3516,7 @@ public:
         object = e;
         
         Dictionary_i* d = (Dictionary_i*)e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!dictionary.count(a.first) ||
                 !d->dictionary.at(a.first)->unify(lisp, a.second, record)) {
                 marking = false;
@@ -3541,7 +3541,7 @@ public:
         object = e;
         
         Dictionary_i* d = (Dictionary_i*)e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!dictionary.count(a.first) ||
                 !d->dictionary.at(a.first)->isequal(lisp, a.second)) {
                 marking = false;
@@ -3570,7 +3570,7 @@ public:
                 status = s_destructible;
         }
         
-        for (auto& a: dictionary)
+        for (const auto& a: dictionary)
             a.second->protecting(protection, lisp);
     }
     
@@ -3588,7 +3588,7 @@ public:
         tampon += L"{";
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L",";
             }
@@ -3619,7 +3619,7 @@ public:
         tampon += L"{";
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L" ";
             }
@@ -3648,7 +3648,7 @@ public:
         tampon += U"{";
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += U" ";
             }
@@ -4031,7 +4031,7 @@ public:
         wstring tampon(L"[");
         
         bool premier = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!premier) {
                 tampon += L",";
             }
@@ -4050,7 +4050,7 @@ public:
         wstring tampon(L"{");
         
         bool premier = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!premier) {
                 tampon += L" ";
             }
@@ -4069,7 +4069,7 @@ public:
         u_ustring tampon(U"{");
         
         bool premier = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!premier) {
                 tampon += U" ";
             }
@@ -4089,7 +4089,7 @@ public:
     Element* protected_index(LispE*, u_ustring&);
     
     Element* index(long i) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (i <= 0) {
                 exchange_value.content = a;
                 return &exchange_value;
@@ -4324,7 +4324,7 @@ public:
         
         wstring buffer(L"[");
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first)
                 first = false;
             else
@@ -4341,7 +4341,7 @@ public:
         
         u_ustring buffer(U"{");
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first)
                 first = false;
             else
@@ -4358,7 +4358,7 @@ public:
         
         wstring buffer(L"{");
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first)
                 first = false;
             else
@@ -4374,7 +4374,7 @@ public:
     }
     
     Element* index(long i) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (i <= 0) {
                 exchange_value.content = a;
                 return &exchange_value;
@@ -4600,7 +4600,7 @@ public:
         
         wstring buffer(L"[");
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first)
                 first = false;
             else
@@ -4617,7 +4617,7 @@ public:
         
         u_ustring buffer(U"{");
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first)
                 first = false;
             else
@@ -4634,7 +4634,7 @@ public:
         
         wstring buffer(L"{");
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first)
                 first = false;
             else
@@ -4650,7 +4650,7 @@ public:
     }
     
     Element* index(long i) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (i <= 0) {
                 exchange_value.content = a;
                 return &exchange_value;
@@ -4778,13 +4778,13 @@ public:
     Set() : Element(t_set) {}
     
     Set(std::unordered_map<u_ustring, Element*>& d) : dictionary(d), Element(t_set) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->increment();
     }
 
     Set(std::unordered_map<u_ustring, Element*>& d, bool duplicate) : Element(t_set) {
         Element* v;
-        for (auto& a : d) {
+        for (const auto& a : d) {
             v = a.second->fullcopy();
             dictionary[a.first] = v;
             v->increment();
@@ -4867,7 +4867,7 @@ public:
         if (e->type != t_sets || dictionary.size() != e->size())
             return false;
 
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (((Set*)e)->dictionary.find(a.first) != ((Set*)e)->dictionary.end())
                 return false;
         }
@@ -4881,7 +4881,7 @@ public:
         if (e->type != t_sets || dictionary.size() != e->size())
             return false;
 
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (((Set*)e)->dictionary.find(a.first) != ((Set*)e)->dictionary.end())
                 return false;
         }
@@ -4902,7 +4902,7 @@ public:
         wstring tampon(L"[");
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L",";
             }
@@ -4921,7 +4921,7 @@ public:
         wstring tampon(L"{");
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += L" ";
             }
@@ -4940,7 +4940,7 @@ public:
         u_ustring tampon(U"{");
         
         bool premier = true;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!premier) {
                 tampon += U" ";
             }
@@ -4960,7 +4960,7 @@ public:
     Element* protected_index(LispE*, u_ustring&);
     
     Element* index(long i) {
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (i <= 0) {
                 return a.second;
             }
@@ -5059,7 +5059,7 @@ public:
     
     virtual void release() {
         if (!status) {
-            for (auto& a: dictionary)
+            for (const auto& a: dictionary)
                 a.second->release();
             delete this;
         }
@@ -5068,7 +5068,7 @@ public:
     virtual void decrement() {
         status -= not_protected();
         if (!status) {
-            for (auto& a: dictionary)
+            for (const auto& a: dictionary)
                 a.second->release();
             delete this;
         }
@@ -5082,7 +5082,7 @@ public:
         
         status-=nb;
         if (!status) {
-            for (auto& a: dictionary)
+            for (const auto& a: dictionary)
                 a.second->release();
             delete this;
         }
@@ -5100,7 +5100,7 @@ public:
 
     Setpool* set(Set* s) {
         dictionary = s->dictionary;
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->increment();
         return this;
     }

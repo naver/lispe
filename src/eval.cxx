@@ -380,7 +380,7 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
     if (value->type == t_dictionary) {
         Strings* keys = lisp->provideStrings();
         u_ustring k;
-        for (auto& a : ((Dictionary*)value)->dictionary) {
+        for (const auto& a : ((Dictionary*)value)->dictionary) {
             k = a.first;
             if (mxkeyvalue) {
                 found = false;
@@ -403,7 +403,7 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
     }
     
     Numbers* keys = lisp->provideNumbers();
-    for (auto& a : ((Dictionary_n*)value)->dictionary) {
+    for (const auto& a : ((Dictionary_n*)value)->dictionary) {
         if (mxkeyvalue) {
             found = false;
             for (j = 0; j < mxkeyvalue; j++) {
@@ -2065,7 +2065,7 @@ Element* LispE::eval(string code) {
     //Delete section from pick-up
     garbages.erase(garbages.begin()+garbage_size, garbages.end());
     //Then we add temporary, this way we avoid holes in the structure.
-    for (auto& a: temporary)
+    for (const auto& a: temporary)
         garbages.push_back(a);
     
     //We de-protect... Note that we now give the status s_destructible in this case
@@ -6196,8 +6196,8 @@ Element* List::evall_bodies(LispE* lisp) {
         List* functions =  lisp->provideList();
         short label = function->protected_index(lisp, (long)1)->label();
         try {
-            for (auto& a: lisp->delegation->method_pool.at(label)) {
-                for (auto& b : a.second) {
+            for (const auto& a: lisp->delegation->method_pool.at(label)) {
+                for (const auto& b : a.second) {
                     functions->append(b);
                 }
             }

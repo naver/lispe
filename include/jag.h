@@ -1034,10 +1034,6 @@ public:
     void forwardemoji();
     void backwardemoji();
 
-        //We find the beginning of each emoji, skipping composed ones...
-        //We build a string with no composed emoji, to match the position of the cursor...
-    void cleanlongemoji(wstring& s, wstring& cleaned, long p);
-
         //This size is computed to take into account Chinese/Japanese/Korean characters...
         //These characters can occupy up to two columns... We also take into account the tab size
     long taille(wstring& s);

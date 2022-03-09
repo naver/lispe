@@ -479,34 +479,30 @@ static void  InitLatinTables() {
 //-----------------------------------------------------------------------------------------
 //We only return the emoji head, when a head is present
 TRANSCHAR getechar(wstring& s, long& i) {
-	TRANSCHAR c = getachar(s, i);
-	if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-		long j = i + 1;
-		TRANSCHAR cc = getachar(s, j);
-		while (handlingutf8->c_is_emojicomp(cc)) {
-			i = j++;
-			cc = getachar(s, j);
-		}
-	}
+    TRANSCHAR c;
+#ifdef WIN32
+    long p = i;
+    c = getachar(s, p);
+    if (!handlingutf8->scan_emoji(s, i))
+        i = p;
+#else
+    c = s[i];
+    handlingutf8->scan_emoji(s, i);
+#endif
 	return c;
 }
 
 long conversionpostochar(wstring& w, long spos) {
     long cpos = 0;
 	long realpos = 0;
-	TRANSCHAR c;
 	while (realpos != spos) {
-		c = getachar(w, realpos);
-		if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-			long j = ++realpos;
-			c = getachar(w, j);
-			while (handlingutf8->c_is_emojicomp(c)) {
-				realpos = ++j;
-				c = getachar(w, j);
-			}
-		}
-		else
-			realpos++;
+#ifdef WIN32
+        if (!handlingutf8->scan_emoji(w, realpos))
+            getachar(w, realpos);
+#else
+        handlingutf8->scan_emoji(w, realpos);
+#endif
+        realpos++;
 		cpos++;
 	}
 	return cpos;
@@ -520,17 +516,13 @@ void conversionpostochar(wstring& w, long& b, long& e) {
     while (realpos != e) {
         if (realpos == sbeg)
             b = cpos;
-        c = getachar(w, realpos);
-        if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-            long j = ++realpos;
-            c = getachar(w, j);
-            while (handlingutf8->c_is_emojicomp(c)) {
-                realpos = ++j;
-                c = getachar(w, j);
-            }
-        }
-        else
-            realpos++;
+#ifdef WIN32
+        if (!handlingutf8->scan_emoji(w, realpos))
+            getachar(w, realpos);
+#else
+        handlingutf8->scan_emoji(w, realpos);
+#endif
+        realpos++;
         cpos++;
     }
     e = cpos;
@@ -2057,14 +2049,9 @@ void c_chartobyteposition(unsigned char* contenu, long sz, long& bcpos, long& ec
         if (!begcpos)
             bcpos = i;
         nb = c_test_utf8(contenu + i);
-        if (nb == 3 && handlingutf8->c_is_emoji(contenu,i)) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+        if (!handlingutf8->scan_emoji(contenu, i))
+            i += nb;
+        i++;
         endcpos--;
         begcpos--;
     }
@@ -2081,14 +2068,9 @@ void c_bytetocharposition(unsigned char* contenu, long& bbpos, long& ebpos) {
         if (i == bpos)
             bbpos = sz;
         nb = c_test_utf8(contenu + i);
-        if (nb == 3 && handlingutf8->c_is_emoji(contenu,i)) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+        if (!handlingutf8->scan_emoji(contenu, i))
+            i += nb;
+        i++;
         sz++;
     }
 
@@ -2104,14 +2086,9 @@ Exporting long c_chartobyteposition(unsigned char* contenu, long sz, long charpo
     long nb;
     while (charpos > 0 && i<sz) {
         nb = c_test_utf8(contenu + i);
-        if (nb == 3 && handlingutf8->c_is_emoji(contenu,i)) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+        if (!handlingutf8->scan_emoji(contenu, i))
+            i += nb;
+        i++;
         charpos--;
     }
     return i;
@@ -2122,14 +2099,9 @@ Exporting long c_chartobyteposition(unsigned char* contenu, long charpos) {
     long nb;
     while (charpos > 0 && contenu[i]) {
         nb = c_test_utf8(contenu + i);
-        if (nb == 3 && handlingutf8->c_is_emoji(contenu,i)) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+        if (!handlingutf8->scan_emoji(contenu, i))
+            i += nb;
+        i++;
         charpos--;
     }
     return i;
@@ -2141,14 +2113,9 @@ Exporting long c_bytetocharposition(unsigned char* contenu, long charpos) {
     long nb;
     while (i < charpos) {
         nb = c_test_utf8(contenu + i);
-        if (nb == 3 && handlingutf8->c_is_emoji(contenu,i)) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+        if (!handlingutf8->scan_emoji(contenu, i))
+            i += nb;
+        i++;
         sz++;
     }
     return sz;
@@ -2158,14 +2125,9 @@ Exporting long c_bytetocharpositionidx(unsigned char* contenu, long charpos, lon
     long nb;
     while (i<charpos) {
         nb = c_test_utf8(contenu + i);
-        if (nb == 3 && handlingutf8->c_is_emoji(contenu,i)) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+        if (!handlingutf8->scan_emoji(contenu, i))
+            i += nb;
+        i++;
         sz++;
     }
     return sz;
@@ -2175,14 +2137,9 @@ Exporting long c_chartobytepositionidx(unsigned char* contenu, long charpos, lon
     long nb;
     while (charpos>0) {
         nb = c_test_utf8(contenu + i);
-        if (nb == 3 && handlingutf8->c_is_emoji(contenu,i)) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+        if (!handlingutf8->scan_emoji(contenu, i))
+            i += nb;
+        i++;
         sz++;
         charpos--;
     }
@@ -2215,36 +2172,24 @@ Exporting long size_utf16(unsigned char* str, long sz, long& charsize) {
 }
 
 wstring getfullchar(wstring& s, long& i) {
-	TRANSCHAR c = getachar(s, i);
-	wstring res;
-	store_char_check_utf16(res, c);
-	if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-		long j = i + 1;
-		c = getachar(s, j);
-		while (handlingutf8->c_is_emojicomp(c)) {
-			i = j++;
-			concat_char_check_utf16(res, c);
-			c = getachar(s, j);
-		}
-	}
-	return res;
+    wstring res;
+    if (!handlingutf8->get_emoji(s, res, i)) {
+        res = s[i];
+        if ((s[i] && 0xFF00) == 0xD800) {
+            res += s[++i];
+        }
+    }
+    return res;
 }
 
 void getafullchar(wstring& s, wstring& res, long& i) {
-    TRANSCHAR c = getachar(s, i);
-	i++;
-    concat_char_check_utf16(res, c);
-    if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-        c = getachar(s, i);
-		i++;
-        long j = i;
-        while (handlingutf8->c_is_emojicomp(c)) {
-            concat_char_check_utf16(res, c);
-            i = j;
-            c = getachar(s, j);
-			j++;
+    if (!handlingutf8->store_emoji(s, res, i)) {
+        res += s[i];
+        if ((s[i] && 0xFF00) == 0xD800) {
+            res += s[++i];
         }
     }
+    i++;
 }
 
 
@@ -2312,20 +2257,10 @@ size_t size_w(wstring& w) {
 
 	long sz = 0;
 	long i = 0;
-
-	TRANSCHAR c;
-	long j;
 	for (; i < lg; i++) {
 		if ((w[i] & 0xFF00) == 0xD800) {
-			c = getachar(w, i);
-			if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-				j = i + 1;
-				c = getachar(w, j);
-				while (handlingutf8->c_is_emojicomp(c)) {
-					i = j++;
-					c = getachar(w, j);
-				}
-			}
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
 		}
 		sz++;
 	}
@@ -2338,22 +2273,13 @@ size_t size_w(wstring& w, long& first) {
     long sz = 0;
     long lg = w.size();
     long i = 0;
-	TRANSCHAR c;
-	long j;
 	for (; i < lg; i++) {
-		if ((w[i] & 0xFF00) == 0xD800) {
-			if (first == -1)
-				first = i;
-			c = getachar(w, i);
-			if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-				j = i + 1;
-				c = getachar(w, j);
-				while (handlingutf8->c_is_emojicomp(c)) {
-					i = j++;
-					c = getachar(w, j);
-				}
-			}
-		}
+        if ((w[i] & 0xFF00) == 0xD800) {
+            if (first == -1)
+                first = i;
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
+        }
 		sz++;
 	}
 
@@ -2363,21 +2289,12 @@ size_t size_w(wstring& w, long& first) {
 //We convert a position in characters into an actual string position
 long convertchartoposutf16(wstring& w, long first, long cpos) {
 	long  i = first;
-	long j;
-	TRANSCHAR c;
 	while (first != cpos) {
-		if ((w[i] & 0xFF00) == 0xD800) {
-			i += getChar(w, i, c);
-			if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-				j = getChar(w, i, c);
-				while (handlingutf8->c_is_emojicomp(c)) {
-					i += j;
-					j = getChar(w, i, c);
-				}
-			}
-		}
-		else
-            i++;
+        if ((w[i] & 0xFF00) == 0xD800) {
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
+        }
+        i++;
 		first++;
 	}
 	return i;
@@ -2385,21 +2302,12 @@ long convertchartoposutf16(wstring& w, long first, long cpos) {
 
 long convertpostocharutf16(wstring& w, long first, long spos) {
 	long  i = first;
-	long j;
-	TRANSCHAR c;
 	while (i != spos) {
-		if ((w[i] & 0xFF00) == 0xD800) {
-			i += getChar(w, i, c);
-			if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-				j = getChar(w, i, c);
-				while (handlingutf8->c_is_emojicomp(c)) {
-					i += j;
-					j = getChar(w, i, c);
-				}
-			}
-		}
-		else
-			i++;
+        if ((w[i] & 0xFF00) == 0xD800) {
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
+        }
+        i++;
 		first++;
 	}
 	return first;
@@ -2410,21 +2318,12 @@ Exporting long convertpostochar(wstring& w, long first, long spos) {
         return spos;
 
 	long  i = first;
-	long j;
-	TRANSCHAR c;
 	while (i != spos) {
-		if ((w[i] & 0xFF00) == 0xD800) {
-			i += getChar(w, i, c);
-			if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-				j = getChar(w, i, c);
-				while (handlingutf8->c_is_emojicomp(c)) {
-					i += j;
-					j = getChar(w, i, c);
-				}
-			}
-		}
-		else
-			i++;
+        if ((w[i] & 0xFF00) == 0xD800) {
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
+        }
+        i++;
 		first++;
 	}
 	return first;
@@ -2435,21 +2334,12 @@ Exporting long convertchartopos(wstring& w, long first, long cpos) {
         return cpos;
 
 	long  i = first;
-	long j;
-	TRANSCHAR c;
 	while (first != cpos) {
-		if ((w[i] & 0xFF00) == 0xD800) {
-			i += getChar(w, i, c);
-			if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-				j = getChar(w, i, c);
-				while (handlingutf8->c_is_emojicomp(c)) {
-					i += j;
-					j = getChar(w, i, c);
-				}
-			}
-		}
-		else
-			i++;
+        if ((w[i] & 0xFF00) == 0xD800) {
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
+        }
+        i++;
 		first++;
 	}
 	return i;
@@ -2457,21 +2347,12 @@ Exporting long convertchartopos(wstring& w, long first, long cpos) {
 
 long convertpostocharraw(wstring& w, long first, long spos) {
     long  i = first;
-    long j;
-    TRANSCHAR c;
     while (i != spos) {
         if ((w[i] & 0xFF00) == 0xD800) {
-            i += getChar(w, i, c);
-            if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-                j = getChar(w, i, c);
-                while (handlingutf8->c_is_emojicomp(c)) {
-                    i += j;
-                    j = getChar(w, i, c);
-                }
-            }
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
         }
-        else
-            i++;
+        i++;
         first++;
     }
     return first;
@@ -2479,21 +2360,12 @@ long convertpostocharraw(wstring& w, long first, long spos) {
 
 long convertchartoposraw(wstring& w, long first, long cpos) {
     long  i = first;
-    long j;
-    TRANSCHAR c;
     while (first != cpos) {
         if ((w[i] & 0xFF00) == 0xD800) {
-            i += getChar(w, i, c);
-            if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-                j = getChar(w, i, c);
-                while (handlingutf8->c_is_emojicomp(c)) {
-                    i += j;
-                    j = getChar(w, i, c);
-                }
-            }
+            if (!handlingutf8->scan_emoji(w, i))
+                i++;
         }
-        else
-            i++;
+        i++;
         first++;
     }
     return i;
@@ -2512,21 +2384,12 @@ void convertpostochar(wstring& w, vector<long>& vspos) {
             vcpos.push_back(vspos[i]);
             continue;
         }
-
         while (realpos != vspos[i]) {
             if ((w[realpos] & 0xFF00) == 0xD800) {
-                realpos += getChar(w, realpos, c);
-                if (((c & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(c)) {
-                    j = getChar(w, realpos, c);
-                    while (handlingutf8->c_is_emojicomp(c)) {
-                        realpos += j;
-                        j = getChar(w, realpos, c);
-                    }
-                }
+                if (!handlingutf8->scan_emoji(w, realpos))
+                    realpos++;
             }
-            else
-                realpos++;
-
+            realpos++;
             charpos++;
         }
         vcpos.push_back(charpos);
@@ -2695,13 +2558,7 @@ Exporting long convertchartopos(wstring& w, long first, long cpos) {
 
     long realpos = first;
     while (first != cpos) {
-        if (((w[realpos] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[realpos])) {
-            realpos++;
-            while (handlingutf8->c_is_emojicomp(w[realpos])) {
-                realpos++;
-            }
-        }
-        else
+        if (!handlingutf8->scan_emoji(w, realpos))
             realpos++;
         first++;
     }
@@ -2714,13 +2571,7 @@ Exporting long convertpostochar(wstring& w, long first, long spos) {
 
     long realpos = first;
     while (realpos != spos) {
-        if (((w[realpos] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[realpos])) {
-            realpos++;
-            while (handlingutf8->c_is_emojicomp(w[realpos])) {
-                realpos++;
-            }
-        }
-        else
+        if (!handlingutf8->scan_emoji(w, realpos))
             realpos++;
         first++;
     }
@@ -2730,13 +2581,7 @@ Exporting long convertpostochar(wstring& w, long first, long spos) {
 Exporting long convertchartoposraw(wstring& w, long first, long cpos) {
     long realpos = first;
     while (first != cpos) {
-        if (((w[realpos] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[realpos])) {
-            realpos++;
-            while (handlingutf8->c_is_emojicomp(w[realpos])) {
-                realpos++;
-            }
-        }
-        else
+        if (!handlingutf8->scan_emoji(w, realpos))
             realpos++;
         first++;
     }
@@ -2746,13 +2591,7 @@ Exporting long convertchartoposraw(wstring& w, long first, long cpos) {
 Exporting long convertpostocharraw(wstring& w, long first, long spos) {
     long realpos = first;
     while (realpos != spos) {
-        if (((w[realpos] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[realpos])) {
-            realpos++;
-            while (handlingutf8->c_is_emojicomp(w[realpos])) {
-                realpos++;
-            }
-        }
-        else
+        if (!handlingutf8->scan_emoji(w, realpos))
             realpos++;
         first++;
     }
@@ -2772,13 +2611,7 @@ void convertpostochar(wstring& w, vector<long>& vspos) {
         }
 
         while (realpos != vspos[i]) {
-            if (((w[realpos] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[realpos])) {
-                realpos++;
-                while (handlingutf8->c_is_emojicomp(w[realpos])) {
-                    realpos++;
-                }
-            }
-            else
+            if (!handlingutf8->scan_emoji(w, realpos))
                 realpos++;
             charpos++;
         }
@@ -2794,12 +2627,7 @@ Exporting long c_char_to_pos_emoji(wstring& w, long charpos) {
         //there is one in the block starting at i...
     charpos -= i;
     while (charpos > 0) {
-        if (((w[i] & 0x1F000) == 0x1F000) && handlingutf8->c_is_emoji(w[i])) {
-            i++;
-            while (handlingutf8->c_is_emojicomp(w[i]))
-                i++;
-        }
-        else
+        if (!handlingutf8->scan_emoji(w, i))
             i++;
         charpos--;
     }
@@ -3245,54 +3073,29 @@ Exporting string c_char_get_next(unsigned char* m, size_t& i) {
 
 
 Exporting string c_char_get(unsigned char* m, long& i) {
-    char str[] = {(char)m[i],0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    string str;
+    str = (char)m[i];
     long nb = c_test_utf8(m + i);
     if (nb == 0)
         return str;
 
-    long idx = 1;
-    long j = i;
-    if (nb == 3 && handlingutf8->c_is_emoji(m, j)) {
-        str[idx++] = (char)m[i+1];
-        str[idx++] = (char)m[i+2];
-        str[idx++] = (char)m[i+3];
-        i = ++j;
-        while (handlingutf8->c_is_emojicomp(m, j)) {
-            nb = c_test_utf8(m+i);
-            str[idx++] = (char)m[i];
-            switch (nb) {
-                case 1:
-                    str[idx++] = (char)m[i+1];
-                    break;
-                case 2:
-                    str[idx++] = (char)m[i+1];
-                    str[idx++] = (char)m[i+2];
-                    break;
-                case 3:
-                    str[idx++] = (char)m[i+1];
-                    str[idx++] = (char)m[i+2];
-                    str[idx++] = (char)m[i+3];
-            }
-            i = ++j;
-        }
-        --i;
-    }
-    else {
+    if (!handlingutf8->get_emoji(m, str, i)) {
         switch (nb) {
             case 1:
-                str[idx] = (char)m[i+1];
+                str = (char)m[i+1];
                 break;
             case 2:
-                str[idx++] = (char)m[i+1];
-                str[idx] = (char)m[i+2];
+                str = (char)m[i+1];
+                str += (char)m[i+2];
                 break;
             case 3:
-                str[idx++] = (char)m[i+1];
-                str[idx++] = (char)m[i+2];
-                str[idx] = (char)m[i+3];
+                str = (char)m[i+1];
+                str += (char)m[i+2];
+                str += (char)m[i+3];
         }
         i += nb;
     }
+        
     return str;
 }
 

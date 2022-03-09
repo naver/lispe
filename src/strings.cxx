@@ -246,7 +246,7 @@ void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
     delete[] token;
 }
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_emoji_description, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base,
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base,
     str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
@@ -652,11 +652,6 @@ public:
                 strvalue = u_trimright(strvalue);
                 return lisp->provideString(strvalue);
             }
-            case str_emoji_description: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
-                string res = lisp->handlingutf8->emoji_description(strvalue);
-                return lisp->provideString(res);
-            }
             case str_tokenize_lispe: {
                 wstring strvalue =  lisp->get_variable(v_str)->asString(lisp);
                 return lisp->tokenize(strvalue, false);
@@ -695,7 +690,7 @@ public:
                 if (search_string == U"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters
-                    while (pos < strvalue.size()) {
+                    while (pos < sz) {
                         lisp->handlingutf8->getchar(strvalue, localvalue, pos, sz);
                         result->append(localvalue);
                     }
@@ -755,7 +750,7 @@ public:
                 if (search_string == U"") {
                     long sz = strvalue.size();
                     //we split the string into an array of characters
-                    while (pos < strvalue.size()) {
+                    while (pos < sz) {
                         lisp->handlingutf8->getchar(strvalue, localvalue, pos, sz);
                         result->append(localvalue);
                     }
@@ -896,8 +891,6 @@ public:
         switch (met) {
             case str_is_emoji:
                 return L"Return true is the character is an emoji";
-            case str_emoji_description:
-                return L"Return the textual description of an emoji";
             case str_remplace: {
                 return L"Replaces all sub-strings";
             }
@@ -1011,7 +1004,6 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib alphap (str)", new Stringmethod(lisp, str_is_alpha));
     lisp->extension("deflib emojip (str)", new Stringmethod(lisp, str_is_emoji));
     lisp->extension("deflib punctuationp (str)", new Stringmethod(lisp, str_is_punctuation));
-    lisp->extension("deflib emoji (str)", new Stringmethod(lisp, str_emoji_description));
     lisp->extension("deflib replace (str fnd rep (index))", new Stringmethod(lisp, str_remplace));
     lisp->extension("deflib convert_in_base (str b (convert))", new Stringmethod(lisp, str_base));
     lisp->extension("deflib left (str nb)", new Stringmethod(lisp, str_left));

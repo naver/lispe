@@ -411,7 +411,7 @@ public:
                 u->status--;
             u = u->next();
         }
-        for (auto& a : toclean)
+        for (const auto& a : toclean)
             a->dec();
     }
     

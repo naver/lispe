@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include "tools.h"
 #include "lispe.h"
+#include "emojis.h"
 
 #ifdef WIN32
 #include <io.h>
@@ -286,325 +287,144 @@ static wchar_t codingtable[] = { 65,97,2,66,98,2,67,99,2,68,100,2,69,101,2,70,10
     65251,65251,1,65252,65252,1,65253,65253,1,65254,65254,1,65255,65255,1,65256,65256,1,65257,65257,1,65258,65258,1,65259,65259,1,65260,65260,1,65261,65261,1,65262,
     65262,1,65263,65263,1,65264,65264,1,65265,65265,1,65266,65266,1,65267,65267,1,65268,65268,1,0};
 
-/*
- Some explanations:
- 
- Emojis characters can be simply one unicode character such as: 😀 (0x1F600) or a sequence of unicode characters: 👋🏼 (0x1F44B, 0x1F3FC)
- We keep our emojis in two tables:
- One table with the emoji code associated to its definition in English. If the emoji is a sequence, then this code is the first element of the sequence
- Another table with the unicode characters that can complement an emoji into a sequence of codes
- */
-
-static const char* temojis[] = { "0x1F004","mahjong red dragon","0x1F0CF","joker","0x1F170","A button (blood type)","0x1F171","B button (blood type)","0x1F17E","O button (blood type)",
-    "0x1F17F","P button","0x1F18E","AB button (blood type)","0x1F191","CL button","0x1F192","COOL button","0x1F193","FREE button",
-    "0x1F194","ID button","0x1F195","NEW button","0x1F196","NG button","0x1F197","OK button","0x1F198","SOS button",
-    "0x1F199","UP! button","0x1F19A","VS button","0x1F1E6","flag: Ascension Island","0x1F1E7","flag: Bosnia & Herzegovina","0x1F1E8","flag: Canada",
-    "0x1F1E9","flag: Germany","0x1F1EA","flag: Ceuta & Melilla","0x1F1EB","flag: Finland","0x1F1EC","flag: Gabon","0x1F1ED","flag: Hong Kong SAR China",
-    "0x1F1EE","flag: Canary Islands","0x1F1EF","flag: Jersey","0x1F1F0","flag: Kenya","0x1F1F1","flag: Laos","0x1F1F2","flag: Morocco",
-    "0x1F1F3","flag: Namibia","0x1F1F4","flag: Oman","0x1F1F5","flag: Panama","0x1F1F6","flag: Qatar","0x1F1F7","flag: Réunion",
-    "0x1F1F8","flag: Saudi Arabia","0x1F1F9","flag: Tristan da Cunha","0x1F1FA","flag: Ukraine","0x1F1FB","flag: Vatican City","0x1F1FC","flag: Wallis & Futuna",
-    "0x1F1FD","flag: Kosovo","0x1F1FE","flag: Yemen","0x1F1FF","flag: South Africa","0x1F201","Japanese here button","0x1F202","Japanese service charge button",
-    "0x1F21A","Japanese free of charge button","0x1F22F","Japanese reserved button","0x1F232","Japanese prohibited button","0x1F233","Japanese vacancy button","0x1F234","Japanese passing grade button",
-    "0x1F235","Japanese no vacancy button","0x1F236","Japanese not free of charge button","0x1F237","Japanese monthly amount button","0x1F238","Japanese application button","0x1F239","Japanese discount button",
-    "0x1F23A","Japanese open for business button","0x1F250","Japanese bargain button","0x1F251","Japanese acceptable button","0x1F300","cyclone","0x1F301","foggy",
-    "0x1F302","closed umbrella","0x1F303","night with stars","0x1F304","sunrise over mountains","0x1F305","sunrise","0x1F306","cityscape at dusk",
-    "0x1F307","sunset","0x1F308","rainbow","0x1F309","bridge at night","0x1F30A","water wave","0x1F30B","volcano",
-    "0x1F30C","milky way","0x1F30D","globe showing Europe-Africa","0x1F30E","globe showing Americas","0x1F30F","globe showing Asia-Australia","0x1F310","globe with meridians",
-    "0x1F311","new moon","0x1F312","waxing crescent moon","0x1F313","first quarter moon","0x1F314","waxing gibbous moon","0x1F315","full moon",
-    "0x1F316","waning gibbous moon","0x1F317","last quarter moon","0x1F318","waning crescent moon","0x1F319","crescent moon","0x1F31A","new moon face",
-    "0x1F31B","first quarter moon face","0x1F31C","last quarter moon face","0x1F31D","full moon face","0x1F31E","sun with face","0x1F31F","glowing star",
-    "0x1F320","shooting star","0x1F321","thermometer","0x1F324","sun behind small cloud","0x1F325","sun behind large cloud","0x1F326","sun behind rain cloud",
-    "0x1F327","cloud with rain","0x1F328","cloud with snow","0x1F329","cloud with lightning","0x1F32A","tornado","0x1F32B","fog",
-    "0x1F32C","wind face","0x1F32D","hot dog","0x1F32E","taco","0x1F32F","burrito","0x1F330","chestnut",
-    "0x1F331","seedling","0x1F332","evergreen tree","0x1F333","deciduous tree","0x1F334","palm tree","0x1F335","cactus",
-    "0x1F336","hot pepper","0x1F337","tulip","0x1F338","cherry blossom","0x1F339","rose","0x1F33A","hibiscus",
-    "0x1F33B","sunflower","0x1F33C","blossom","0x1F33D","ear of corn","0x1F33E","sheaf of rice","0x1F33F","herb",
-    "0x1F340","four leaf clover","0x1F341","maple leaf","0x1F342","fallen leaf","0x1F343","leaf fluttering in wind","0x1F344","mushroom",
-    "0x1F345","tomato","0x1F346","eggplant","0x1F347","grapes","0x1F348","melon","0x1F349","watermelon",
-    "0x1F34A","tangerine","0x1F34B","lemon","0x1F34C","banana","0x1F34D","pineapple","0x1F34E","red apple",
-    "0x1F34F","green apple","0x1F350","pear","0x1F351","peach","0x1F352","cherries","0x1F353","strawberry",
-    "0x1F354","hamburger","0x1F355","pizza","0x1F356","meat on bone","0x1F357","poultry leg","0x1F358","rice cracker",
-    "0x1F359","rice ball","0x1F35A","cooked rice","0x1F35B","curry rice","0x1F35C","steaming bowl","0x1F35D","spaghetti",
-    "0x1F35E","bread","0x1F35F","french fries","0x1F360","roasted sweet potato","0x1F361","dango","0x1F362","oden",
-    "0x1F363","sushi","0x1F364","fried shrimp","0x1F365","fish cake with swirl","0x1F366","soft ice cream","0x1F367","shaved ice",
-    "0x1F368","ice cream","0x1F369","doughnut","0x1F36A","cookie","0x1F36B","chocolate bar","0x1F36C","candy",
-    "0x1F36D","lollipop","0x1F36E","custard","0x1F36F","honey pot","0x1F370","shortcake","0x1F371","bento box",
-    "0x1F372","pot of food","0x1F373","cooking","0x1F374","fork and knife","0x1F375","teacup without handle","0x1F376","sake",
-    "0x1F377","wine glass","0x1F378","cocktail glass","0x1F379","tropical drink","0x1F37A","beer mug","0x1F37B","clinking beer mugs",
-    "0x1F37C","baby bottle","0x1F37D","fork and knife with plate","0x1F37E","bottle with popping cork","0x1F37F","popcorn","0x1F380","ribbon",
-    "0x1F381","wrapped gift","0x1F382","birthday cake","0x1F383","jack-o-lantern","0x1F384","Christmas tree","0x1F385","Santa Claus",
-    "0x1F386","fireworks","0x1F387","sparkler","0x1F388","balloon","0x1F389","party popper","0x1F38A","confetti ball",
-    "0x1F38B","tanabata tree","0x1F38C","crossed flags","0x1F38D","pine decoration","0x1F38E","Japanese dolls","0x1F38F","carp streamer",
-    "0x1F390","wind chime","0x1F391","moon viewing ceremony","0x1F392","backpack","0x1F393","graduation cap","0x1F396","military medal",
-    "0x1F397","reminder ribbon","0x1F399","studio microphone","0x1F39A","level slider","0x1F39B","control knobs","0x1F39E","film frames",
-    "0x1F39F","admission tickets","0x1F3A0","carousel horse","0x1F3A1","ferris wheel","0x1F3A2","roller coaster","0x1F3A3","fishing pole",
-    "0x1F3A4","microphone","0x1F3A5","movie camera","0x1F3A6","cinema","0x1F3A7","headphone","0x1F3A8","artist palette",
-    "0x1F3A9","top hat","0x1F3AA","circus tent","0x1F3AB","ticket","0x1F3AC","clapper board","0x1F3AD","performing arts",
-    "0x1F3AE","video game","0x1F3AF","direct hit","0x1F3B0","slot machine","0x1F3B1","pool 8 ball","0x1F3B2","game die",
-    "0x1F3B3","bowling","0x1F3B4","flower playing cards","0x1F3B5","musical note","0x1F3B6","musical notes","0x1F3B7","saxophone",
-    "0x1F3B8","guitar","0x1F3B9","musical keyboard","0x1F3BA","trumpet","0x1F3BB","violin","0x1F3BC","musical score",
-    "0x1F3BD","running shirt","0x1F3BE","tennis","0x1F3BF","skis","0x1F3C0","basketball","0x1F3C1","chequered flag",
-    "0x1F3C2","snowboarder","0x1F3C3","person running","0x1F3C4","person surfing","0x1F3C5","sports medal","0x1F3C6","trophy",
-    "0x1F3C7","horse racing","0x1F3C8","american football","0x1F3C9","rugby football","0x1F3CA","person swimming","0x1F3CB","person lifting weights",
-    "0x1F3CC","person golfing","0x1F3CD","motorcycle","0x1F3CE","racing car","0x1F3CF","cricket game","0x1F3D0","volleyball",
-    "0x1F3D1","field hockey","0x1F3D2","ice hockey","0x1F3D3","ping pong","0x1F3D4","snow-capped mountain","0x1F3D5","camping",
-    "0x1F3D6","beach with umbrella","0x1F3D7","building construction","0x1F3D8","houses","0x1F3D9","cityscape","0x1F3DA","derelict house",
-    "0x1F3DB","classical building","0x1F3DC","desert","0x1F3DD","desert island","0x1F3DE","national park","0x1F3DF","stadium",
-    "0x1F3E0","house","0x1F3E1","house with garden","0x1F3E2","office building","0x1F3E3","Japanese post office","0x1F3E4","post office",
-    "0x1F3E5","hospital","0x1F3E6","bank","0x1F3E7","ATM sign","0x1F3E8","hotel","0x1F3E9","love hotel",
-    "0x1F3EA","convenience store","0x1F3EB","school","0x1F3EC","department store","0x1F3ED","factory","0x1F3EE","red paper lantern",
-    "0x1F3EF","Japanese castle","0x1F3F0","castle","0x1F3F3","white flag","0x1F3F4","black flag","0x1F3F5","rosette",
-    "0x1F3F7","label","0x1F3F8","badminton","0x1F3F9","bow and arrow","0x1F3FA","amphora","0x1F3FB","light skin tone",
-    "0x1F3FC","medium-light skin tone","0x1F3FD","medium skin tone","0x1F3FE","medium-dark skin tone","0x1F3FF","dark skin tone","0x1F400","rat",
-    "0x1F401","mouse","0x1F402","ox","0x1F403","water buffalo","0x1F404","cow","0x1F405","tiger",
-    "0x1F406","leopard","0x1F407","rabbit","0x1F408","cat","0x1F409","dragon","0x1F40A","crocodile",
-    "0x1F40B","whale","0x1F40C","snail","0x1F40D","snake","0x1F40E","horse","0x1F40F","ram",
-    "0x1F410","goat","0x1F411","ewe","0x1F412","monkey","0x1F413","rooster","0x1F414","chicken",
-    "0x1F415","dog","0x1F416","pig","0x1F417","boar","0x1F418","elephant","0x1F419","octopus",
-    "0x1F41A","spiral shell","0x1F41B","bug","0x1F41C","ant","0x1F41D","honeybee","0x1F41E","lady beetle",
-    "0x1F41F","fish","0x1F420","tropical fish","0x1F421","blowfish","0x1F422","turtle","0x1F423","hatching chick",
-    "0x1F424","baby chick","0x1F425","front-facing baby chick","0x1F426","bird","0x1F427","penguin","0x1F428","koala",
-    "0x1F429","poodle","0x1F42A","camel","0x1F42B","two-hump camel","0x1F42C","dolphin","0x1F42D","mouse face",
-    "0x1F42E","cow face","0x1F42F","tiger face","0x1F430","rabbit face","0x1F431","cat face","0x1F432","dragon face",
-    "0x1F433","spouting whale","0x1F434","horse face","0x1F435","monkey face","0x1F436","dog face","0x1F437","pig face",
-    "0x1F438","frog","0x1F439","hamster","0x1F43A","wolf","0x1F43B","bear","0x1F43C","panda",
-    "0x1F43D","pig nose","0x1F43E","paw prints","0x1F43F","chipmunk","0x1F440","eyes","0x1F441","eye in speech bubble",
-    "0x1F442","ear","0x1F443","nose","0x1F444","mouth","0x1F445","tongue","0x1F446","backhand index pointing up",
-    "0x1F447","backhand index pointing down","0x1F448","backhand index pointing left","0x1F449","backhand index pointing right","0x1F44A","oncoming fist","0x1F44B","waving hand",
-    "0x1F44C","OK hand","0x1F44D","thumbs up","0x1F44E","thumbs down","0x1F44F","clapping hands","0x1F450","open hands",
-    "0x1F451","crown","0x1F452","womans hat","0x1F453","glasses","0x1F454","necktie","0x1F455","t-shirt",
-    "0x1F456","jeans","0x1F457","dress","0x1F458","kimono","0x1F459","bikini","0x1F45A","womans clothes",
-    "0x1F45B","purse","0x1F45C","handbag","0x1F45D","clutch bag","0x1F45E","mans shoe","0x1F45F","running shoe",
-    "0x1F460","high-heeled shoe","0x1F461","womans sandal","0x1F462","womans boot","0x1F463","footprints","0x1F464","bust in silhouette",
-    "0x1F465","busts in silhouette","0x1F466","boy","0x1F467","girl","0x1F468","man","0x1F469","woman",
-    "0x1F46A","family","0x1F46B","woman and man holding hands","0x1F46C","men holding hands","0x1F46D","women holding hands","0x1F46E","police officer",
-    "0x1F46F","people with bunny ears","0x1F470","bride with veil","0x1F471","person: blond hair","0x1F472","man with Chinese cap","0x1F473","person wearing turban",
-    "0x1F474","old man","0x1F475","old woman","0x1F476","baby","0x1F477","construction worker","0x1F478","princess",
-    "0x1F479","ogre","0x1F47A","goblin","0x1F47B","ghost","0x1F47C","baby angel","0x1F47D","alien",
-    "0x1F47E","alien monster","0x1F47F","angry face with horns","0x1F480","skull","0x1F481","person tipping hand","0x1F482","guard",
-    "0x1F483","woman dancing","0x1F484","lipstick","0x1F485","nail polish","0x1F486","person getting massage","0x1F487","person getting haircut",
-    "0x1F488","barber pole","0x1F489","syringe","0x1F48A","pill","0x1F48B","kiss mark","0x1F48C","love letter",
-    "0x1F48D","ring","0x1F48E","gem stone","0x1F48F","kiss","0x1F490","bouquet","0x1F491","couple with heart",
-    "0x1F492","wedding","0x1F493","beating heart","0x1F494","broken heart","0x1F495","two hearts","0x1F496","sparkling heart",
-    "0x1F497","growing heart","0x1F498","heart with arrow","0x1F499","blue heart","0x1F49A","green heart","0x1F49B","yellow heart",
-    "0x1F49C","purple heart","0x1F49D","heart with ribbon","0x1F49E","revolving hearts","0x1F49F","heart decoration","0x1F4A0","diamond with a dot",
-    "0x1F4A1","light bulb","0x1F4A2","anger symbol","0x1F4A3","bomb","0x1F4A4","zzz","0x1F4A5","collision",
-    "0x1F4A6","sweat droplets","0x1F4A7","droplet","0x1F4A8","dashing away","0x1F4A9","pile of poo","0x1F4AA","flexed biceps",
-    "0x1F4AB","dizzy","0x1F4AC","speech balloon","0x1F4AD","thought balloon","0x1F4AE","white flower","0x1F4AF","hundred points",
-    "0x1F4B0","money bag","0x1F4B1","currency exchange","0x1F4B2","heavy dollar sign","0x1F4B3","credit card","0x1F4B4","yen banknote",
-    "0x1F4B5","dollar banknote","0x1F4B6","euro banknote","0x1F4B7","pound banknote","0x1F4B8","money with wings","0x1F4B9","chart increasing with yen",
-    "0x1F4BA","seat","0x1F4BB","laptop computer","0x1F4BC","briefcase","0x1F4BD","computer disk","0x1F4BE","floppy disk",
-    "0x1F4BF","optical disk","0x1F4C0","dvd","0x1F4C1","file folder","0x1F4C2","open file folder","0x1F4C3","page with curl",
-    "0x1F4C4","page facing up","0x1F4C5","calendar","0x1F4C6","tear-off calendar","0x1F4C7","card index","0x1F4C8","chart increasing",
-    "0x1F4C9","chart decreasing","0x1F4CA","bar chart","0x1F4CB","clipboard","0x1F4CC","pushpin","0x1F4CD","round pushpin",
-    "0x1F4CE","paperclip","0x1F4CF","straight ruler","0x1F4D0","triangular ruler","0x1F4D1","bookmark tabs","0x1F4D2","ledger",
-    "0x1F4D3","notebook","0x1F4D4","notebook with decorative cover","0x1F4D5","closed book","0x1F4D6","open book","0x1F4D7","green book",
-    "0x1F4D8","blue book","0x1F4D9","orange book","0x1F4DA","books","0x1F4DB","name badge","0x1F4DC","scroll",
-    "0x1F4DD","memo","0x1F4DE","telephone receiver","0x1F4DF","pager","0x1F4E0","fax machine","0x1F4E1","satellite antenna",
-    "0x1F4E2","loudspeaker","0x1F4E3","megaphone","0x1F4E4","outbox tray","0x1F4E5","inbox tray","0x1F4E6","package",
-    "0x1F4E7","e-mail","0x1F4E8","incoming envelope","0x1F4E9","envelope with arrow","0x1F4EA","closed mailbox with lowered flag","0x1F4EB","closed mailbox with raised flag",
-    "0x1F4EC","open mailbox with raised flag","0x1F4ED","open mailbox with lowered flag","0x1F4EE","postbox","0x1F4EF","postal horn","0x1F4F0","newspaper",
-    "0x1F4F1","mobile phone","0x1F4F2","mobile phone with arrow","0x1F4F3","vibration mode","0x1F4F4","mobile phone off","0x1F4F5","no mobile phones",
-    "0x1F4F6","antenna bars","0x1F4F7","camera","0x1F4F8","camera with flash","0x1F4F9","video camera","0x1F4FA","television",
-    "0x1F4FB","radio","0x1F4FC","videocassette","0x1F4FD","film projector","0x1F4FF","prayer beads","0x1F500","shuffle tracks button",
-    "0x1F501","repeat button","0x1F502","repeat single button","0x1F503","clockwise vertical arrows","0x1F504","counterclockwise arrows button","0x1F505","dim button",
-    "0x1F506","bright button","0x1F507","muted speaker","0x1F508","speaker low volume","0x1F509","speaker medium volume","0x1F50A","speaker high volume",
-    "0x1F50B","battery","0x1F50C","electric plug","0x1F50D","magnifying glass tilted left","0x1F50E","magnifying glass tilted right","0x1F50F","locked with pen",
-    "0x1F510","locked with key","0x1F511","key","0x1F512","locked","0x1F513","unlocked","0x1F514","bell",
-    "0x1F515","bell with slash","0x1F516","bookmark","0x1F517","link","0x1F518","radio button","0x1F519","BACK arrow",
-    "0x1F51A","END arrow","0x1F51B","ON! arrow","0x1F51C","SOON arrow","0x1F51D","TOP arrow","0x1F51E","no one under eighteen",
-    "0x1F51F","keycap: 10","0x1F520","input latin uppercase","0x1F521","input latin lowercase","0x1F522","input numbers","0x1F523","input symbols",
-    "0x1F524","input latin letters","0x1F525","fire","0x1F526","flashlight","0x1F527","wrench","0x1F528","hammer",
-    "0x1F529","nut and bolt","0x1F52A","kitchen knife","0x1F52B","pistol","0x1F52C","microscope","0x1F52D","telescope",
-    "0x1F52E","crystal ball","0x1F52F","dotted six-pointed star","0x1F530","Japanese symbol for beginner","0x1F531","trident emblem","0x1F532","black square button",
-    "0x1F533","white square button","0x1F534","red circle","0x1F535","blue circle","0x1F536","large orange diamond","0x1F537","large blue diamond",
-    "0x1F538","small orange diamond","0x1F539","small blue diamond","0x1F53A","red triangle pointed up","0x1F53B","red triangle pointed down","0x1F53C","upwards button",
-    "0x1F53D","downwards button","0x1F549","om","0x1F54A","dove","0x1F54B","kaaba","0x1F54C","mosque",
-    "0x1F54D","synagogue","0x1F54E","menorah","0x1F550","one oclock","0x1F551","two oclock","0x1F552","three oclock",
-    "0x1F553","four oclock","0x1F554","five oclock","0x1F555","six oclock","0x1F556","seven oclock","0x1F557","eight oclock",
-    "0x1F558","nine oclock","0x1F559","ten oclock","0x1F55A","eleven oclock","0x1F55B","twelve oclock","0x1F55C","one-thirty",
-    "0x1F55D","two-thirty","0x1F55E","three-thirty","0x1F55F","four-thirty","0x1F560","five-thirty","0x1F561","six-thirty",
-    "0x1F562","seven-thirty","0x1F563","eight-thirty","0x1F564","nine-thirty","0x1F565","ten-thirty","0x1F566","eleven-thirty",
-    "0x1F567","twelve-thirty","0x1F56F","candle","0x1F570","mantelpiece clock","0x1F573","hole","0x1F574","man in suit levitating",
-    "0x1F575","detective","0x1F576","sunglasses","0x1F577","spider","0x1F578","spider web","0x1F579","joystick",
-    "0x1F57A","man dancing","0x1F587","linked paperclips","0x1F58A","pen","0x1F58B","fountain pen","0x1F58C","paintbrush",
-    "0x1F58D","crayon","0x1F590","hand with fingers splayed","0x1F595","middle finger","0x1F596","vulcan salute","0x1F5A4","black heart",
-    "0x1F5A5","desktop computer","0x1F5A8","printer","0x1F5B1","computer mouse","0x1F5B2","trackball","0x1F5BC","framed picture",
-    "0x1F5C2","card index dividers","0x1F5C3","card file box","0x1F5C4","file cabinet","0x1F5D1","wastebasket","0x1F5D2","spiral notepad",
-    "0x1F5D3","spiral calendar","0x1F5DC","clamp","0x1F5DD","old key","0x1F5DE","rolled-up newspaper","0x1F5E1","dagger",
-    "0x1F5E3","speaking head","0x1F5E8","left speech bubble","0x1F5EF","right anger bubble","0x1F5F3","ballot box with ballot","0x1F5FA","world map",
-    "0x1F5FB","mount fuji","0x1F5FC","Tokyo tower","0x1F5FD","Statue of Liberty","0x1F5FE","map of Japan","0x1F5FF","moai",
-    "0x1F600","grinning face","0x1F601","beaming face with smiling eyes","0x1F602","face with tears of joy","0x1F603","grinning face with big eyes","0x1F604","grinning face with smiling eyes",
-    "0x1F605","grinning face with sweat","0x1F606","grinning squinting face","0x1F607","smiling face with halo","0x1F608","smiling face with horns","0x1F609","winking face",
-    "0x1F60A","smiling face with smiling eyes","0x1F60B","face savoring food","0x1F60C","relieved face","0x1F60D","smiling face with heart-eyes","0x1F60E","smiling face with sunglasses",
-    "0x1F60F","smirking face","0x1F610","neutral face","0x1F611","expressionless face","0x1F612","unamused face","0x1F613","downcast face with sweat",
-    "0x1F614","pensive face","0x1F615","confused face","0x1F616","confounded face","0x1F617","kissing face","0x1F618","face blowing a kiss",
-    "0x1F619","kissing face with smiling eyes","0x1F61A","kissing face with closed eyes","0x1F61B","face with tongue","0x1F61C","winking face with tongue","0x1F61D","squinting face with tongue",
-    "0x1F61E","disappointed face","0x1F61F","worried face","0x1F620","angry face","0x1F621","pouting face","0x1F622","crying face",
-    "0x1F623","persevering face","0x1F624","face with steam from nose","0x1F625","sad but relieved face","0x1F626","frowning face with open mouth","0x1F627","anguished face",
-    "0x1F628","fearful face","0x1F629","weary face","0x1F62A","sleepy face","0x1F62B","tired face","0x1F62C","grimacing face",
-    "0x1F62D","loudly crying face","0x1F62E","face with open mouth","0x1F62F","hushed face","0x1F630","anxious face with sweat","0x1F631","face screaming in fear",
-    "0x1F632","astonished face","0x1F633","flushed face","0x1F634","sleeping face","0x1F635","dizzy face","0x1F636","face without mouth",
-    "0x1F637","face with medical mask","0x1F638","grinning cat with smiling eyes","0x1F639","cat with tears of joy","0x1F63A","grinning cat","0x1F63B","smiling cat with heart-eyes",
-    "0x1F63C","cat with wry smile","0x1F63D","kissing cat","0x1F63E","pouting cat","0x1F63F","crying cat","0x1F640","weary cat",
-    "0x1F641","slightly frowning face","0x1F642","slightly smiling face","0x1F643","upside-down face","0x1F644","face with rolling eyes","0x1F645","person gesturing NO",
-    "0x1F646","person gesturing OK","0x1F647","person bowing","0x1F648","see-no-evil monkey","0x1F649","hear-no-evil monkey","0x1F64A","speak-no-evil monkey",
-    "0x1F64B","person raising hand","0x1F64C","raising hands","0x1F64D","person frowning","0x1F64E","person pouting","0x1F64F","folded hands",
-    "0x1F680","rocket","0x1F681","helicopter","0x1F682","locomotive","0x1F683","railway car","0x1F684","high-speed train",
-    "0x1F685","bullet train","0x1F686","train","0x1F687","metro","0x1F688","light rail","0x1F689","station",
-    "0x1F68A","tram","0x1F68B","tram car","0x1F68C","bus","0x1F68D","oncoming bus","0x1F68E","trolleybus",
-    "0x1F68F","bus stop","0x1F690","minibus","0x1F691","ambulance","0x1F692","fire engine","0x1F693","police car",
-    "0x1F694","oncoming police car","0x1F695","taxi","0x1F696","oncoming taxi","0x1F697","automobile","0x1F698","oncoming automobile",
-    "0x1F699","sport utility vehicle","0x1F69A","delivery truck","0x1F69B","articulated lorry","0x1F69C","tractor","0x1F69D","monorail",
-    "0x1F69E","mountain railway","0x1F69F","suspension railway","0x1F6A0","mountain cableway","0x1F6A1","aerial tramway","0x1F6A2","ship",
-    "0x1F6A3","person rowing boat","0x1F6A4","speedboat","0x1F6A5","horizontal traffic light","0x1F6A6","vertical traffic light","0x1F6A7","construction",
-    "0x1F6A8","police car light","0x1F6A9","triangular flag","0x1F6AA","door","0x1F6AB","prohibited","0x1F6AC","cigarette",
-    "0x1F6AD","no smoking","0x1F6AE","litter in bin sign","0x1F6AF","no littering","0x1F6B0","potable water","0x1F6B1","non-potable water",
-    "0x1F6B2","bicycle","0x1F6B3","no bicycles","0x1F6B4","person biking","0x1F6B5","person mountain biking","0x1F6B6","person walking",
-    "0x1F6B7","no pedestrians","0x1F6B8","children crossing","0x1F6B9","mens room","0x1F6BA","womens room","0x1F6BB","restroom",
-    "0x1F6BC","baby symbol","0x1F6BD","toilet","0x1F6BE","water closet","0x1F6BF","shower","0x1F6C0","person taking bath",
-    "0x1F6C1","bathtub","0x1F6C2","passport control","0x1F6C3","customs","0x1F6C4","baggage claim","0x1F6C5","left luggage",
-    "0x1F6CB","couch and lamp","0x1F6CC","person in bed","0x1F6CD","shopping bags","0x1F6CE","bellhop bell","0x1F6CF","bed",
-    "0x1F6D0","place of worship","0x1F6D1","stop sign","0x1F6D2","shopping cart","0x1F6D5","hindu temple","0x1F6E0","hammer and wrench",
-    "0x1F6E1","shield","0x1F6E2","oil drum","0x1F6E3","motorway","0x1F6E4","railway track","0x1F6E5","motor boat",
-    "0x1F6E9","small airplane","0x1F6EB","airplane departure","0x1F6EC","airplane arrival","0x1F6F0","satellite","0x1F6F3","passenger ship",
-    "0x1F6F4","kick scooter","0x1F6F5","motor scooter","0x1F6F6","canoe","0x1F6F7","sled","0x1F6F8","flying saucer",
-    "0x1F6F9","skateboard","0x1F6FA","auto rickshaw","0x1F7E0","orange circle","0x1F7E1","yellow circle","0x1F7E2","green circle",
-    "0x1F7E3","purple circle","0x1F7E4","brown circle","0x1F7E5","red square","0x1F7E6","blue square","0x1F7E7","orange square",
-    "0x1F7E8","yellow square","0x1F7E9","green square","0x1F7EA","purple square","0x1F7EB","brown square","0x1F90D","white heart",
-    "0x1F90E","brown heart","0x1F90F","pinching hand","0x1F910","zipper-mouth face","0x1F911","money-mouth face","0x1F912","face with thermometer",
-    "0x1F913","nerd face","0x1F914","thinking face","0x1F915","face with head-bandage","0x1F916","robot","0x1F917","hugging face",
-    "0x1F918","sign of the horns","0x1F919","call me hand","0x1F91A","raised back of hand","0x1F91B","left-facing fist","0x1F91C","right-facing fist",
-    "0x1F91D","handshake","0x1F91E","crossed fingers","0x1F91F","love-you gesture","0x1F920","cowboy hat face","0x1F921","clown face",
-    "0x1F922","nauseated face","0x1F923","rolling on the floor laughing","0x1F924","drooling face","0x1F925","lying face","0x1F926","person facepalming",
-    "0x1F927","sneezing face","0x1F928","face with raised eyebrow","0x1F929","star-struck","0x1F92A","zany face","0x1F92B","shushing face",
-    "0x1F92C","face with symbols on mouth","0x1F92D","face with hand over mouth","0x1F92E","face vomiting","0x1F92F","exploding head","0x1F930","pregnant woman",
-    "0x1F931","breast-feeding","0x1F932","palms up together","0x1F933","selfie","0x1F934","prince","0x1F935","man in tuxedo",
-    "0x1F936","Mrs. Claus","0x1F937","person shrugging","0x1F938","person cartwheeling","0x1F939","person juggling","0x1F93A","person fencing",
-    "0x1F93C","people wrestling","0x1F93D","person playing water polo","0x1F93E","person playing handball","0x1F93F","diving mask","0x1F940","wilted flower",
-    "0x1F941","drum","0x1F942","clinking glasses","0x1F943","tumbler glass","0x1F944","spoon","0x1F945","goal net",
-    "0x1F947","1st place medal","0x1F948","2nd place medal","0x1F949","3rd place medal","0x1F94A","boxing glove","0x1F94B","martial arts uniform",
-    "0x1F94C","curling stone","0x1F94D","lacrosse","0x1F94E","softball","0x1F94F","flying disc","0x1F950","croissant",
-    "0x1F951","avocado","0x1F952","cucumber","0x1F953","bacon","0x1F954","potato","0x1F955","carrot",
-    "0x1F956","baguette bread","0x1F957","green salad","0x1F958","shallow pan of food","0x1F959","stuffed flatbread","0x1F95A","egg",
-    "0x1F95B","glass of milk","0x1F95C","peanuts","0x1F95D","kiwi fruit","0x1F95E","pancakes","0x1F95F","dumpling",
-    "0x1F960","fortune cookie","0x1F961","takeout box","0x1F962","chopsticks","0x1F963","bowl with spoon","0x1F964","cup with straw",
-    "0x1F965","coconut","0x1F966","broccoli","0x1F967","pie","0x1F968","pretzel","0x1F969","cut of meat",
-    "0x1F96A","sandwich","0x1F96B","canned food","0x1F96C","leafy green","0x1F96D","mango","0x1F96E","moon cake",
-    "0x1F96F","bagel","0x1F970","smiling face with hearts","0x1F971","yawning face","0x1F973","partying face","0x1F974","woozy face",
-    "0x1F975","hot face","0x1F976","cold face","0x1F97A","pleading face","0x1F97B","sari","0x1F97C","lab coat",
-    "0x1F97D","goggles","0x1F97E","hiking boot","0x1F97F","flat shoe","0x1F980","crab","0x1F981","lion",
-    "0x1F982","scorpion","0x1F983","turkey","0x1F984","unicorn","0x1F985","eagle","0x1F986","duck",
-    "0x1F987","bat","0x1F988","shark","0x1F989","owl","0x1F98A","fox","0x1F98B","butterfly",
-    "0x1F98C","deer","0x1F98D","gorilla","0x1F98E","lizard","0x1F98F","rhinoceros","0x1F990","shrimp",
-    "0x1F991","squid","0x1F992","giraffe","0x1F993","zebra","0x1F994","hedgehog","0x1F995","sauropod",
-    "0x1F996","T-Rex","0x1F997","cricket","0x1F998","kangaroo","0x1F999","llama","0x1F99A","peacock",
-    "0x1F99B","hippopotamus","0x1F99C","parrot","0x1F99D","raccoon","0x1F99E","lobster","0x1F99F","mosquito",
-    "0x1F9A0","microbe","0x1F9A1","badger","0x1F9A2","swan","0x1F9A5","sloth","0x1F9A6","otter",
-    "0x1F9A7","orangutan","0x1F9A8","skunk","0x1F9A9","flamingo","0x1F9AA","oyster","0x1F9AE","guide dog",
-    "0x1F9AF","probing cane","0x1F9B0","red hair","0x1F9B1","curly hair","0x1F9B2","bald","0x1F9B3","white hair",
-    "0x1F9B4","bone","0x1F9B5","leg","0x1F9B6","foot","0x1F9B7","tooth","0x1F9B8","superhero",
-    "0x1F9B9","supervillain","0x1F9BA","safety vest","0x1F9BB","ear with hearing aid","0x1F9BC","motorized wheelchair","0x1F9BD","manual wheelchair",
-    "0x1F9BE","mechanical arm","0x1F9BF","mechanical leg","0x1F9C0","cheese wedge","0x1F9C1","cupcake","0x1F9C2","salt",
-    "0x1F9C3","beverage box","0x1F9C4","garlic","0x1F9C5","onion","0x1F9C6","falafel","0x1F9C7","waffle",
-    "0x1F9C8","butter","0x1F9C9","mate","0x1F9CA","ice cube","0x1F9CD","person standing","0x1F9CE","person kneeling",
-    "0x1F9CF","deaf person","0x1F9D0","face with monocle","0x1F9D1","person","0x1F9D2","child","0x1F9D3","older person",
-    "0x1F9D4","man: beard","0x1F9D5","woman with headscarf","0x1F9D6","person in steamy room","0x1F9D7","person climbing","0x1F9D8","person in lotus position",
-    "0x1F9D9","mage","0x1F9DA","fairy","0x1F9DB","vampire","0x1F9DC","merperson","0x1F9DD","elf",
-    "0x1F9DE","genie","0x1F9DF","zombie","0x1F9E0","brain","0x1F9E1","orange heart","0x1F9E2","billed cap",
-    "0x1F9E3","scarf","0x1F9E4","gloves","0x1F9E5","coat","0x1F9E6","socks","0x1F9E7","red envelope",
-    "0x1F9E8","firecracker","0x1F9E9","puzzle piece","0x1F9EA","test tube","0x1F9EB","petri dish","0x1F9EC","dna",
-    "0x1F9ED","compass","0x1F9EE","abacus","0x1F9EF","fire extinguisher","0x1F9F0","toolbox","0x1F9F1","brick",
-    "0x1F9F2","magnet","0x1F9F3","luggage","0x1F9F4","lotion bottle","0x1F9F5","thread","0x1F9F6","yarn",
-    "0x1F9F7","safety pin","0x1F9F8","teddy bear","0x1F9F9","broom","0x1F9FA","basket","0x1F9FB","roll of paper",
-    "0x1F9FC","soap","0x1F9FD","sponge","0x1F9FE","receipt","0x1F9FF","nazar amulet","0x1FA70","ballet shoes",
-    "0x1FA71","one-piece swimsuit","0x1FA72","swim brief","0x1FA73","shorts","0x1FA78","drop of blood","0x1FA79","adhesive bandage",
-    "0x1FA7A","stethoscope","0x1FA80","yo-yo","0x1FA81","kite","0x1FA82","parachute","0x1FA90","ringed planet",
-    "0x1FA91","chair","0x1FA92","razor","0x1FA93","axe","0x1FA94","diya lamp","0x1FA95","banjo",
-    "0x203C","double exclamation mark","0x2049","exclamation question mark","0x2122","trade mark","0x2139","information","0x2194","left-right arrow",
-    "0x2195","up-down arrow","0x2196","up-left arrow","0x2197","up-right arrow","0x2198","down-right arrow","0x2199","down-left arrow",
-    "0x21A9","right arrow curving left","0x21AA","left arrow curving right","0x231A","watch","0x231B","hourglass done","0x2328","keyboard",
-    "0x23CF","eject button","0x23E9","fast-forward button","0x23EA","fast reverse button","0x23EB","fast up button","0x23EC","fast down button",
-    "0x23ED","next track button","0x23EE","last track button","0x23EF","play or pause button","0x23F0","alarm clock","0x23F1","stopwatch",
-    "0x23F2","timer clock","0x23F3","hourglass not done","0x23F8","pause button","0x23F9","stop button","0x23FA","record button",
-    "0x24C2","circled M","0x25AA","black small square","0x25AB","white small square","0x25B6","play button","0x25C0","reverse button",
-    "0x25FB","white medium square","0x25FC","black medium square","0x25FD","white medium-small square","0x25FE","black medium-small square","0x2600","sun",
-    "0x2601","cloud","0x2602","umbrella","0x2603","snowman","0x2604","comet","0x260E","telephone",
-    "0x2611","check box with check","0x2614","umbrella with rain drops","0x2615","hot beverage","0x2618","shamrock","0x261D","index pointing up",
-    "0x2620","skull and crossbones","0x2622","radioactive","0x2623","biohazard","0x2626","orthodox cross","0x262A","star and crescent",
-    "0x262E","peace symbol","0x262F","yin yang","0x2638","wheel of dharma","0x2639","frowning face","0x263A","smiling face",
-    "0x2640","female sign","0x2642","male sign","0x2648","Aries","0x2649","Taurus","0x264A","Gemini",
-    "0x264B","Cancer","0x264C","Leo","0x264D","Virgo","0x264E","Libra","0x264F","Scorpio",
-    "0x2650","Sagittarius","0x2651","Capricorn","0x2652","Aquarius","0x2653","Pisces","0x265F","chess pawn",
-    "0x2660","spade suit","0x2663","club suit","0x2665","heart suit","0x2666","diamond suit","0x2668","hot springs",
-    "0x267B","recycling symbol","0x267E","infinity","0x267F","wheelchair symbol","0x2692","hammer and pick","0x2693","anchor",
-    "0x2694","crossed swords","0x2695","medical symbol","0x2696","balance scale","0x2697","alembic","0x2699","gear",
-    "0x269B","atom symbol","0x269C","fleur-de-lis","0x26A0","warning","0x26A1","high voltage","0x26AA","white circle",
-    "0x26AB","black circle","0x26B0","coffin","0x26B1","funeral urn","0x26BD","soccer ball","0x26BE","baseball",
-    "0x26C4","snowman without snow","0x26C5","sun behind cloud","0x26C8","cloud with lightning and rain","0x26CE","Ophiuchus","0x26CF","pick",
-    "0x26D1","rescue workers helmet","0x26D3","chains","0x26D4","no entry","0x26E9","shinto shrine","0x26EA","church",
-    "0x26F0","mountain","0x26F1","umbrella on ground","0x26F2","fountain","0x26F3","flag in hole","0x26F4","ferry",
-    "0x26F5","sailboat","0x26F7","skier","0x26F8","ice skate","0x26F9","person bouncing ball","0x26FA","tent",
-    "0x26FD","fuel pump","0x2702","scissors","0x2705","check mark button","0x2708","airplane","0x2709","envelope",
-    "0x270A","raised fist","0x270B","raised hand","0x270C","victory hand","0x270D","writing hand","0x270F","pencil",
-    "0x2712","black nib","0x2714","check mark","0x2716","multiplication sign","0x271D","latin cross","0x2721","star of David",
-    "0x2728","sparkles","0x2733","eight-spoked asterisk","0x2734","eight-pointed star","0x2744","snowflake","0x2747","sparkle",
-    "0x274C","cross mark","0x274E","cross mark button","0x2753","question mark","0x2754","white question mark","0x2755","white exclamation mark",
-    "0x2757","exclamation mark","0x2763","heart exclamation","0x2764","red heart","0x2795","plus sign","0x2796","minus sign",
-    "0x2797","division sign","0x27A1","right arrow","0x27B0","curly loop","0x27BF","double curly loop","0x2934","right arrow curving up",
-    "0x2935","right arrow curving down","0x2B05","left arrow","0x2B06","up arrow","0x2B07","down arrow","0x2B1B","black large square",
-    "0x2B1C","white large square","0x2B50","star","0x2B55","hollow red circle","0x3030","wavy dash","0x303D","part alternation mark",
-    "0x3297","Japanese congratulations button","0x3299","Japanese secret button",
-    "", "" };
-
-
-static UWCHAR temojiscomplement[] = {
-    0x1F1E6,0x1F1E7,0x1F1E8,0x1F1E9,0x1F1EA,0x1F1EB,0x1F1EC,0x1F1ED,0x1F1EE,0x1F1EF,
-    0x1F1F0,0x1F1F1,0x1F1F2,0x1F1F3,0x1F1F4,0x1F1F5,0x1F1F6,0x1F1F7,0x1F1F8,0x1F1F9,
-    0x1F1FA,0x1F1FB,0x1F1FC,0x1F1FD,0x1F1FE,0x1F1FF,0x1F308,0x1F33E,0x1F373,0x1F393,
-    0x1F3A4,0x1F3A8,0x1F3EB,0x1F3ED,0x1F3FB,0x1F3FC,0x1F3FD,0x1F3FE,0x1F3FF,0x1F466,
-    0x1F467,0x1F468,0x1F469,0x1F48B,0x1F4BB,0x1F4BC,0x1F527,0x1F52C,0x1F5E8,0x1F680,
-    0x1F692,0x1F91D,0x1F9AF,0x1F9B0,0x1F9B1,0x1F9B2,0x1F9B3,0x1F9BA,0x1F9BC,0x1F9BD,
-    0x1F9D1,0x200D,0x20E3,0x2620,0x2640,0x2642,0x2695,0x2696,0x2708,0x2764,
-    0xE0062,0xE0063,0xE0065,0xE0067,0xE006C,0xE006E,0xE0073,0xE0074,0xE0077,0xE007F,
-    0xFE0F, 0};
-
-
-long UTF8_Handler::c_bytetocharposition(unsigned char* contenu, long charpos) {
-    long i = 0;
+//------------------------------------------------------------------------
+long UTF8_Handler::size_w(u_ustring& s) {
     long sz = 0;
-    long nb;
-    while (i < charpos) {
-        nb = c_test_utf8(contenu + i);
-        if (nb == 3 && c_is_emoji(contenu,i)) {
-            i++;
-            while (c_is_emojicomp(contenu, i)) {
-                i++;
-            }
-        }
-        else
-            i += nb + 1;
+    for (long i = 0; i < s.size(); i++) {
+        scan_emoji(s, i);
         sz++;
     }
     return sz;
 }
 
+long UTF8_Handler::size_utf16(wstring& s) {
+    long sz = 0;
+    for (long i = 0; i < s.size(); i++) {
+        scan_emoji16(s, i);
+        sz++;
+    }
+    return sz;
+}
 
+bool UTF8_Handler::scan_emoji(unsigned char* u, long& i) {
+    return emojis_characters->scan(u, i);
+}
+
+bool UTF8_Handler::get_emoji(unsigned char* u, string& res, long& i) {
+    return emojis_characters->get(u, res, i);
+}
+
+bool UTF8_Handler::store_emoji(unsigned char* u, string& res, long& i) {
+    return emojis_characters->store(u, res, i);
+}
+
+bool UTF8_Handler::scan_emoji(string& u, long& i) {
+    return emojis_characters->scan(u, i);
+}
+
+bool UTF8_Handler::get_emoji(string& u, string& res, long& i) {
+    return emojis_characters->get(u, res, i);
+}
+
+bool UTF8_Handler::store_emoji(string& u, string& res, long& i) {
+    return emojis_characters->store(u, res, i);
+}
+
+#ifdef WIN32
+Exporting void concat_to_wstring(wstring& res, UWCHAR code) {
+	if ((code & 0xFF00FF000) == 0xD800D8000) {
+		if ((code & 0xFF00FF000) == 0xDC00D8000) {
+			res += (wchar_t)(code & 0xFFFF);
+			res += (wchar_t)(code >> 16);
+		}
+		else {
+			res += (wchar_t)(code >> 16);
+			res += (wchar_t)(code & 0xFFFF);
+		}
+	}
+	else
+		res += (wchar_t)code;
+}
+
+bool UTF8_Handler::scan_emoji(wstring& u, long& i) {
+    return emojis_characters->scan16(u, i);
+}
+
+bool UTF8_Handler::get_emoji(wstring& u, wstring& res, long& i) {
+    return emojis_characters->get16(u, res, i);
+}
+
+bool UTF8_Handler::store_emoji(wstring& u, wstring& res, long& i) {
+    return emojis_characters->store16(u, res, i);
+}
+#else
+bool UTF8_Handler::scan_emoji(wstring& u, long& i) {
+    return emojis_characters->scan(u, i);
+}
+
+bool UTF8_Handler::get_emoji(wstring& u, wstring& res, long& i) {
+    return emojis_characters->get(u, res, i);
+}
+
+bool UTF8_Handler::store_emoji(wstring& u, wstring& res, long& i) {
+    return emojis_characters->store(u, res, i);
+}
+#endif
+
+bool UTF8_Handler::scan_emoji16(wstring& u, long& i) {
+    return emojis_characters->scan16(u, i);
+}
+
+bool UTF8_Handler::get_emoji16(wstring& u, wstring& res, long& i) {
+    return emojis_characters->get16(u, res, i);
+}
+
+bool UTF8_Handler::store_emoji16(wstring& u, wstring& res, long& i) {
+    return emojis_characters->store16(u, res, i);
+}
+
+bool UTF8_Handler::scan_emoji(u_ustring& u, long& i) {
+    return emojis_characters->scan(u, i);
+}
+
+bool UTF8_Handler::get_emoji(u_ustring& u, u_ustring& res, long& i) {
+    return emojis_characters->get(u, res, i);
+}
+
+bool UTF8_Handler::store_emoji(u_ustring& u, u_ustring& res, long& i) {
+    return emojis_characters->store(u, res, i);
+}
+
+//------------------------------------------------------------------------
+
+long UTF8_Handler::c_bytetocharposition(unsigned char* contenu, long charpos) {
+    long i = 0;
+    long sz = 0;
+    while (i < charpos) {
+        i += 1 + c_test_utf8(contenu + i);
+        sz++;
+    }
+    return sz;
+}
+
+long UTF8_Handler::c_bytetoutf16position(unsigned char* contenu, long charpos) {
+    long i = 0;
+    long sz = 0;
+    UWCHAR code;
+    while (i < charpos) {
+        i += 1 + c_utf8_to_unicode(contenu + i, code);
+        if (code & 0xFFFF0000)
+            sz++;
+        sz++;
+    }
+    return sz;
+}
 
 long UTF8_Handler::getonchar(u_ustring& w, long position) {
     long i = 0;
     long nb = 0;
-    u_uchar c;
     while (nb < position) {
-        c = getonewchar(w, i);
-        if (c_is_emoji(c)) {
-            i++;
-            c = getonewchar(w, i);
-            while (c_is_emojicomp(c)) {
-                i++;
-                c = getonewchar(w, i);
-            }
-        }
+        scan_emoji(w, i);
         i++;
         nb++;
     }
@@ -641,83 +461,55 @@ u_ustring UTF8_Handler::u_insert_sep(u_ustring& s, u_ustring sep) {
     return res;
 }
 
-
-
 UWCHAR UTF8_Handler::getachar(u_ustring& s, long& i) {
-    UWCHAR res;
-    try {
-        emojis.at(s[i]);
-        res = s[i++];
-        while (i < s.size() && c_is_emojicomp(s[i])) {++i;}
-        --i;
-    }
-    catch (...) {
-        res = s[i];
-    }
+    UWCHAR res = s[i];
+    scan_emoji(s, i);
     return res;
 }
 
 void UTF8_Handler::getchar(u_ustring& s, u_ustring& res,  long& i, long sz) {
-    if (emojis.find(s[i]) != emojis.end()) {
-        res = s[i++];
-        while (i < sz && c_is_emojicomp(s[i])) {
-            res += s[i++];
-        }
-    }
-    else
-        res = s[i++];
+    if (!get_emoji(s, res, i))
+        res = s[i];
+    i++;
 }
 
 void UTF8_Handler::getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz) {
-    if (emojis.find(s[i]) != emojis.end()) {
-        res += s[i++];
-        while (i < sz && c_is_emojicomp(s[i])) {
-            res += s[i++];
-        }
-    }
-    else
-        res += s[i++];
+    if (!store_emoji(s, res, i))
+        res += s[i];
+    i++;
 }
 
 //------------------------------------------------------------------------
 // EMOJIS
 //------------------------------------------------------------------------
+
 bool UTF8_Handler::c_is_emoji(UWCHAR c) {
-    return ((uint32_t)c >= min_emoji && emojis.find(c) != emojis.end());
+    return emojis_characters->isemoji(c);
 }
 
 bool UTF8_Handler::c_is_emojicomp(UWCHAR c) {
-    return ((uint32_t)c >= min_emojicomp && emojiscomplement.find(c) != emojiscomplement.end());
+    return emojis_characters->isemojicomplement(c);
 }
 
 bool UTF8_Handler::c_is_emoji(unsigned char* m, long& i) {
-    return c_is_emoji(getonechar(m, i));
+    return emojis_characters->isemoji(getonechar(m, i));
 }
 
 bool UTF8_Handler::c_is_emojicomp(unsigned char* m, long& i) {
-    return c_is_emojicomp(getonechar(m, i));
+    return emojis_characters->isemojicomplement(getonechar(m, i));
 }
 
 bool UTF8_Handler::s_is_emoji(string& s) {
     if (s == "")
         return false;
+    
     long lg = s.size();
-    bool check_comp = false;
     long p;
     for (long i = 0; i < lg; i++) {
         p = i;
-        if (c_is_emoji(USTR(s), p)) {
-            check_comp = true;
+        if (scan_emoji(s, p)) {
             i = p;
             continue;
-        }
-        
-        if (check_comp) {
-            p = i;
-            if (c_is_emojicomp(USTR(s), p)) {
-                i = p;
-                continue;
-            }
         }
         return false;
     }
@@ -728,21 +520,10 @@ bool UTF8_Handler::u_is_emoji(u_ustring& s) {
     if (s == U"")
         return false;
     long lg = s.size();
-    bool check_comp = false;
-    
-    u_uchar c;
     
     for (long i = 0; i < lg; i++) {
-        c = getonewchar(s, i);
-        if (c_is_emoji(c)) {
-            check_comp = true;
+        if (scan_emoji(s, i))
             continue;
-        }
-        
-        if (check_comp) {
-            if (c_is_emojicomp(c))
-                continue;
-        }
         return false;
     }
     return true;
@@ -753,38 +534,6 @@ bool UTF8_Handler::s_is_emoji(wstring& w) {
     return u_is_emoji(s);
 }
 
-string UTF8_Handler::emoji_description(string& s) {
-    if (s.size() == 0)
-        return "";
-    UWCHAR c;
-    c_utf8_to_unicode(USTR(s), c);
-    if (emojis.find(c) != emojis.end())
-        return emojis.at(c);
-    return "";
-}
-
-string UTF8_Handler::emoji_description(u_ustring& s) {
-    if (s.size() != 0 && emojis.find(s[0]) != emojis.end())
-        return emojis.at(s[0]);
-    return "";
-}
-
-string UTF8_Handler::emoji_description(wstring& w) {
-    u_pstring s =  _w_to_u(w);
-    return emoji_description(s);
-}
-
-
-string UTF8_Handler::emoji_description(UWCHAR c) {
-    if (emojis.find(c) != emojis.end())
-        return emojis.at(c);
-    return "";
-}
-
-void UTF8_Handler::l_emojis(map<UWCHAR, string>& dico) {
-    for (auto& it : emojis)
-        dico[it.first] = it.second;
-}
 //------------------------------------------------------------------------
 Exporting string cs_unicode_to_utf8(UWCHAR code) {
     char utf[5];
@@ -815,7 +564,6 @@ Exporting string cs_unicode_to_utf8(UWCHAR code) {
     return utf;
 }
 
-
 unsigned char c_unicode_to_utf8(UWCHAR code, unsigned char* utf) {
     if (code < 0x0080) {
         utf[0] = (unsigned char)code;
@@ -842,6 +590,34 @@ unsigned char c_unicode_to_utf8(UWCHAR code, unsigned char* utf) {
     utf[3] = 0x80 | (code& 0x3f);
     utf[4] = 0;
     return 4;
+}
+
+Exporting char* unicode_2_utf8(long code, char* utf) {
+    if (code < 0x0080) {
+        utf[0] = (unsigned char)code;
+        utf[1] = 0;
+        return utf;
+    }
+    if (code < 0x0800) {
+        utf[0] = 0xc0 | (code >> 6);
+        utf[1] = 0x80 | (code & 0x3f);
+        utf[2] = 0;
+        return utf;
+    }
+    if (code < 0x10000) {
+        utf[0] = 0xe0 | (code >> 12);
+        utf[1] = 0x80 | ((code >> 6) & 0x3f);
+        utf[2] = 0x80 | (code & 0x3f);
+        utf[3] = 0;
+        return utf;
+    }
+
+    utf[0] = 0xF0 | (code >> 18);
+    utf[1] = 0x80 | ((code >> 12) & 0x3f);
+    utf[2] = 0x80 | ((code >> 6) & 0x3f);
+    utf[3] = 0x80 | (code & 0x3f);
+    utf[4] = 0;
+    return utf;
 }
 
 
@@ -939,7 +715,11 @@ union bulongchar {
     }
 };
 
-UTF8_Handler::UTF8_Handler() : emojiscomplement(true) {    
+UTF8_Handler::~UTF8_Handler() {
+    delete emojis_characters;
+}
+
+UTF8_Handler::UTF8_Handler() {
     wchar_t unicode;
     bulongchar xs;
     bulongchar xse;
@@ -947,6 +727,8 @@ UTF8_Handler::UTF8_Handler() : emojiscomplement(true) {
     int maxtable;
     for (maxtable = 0; codingtable[maxtable] != 0; maxtable++);
     
+    
+    emojis_characters = new Emojis();
     
     for (i = 0; i < maxtable; i += 3) {
         unicode = codingtable[i];
@@ -970,29 +752,6 @@ UTF8_Handler::UTF8_Handler() : emojiscomplement(true) {
     i = 0;
     while (ponctuations[i] != 0) {
         punctuations[ponctuations[i]] = true;
-        i++;
-    }
-
-    //emoji
-    i = 0;
-    string code;
-    uint32_t c;
-    min_emoji = 0xFFFFF;
-    while (temojis[i][0] != 0) {
-        code = temojis[i];
-        c = (uint32_t)convertinginteger(code);
-        min_emoji = mini(min_emoji, c);
-        if (c > 127)
-            emojis[c] = temojis[i + 1];
-        i += 2;
-    }
-    
-    i = 0;
-    min_emojicomp = 0xFFFFF;;
-    while (temojiscomplement[i]) {
-        c = temojiscomplement[i];
-        min_emojicomp = mini(min_emojicomp, c);
-        emojiscomplement[c] = true;
         i++;
     }
     
@@ -3650,42 +3409,98 @@ static inline char* concatstrings(char* str, char* ctn, long& i, long& size_str,
     return str;
 }
 //------------------------------------------------------------------------
+Exporting void s_utf16_to_utf8_clean(string& s, wstring& str) {
+	s = "";
+	s_utf16_to_utf8(s, str);
+}
+
+Exporting void s_utf16_to_utf8(string& s, wchar_t* str, long sz) {
+	if (!sz)
+		return;
+
+	long i = 0;
+	char inter[5];
+	long ineo = 0;
+	long szo = 1 + (sz << 1);
+	char* neo = new char[szo];
+	neo[0] = 0;
+	long nb;
+	UWCHAR c;
+
+	while (i < sz) {
+		if (str[i] < 0x0080 && ineo < szo - 1) {
+			neo[ineo++] = (char)str[i];
+			i++;
+			continue;
+		}
+
+		if (c_utf16_to_unicode(c, str[i], false))
+			c_utf16_to_unicode(c, str[++i], true);
+
+		nb = c_unicode_to_utf8(c, (uchar*)inter);
+		neo = concatstrings(neo, inter, ineo, szo, nb);
+		i++;
+	}
+
+	neo[ineo] = 0;
+	s += neo;
+	delete[] neo;
+}
+
+Exporting void s_utf16_to_utf8(string& s, wstring& str) {
+	long sz = str.size();
+	if (!sz)
+		return;
+
+	long i = 0;
+	char inter[5];
+	long ineo = 0;
+	long szo = 1 + (sz << 1);
+	char* neo = new char[szo];
+	neo[0] = 0;
+	long nb;
+	UWCHAR c;
+
+	while (i < sz) {
+		if (str[i] < 0x0080 && ineo < szo - 1) {
+			neo[ineo++] = (char)str[i];
+			i++;
+			continue;
+		}
+
+		if (c_utf16_to_unicode(c, str[i], false))
+			c_utf16_to_unicode(c, str[++i], true);
+
+		nb = c_unicode_to_utf8(c, (uchar*)inter);
+		neo = concatstrings(neo, inter, ineo, szo, nb);
+		i++;
+	}
+
+	neo[ineo] = 0;
+	s += neo;
+	delete[] neo;
+}
+
+#ifdef WIN32
 Exporting void s_unicode_to_utf8_clean(string& s, wstring& str) {
-    s = "";
-    s_unicode_to_utf8(s, str);
+	s = "";
+	s_utf16_to_utf8(s, str);
 }
 
 Exporting void s_unicode_to_utf8(string& s, wstring& str) {
-    long i = 0;
-    char inter[5];
-    long ineo = 0;
-    long sz = str.size();
-    if (!sz)
-        return;
-
-    long szo = 1 + (sz << 1);
-    char* neo = new char[szo];
-    neo[0] = 0;
-    long nb;
-
-    while (i < sz) {
-        if (str[i] < 0x0080 && ineo < szo-1) {
-            neo[ineo++] = (char)str[i];
-            i++;
-            continue;
-        }
-        
-        nb = c_unicode_to_utf8(str[i], (uchar*)inter);
-        neo = concatstrings(neo,inter,ineo, szo, nb);
-        i++;
-    }
-    
-    neo[ineo] = 0;
-    s += neo;
-    delete[] neo;
+	s_utf16_to_utf8(s, str);
 }
 
-Exporting void s_unicode_to_utf8(string& s, u_ustring& str) {
+Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz) {
+	s_utf16_to_utf8(s, str, sz);
+}
+#else
+Exporting void s_unicode_to_utf8_clean(string& s, wstring& str) {
+	s = "";
+	s_unicode_to_utf8(s, str);
+}
+
+Exporting void s_unicode_to_utf8(string& s, wstring& str) {
     long i = 0;
     char inter[5];
     long ineo = 0;
@@ -3743,10 +3558,81 @@ Exporting void s_unicode_to_utf8(string& s, wchar_t* str, long sz) {
 	s += neo;
 	delete[] neo;
 }
+#endif
+
+Exporting void s_unicode_to_utf8(string& s, u_ustring& str) {
+	long i = 0;
+	char inter[5];
+	long ineo = 0;
+	long sz = str.size();
+	if (!sz)
+		return;
+
+	long szo = 1 + (sz << 1);
+	char* neo = new char[szo];
+	neo[0] = 0;
+	long nb;
+
+	while (i < sz) {
+		if (str[i] < 0x0080 && ineo < szo - 1) {
+			neo[ineo++] = (char)str[i];
+			i++;
+			continue;
+		}
+
+		nb = c_unicode_to_utf8(str[i], (uchar*)inter);
+		neo = concatstrings(neo, inter, ineo, szo, nb);
+		i++;
+	}
+
+	neo[ineo] = 0;
+	s += neo;
+	delete[] neo;
+}
 
 Exporting void s_utf8_to_unicode_clean(wstring& w, unsigned char* str , long sz) {
     w = L"";
     s_utf8_to_unicode(w, str , sz);
+}
+
+Exporting void c_unicode_to_utf16(wstring& w, u_uchar c) {
+    if (!(c & 0xFFFF0000))
+        w = (wchar_t)c;
+    else {
+        u_uchar c16;
+        c_unicode_to_utf16(c16, c);
+        w = (wchar_t)(c16 >> 16);
+        w += (wchar_t)(c16 & 0xFFFF);
+    }
+}
+
+Exporting void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz) {
+    if (!sz)
+        return;
+    
+    
+    UWCHAR c;
+    uchar nb;
+    
+    UWCHAR c16;
+    while (sz--) {
+        if (*str & 0x80) {
+            nb = c_utf8_to_unicode(str, c);
+            str += nb + 1;
+            sz = (sz >= nb)?sz-nb:0;
+            if (!(c & 0xFFFF0000)) {
+                w += (wchar_t)c;
+                continue;
+            }
+            
+            c_unicode_to_utf16(c16, c);
+            w += (wchar_t)(c16 >> 16);
+            w += (wchar_t)(c16 & 0xFFFF);
+            continue;
+        }
+        w += (wchar_t)*str;
+        ++str;
+    }    
 }
 
 Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
@@ -4975,23 +4861,23 @@ Exporting bool c_utf16(u_uchar code) {
 
 //Convert a unicode character into a utf16 character
 Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code) {
-        //A unicode character is encoded over 4 bytes: 3 -> 0
-        //if we have bits on byte 2, then we need to provide 4 bytes...
+    //A unicode character is encoded over 4 bytes: 3 -> 0
+    //if we have bits on byte 2, then we need to provide 4 bytes...
     if ((code & 0x1F0000) == 0) {
         res = code;
         return false;
     }
     
-        //00000000 000uuuuu xxxxxxyy yyyyyyyy
-        //110110ww    wwxxxxxx    110111yy    yyyyyyyy
+    //00000000 000uuuuu xxxxxxyy yyyyyyyy
+    //110110ww    wwxxxxxx    110111yy    yyyyyyyy
     
-        //wwww is uuuu-1
-        //We need to provide 4 bytes...
-        //The first byte should by 1101 1000 which is 0xD800
+    //wwww is uuuu-1
+    //We need to provide 4 bytes...
+    //The first byte should by 1101 1000 which is 0xD800
     uint32_t r = 0xD800 | ((code & 0xFC00) >> 10) | ((((code & 0x1F0000) >> 16) - 1) << 6);
     
-        //The xxxxx are the six bytes on the right of byte 1
-        //the yyyyy
+    //The xxxxx are the six bytes on the right of byte 1
+    //the yyyyy
     res = (r << 16) | 0xDC00 | (code & 0x3FF);
     
     return true;
@@ -5003,9 +4889,9 @@ Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second) {
         return false;
     }
     
-        //if the first byte is  0xD8000000 then it is a four bytes coding
+    //if the first byte is  0xD8000000 then it is a four bytes coding
     if ((code & 0xFF00) == 0xD800) {
-            //first we extract w
+        //first we extract w
         r = ((((code & 0x03C0) >> 6) + 1) << 16) | ((code & 0x3F) << 10);
         return true;
     }

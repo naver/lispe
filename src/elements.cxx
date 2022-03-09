@@ -74,7 +74,7 @@ Element* Dictionary::copyatom(LispE* lisp, uint16_t s) {
 
     Dictionary* d = lisp->provideDictionary();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -88,7 +88,7 @@ Element* Dictionary_n::copyatom(LispE* lisp, uint16_t s) {
 
     Dictionary_n* d = lisp->provideDictionary_n();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -102,7 +102,7 @@ Element* Dictionary_i::copyatom(LispE* lisp, uint16_t s) {
 
     Dictionary_i* d = lisp->provideDictionary_i();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -143,7 +143,7 @@ Element* Set::copyatom(LispE* lisp, uint16_t s) {
 
     Set* st = lisp->provideSet();
     st->dictionary = dictionary;
-    for (auto& a : st->dictionary)
+    for (const auto& a : st->dictionary)
         a.second->increment();
     return st;
 }
@@ -680,7 +680,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
             if (type == t_dictionary) {
                 map<u_ustring, Element*>& dico = ((Dictionary*)this)->dictionary;
                 u_ustring key;
-                for (auto& a: dico) {
+                for (const auto& a: dico) {
                     local = "";
                     key = a.first;
                     s_unicode_to_utf8(local, key);
@@ -694,7 +694,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
                 return;
             }
             unordered_map<double, Element*>& dico = ((Dictionary_n*)this)->dictionary;
-            for (auto& a: dico) {
+            for (const auto& a: dico) {
                 local = convertToString(a.first);
                 code += local;
                 code += ":";

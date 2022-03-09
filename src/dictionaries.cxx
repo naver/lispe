@@ -32,7 +32,7 @@ Element* Dictionarypool::fullcopy() {
         d = lisp->provideDictionary();
     object = d;
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->fullcopy();
         d->dictionary[a.first] = e;
         e->increment();
@@ -47,7 +47,7 @@ Element* Dictionarypool::copyatom(LispE* lsp, uint16_t s) {
     
     Dictionary* d = lisp->provideDictionary();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -69,7 +69,7 @@ Element* Dictionarypool::copying(bool duplicate) {
     else
         d = lisp->provideDictionary();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -85,7 +85,7 @@ void Dictionarypool::decrement() {
     
     status--;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->dictionary_pool.push_back(this);
@@ -101,7 +101,7 @@ void Dictionarypool::decrementstatus(uint16_t nb) {
     
     status-=nb;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->dictionary_pool.push_back(this);
@@ -114,7 +114,7 @@ void Dictionarypool::release() {
         if (marking)
             return;
         marking = true;
-        for (auto& a: dictionary)
+        for (const auto& a: dictionary)
             a.second->decrement();
         marking = false;
         dictionary.clear();
@@ -172,7 +172,7 @@ Element* Dictionary_npool::fullcopy() {
         d = lisp->provideDictionary_n();
     object = d;
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->fullcopy();
         d->dictionary[a.first] = e;
         e->increment();
@@ -194,7 +194,7 @@ Element* Dictionary_npool::copying(bool duplicate) {
     else
         d = lisp->provideDictionary_n();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -208,7 +208,7 @@ Element* Dictionary_npool::copyatom(LispE* lsp, uint16_t s) {
     
     Dictionary_n* d = lisp->provideDictionary_n();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -223,7 +223,7 @@ void Dictionary_npool::decrement() {
     marking = true;
     status--;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->dictionaryn_pool.push_back(this);
@@ -238,7 +238,7 @@ void Dictionary_npool::decrementstatus(uint16_t nb) {
     marking = true;
     status-=nb;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->dictionaryn_pool.push_back(this);
@@ -251,7 +251,7 @@ void Dictionary_npool::release() {
         if (marking)
             return;
         marking = true;
-        for (auto& a: dictionary)
+        for (const auto& a: dictionary)
             a.second->decrement();
         marking = false;
         dictionary.clear();
@@ -275,7 +275,7 @@ Element* Dictionary_ipool::fullcopy() {
         d = lisp->provideDictionary_i();
     object = d;
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->fullcopy();
         d->dictionary[a.first] = e;
         e->increment();
@@ -297,7 +297,7 @@ Element* Dictionary_ipool::copying(bool duplicate) {
     else
         d = lisp->provideDictionary_i();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -311,7 +311,7 @@ Element* Dictionary_ipool::copyatom(LispE* lsp, uint16_t s) {
     
     Dictionary_i* d = lisp->provideDictionary_i();
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         e = a.second->copying(false);
         d->dictionary[a.first] = e;
         e->increment();
@@ -326,7 +326,7 @@ void Dictionary_ipool::decrement() {
     marking = true;
     status--;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->dictionaryi_pool.push_back(this);
@@ -341,7 +341,7 @@ void Dictionary_ipool::decrementstatus(uint16_t nb) {
     marking = true;
     status-=nb;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->dictionaryi_pool.push_back(this);
@@ -354,7 +354,7 @@ void Dictionary_ipool::release() {
         if (marking)
             return;
         marking = true;
-        for (auto& a: dictionary)
+        for (const auto& a: dictionary)
             a.second->decrement();
         marking = false;
         dictionary.clear();
@@ -367,7 +367,7 @@ Element* Dictionary::minimum(LispE* lisp) {
         return null_;
     Element* e = NULL;
     
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (e == NULL)
             e = a.second;
         else {
@@ -384,7 +384,7 @@ Element* Dictionary::maximum(LispE* lisp) {
         return null_;
     Element* e = NULL;
     
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (e == NULL)
             e = a.second;
         else {
@@ -401,7 +401,7 @@ Element* Dictionary::minmax(LispE* lisp) {
         return null_;
     Element* v_min = NULL;
     Element* v_max = NULL;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (v_min == NULL) {
             v_min = a.second;
             v_max = a.second;
@@ -423,7 +423,7 @@ Element* Dictionary::minmax(LispE* lisp) {
 
 void Dictionary::flatten(LispE* lisp, List* l) {
     u_ustring k;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         k = a.first;
         l->append(lisp->provideString(k));
         a.second->flatten(lisp, l);
@@ -434,7 +434,7 @@ void Dictionary::garbaging_values(LispE* lisp) {
     if (marking)
         return;
     marking = true;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (!a.second->is_protected()) {
             lisp->control_garbaging(a.second);
             a.second->garbaging_values(lisp);
@@ -454,7 +454,7 @@ Element* Dictionary::loop(LispE* lisp, short label, List* code) {
     //We record the keys first, in  case the dictionary is changed
     //in the following instructions
     Strings* _keys = lisp->provideStrings();
-    for (auto& a: dictionary)
+    for (const auto& a: dictionary)
         _keys->liste.push_back(a.first);
     try {
         for (long i = 0; i < _keys->size(); i++) {
@@ -485,7 +485,7 @@ Element* Dictionary::loop(LispE* lisp, short label, List* code) {
 Element* Dictionary::thekeys(LispE* lisp) {
     Strings* dkeys = lisp->provideStrings();
     u_ustring keyvalue;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         keyvalue = a.first;
         dkeys->append(keyvalue);
     }
@@ -494,14 +494,14 @@ Element* Dictionary::thekeys(LispE* lisp) {
 
 Element* Dictionary::thevalues(LispE* lisp) {
     List* liste = lisp->provideList();
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         liste->append(a.second->copying(false));
     }
     return liste;
 }
 
 Element* Dictionary::search_element(LispE* lisp, Element* valeur, long ix) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             u_ustring keyvalue = a.first;
             return lisp->provideString(keyvalue);
@@ -511,7 +511,7 @@ Element* Dictionary::search_element(LispE* lisp, Element* valeur, long ix) {
 }
 
 bool Dictionary::check_element(LispE* lisp, Element* valeur) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             u_ustring keyvalue = a.first;
             return true;
@@ -547,7 +547,7 @@ Element* Dictionary::replace_all_elements(LispE* lisp, Element* valeur, Element*
 Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Strings* l = lisp->provideStrings();
     u_ustring keyvalue;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             keyvalue = a.first;
             l->append(keyvalue);
@@ -563,7 +563,7 @@ Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long ix) 
 Element* Dictionary::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
     u_ustring keyvalue;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             keyvalue = a.first;
             nb++;
@@ -573,7 +573,7 @@ Element* Dictionary::count_all_elements(LispE* lisp, Element* valeur, long ix) {
 }
 
 Element* Dictionary::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_) {
             u_ustring keyvalue = a.first;
             return lisp->provideString(keyvalue);
@@ -587,7 +587,7 @@ Element* Dictionary::reverse(LispE* lisp, bool duplicate) {
     
     u_ustring k;
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         k = a.second->asUString(lisp);
         e = dico->dictionary[k];
         if (e == NULL) {
@@ -636,7 +636,7 @@ Element* Dictionary::join_in_list(LispE* lisp, u_ustring& sep) {
         sep = U",";
     u_ustring str;
     u_ustring beg;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         str += beg;
         beg = sep;
         str += a.first;
@@ -658,7 +658,7 @@ Element* Dictionary::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
         Dictionary* d = lisp->provideDictionary();
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
             e->increment();
@@ -673,7 +673,7 @@ Element* Dictionary_i::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
         Dictionary_i* d = lisp->provideDictionary_i();
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
             e->increment();
@@ -687,7 +687,7 @@ Element* Dictionary_n::duplicate_constant(LispE* lisp, bool pair) {
     if (status == s_constant) {
         Dictionary_n* d = lisp->provideDictionary_n();
         Element* e;
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             e = a.second->copying(false);
             d->dictionary[a.first] = e;
             e->increment();
@@ -702,7 +702,7 @@ Element* Dictionary_i::minimum(LispE* lisp) {
         return null_;
     Element* e = NULL;
     
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (e == NULL)
             e = a.second;
         else {
@@ -719,7 +719,7 @@ Element* Dictionary_i::maximum(LispE* lisp) {
         return null_;
     Element* e = NULL;
     
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (e == NULL)
             e = a.second;
         else {
@@ -737,7 +737,7 @@ Element* Dictionary_i::minmax(LispE* lisp) {
     
     Element* v_min = NULL;
     Element* v_max = NULL;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (v_min == NULL) {
             v_min = a.second;
             v_max = a.second;
@@ -759,7 +759,7 @@ Element* Dictionary_i::minmax(LispE* lisp) {
 
 void Dictionary_i::flatten(LispE* lisp, List* l) {
     long k;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         k = a.first;
         l->append(lisp->provideNumber(k));
         a.second->flatten(lisp, l);
@@ -770,7 +770,7 @@ void Dictionary_i::garbaging_values(LispE* lisp) {
     if (marking)
         return;
     marking = true;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (!a.second->is_protected()) {
             lisp->control_garbaging(a.second);
             a.second->garbaging_values(lisp);
@@ -789,7 +789,7 @@ Element* Dictionary_i::loop(LispE* lisp, short label, List* code) {
     //We record the keys first, in  case the dictionary is changed
     //in the following instructions
     Integers* _keys = lisp->provideIntegers();
-    for (auto& a: dictionary)
+    for (const auto& a: dictionary)
         _keys->liste.push_back(a.first);
     try {
         for (long a_key = 0; a_key < _keys->liste.size(); a_key++) {
@@ -819,7 +819,7 @@ Element* Dictionary_i::loop(LispE* lisp, short label, List* code) {
 
 Element* Dictionary_i::thekeys(LispE* lisp) {
     Integers* dkeys = lisp->provideIntegers();
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         dkeys->liste.push_back(a.first);
     }
     return dkeys;
@@ -827,14 +827,14 @@ Element* Dictionary_i::thekeys(LispE* lisp) {
 
 Element* Dictionary_i::thevalues(LispE* lisp) {
     List* liste = lisp->provideList();
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         liste->append(a.second->copying(false));
     }
     return liste;
 }
 
 Element* Dictionary_i::search_element(LispE* lisp, Element* valeur, long ix) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
     }
@@ -842,7 +842,7 @@ Element* Dictionary_i::search_element(LispE* lisp, Element* valeur, long ix) {
 }
 
 bool Dictionary_i::check_element(LispE* lisp, Element* valeur) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return true;
     }
@@ -875,7 +875,7 @@ Element* Dictionary_i::replace_all_elements(LispE* lisp, Element* valeur, Elemen
 
 Element* Dictionary_i::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             l->liste.push_back(a.first);
     }
@@ -888,7 +888,7 @@ Element* Dictionary_i::search_all_elements(LispE* lisp, Element* valeur, long ix
 
 Element* Dictionary_i::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             nb++;
     }
@@ -896,7 +896,7 @@ Element* Dictionary_i::count_all_elements(LispE* lisp, Element* valeur, long ix)
 }
 
 Element* Dictionary_i::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
     }
@@ -908,7 +908,7 @@ Element* Dictionary_i::reverse(LispE* lisp, bool duplicate) {
     
     long k;
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         k = a.second->asInteger();
         e = dico->dictionary[k];
         if (e == NULL) {
@@ -950,7 +950,7 @@ Element* Dictionary_i::join_in_list(LispE* lisp, u_ustring& sep) {
         sep = U",";
     u_ustring str;
     u_ustring beg;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         str += beg;
         beg = sep;
         str += convertToUString(a.first);
@@ -973,7 +973,7 @@ Element* Dictionary_n::minimum(LispE* lisp) {
         return null_;
     Element* e = NULL;
     
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (e == NULL)
             e = a.second;
         else {
@@ -990,7 +990,7 @@ Element* Dictionary_n::maximum(LispE* lisp) {
         return null_;
     Element* e = NULL;
     
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (e == NULL)
             e = a.second;
         else {
@@ -1008,7 +1008,7 @@ Element* Dictionary_n::minmax(LispE* lisp) {
     
     Element* v_min = NULL;
     Element* v_max = NULL;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (v_min == NULL) {
             v_min = a.second;
             v_max = a.second;
@@ -1030,7 +1030,7 @@ Element* Dictionary_n::minmax(LispE* lisp) {
 
 void Dictionary_n::flatten(LispE* lisp, List* l) {
     double k;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         k = a.first;
         l->append(lisp->provideNumber(k));
         a.second->flatten(lisp, l);
@@ -1041,7 +1041,7 @@ void Dictionary_n::garbaging_values(LispE* lisp) {
     if (marking)
         return;
     marking = true;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (!a.second->is_protected()) {
             lisp->control_garbaging(a.second);
             a.second->garbaging_values(lisp);
@@ -1060,7 +1060,7 @@ Element* Dictionary_n::loop(LispE* lisp, short label, List* code) {
     //We record the keys first, in  case the dictionary is changed
     //in the following instructions
     Numbers* _keys = lisp->provideNumbers();
-    for (auto& a: dictionary)
+    for (const auto& a: dictionary)
         _keys->liste.push_back(a.first);
     try {
         for (long a_key = 0; a_key < _keys->liste.size(); a_key++) {
@@ -1090,7 +1090,7 @@ Element* Dictionary_n::loop(LispE* lisp, short label, List* code) {
 
 Element* Dictionary_n::thekeys(LispE* lisp) {
     Numbers* dkeys = lisp->provideNumbers();
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         dkeys->liste.push_back(a.first);
     }
     return dkeys;
@@ -1098,14 +1098,14 @@ Element* Dictionary_n::thekeys(LispE* lisp) {
 
 Element* Dictionary_n::thevalues(LispE* lisp) {
     List* liste = lisp->provideList();
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         liste->append(a.second->copying(false));
     }
     return liste;
 }
 
 Element* Dictionary_n::search_element(LispE* lisp, Element* valeur, long ix) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
     }
@@ -1113,7 +1113,7 @@ Element* Dictionary_n::search_element(LispE* lisp, Element* valeur, long ix) {
 }
 
 bool Dictionary_n::check_element(LispE* lisp, Element* valeur) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return true;
     }
@@ -1146,7 +1146,7 @@ Element* Dictionary_n::replace_all_elements(LispE* lisp, Element* valeur, Elemen
 
 Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Numbers* l = lisp->provideNumbers();
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             l->liste.push_back(a.first);
     }
@@ -1159,7 +1159,7 @@ Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long ix
 
 Element* Dictionary_n::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             nb++;
     }
@@ -1167,7 +1167,7 @@ Element* Dictionary_n::count_all_elements(LispE* lisp, Element* valeur, long ix)
 }
 
 Element* Dictionary_n::search_reverse(LispE* lisp, Element* valeur, long ix) {
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (a.second->equal(lisp, valeur) == true_)
             return lisp->provideNumber(a.first);
     }
@@ -1179,7 +1179,7 @@ Element* Dictionary_n::reverse(LispE* lisp, bool duplicate) {
     
     double k;
     Element* e;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         k = a.second->asNumber();
         e = dico->dictionary[k];
         if (e == NULL) {
@@ -1221,7 +1221,7 @@ Element* Dictionary_n::join_in_list(LispE* lisp, u_ustring& sep) {
         sep = U",";
     u_ustring str;
     u_ustring beg;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         str += beg;
         beg = sep;
         str += convertToUString(a.first);

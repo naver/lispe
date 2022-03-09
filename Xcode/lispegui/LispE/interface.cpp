@@ -78,7 +78,7 @@ public:
     }
 };
 
-void tokenize_line(wstring& code, Segmentingtype& infos) {
+void tokenize_line(const uint16_t* code, Segmentingtype& infos, long sz) {
     static uchar stops[172];
     static bool init = false;
     long idx;
@@ -120,7 +120,6 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
 
     wstring tampon;
 
-    long sz = code.size();
     long i, current_i;
     //The first line of the code is 1
     long line_number = 1;
@@ -239,18 +238,18 @@ void tokenize_line(wstring& code, Segmentingtype& infos) {
 
                 idx = i + 1;
                 nxt = c;
+                tampon = L"";
                 while (idx <= sz && nxt > 32 && !special_characters.c_is_punctuation(nxt) && !isspace(nxt)) {
+                    tampon += nxt;
                     i = idx;
                     nxt = code[idx];
                     infos.drift = c_utf16(nxt);
                     idx++;
                 }
                 
-                if ((i - current_i) <= 1)
+                if (tampon == L"")
                     tampon = c;
-                else
-                    tampon = code.substr(current_i, i - current_i);
-
+                
                 if (point)
                     infos.append(l_defun, current_i, i);
                 else {
@@ -671,7 +670,7 @@ extern "C" {
     }
 
 
-    long* colorparser(const char* txt, long from, long upto) {
+    long* colorparser(const uint16_t* txt, long from, long sz) {
         static vector<long> limits;
         static Segmentingtype infos;
         
@@ -685,34 +684,7 @@ extern "C" {
             windowmode = false;
         }
 
-/*
-        long drift = 0;
-        if (from) {
-            char c = txt[from];
-            ((char*)txt)[from] = 0;
-            string s = txt;
-            drift = s.rfind("\n(", from);
-
-            if (drift != -1) {
-                ((char*)txt)[from] = c;
-                from = drift;
-                c = txt[from];
-                ((char*)txt)[from] = 0;
-                drift = size_raw_c((unsigned char*)txt, from);
-                ((char*)txt)[from] = c;
-            }
-            else {
-                drift = size_raw_c((unsigned char*)txt, from);
-                ((char*)txt)[from] = c;
-            }
-        }
-*/
-        wstring line;
-        s_utf8_to_unicode(line, (unsigned char*)txt, upto);
-        tokenize_line(line, infos);
-        if (from) {
-            from = special_characters.c_bytetocharposition((unsigned char*)txt, from);
-        }
+        tokenize_line(txt, infos, sz);
         
         long left = 0, right = 0;
         wstring sub;

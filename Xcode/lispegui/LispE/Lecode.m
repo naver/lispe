@@ -25,7 +25,7 @@ extern AppDelegate* currentdelegate;
 const char* Getkeywords(void);
 const char* lindentation(char* basecode, int blancs);
 long indentationVirtuel(char* cr, char* acc);
-long* colorparser(const char* txt, long, long);
+long* colorparser(UInt16* txt, long, long);
 void deletion(long* c);
 long computeparenthesis(const char* ln, char checkcar, long limit);
 
@@ -301,10 +301,13 @@ BOOL dark = false;
     
     long limite=longueur;
 
-    NSRange suivant;
-    NSRange trouve;
     NSString* letexte = [self string];
-    //unichar test[1000];
+
+    NSRange suivant = {0, longueur};
+    unichar* txt = (unichar*)malloc(sizeof(unichar)*longueur);
+    [letexte getCharacters:txt range:suivant];
+    
+    NSRange trouve;
     
     if (currentrange.length != 0) {
         suivant = currentrange;
@@ -319,7 +322,6 @@ BOOL dark = false;
                     suivant = [letexte paragraphRangeForRange: suivant];
                     limite += suivant.length;
                 }
-                //[letexte getCharacters:test range:suivant];
             }
         }
     }
@@ -328,8 +330,9 @@ BOOL dark = false;
         suivant.length = longueur;
     }
         
-    limite = [letexte lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
-    long* tobecolored=colorparser([letexte UTF8String], suivant.location, limite);
+    long* tobecolored = colorparser(txt, suivant.location, limite);
+    
+    free(txt);
 
     NSColor* defaultcolor = [NSColor blackColor];
     if (dark) {

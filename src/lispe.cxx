@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.3.4.13.46";
+static std::string version = "1.2022.3.9.14.37";
 string LispVersion() {
     return version;
 }
@@ -149,14 +149,14 @@ Delegation::~Delegation() {
     for (auto& a : thread_pool)
         a.second.clear();
 
-    for (auto& a: locks)
+    for (const auto& a: locks)
         delete a.second;
 
     binHash<Element*>::iterator a;
 	for (a = atom_pool.begin(); a != atom_pool.end(); a++)
         delete a->second;
 
-    for (auto& a: waitons)
+    for (const auto& a: waitons)
         delete a.second;
 
     delete _EMPTYLIST;
@@ -933,22 +933,22 @@ void LispE::cleaning() {
     seti_pool.cleaning();
     set_pool.cleaning();
 
-    for (auto& a : const_string_pool) {
+    for (const auto& a : const_string_pool) {
         delete a.second;
     }
 
-    for (auto& a : const_integer_pool) {
+    for (const auto& a : const_integer_pool) {
         delete a.second;
     }
 
-    for (auto& a : const_number_pool) {
+    for (const auto& a : const_number_pool) {
         delete a.second;
     }
 
-    for (auto& a: pools)
+    for (const auto& a: pools)
         delete a.second;
 
-    for (auto& a: vpools) {
+    for (const auto& a: vpools) {
         if (a != delegation->_NULL && a->status < s_constant)
             delete a;
     }
@@ -960,7 +960,7 @@ void LispE::cleaning() {
         delete delegation;
 #ifdef MACDEBUG
         vector<Element*> errors;
-        for (auto& a: __indexes) {
+        for (const auto& a: __indexes) {
             if (a != NULL) {
                 errors.push_back(a);
             }
@@ -2324,6 +2324,10 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
 
 
 

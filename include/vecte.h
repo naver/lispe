@@ -44,7 +44,8 @@ public:
     }
     
 	~vecte() {
-		free(vecteur);
+        if (sz)
+            free(vecteur);
 	}
 
     
@@ -101,7 +102,24 @@ public:
             memset(vecteur+last, NULL, sizeof(Z)*(sz-last));
         }
 	}
-
+    
+    inline void trim() {
+        if (!last) {
+            free(vecteur);
+            vecteur = NULL;
+            sz = 0;
+            return;
+        }
+        if (last == sz)
+            return;
+        
+        Z* trimmed = (Z*)malloc(sizeof(Z)*last);
+        memcpy(trimmed, vecteur, sizeof(Z)*last);
+        free(vecteur);
+        vecteur = trimmed;
+        sz = last;
+    }
+    
     inline void resize(long i) {
         if (i >= sz) {
             sz = i << 1;
@@ -111,6 +129,7 @@ public:
         }
     }
 
+    
 	inline Z remove(long pos = -1) {
 		Z v;
 		if (pos < 0) {
@@ -341,6 +360,7 @@ public:
         for (long i = 0; i < last; i++)
             v.push_back(vecteur[i]);
     }
+    
 };
 
 

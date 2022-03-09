@@ -5764,7 +5764,7 @@ Element* Set_i::plus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     long d = 0;
     if (e == NULL) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             d += a;
         }
         return lisp->provideInteger(d);
@@ -5773,7 +5773,7 @@ Element* Set_i::plus(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -5787,7 +5787,7 @@ Element* Set_i::plus(LispE* lisp, Element* e) {
     }
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -5800,7 +5800,7 @@ Element* Set_i::plus(LispE* lisp, Element* e) {
         return res;
     }
     long w = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a + w;
         res->add(d);
     }
@@ -5813,7 +5813,7 @@ Element* Set_i::minus(LispE* lisp, Element* e) {
     long d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -5827,7 +5827,7 @@ Element* Set_i::minus(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -5841,7 +5841,7 @@ Element* Set_i::minus(LispE* lisp, Element* e) {
     }
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -5854,7 +5854,7 @@ Element* Set_i::minus(LispE* lisp, Element* e) {
         return res;
     }
     long w = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a - w;
         res->add(d);
     }
@@ -5866,7 +5866,7 @@ Element* Set_i::multiply(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     long d = 1;
     if (e == NULL) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             d *= a;
         }
         return lisp->provideInteger(d);
@@ -5875,7 +5875,7 @@ Element* Set_i::multiply(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -5889,7 +5889,7 @@ Element* Set_i::multiply(LispE* lisp, Element* e) {
     }
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -5902,7 +5902,7 @@ Element* Set_i::multiply(LispE* lisp, Element* e) {
         return res;
     }
     long w = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a * w;
         res->add(d);
     }
@@ -5915,7 +5915,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
     double d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -5932,7 +5932,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -5952,7 +5952,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
     double w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -5975,7 +5975,7 @@ Element* Set_i::divide(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     }
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a / w;
         res->add(d);
     }
@@ -5989,7 +5989,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
     if (e == NULL) {
         bool first = true;
         long d = 0;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6008,7 +6008,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6028,7 +6028,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
     long w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6051,7 +6051,7 @@ Element* Set_i::mod(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     }
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = (long)a % w;
         res->add(d);
     }
@@ -6065,7 +6065,7 @@ Element* Set_i::power(LispE* lisp, Element* e) {
     double d = 1;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6079,7 +6079,7 @@ Element* Set_i::power(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6094,7 +6094,7 @@ Element* Set_i::power(LispE* lisp, Element* e) {
     double w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6113,7 +6113,7 @@ Element* Set_i::power(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     }
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = pow((double)a, w);
         res->add(d);
     }
@@ -6126,7 +6126,7 @@ Element* Set_i::bit_and_not(LispE* lisp, Element* e) {
     long d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6140,7 +6140,7 @@ Element* Set_i::bit_and_not(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6155,7 +6155,7 @@ Element* Set_i::bit_and_not(LispE* lisp, Element* e) {
     long r;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6169,7 +6169,7 @@ Element* Set_i::bit_and_not(LispE* lisp, Element* e) {
         return res;
     }
     r = ~e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a & r;
         res->add(d);
     }
@@ -6181,7 +6181,7 @@ Element* Set_i::bit_and(LispE* lisp, Element* e) {
     long d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6195,7 +6195,7 @@ Element* Set_i::bit_and(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6210,7 +6210,7 @@ Element* Set_i::bit_and(LispE* lisp, Element* e) {
     long r;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6224,7 +6224,7 @@ Element* Set_i::bit_and(LispE* lisp, Element* e) {
         return res;
     }
     r = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a & r;
         res->add(d);
     }
@@ -6235,7 +6235,7 @@ Element* Set_i::bit_and(LispE* lisp, Element* e) {
 Element* Set_i::bit_or(LispE* lisp, Element* e) {
     long d = 0;
     if (e == NULL) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             d |= a;
         }
         return lisp->provideInteger(d);
@@ -6244,7 +6244,7 @@ Element* Set_i::bit_or(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6259,7 +6259,7 @@ Element* Set_i::bit_or(LispE* lisp, Element* e) {
     long r;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6273,7 +6273,7 @@ Element* Set_i::bit_or(LispE* lisp, Element* e) {
         return res;
     }
     r = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a | r;
         res->add(d);
     }
@@ -6285,7 +6285,7 @@ Element* Set_i::bit_xor(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     long d = 0;
     if (e == NULL) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             d ^= a;
         }
         return lisp->provideInteger(d);
@@ -6294,7 +6294,7 @@ Element* Set_i::bit_xor(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6309,7 +6309,7 @@ Element* Set_i::bit_xor(LispE* lisp, Element* e) {
     long r;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6323,7 +6323,7 @@ Element* Set_i::bit_xor(LispE* lisp, Element* e) {
         return res;
     }
     r = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a ^ r;
         res->add(d);
     }
@@ -6335,7 +6335,7 @@ Element* Set_i::bit_not(LispE* lisp) {
     //Two cases either e is a number or it is a list...
     Set_i* res = lisp->provideSet_i();
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         res->add(~a);
     }
     release();
@@ -6347,7 +6347,7 @@ Element* Set_i::leftshift(LispE* lisp, Element* e) {
     long d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6361,7 +6361,7 @@ Element* Set_i::leftshift(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6377,7 +6377,7 @@ Element* Set_i::leftshift(LispE* lisp, Element* e) {
     long w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6391,7 +6391,7 @@ Element* Set_i::leftshift(LispE* lisp, Element* e) {
         return res;
     }
     w = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a << w;
         res->add(d);
     }
@@ -6404,7 +6404,7 @@ Element* Set_i::rightshift(LispE* lisp, Element* e) {
     long d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6418,7 +6418,7 @@ Element* Set_i::rightshift(LispE* lisp, Element* e) {
     Set_i* res = lisp->provideSet_i();
     if (e->type == t_seti) {
         auto nxt = ((Set_i*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_i*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6434,7 +6434,7 @@ Element* Set_i::rightshift(LispE* lisp, Element* e) {
     long w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6448,7 +6448,7 @@ Element* Set_i::rightshift(LispE* lisp, Element* e) {
         return res;
     }
     w = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a >> w;
         res->add(d);
     }
@@ -6461,7 +6461,7 @@ Element* Set_n::plus(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     double d = 0;
     if (e == NULL) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             d += a;
         }
         return lisp->provideNumber(d);
@@ -6470,7 +6470,7 @@ Element* Set_n::plus(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6484,7 +6484,7 @@ Element* Set_n::plus(LispE* lisp, Element* e) {
     }
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6497,7 +6497,7 @@ Element* Set_n::plus(LispE* lisp, Element* e) {
         return res;
     }
     double w = e->asNumber();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a + w;
         res->add(d);
     }
@@ -6510,7 +6510,7 @@ Element* Set_n::minus(LispE* lisp, Element* e) {
     double d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6524,7 +6524,7 @@ Element* Set_n::minus(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6538,7 +6538,7 @@ Element* Set_n::minus(LispE* lisp, Element* e) {
     }
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6551,7 +6551,7 @@ Element* Set_n::minus(LispE* lisp, Element* e) {
         return res;
     }
     double w = e->asNumber();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a - w;
         res->add(d);
     }
@@ -6563,7 +6563,7 @@ Element* Set_n::multiply(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     double d = 1;
     if (e == NULL) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             d *= a;
         }
         return lisp->provideNumber(d);
@@ -6572,7 +6572,7 @@ Element* Set_n::multiply(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6586,7 +6586,7 @@ Element* Set_n::multiply(LispE* lisp, Element* e) {
     }
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6599,7 +6599,7 @@ Element* Set_n::multiply(LispE* lisp, Element* e) {
         return res;
     }
     double w = e->asNumber();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a * w;
         res->add(d);
     }
@@ -6612,7 +6612,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
     double d = 0;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6629,7 +6629,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6649,7 +6649,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
     double w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6672,7 +6672,7 @@ Element* Set_n::divide(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     }
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a / w;
         res->add(d);
     }
@@ -6686,7 +6686,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
     if (e == NULL) {
         bool first = true;
         long d = 0;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6705,7 +6705,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6725,7 +6725,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
     long w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6748,7 +6748,7 @@ Element* Set_n::mod(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     }
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = (long)a % w;
         res->add(d);
     }
@@ -6762,7 +6762,7 @@ Element* Set_n::power(LispE* lisp, Element* e) {
     double d = 1;
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d = a;
                 first = false;
@@ -6776,7 +6776,7 @@ Element* Set_n::power(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6791,7 +6791,7 @@ Element* Set_n::power(LispE* lisp, Element* e) {
     double w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6810,7 +6810,7 @@ Element* Set_n::power(LispE* lisp, Element* e) {
         throw new Error("Error: division by zero");
     }
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = pow(a, w);
         res->add(d);
     }
@@ -6824,7 +6824,7 @@ Element* Set_n::bit_and_not(LispE* lisp, Element* e) {
     double64 r(0);
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d.v = a;
                 first = false;
@@ -6840,7 +6840,7 @@ Element* Set_n::bit_and_not(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6857,7 +6857,7 @@ Element* Set_n::bit_and_not(LispE* lisp, Element* e) {
 
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6872,7 +6872,7 @@ Element* Set_n::bit_and_not(LispE* lisp, Element* e) {
         return res;
     }
     r.v = e->asNumber();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d.v = a;
         d.bits &= ~r.bits;
         res->add(d.v);
@@ -6887,7 +6887,7 @@ Element* Set_n::bit_and(LispE* lisp, Element* e) {
     double64 r(0);
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d.v = a;
                 first = false;
@@ -6903,7 +6903,7 @@ Element* Set_n::bit_and(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6920,7 +6920,7 @@ Element* Set_n::bit_and(LispE* lisp, Element* e) {
 
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6935,7 +6935,7 @@ Element* Set_n::bit_and(LispE* lisp, Element* e) {
         return res;
     }
     r.v = e->asNumber();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d.v = a;
         d.bits &= r.bits;
         res->add(d.v);
@@ -6950,7 +6950,7 @@ Element* Set_n::bit_or(LispE* lisp, Element* e) {
     double64 r(0);
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d.v = a;
                 first = false;
@@ -6966,7 +6966,7 @@ Element* Set_n::bit_or(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -6983,7 +6983,7 @@ Element* Set_n::bit_or(LispE* lisp, Element* e) {
 
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -6998,7 +6998,7 @@ Element* Set_n::bit_or(LispE* lisp, Element* e) {
         return res;
     }
     r.v = e->asNumber();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d.v = a;
         d.bits |= r.bits;
         res->add(d.v);
@@ -7013,7 +7013,7 @@ Element* Set_n::bit_xor(LispE* lisp, Element* e) {
     double64 r(0);
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d.v = a;
                 first = false;
@@ -7029,7 +7029,7 @@ Element* Set_n::bit_xor(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -7046,7 +7046,7 @@ Element* Set_n::bit_xor(LispE* lisp, Element* e) {
 
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -7061,7 +7061,7 @@ Element* Set_n::bit_xor(LispE* lisp, Element* e) {
         return res;
     }
     r.v = e->asNumber();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d.v = a;
         d.bits ^= r.bits;
         res->add(d.v);
@@ -7075,7 +7075,7 @@ Element* Set_n::bit_not(LispE* lisp) {
     double64 d(0);
     Set_n* res = lisp->provideSet_n();
 
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d.v = a;
         d.bits = ~d.bits;
         res->add(d.v);
@@ -7089,7 +7089,7 @@ Element* Set_n::leftshift(LispE* lisp, Element* e) {
     double64 d(0);
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d.v = a;
                 first = false;
@@ -7103,7 +7103,7 @@ Element* Set_n::leftshift(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -7119,7 +7119,7 @@ Element* Set_n::leftshift(LispE* lisp, Element* e) {
     long w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -7134,7 +7134,7 @@ Element* Set_n::leftshift(LispE* lisp, Element* e) {
         return res;
     }
     w = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d.v = a;
         d.bits <<= w;
         res->add(d.v);
@@ -7148,7 +7148,7 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
     double64 d(0);
     if (e == NULL) {
         bool first = true;
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (first) {
                 d.v = a;
                 first = false;
@@ -7162,7 +7162,7 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
     Set_n* res = lisp->provideSet_n();
     if (e->type == t_setn) {
         auto nxt = ((Set_n*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_n*)e)->ensemble.end()) {
                 release();
                 return res;
@@ -7178,7 +7178,7 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
     long w;
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size()) {
                 release();
                 return res;
@@ -7193,7 +7193,7 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
         return res;
     }
     w = e->asInteger();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d.v = a;
         d.bits >>= w;
         res->add(d.v);
@@ -11034,7 +11034,7 @@ Element* List::evall_sum(LispE* lisp) {
         case t_seti: {
             long v = 0;
             Set_i* lst = (Set_i*)first_element;
-            for (auto& a: lst->ensemble)
+            for (const auto& a: lst->ensemble)
                 v += a;
             first_element->release();
             return lisp->provideInteger(v);
@@ -11042,7 +11042,7 @@ Element* List::evall_sum(LispE* lisp) {
         case t_setn: {
             double v = 0;
             Set_n* lst = (Set_n*)first_element;
-            for (auto& a: lst->ensemble)
+            for (const auto& a: lst->ensemble)
                 v += a;
             first_element->release();
             return lisp->provideNumber(v);
@@ -11096,7 +11096,7 @@ Element* List::evall_product(LispE* lisp) {
         case t_seti: {
             long v = 1;
             Set_i* lst = (Set_i*)first_element;
-            for (auto& a: lst->ensemble)
+            for (const auto& a: lst->ensemble)
                 v *= a;
             first_element->release();
             return lisp->provideInteger(v);
@@ -11104,7 +11104,7 @@ Element* List::evall_product(LispE* lisp) {
         case t_setn: {
             double v = 1;
             Set_n* lst = (Set_n*)first_element;
-            for (auto& a: lst->ensemble)
+            for (const auto& a: lst->ensemble)
                 v *= a;
             first_element->release();
             return lisp->provideNumber(v);

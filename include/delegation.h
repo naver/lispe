@@ -224,7 +224,7 @@ public:
     }
     
     void forceClean() {
-        for (auto& e: force_clean) {
+        for (const auto& e: force_clean) {
             if (e != NULL)
                 e->clean();
         }
@@ -591,7 +591,7 @@ public:
         method_pool[label][sublabel].push_back(e);
         
         try {
-            for (auto& a: data_descendant.at(sublabel))
+            for (const auto& a: data_descendant.at(sublabel))
                 method_pool[label][a].push_back(e);
         }
         catch (...) {}

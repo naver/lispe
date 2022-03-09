@@ -136,7 +136,7 @@ public:
     }
     
     ~Ontology() {
-        for (auto& a : indexes)
+        for (const auto& a : indexes)
             a.second->decrement();
     }
     

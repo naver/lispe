@@ -3447,30 +3447,22 @@ long jag_editor::splitline(wstring& l, long linenumber, vector<wstring>& subs) {
 
     wstring code;
     UWCHAR c;
-    long j;
 
     for (long i = 0; i < l.size(); i++) {
-        c = getonewchar(l, i);
-        concat_to_wstring(code, c);
-        if (special_characters.c_is_emojicomp(c))
-            continue;
-
-        if (c == 9) {//tab position
-            sz += (8 - (sz%8))%8;
-            sz--;
-        }
+        if (special_characters.store_emoji(l, code, i))
+            sz++;
         else {
-            if (ckjchar(c)) //double space on screen
-                sz++;
-            else { //emoji with combination
-                if (special_characters.c_is_emoji(c)) {
-                    j = i + 1;
-                    c = getonewchar(l, j);
-                    sz++; //double space on screen
-                }
+            c = getonewchar(l, i);
+            concat_to_wstring(code, c);
+            if (c == 9) {//tab position
+                sz += (8 - (sz%8))%8;
+                sz--;
+            }
+            else {
+                if (ckjchar(c)) //double space on screen
+                    sz++;
             }
         }
-
         sz++;
         if (sz >= col_size) {
             subs.push_back(code);
@@ -3489,22 +3481,21 @@ long jag_editor::taille(wstring& s) {
     long sz = s.size();
     long pref = prefixego() + 1;
     long pos = pref;
+    UWCHAR c;
     for (long i = 0; i < sz; i++) {
-        if (special_characters.c_is_emojicomp(s[i]))
-            continue;
-
-        if (special_characters.c_is_emoji(s[i])) {
+        if (special_characters.scan_emoji(s, i))
             pos += 2;
-            continue;
+        else {
+            c = getonewchar(s, i);
+            if (ckjchar(c)) {
+                pos += 2;
+            }
+            else {
+                if (c == 9) //tab position
+                    pos += (8 - (pos%8))%8;
+                pos++;
+            }
         }
-
-        if (ckjchar(s[i])) {
-            pos += 2;
-            continue;
-        }
-        if (s[i] == 9) //tab position
-            pos += (8 - (pos%8))%8;
-        pos++;
     }
     return (pos-pref);
 }
@@ -3513,19 +3504,12 @@ long jag_editor::sizestring(wstring& s) {
     long sz = s.size();
     long szstr = 0;
     for (long i = 0; i < sz; i++) {
-        if (special_characters.c_is_emojicomp(s[i]))
-            continue;
+        if (!special_characters.scan_emoji(s, i)) {
+            getonewchar(s, i);
+        }
         szstr++;
     }
     return szstr;
-}
-
-void jag_editor::cleanlongemoji(wstring& s, wstring& cleaned, long p) {
-    long i = 0;
-    while (i < p) {
-        cleaned += s[i++];
-        while (special_characters.c_is_emojicomp(s[i])) {i++;}
-    }
 }
 
 long jag_editor::size_upto(wstring& s, long p) {
@@ -3533,28 +3517,25 @@ long jag_editor::size_upto(wstring& s, long p) {
     long pos = pref;
     UWCHAR c;
     for (long i = 0; i < p; i++) {
-        c = getonewchar(s, i);
-        if (special_characters.c_is_emojicomp(c))
-            continue;
-
-        if (special_characters.c_is_emoji(c)) {
+        if (special_characters.scan_emoji(s, i))
             pos += 2;
-            continue;
+        else {
+            c = getonewchar(s, i);
+            if (ckjchar(c)) {
+                pos += 2;
+            }
+            else {
+                if (c == 9) //tab position
+                    pos += (8 - (pos%8))%8;
+                pos++;
+            }
         }
-
-        if (ckjchar(c)) {
-            pos += 2;
-            continue;
-        }
-        if (c == 9) //tab position
-            pos += (8 - (pos%8))%8;
-        pos++;
     }
     return (pos-pref);
 }
 
 
-    //The deletion of a character is different if it is an emoji...
+//The deletion of a character is different if it is an emoji...
 long jag_editor::deleteachar(wstring& l, bool last, long pins) {
     if (l == L"")
         return pins;
@@ -3567,9 +3548,19 @@ long jag_editor::deleteachar(wstring& l, bool last, long pins) {
 
     if (last) {
         while (mx) {
-            while (special_characters.c_is_emojicomp(l.back())) {
-                l.pop_back();
-                pins--;
+            if (special_characters.c_is_emojicomp(l.back())) {
+                long sz = l.size() - 2;
+                long i = sz;
+                while (sz >= 0 && !special_characters.scan_emoji(l, i)) {
+                    sz--;
+                    i = sz;
+                }
+                if (sz >= 0) {
+                    pins -= i - sz;
+                    l.erase(i, sz - i + 1);
+                }
+                else
+                    l.pop_back();                    
             }
             mx--;
         }
@@ -3578,10 +3569,15 @@ long jag_editor::deleteachar(wstring& l, bool last, long pins) {
     else {
         long nb = 0;
         long i = pins;
+        long j;
         while (mx) {
-            if (i < l.size() && special_characters.c_is_emoji(l[i++])) {
-                while (i < l.size() && special_characters.c_is_emojicomp(l[i++])) nb++;
+            j = i;
+            if (special_characters.scan_emoji(l, j)) {
+                nb += j - i;
+                i = j;
             }
+            else
+                i++;
             nb++;
             mx--;
         }
@@ -3591,29 +3587,32 @@ long jag_editor::deleteachar(wstring& l, bool last, long pins) {
 }
 
 void jag_editor::forwardemoji() {
-    if (special_characters.c_is_emoji(line[posinstring])) {
-        posinstring++;
-        long sz = line.size();
-        while (posinstring < sz && special_characters.c_is_emojicomp(line[posinstring]))
-            posinstring++;
-    }
-    else
-        posinstring++;
+    special_characters.scan_emoji(line, posinstring);
+    posinstring++;
 }
 
 void jag_editor::backwardemoji() {
     posinstring--;
-    long i = 0;
-    if (posinstring < i)
+    if (posinstring < 0)
         return;
-
-    i = posinstring;
-    if (special_characters.c_is_emojicomp(line[i])) {
-        i--;
-        while (i > 0 && special_characters.c_is_emojicomp(line[i]))
-            i--;
-        if (i >= 0 && special_characters.c_is_emoji(line[i]))
-            posinstring = i;
+    
+    long p = 0;
+    for (long i = 0; i < line.size(); i++) {
+        p = i;
+        if (!special_characters.scan_emoji(line, p)) {
+            getonewchar(line, p);
+            if (p >= posinstring) {
+                posinstring = i;
+                return;
+            }
+        }
+        else {
+            if (p >= posinstring) {
+                posinstring = i;
+                return;
+            }
+        }
+        i = p;
     }
 }
 

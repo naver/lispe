@@ -650,7 +650,7 @@ Element* Ontology::find(LispE* lisp, Concept* c) {
     if (c->ontologie != this)
         throw new Error("Error: this concept does not belong to this ontology");
     u_ustring w;
-    for (auto& a: indexes) {
+    for (const auto& a: indexes) {
         if (c->equal(a.second)) {
             w = a.first;
             return lisp->provideString(w);
@@ -674,7 +674,7 @@ Element* Ontology::loop(LispE* lisp, short label, List* code) {
     lisp->recording(null_, label);
     Element* element;
     long sz = code->liste.size();
-    for (auto& a : indexes) {
+    for (const auto& a : indexes) {
         element = a.second;
         lisp->replacingvalue(element, label);
         e = null_;

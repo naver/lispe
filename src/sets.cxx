@@ -247,7 +247,7 @@ Element* Set_s::minimum(LispE* lisp) {
         return null_;
     u_ustring w;
     bool first = true;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             w = a;
             first = false;
@@ -265,7 +265,7 @@ Element* Set_s::maximum(LispE* lisp) {
         return null_;
     u_ustring w;
     bool first = true;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             w = a;
             first = false;
@@ -284,7 +284,7 @@ Element* Set_s::minmax(LispE* lisp) {
     u_ustring v_min;
     u_ustring v_max;
     bool first = true;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             v_min = a;
             v_max = a;
@@ -308,7 +308,7 @@ void Set_s::flatten(LispE* lisp, List* l) {
     if (ensemble.empty())
         return;
     u_ustring k;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         k = a;
         l->append(lisp->provideString(k));
     }
@@ -353,7 +353,7 @@ Element* Set_s::thekeys(LispE* lisp) {
     if (ensemble.empty())
         return keys;
     u_ustring k;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         k = a;
         keys->append(lisp->provideString(k));
     }
@@ -365,7 +365,7 @@ Element* Set_s::thevalues(LispE* lisp) {
     if (ensemble.empty())
         return keys;
     u_ustring k;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         k = a;
         keys->append(lisp->provideString(k));
     }
@@ -434,7 +434,7 @@ Element* Set_s::list_and(LispE* lisp, Element* value) {
         throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
     
     Set_s* s = lisp->provideSet_s();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         exchange_value.content = a;
         if (value->check_element(lisp, &exchange_value))
             s->add(a);
@@ -533,7 +533,7 @@ Element* Set_s::search_reverse(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_s::protected_index(LispE* lisp, long i) {
     if (i >= 0 && i < ensemble.size()) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!i) {
                 exchange_value.content = a;
                 return lisp->provideString(exchange_value.content);
@@ -546,7 +546,7 @@ Element* Set_s::protected_index(LispE* lisp, long i) {
 
 Element* Set_s::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < ensemble.size()) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!i) {
                 exchange_value.content = a;
                 return lisp->provideString(exchange_value.content);
@@ -558,7 +558,7 @@ Element* Set_s::value_on_index(LispE* lisp, long i) {
 }
 
 Element* Set_s::value_from_index(LispE* lisp, long i) {
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         if (!i) {
             exchange_value.content = a;
             return lisp->provideString(exchange_value.content);
@@ -606,7 +606,7 @@ Element* Set_s::join_in_list(LispE* lisp, u_ustring& sep) {
         sep = U",";
     u_ustring str;
     u_ustring beg;
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         str += beg;
         beg = sep;
         str += a;
@@ -626,7 +626,7 @@ Element* Set_s::plus(LispE* lisp, Element* e) {
     //Two cases either e is a string or it is a list...
     u_ustring d;
     if (e == NULL) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             d += a;
         }
         return lisp->provideString(d);
@@ -634,7 +634,7 @@ Element* Set_s::plus(LispE* lisp, Element* e) {
     Set_s* res = lisp->provideSet_s();
     if (e->type == t_sets) {
         auto nxt = ((Set_s*)e)->ensemble.begin();
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (nxt == ((Set_s*)e)->ensemble.end())
                 return res;
             d = a + *nxt;
@@ -646,7 +646,7 @@ Element* Set_s::plus(LispE* lisp, Element* e) {
     }
     if (e->isList()) {
         long i = 0;
-        for (auto& a : ensemble) {
+        for (const auto& a : ensemble) {
             if (i == e->size())
                 return res;
             d = a + e->index(i)->asUString(lisp);
@@ -657,7 +657,7 @@ Element* Set_s::plus(LispE* lisp, Element* e) {
         return res;
     }
     u_ustring w = e->asUString(lisp);
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         d = a + w;
         res->add(d);
     }
@@ -667,7 +667,7 @@ Element* Set_s::plus(LispE* lisp, Element* e) {
 
 Element* Set_s::asList(LispE* lisp, List* l) {
     u_ustring v;
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         v = a;
         l->append(lisp->provideString(v));
     }
@@ -701,7 +701,7 @@ Element* Set_i::list_and(LispE* lisp, Element* value) {
         throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
     
     Set_i* s = lisp->provideSet_i();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         exchange_value.content = a;
         if (value->check_element(lisp, &exchange_value))
             s->add(a);
@@ -795,7 +795,7 @@ Element* Set_i::list_xor(LispE* lisp, Element* value) {
 }
 
 Element* Set_i::asList(LispE* lisp, List* l) {
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         l->append(lisp->provideInteger(a));
     }
     return l;
@@ -820,7 +820,7 @@ Element* Set_i::minimum(LispE* lisp) {
         return null_;
     long w = 0;
     bool first = true;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             w = a;
             first = false;
@@ -838,7 +838,7 @@ Element* Set_i::maximum(LispE* lisp) {
         return null_;
     long w = 0;
     bool first = true;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             w = a;
             first = false;
@@ -858,7 +858,7 @@ Element* Set_i::minmax(LispE* lisp) {
     long v_max = 0;
     bool first = true;
     
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             v_min = a;
             v_max = a;
@@ -881,7 +881,7 @@ Element* Set_i::minmax(LispE* lisp) {
 void Set_i::flatten(LispE* lisp, List* l) {
     if (ensemble.empty())
         return;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         l->append(lisp->provideInteger(a));
     }
 }
@@ -914,7 +914,7 @@ Element* Set_i::thekeys(LispE* lisp) {
     Numbers* keys = lisp->provideNumbers();
     if (ensemble.empty())
         return keys;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         keys->append(lisp->provideInteger(a));
     }
     return keys;
@@ -924,7 +924,7 @@ Element* Set_i::thevalues(LispE* lisp) {
     Numbers* keys = lisp->provideNumbers();
     if (ensemble.empty())
         return keys;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         keys->append(lisp->provideInteger(a));
     }
     return keys;
@@ -970,7 +970,7 @@ Element* Set_i::search_reverse(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_i::protected_index(LispE* lisp, long i) {
     if (i >= 0 && i < ensemble.size()) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!i) {
                 return lisp->provideInteger(a);
             }
@@ -982,7 +982,7 @@ Element* Set_i::protected_index(LispE* lisp, long i) {
 
 Element* Set_i::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < ensemble.size()) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!i) {
                 return lisp->provideInteger(a);
             }
@@ -993,7 +993,7 @@ Element* Set_i::value_on_index(LispE* lisp, long i) {
 }
 
 Element* Set_i::value_from_index(LispE* lisp, long i) {
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         if (!i) {
             return lisp->provideInteger(a);
         }
@@ -1021,7 +1021,7 @@ Element* Set_i::join_in_list(LispE* lisp, u_ustring& sep) {
         sep = U",";
     u_ustring str;
     u_ustring beg;
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         str += beg;
         beg = sep;
         str += convertToUString(a);
@@ -1056,7 +1056,7 @@ Element* Set_n::minimum(LispE* lisp) {
         return null_;
     double w = 0;
     bool first = true;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             w = a;
             first = false;
@@ -1074,7 +1074,7 @@ Element* Set_n::maximum(LispE* lisp) {
         return null_;
     double w = 0;
     bool first = true;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             w = a;
             first = false;
@@ -1094,7 +1094,7 @@ Element* Set_n::minmax(LispE* lisp) {
     double v_max = 0;
     bool first = true;
     
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         if (first) {
             v_min = a;
             v_max = a;
@@ -1117,7 +1117,7 @@ Element* Set_n::minmax(LispE* lisp) {
 void Set_n::flatten(LispE* lisp, List* l) {
     if (ensemble.empty())
         return;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         l->append(lisp->provideNumber(a));
     }
 }
@@ -1150,7 +1150,7 @@ Element* Set_n::thekeys(LispE* lisp) {
     Numbers* keys = lisp->provideNumbers();
     if (ensemble.empty())
         return keys;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         keys->append(lisp->provideNumber(a));
     }
     return keys;
@@ -1160,7 +1160,7 @@ Element* Set_n::thevalues(LispE* lisp) {
     Numbers* keys = lisp->provideNumbers();
     if (ensemble.empty())
         return keys;
-    for (auto& a : ensemble) {
+    for (const auto& a : ensemble) {
         keys->append(lisp->provideNumber(a));
     }
     return keys;
@@ -1227,7 +1227,7 @@ Element* Set_n::list_and(LispE* lisp, Element* value) {
         throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
     
     Set_n* s = lisp->provideSet_n();
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         exchange_value.content = a;
         if (value->check_element(lisp, &exchange_value))
             s->add(a);
@@ -1326,7 +1326,7 @@ Element* Set_n::search_reverse(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_n::protected_index(LispE* lisp, long i) {
     if (i >= 0 && i < ensemble.size()) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!i) {
                 return lisp->provideNumber(a);
             }
@@ -1338,7 +1338,7 @@ Element* Set_n::protected_index(LispE* lisp, long i) {
 
 Element* Set_n::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < ensemble.size()) {
-        for (auto& a: ensemble) {
+        for (const auto& a: ensemble) {
             if (!i) {
                 return lisp->provideNumber(a);
             }
@@ -1349,7 +1349,7 @@ Element* Set_n::value_on_index(LispE* lisp, long i) {
 }
 
 Element* Set_n::value_from_index(LispE* lisp, long i) {
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         if (!i) {
             return lisp->provideNumber(a);
         }
@@ -1377,7 +1377,7 @@ Element* Set_n::join_in_list(LispE* lisp, u_ustring& sep) {
         sep = U",";
     u_ustring str;
     u_ustring beg;
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         str += beg;
         beg = sep;
         str += convertToUString(a);
@@ -1394,7 +1394,7 @@ bool Set_n::egal(Element* e) {
 }
 
 Element* Set_n::asList(LispE* lisp, List* l) {
-    for (auto& a: ensemble) {
+    for (const auto& a: ensemble) {
         l->append(lisp->provideNumber(a));
     }
     return l;
@@ -1416,7 +1416,7 @@ Element* Set::minimum(LispE* lisp) {
         return null_;
     Element* e = null_;
     bool first = true;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (first) {
             e = a.second;
             first = false;
@@ -1434,7 +1434,7 @@ Element* Set::maximum(LispE* lisp) {
         return null_;
     Element* e = null_;
     bool first = true;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (first) {
             e = a.second;
             first = false;
@@ -1453,7 +1453,7 @@ Element* Set::minmax(LispE* lisp) {
     Element* em = null_;
     Element* eM = null_;
     bool first = true;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         if (first) {
             em = a.second;
             eM = a.second;
@@ -1477,7 +1477,7 @@ Element* Set::minmax(LispE* lisp) {
 void Set::flatten(LispE* lisp, List* l) {
     if (dictionary.empty())
         return;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         l->append(a.second);
     }
 }
@@ -1488,7 +1488,7 @@ Element* Set::loop(LispE* lisp, short label, List* code) {
     Element* element;
     lisp->recording(null_, label);
     long sz = code->liste.size();
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         element = a.second;
         lisp->replacingvalue(element, label);
         _releasing(e);
@@ -1511,7 +1511,7 @@ Element* Set::thekeys(LispE* lisp) {
     if (dictionary.empty())
         return keys;
     u_ustring k;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         k = a.first;
         keys->append(lisp->provideString(k));
     }
@@ -1522,7 +1522,7 @@ Element* Set::thevalues(LispE* lisp) {
     List* keys = lisp->provideList();
     if (dictionary.empty())
         return keys;
-    for (auto& a : dictionary) {
+    for (const auto& a : dictionary) {
         keys->append(a.second->copying(false));
     }
     return keys;
@@ -1597,7 +1597,7 @@ Element* Set::list_and(LispE* lisp, Element* value) {
         throw new Error("Error: Can only apply '&&&' to strings, lists or sets");
     
     Set* s = lisp->provideSet();
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         if (value->check_element(lisp, a.second)) {
             s->dictionary[a.first] = a.second;
             a.second->increment();
@@ -1699,7 +1699,7 @@ Element* Set::search_reverse(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set::protected_index(LispE* lisp, long i) {
     if (i >= 0 && i < dictionary.size()) {
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!i) {
                 return a.second;
             }
@@ -1711,7 +1711,7 @@ Element* Set::protected_index(LispE* lisp, long i) {
 
 Element* Set::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < dictionary.size()) {
-        for (auto& a: dictionary) {
+        for (const auto& a: dictionary) {
             if (!i) {
                 return a.second;
             }
@@ -1722,7 +1722,7 @@ Element* Set::value_on_index(LispE* lisp, long i) {
 }
 
 Element* Set::value_from_index(LispE* lisp, long i) {
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         if (!i) {
             return a.second;
         }
@@ -1767,7 +1767,7 @@ Element* Set::join_in_list(LispE* lisp, u_ustring& sep) {
         sep = U",";
     u_ustring str;
     u_ustring beg;
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         str += beg;
         beg = sep;
         str += a.first;
@@ -1784,7 +1784,7 @@ bool Set::egal(Element* e) {
 }
 
 Element* Set::asList(LispE* lisp, List* l) {
-    for (auto& a: dictionary) {
+    for (const auto& a: dictionary) {
         l->append(a.second->copying(false));
     }
     return l;
@@ -1828,7 +1828,7 @@ void Setpool::decrement() {
     
     status--;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->set_pool.push_back(this);
@@ -1841,7 +1841,7 @@ void Setpool::decrementstatus(uint16_t nb) {
     
     status-=nb;
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->set_pool.push_back(this);
@@ -1850,7 +1850,7 @@ void Setpool::decrementstatus(uint16_t nb) {
 
 void Setpool::release() {
     if (!status) {
-        for (auto& a : dictionary)
+        for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
         lisp->set_pool.push_back(this);
