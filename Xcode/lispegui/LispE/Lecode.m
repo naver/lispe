@@ -325,10 +325,6 @@ BOOL dark = false;
             }
         }
     }
-    else {
-        suivant.location = 0;
-        suivant.length = longueur;
-    }
         
     long* tobecolored = colorparser(txt, suivant.location, limite);
     
