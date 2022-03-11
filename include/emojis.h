@@ -1710,7 +1710,7 @@ public:
     }
     
     bool isemoji(char32_t c) {
-        return (utf32_arcs.find(c) != utf32_arcs.end());
+        return (c > 57 && utf32_arcs.find(c) != utf32_arcs.end());
     }
     
     bool isemojicomplement(char32_t c) {

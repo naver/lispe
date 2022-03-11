@@ -1044,7 +1044,7 @@ public:
 
     long sizestring(wstring& l);
 
-    long fullsize(wstring& l) {
+    inline long fullsize(wstring& l) {
         return taille(l);
     }
 
