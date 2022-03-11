@@ -3101,7 +3101,28 @@ void jag_editor::unselectlines(long from_line, long to_line, long from_pos, long
 
 
 void jag_editor::computeposition(int& p, long position) {
-    p -= (size_upto(lines[position], p) - p) + 1 + prefixe();
+    wstring s = lines[position];
+    p -= prefixe() + 1;
+    long i = 0;
+    int pos = 0;
+    UWCHAR c;
+    while (pos < p) {
+        if (special_characters.scan_emoji(s, i))
+            pos += 2;
+        else {
+            c = getonewchar(s, i);
+            if (ckjchar(c)) {
+                pos+=2;
+            }
+            else {
+                if (c == 9) //tab position
+                    pos += (8 - (pos%8))%8;
+                pos++;
+            }
+        }
+        i++;
+    }
+    p = i;
 }
 
 void jag_editor::handlemousectrl(string& mousectrl) {
