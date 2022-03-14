@@ -1072,6 +1072,19 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         current_i = i;
         c = getonechar(USTR(code), i);
         switch (c) {
+            case 27: {//if it is an escape character
+                //We might have a color definition
+                idx = i + 1;
+                if (code[idx] == '[') {
+                    //we are looking for the final 'm'
+                    while (idx < sz && code[idx] != 'm')
+                        idx++;
+
+                    if (idx != sz)
+                        i = idx;
+                }
+                break;
+            }
             case ';':
 			case '#':
                 idx = i;
