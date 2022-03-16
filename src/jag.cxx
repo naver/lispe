@@ -327,12 +327,13 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     signal(SIGWINCH, resizewindow);
 #endif
     colors.push_back(m_red); //0
-    colors.push_back(m_dore); //1
+    colors.push_back(m_ital); //1
     colors.push_back(m_blue); //2
     colors.push_back(m_gray); //3
     colors.push_back(m_green); //4
     colors.push_back(m_yellow); //5
-
+    colors.push_back(m_selectgray); //6
+    
     poscommand = 0;
     option = x_none;
     pos = 0;
@@ -402,7 +403,7 @@ void jag_editor::selectfound(long l, long r) {
     string line = convert(lsub);
 
     lsub = ln.substr(l, r-l);
-    string inter = m_selectgray;
+    string inter = colors[6];
     inter += convert(lsub);
     inter += m_current;
 
@@ -1944,10 +1945,7 @@ void jag_editor::deindentminus() {
 bool jag_editor::checkcommand(char cmd) {
     switch (cmd) {
         case 'b': //black mode
-            if (colors[2] == m_blue)
-                colors[2] = m_blueblack;
-            else
-                colors[2] = m_blue;
+            switch_darkmode();
             displaylist(poslines[0]);
             movetoline(currentline);
             movetoposition();
@@ -3014,7 +3012,7 @@ void jag_editor::displayextract(wstring& sub, long pos, long from_pos, long to_p
         wstring end = sub.substr(to_pos, sub.size());
         kbuffer += middle;
         string inter = convert(start);
-        inter += m_selectgray;
+        inter += colors[6];
         inter += convert(middle);
         inter +=  m_current;
         inter += convert(end);
@@ -3299,11 +3297,16 @@ string jag_editor::coloringline(wstring& w, long i) {
 
 
 //This is the main method that launches the terminal
-void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& args) {
+void jag_editor::launchterminal(bool darkmode, char loadedcode, vector<string>& args, vector<string>& newcolors) {
     arguments = args;
 
     if (darkmode)
-        colors[2] = m_blueblack;
+        switch_darkmode();
+
+    if (newcolors.size() != 0) {
+        colors.clear();
+        colors = newcolors;
+    }
 
     localhelp << m_red << "^c/q" << m_current << ":exit";
 

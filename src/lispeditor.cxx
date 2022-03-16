@@ -92,12 +92,22 @@ void lispe_editor::displaythehelp(long i) {
         cerr << "   \t\t\t- " << m_redbold << "var: display the content of the variable 'var'" << m_current << endl;
         cerr << "   \t\t\t- " << m_redbold << "(...): execute some lisp code" << m_current << endl << endl;
     }
-
+    
     if (!i || i == 2) {
         cerr << "   - " << m_redbold << "2. Command line mode:" << m_current << endl;
         cerr << "   \t- " << m_redbold << "help:" << m_current << " display the help" << endl;
         cerr << "   \t- " << m_redbold << "help n:" << m_current << " display one of the help sections (from 1 to 5)" << endl;
         cerr << "   \t- " << m_redbold << "cls:" << m_current << " clear screen" << endl;
+        cerr << "   \t- " << m_redbold << "colors:" << m_current << " display all possible colors in terminal" << endl;
+        cerr << "   \t- " << m_redbold << "colors attribute foreground background:" << m_current << " display one color with these values" << endl;
+        cerr << "   \t- " << m_redbold << "syntax:" << m_current << " display the selected colors for each token type in a program" << endl;
+        cerr << "   \t- " << m_redbold << "syntax no:" << m_current << " no colors" << endl;
+        cerr << "   \t- " << m_redbold << "syntax dark:" << m_current << " dark mode" << endl;
+        cerr << "   \t- " << m_redbold << "syntax full:" << m_current << " full color mode" << endl;
+        cerr << "   \t- " << m_redbold << "syntax syncolor:" << m_current << " display the '-syncolor' online command for LispE" << endl;
+        cerr << "   \t" << m_redbold << "\tExample: lispe -syncolor 0 31 49 3 0 0 0 34 49 0 90 49 0 32 49 1 91 49" << m_current << endl;
+        cerr << "   \t- " << m_redbold << "syntax type att fg bg:" << m_current << " modify the syntactic color associated with 'type'" << endl;
+        cerr << "   \t" << m_redbold << "\tExample: syntax definition 3 31 49" << m_current << endl;
         cerr << "   \t- " << m_redbold << "history:" << m_current << " display the command history" << endl;
         cerr << "   \t- " << m_redbold << "retrieve filename:" << m_current << " load the command history from a file" << endl;
         cerr << "   \t- " << m_redbold << "store filename:" << m_current << " store the command history in a file" << endl;
@@ -293,9 +303,17 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
                     add = true;
                 }
                 else {
-                    if (isegment > 0 && segments->tokens[isegment-1] == U"(") {
-                        sub += colors[5];
-                        add = true;
+                    if (isegment > 0) {
+                        if (segments->tokens[isegment-1] == U"(") {
+                            sub += colors[5];
+                            add = true;
+                        }
+                        else {
+                            if (isegment > 1 && segments->tokens[isegment-2] == U"(") {
+                                sub += colors[1];
+                                add = true;
+                            }
+                        }
                     }
                 }
                 break;
@@ -390,7 +408,8 @@ bool lispe_editor::evallocalcode(string code, bool disp) {
 }
 
 long lispe_editor::handlingcommands(long pos, bool& dsp) {
-    typedef enum {cmd_none, cmd_filename, cmd_spaces, cmd_select, cmd_edit, cmd_run, cmd_debug, cmd_cls, cmd_help, cmd_list,
+
+    typedef enum {cmd_none, cmd_filename, cmd_spaces, cmd_select, cmd_edit, cmd_run, cmd_debug, cmd_cls, cmd_help, cmd_list, cmd_syntax, cmd_colors,
         cmd_rm, cmd_history, cmd_open, cmd_create, cmd_save, cmd_exit, cmd_load_history, cmd_store_history, cmd_clear, cmd_reinit} thecommands;
 
     static bool init = false;
@@ -419,6 +438,8 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
         commands[L"exit"] = cmd_exit;
         commands[L"clear"] = cmd_clear;
         commands[L"reinit"] = cmd_reinit;
+        commands[L"colors"] = cmd_colors;
+        commands[L"syntax"] = cmd_syntax;
     }
 
     cout << endl;
@@ -778,6 +799,144 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             line = L"";
             posinstring = 0;
             return pos;
+        case cmd_syntax:
+            addcommandline(line);
+
+            if (v.size() == 1) {
+                int j;
+                cerr << endl << m_redbold << "Denomination\t" << "att\tfg\tbg" <<endl;
+                for (i = 0; i < nbdenomination; i++) {
+                    cerr << colors[i] << colordenomination[i] << ":\t";
+                    if (colordenomination[i].size() <= 6)
+                        cerr << "\t";
+                    j = 2;
+                    while (colors[i][j] != 'm') {
+                        if (colors[i][j] == ';')
+                            cerr << "\t";
+                        else
+                            cerr << colors[i][j];
+                        j++;
+                    }
+                    cerr << m_current << endl;
+                }
+                cerr << endl;
+                return pos;
+            }
+            if (v.size() == 2) {
+                if (v[1] == L"no") {
+                    colors.clear();
+                    for (i = 0; i < nbdenomination - 1; i++)
+                        colors.push_back(m_current);
+                    cerr << "no colors" << endl;
+                    return pos;
+                }
+                if (v[1] == L"full") {
+                    colors.clear();
+                    colors.push_back(m_red); //0
+                    colors.push_back(m_ital); //1
+                    colors.push_back(m_blue); //2
+                    colors.push_back(m_gray); //3
+                    colors.push_back(m_green); //4
+                    colors.push_back(m_yellow); //5
+                    colors.push_back(m_selectgray); //6
+                    cerr << "colors full" << endl;
+                    return pos;
+                }
+                if (v[1] == L"dark") {
+                    colors.clear();
+                    colors.push_back(m_red); //0
+                    colors.push_back(m_ital); //1
+                    colors.push_back(m_blue); //2
+                    colors.push_back(m_gray); //3
+                    colors.push_back(m_green); //4
+                    colors.push_back(m_yellow); //5
+                    colors.push_back(m_selectgray); //6
+                    switch_darkmode();
+                    cerr << "colors dark mode" << endl;
+                    return pos;
+                }
+                int j, nb;
+                cerr << "-syncolor ";
+                for (i = 0; i < nbdenomination; i++) {
+                    j = 2;
+                    nb = 0;
+                    while (colors[i][j] != 'm') {
+                        if (colors[i][j] == ';') {
+                            cerr << " ";
+                            nb++;
+                        }
+                        else
+                            cerr << colors[i][j];
+                        j++;
+                    }
+                    if (!nb)
+                        cerr << " 0 0 ";
+                    else
+                        if (nb == 1)
+                            cerr << " 0 ";
+                        else
+                            cerr << " ";
+                }
+                cerr << endl;
+                return pos;
+            }
+            if (v.size() >= 3) {
+                char buffer[100];
+                //the second word is the denomination
+                string s;
+                s_unicode_to_utf8(s, v[1]);
+                long att = 0, fg = 0, bg = 0;
+                for (i = 0; i < nbdenomination; i++) {
+                    if (colordenomination[i] == s) {
+                        att = convertinginteger(v[2]);
+                        if (v.size() > 3) {
+                            fg = convertinginteger(v[3]);
+                            if (v.size() > 4)
+                                bg = convertinginteger(v[4]);
+                        }
+                        if (fg != 0) {
+                            if (bg != 0)
+                                sprintf(buffer,"\033[%ld;%ld;%ldm", att, fg, bg);
+                            else
+                                sprintf(buffer,"\033[%ld;%ldm", att, fg);
+                        }
+                        else
+                            sprintf(buffer,"\033[%ldm", att);
+                        
+                        colors[i] = buffer;
+                        cout << buffer << s << " " << att << " " << fg << " " << bg << m_current << endl;
+                        return pos;
+                    }
+                }
+            }
+            
+            cerr << m_redbold << "colors takes four parameters: denomination attribute forground background" << m_current << endl;
+            return pos;
+        case cmd_colors:
+            addcommandline(line);
+            
+        {
+            char buffer[100];
+            if (v.size() == 4) {
+                long att = convertinginteger(v[1]);
+                long fg = convertinginteger(v[2]);
+                long bg = convertinginteger(v[3]);
+                sprintf(buffer,"\033[%ld;%ld;%ldm", att, fg, bg);
+                printf("%sdisplaying color%s\n",buffer, m_current);
+            }
+            else {
+                for (int att = 0; m_attr[att] != -1; att++) {
+                    for (int fg = 0; m_clfg[fg]; fg++) {
+                        for (int bg = 0; m_clbg[bg]; bg++) {
+                            sprintf(buffer,"\033[%d;%d;%dm", m_attr[att], m_clfg[fg], m_clbg[bg]);
+                            printf("%s%d,%d,%d:\t%s displaying color%s\n",m_current,m_attr[att], m_clfg[fg], m_clbg[bg], buffer, m_current);
+                        }
+                    }
+                }
+                cout << m_current;
+            }
+        }
+            return pos;
         case cmd_history:
             cerr << endl;
             if (historyfilename != "")
@@ -992,17 +1151,20 @@ void lispe_editor::clean_breakpoints(long idline) {
     movetoposition();
 }
 
-void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& args) {
+void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& args, vector<string>& newcolors) {
     Au_meta::met = &special_characters;
     clearscreen();
-
+    
     arguments = args;
 
-    if (darkmode) {
-        colors[2] = m_blueblack;
-        colors[5] = m_dark_yellow;
-    }
+    if (darkmode)
+        switch_darkmode();
 
+    if (newcolors.size() != 0) {
+        colors.clear();
+        colors = newcolors;
+    }
+    
     localhelp << m_red << "^c/q" << m_current << ":cmd line " << m_red << "^xq" << m_current << ":quit";
 
     option = x_none;
@@ -1414,9 +1576,9 @@ void displaying_current_lines(LispE* lisp, long current_file, long current_line,
 
         if (it->first == current_line) {
             if (lisp->delegation->check_breakpoints(current_file, it->first))
-                cout << m_selectgray << "[^^" << it->first << "] " << it->second << m_current;
+                cout << editor->colors[6] << "[^^" << it->first << "] " << it->second << m_current;
             else
-                cout << m_selectgray << "[" << it->first << "] " << it->second << m_current;
+                cout << editor->colors[6] << "[" << it->first << "] " << it->second << m_current;
         }
         else {
             if (lisp->delegation->check_breakpoints(current_file, it->first))
@@ -1451,7 +1613,7 @@ void display_variables(LispE* lisp, Element* instructions, lispe_editor* editor,
     for (auto& a: uniques) {
         e = a.second;
         value = lisp->getvalue(e->label());
-        if (!value->isFunction()) {
+        if (value != NULL && !value->isFunction()) {
             thevalue =  value->toString(lisp);
             if (!full && thevalue.size() > 80) {
                 thevalue = thevalue.substr(0,80);

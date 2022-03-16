@@ -77,6 +77,8 @@ class jag_editor;
 
 extern jag_editor* JAGEDITOR;
 
+const string colordenomination[] = {"string", "definition", "instruction", "quote", "comment", "call", "selection"};
+const short nbdenomination = 7;
 
 class wstring_controlled : public wstring {
 public:
@@ -1078,6 +1080,20 @@ public:
         }
     }
 
+    void switch_darkmode() {
+        if (colors[2] == m_blue) {
+            //Dark Mode Colors
+            colors[1] = m_dore;
+            colors[2] = m_blueblack;
+            colors[5] = m_dark_yellow;
+        }
+        else {
+            colors[1] = m_ital;
+            colors[2] = m_blue;
+            colors[5] = m_yellow;
+        }
+    }
+    
     void displaylist(long beg);
     virtual void displaylist(long beg, long end) {
         displaylist(beg);
@@ -1250,7 +1266,7 @@ public:
     
     //This a case of copy/paste within the editor, we need to remove the prefixes
     //This is the main method that launches the terminal
-    virtual void launchterminal(bool darkmode, char loadedcode, vector<string>& args);
+    virtual void launchterminal(bool darkmode, char loadedcode, vector<string>& args, vector<string>& newcolors);
     bool checkaction(string&, long& first, long& last, bool lsp = false);
 
     virtual void addcommandline(wstring& w) {}

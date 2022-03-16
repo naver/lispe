@@ -183,6 +183,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
 //Version avec éditeur jag intégré
 int main(int argc, char *argv[]) {
     vector<string> arguments;
+    vector<string> newcolors;
 
     const char* coloring = m_blue;
     
@@ -241,11 +242,56 @@ int main(int argc, char *argv[]) {
             cout << "    lispe -r 'rgx': "<< coloring << "Condition (posix regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
             cout << "    lispe -R 'rgx': " << coloring << "Condition (internal regular expressions) must appears right before '-p' or '-P'" << m_current << endl;
             cout << endl;
+            cout << m_red << "    -syncolor (Colors for: strings, definition, instruction, quote, comments, call), 3 digits each" << m_current << endl;
+            cout << "        -syncolor no (no colors)" << endl << endl;
+            cout << "        -syncolor att fg bg att fg bg att fg bg att fg bg att fg bg att fg bg" << endl << endl;
             cout << m_red << "    Read: 'https://github.com/naver/lispe/wiki/7.-Shell' for more information" << m_current << endl;
             cout << endl << endl;
             return -1;
         }
             
+        if (args == "-syncolor") {
+            if (i < argc) {
+                args = argv[i + 1];
+                if (args == "no") {
+                    for (long j = 0; j < nbdenomination - 1; j++)
+                        newcolors.push_back(m_current);
+                    newcolors.push_back(m_selectgray);
+                    i++;
+                    continue;
+                }
+            }
+            
+            long nb = 3*nbdenomination;
+            if ((i + nb) >= argc) {
+                cerr << "There should be: "<< nb << " values, 3 digits for each denomination: string, definition, instruction, quote, comments, call, selection" << endl;
+                exit(-1);
+            }
+            i++;
+            nb += i;
+            long col;
+            char cp = 0;
+            stringstream color;
+            color <<  "\033[";
+            while (i < nb) {
+                args = argv[i++];
+                col = convertinginteger(args);
+                color << col;
+                cp++;
+                if (cp == 3) {
+                    cp = 0;
+                    color << "m";
+                    newcolors.push_back(color.str());
+                    color.str("");
+                    color << "\033[";
+                }
+                else
+                    color << ";";
+            }
+            --i;
+            continue;
+        }
+        
         if (args == "-mg") {
             if (i >= argc - 1) {
                 cerr << "Missing code for option '-mg'" << endl;
@@ -375,7 +421,7 @@ int main(int argc, char *argv[]) {
             w = JAGEDITOR->wconvert(line);
             JAGEDITOR->addcommandline(w);
             line = "";
-            JAGEDITOR->launchterminal(darkmode, 4, arguments);
+            JAGEDITOR->launchterminal(darkmode, 4, arguments, newcolors);
             return 0;
         }
 
@@ -399,7 +445,7 @@ int main(int argc, char *argv[]) {
             w = JAGEDITOR->wconvert(line);
             JAGEDITOR->addcommandline(w);
             line = "";
-            JAGEDITOR->launchterminal(darkmode, 3, arguments);
+            JAGEDITOR->launchterminal(darkmode, 3, arguments, newcolors);
             return 0;
         }
         
@@ -420,6 +466,6 @@ int main(int argc, char *argv[]) {
     
     JAGEDITOR = new lispe_editor();
     JAGEDITOR->setnoprefix();
-    JAGEDITOR->launchterminal(darkmode, 2, arguments);
+    JAGEDITOR->launchterminal(darkmode, 2, arguments, newcolors);
 }
 #endif

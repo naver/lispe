@@ -780,7 +780,7 @@ public:
             cout << "&:display on: " << m_red;
     }
     
-    void launchterminal(bool darkmode, char noinit, vector<string>& theargs);
+    void launchterminal(bool darkmode, char noinit, vector<string>& theargs, vector<string>& newcolors);
     
     void setcode(string& code, bool clean) {
         LispSetCode(code);

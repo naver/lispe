@@ -50,37 +50,38 @@ const char m_gray[] = {0,0};
 const char m_lightgray[] = {0,0};
 const char m_selectgray[] = {0,0};
 #else
-const char m_current[] = {27, '[', '0', 'm', 0};
-const char m_redital[] = {27, '[', '3', ';', '3','1', ';','4','9','m',0};
-const char m_redbold[] = {27, '[', '1', ';', '3','1', ';','4','9','m',0};
-const char m_redboldblink[] = {27, '[', '5', ';', '3','1', ';','4','9','m',0};
-const char m_green[] = {27, '[', '0', ';', '3','2', ';','4','9','m',0};
-const char m_dore[] = {27, '[', '0', ';', '3','3', ';','4','9','m',0};
-const char m_dark_yellow[] = {27, '[', '0', ';', '9','3', ';','4','0','m',0};
-const char m_yellow[] = {27, '[', '1', ';', '9','1', ';','4','9','m',0};
+const char m_current[] = "\033[0m";
+const char m_redital[] = "\033[3;31;49m";
+const char m_redbold[] = "\033[1;31;49m";
+const char m_redboldblink[] = "\033[5;31;49m";
+const char m_green[] = "\033[0;32;49m";
+const char m_dore[] = "\033[0;33;49m";
+const char m_dark_yellow[] = "\033[0;93;40m";
+const char m_yellow[] = "\033[1;91;49m";
 #ifdef WIN32
-const char m_red[] = { 27, '[', '1', ';', '3','1', ';','4','9','m',0 };
-const char m_blue[] = { 27, '[', '0', ';', '3','6','m',0 };
-const char m_blueblack[] = { 27, '[', '0', ';', '3','6', ';','4','9','m',0 };
+const char m_red[] = "\033[1;31;49m";
+const char m_blue[] = "\033[0;36m";
+const char m_blueblack[] = "\033[0;36;49m";
 #else
-const char m_red[] = { 27, '[', '0', ';', '3','1', ';','4','9','m',0 };
-const char m_blue[] = {27, '[', '0', ';', '3','4', ';','4','9','m',0};
-const char m_blueblack[] = {27, '[', '0', ';', '3','6', ';','4','9','m',0};
+const char m_red[] = "\033[0;31;49m";
+const char m_blue[] = "\033[0;34;49m";
+const char m_blueblack[] = "\033[0;36;49m";
 #endif
-const char m_gray[] = {27, '[', '0', ';', '9','0', ';','4','9','m',0};
-const char m_lightgray[] = {27, '[', '0', ';', '9','0', ';','4','9','m',0};
+const char m_ital[] = "\033[3m";
+const char m_dark_function[] = "\033[0;33;40m";
 
-const char m_selectgray[] = {27, '[', '7', ';', '9','3', ';','4','0','m',0};
+const char m_gray[] = "\033[0;90;49m";
+const char m_lightgray[] = "\033[0;90;49m";
+
+const char m_selectgray[] = "\033[7;93;40m";
 #endif
-
-const string colordenomination[] = {"strings", "methods", "keywords", "functions", "comments"};
 
 //Background
 const int m_clbg[] = {40, 41, 42, 43, 44, 45, 46, 47, 49, 100, 101, 102, 103, 104, 105, 106, 107, 0};
 //Foreground
 const int m_clfg[] =  {30, 31, 32, 33, 34, 35, 36, 37, 39, 90, 91, 92, 93, 94, 95, 96, 97, 0};
 //Formatting
-const int m_attr[] = {0, 1, 2, 4, 5, 7, -1};
+const int m_attr[] = {0, 1, 2, 3, 4, 5, 7, -1};
 
 //action, moving the cursor...
 extern char m_down[];
