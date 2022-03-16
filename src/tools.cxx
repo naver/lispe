@@ -2913,7 +2913,7 @@ long convertinginteger(string& number) {
     
     uchar c = number[ipos++];
     if (number.size() == ipos)
-        return (c - 48);
+        return (c - 48)*sign;
 
     if (c == '0') {
         if (number[ipos] == 'x') {
@@ -2966,7 +2966,7 @@ long convertinginteger(wstring& number) {
     
     uchar c = number[ipos++];
     if (number.size() == ipos)
-        return (c - 48);
+        return (c - 48)*sign;
 
     if (c == '0') {
         if (number[ipos] == 'x') {
@@ -3019,7 +3019,7 @@ long convertinginteger(u_ustring& number) {
     
     uchar c = number[ipos++];
     if (number.size() == ipos)
-        return (c - 48);
+        return (c - 48)*sign;
 
     if (c == '0') {
         if (number[ipos] == 'x') {

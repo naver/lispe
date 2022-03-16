@@ -100,6 +100,7 @@ void lispe_editor::displaythehelp(long i) {
         cerr << "   \t- " << m_redbold << "cls:" << m_current << " clear screen" << endl;
         cerr << "   \t- " << m_redbold << "colors:" << m_current << " display all possible colors in terminal" << endl;
         cerr << "   \t- " << m_redbold << "colors attribute foreground background:" << m_current << " display one color with these values" << endl;
+        cerr << "   \t" << m_redbold << "\t- use -1 for attribute, foreground or background to loop on a specific color" << m_current << endl;
         cerr << "   \t- " << m_redbold << "syntax:" << m_current << " display the selected colors for each token type in a program" << endl;
         cerr << "   \t- " << m_redbold << "syntax no:" << m_current << " no colors" << endl;
         cerr << "   \t- " << m_redbold << "syntax dark:" << m_current << " dark mode" << endl;
@@ -917,26 +918,80 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             
         {
             char buffer[100];
-            if (v.size() == 4) {
-                long att = convertinginteger(v[1]);
-                long fg = convertinginteger(v[2]);
-                long bg = convertinginteger(v[3]);
-                sprintf(buffer,"\033[%ld;%ld;%ldm", att, fg, bg);
-                printf("%sdisplaying color%s\n",buffer, m_current);
+            int att = -1;
+            int fg = -1;
+            int bg = -1;
+            int e_att = 0;
+            int e_fg = 0;
+            int e_bg = 0;
+            switch (v.size()) {
+                case 4:
+                    bg = (int)convertinginteger(v[3]);
+                case 3:
+                    fg = (int)convertinginteger(v[2]);
+                    e_fg = fg;
+                case 2:
+                    att = (int)convertinginteger(v[1]);
+                    e_att = att;
             }
+            
+            if (bg != -1) {
+                for (e_bg = 0; m_clbg[e_bg]; e_bg++) {
+                    if (bg == m_clbg[e_bg]) {
+                        bg = -10;
+                        break;
+                    }
+                }
+            }
+            if (bg == -10)
+                bg = m_clbg[e_bg+1];
             else {
-                for (int att = 0; m_attr[att] != -1; att++) {
-                    for (int fg = 0; m_clfg[fg]; fg++) {
-                        for (int bg = 0; m_clbg[bg]; bg++) {
-                            sprintf(buffer,"\033[%d;%d;%dm", m_attr[att], m_clfg[fg], m_clbg[bg]);
-                            printf("%s%d,%d,%d:\t%s displaying color%s\n",m_current,m_attr[att], m_clfg[fg], m_clbg[bg], buffer, m_current);
-                        }
+                e_bg = 0;
+                bg = 0;
+            }
+
+            if (fg != -1) {
+                for (e_fg = 0; m_clfg[e_fg]; e_fg++) {
+                    if (fg == m_clfg[e_fg]) {
+                        fg = -10;
+                        break;
+                    }
+                }
+            }
+            
+            if (fg == -10)
+                fg = m_clfg[e_fg+1];
+            else {
+                e_fg = 0;
+                fg = 0;
+            }
+
+            if (att != -1) {
+                for (e_att = 0; m_attr[e_att] != -1; e_att++) {
+                    if (att == m_attr[e_att]) {
+                        att = -10;
+                        break;
+                    }
+                }
+            }
+            if (att == -10)
+                att = m_attr[e_att+1];
+            else {
+                e_att = 0;
+                att = -1;
+            }
+
+            for (int i_att = e_att; m_attr[i_att] != att; i_att++) {
+                for (int i_fg = e_fg; m_clfg[i_fg] != fg; i_fg++) {
+                    for (int i_bg = e_bg; m_clbg[i_bg] != bg; i_bg++) {
+                        sprintf(buffer,"\033[%d;%d;%dm", m_attr[i_att], m_clfg[i_fg], m_clbg[i_bg]);
+                        printf("%s%d,%d,%d:\t%s displaying color%s\n",m_current,m_attr[i_att], m_clfg[i_fg], m_clbg[i_bg], buffer, m_current);
                     }
                 }
                 cout << m_current;
             }
-        }
             return pos;
+        }
         case cmd_history:
             cerr << endl;
             if (historyfilename != "")

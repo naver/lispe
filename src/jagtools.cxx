@@ -2168,7 +2168,7 @@ long convertinginteger(string& number) {
 
     uchar c = number[ipos++];
     if (number.size() == ipos)
-        return (c - 48);
+        return (c - 48)*sign;
 
     if (c == '0' || number[ipos] == 'x') {
         ipos++;
@@ -2211,7 +2211,7 @@ long convertinginteger(u_ustring& number) {
 
     uchar c = number[ipos++];
     if (number.size() == ipos)
-        return (c - 48);
+        return (c - 48)*sign;
 
     if (c == '0' || number[ipos] == 'x') {
         ipos++;
@@ -2253,7 +2253,7 @@ long convertinginteger(wstring& number) {
 
     uchar c = number[ipos++];
     if (number.size() == ipos)
-        return (c - 48);
+        return (c - 48)*sign;
 
     if (c == '0' || number[ipos] == 'x') {
         ipos++;

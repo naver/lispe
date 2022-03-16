@@ -336,7 +336,7 @@ string display_variables(LispE* lisp, Element* instructions, bool full) {
     for (auto& a: uniques) {
         e = a.second;
         value = lisp->getvalue(e->label());
-        if (!value->isFunction()) {
+        if (value != NULL && !value->isFunction()) {
             thevalue = e->toString(lisp);
             thevalue += ":";
             thevalue +=  value->toString(lisp);
