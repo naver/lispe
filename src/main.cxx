@@ -253,6 +253,11 @@ int main(int argc, char *argv[]) {
         if (args == "-syncolor") {
             if (i < argc) {
                 args = argv[i + 1];
+                if (args == "dark") {
+                    i++;
+                    darkmode = true;
+                    continue;
+                }
                 if (args == "no") {
                     for (long j = 0; j < nbdenomination - 1; j++)
                         newcolors.push_back(m_current);
