@@ -911,7 +911,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                 }
             }
             
-            cerr << m_redbold << "colors takes four parameters: denomination attribute forground background" << m_current << endl;
+            cerr << m_redbold << "colors takes either: string, definition, instruction, quote, comment, call or selection" << m_current << endl;
             return pos;
         case cmd_colors:
             addcommandline(line);
