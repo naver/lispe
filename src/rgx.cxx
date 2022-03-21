@@ -634,7 +634,7 @@ Au_state* Au_state::build(Au_automatons* aus, long i,vector<u_ustring>& toks, ve
     
     long j;
     bool stop;
-    short count;
+    int16_t count;
     vector<u_ustring> ltoks;
     vector<aut_actions> ltypes;
     Au_state* ret = NULL;
@@ -972,7 +972,7 @@ public:
     Au_automate au;
     u_ustring strvalue;
  
-    LispERegularExpressions(u_ustring str, short l_rgx) : au(str), strvalue(str), Element(l_rgx) {}
+    LispERegularExpressions(u_ustring str, int16_t l_rgx) : au(str), strvalue(str), Element(l_rgx) {}
     
     bool verify() {
         if (au.first == NULL)
@@ -1078,7 +1078,7 @@ public:
     wregex* au;
     wstring strvalue;
  
-    LispEPosixRegularExpression(wstring str, short l_rgx) : strvalue(str), Element(l_rgx) {
+    LispEPosixRegularExpression(wstring str, int16_t l_rgx) : strvalue(str), Element(l_rgx) {
         try {
             au = new wregex(strvalue);
         }
@@ -1243,7 +1243,7 @@ typedef enum {rgx_rgx, rgx_find, rgx_findall, rgx_find_i, rgx_findall_i, rgx_spl
 class RegularExpressionConstructor : public Element {
 public:
     rgx reg;
-    short l_rgx;
+    int16_t l_rgx;
     
     RegularExpressionConstructor(LispE* lisp, rgx r) : reg(r), Element(l_lib, s_constant) {
         u_ustring wrgx = U"rgx_";

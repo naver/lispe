@@ -15,14 +15,14 @@ class LispE;
 #include "vecte.h"
 #include "mapbin.h"
 
-const short n_variables = 4;
-const short f_variables = n_variables - 1;
+const int16_t n_variables = 4;
+const int16_t f_variables = n_variables - 1;
 
 class Stackelement {
 public:
     
     binHash<Element*> variables;
-    vecte<short> names[n_variables];
+    vecte<int16_t> names[n_variables];
     Element* function;
 
     Stackelement() {
@@ -41,7 +41,7 @@ public:
         return variables.size();
     }
     
-    bool recordargument(LispE* lisp, Element* e, short label) {
+    bool recordargument(LispE* lisp, Element* e, int16_t label) {
         if (variables.check(label))
             return variables.at(label)->unify(lisp,e, false);
         
@@ -54,7 +54,7 @@ public:
         return true;
     }
     
-    bool recordingunique(Element* e, short label) {
+    bool recordingunique(Element* e, int16_t label) {
         if (variables.check(label))
             return false;
         variables[label] = e;
@@ -66,7 +66,7 @@ public:
     }
 
     void savelocal(Element* e, List* l) {
-        short label = e->label();
+        int16_t label = e->label();
         if (variables.check(label)) {
             l->append(e);
             l->append(variables.at(label));
@@ -74,7 +74,7 @@ public:
     }
 
     bool localsave(Element* e, List* l) {
-        short label = e->label();
+        int16_t label = e->label();
         if (variables.check(label)) {
             l->append(e);
             l->append(variables.at(label));
@@ -85,7 +85,7 @@ public:
 
 
     //record a function argument in the stack
-    void record_argument(Element* e, short label) {
+    void record_argument(Element* e, int16_t label) {
         variables[label] = e;
         if (e->status != s_constant) {
             e->increment();
@@ -93,7 +93,7 @@ public:
         }
     }
     
-    void recording(Element* e, short label) {
+    void recording(Element* e, int16_t label) {
         if (variables.check(label)) {
             if (variables.at(label) == e)
                 return;
@@ -120,7 +120,7 @@ public:
         }
     }
 
-    Element* recording_variable(Element* e, short label) {
+    Element* recording_variable(Element* e, int16_t label) {
         if (variables.check(label)) {
             if (variables.at(label) == e)
                 return e;
@@ -148,7 +148,7 @@ public:
         return e;
     }
 
-    void storing_variable(Element* e, short label) {
+    void storing_variable(Element* e, int16_t label) {
         if (variables.check(label)) {
             if (variables.at(label) == e)
                 return;
@@ -176,7 +176,7 @@ public:
     }
 
 
-    void replacingvalue(Element* e, short label) {
+    void replacingvalue(Element* e, int16_t label) {
         if (variables.at(label) == e)
             return;
                 
@@ -198,18 +198,18 @@ public:
         }
     }
 
-    Element* get(short label) {
+    Element* get(int16_t label) {
         return variables.search(label);
     }
     
-    void remove(short label) {
+    void remove(int16_t label) {
         if (names[label&f_variables].checkanderase(label)) {
             variables.at(label)->decrement();
         }
         variables.erase(label);
     }
 
-    void remove(short label, Element* keep) {
+    void remove(int16_t label, Element* keep) {
         if (names[label&f_variables].checkanderase(label)) {
             Element* local = variables.at(label);
             if (local == keep)
@@ -234,8 +234,8 @@ public:
     }
     
     void clear() {
-        for (short label = 0; label < n_variables; label++) {
-            for (short i = 0; i < names[label&f_variables].last; i++) {
+        for (int16_t label = 0; label < n_variables; label++) {
+            for (int16_t i = 0; i < names[label&f_variables].last; i++) {
                 variables.at(names[label&f_variables].vecteur[i])->decrement();
             }
             names[label&f_variables].clear();
@@ -246,8 +246,8 @@ public:
 
     void clear(Element* keep) {
         Element* e;
-        for (short label = 0; label < n_variables; label++) {
-            for (short i = 0; i < names[label&f_variables].last; i++) {
+        for (int16_t label = 0; label < n_variables; label++) {
+            for (int16_t i = 0; i < names[label&f_variables].last; i++) {
                 e = variables.at(names[label&f_variables].vecteur[i]);
                 if (e != keep)
                     e->decrement();
@@ -276,7 +276,7 @@ public:
         stack->variables.andnot(variables);
     }
     
-    void atoms(vector<short>& v_atoms) {
+    void atoms(vector<int16_t>& v_atoms) {
         binHash<Element*>::iterator a;
         for (a = variables.begin(); a != variables.end(); a++) {
             v_atoms.push_back(a->first);
@@ -284,8 +284,8 @@ public:
     }
     
     ~Stackelement() {
-        for (short label = 0; label < n_variables; label++) {
-            for (short i = 0; i < names[label&f_variables].last; i++)
+        for (int16_t label = 0; label < n_variables; label++) {
+            for (int16_t i = 0; i < names[label&f_variables].last; i++)
                 variables.at(names[label&f_variables].vecteur[i])->decrement();
             names[label&f_variables].clear();
         }

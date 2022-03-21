@@ -54,7 +54,7 @@ string Normalizefilename(string path);
 class lispe_editor : public jag_editor {
     Tokenizer parse;
     
-    hmap<string, short> filenames;
+    hmap<string, int16_t> filenames;
     vector<string> ifilenames;
     vector<wstring> codes;
     

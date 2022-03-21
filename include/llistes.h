@@ -22,9 +22,9 @@ public:
     Element* value;
     u_link* _next;
     u_link* _previous;
-    short status;
     uint32_t mark;
-    
+    uint64_t status;
+
     u_link(Element* v) {
         mark = 0;
         status = 0;
@@ -41,7 +41,7 @@ public:
         }
     }
 
-    void inc(long s) {
+    void inc(uint64_t s) {
         status += s;
     }
     
@@ -476,7 +476,7 @@ public:
             //if there is no cycle
             //No element in the current list is in l
             if (l.first->mark != u->mark) {
-                short status = u->status;
+                int16_t status = u->status;
                 u = l.begin();
                 while (u != NULL) {
                     u->inc(status);
@@ -516,7 +516,7 @@ public:
 
     Element* asList(LispE* lisp, List* l);
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
 
     long find_element(LispE*, Element* element_value, long idx);
     bool check_element(LispE* lisp, Element* element_value);
@@ -581,7 +581,7 @@ public:
         e->increment();
     }
 
-    short label(long i) {
+    int16_t label(long i) {
         return ((Atome*)at_e(i))->atome;
     }
     
@@ -905,8 +905,8 @@ public:
         return liste.atleast2();
     }
     
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
+    bool compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j);
+    void sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax);
     void sorting(LispE* lisp, List* comparison);
 
     void push_element(LispE* lisp, List* l);

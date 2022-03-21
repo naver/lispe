@@ -26,8 +26,8 @@
 #define debug_next 2
 #define debug_inside_function 3
 //------------------------------------------------------------
-typedef short (LispE::*checkEval)(List*, long);
-typedef short (LispE::*checkBasicEval)(Listincode*);
+typedef int16_t (LispE::*checkEval)(List*, long);
+typedef int16_t (LispE::*checkBasicEval)(Listincode*);
 //------------------------------------------------------------
 string LispVersion();
 //------------------------------------------------------------
@@ -97,7 +97,7 @@ public:
     Element* n_one;
     
     
-    std::atomic<short> nbjoined;
+    std::atomic<int16_t> nbjoined;
 
     long id_thread;
     
@@ -253,7 +253,7 @@ public:
         delegation->addtolisting(l, e);
     }
     
-    List* create_instruction(short label,
+    List* create_instruction(int16_t label,
                              Element* e = NULL,
                              Element* ee = NULL,
                              Element* eee = NULL,
@@ -262,7 +262,7 @@ public:
                              Element* eeeeee = NULL,
                              Element* eeeeeee = NULL);
 
-    List* create_local_instruction(short label,
+    List* create_local_instruction(int16_t label,
                              Element* e = NULL,
                              Element* ee = NULL,
                              Element* eee = NULL,
@@ -369,7 +369,7 @@ public:
         return delegation->activate_on_breakpoints(this, e);
     }
     
-    inline bool is_instruction(short c) {
+    inline bool is_instruction(int16_t c) {
         return delegation->is_instruction(c);
     }
     
@@ -383,19 +383,19 @@ public:
         return delegation->is_instruction(s);
     }
     
-    inline bool is_operator(short c) {
+    inline bool is_operator(int16_t c) {
         return delegation->is_operator(c);
     }
     
-    inline bool is_math_operator(short c) {
+    inline bool is_math_operator(int16_t c) {
         return delegation->is_math_operator(c);
     }
     
-    short is_atom(u_ustring& s) {
+    int16_t is_atom(u_ustring& s) {
         return delegation->is_atom(s);
     }
     
-    short is_atom(string str) {
+    int16_t is_atom(string str) {
         u_ustring s;
         s_utf8_to_unicode(s, USTR(str), str.size());
         return delegation->is_atom(s);
@@ -472,7 +472,7 @@ public:
         delegation->stop_execution = 0;
     }
     
-    inline short checkLispState() {
+    inline int16_t checkLispState() {
         return (execution_stack.last >= max_stack_size?0x200:delegation->stop_execution);
     }
         
@@ -485,42 +485,42 @@ public:
     }
     
     //0
-    inline short check_empty(List* l, long sz) {
+    inline int16_t check_empty(List* l, long sz) {
         return l_emptylist;
     }
     
     //1
-    inline short check_straight(List* l, long sz) {
+    inline int16_t check_straight(List* l, long sz) {
         return l->liste.get0();
     }
     
     //2
-    inline short check_arity(List* l, long sz) {
-        short lb = l->liste.get0();
+    inline int16_t check_arity(List* l, long sz) {
+        int16_t lb = l->liste.get0();
         if (delegation->checkArity(lb, sz))
             return lb;
         
         throw new Error(U"Error: wrong number of arguments");
     }
 
-    inline short checkState(List* l, long sz) {
+    inline int16_t checkState(List* l, long sz) {
         delegation->checkExecution();
         return (this->*checkstates[((check_arity_on_fly + 1)*bool(sz))])(l, sz);
     }
 
 
     //0
-    inline short check_basic_straight(Listincode* l) {
+    inline int16_t check_basic_straight(Listincode* l) {
         return l->liste.get0();
     }
 
     //1
-    inline short check_basic_trace(Listincode* l) {
+    inline int16_t check_basic_trace(Listincode* l) {
         trace_and_context(l);
         return l->liste.get0();
     }
 
-    inline short checkBasicState(Listincode* l) {
+    inline int16_t checkBasicState(Listincode* l) {
         delegation->checkExecution();
         return (this->*checkbasicstates[bool(trace)])(l);
     }
@@ -548,15 +548,15 @@ public:
         }
     }
 
-    inline string toString(short c) {
+    inline string toString(int16_t c) {
         return delegation->toString(c);
     }
 
-    inline wstring asString(short c) {
+    inline wstring asString(int16_t c) {
         return delegation->asString(c);
     }
 
-    inline u_ustring asUString(short c) {
+    inline u_ustring asUString(int16_t c) {
         return delegation->asUString(c);
     }
 
@@ -565,9 +565,9 @@ public:
     }
     
     inline void atomsOnStack(vector<Element*>& v_atoms) {
-        vector<short> labels;
+        vector<int16_t> labels;
         execution_stack.back()->atoms(labels);
-        for (short i = 0; i < labels.size(); i++) {
+        for (int16_t i = 0; i < labels.size(); i++) {
             if (delegation->is_atom_code(labels[i]))
                 v_atoms.push_back(delegation->provideAtom(labels[i]));
         }
@@ -669,7 +669,7 @@ public:
         if (e->isList()) {
             if (!e->size())
                 return;
-            short label = e->index(0)->label();
+            int16_t label = e->index(0)->label();
             long i = 0;
             if (label == l_key || label == l_keyn) {
                 if (*dico == NULL) {
@@ -694,7 +694,7 @@ public:
         }
     }
     
-    inline Element* recordingMethod(Element* e, short label) {
+    inline Element* recordingMethod(Element* e, int16_t label) {
         //We check if we have dictionaries in the list...
         Element* parameters = e->index(2);
         Dictionary_as_list* dico;
@@ -711,13 +711,13 @@ public:
                 parameters->change(i, dico);
             }
         }
-        short sublabel = extractlabel(e->index(2));
+        int16_t sublabel = extractlabel(e->index(2));
         if (globalDeclaration())
             return delegation->recordingMethod(NULL, e, label, sublabel);
         return delegation->recordingMethod(execution_stack.back(), e, label, sublabel);
     }
     
-    inline Element* recordingData(Element* e, short label, short ancestor) {
+    inline Element* recordingData(Element* e, int16_t label, int16_t ancestor) {
         return delegation->recordingData(e, label, ancestor);
     }
     
@@ -725,11 +725,11 @@ public:
         return delegation->checkAncestor(ancestor, label->label());
     }
     
-    inline Element* getMethod(short label, short sublabel, long i) {
+    inline Element* getMethod(int16_t label, int16_t sublabel, long i) {
         return delegation->getMethod(label, sublabel, i);
     }
         
-    inline short checkDataStructure(short label) {
+    inline int16_t checkDataStructure(int16_t label) {
         return delegation->checkDataStructure(label);
     }
 
@@ -755,7 +755,7 @@ public:
     }
 
     //We delve into the argument structure to find the first label
-    inline short extractlabel(Element* e) {
+    inline int16_t extractlabel(Element* e) {
         while (e->isList()) {
             if (!e->size())
                 return v_null;
@@ -766,15 +766,15 @@ public:
     
     Element* generate_macro(Element* code);
 
-    inline Element* recordingMacro(Element* e, short label) {
+    inline Element* recordingMacro(Element* e, int16_t label) {
         return delegation->recordingMacro(this, e, label);
     }
     
-    inline bool recordargument(Element* e, short label) {
+    inline bool recordargument(Element* e, int16_t label) {
         return execution_stack.back()->recordargument(this, e, label);
     }
     
-    inline Element* recordingunique(Element* e, short label) {
+    inline Element* recordingunique(Element* e, int16_t label) {
         if (!execution_stack.back()->recordingunique(e, label)) {
             std::wstringstream w;
             w << "Error: '" << u_to_w(delegation->code_to_string[label]) << "' has been recorded already";
@@ -783,27 +783,27 @@ public:
         return e;
     }
     
-    inline void recording(Element* e, short label) {
+    inline void recording(Element* e, int16_t label) {
         execution_stack.back()->recording(e->duplicate_constant(this), label);
     }
 
-    inline void record_argument(Element* e, short label) {
+    inline void record_argument(Element* e, int16_t label) {
         execution_stack.back()->record_argument(e, label);
     }
 
-    inline void replacingvalue(Element* e, short label) {
+    inline void replacingvalue(Element* e, int16_t label) {
         execution_stack.back()->replacingvalue(e->duplicate_constant(this), label);
     }
 
-    inline Element* recording_variable(Element* e, short label) {
+    inline Element* recording_variable(Element* e, int16_t label) {
         return execution_stack.back()->recording_variable(e->duplicate_constant(this), label);
     }
 
-    inline void storing_variable(Element* e, short label) {
+    inline void storing_variable(Element* e, int16_t label) {
         execution_stack.back()->storing_variable(e->duplicate_constant(this), label);
     }
 
-    inline void storing_global(Element* e, short label) {
+    inline void storing_global(Element* e, int16_t label) {
         execution_stack[0]->storing_variable(e->duplicate_constant(this), label);
     }
 
@@ -815,11 +815,11 @@ public:
         execution_stack[0]->storing_variable(e->duplicate_constant(this), delegation->encode(label));
     }
 
-    inline void removefromstack(short label) {
+    inline void removefromstack(int16_t label) {
         execution_stack.back()->remove(label);
     }
 
-    inline void removefromstack(short label, Element* keep) {
+    inline void removefromstack(int16_t label, Element* keep) {
         execution_stack.back()->remove(label, keep);
     }
 
@@ -857,11 +857,11 @@ public:
         return execution_stack.back()->variables.at(encode(name));
     }
 
-    inline Element* get_variable(short label) {
+    inline Element* get_variable(int16_t label) {
         return execution_stack.back()->variables.at(label);
     }
 
-    inline bool unboundAtomError(short label) {
+    inline bool unboundAtomError(int16_t label) {
         u_ustring err = U"Error: Unbound atom: '";
         err += delegation->code_to_string[label];
         err += U"'";
@@ -869,14 +869,14 @@ public:
     }
     
 
-    inline Element* getDataStructure(short label) {
+    inline Element* getDataStructure(int16_t label) {
         Element* res;
         delegation->data_pool.search(label, &res) ||
         unboundAtomError(label);
         return res;
     }
     
-    inline Element* getvalue(short label) {
+    inline Element* getvalue(int16_t label) {
         Element* res = n_null;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res);
@@ -884,7 +884,7 @@ public:
     }
 
     inline Element* get(u_ustring name) {
-        short label = encode(name);
+        int16_t label = encode(name);
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
@@ -895,7 +895,7 @@ public:
     }
 
     inline Element* get(string name) {
-        short label = encode(name);
+        int16_t label = encode(name);
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
@@ -906,7 +906,7 @@ public:
     }
 
 
-    inline Element* get(short label) {
+    inline Element* get(int16_t label) {
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
@@ -917,11 +917,11 @@ public:
         return res;
     }
     
-    inline Element* checkLabel(short label) {
+    inline Element* checkLabel(int16_t label) {
         return execution_stack.back()->get(label);
     }
 
-    inline bool checkFunctionLabel(short label) {
+    inline bool checkFunctionLabel(int16_t label) {
         return delegation->function_pool.check(label);
     }
     
@@ -966,11 +966,11 @@ public:
         }
     }
     
-    Element* provideOperator(short identifier) {
+    Element* provideOperator(int16_t identifier) {
         return delegation->provideOperator(identifier);
     }
     
-    Element* provideAtom(short identifier) {
+    Element* provideAtom(int16_t identifier) {
         return delegation->provideAtom(identifier);
     }
 
@@ -987,18 +987,18 @@ public:
            return delegation->provideAtom(identifier, threaded());
     }
     
-    void replaceAtom(u_ustring& identifier, short code) {
+    void replaceAtom(u_ustring& identifier, int16_t code) {
         delegation->replaceAtom(identifier, code, threaded());
     }
     
-    Element* provideAtomOrInstruction(short identifier) {
+    Element* provideAtomOrInstruction(int16_t identifier) {
         return delegation->provideAtomOrInstruction(identifier);
     }
     Element* provideAtomOrInstruction(string& identifier) {
         return delegation->provideAtomOrInstruction(identifier);
     }
     
-    Element* provideNonLabelAtom(short identifier) {
+    Element* provideNonLabelAtom(int16_t identifier) {
         return delegation->provideNonLabelAtom(identifier);
     }
     Element* provideCADR(u_ustring& c) {
@@ -1199,20 +1199,20 @@ public:
         }
     }
     
-    short encode(string& str) {
+    int16_t encode(string& str) {
         return delegation->encode(str);
     }
     
-    short encode(u_ustring& s) {
+    int16_t encode(u_ustring& s) {
         return delegation->encode(s);
     }
     
-    short encode(wstring& w) {
+    int16_t encode(wstring& w) {
         u_pstring s = _w_to_u(w);
         return delegation->encode(s);
     }
     
-    short encode(wchar_t c) {
+    int16_t encode(wchar_t c) {
         return delegation->encode(c);
     }
     

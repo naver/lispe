@@ -1138,7 +1138,7 @@ bool Strings::isequal(LispE* lisp, Element* value) {
 }
 //------------------------------------------------------------------------------------------
 
-Element* List::eval_pattern(LispE* lisp, short function_label) {
+Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     List* arguments = lisp->provideList();
     Element* element;
     Element* body;
@@ -1147,8 +1147,8 @@ Element* List::eval_pattern(LispE* lisp, short function_label) {
     //We calculate our values in advance, in the case of a recursive call, we must
     //use current values on the stack
     long nbarguments = liste.size()-1;
-    short ilabel = -1;
-    short sublabel = -1;
+    int16_t ilabel = -1;
+    int16_t sublabel = -1;
     char match;
 
     try {
@@ -1310,7 +1310,7 @@ long List::argumentsize(LispE* lisp, long sz) {
 void List::sameSizeNoTerminalArguments(LispE* lisp, Element* data, List* parameters) {
     Stackelement* s = lisp->providingStack(data);
     // For each of the parameters we record in the stack
-    short label;
+    int16_t label;
 
     long sz = parameters->size();
     try {
@@ -1391,7 +1391,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
         //Note that if it is a new thread creation, the body is pushed onto the stack
         //of this new thread environment...
         // For each of the parameters we record in the stack
-        short label;
+        int16_t label;
         Element* element;
         for (i = 0; i < sz; i++) {
             if (i < nbarguments)
@@ -1477,7 +1477,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
         //Note that if it is a new thread creation, the body is pushed onto the stack
         //of this new thread environment...
         // For each of the parameters we record in the stack
-        short label;
+        int16_t label;
         Element* element;
         for (i = 0; i < sz; i++) {
             if (i < nbarguments)
@@ -1553,7 +1553,7 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
 //In this case, we record in the current stack
 void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nbarguments, long defaultarguments) {
     List* l = NULL;
-    short label;
+    int16_t label;
     Element* element;
     Element* data;
     long sz = parameters->liste.size();
@@ -1843,7 +1843,7 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
     }
     
     // For each of the parameters we record in the stack
-    short label;
+    int16_t label;
     long i;
     List* call = lisp->provideList();
     Integers* labels = lisp->provideIntegers();
@@ -1972,7 +1972,7 @@ Element* List::eval_data(LispE* lisp, Element* data) {
 
 //Execution of a function as well as the shift of parameters with arguments
 Element* List::evalfunction(LispE* lisp, Element* body) {
-    short label = body->function_label();
+    int16_t label = body->function_label();
     switch(label) {
         case l_defpat:
             return eval_pattern(lisp, ((List*)body)->liste[1]->label());
@@ -2075,7 +2075,7 @@ Element* LispE::eval(string code) {
 //--------------------------------------------------------------------------------
 // The main evaluation function, the one that evaluates instructions or functions
 //--------------------------------------------------------------------------------
-bool List::eval_Boolean(LispE* lisp, short instruction) {
+bool List::eval_Boolean(LispE* lisp, int16_t instruction) {
     return (this->*lisp->delegation->evals[instruction])(lisp)->Boolean();
 }
 
@@ -2190,7 +2190,7 @@ Element* List::evall_return(LispE* lisp) {
 }
 
 Element* List::evall_and(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element = null_;
     bool test = true;
         
@@ -2316,7 +2316,7 @@ Element* List::evall_addr_(LispE* lisp) {
 
 
 Element* List::evall_root(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
 
     lisp->delegation->reset_context();
     
@@ -2345,7 +2345,7 @@ Element* List::evall_root(LispE* lisp) {
 
 
 Element* List::evall_block(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     
     //We might need to mark the last element as being terminal
     //the block might belong to an if
@@ -2366,7 +2366,7 @@ Element* List::evall_block(LispE* lisp) {
 
 
 Element* List::evall_elapse(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element = null_;
     double diff = 0;
     
@@ -2457,7 +2457,7 @@ Element* List::evall_maplist(LispE* lisp) {
     
     lisp->set_true_as_one();
     List* call = lisp->provideList();
-    short label = -1;
+    int16_t label = -1;
     void* iter = NULL;
     
     try {
@@ -2610,9 +2610,9 @@ Element* List::evall_filterlist(LispE* lisp) {
     Element* result = null_;
     
     lisp->set_true_as_one();
-    short ps = 1;
+    int16_t ps = 1;
     List* call = lisp->provideList();
-    short label = -1;
+    int16_t label = -1;
     void* iter =  NULL;
     
     try {
@@ -2764,9 +2764,9 @@ Element* List::evall_takelist(LispE* lisp) {
     Element* result = null_;
     
     lisp->set_true_as_one();
-    short ps = 1;
+    int16_t ps = 1;
     List* call = lisp->provideList();
-    short label = -1;
+    int16_t label = -1;
     void* iter = NULL;
     
     try {
@@ -2931,9 +2931,9 @@ Element* List::evall_droplist(LispE* lisp) {
     Element* result = null_;
     
     lisp->set_true_as_one();
-    short ps = 1;
+    int16_t ps = 1;
     List* call = lisp->provideList();
-    short label = -1;
+    int16_t label = -1;
     void* iter = NULL;
     
     try {
@@ -3860,8 +3860,8 @@ Element* List::reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
     
     List* call = lisp->provideList();
     lisp->set_true_as_one();
-    short arg1 = 0;
-    short arg2 = 0;
+    int16_t arg1 = 0;
+    int16_t arg2 = 0;
     Element* rarg1 = NULL;
     Element* rarg2 = NULL;
     try {
@@ -4202,8 +4202,8 @@ Element* List::backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz)
     
     List* call = lisp->provideList();
     lisp->set_true_as_one();
-    short arg1 = 0;
-    short arg2 = 0;
+    int16_t arg1 = 0;
+    int16_t arg2 = 0;
     Element* rarg1 = NULL;
     Element* rarg2 = NULL;
     try {
@@ -4712,7 +4712,7 @@ Element* List::evall_rho(LispE* lisp) {
                     res = new Shorts();
                     res->reserve(sz1);
                     if (listsize <= 1) {
-                        short v = 0;
+                        int16_t v = 0;
                         if (listsize == 1)
                             v = e->index(0)->asShort();
                         for (long i = 0; i < sz1; i++) {
@@ -5207,8 +5207,8 @@ Element* List::scan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
     lisp->set_true_as_one();
 
     try {
-        short arg1 = op->index(1)->index(0)->label();
-        short arg2 = op->index(1)->index(1)->label();
+        int16_t arg1 = op->index(1)->index(0)->label();
+        int16_t arg2 = op->index(1)->index(1)->label();
         Element* rarg1 = NULL;
         Element* rarg2 = NULL;
         
@@ -5534,8 +5534,8 @@ Element* List::backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
     lisp->set_true_as_one();
 
     try {
-        short arg1 = op->index(1)->index(0)->label();
-        short arg2 = op->index(1)->index(1)->label();
+        int16_t arg1 = op->index(1)->index(0)->label();
+        int16_t arg2 = op->index(1)->index(1)->label();
         Element* rarg1 = NULL;
         Element* rarg2 = NULL;
         
@@ -5676,12 +5676,12 @@ Element* List::evall_backscan(LispE* lisp) {
 }
 
 Element* List::evall_catch(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* element = null_;
 
     
     try {
-        for (short i = 1; i < listsize; i++) {
+        for (int16_t i = 1; i < listsize; i++) {
             element->release();
             element = liste[i]->eval(lisp);
         }
@@ -5725,7 +5725,7 @@ Element* List::evall_check(LispE* lisp) {
         return null_;
     }
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     _releasing(element);
     liste.back()->setterminal(terminal);
     for (long i = 2; i < listsize && element->type != l_return; i++) {
@@ -5777,9 +5777,9 @@ Element* List::evall_checking(LispE* lisp) {
 Element* List::evall_compose(LispE* lisp) {
     Element* values = null_;
     List* loop = (List*)liste.back();
-    short i = 4;
-    short listsize = liste.size()-1;
-    short label;
+    int16_t i = 4;
+    int16_t listsize = liste.size()-1;
+    int16_t label;
     
 	bool nxt = lisp->delegation->next_stop;
 
@@ -5817,7 +5817,7 @@ Element* List::evall_compose(LispE* lisp) {
 
 
 Element* List::evall_cond(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
@@ -6056,16 +6056,16 @@ Element* List::evall_data(LispE* lisp) {
         garbaging_values(lisp);
     }
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
 
     try {
         //We record a data structure of the form: (data (Atom x y z) (Atom x y))
-        short lab;
+        int16_t lab;
         long i = 1;
-        short ancestor = v_null;
+        int16_t ancestor = v_null;
         if (liste[1]->isAtom()) {
             ancestor = liste[1]->label();
             i = 2;
@@ -6094,7 +6094,7 @@ Element* List::evall_deflib(LispE* lisp) {
     if (liste._size() != 3)
         throw new Error("Error: wrong number of arguments");
     
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     if (label == v_null)
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
@@ -6115,7 +6115,7 @@ Element* List::evall_deflibpat(LispE* lisp) {
     if (liste._size() != 3)
         throw new Error("Error: wrong number of arguments");
     
-    short label;
+    int16_t label;
     
     //We declare a function
     label = liste[1]->label();
@@ -6130,7 +6130,7 @@ Element* List::evall_defmacro(LispE* lisp) {
     if (liste._size() != 4)
         throw new Error("Error: wrong number of arguments");
     //We declare a function
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     if (label == v_null)
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
@@ -6149,7 +6149,7 @@ Element* List::evall_defpat(LispE* lisp) {
     if (liste.size() < 4)
         throw new Error("Error: wrong number of arguments");
     
-    short label;
+    int16_t label;
     
     //We declare a function
     label = liste[1]->label();
@@ -6172,7 +6172,7 @@ Element* List::evall_defun(LispE* lisp) {
         throw new Error("Error: wrong number of arguments");
 
     //We declare a function
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     if (label == v_null)
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
@@ -6194,7 +6194,7 @@ Element* List::evall_bodies(LispE* lisp) {
     Element* function = liste[1]->eval(lisp);
     if (function->protected_index(lisp, (long)0)->type == l_defpat) {
         List* functions =  lisp->provideList();
-        short label = function->protected_index(lisp, (long)1)->label();
+        int16_t label = function->protected_index(lisp, (long)1)->label();
         try {
             for (const auto& a: lisp->delegation->method_pool.at(label)) {
                 for (const auto& b : a.second) {
@@ -6231,7 +6231,7 @@ Element* List::evall_different(LispE* lisp) {
 
 Element* List::evall_eq(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
 
     Element* second_element;
     bool test;
@@ -6346,7 +6346,7 @@ Element* List::evall_extract(LispE* lisp) {
 Element* List::evall_set_range(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
 
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     Element* value;
 
     try {
@@ -6548,7 +6548,7 @@ Element* List::evall_getchar(LispE* lisp) {
 Element* List::evall_greater(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Integers* res = NULL;
     Element* test;
 
@@ -6596,7 +6596,7 @@ Element* List::evall_greater(LispE* lisp) {
 Element* List::evall_greaterorequal(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element;
     Integers* res = NULL;
     Element* test;
@@ -6658,7 +6658,7 @@ Element* List::evall_ife(LispE* lisp) {
         return liste[2]->eval(lisp);
     }
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     liste.back()->setterminal(terminal);
     _releasing(element);
     
@@ -6694,7 +6694,7 @@ Element* List::evall_index(LispE* lisp) {
     Element* result = container;
 
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* value = null_;
     
     try {
@@ -6728,7 +6728,7 @@ Element* List::evall_index_zero(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* result = container;
 
-    short listsize = liste.size() - 1;
+    int16_t listsize = liste.size() - 1;
     Element* value;
     long i = 2;
 
@@ -6742,7 +6742,7 @@ Element* List::evall_index_zero(LispE* lisp) {
         }
         
         value = liste[i]->eval(lisp);
-        short the_type = result->type;
+        int16_t the_type = result->type;
         result = result->value_on_index(lisp, value);
         value->release();
         
@@ -6776,7 +6776,7 @@ Element* List::evall_set_at(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* result = container;
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
 	Element* value = null_;
 	Element* ix;
 
@@ -6815,7 +6815,7 @@ Element* List::evall_set_at(LispE* lisp) {
 //Infix Expressions: x op y op z op u
 Element* List::evall_infix(LispE* lisp) {
     Element* expression = liste[1]->eval(lisp);
-    short listsize = expression->size();
+    int16_t listsize = expression->size();
 
     if (expression->type != t_list || !listsize)
         return expression;
@@ -6959,7 +6959,7 @@ Element* List::evall_infix(LispE* lisp) {
 
 //Infix Expressions: x op y op z op u
 Element* Listincode::eval_infix(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize % 2)
         throw new Error("Error: Infix expression is malformed");
     
@@ -7054,7 +7054,7 @@ Element* List::evall_input(LispE* lisp) {
 Element* List::evall_insert(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
 
-    short lstsize = liste.size();
+    int16_t lstsize = liste.size();
     Element* second_element = null_;
     Element* third_element = NULL;
     List* comparison = NULL;
@@ -7127,7 +7127,7 @@ Element* List::evall_join(LispE* lisp) {
 
 
 Element* List::evall_key(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary();
@@ -7224,7 +7224,7 @@ Element* List::evall_key(LispE* lisp) {
 
 
 Element* List::evall_keyi(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_i();
@@ -7285,7 +7285,7 @@ Element* List::evall_keyi(LispE* lisp) {
 }
 
 Element* List::evall_keyn(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_n();
@@ -7344,7 +7344,7 @@ Element* List::evall_keyn(LispE* lisp) {
 }
 
 Element* List::evall_dictionary(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary();
@@ -7378,7 +7378,7 @@ Element* List::evall_dictionary(LispE* lisp) {
 
 
 Element* List::evall_dictionaryi(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_i();
@@ -7411,7 +7411,7 @@ Element* List::evall_dictionaryi(LispE* lisp) {
 }
 
 Element* List::evall_dictionaryn(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_n();
@@ -7458,7 +7458,7 @@ Element* List::evall_keys(LispE* lisp) {
 
 
 Element* List::evall_label(LispE* lisp) {
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     if (label == v_null)
         throw new Error(L"Error: Missing label for 'label'");
 
@@ -7491,7 +7491,7 @@ Element* List::evall_last(LispE* lisp) {
 }
 
 Element* List::evall_list(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1)
         return emptylist_;
 
@@ -7513,7 +7513,7 @@ Element* List::evall_list(LispE* lisp) {
 }
 
 Element* List::evall_heap(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* oper = null_;
     List* compare = NULL;
     Heap* tas = NULL;
@@ -7548,7 +7548,7 @@ Element* List::evall_heap(LispE* lisp) {
 
 
 Element* List::evall_llist(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1)
         return new LList(&lisp->delegation->mark);
 
@@ -7623,7 +7623,7 @@ Element* List::evall_to_llist(LispE* lisp) {
 }
 
 Element* List::evall_nconc(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1)
         return emptylist_;
 
@@ -7701,7 +7701,7 @@ Element* List::evall_nconc(LispE* lisp) {
 }
 
 Element* List::evall_nconcn(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     if (listsize == 1)
         return emptylist_;
 
@@ -7792,7 +7792,7 @@ Element* List::evall_lock(LispE* lisp) {
 
     ThreadLock* _lock = lisp->delegation->getlock(key);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     bool test = lisp->threaded();
     _lock->locking(test);
 
@@ -7814,7 +7814,7 @@ Element* List::evall_lock(LispE* lisp) {
 
 
 Element* List::evall_loop(LispE* lisp) {
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     if (label == v_null)
         throw new Error(L"Error: Missing label for 'loop'");
 
@@ -7839,7 +7839,7 @@ Element* List::evall_loopcount(LispE* lisp) {
     long counter;
     evalAsInteger(1, lisp, counter);
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     
     
     Element* result = null_;
@@ -7882,7 +7882,7 @@ Element* List::evall_compare(LispE* lisp) {
 Element* List::evall_lower(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element;
     Integers* res = NULL;
     Element* test;
@@ -7929,7 +7929,7 @@ Element* List::evall_lower(LispE* lisp) {
 Element* List::evall_lowerorequal(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element;
     Integers* res = NULL;
     Element* test;
@@ -8006,7 +8006,7 @@ Element* List::evall_mapping(LispE* lisp) {
 Element* List::evall_minmax(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
 
     Element* max_element = first_element;
     Element* min_element = first_element;
@@ -8059,7 +8059,7 @@ Element* List::evall_minmax(LispE* lisp) {
 
 Element* List::evall_max(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element;
 
     try {
@@ -8091,7 +8091,7 @@ Element* List::evall_max(LispE* lisp) {
 
 
 Element* List::evall_maybe(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* first_element;
 
     
@@ -8122,7 +8122,7 @@ Element* List::evall_maybe(LispE* lisp) {
 
 Element* List::evall_min(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element;
 
     try {
@@ -8164,7 +8164,7 @@ Element* List::evall_ncheck(LispE* lisp) {
     }
     
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     _releasing(element);
     
     liste.back()->setterminal(terminal);
@@ -8780,7 +8780,7 @@ Element* List::evall_strings(LispE* lisp) {
 
 
 Element* List::evall_or(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* element = null_;
     bool test = false;
     
@@ -8898,7 +8898,7 @@ Element* List::evall_prettify(LispE* lisp) {
 
 
 Element* List::evall_print(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* element = null_;
     
     string val;
@@ -8916,7 +8916,7 @@ Element* List::evall_print(LispE* lisp) {
 
 
 Element* List::evall_printerr(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* element;
     
     
@@ -8934,7 +8934,7 @@ Element* List::evall_printerr(LispE* lisp) {
 
 
 Element* List::evall_printerrln(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* element;
     
     
@@ -8954,7 +8954,7 @@ Element* List::evall_printerrln(LispE* lisp) {
 
 
 Element* List::evall_println(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* element;
     string val;
     
@@ -9228,7 +9228,7 @@ Element* List::evall_replaceall(LispE* lisp) {
 
 
 Element* List::evall_select(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element = null_;
     for (long i = 1; i < listsize && second_element == null_; i++) {
         liste[i]->setterminal(terminal);
@@ -9684,7 +9684,7 @@ Element* List::evall_while(LispE* lisp) {
     bool test = condition->Boolean();
     condition->release();
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* result = null_;
     
     try {
@@ -9720,7 +9720,7 @@ Element* List::evall_xor(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     char check = (char)element->Boolean();
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     char test = true;
     
     
@@ -9792,14 +9792,14 @@ Element* List::evall_link(LispE* lisp) {
 }
 
 Element* List::evall_zip(LispE* lisp) {
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     List* lists = lisp->provideList();
     Element* container = null_;
     Element* result = null_;
     long szl = -1;
     long i;
     long j = 0;
-    short thetype = 0;
+    int16_t thetype = 0;
 
     try {
         //We combine different lists together...
@@ -9893,7 +9893,7 @@ Element* List::evall_zipwith(LispE* lisp) {
     
     long lsz;
     long i, j = 0;
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* function = liste[1];
     
     Element* value = null_;
@@ -10052,7 +10052,7 @@ Element* List::eval_call_function(LispE* lisp) {
         Element* body = liste[0]->eval(lisp);
 
         //We also retrieve its label (which is l_defun or l_defpat or...)
-        short label = body->index(0)->label();
+        int16_t label = body->index(0)->label();
         char tr = debug_next;
         if (label == l_defun || label == l_defpat || label == l_lambda) {
             if (lisp->trace == debug_inside_function)
@@ -10083,7 +10083,7 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     if (lisp->delegation->trace_on) {
         if (lisp->trace) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
-            short label = body->index(0)->label();
+            int16_t label = body->index(0)->label();
             char tr = debug_next;
             if (label == l_defun || label == l_defpat || label == l_lambda) {
                 if (lisp->trace == debug_inside_function)
@@ -10108,7 +10108,7 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     if (lisp->threaded())
         return evalfunction(lisp, body);
     
-    short label = body->function_label();
+    int16_t label = body->function_label();
     switch(label) {
         case l_defpat:
             liste[0] = new Atomefonction(body, t_pattern);
@@ -10142,7 +10142,7 @@ Element* Listincode::eval_call_self(LispE* lisp) {
     if (lisp->delegation->trace_on) {
         if (lisp->trace) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
-            short label = body->index(0)->label();
+            int16_t label = body->index(0)->label();
             char tr = debug_next;
             if (label == l_defun || label == l_defpat || label == l_lambda) {
                 if (lisp->trace == debug_inside_function)
@@ -10167,7 +10167,7 @@ Element* Listincode::eval_call_self(LispE* lisp) {
     if (lisp->threaded())
         return evalfunction(lisp, body);
     
-    short label = body->function_label();
+    int16_t label = body->function_label();
     switch(label) {
         case l_defpat:
             liste[0] = new Atomefonction(body, t_pattern);

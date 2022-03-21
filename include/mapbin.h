@@ -45,7 +45,7 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
         table = NULL;
     }
 
-    binIter<S, Z>(Z** n, uint64_t* idx, int16_t sz, short b = 0) {
+    binIter<S, Z>(Z** n, uint64_t* idx, int16_t sz, int16_t b = 0) {
         first = 0;
         base = b;
         tsize = sz;
@@ -58,7 +58,7 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
             next();
     }
 
-    binIter<S, Z>(Z** n, uint64_t* idx, int16_t sz, uint16_t ix, uint16_t jx, short b = 0) {
+    binIter<S, Z>(Z** n, uint64_t* idx, int16_t sz, uint16_t ix, uint16_t jx, int16_t b = 0) {
         base = b;
         indexes = idx;
         table = n;
@@ -160,9 +160,9 @@ public:
     int16_t base;
     uint64_t filter;
     
-    short first;
-    short idx;
-    short nb;
+    int16_t first;
+    int16_t idx;
+    int16_t nb;
 
     binSetIter() {
         indexes = NULL;
@@ -464,7 +464,7 @@ template <class Z> class binHash {
     uint16_t tsize;
     int16_t base;
 
-    typedef binIter<short, Z> iterator;
+    typedef binIter<int16_t, Z> iterator;
 
     iterator begin(){ return iterator(table, indexes, tsize, base); }
     iterator end() {
@@ -783,7 +783,7 @@ public:
     uint16_t tsize;
     int16_t base;
 
-    typedef binIter<short, Z> iterator;
+    typedef binIter<int16_t, Z> iterator;
     
     iterator begin(){ return iterator(table, indexes, tsize, base); }
     iterator end() {

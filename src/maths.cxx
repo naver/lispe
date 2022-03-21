@@ -1044,7 +1044,7 @@ long Element::checkInteger(LispE* lisp) {
     throw new Error(s);
 }
 
-short Element::checkShort(LispE* lisp) {
+int16_t Element::checkShort(LispE* lisp) {
     wstring s = L"Error: cannot use this element in an arithmetic expression: '";
     s += asString(lisp);
     s += L"'";
@@ -5085,7 +5085,7 @@ Element* Shorts::bit_not(LispE* l) {
 Element* Shorts::bit_and(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             d &= liste[i];
         }
@@ -5121,7 +5121,7 @@ Element* Shorts::bit_and(LispE* lisp, Element* e) {
 Element* Shorts::bit_and_not(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             d &= ~liste[i];
         }
@@ -5158,7 +5158,7 @@ Element* Shorts::bit_and_not(LispE* lisp, Element* e) {
 Element* Shorts::bit_or(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             d |= liste[i];
         }
@@ -5193,7 +5193,7 @@ Element* Shorts::bit_or(LispE* lisp, Element* e) {
 Element* Shorts::bit_xor(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             d ^= liste[i];
         }
@@ -5434,7 +5434,7 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
         case t_short:
         case t_float:
         case t_integer: {
-            short v = e->asShort();
+            int16_t v = e->asShort();
             if (!v)
                 throw new Error("Error: division by zero");
             liste.divide(v);
@@ -5510,7 +5510,7 @@ Element* Shorts::plus(LispE* lisp, Element* e) {
 
 Element* Shorts::minus(LispE* lisp, Element* e) {
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             d -= liste[i];
         }
@@ -5583,7 +5583,7 @@ Element* Shorts::multiply(LispE* lisp, Element* e) {
 Element* Shorts::divide(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
                 throw new Error("Error: division by zero");
@@ -5611,7 +5611,7 @@ Element* Shorts::divide(LispE* lisp, Element* e) {
         }
         return this;
     }
-    short d = e->asShort();
+    int16_t d = e->asShort();
     if (d == 0)
         throw new Error("Error: division by zero");
     liste.divide(d);
@@ -5620,7 +5620,7 @@ Element* Shorts::divide(LispE* lisp, Element* e) {
 
 Element* Shorts::mod(LispE* lisp, Element* e) {
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             if (!liste[i])
                 throw new Error("Error: division by zero");
@@ -5692,7 +5692,7 @@ Element* Shorts::power(LispE* lisp, Element* e) {
 
 Element* Shorts::leftshift(LispE* lisp, Element* e) {
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             d <<= liste[i];
         }
@@ -5728,7 +5728,7 @@ Element* Shorts::leftshift(LispE* lisp, Element* e) {
 Element* Shorts::rightshift(LispE* lisp, Element* e) {
     //Two cases either e is a number or it is a list...
     if (e == NULL) {
-        short d = liste[0];
+        int16_t d = liste[0];
         for (long i = 1; i < size(); i++) {
             d >>= liste[i];
         }
@@ -7210,7 +7210,7 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
 Element* List::evall_bitand(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -7296,7 +7296,7 @@ Element* List::evall_bitand(LispE* lisp) {
 Element* List::evall_bitandnot(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -7381,7 +7381,7 @@ Element* List::evall_bitandnot(LispE* lisp) {
 Element* List::evall_bitor(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -7465,7 +7465,7 @@ Element* List::evall_bitor(LispE* lisp) {
 Element* List::evall_bitxor(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -7549,7 +7549,7 @@ Element* List::evall_bitxor(LispE* lisp) {
 Element* List::evall_divide(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -7634,7 +7634,7 @@ Element* List_dividen::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     first_element = first_element->copyatom(lisp, 1);
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element = null_;
     
     try {
@@ -7743,7 +7743,7 @@ Element* List_divide3::eval(LispE* lisp) {
 Element* List::evall_minus(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -7829,7 +7829,7 @@ Element* List_minusn::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     first_element = first_element->copyatom(lisp, 1);
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element = null_;
     
     try {
@@ -7935,7 +7935,7 @@ Element* List_minus3::eval(LispE* lisp) {
 Element* List::evall_mod(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -8020,7 +8020,7 @@ Element* List::evall_mod(LispE* lisp) {
 Element* List::evall_multiply(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -8049,7 +8049,7 @@ Element* List::evall_multiply(LispE* lisp) {
                     return v?lisp->provideFloat(v):zero_;
                 }
                 case t_shorts: {
-                    short v = ((Shorts*)lst)->liste.product();
+                    int16_t v = ((Shorts*)lst)->liste.product();
                     first_element->release();
                     return v?new Short(v):zero_;
                 }
@@ -8116,7 +8116,7 @@ Element* List_multiplyn::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     first_element = first_element->copyatom(lisp, 1);
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element = null_;
     
     try {
@@ -8154,7 +8154,7 @@ Element* List_multiply2::eval(LispE* lisp) {
                 return v?lisp->provideFloat(v):zero_;
             }
             case t_shorts: {
-                short v = ((Shorts*)lst)->liste.product();
+                int16_t v = ((Shorts*)lst)->liste.product();
                 first_element->release();
                 return v?new Short(v):zero_;
             }
@@ -8289,7 +8289,7 @@ Element* List::evall_listxor(LispE* lisp) {
 Element* List::evall_plus(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -8320,7 +8320,7 @@ Element* List::evall_plus(LispE* lisp) {
                     return v?lisp->provideFloat(v):zero_;
                 }
                 case t_shorts: {
-                    short v = ((Shorts*)lst)->liste.sum();
+                    int16_t v = ((Shorts*)lst)->liste.sum();
                     first_element->release();
                     return v?new Short(v):zero_;
                 }
@@ -8387,7 +8387,7 @@ Element* List_plusn::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     first_element = first_element->copyatom(lisp, 1);
     
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* second_element = null_;
     
     try {
@@ -8428,7 +8428,7 @@ Element* List_plus2::eval(LispE* lisp) {
                 return v?lisp->provideFloat(v):zero_;
             }
             case t_shorts: {
-                short v = ((Shorts*)lst)->liste.sum();
+                int16_t v = ((Shorts*)lst)->liste.sum();
                 first_element->release();
                 return v?new Short(v):zero_;
             }
@@ -8507,7 +8507,7 @@ Element* List_plus3::eval(LispE* lisp) {
 Element* List::evall_leftshift(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -8592,7 +8592,7 @@ Element* List::evall_leftshift(LispE* lisp) {
 Element* List::evall_rightshift(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -8677,7 +8677,7 @@ Element* List::evall_rightshift(LispE* lisp) {
 Element* List::evall_power(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    short listsize = liste.size();
+    int16_t listsize = liste.size();
     Element* lst = this;
     Element* second_element = null_;
     long i;
@@ -8785,9 +8785,9 @@ Element* List_power2::eval(LispE* lisp) {
 
 Element* List::evall_bitandequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -8904,9 +8904,9 @@ Element* List::evall_bitandequal(LispE* lisp) {
 
 Element* List::evall_bitandnotequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -9023,9 +9023,9 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
 
 Element* List::evall_bitorequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -9144,9 +9144,9 @@ Element* List::evall_bitorequal(LispE* lisp) {
 
 Element* List::evall_bitxorequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -9263,9 +9263,9 @@ Element* List::evall_bitxorequal(LispE* lisp) {
 
 Element* List::evall_divideequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -9382,7 +9382,7 @@ Element* List::evall_divideequal(LispE* lisp) {
 
 Element* List_divideequal_list::eval(LispE* lisp) {
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     List* exec = lisp->provideList();
@@ -9482,9 +9482,9 @@ Element* List_divideequal_list::eval(LispE* lisp) {
 }
 
 Element* List_divideequal_var::eval(LispE* lisp) {
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     listsize = liste.size();
@@ -9564,9 +9564,9 @@ Element* List_divideequal_var::eval(LispE* lisp) {
 
 Element* List::evall_leftshiftequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -9683,9 +9683,9 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
 
 Element* List::evall_minusequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -9802,7 +9802,7 @@ Element* List::evall_minusequal(LispE* lisp) {
 
 Element* List_minusequal_list::eval(LispE* lisp) {
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     List* exec = lisp->provideList();
@@ -9902,9 +9902,9 @@ Element* List_minusequal_list::eval(LispE* lisp) {
 }
 
 Element* List_minusequal_var::eval(LispE* lisp) {
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     
@@ -9985,9 +9985,9 @@ Element* List_minusequal_var::eval(LispE* lisp) {
 
 Element* List::evall_modequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -10105,9 +10105,9 @@ Element* List::evall_modequal(LispE* lisp) {
 
 Element* List::evall_multiplyequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -10224,7 +10224,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
 
 Element* List_multiplyequal_list::eval(LispE* lisp) {
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     List* exec = lisp->provideList();
@@ -10324,9 +10324,9 @@ Element* List_multiplyequal_list::eval(LispE* lisp) {
 }
 
 Element* List_multiplyequal_var::eval(LispE* lisp) {
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     listsize = liste.size();
@@ -10407,9 +10407,9 @@ Element* List_multiplyequal_var::eval(LispE* lisp) {
 
 Element* List::evall_plusequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -10532,7 +10532,7 @@ Element* List::evall_plusequal(LispE* lisp) {
 
 Element* List_plusequal_list::eval(LispE* lisp) {
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     List* exec = lisp->provideList();
@@ -10638,9 +10638,9 @@ Element* List_plusequal_list::eval(LispE* lisp) {
 }
 
 Element* List_plusequal_var::eval(LispE* lisp) {
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
 
@@ -10727,9 +10727,9 @@ Element* List_plusequal_var::eval(LispE* lisp) {
 
 Element* List::evall_rightshiftequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -10846,9 +10846,9 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
 
 Element* List::evall_powerequal(LispE* lisp) {
     List* exec = NULL;
-    short label = liste[1]->label();
+    int16_t label = liste[1]->label();
     long i;
-    short listsize;
+    int16_t listsize;
     Element* first_element = liste[1];
 
     if (label < l_final) {
@@ -10965,7 +10965,7 @@ Element* List::evall_powerequal(LispE* lisp) {
 
 Element* List::evall_powerequal2(LispE* lisp) {
     Element* first_element = liste[0];
-    short label;
+    int16_t label;
 
     try {
         first_element = liste[1]->eval(lisp)->copyatom(lisp, s_constant);
@@ -10999,7 +10999,7 @@ Element* List::evall_sum(LispE* lisp) {
             return v?lisp->provideNumber(v):zero_;
         }
         case t_shorts: {
-            short v = ((Shorts*)first_element)->liste.sum();
+            int16_t v = ((Shorts*)first_element)->liste.sum();
             first_element->release();
             return v?new Short(v):zero_;
         }
@@ -11067,7 +11067,7 @@ Element* List::evall_product(LispE* lisp) {
             return v?lisp->provideNumber(v):zero_;
         }
         case t_shorts: {
-            short v = ((Shorts*)first_element)->liste.product();
+            int16_t v = ((Shorts*)first_element)->liste.product();
             first_element->release();
             return v?new Short(v):zero_;
         }
@@ -11266,7 +11266,7 @@ long hcf_math(long x, long y) {
 class Math : public Element {
 public:
     math m;
-    short v_val;
+    int16_t v_val;
     Math(LispE* lisp, math s) : m(s), Element(l_lib) {
         //We chose val as variable name everywhere
         // we recover his code to speed up processing ...

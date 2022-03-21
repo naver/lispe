@@ -45,9 +45,9 @@ public:
     unordered_map<u_ustring, bool> operators;
     vector<vector<u_ustring> > tokenizer;
 
-    vector<vector<short> > ruleelements;
-    vector<short*> closing;
-    vector<short> action;
+    vector<vector<int16_t> > ruleelements;
+    vector<int16_t*> closing;
+    vector<int16_t> action;
 
     vector<long> stackln;
     vecte<long> stacktype;
@@ -55,7 +55,7 @@ public:
     
     UTF8_Handler* access;
 
-    short table[255];
+    int16_t table[255];
 
 
     long firstrule;
@@ -80,7 +80,7 @@ public:
         lookforquotes = false;
         lispmode = false;
 
-        for (short i=0; i< 255; i++) {
+        for (int16_t i=0; i< 255; i++) {
             table[i]=255;
         }
         
@@ -97,7 +97,7 @@ public:
     }
 
     void reset() {
-        for (short i=0; i< 255; i++) {
+        for (int16_t i=0; i< 255; i++) {
             table[i]=255;
         }
         
@@ -391,8 +391,8 @@ public:
         u_uchar brk=L']', metakey;
         u_uchar cc;
         
-        short opening;
-        short mx = 0;
+        int16_t opening;
+        int16_t mx = 0;
         
         char typebrk=xr_chardisjunction;
         bool aplus;
@@ -400,9 +400,9 @@ public:
         bool addfirstrule;
         map<u_ustring, u_ustring> metalines;
         bool initmetakey=false;
-        vector<short> e;
-        vector<short> stackopen;
-        vector<short> stackpar;
+        vector<int16_t> e;
+        vector<int16_t> stackopen;
+        vector<int16_t> stackpar;
         vector<u_ustring> rule;
 
 
@@ -436,7 +436,7 @@ public:
             opening=0;
             metakey=0;
 
-            short r=-1;
+            int16_t r=-1;
 
             //first we look for the = sign at the end of the string...
             
@@ -615,7 +615,7 @@ public:
                     case L'(':
                         if (j) {
                             bool found=false;
-                            short nb=1;
+                            int16_t nb=1;
                             k=j+1;
                             while (k<line.size()) {
                                 if (line[k]=='(')
@@ -670,7 +670,7 @@ public:
                 ruleelements[i][0] |= xr_singlebody;
             tokenizer.push_back(rule);
             if (stackpar.size()) {
-                short* clos = new short[mx+1];
+                int16_t* clos = new int16_t[mx+1];
                 for (k = 0; k < stackpar.size(); k+=2)
                     clos[stackpar[k]] = stackpar[k+1];
                 closing[closing.size()-1] = clos;
@@ -679,7 +679,7 @@ public:
         rules.clear();
     }
 
-    char check(u_ustring& label, short type, u_uchar* chr) {
+    char check(u_ustring& label, int16_t type, u_uchar* chr) {
         if (!chr[0])
             return false;
         
@@ -807,7 +807,7 @@ public:
     }
     
     void apply(u_ustring& toparse, vecte_n<u_ustring>* vstack);
-    char loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, long& itoken, short& r, long& line, long& posc);
+    char loop(u_ustring& toparse, int16_t i, u_uchar* token, u_uchar* chr, long& itoken, int16_t& r, long& line, long& posc);
 
     u_ustring next(u_ustring& w, long& pos, long& l) {
         if (pos>=w.size())

@@ -28,12 +28,12 @@
 #define waddtoken(tok, c, itok) tok[itok++] = c[0]; tok[itok] = 0
 #endif
 
-char x_tokens::loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, long& itoken, short& r, long& l, long& posc) {
+char x_tokens::loop(u_ustring& toparse, int16_t i, u_uchar* token, u_uchar* chr, long& itoken, int16_t& r, long& l, long& posc) {
     long sz;
-    short type;
+    int16_t type;
     
-    vector<short>& element = ruleelements[i];
-    short* closed = closing[i];
+    vector<int16_t>& element = ruleelements[i];
+    int16_t* closed = closing[i];
     vector<u_ustring>& rule = tokenizer[i];
 
     sz = rule.size();
@@ -47,7 +47,7 @@ char x_tokens::loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, l
             if (verif(type,xr_optional)) {
                 long ps = posc;
                 long itok =  itoken;
-                short rr = r + 1;
+                int16_t rr = r + 1;
                 if (loop(toparse, i, token, chr, itok, rr, l, ps)) {
                     if (verif(element[rr],xr_plus))//if we can loop, we try...
                         r--;
@@ -87,8 +87,8 @@ char x_tokens::loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, l
             return true;
 
         if (verif(type,xr_plus)) {
-            short nxt = 0;
-            short ni = 0;
+            int16_t nxt = 0;
+            int16_t ni = 0;
             //We then try to find the first actual character to stop at when traversing the RGX
             if (verif(type,xr_neednext)) {
                 ni=r+1;
@@ -100,7 +100,7 @@ char x_tokens::loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, l
                 }
             }
 
-            short esc_char = check(label,type,chr);
+            int16_t esc_char = check(label,type,chr);
             
             while (esc_char) {
                 if (esc_char==2) {
@@ -117,7 +117,7 @@ char x_tokens::loop(u_ustring& toparse, short i, u_uchar* token, u_uchar* chr, l
                             u_uchar cc[] = {0,0,0};
                             getnext(toparse, cc, cp);
                             bool found = true;
-                            for (short k = r+2; k < ni; k++) {
+                            for (int16_t k = r+2; k < ni; k++) {
                                 if (!check(rule[k],element[k],cc)) {
                                     found = false;
                                     break;
@@ -150,11 +150,11 @@ void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
 
     long itoken = 0;
     long line=0,i, l;
-    short r;
+    int16_t r;
     long pos=0, posc;
     long sztokenizer;
     
-    short ty;
+    int16_t ty;
     
     bool getit=false;
     char found=true;
@@ -262,7 +262,7 @@ class Rulemethod : public Element {
 public:
   x_tokens tok;
     
-    Rulemethod(LispE* lisp, short l_rule_tokenize) : Element(l_rule_tokenize) {
+    Rulemethod(LispE* lisp, int16_t l_rule_tokenize) : Element(l_rule_tokenize) {
         tok.access = lisp->handlingutf8;
     }
     
@@ -274,12 +274,12 @@ public:
 class Stringmethod : public Element {
 public:
     string_method met;
-    short v_str;
-    short v_fnd;
-    short v_rep;
-    short v_nb;
-    short v_pos;
-    short l_tokenize;
+    int16_t v_str;
+    int16_t v_fnd;
+    int16_t v_rep;
+    int16_t v_nb;
+    int16_t v_pos;
+    int16_t l_tokenize;
     
     Stringmethod(LispE* lisp, string_method s) : met(s), Element(l_lib) {
         //We know the names of variables in advance, so we might as well take advantage of it to retrieve their codes.

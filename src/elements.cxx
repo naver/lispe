@@ -47,7 +47,7 @@ Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
     max_iterator = 0;
 }
 //------------------------------------------------------------------------------------------
-short Element::function_label() {
+int16_t Element::function_label() {
     throw new Error("Error: Not a function or a data structure");
 }
 //------------------------------------------------------------------------------------------
@@ -556,7 +556,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
             return;
         }
         
-        short type = index(0)->type;
+        int16_t type = index(0)->type;
         if (type == l_lambda) {
             code += " ";
             code += toString(lisp);
@@ -871,11 +871,11 @@ Element* Element::rank(LispE* lisp, vecte<long>& positions) {
 
 //------------------------------------------------------------------------------------------
 
-Element* Element::loop(LispE* lisp, short label,  List* code) {
+Element* Element::loop(LispE* lisp, int16_t label,  List* code) {
     return null_;
 }
 
-Element* String::loop(LispE* lisp, short label, List* code) {
+Element* String::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -942,7 +942,7 @@ Element* Rankloop::next_iter_exchange(LispE* lisp, void* iter)  {
     return rank;
 }
 
-Element* Rankloop::loop(LispE* lisp, short label, List* code) {
+Element* Rankloop::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -973,7 +973,7 @@ Element* Rankloop::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
-Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
+Element* InfiniterangeNumber::loop(LispE* lisp, int16_t label, List* code) {
     if (!increment)
         throw new Error("Error: increment cannot be 0");
     long i_loop;
@@ -1011,7 +1011,7 @@ Element* InfiniterangeNumber::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
-Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
+Element* InfiniterangeInteger::loop(LispE* lisp, int16_t label, List* code) {
     if (!increment)
         throw new Error("Error: increment cannot be 0");
     
@@ -1048,7 +1048,7 @@ Element* InfiniterangeInteger::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
-Element* Infinitelist::loop(LispE* lisp, short label, List* code) {
+Element* Infinitelist::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     long sz = code->liste.size();
@@ -1071,7 +1071,7 @@ Element* Infinitelist::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
-Element* Cyclelist::loop(LispE* lisp, short label, List* code) {
+Element* Cyclelist::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -1793,7 +1793,7 @@ Element* String::less(LispE* lisp, Element* e) {
 
 Element* String::compare(LispE* lisp, Element* e) {
     u_ustring v = e->asUString(lisp);
-    short test = (content == v) + (content < v) * 2;
+    int16_t test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
@@ -1815,7 +1815,7 @@ Element* Number::less(LispE* lisp, Element* e) {
 
 Element* Number::compare(LispE* lisp, Element* e) {
     double v = e->asNumber();
-    short test = (content == v) + (content < v) * 2;
+    int16_t test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
@@ -1825,7 +1825,7 @@ Element* Float::less(LispE* lisp, Element* e) {
 
 Element* Float::compare(LispE* lisp, Element* e) {
     float v = e->asFloat();
-    short test = (content == v) + (content < v) * 2;
+    int16_t test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
@@ -1859,7 +1859,7 @@ Element* Integer::less(LispE* lisp, Element* e) {
 
 Element* Integer::compare(LispE* lisp, Element* e) {
     long v = e->asInteger();
-    short test = (content == v) + (content < v) * 2;
+    int16_t test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
@@ -1868,8 +1868,8 @@ Element* Short::less(LispE* lisp, Element* e) {
 }
 
 Element* Short::compare(LispE* lisp, Element* e) {
-    short v = e->asShort();
-    short test = (content == v) + (content < v) * 2;
+    int16_t v = e->asShort();
+    int16_t test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
@@ -1975,8 +1975,8 @@ Element* String::extraction(LispE* lisp, List* liste) {
     
     long from;
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     switch (e_from->label()) {
         case l_minus:
             e_from = liste->liste[3]->eval(lisp);
@@ -2181,8 +2181,8 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     
     long from;
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     switch (e_from->label()) {
         case l_minus:
             e_from = liste->liste[3]->eval(lisp);

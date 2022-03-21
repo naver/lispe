@@ -668,7 +668,7 @@ Element* Ontology::find(LispE* lisp, u_ustring& w) {
     }
 }
 
-Element* Ontology::loop(LispE* lisp, short label, List* code) {
+Element* Ontology::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -702,8 +702,8 @@ Element* Ontology::loop(LispE* lisp, short label, List* code) {
 class Ontologyaction : public Element {
 public:
     onto reg;
-    short l_ontology;
-    short l_concept;
+    int16_t l_ontology;
+    int16_t l_concept;
     
     
     Ontologyaction(LispE* lisp, onto r) : reg(r), Element(l_lib, s_constant) {

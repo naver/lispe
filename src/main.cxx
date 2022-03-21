@@ -92,7 +92,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
     string line_in;
     vector<string> fields;
     string blanc(" ");
-    short l;
+    int16_t l;
     long i;
     std::stringstream setq_list;
     std::stringstream setq;

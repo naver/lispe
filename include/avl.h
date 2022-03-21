@@ -330,7 +330,7 @@ public:
     wstring jsonString(LispE* lisp);
     wstring asString(LispE* lisp);
     u_ustring asUString(LispE* lisp);
-    Element* loop(LispE* lisp, short label, List* code);
+    Element* loop(LispE* lisp, int16_t label, List* code);
     bool egal(Element* e);
 };
 #endif

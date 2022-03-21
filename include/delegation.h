@@ -102,7 +102,7 @@ public:
     binHashe<u_ustring> code_to_string;
     binHashe<string> instructions;
     
-    binHash<short> data_ancestor;
+    binHash<int16_t> data_ancestor;
     binHash<Element*> function_pool;
     binHash<Element*> data_pool;
     
@@ -121,9 +121,9 @@ public:
     binSet number_types;
     
     //------------------------------------------
-    unordered_map<u_ustring, short> string_to_code;
-    unordered_map<short, vector<short> > data_descendant;
-    unordered_map<short, unordered_map<short, vector<Element*> > > method_pool;
+    unordered_map<u_ustring, int16_t> string_to_code;
+    unordered_map<int16_t, vector<int16_t> > data_descendant;
+    unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > > method_pool;
 
     unordered_map<string, bool> libraries;
     unordered_map<string, long> allfiles;
@@ -192,7 +192,7 @@ public:
     long i_current_line;
     long i_current_file;
     bool context_is_error;
-    short stop_execution;
+    int16_t stop_execution;
 
     bool next_stop;
     char add_to_listing;
@@ -240,7 +240,7 @@ public:
         lock.unlocking(tobelocked);
     }
     
-    char checkComparator(short type, short root) {
+    char checkComparator(int16_t type, int16_t root) {
         if (root == type) {
             if (operators.check(type))
                 return -1;
@@ -261,7 +261,7 @@ public:
     }
 
 
-    inline string toString(short c) {
+    inline string toString(int16_t c) {
         string s;
         if (code_to_string.check(c)) {
             u_ustring w = code_to_string.at(c);
@@ -271,19 +271,19 @@ public:
         return "nil";
     }
 
-    inline wstring asString(short c) {
+    inline wstring asString(int16_t c) {
         if (code_to_string.check(c))
             return u_to_w(code_to_string.at(c));
         return L"nil";
     }
 
-    inline u_ustring asUString(short c) {
+    inline u_ustring asUString(int16_t c) {
         if (code_to_string.check(c))
             return code_to_string.at(c);
         return U"nil";
     }
 
-    bool isNumberType(short u) {
+    bool isNumberType(int16_t u) {
         return number_types.check(u);
     }
     
@@ -313,7 +313,7 @@ public:
     
     void updatecreator();
     
-    short encode(string& str) {
+    int16_t encode(string& str) {
         u_ustring s;
         s_utf8_to_unicode(s, USTR(str), str.size());
         try {
@@ -327,7 +327,7 @@ public:
         }
     }
 
-    short encode(wstring& w) {
+    int16_t encode(wstring& w) {
         u_pstring s = _w_to_u(w);
         try {
             return string_to_code.at(s);
@@ -340,7 +340,7 @@ public:
         }
     }
 
-    short encode(u_ustring& s) {
+    int16_t encode(u_ustring& s) {
         try {
             return string_to_code.at(s);
         }
@@ -352,7 +352,7 @@ public:
         }
     }
     
-    short encode(wchar_t c) {
+    int16_t encode(wchar_t c) {
         u_ustring s;
         s = (u_uchar)c;
         try {
@@ -366,7 +366,7 @@ public:
         }
     }
 
-    short encode(u_uchar c) {
+    int16_t encode(u_uchar c) {
         u_ustring s;
         s = c;
         try {
@@ -380,7 +380,7 @@ public:
         }
     }
 
-    void replaceAtom(u_ustring& name, short code, bool tobelocked) {
+    void replaceAtom(u_ustring& name, int16_t code, bool tobelocked) {
         lock.locking(tobelocked);
         string_to_code[name] = code;
         lock.unlocking(tobelocked);
@@ -391,7 +391,7 @@ public:
         u_ustring s;
         s_utf8_to_unicode(s, USTR(w), w.size());
         try {
-            short code = string_to_code.at(s);
+            int16_t code = string_to_code.at(s);
             if (atom_pool.check(code))
                 return (lisp_code)code;
         }
@@ -400,11 +400,11 @@ public:
         return l_final;
     }
 
-    short is_atom(string& w) {
+    int16_t is_atom(string& w) {
         u_ustring s;
         s_utf8_to_unicode(s, USTR(w), w.size());
         try {
-            short code = string_to_code.at(s);
+            int16_t code = string_to_code.at(s);
             if (atom_pool.check(code))
                 return code;
         }
@@ -413,9 +413,9 @@ public:
         return -1;
     }
 
-    short is_atom(u_ustring& s) {
+    int16_t is_atom(u_ustring& s) {
         try {
-            short code = string_to_code.at(s);
+            int16_t code = string_to_code.at(s);
             if (atom_pool.check(code))
                 return code;
         }
@@ -424,9 +424,9 @@ public:
         return -1;
     }
 
-    short is_atom(wstring& w) {
+    int16_t is_atom(wstring& w) {
         try {
-            short code = string_to_code.at(_w_to_u(w));
+            int16_t code = string_to_code.at(_w_to_u(w));
             if (atom_pool.check(code))
                 return code;
         }
@@ -435,9 +435,9 @@ public:
         return -1;
     }
 
-    short is_basic_atom(wstring& w) {
+    int16_t is_basic_atom(wstring& w) {
         try {
-            short code = string_to_code.at(_w_to_u(w));
+            int16_t code = string_to_code.at(_w_to_u(w));
             if (atom_basic_pool.check(code))
                 return code;
         }
@@ -447,7 +447,7 @@ public:
     }
 
 
-    bool is_instruction(short c) {
+    bool is_instruction(int16_t c) {
         return instructions.check(c);
     }
 
@@ -469,15 +469,15 @@ public:
         }
     }
 
-    bool is_math_operator(short c) {
+    bool is_math_operator(int16_t c) {
         return math_operators.check(c);
     }
 
-    bool is_operator(short c) {
+    bool is_operator(int16_t c) {
         return operators.check(c);
     }
 
-    bool is_atom_code(short code) {
+    bool is_atom_code(int16_t code) {
         return (code > l_final && atom_pool.check(code));
     }
 
@@ -491,11 +491,11 @@ public:
         }
     }
 
-    Element* provideOperator(short code) {
+    Element* provideOperator(int16_t code) {
         return operator_pool.search(code);
     }
 
-    bool sameArity(short instruction_code, unsigned long arity) {
+    bool sameArity(int16_t instruction_code, unsigned long arity) {
         try {
             return (arities.at(instruction_code) == arity);
         }
@@ -505,7 +505,7 @@ public:
         return false;
     }
     
-    bool checkArity(short instruction_code, unsigned long sz) {
+    bool checkArity(int16_t instruction_code, unsigned long sz) {
         if (arities.check(instruction_code)) {
             sz = 1 << ((sz < 16)?sz:15);
             return ((arities.at(instruction_code)&sz) == sz);
@@ -513,7 +513,7 @@ public:
         return true;
     }
 
-    inline void set_instruction(short instruction_code, string name,  unsigned long arity, methodEval m) {
+    inline void set_instruction(int16_t instruction_code, string name,  unsigned long arity, methodEval m) {
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         evals[instruction_code] = m;
@@ -522,7 +522,7 @@ public:
         code_to_string[instruction_code] = n;
     }
 
-    inline void set_pure_instruction(short instruction_code, string name,  unsigned long arity) {
+    inline void set_pure_instruction(int16_t instruction_code, string name,  unsigned long arity) {
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         u_ustring n;
@@ -565,7 +565,7 @@ public:
         }
     }
     
-    bool recordingFunction(Element* e, short label) {
+    bool recordingFunction(Element* e, int16_t label) {
         if (function_pool.check(label))
             return false;
         
@@ -573,7 +573,7 @@ public:
         return true;
     }
     
-    inline Element* recordingMethod(Stackelement* stack, Element* e, short label, short sublabel) {
+    inline Element* recordingMethod(Stackelement* stack, Element* e, int16_t label, int16_t sublabel) {
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...
         
@@ -599,7 +599,7 @@ public:
         return e;
     }
     
-    inline Element* recordingData(Element* e, short label, short ancestor) {
+    inline Element* recordingData(Element* e, int16_t label, int16_t ancestor) {
         if (data_pool.check(label))
             throw new Error("Error: data structure has already been recorded");
         
@@ -613,11 +613,11 @@ public:
         return e;
     }
     
-    inline bool checkAncestor(Element* ancestor, short label) {
+    inline bool checkAncestor(Element* ancestor, int16_t label) {
         return (data_ancestor.check(label) && (data_ancestor.at(label) == ancestor->label()));
     }
     
-    inline Element* getMethod(short label, short sublabel, long i) {
+    inline Element* getMethod(int16_t label, int16_t sublabel, long i) {
         try {
             return method_pool.at(label).at(sublabel).at(i);
         }
@@ -626,14 +626,14 @@ public:
         }
     }
         
-    inline short checkDataStructure(short label) {
+    inline int16_t checkDataStructure(int16_t label) {
         if (data_pool.check(label))
             return label;
         return v_null;
     }
     
     //We delve into the argument structure to find the first label
-    inline short extractlabel(Element* e) {
+    inline int16_t extractlabel(Element* e) {
         while (e->isList()) {
             if (!e->size())
                 return v_null;
@@ -642,11 +642,11 @@ public:
         return checkDataStructure(e->label());
     }
     
-    inline Element* getDataStructure(short label) {
+    inline Element* getDataStructure(int16_t label) {
         return data_pool.search(label);
     }
     
-    inline Element* recordingMacro(LispE* lisp, Element* e, short label) {
+    inline Element* recordingMacro(LispE* lisp, Element* e, int16_t label) {
         if (macros.check(label))
             throw new Error("Error: This macro has already been recorded");
         
@@ -777,7 +777,7 @@ public:
         return false;
     }
     
-    Element* provideAtom(short code) {
+    Element* provideAtom(int16_t code) {
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Atome(code, code_to_string.at(code));
@@ -788,7 +788,7 @@ public:
     }
 
     Element* provideAtom(u_ustring& name) {
-        short code = encode(name);
+        int16_t code = encode(name);
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Atome(code, name);
@@ -798,7 +798,7 @@ public:
         return e;
     }
 
-    void provideAtomType(short code) {
+    void provideAtomType(int16_t code) {
         if (!atom_pool.check(code)) {
             Element* e = new Atomtype(code, code_to_string.at(code));
             e->status = s_constant;
@@ -809,7 +809,7 @@ public:
 
     Element* provideAtom(u_ustring& name, bool tobelocked) {
         lock.locking(tobelocked);
-        short code = encode(name);
+        int16_t code = encode(name);
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Atome(code, name);
@@ -820,7 +820,7 @@ public:
         return e;
     }
 
-    Element* provideAtomOrInstruction(short code) {
+    Element* provideAtomOrInstruction(int16_t code) {
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
             if (operator_pool.check(code))
@@ -838,7 +838,7 @@ public:
     }
 
     Element* provideAtomOrInstruction(string& identifier) {
-        short code = encode(identifier);
+        int16_t code = encode(identifier);
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
             if (operator_pool.check(code))
@@ -856,7 +856,7 @@ public:
     }
 
 
-    Element* provideNonLabelAtom(short code) {
+    Element* provideNonLabelAtom(int16_t code) {
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Atomnotlabel(code, code_to_string.at(code));
@@ -867,7 +867,7 @@ public:
     }
 
     Element* provideCADR(u_ustring& strvalue) {
-        short code = encode(strvalue);
+        int16_t code = encode(strvalue);
         Element* e =  atom_pool.search(code);
         if (e == NULL) {
             e = new Cadr(strvalue);

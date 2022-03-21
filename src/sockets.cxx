@@ -58,8 +58,8 @@ string Msgerror() {
 }
 
 
-static short XConvert(char* number, int nb) {
-    unsigned short v = 0;
+static int16_t XConvert(char* number, int nb) {
+    uint16_t v = 0;
     uchar c;
     for (int i = 0; i<nb; i++) {
         c = number[i];
@@ -122,7 +122,7 @@ public:
     socklen_t len;
 #endif
     
-    Socketelement(short ty) : Element(ty) {
+    Socketelement(int16_t ty) : Element(ty) {
         //Do not forget your variable initialisation
         hp = NULL;
         sock = -1;
@@ -207,7 +207,7 @@ public:
     }
     
     Element* methodRead(LispE* lisp, int socketclient) {
-        short ssz;
+        int16_t ssz;
         string res;
         SOCKET currentsock;
         if (server == true) {
@@ -540,7 +540,7 @@ public:
     }
 
     Element* Write(string act, LispE* lisp, SOCKET currentsock, string& strc) {
-        short sz;
+        int16_t sz;
         char padding[POSSIGNATURE + 1];
         
         memset(padding, '\0', POSSIGNATURE + 1);
@@ -614,13 +614,13 @@ public:
     static bool rootsocket;
 #endif
     socket_action action;
-    short type_socket;
-    short type_socket_element;
-    short id_socketClientId;
-    short id_sock;
-    short id_port;
+    int16_t type_socket;
+    int16_t type_socket_element;
+    int16_t id_socketClientId;
+    int16_t id_sock;
+    int16_t id_port;
 
-    Socket(LispE* lisp, socket_action a, short ty) : action(a), Element(ty) {
+    Socket(LispE* lisp, socket_action a, int16_t ty) : action(a), Element(ty) {
         u_ustring w = U"socket_";
         type_socket_element = lisp->encode(w);
         
@@ -824,7 +824,7 @@ bool Socket::rootsocket = false;
 
 void moduleSocket(LispE* lisp) {
     u_ustring w = U"socketmethods_";
-    short idsocket = lisp->encode(w);
+    int16_t idsocket = lisp->encode(w);
         
     lisp->extension("deflib socket_create(port nbclients (hostname))", new Socket(lisp, sock_create, idsocket));
     lisp->extension("deflib socket_connect(hostname port)", new Socket(lisp, sock_connect, idsocket));

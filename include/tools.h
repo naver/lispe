@@ -89,7 +89,7 @@ void s_split(wstring& s, wstring& splitter, vector<wstring>& strs, bool keepblan
 void s_split(string& s, string& splitter, vector<string>& vs, bool keepblanks = false);
 long getindex(unsigned char* contenu, long lg, long i);
 
-void noconvertingfloathexa(const char* s, short& l);
+void noconvertingfloathexa(const char* s, int16_t& l);
 double convertingfloathexa(const char* s, long& l);
 double convertingfloathexa(const char* s);
 double convertingfloathexa(wchar_t* s, long& l);

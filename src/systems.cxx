@@ -57,7 +57,7 @@ public:
     bool signature;
     bool open;
     
-    Stream(short idstream) : Element(idstream) {
+    Stream(int16_t idstream) : Element(idstream) {
         mode = file_open;
         signature = false;
         open = false;
@@ -378,7 +378,7 @@ public:
     Element* w;
     Element* a;
     
-    Streamoperation(LispE* lisp, file_command fc, short l_file) : fcommand(fc), Element(l_file) {
+    Streamoperation(LispE* lisp, file_command fc, int16_t l_file) : fcommand(fc), Element(l_file) {
         r = lisp->provideAtom(U"r");
         w = lisp->provideAtom(U"w");
         a = lisp->provideAtom(U"a");
@@ -509,7 +509,7 @@ public:
         type = lisp->encode(d);
     }
     
-    Dateitem(short letype) : Element(letype) {
+    Dateitem(int16_t letype) : Element(letype) {
         time(&the_time);
     }
     
@@ -645,7 +645,7 @@ public:
         return the_time;
     }
 
-    short asShort() {
+    int16_t asShort() {
         return the_time;
     }
     
@@ -703,10 +703,10 @@ class Date : public Element {
 public:
 
     tempus tmp;
-    short v_d;
-    short v_date;
+    int16_t v_d;
+    int16_t v_date;
     
-    Date(LispE* lisp, short l_date, tempus t) : tmp(t),  Element(l_date) {
+    Date(LispE* lisp, int16_t l_date, tempus t) : tmp(t),  Element(l_date) {
         u_ustring s(U"d");
         v_d = lisp->encode(s);
         s = U"adate";
@@ -715,7 +715,7 @@ public:
 
     // We recover the default values described as a list
     //in the parameters of the deflib functions (see below)
-    int extract_value(LispE* lisp, short identifier) {
+    int extract_value(LispE* lisp, int16_t identifier) {
         return (int)lisp->get_variable(identifier)->asInteger();
     }
 
@@ -893,7 +893,7 @@ public:
             chrono_value = std::chrono::high_resolution_clock::now();
     }
     
-    Chrono(LispE* lisp, short l_chrono) : Element(l_chrono) {
+    Chrono(LispE* lisp, int16_t l_chrono) : Element(l_chrono) {
         chrono_value = std::chrono::high_resolution_clock::now();
 
     }
@@ -902,7 +902,7 @@ public:
         return new Chrono(this, false);
     }
     
-    short label() {
+    int16_t label() {
         return type;
     }
     
@@ -918,7 +918,7 @@ public:
         return chrono_value.time_since_epoch().count();
     }
 
-    short asShort() {
+    int16_t asShort() {
         return chrono_value.time_since_epoch().count();
     }
 
@@ -946,10 +946,10 @@ public:
 class Command : public Element {
 public:
     systeme sys;
-    short v_name;
-    short v_path;
-    short v_cmd;
-    short v_value;
+    int16_t v_name;
+    int16_t v_path;
+    int16_t v_cmd;
+    int16_t v_value;
     
     Command(LispE* lisp, systeme s) : sys(s), Element(l_lib) {
         u_ustring nom = U"name";
@@ -1168,7 +1168,7 @@ void moduleSysteme(LispE* lisp) {
     //------------------------------------------
 
     u_ustring w = U"chrono_";
-    short identifier = lisp->encode(w);
+    int16_t identifier = lisp->encode(w);
     lisp->extension("deflib chrono ()", new Chrono(lisp, identifier));
     
     //------------------------------------------

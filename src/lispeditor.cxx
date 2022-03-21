@@ -1123,7 +1123,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                 editors_redos.erase(editors_redos.begin()+i);
 
                 //We need to resynchronize the id for each file...
-                hmap<string, short>:: iterator it;
+                hmap<string, int16_t>:: iterator it;
                 for (it = filenames.begin(); it != filenames.end(); it++) {
                     if (it->second > i)
                         --it->second;

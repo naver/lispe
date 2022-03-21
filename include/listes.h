@@ -23,9 +23,9 @@ class Matrice;
 class Atomefonction : public Element {
 public:
     Element* body;
-    short function_label;
+    int16_t function_label;
     
-    Atomefonction(Element* b, short a) : body(b), Element(a) {
+    Atomefonction(Element* b, int16_t a) : body(b), Element(a) {
         function_label = b->index(1)->label();
     }
 
@@ -35,7 +35,7 @@ public:
         return body;
     }
     
-    short label() {
+    int16_t label() {
         return function_label;
     }
 };
@@ -345,7 +345,7 @@ public:
         return item->buffer[pos+home];
     }
     
-    inline short get0() {
+    inline int16_t get0() {
         return item->buffer[home]->type;
     }
 
@@ -374,8 +374,8 @@ public:
         item->setAndQuote(home + i, v);
     }
     
-    bool compare(LispE*, List* compare, short instruction, long i, long j);
-    void sorting(LispE*, List* f, short instruction, long b, long e);
+    bool compare(LispE*, List* compare, int16_t instruction, long i, long j);
+    void sorting(LispE*, List* f, int16_t instruction, long b, long e);
     void sorting(LispE*, List* f);
     
     void operator =(LIST& z) {
@@ -537,7 +537,7 @@ public:
         liste.reserve(sz);
     }
     
-    virtual Element* loop(LispE* lisp, short label,  List* code);
+    virtual Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* multiloop(LispE* lisp);
     Element* polyloop(LispE* lisp);
     
@@ -583,7 +583,7 @@ public:
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
 
-    short label(long i) {
+    int16_t label(long i) {
         return ((Atome*)liste.item->buffer[i])->atome;
     }
     
@@ -979,7 +979,7 @@ public:
         return (liste.size());
     }
     
-    Element* eval_pattern(LispE* lisp, short function_name);
+    Element* eval_pattern(LispE* lisp, int16_t function_name);
 
     void evalthread(LispE*, List* body);
     Element* evalfunction(LispE*, Element* body);
@@ -996,11 +996,11 @@ public:
     
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
-    short label() {
+    int16_t label() {
         return (liste.is_not_empty()?t_list:v_null);
     }
 
-    short function_label() {
+    int16_t function_label() {
         return liste[0]->label();
     }
     
@@ -1424,7 +1424,7 @@ public:
     Element* evall_debug_function(LispE* lisp);
 #endif
     
-    bool eval_Boolean(LispE* lisp, short instruction);
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
 
     inline Element* evalt_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
@@ -1499,9 +1499,9 @@ class Listkleene : public List {
 public:
     Element* argument;
     Element* variable;
-    short action;
+    int16_t action;
     
-    Listkleene(Element* l, Element* v, short a) : action(a), argument(l), variable(v) {}
+    Listkleene(Element* l, Element* v, int16_t a) : action(a), argument(l), variable(v) {}
     
     bool unify_kleene(LispE* lisp, Element* value, Element* current, long& i, long& r, bool record);
 };
@@ -1530,7 +1530,7 @@ public:
     bool isList() {
         return false;
     }
-    short label() {
+    int16_t label() {
         switch (liste[0]->type) {
             case l_sets:
                 return t_sets;
@@ -1548,9 +1548,9 @@ public:
 
 class Listargumentlabel : public List {
 public:
-    short ilabel;
+    int16_t ilabel;
     
-    Listargumentlabel(List* l, short lab) : ilabel(lab), List(l, 0) {}
+    Listargumentlabel(List* l, int16_t lab) : ilabel(lab), List(l, 0) {}
     
     bool unify(LispE* lisp, Element* value, bool record);
 };
@@ -1961,7 +1961,7 @@ public:
         return true;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -2194,7 +2194,7 @@ public:
         
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
-    short label() {
+    int16_t label() {
         return (liste.empty()?t_floats:v_null);
     }
 
@@ -2423,7 +2423,7 @@ public:
         return true;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -2655,7 +2655,7 @@ public:
         
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
-    short label() {
+    int16_t label() {
         return (liste.empty()?t_numbers:v_null);
     }
 
@@ -2810,7 +2810,7 @@ class Shorts : public Element {
 public:
     
     Constshort exchange_value;
-    vecte_a<short> liste;
+    vecte_a<int16_t> liste;
     
     Shorts() : Element(t_shorts), exchange_value(0) {}
     Shorts(uint16_t s) : Element(t_shorts, s), exchange_value(0) {}
@@ -2869,7 +2869,7 @@ public:
         return true;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -3106,7 +3106,7 @@ public:
         
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
-    short label() {
+    int16_t label() {
         return (liste.empty()?t_integers:v_null);
     }
 
@@ -3277,7 +3277,7 @@ public:
         return true;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -3514,7 +3514,7 @@ public:
         
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
-    short label() {
+    int16_t label() {
         return (liste.empty()?t_integers:v_null);
     }
 
@@ -3729,7 +3729,7 @@ public:
 
     Element* check_member(LispE*, Element* the_set);
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     inline float val(long i, long j) {
         return ((Floats*)liste[i])->liste[j];
@@ -3908,7 +3908,7 @@ public:
 
     Element* check_member(LispE*, Element* the_set);
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     inline double val(long i, long j) {
         return ((Numbers*)liste[i])->liste[j];
@@ -4093,13 +4093,13 @@ public:
     
     long nbelements() {
         long nb = 1;
-        for (short i = 0; i < shape.size(); i++)
+        for (int16_t i = 0; i < shape.size(); i++)
             nb*=shape[i];
         return nb;
     }
     
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
@@ -4367,13 +4367,13 @@ public:
     
     long nbelements() {
         long nb = 1;
-        for (short i = 0; i < shape.size(); i++)
+        for (int16_t i = 0; i < shape.size(); i++)
             nb*=shape[i];
         return nb;
     }
     
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
@@ -4648,7 +4648,7 @@ public:
         return true;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -4898,7 +4898,7 @@ public:
         
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
-    short label() {
+    int16_t label() {
         return (liste.empty()?t_strings:v_null);
     }
 
@@ -5123,7 +5123,7 @@ public:
         return r;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
 };
 
 

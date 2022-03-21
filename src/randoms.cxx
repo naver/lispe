@@ -71,12 +71,12 @@ double localrandom(long mx) {
 class Aleatoire : public Element {
 public:
     aleatoire rnd;
-    short v_nb;
-    short v_alpha;
-    short v_beta;
-    short v_liste;
-    short v_initial;
-    short v_inter;
+    int16_t v_nb;
+    int16_t v_alpha;
+    int16_t v_beta;
+    int16_t v_liste;
+    int16_t v_initial;
+    int16_t v_inter;
     
     Aleatoire(LispE* lisp, aleatoire r) : rnd(r), Element(l_lib) {
         u_ustring nom(U"nb");
@@ -129,7 +129,7 @@ public:
         switch (valuevect->type) {
             case  t_shorts: {
                 Shorts* liste = new Shorts();
-                short vlispe;
+                int16_t vlispe;
                 for (i = 0; i < nb; i++) {
                     v = d(gen);
                     vlispe = ((Shorts*)valuevect)->liste[v];

@@ -367,13 +367,13 @@ Element* Pair::cdr(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------------
-inline bool LIST::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
+inline bool LIST::compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j) {
     comparison->in_quote(1, item->buffer[i]);
     comparison->in_quote(2, item->buffer[j]);
     return comparison->eval_Boolean(lisp, instruction);
 }
 
-void LIST::sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
+void LIST::sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax) {
     //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
     //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
     //(sort '< '(20 12 15 13 19 17 14))
@@ -739,7 +739,7 @@ Element* List::rank(LispE* lisp, vecte<long>& positions) {
     if (!checkShape(0, shape))
         throw new Error("Error: unregular matrix: some sub-lists have different sizes");
     
-    short sz = positions.size();
+    int16_t sz = positions.size();
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
 
@@ -751,7 +751,7 @@ Element* List::rank(LispE* lisp, vecte<long>& positions) {
     return res;
 }
 
-Element* LList::loop(LispE* lisp, short label, List* code) {
+Element* LList::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -775,7 +775,7 @@ Element* LList::loop(LispE* lisp, short label, List* code) {
     return e;
 }
 
-Element* List::loop(LispE* lisp, short label, List* code) {
+Element* List::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -809,7 +809,7 @@ Element* List::multiloop(LispE* lisp) {
     long indexe = 0;
     long nbvars = liste[1]->size();
     
-    short label;
+    int16_t label;
     
     try {
         for (var = 0; var < nbvars; var++) {
@@ -868,7 +868,7 @@ Element* List::polyloop(LispE* lisp) {
     long nbvars = liste[1]->size();
     unsigned long nb = -1;
     
-    short label;
+    int16_t label;
     
     try {
         for (var = 0; var < nbvars; var++) {
@@ -1673,8 +1673,8 @@ Element* List::extraction(LispE* lisp, List* l) {
 
     long from = 0;
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     switch (e_from->label()) {
         case l_minus:
             e_from = l->liste[3]->eval(lisp);
@@ -1874,8 +1874,8 @@ Element* LList::extraction(LispE* lisp, List* l) {
     
     long from = 0;
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     switch (e_from->label()) {
         case l_minus:
             e_from = l->liste[3]->eval(lisp);
@@ -2090,8 +2090,8 @@ Element* List::replace_in(LispE* lisp, List* l) {
     long upto;
 
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     try {
         switch (e_from->label()) {
             case l_minus:
@@ -2325,8 +2325,8 @@ Element* LList::replace_in(LispE* lisp, List* l) {
     long upto;
 
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     long sz = size();
     try {
         switch (e_from->label()) {
@@ -2687,13 +2687,13 @@ template<> Element* vecte_a<long>::provide(LispE* lisp, long v) {
 }
 */
 
-template <class Z> bool vecte_a<Z>::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
+template <class Z> bool vecte_a<Z>::compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j) {
     comparison->liste[1]->setvalue(items->buffer[i]);
     comparison->liste[2]->setvalue(items->buffer[j]);
     return comparison->eval_Boolean(lisp, instruction);
 }
 
-template <class Z>void vecte_a<Z>::values_sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
+template <class Z>void vecte_a<Z>::values_sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax) {
     //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
     //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
     //(sort '< '(20 12 15 13 19 17 14))
@@ -2769,13 +2769,13 @@ template <class Z>void vecte_a<Z>::values_sorting(LispE* lisp, List* comparison,
 
 //--------------------------------------------------------------------------------
 
-template <class Z> bool vecte_n<Z>::compare(LispE* lisp, List* comparison, short instruction, long i, long j) {
+template <class Z> bool vecte_n<Z>::compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j) {
     comparison->liste[1]->setvalue(items->buffer[i]);
     comparison->liste[2]->setvalue(items->buffer[j]);
     return comparison->eval_Boolean(lisp, instruction);
 }
 
-template <class Z> void vecte_n<Z>::values_sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax) {
+template <class Z> void vecte_n<Z>::values_sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax) {
     //(setq s (sort '< (shuffle (cons 5 (range 1 99999 1)))))
     //(sort '< '(28 60 10 38 80 34 8 22 78 68 85 48 13 39 100 56 89 82 11 52 99 50 20 96 97 59 23 81 53 15 3 67 77 7 57 74 49 32 86 66 43 26 75 62 29 71 2 91 51 1 18 12 24 21 36 72 90 40 70 14 61 93 6 4 79 94 47 58 30 83 84 44 88 63 95 45 33 65 37 92 27 64 55 9 31 73 54 16 98 5 46 25 76 42 17 69 19 35 5 41 87))
     //(sort '< '(20 12 15 13 19 17 14))
@@ -2973,7 +2973,7 @@ void Numbers::append(LispE* lisp, long v) {
     liste.push_back(v);
 }
 
-Element* Numbers::loop(LispE* lisp, short label, List* code) {
+Element* Numbers::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     Number* element;
@@ -3561,7 +3561,7 @@ void Integers::append(LispE* lisp, long v) {
     liste.push_back(v);
 }
 
-Element* Integers::loop(LispE* lisp, short label, List* code) {
+Element* Integers::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     Integer* element;
@@ -4144,7 +4144,7 @@ void Strings::append(LispE* lisp, long v) {
     liste.push_back(convertToUString(v));
 }
 
-Element* Strings::loop(LispE* lisp, short label, List* code) {
+Element* Strings::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     String* element;
@@ -4500,8 +4500,8 @@ Element* Strings::extraction(LispE* lisp, List* l) {
     
     long from = 0;
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     switch (e_from->label()) {
         case l_minus:
             e_from = l->liste[3]->eval(lisp);
@@ -4704,8 +4704,8 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
     
     long from = 0;
     long firstisString = -1;
-    short nxt = 3;
-    short ty;
+    int16_t nxt = 3;
+    int16_t ty;
     switch (e_from->label()) {
         case l_minus:
             e_from = l->liste[3]->eval(lisp);
@@ -5013,8 +5013,8 @@ Element* Shorts::maximum(LispE* lisp) {
 }
 
 Element* Shorts::minmax(LispE* lisp) {
-    short v_min;
-    short v_max;
+    int16_t v_min;
+    int16_t v_max;
     if (liste.minmax(v_min, v_max)) {
         Shorts* f = new Shorts();
         f->liste.push_back(v_min);
@@ -5066,7 +5066,7 @@ Element* Shorts::invert_sign(LispE* lisp) {
 }
 
 void Shorts::append(LispE* lisp, u_ustring& k) {
-    short d = (short)convertinginteger(k);
+    int16_t d = (int16_t)convertinginteger(k);
     liste.push_back(d);
 }
 
@@ -5078,7 +5078,7 @@ void Shorts::append(LispE* lisp, long v) {
     liste.push_back(v);
 }
 
-Element* Shorts::loop(LispE* lisp, short label, List* code) {
+Element* Shorts::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     Integer* element;
@@ -5277,7 +5277,7 @@ Element* Shorts::list_xor(LispE* lisp, Element* value) {
             l->liste.push_back(liste[i]);
     }
 
-    short v;
+    int16_t v;
     if (value->type == t_llist) {
         u_link* a = ((LList*)value)->liste.begin();
         for (; a != NULL; a = a->next()) {
@@ -5685,7 +5685,7 @@ void Floats::append(LispE* lisp, long v) {
     liste.push_back(v);
 }
 
-Element* Floats::loop(LispE* lisp, short label, List* code) {
+Element* Floats::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     Float* element;
@@ -6186,7 +6186,7 @@ Element* Matrice::transposed(LispE* lisp) {
 }
 
 Element* Matrice::rank(LispE* lisp, vecte<long>& positions) {
-    short sz = positions.size();
+    int16_t sz = positions.size();
     if (!sz || sz > 2)
         throw new Error("Error: index mismatch");
         
@@ -6232,7 +6232,7 @@ Element* Matrice::rank(LispE* lisp, vecte<long>& positions) {
     return result;
 }
 
-Element* Matrice::loop(LispE* lisp, short label, List* code) {
+Element* Matrice::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -6303,7 +6303,7 @@ Element* Matrice_float::transposed(LispE* lisp) {
 }
 
 Element* Matrice_float::rank(LispE* lisp, vecte<long>& positions) {
-    short sz = positions.size();
+    int16_t sz = positions.size();
     if (!sz || sz > 2)
         throw new Error("Error: index mismatch");
         
@@ -6349,7 +6349,7 @@ Element* Matrice_float::rank(LispE* lisp, vecte<long>& positions) {
     return result;
 }
 
-Element* Matrice_float::loop(LispE* lisp, short label, List* code) {
+Element* Matrice_float::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -6465,7 +6465,7 @@ Element* Tenseur::storeRank(LispE* lisp, Element* result, Element* current, vect
 
 Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
-    short sz = positions.size();
+    int16_t sz = positions.size();
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
 
@@ -6496,7 +6496,7 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
     return ts;
 }
 
-Element* Tenseur::loop(LispE* lisp, short label, List* code) {
+Element* Tenseur::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -6613,7 +6613,7 @@ Element* Tenseur_float::storeRank(LispE* lisp, Element* result, Element* current
 
 Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
-    short sz = positions.size();
+    int16_t sz = positions.size();
     if (!sz || sz > shape.size())
         throw new Error("Error: index mismatch");
 
@@ -6643,7 +6643,7 @@ Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     return ts;
 }
 
-Element* Tenseur_float::loop(LispE* lisp, short label, List* code) {
+Element* Tenseur_float::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -6734,7 +6734,7 @@ Element* Shorts::next_iter(LispE* lisp, void* it) {
     long* n = (long*)it;
     if (n[0] == liste.size())
         return emptyatom_;
-    short v = liste[n[0]];
+    int16_t v = liste[n[0]];
     n[0]++;
     return new Short(v);
 }

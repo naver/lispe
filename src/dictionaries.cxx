@@ -443,7 +443,7 @@ void Dictionary::garbaging_values(LispE* lisp) {
     marking = false;
 }
 
-Element* Dictionary::loop(LispE* lisp, short label, List* code) {
+Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     
@@ -779,7 +779,7 @@ void Dictionary_i::garbaging_values(LispE* lisp) {
     marking = false;
 }
 
-Element* Dictionary_i::loop(LispE* lisp, short label, List* code) {
+Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     
@@ -1050,7 +1050,7 @@ void Dictionary_n::garbaging_values(LispE* lisp) {
     marking = false;
 }
 
-Element* Dictionary_n::loop(LispE* lisp, short label, List* code) {
+Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     

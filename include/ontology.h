@@ -123,9 +123,9 @@ public:
     std::unordered_map<u_ustring, Concept*> indexes;
     u_ustring name;
     Concept* absurd;
-    short local_concept;
+    int16_t local_concept;
 
-    Ontology(u_ustring& n, short l_hie, short l_conc) : Element(l_hie) {
+    Ontology(u_ustring& n, int16_t l_hie, int16_t l_conc) : Element(l_hie) {
         local_concept = l_conc;
         name = n;
         u_ustring s_absurd = U"_absurd";
@@ -182,7 +182,7 @@ public:
         }
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* find(LispE* lisp, Concept* c);
     Element* find(LispE* lisp, u_ustring& w);

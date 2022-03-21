@@ -322,7 +322,7 @@ void Set_s::append(LispE* lisp, long v) {
     ensemble.insert(convertToUString(v));
 }
 
-Element* Set_s::loop(LispE* lisp, short label, List* code) {
+Element* Set_s::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     String* element;
@@ -886,7 +886,7 @@ void Set_i::flatten(LispE* lisp, List* l) {
     }
 }
 
-Element* Set_i::loop(LispE* lisp, short label, List* code) {
+Element* Set_i::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     Integer* element;
@@ -1122,7 +1122,7 @@ void Set_n::flatten(LispE* lisp, List* l) {
     }
 }
 
-Element* Set_n::loop(LispE* lisp, short label, List* code) {
+Element* Set_n::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     Number* element;
@@ -1482,7 +1482,7 @@ void Set::flatten(LispE* lisp, List* l) {
     }
 }
 
-Element* Set::loop(LispE* lisp, short label, List* code) {
+Element* Set::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     Element* element;
@@ -2109,7 +2109,7 @@ void Avl::rebuilding(Avl** courant,long type) {
 
 Element* Avl::search(LispE* lisp, Element* element, List* compare) {
     Avl* e = this;
-    short test;
+    int16_t test;
     while (e != NULL) {
         compare->in_quote(2, e->value);
         test = compare->eval(lisp)->asShort();
@@ -2132,7 +2132,7 @@ Element* Avl::search(LispE* lisp, Element* element, List* compare) {
 
 bool Avl::check(LispE* lisp, Element* element, List* compare) {
     Avl* e = this;
-    short test;
+    int16_t test;
     while (e != NULL) {
         compare->in_quote(2, e->value);
         test = compare->eval(lisp)->asShort();
@@ -2156,7 +2156,7 @@ bool Avl::check(LispE* lisp, Element* element, List* compare) {
 bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare) {
     Avl* parent = this;
     Avl* e=this;
-    short test;
+    int16_t test;
     char origin = 0;
     while (e != NULL) {
         compare->in_quote(2, e->value);
@@ -2721,7 +2721,7 @@ bool Heap::egal(Element* e) {
     return (e->type == t_heap && root == ((Heap*)e)->root);
 }
 
-Element* Heap::loop(LispE* lisp, short label, List* code) {
+Element* Heap::loop(LispE* lisp, int16_t label, List* code) {
     if (root == NULL)
         return null_;
     

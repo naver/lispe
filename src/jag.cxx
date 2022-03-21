@@ -93,7 +93,7 @@ extern char m_scrollmargin[];
 static char m_right[] = {27, '[', '0', '0', '1', 67, 0};
 char m_down[] = {27, '[', '0', '0', '1', 66, 0};
 
-static const short _getbuffsize = 128;
+static const int16_t _getbuffsize = 128;
 
 //Moving to a specific line/column
 char sys_row_column[] = { 27, 91, '0', '0', '0', ';', '0', '0','0', 'H', 0 };

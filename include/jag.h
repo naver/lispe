@@ -78,7 +78,7 @@ class jag_editor;
 extern jag_editor* JAGEDITOR;
 
 const string colordenomination[] = {"string", "definition", "instruction", "quote", "comment", "call", "selection"};
-const short nbdenomination = 7;
+const int16_t nbdenomination = 7;
 
 class wstring_controlled : public wstring {
 public:

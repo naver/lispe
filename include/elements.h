@@ -188,31 +188,34 @@ class List;
 class Element {
 public:
     
-    short type;
+    int16_t type;
+    uint16_t status;
+    
 #ifdef MACDEBUG
     long __idx;
     lisp_code __lc;
 #endif
-    uint16_t status;
     
-    Element(short ty) {
+    Element(int16_t ty) {
         type = ty;
+        status = s_destructible;
+
 #ifdef MACDEBUG
         __lc = (lisp_code)type;
         __idx = __indexes.size();
         __indexes.push_back(this);
 #endif
-        status = s_destructible;
     }
     
-    Element(short ty, uint16_t s) {
+    Element(int16_t ty, uint16_t s) {
         type = ty;
+        status = s;
+
 #ifdef MACDEBUG
         __lc = (lisp_code)type;
         __idx = __indexes.size();
         __indexes.push_back(this);
 #endif 
-        status = s;
     }
     
     virtual ~Element() {
@@ -226,8 +229,8 @@ public:
         return true;
     }
     
-    void generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<short,Element*>& dico_variables);
-    void replaceVariableNames(LispE* lisp, unordered_map<short, Element*>& names);
+    void generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<int16_t,Element*>& dico_variables);
+    void replaceVariableNames(LispE* lisp, unordered_map<int16_t, Element*>& names);
     bool replaceVariableNames(LispE* lisp);
 
     virtual bool isArgumentFunction() {
@@ -474,7 +477,7 @@ public:
         return w_to_u(asString(lisp));
     }
 
-    virtual Element* loop(LispE* lisp, short label,  List* code);
+    virtual Element* loop(LispE* lisp, int16_t label,  List* code);
     virtual wstring stringInList(LispE* lisp) {
         return asString(lisp);
     }
@@ -499,7 +502,7 @@ public:
         return 0;
     }
 
-    virtual short asShort() {
+    virtual int16_t asShort() {
         return 0;
     }
     
@@ -514,7 +517,7 @@ public:
     virtual void setvalue(double v) {}
     virtual void setvalue(long v) {}
     virtual void setvalue(float v) {}
-    virtual void setvalue(short v) {}
+    virtual void setvalue(int16_t v) {}
     virtual void setvalue(u_ustring& v) {}
     
     virtual bool Boolean() {
@@ -631,7 +634,7 @@ public:
     
     virtual double checkNumber(LispE* lisp);
     virtual long checkInteger(LispE* lisp);
-    virtual short checkShort(LispE* lisp);
+    virtual int16_t checkShort(LispE* lisp);
     virtual float checkFloat(LispE* lisp);
 
     virtual bool isDictionary() {
@@ -718,13 +721,13 @@ public:
         return 0;
     }
     
-    virtual short function_label();
+    virtual int16_t function_label();
     
-    virtual short label() {
+    virtual int16_t label() {
         return type;
     }
     
-    virtual short type_element() {
+    virtual int16_t type_element() {
         return type;
     }
     
@@ -950,10 +953,10 @@ public:
 class Atome : public Element {
 public:
     u_ustring name;
-    short atome;
+    int16_t atome;
     
-    Atome(short a, u_ustring w) : name(w), atome(a), Element(t_atom) {}
-    Atome(short a, uint16_t s, u_ustring w) : name(w), atome(a), Element(t_atom, s) {}
+    Atome(int16_t a, u_ustring w) : name(w), atome(a), Element(t_atom) {}
+    Atome(int16_t a, uint16_t s, u_ustring w) : name(w), atome(a), Element(t_atom, s) {}
 
     Element* transformargument(LispE* lisp);
 
@@ -969,7 +972,7 @@ public:
         return name;
     }
 
-    short function_label() {
+    int16_t function_label() {
         return atome;
     }
     
@@ -986,7 +989,7 @@ public:
     
     Element* eval(LispE* lisp);
     
-    virtual short label() {
+    virtual int16_t label() {
         return atome;
     }
     
@@ -1017,7 +1020,7 @@ public:
         return Boolean();
     }
 
-    short asShort() {
+    int16_t asShort() {
         return Boolean();
     }
     
@@ -1050,8 +1053,8 @@ public:
 class Atomtype : public Atome {
 public:
 
-    Atomtype(short a, u_ustring w) : Atome(a, w) {}
-    Atomtype(short a, uint16_t s, u_ustring w) : Atome(a, s, w) {}
+    Atomtype(int16_t a, u_ustring w) : Atome(a, w) {}
+    Atomtype(int16_t a, uint16_t s, u_ustring w) : Atome(a, s, w) {}
 
     char check_match(LispE* lisp, Element* value) {
         return check_ok*(atome == value->type_element());
@@ -1062,10 +1065,10 @@ public:
 class Atomnotlabel : public Atome {
 public:
     
-    Atomnotlabel(short a, u_ustring w) : Atome(a, w) {}
-    Atomnotlabel(short a, uint16_t s, u_ustring w) : Atome(a, s, w) {}
+    Atomnotlabel(int16_t a, u_ustring w) : Atome(a, w) {}
+    Atomnotlabel(int16_t a, uint16_t s, u_ustring w) : Atome(a, s, w) {}
     
-    short label() {
+    int16_t label() {
         return v_null;
     }
     
@@ -1075,7 +1078,7 @@ class Atomekleene : public Atome {
 public:
     char action;
     
-    Atomekleene(short a, u_ustring w, char act) : Atome(a, w) {
+    Atomekleene(int16_t a, u_ustring w, char act) : Atome(a, w) {
         action = act;
     }
     
@@ -1088,7 +1091,7 @@ class Operator : public Element {
 public:
     u_ustring name;
     
-    Operator(short c, u_ustring w) : name(w), Element(c) {}
+    Operator(int16_t c, u_ustring w) : name(w), Element(c) {}
 
     u_ustring asUString(LispE* lisp) {
         return name;
@@ -1113,14 +1116,14 @@ public:
         return true;
     }
     
-    short label() {
+    int16_t label() {
         return type;
     }
     
     //Notice that we return t_atom
     //This function is used in Atomtype::check_match
     //so that 'key' for instance is considered as an atom
-    short type_element() {
+    int16_t type_element() {
         return t_atom;
     }
 
@@ -1150,7 +1153,7 @@ class Instruction : public Element {
 public:
     u_ustring name;
     
-    Instruction(short c, u_ustring w) : name(w), Element(c) {}
+    Instruction(int16_t c, u_ustring w) : name(w), Element(c) {}
     
     u_ustring asUString(LispE* lisp) {
         return name;
@@ -1183,11 +1186,11 @@ public:
         return true;
     }
     
-    short type_element() {
+    int16_t type_element() {
         return t_atom;
     }
 
-    short label() {
+    int16_t label() {
         return type;
     }
     
@@ -1249,7 +1252,7 @@ public:
         return value->asInteger();
     }
     
-    short asShort() {
+    int16_t asShort() {
         return value->asShort();
     }
     
@@ -1305,7 +1308,7 @@ public:
         return true;
     }
     
-    short type_element() {
+    int16_t type_element() {
         return t_atom;
     }
 
@@ -1370,7 +1373,7 @@ public:
         return content;
     }
     
-    short checkShort(LispE* lisp) {
+    int16_t checkShort(LispE* lisp) {
         return content;
     }
     
@@ -1394,8 +1397,8 @@ public:
         return content;
     }
 
-    short asShort() {
-        return (short)content;
+    int16_t asShort() {
+        return (int16_t)content;
     }
 
     long asInteger() {
@@ -1514,7 +1517,7 @@ public:
         return content;
     }
     
-    short checkShort(LispE* lisp) {
+    int16_t checkShort(LispE* lisp) {
         return content;
     }
     
@@ -1534,8 +1537,8 @@ public:
         return content;
     }
 
-    short asShort() {
-        return (short)content;
+    int16_t asShort() {
+        return (int16_t)content;
     }
 
     long asInteger() {
@@ -1668,14 +1671,14 @@ public:
 class Short : public Element {
 public:
  
-    short content;
-    Short(short d) : Element(t_short) {
+    int16_t content;
+    Short(int16_t d) : Element(t_short) {
         content = d;
     }
     
-    Short(short d, uint16_t s) : content(d), Element(t_short, s) {}
+    Short(int16_t d, uint16_t s) : content(d), Element(t_short, s) {}
 
-    bool equalvalue(short n) {
+    bool equalvalue(int16_t n) {
         return (content == n);
     }
     
@@ -1688,7 +1691,7 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
-    void setvalue(short v) { content = v;}
+    void setvalue(int16_t v) { content = v;}
 
     
     char check_match(LispE* lisp, Element* value) {
@@ -1733,7 +1736,7 @@ public:
         return content;
     }
     
-    short checkShort(LispE* lisp) {
+    int16_t checkShort(LispE* lisp) {
         return content;
     }
 
@@ -1745,7 +1748,7 @@ public:
         return content;
     }
 
-    short asShort() {
+    int16_t asShort() {
         return content;
     }
 
@@ -1890,7 +1893,7 @@ public:
         return content;
     }
 
-    short checkShort(LispE* lisp) {
+    int16_t checkShort(LispE* lisp) {
         return content;
     }
 
@@ -1902,7 +1905,7 @@ public:
         return content;
     }
 
-    short asShort() {
+    int16_t asShort() {
         return content;
     }
 
@@ -2030,7 +2033,7 @@ public:
 class Constshort : public Short {
 public:
 
-    Constshort(short d) : Short(d) {
+    Constshort(int16_t d) : Short(d) {
         status = s_constant;
     }
     
@@ -2112,7 +2115,7 @@ public:
         return (value == this || value->compare_string(lisp, content));
     }
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool isEmpty() {
         return (content == U"");
@@ -2251,8 +2254,8 @@ public:
         return convertingfloathexa(content);
     }
 
-    short asShort() {
-        return (short)convertingfloathexa(content);
+    int16_t asShort() {
+        return (int16_t)convertingfloathexa(content);
     }
     
     long asInteger() {
@@ -2352,7 +2355,7 @@ public:
 
     wstring asString(LispE* lisp);
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* car(LispE*);
     Element* cdr(LispE*);
 };
@@ -2393,7 +2396,7 @@ public:
     wstring asString(LispE* lisp);
 
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* car(LispE*);
     Element* cdr(LispE*);
 
@@ -2423,7 +2426,7 @@ public:
         value = e;
     }
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
 };
 
 class Cyclelist : public Element {
@@ -2449,7 +2452,7 @@ public:
     u_ustring asUString(LispE* lisp);
     wstring asString(LispE* lisp);
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
 };
 
 
@@ -2539,7 +2542,7 @@ public:
 
     void garbaging_values(LispE*);
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -3009,7 +3012,7 @@ public:
     void flatten(LispE*, List* l);
     
     bool check_element(LispE* lisp, Element* element_value);
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
@@ -3416,7 +3419,7 @@ public:
     void flatten(LispE*, List* l);
     
     bool check_element(LispE* lisp, Element* element_value);
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* search_element(LispE*, Element* element_value, long idx);
     Element* search_all_elements(LispE*, Element* element_value, long idx);
     Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
@@ -3734,7 +3737,7 @@ public:
     vector<Element*> keyvalues;
     vector<Element*> valuevalues;
     uint64_t keyvalue;
-    short mxkeyvalue;
+    int16_t mxkeyvalue;
     bool purekeys;
     bool choice;
     bool select;
@@ -3749,7 +3752,7 @@ public:
         mxkeyvalue = 0;
     }
     
-    short label() {
+    int16_t label() {
         return t_dictionary;
     }
 
@@ -3968,7 +3971,7 @@ public:
         delete (std::set<u_ustring>::iterator*)it;
     }
     
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -4262,7 +4265,7 @@ public:
         delete (std::set<double>::iterator*)it;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -4538,7 +4541,7 @@ public:
         delete (std::set<long>::iterator*)it;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -4822,7 +4825,7 @@ public:
         delete (std::unordered_map<u_ustring, Element*>::iterator*)it;
     }
 
-    Element* loop(LispE* lisp, short label,  List* code);
+    Element* loop(LispE* lisp, int16_t label,  List* code);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);

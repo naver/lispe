@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.3.16.14.53";
+static std::string version = "1.2022.3.21.15.2";
 string LispVersion() {
     return version;
 }
@@ -249,7 +249,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
     set_instruction(l_count, "count", P_THREE|P_FOUR, &List::evall_count);
     set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp);
-    set_instruction(l_short, "short", P_TWO, &List::evall_converttoshort);
+    set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort);
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger);
     set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat);
     set_instruction(l_number, "number", P_TWO, &List::evall_converttonumber);
@@ -1053,7 +1053,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         stops[171] = true;
     }
 
-    short string_end;
+    int16_t string_end;
     long sz = code.size();
     long i, current_i;
     int nb_parentheses = 0;
@@ -1522,7 +1522,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
     Element* quoted = courant;
     double value;
     char topfunction = false;
-    short lab = -1;
+    int16_t lab = -1;
         
     while (index < parse.types.size()) {
         parse.current = index;
@@ -1910,7 +1910,7 @@ Element* LispE::atomise(u_ustring a) {
     return l;
 }
 
-List* LispE::create_instruction(short label,
+List* LispE::create_instruction(int16_t label,
                                 Element* e1,
                                 Element* e2,
                                 Element* e3,
@@ -1939,7 +1939,7 @@ List* LispE::create_instruction(short label,
     return l;
 }
 
-List* LispE::create_local_instruction(short label,
+List* LispE::create_local_instruction(int16_t label,
                                 Element* e1,
                                 Element* e2,
                                 Element* e3,
@@ -2166,7 +2166,7 @@ void LispE::add_pathname(string pathname) {
 // Macro section
 //------------------------------------------------------------------------------------------
 //We duplicate our macro into new code that will replace the current call...
-void Element::generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<short,Element*>& dico_variables) {
+void Element::generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<int16_t,Element*>& dico_variables) {
     Element* e;
     for (long i = 0;i < size(); i++) {
         e = index(i);
@@ -2203,7 +2203,7 @@ Element* LispE::generate_macro(Element* code) {
     if (code->size() == 0)
         return code;
 
-    short label = code->index(0)->label();
+    int16_t label = code->index(0)->label();
     
     Element* macro_rule = delegation->macros.search(label);
     if (macro_rule != NULL) {
@@ -2212,7 +2212,7 @@ Element* LispE::generate_macro(Element* code) {
             throw new Error("Error: parameter size does not match argument");
         //Now we need to create a place where to store our parameters...
         long i;
-        unordered_map<short,Element*> dico_variables;
+        unordered_map<int16_t,Element*> dico_variables;
         //Keeping track of the what to replace
         for (i = 0; i < macro_parameters->size(); i++) {
             label = macro_parameters->index(i)->label();
@@ -2232,7 +2232,7 @@ Element* LispE::generate_macro(Element* code) {
 
 
 //We replace the variables with local macro name...
-void Element::replaceVariableNames(LispE* lisp, unordered_map<short,Element*>& dico_variables) {
+void Element::replaceVariableNames(LispE* lisp, unordered_map<int16_t,Element*>& dico_variables) {
     if (isList()) {
         Element* e;
         for (long i = 0; i < size(); i++) {
@@ -2254,9 +2254,9 @@ void Element::replaceVariableNames(LispE* lisp, unordered_map<short,Element*>& d
 bool Element::replaceVariableNames(LispE* lisp) {
     //First we gather all names
     Element* macro_parameters = index(2);
-    short newlabel, varlabel;
+    int16_t newlabel, varlabel;
     u_ustring lb;
-    unordered_map<short,Element*> dico_variables;
+    unordered_map<int16_t,Element*> dico_variables;
     for (long i = 0; i < macro_parameters->size(); i++) {
         //Our new name
         lb = U"#macro";
@@ -2337,6 +2337,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

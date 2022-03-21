@@ -819,8 +819,8 @@ public:
         }
     }
     
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void values_sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
+    bool compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j);
+    void values_sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax);
     
     Z sum() {
         return items->sum(home);
@@ -1267,8 +1267,8 @@ public:
         }
     }
 
-    bool compare(LispE* lisp, List* comparison, short instruction, long i, long j);
-    void values_sorting(LispE* lisp, List* comparison, short instruction, long rmin, long rmax);
+    bool compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j);
+    void values_sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax);
 
     Z sum() {
         return items->sum(home);

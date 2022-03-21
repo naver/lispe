@@ -28,7 +28,7 @@
 long margin_value_reference = 3;
 //------------------------------------------------------------------------------------
 
-static const short _getbuffsize = 128;
+static const int16_t _getbuffsize = 128;
 char m_scrollmargin[] = { 27, 91, '0', '0', '0', ';', '0', '0','0', 'r', 0 };
 static char m_deletechar[] = { 27, 91, '1', 'P', 0 };
 static char m_oneleft[] = { 27, '[', '1', 68, 0 };

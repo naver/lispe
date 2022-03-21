@@ -234,7 +234,7 @@ static void replacevariable(Element* L, Element* v, Element* n) {
 
 
 static bool replace_recipient(Element* L, Element* rec, Element* accu) {
-    short label = L->index(0)->label();
+    int16_t label = L->index(0)->label();
     if (L->index(1) == rec && (label == l_push || label == l_insert)) {
         L->change(2, accu);
         return true;
@@ -272,7 +272,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
     Element* _id_var;
     
     //Then we can compose our elements...
-    short labeltype = first_element->type;
+    int16_t labeltype = first_element->type;
     if (!lisp->delegation->checkArity(labeltype, listsize)) {
         u_ustring err(U"Error: wrong number of arguments for: '");
         err += lisp->asUString(labeltype);
@@ -362,7 +362,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
     swprintf_s(buffer,20, L"#accu%d", idx);
     _value = P(buffer);
 
-    short fold_ordering = 0;
+    int16_t fold_ordering = 0;
     if (creation) {
         //We need to create our structure from scratch
         iterator_variable = _iterator;
@@ -604,7 +604,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 //We use a new accumulator value. IF we are in this section
                 //it means that a test on current _value has already been implemented
                 //we do not want to interfer with it:
-                short label = final_section->index(0)->label();
+                int16_t label = final_section->index(0)->label();
                 if (label == l_check || label == l_ncheck) {
                     Element* accu = NULL;
                     if (operation == null_) {
@@ -647,7 +647,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
 
                 action = lisp->create_instruction(l_ncheck, _first);
                 
-                short label = final_section->index(0)->label();
+                int16_t label = final_section->index(0)->label();
                 if (label == l_check || label == l_ncheck) {
                     Element* accu = _value;
                     if (operation == null_) {
@@ -754,7 +754,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 action = lisp->create_instruction(l_setq, _first, true_);
                 compose->beforelast(action);
                 Element* recipient = final_section;
-                short label = recipient->index(0)->label();
+                int16_t label = recipient->index(0)->label();
                 if (label == l_check || label == l_ncheck) {
                     recipient = recipient->last();
                     label = recipient->index(0)->label();
@@ -783,7 +783,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 compose->beforelast(action);
                 
                 Element* recipient = final_section;
-                short label = recipient->index(0)->label();
+                int16_t label = recipient->index(0)->label();
                 if (label == l_check || label == l_ncheck) {
                     recipient = recipient->last();
                     label = recipient->index(0)->label();
@@ -807,7 +807,7 @@ Element* List::composing(LispE* lisp, bool docompose) {
                 action = lisp->create_instruction(l_setq, _first, true_);
                 compose->beforelast(action);
                 Element* recipient = final_section;
-                short label = recipient->index(0)->label();
+                int16_t label = recipient->index(0)->label();
                 if (label == l_check || label == l_ncheck) {
                     recipient = recipient->last();
                     label = recipient->index(0)->label();
@@ -1082,7 +1082,7 @@ Element* Atome::transformargument(LispE* lisp) {
     if (name.back() == '+' || name.back() == '*' || name.back() == '%') {
         char a = name.back();
         u_ustring bare_name = name.substr(0, name.size()-1);
-        short l_name = lisp->encode(bare_name);
+        int16_t l_name = lisp->encode(bare_name);
         Element* e = new Atomekleene(l_name, bare_name, a);
         return lisp->push_in_garbage(e);
     }
@@ -1096,7 +1096,7 @@ Element* List::transformargument(LispE* lisp) {
         return this;
 
     Element* element;
-    short label = liste[0]->label();
+    int16_t label = liste[0]->label();
 
     if (label == l_quote) {
         element = new Listargumentquote(this);

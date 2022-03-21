@@ -2628,7 +2628,7 @@ double convertingfloathexa(const char* s, long& l) {
     return res*sign;
 }
 
-void noconversiontofloathexa(const char* s, int sign, short& l) {
+void noconversiontofloathexa(const char* s, int sign, int16_t& l) {
     uchar c = *s++;
     l++;
     
@@ -2669,7 +2669,7 @@ void noconversiontofloathexa(const char* s, int sign, short& l) {
     }
 }
 
-void noconvertingfloathexa(const char* s, short& l) {
+void noconvertingfloathexa(const char* s, int16_t& l) {
     l = 0;
     //End of string...
     if (*s ==0 )
@@ -3818,10 +3818,10 @@ long IndentationCode(string& codestr) {
     long p;
     long finalblank = 0;
 
-    short addspace = 0;
-    short checkspace = 0;
-    short iparenthesis = 0;
-    short l;
+    int16_t addspace = 0;
+    int16_t checkspace = 0;
+    int16_t iparenthesis = 0;
+    int16_t l;
 
     bool consumeblanks = true;
 
@@ -4055,9 +4055,9 @@ void IndentationCode(string& str, string& codeindente) {
     long iparenthesis = 0;
     long current_line = 0;
         
-    short l;
-    short addspace = 0;
-    short checkspace = 0;
+    int16_t l;
+    int16_t addspace = 0;
+    int16_t checkspace = 0;
     
     bool consumeblanks = true;
     
