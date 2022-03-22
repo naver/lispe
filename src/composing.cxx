@@ -1135,6 +1135,11 @@ Element* List::transformargument(LispE* lisp) {
         return lisp->push_in_garbage(element);
     }
 
+    if (label >= l_dictionary && label <= l_dictionaryn) {
+        element = new Argumentdictionary(lisp, this);
+        lisp->removefromgarbage(this);
+        return lisp->push_in_garbage(element);
+    }
 
     bool sep = false;
     if (sz > 1 && liste[sz-2] == separator_) {

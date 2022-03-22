@@ -323,6 +323,67 @@ bool Dictionary_as_list::traverse(LispE* lisp, Dictionary_n* d, Numbers* keys, I
     return traverse(lisp, d, keys, consummed, di+1, i, record);
 }
 
+
+bool Dictionary_as_list::traverse(LispE* lisp, Dictionary_i* d, Integers* keys, Integers* consummed, long di, long i, bool record) {
+    if (i == keyvalues.size()) {
+        return (consummed->size() == keys->size());
+    }
+    
+    Element* k = keyvalues[i];
+    Element* v = valuevalues[i];
+    if (k == separator_) {
+        if (v == null_)
+            return true;
+        if (consummed->size() == keys->size())
+            return v->unify(lisp, emptydictionary_, record);
+        long ii,jj;
+        bool found = false;
+        Dictionary_i* dico = lisp->provideDictionary_i();
+        for (ii = 0; ii < keys->size(); ii++) {
+            found = false;
+            for (jj = 0; jj < consummed->size(); jj++) {
+                if (consummed->liste[jj] == ii) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            dico->recording(keys->liste[ii], d->dictionary[keys->liste[ii]]);
+        }
+        if (!v->unify(lisp, dico, record)) {
+            dico->release();
+            return false;
+        }
+        return true;
+    }
+    
+    if (di == keys->size())
+        return false;
+    
+    bool removekey = false;
+    bool removevalue = false;
+    if (record) {
+        removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
+        removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
+    }
+    Element* e = lisp->provideInteger(keys->liste[di]);
+    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp, e, record)) {
+        consummed->liste.push_back(di);
+        e->release();
+        if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
+            return true;
+        consummed->liste.pop_back();
+    }
+    else
+        e->release();
+    if (removekey)
+        lisp->removefromstack(k->label());
+    if (removevalue)
+        lisp->removefromstack(v->label());
+    return traverse(lisp, d, keys, consummed, di+1, i, record);
+}
+
 bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
     if (!value->isDictionary())
         return false;
@@ -402,8 +463,29 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
         return found;
     }
     
-    Numbers* keys = lisp->provideNumbers();
-    for (const auto& a : ((Dictionary_n*)value)->dictionary) {
+    if (value->type == t_dictionaryn) {
+        Numbers* keys = lisp->provideNumbers();
+        for (const auto& a : ((Dictionary_n*)value)->dictionary) {
+            if (mxkeyvalue) {
+                found = false;
+                for (j = 0; j < mxkeyvalue; j++) {
+                    if (keyvalues[j]->equalvalue(a.first)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found)
+                    continue;
+            }
+            keys->liste.push_back(a.first);
+        }
+        found = traverse(lisp, (Dictionary_n*)value, keys, consummed, 0, mxkeyvalue, record);
+        keys->release();
+        consummed->release();
+        return found;
+    }
+    Integers* keys = lisp->provideIntegers();
+    for (const auto& a : ((Dictionary_i*)value)->dictionary) {
         if (mxkeyvalue) {
             found = false;
             for (j = 0; j < mxkeyvalue; j++) {
@@ -417,7 +499,7 @@ bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
         }
         keys->liste.push_back(a.first);
     }
-    found = traverse(lisp, (Dictionary_n*)value, keys, consummed, 0, mxkeyvalue, record);
+    found = traverse(lisp, (Dictionary_i*)value, keys, consummed, 0, mxkeyvalue, record);
     keys->release();
     consummed->release();
     return found;
@@ -1181,23 +1263,35 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
         throw err;
     }
 
-    ilabel = 0;
-    match = 0;
-    body = lisp->getMethod(function_label,sublabel,ilabel);
-    if (body == null_) {
+    body = NULL;
+    auto& functions = lisp->delegation->method_pool[function_label];
+    auto subfunction = functions.find(sublabel);
+    if (subfunction == functions.end()) {
         sublabel = v_null;
-        ilabel = 0;
-        //We check, if we have a roolback function
-        body = lisp->getMethod(function_label,v_null,0);
+        //We check, if we have a rollback function
+        subfunction = functions.find(sublabel);
+        if (subfunction == functions.end()) {
+            arguments->release();
+            wstring message = L"Error: Could not find a match for function: '";
+            message += lisp->asString(function_label);
+            message += L"'";
+            throw new Error(message);
+        }
     }
 
+    body = subfunction->second[0];
+
+    ilabel = 1;
+    match = 0;
+    long sz = subfunction->second.size();
     lisp->push(body);
-    while (body != null_) {
+
+    while (body != NULL) {
         lisp->setstackfunction(body);
         element = body->index(2);
         if (element->size() == nbarguments) {
             match = true;
-            for (i = 0; i < element->size() && match; i++) {
+            for (i = 0; i < nbarguments && match; i++) {
                 match = element->index(i)->unify(lisp, arguments->liste[i], true);
             }
             if (match)
@@ -1205,15 +1299,23 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
             
             lisp->clear_top_stack();
         }
-        body = lisp->getMethod(function_label,sublabel,++ilabel);
-        if (body == null_ && sublabel != v_null) {
-            sublabel = v_null;
-            ilabel = 0;
-            //We check, if we have a roolback function
-            body = lisp->getMethod(function_label,v_null,ilabel);
+        body = NULL;
+        if (ilabel < sz)
+            body = subfunction->second[ilabel++];
+        else {
+            if (sublabel != v_null) {
+                sublabel = v_null;
+                ilabel = 1;
+                //We check, if we have a rollback function
+                subfunction = functions.find(sublabel);
+                if (subfunction != functions.end()) {
+                    body = subfunction->second[0];
+                    sz = subfunction->second.size();
+                }
+            }
         }
     }
-    
+
     if (!match) {
         lisp->pop();
         arguments->release();
@@ -8411,6 +8513,7 @@ Element* List::evall_floats(LispE* lisp) {
     Element* values;
 
     try {
+        n->liste.reserve(listsz<<1);
         for (long e = 1; e < listsz; e++) {
             values = liste[e]->eval(lisp);
             if (values->isList()) {
@@ -8442,6 +8545,7 @@ Element* List::evall_numbers(LispE* lisp) {
 
 
     try {
+        n->liste.reserve(listsz<<1);
         for (long e = 1; e < listsz; e++) {
             values = liste[e]->eval(lisp);
             if (values->isList()) {
@@ -8472,6 +8576,7 @@ Element* List::evall_shorts(LispE* lisp) {
 
 
     try {
+        n->liste.reserve(listsz<<1);
         for (long e = 1; e < listsz; e++) {
             values = liste[e]->eval(lisp);
             if (values->isList()) {
@@ -8503,6 +8608,7 @@ Element* List::evall_integers(LispE* lisp) {
 
 
     try {
+        n->liste.reserve(listsz<<1);
         for (long e = 1; e < listsz; e++) {
             values = liste[e]->eval(lisp);
             if (values->isList()) {
@@ -8757,6 +8863,7 @@ Element* List::evall_strings(LispE* lisp) {
 
 
     try {
+        n->liste.reserve(listsz<<1);
         for (long e = 1; e < listsz; e++) {
             values = liste[e]->eval(lisp);
             if (values->isList()) {

@@ -444,7 +444,7 @@ BOOL dark = false;
     if (longueur<=3)
         return NO;
     currentrange=NSMakeRange(locpos,0);
-    NSString* truc;
+    NSString* padded;
     
     if (key == '`') {
         currentrange = NSMakeRange(0, 0);
@@ -517,19 +517,19 @@ BOOL dark = false;
         //we need to count the number of spaces...
         line=[line stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         if (ln) {
-            truc=[@"" stringByPaddingToLength:ln withString:@" " startingAtIndex:0];
-            truc=[truc stringByAppendingString: line];
+            padded=[@"" stringByPaddingToLength:ln withString:@" " startingAtIndex:0];
+            padded=[padded stringByAppendingString: line];
         }
         else {
-            if ([truc isEqualToString:line])
+            if ([padded isEqualToString:line])
                 return YES;
-            truc=line;
+            padded=line;
         }
         
-        if ([self shouldChangeTextInRange:currentrange replacementString:truc]) {
-            [self replaceCharactersInRange:currentrange withString:truc];
+        if ([self shouldChangeTextInRange:currentrange replacementString:padded]) {
+            [self replaceCharactersInRange:currentrange withString:padded];
             long difference = currentrange.length;
-            currentrange.length = [truc length];
+            currentrange.length = [padded length];
             difference -= currentrange.length;
             locpos -= difference;
         }
@@ -581,24 +581,24 @@ BOOL dark = false;
     //we need to count the number of spaces...
     line=[line stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     if (ln > 0) {
-        truc=[@"" stringByPaddingToLength:ln withString:@" " startingAtIndex:0];
-        truc=[truc stringByAppendingString: line];
+        padded=[@"" stringByPaddingToLength:ln withString:@" " startingAtIndex:0];
+        padded=[padded stringByAppendingString: line];
         
-        if ([self shouldChangeTextInRange:currentrange replacementString:truc])
-            [self replaceCharactersInRange:currentrange withString:truc];
+        if ([self shouldChangeTextInRange:currentrange replacementString:padded])
+            [self replaceCharactersInRange:currentrange withString:padded];
         
         localrange=currentrange;
         localrange.location+=ln;
         localrange.length=0;
         currentrange=[self viewRange];
-        [self colorie: YES];
         [self setSelectedRange:localrange];
+        [self colorie: YES];
         return YES;
     }
     currentrange=[self viewRange];
-    [self colorie: YES];
     localrange.length=0;
     [self setSelectedRange:localrange];
+    [self colorie: YES];
     return YES;
 }
 

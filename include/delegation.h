@@ -310,9 +310,7 @@ public:
     bool isEndTrace() {
         return endtrace;
     }
-    
-    void updatecreator();
-    
+        
     int16_t encode(string& str) {
         u_ustring s;
         s_utf8_to_unicode(s, USTR(str), str.size());
@@ -617,15 +615,6 @@ public:
         return (data_ancestor.check(label) && (data_ancestor.at(label) == ancestor->label()));
     }
     
-    inline Element* getMethod(int16_t label, int16_t sublabel, long i) {
-        try {
-            return method_pool.at(label).at(sublabel).at(i);
-        }
-        catch (...) {
-            return _NULL;
-        }
-    }
-        
     inline int16_t checkDataStructure(int16_t label) {
         if (data_pool.check(label))
             return label;

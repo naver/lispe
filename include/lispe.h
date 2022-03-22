@@ -44,8 +44,6 @@ class LispE {
 public:
     Element* _BOOLEANS[2];
     
-    checkEval checkstates[4];
-    checkBasicEval checkbasicstates[4];
 
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
@@ -109,7 +107,6 @@ public:
     bool clean_utf8;
     
     LispE(UTF8_Handler* hnd = NULL) {
-        updatecreator();
         initpools();
         preparingthread = false;
         check_arity_on_fly = false;
@@ -160,8 +157,6 @@ public:
         cleaning();
     }
     
-    //------------------------------------------
-    void updatecreator();
     //------------------------------------------
 
     void set_true_as_true() {
@@ -484,34 +479,15 @@ public:
         throw new Error(msg);
     }
     
-    //0
-    inline int16_t check_empty(List* l, long sz) {
-        return l_emptylist;
-    }
-    
-    //1
-    inline int16_t check_straight(List* l, long sz) {
-        return l->liste.get0();
-    }
-    
     //2
     inline int16_t check_arity(List* l, long sz) {
         int16_t lb = l->liste.get0();
-        if (delegation->checkArity(lb, sz))
-            return lb;
-        
-        throw new Error(U"Error: wrong number of arguments");
+        return (delegation->checkArity(lb, sz))?lb:sendError(U"Error: wrong number of arguments");
     }
 
     inline int16_t checkState(List* l, long sz) {
         delegation->checkExecution();
-        return (this->*checkstates[((check_arity_on_fly + 1)*bool(sz))])(l, sz);
-    }
-
-
-    //0
-    inline int16_t check_basic_straight(Listincode* l) {
-        return l->liste.get0();
+        return (!sz)?l_emptylist:(!check_arity_on_fly)?l->liste.get0():check_arity(l, sz);
     }
 
     //1
@@ -522,7 +498,7 @@ public:
 
     inline int16_t checkBasicState(Listincode* l) {
         delegation->checkExecution();
-        return (this->*checkbasicstates[bool(trace)])(l);
+        return (!trace)?l->liste.get0():check_basic_trace(l);
     }
 
     inline void checkPureState(Listincode* l) {
@@ -725,10 +701,6 @@ public:
         return delegation->checkAncestor(ancestor, label->label());
     }
     
-    inline Element* getMethod(int16_t label, int16_t sublabel, long i) {
-        return delegation->getMethod(label, sublabel, i);
-    }
-        
     inline int16_t checkDataStructure(int16_t label) {
         return delegation->checkDataStructure(label);
     }

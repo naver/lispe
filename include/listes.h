@@ -1532,6 +1532,8 @@ public:
     }
     int16_t label() {
         switch (liste[0]->type) {
+            case l_set:
+                return t_set;
             case l_sets:
                 return t_sets;
             case l_setn:
@@ -1544,6 +1546,15 @@ public:
     bool unify(LispE* lisp, Element* value, bool record);
 };
 
+class Argumentdictionary : public Element {
+public:
+    Dictionary_as_list d;
+    Argumentdictionary(LispE* lisp, List* l) : d(lisp, l), Element(t_dictionary) {}
+    
+    bool unify(LispE* lisp, Element* value, bool record) {
+        return d.unify(lisp, value, record);
+    }
+};
 
 
 class Listargumentlabel : public List {

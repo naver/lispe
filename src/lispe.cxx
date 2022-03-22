@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.3.21.15.2";
+static std::string version = "1.2022.3.22.14.32";
 string LispVersion() {
     return version;
 }
@@ -29,16 +29,6 @@ extern "C" {
     const char* lispversion() {
         return version.c_str();
     }
-}
-
-//------------------------------------------------------------------------------------------
-void LispE::updatecreator() {
-    checkstates[0] = &LispE::check_empty;
-    checkstates[1] = &LispE::check_straight;
-    checkstates[2] = &LispE::check_arity;
-    
-    checkbasicstates[0] = &LispE::check_basic_straight;
-    checkbasicstates[1] = &LispE::check_basic_trace;
 }
 
 //------------------------------------------------------------------------------------------
@@ -974,7 +964,6 @@ void LispE::cleaning() {
 
 LispE::LispE(LispE* lisp, List* function, List* body) {
     void_function = lisp->void_function;
-    updatecreator();
     preparingthread = false;
     check_arity_on_fly = false;
     delegation = lisp->delegation;
@@ -2166,12 +2155,12 @@ void LispE::add_pathname(string pathname) {
 // Macro section
 //------------------------------------------------------------------------------------------
 //We duplicate our macro into new code that will replace the current call...
-void Element::generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<int16_t,Element*>& dico_variables) {
+void Element::generate_body_from_macro(LispE* lisp, Listincode* code, binHash<Element*>& dico_variables) {
     Element* e;
     for (long i = 0;i < size(); i++) {
         e = index(i);
         if (e->isAtom()) {
-            if (dico_variables.find(e->label()) != dico_variables.end())
+            if (dico_variables.check(e->label()))
                 code->append(dico_variables[e->label()]);
             else
                 code->append(e);
@@ -2212,7 +2201,7 @@ Element* LispE::generate_macro(Element* code) {
             throw new Error("Error: parameter size does not match argument");
         //Now we need to create a place where to store our parameters...
         long i;
-        unordered_map<int16_t,Element*> dico_variables;
+        binHash<Element*> dico_variables;
         //Keeping track of the what to replace
         for (i = 0; i < macro_parameters->size(); i++) {
             label = macro_parameters->index(i)->label();
@@ -2232,12 +2221,12 @@ Element* LispE::generate_macro(Element* code) {
 
 
 //We replace the variables with local macro name...
-void Element::replaceVariableNames(LispE* lisp, unordered_map<int16_t,Element*>& dico_variables) {
+void Element::replaceVariableNames(LispE* lisp, binHash<Element*>& dico_variables) {
     if (isList()) {
         Element* e;
         for (long i = 0; i < size(); i++) {
             e = index(i);
-            if (e->isAtom() && dico_variables.find(e->label()) != dico_variables.end())
+            if (e->isAtom() && dico_variables.check(e->label()))
                 ((List*)this)->liste[i] = dico_variables[e->label()];
             else {
                 if (e->isList()) {
@@ -2256,7 +2245,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
     Element* macro_parameters = index(2);
     int16_t newlabel, varlabel;
     u_ustring lb;
-    unordered_map<int16_t,Element*> dico_variables;
+    binHash<Element*> dico_variables;
     for (long i = 0; i < macro_parameters->size(); i++) {
         //Our new name
         lb = U"#macro";
@@ -2337,6 +2326,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

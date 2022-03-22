@@ -16,6 +16,30 @@
 #include <algorithm>
 
 
+Dictionary_as_list::Dictionary_as_list(LispE* lisp, List* l) : Element(t_dictionary) {
+    choice = true;
+    purekeys = true;
+    select = true;
+    
+    //To the bits are set to zeo
+    keyvalue = 0;
+    mxkeyvalue = 0;
+    Element* e;
+    for (long  i = 1; i < l->size(); i += 2) {
+        e = l->index(i);
+        if (!e->isString() && !e->isNumber())
+            purekeys = false;
+        else {
+            //We record its position in bit vector
+            mxkeyvalue = keyvalues.size();
+            keyvalue |= ((uint64_t)1 << mxkeyvalue++);
+        }
+        keyvalues.push_back(e);
+        valuevalues.push_back(l->index(i + 1));
+    }
+}
+
+
 Element* Dictionarypool::newInstance() {
     return lisp->provideDictionary();
 }

@@ -95,7 +95,8 @@ typedef enum {
     l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_flatten, l_nconc, l_nconcn,
     l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
-    l_numbers, l_floats, l_shorts, l_integers, l_strings, l_set, l_setn, l_seti, l_sets,
+    l_numbers, l_floats, l_shorts, l_integers, l_strings,
+    l_set, l_setn, l_seti, l_sets,
     l_dictionary, l_dictionaryi, l_dictionaryn,
     
     //Display values
@@ -229,8 +230,8 @@ public:
         return true;
     }
     
-    void generate_body_from_macro(LispE* lisp, Listincode* code, unordered_map<int16_t,Element*>& dico_variables);
-    void replaceVariableNames(LispE* lisp, unordered_map<int16_t, Element*>& names);
+    void generate_body_from_macro(LispE* lisp, Listincode* code, binHash<Element*>& dico_variables);
+    void replaceVariableNames(LispE* lisp, binHash<Element*>& names);
     bool replaceVariableNames(LispE* lisp);
 
     virtual bool isArgumentFunction() {
@@ -3752,6 +3753,8 @@ public:
         mxkeyvalue = 0;
     }
     
+    Dictionary_as_list(LispE* lisp, List* l);
+    
     int16_t label() {
         return t_dictionary;
     }
@@ -3861,6 +3864,7 @@ public:
     bool unify(LispE* lisp, Element* e, bool record);
     bool traverse(LispE*, Dictionary*, Strings* keys, Integers* consummed, long di, long i, bool record);
     bool traverse(LispE*, Dictionary_n*, Numbers* keys, Integers* consummed, long di, long i, bool record);
+    bool traverse(LispE*, Dictionary_i*, Integers* keys, Integers* consummed, long di, long i, bool record);
 
     void release() {
         if (!status) {

@@ -814,7 +814,7 @@ public:
     }
     
     inline void to_vector(vector<Z>& v) {
-        for (long i = home; i < size(); i++) {
+        for (long i = home; i < items->last; i++) {
             v.push_back(items->buffer[home+i]);
         }
     }
@@ -1262,7 +1262,7 @@ public:
     }
 
     inline void to_vector(vector<Z>& v) {
-        for (long i = home; i < size(); i++) {
+        for (long i = home; i < items->last; i++) {
             v.push_back(items->buffer[home+i]);
         }
     }
