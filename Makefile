@@ -60,7 +60,7 @@ libs: liblispe
 	$(MAKE) -C curl clean all
 	$(MAKE) -C xml clean all
 	$(MAKE) -C sqlite clean all
-	$(MAKE) -C pythonlispe clean all
 	$(MAKE) -C transducer clean all
+	$(MAKE) -C pythonlispe clean all
 	$(MAKE) -C gui clean all
 
