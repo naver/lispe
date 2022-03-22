@@ -3114,8 +3114,9 @@ void jag_editor::computeposition(int& p, long position) {
             }
             else {
                 if (c == 9) //tab position
-                    pos += (8 - (pos%8))%8;
-                pos++;
+                    pos += 8;
+                else
+                    pos++;
             }
         }
         i++;
