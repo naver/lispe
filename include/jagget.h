@@ -119,6 +119,10 @@ const char c_up[] = { 224, 73, 0 };
 const char c_down[] = { 224,81, 0 };
 const char c_right[] = { 224,116, 0 };
 const char c_left[] = { 224,115, 0 };
+const unsigned char alt_xbis[] = { 226, 'x', 0 };
+const unsigned char alt_cbis[] = { 226, 'c', 0 };
+const unsigned char alt_vbis[] = { 226, 'v', 0 };
+
 const unsigned char alt_x[] = { 226, 'x', 0 };
 const unsigned char alt_c[] = { 226, 'c', 0 };
 const unsigned char alt_v[] = { 226, 'v', 0 };
@@ -159,6 +163,10 @@ const char endkey[] = { 27, 91, 70, 0 };
 
 const unsigned char alt_plus[] = {226, 137, 160, 0};
 const unsigned char alt_minus[] = {226, 128, 148, 0};
+
+const unsigned char alt_xbis[] = { 27, 'x', 0 };
+const unsigned char alt_cbis[] = { 27, 'c', 0 };
+const unsigned char alt_vbis[] = { 27, 'v', 0 };
 
 const unsigned char alt_x[] = {226, 137, 136, 0};
 const unsigned char alt_c[] = {194, 169, 0};
