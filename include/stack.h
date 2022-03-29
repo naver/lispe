@@ -22,6 +22,7 @@ class Stackelement {
 public:
     
     binHash<Element*> variables;
+    vecte<int16_t> status;
     vecte<int16_t> names[n_variables];
     Element* function;
 
@@ -175,6 +176,59 @@ public:
         }
     }
 
+    void reset_in_stack(Element* e, int16_t label) {
+        if (e == NULL)
+            remove(label);
+        else {
+            e->status = status.backpop();
+            if (variables.at(label) != e) {
+                variables.at(label)->decrement();
+                variables.put(label, e);
+            }
+        }
+    }
+    
+    void reset_in_stack(Element* e, int16_t label, Element* keep) {
+        if (e == NULL)
+            remove(label);
+        else {
+            e->status = status.backpop();
+            Element* last = variables.at(label);
+            if (last != e) {
+                if (last == keep)
+                    last->decrementkeep();
+                else
+                    last->decrement();
+                variables.put(label, e);
+            }
+        }
+    }
+    
+    Element* record_or_replace(Element* e, int16_t label) {
+        if (variables.check(label)) {
+            Element* ret = variables.at(label);
+            //we keep track of the current status...
+            status.push_back(ret->status);
+            ret->increment();
+            if (ret == e)
+                return e;
+            
+            if (e->status != s_constant)
+                e->increment();
+            else
+                names[label&f_variables].erase(label);
+            variables.put(label, e);
+            return ret;
+        }
+
+        variables[label] = e;
+        
+        if (e->status != s_constant) {
+            e->increment();
+            names[label&f_variables].push_back(label);
+        }
+        return NULL;
+    }
 
     void replacingvalue(Element* e, int16_t label) {
         if (variables.at(label) == e)
@@ -198,11 +252,11 @@ public:
         }
     }
 
-    Element* get(int16_t label) {
+    inline Element* get(int16_t label) {
         return variables.search(label);
     }
     
-    void remove(int16_t label) {
+    inline void remove(int16_t label) {
         if (names[label&f_variables].checkanderase(label)) {
             variables.at(label)->decrement();
         }
@@ -241,6 +295,7 @@ public:
             names[label&f_variables].clear();
         }
         variables.clear();
+        status.clear();
         function = NULL;
     }
 
@@ -256,6 +311,7 @@ public:
         }
         
         variables.clear();
+        status.clear();
         function = NULL;
     }
 

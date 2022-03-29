@@ -755,6 +755,18 @@ public:
         return e;
     }
     
+    inline Element* record_or_replace(Element* e, int16_t label) {
+        return execution_stack.back()->record_or_replace(e->duplicate_constant(this), label);
+    }
+
+    inline void reset_in_stack(Element* e, int16_t label) {
+        execution_stack.back()->reset_in_stack(e, label);
+    }
+
+    inline void reset_in_stack(Element* e, int16_t label, Element* keep) {
+        execution_stack.back()->reset_in_stack(e, label, keep);
+    }
+
     inline void recording(Element* e, int16_t label) {
         execution_stack.back()->recording(e->duplicate_constant(this), label);
     }

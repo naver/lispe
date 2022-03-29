@@ -1875,20 +1875,20 @@ Element* List::eval_thread(LispE* lisp, List* body) {
 
 //Execution of a function as well as the shift of parameters with arguments
 //For this specific lambda, we do not create a stack
-Element* List::eval_lambda_min(LispE* lisp, List* body) {
+Element* List::eval_lambda_min(LispE* lisp) {
     // It is either a lambda or a function
     //otherwise it's an error
     long i;
     Element* element;
-    long nbarguments = body->size();
+    long nbarguments = size();
     
-    Element* stackfunction = lisp->exchangestackfunction(body);
+    Element* stackfunction = lisp->exchangestackfunction(this);
     
     try {
         element = null_;
         for (i = 2; i < nbarguments && element->type != l_return; i++) {
             element->release();
-            element = body->liste[i]->eval(lisp);
+            element = liste[i]->eval(lisp);
         }
         if (element->type == l_return) {
             Element* e = element->eval(lisp);
@@ -1947,8 +1947,8 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
     // For each of the parameters we record in the stack
     int16_t label;
     long i;
-    List* call = lisp->provideList();
-    Integers* labels = lisp->provideIntegers();
+    vecte<Element*> recorded(nbarguments);
+    vecte<int16_t> labels(nbarguments);
     
     try {
         //We then push a new stack element...
@@ -1960,22 +1960,15 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
             label = parameters->liste[i]->label();
             //The evaluation must be done on the previous stage of the stack
             element = liste[i+1]->eval(lisp);
-            if (lisp->localsave(parameters->index(i), call))
-                lisp->replacingvalue(element, label);
-            else {
-                lisp->recording(element, label);
-                labels->liste.push_back(label);
-            }
+            recorded.push_raw(lisp->record_or_replace(element, label));
+            labels.push_raw(label);
         }
     }
     catch (Error* err) {
-        for (i = 0; i < call->size(); i+=2) {
-            lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
-        }
-        for (i = 0; i < labels->size(); i++)
-            lisp->removefromstack(labels->liste[i]);
-        call->release();
-        labels->release();
+        //We must call reset_in_stack from end to begin
+        //the status should popped out from Stack::status
+        for (i = labels.size() - 1; i >= 0; i--)
+            lisp->reset_in_stack(recorded[i], labels[i]);
         throw err;
     }
 
@@ -1996,14 +1989,10 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
             if (element->type == l_return) {
                 Element* e = element->eval(lisp);
                 element->release();
-                for (i = 0; i < call->size(); i+=2) {
-                    lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
-                }
-                //This version protects 'e' from being destroyed in the stack.
-                for (i = 0; i < labels->size(); i++)
-                    lisp->removefromstack(labels->liste[i], e);
-                labels->release();
-                call->release();
+                //We must call reset_in_stack from end to begin
+                //the status should popped out from Stack::status
+                for (i = labels.size() - 1; i >= 0; i--)
+                    lisp->reset_in_stack(recorded[i], labels[i], e);
                 return e;
             }
         }
@@ -2011,27 +2000,14 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
     }
     catch (Error* err) {
         lisp->setstackfunction(stackfunction);
-        for (i = 0; i < call->size(); i+=2) {
-            lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
-        }
-        for (i = 0; i < labels->size(); i++)
-            lisp->removefromstack(labels->liste[i]);
-        labels->release();
-        call->release();
+        for (i = labels.size() - 1; i >= 0; i--)
+            lisp->reset_in_stack(recorded[i], labels[i]);
         throw err;
     }
     
-    for (i = 0; i < call->size(); i+=2) {
-        lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
-    }
-
-    for (i = 0; i < labels->size(); i++)
-        lisp->removefromstack(labels->liste[i], element);
-    labels->release();
-    call->release();
+    for (i = labels.size() - 1; i >= 0; i--)
+        lisp->reset_in_stack(recorded[i], labels[i], element);
     lisp->setstackfunction(stackfunction);
-    
-    //This version protects 'e' from being destroyed in the stack.
     return element;
 }
 
@@ -2558,9 +2534,10 @@ Element* List::evall_maplist(LispE* lisp) {
     Element* container = NULL;
     
     lisp->set_true_as_one();
-    List* call = lisp->provideList();
     int16_t label = -1;
     void* iter = NULL;
+    Element* save_variable = this;
+    List* call = NULL;
     
     try {
         element = liste[2]->eval(lisp);
@@ -2568,7 +2545,6 @@ Element* List::evall_maplist(LispE* lisp) {
         op = liste[1];
         listsz = element->size();
         if (!listsz) {
-            call->release();
             element->release();
             lisp->set_true_as_true();
             return emptylist_;
@@ -2587,12 +2563,9 @@ Element* List::evall_maplist(LispE* lisp) {
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
-            if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(nxt, label);
-            else
-                lisp->recording(nxt, label);
+            save_variable = lisp->record_or_replace(nxt, label);
             
-            e = eval_lambda_min(lisp, (List*)op);
+            e = ((List*)op)->eval_lambda_min(lisp);
             if (e->type == l_return)
                 container = emptylist_;
             else {
@@ -2618,7 +2591,7 @@ Element* List::evall_maplist(LispE* lisp) {
                 nxt = element->next_iter_exchange(lisp, iter);
                 while (nxt != emptyatom_) {
                     lisp->replacingvalue(nxt, label);
-                    e = eval_lambda_min(lisp, (List*)op);
+                    e = ((List*)op)->eval_lambda_min(lisp);
                     if (e->type == l_return)
                         break;
                     e = e->copying(false);
@@ -2628,13 +2601,11 @@ Element* List::evall_maplist(LispE* lisp) {
                 }
             }
             element->clean_iter(iter);
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], label);
-            else
-                lisp->removefromstack(label);
-            call->release();
+            lisp->reset_in_stack(save_variable, label);
         }
         else {
+            call = lisp->provideList();
+
             op = eval_body_as_argument(lisp, op);
             
             
@@ -2682,11 +2653,8 @@ Element* List::evall_maplist(LispE* lisp) {
     }
     catch (Error* err) {
         if (op->isLambda()) {
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], call->liste[0]->label());
-            else
-                lisp->removefromstack(label);
-            call->rawrelease();
+            if (save_variable != this)
+                lisp->reset_in_stack(save_variable, label);
         }
         else
             call->release();
@@ -2713,7 +2681,8 @@ Element* List::evall_filterlist(LispE* lisp) {
     
     lisp->set_true_as_one();
     int16_t ps = 1;
-    List* call = lisp->provideList();
+    List* call = NULL;
+    Element* save_variable = this;
     int16_t label = -1;
     void* iter =  NULL;
     
@@ -2748,7 +2717,6 @@ Element* List::evall_filterlist(LispE* lisp) {
 
         listsz = element->size();
         if (!listsz) {
-            call->release();
             element->release();
             lisp->set_true_as_true();
             return result;
@@ -2769,12 +2737,9 @@ Element* List::evall_filterlist(LispE* lisp) {
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
-            if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(nxt, label);
-            else
-                lisp->recording(nxt, label);
+            save_variable = lisp->record_or_replace(nxt, label);
             
-            e = eval_lambda_min(lisp, (List*)op);
+            e = ((List*)op)->eval_lambda_min(lisp);
             if (e->type != l_return) {
                 if (e->Boolean()) {
                     e->release();
@@ -2785,7 +2750,7 @@ Element* List::evall_filterlist(LispE* lisp) {
                 nxt = element->next_iter_exchange(lisp, iter);
                 while (nxt != emptyatom_) {
                     lisp->replacingvalue(nxt, label);
-                    e = call->eval_lambda_min(lisp, (List*)op);
+                    e = ((List*)op)->eval_lambda_min(lisp);
                     if (e->type == l_return)
                         break;
                     if (e->Boolean()) {
@@ -2798,13 +2763,10 @@ Element* List::evall_filterlist(LispE* lisp) {
                 }
             }
             element->clean_iter(iter);
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], call->liste[0]->label());
-            else
-                lisp->removefromstack(label);
-            call->release();
+            lisp->reset_in_stack(save_variable, label);
         }
         else {
+            call = lisp->provideList();
             if (op->isList() && op->size()) {
                 for (ps = 0; ps < op->size(); ps++) {
                     call->append(op->index(ps));
@@ -2839,13 +2801,12 @@ Element* List::evall_filterlist(LispE* lisp) {
     }
     catch (Error* err) {
         if (op->isLambda()) {
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], call->liste[0]->label());
-            else
-                lisp->removefromstack(label);
+            if (save_variable != this)
+                lisp->reset_in_stack(save_variable, label);
         }
+        else
+            call->release();
         
-        call->release();
         lisp->set_true_as_true();
         if (iter != NULL)
             element->clean_iter(iter);
@@ -2867,7 +2828,8 @@ Element* List::evall_takelist(LispE* lisp) {
     
     lisp->set_true_as_one();
     int16_t ps = 1;
-    List* call = lisp->provideList();
+    List* call = NULL;
+    Element* save_variable = this;
     int16_t label = -1;
     void* iter = NULL;
     
@@ -2902,7 +2864,6 @@ Element* List::evall_takelist(LispE* lisp) {
 
         listsz = element->size();
         if (!listsz) {
-            call->release();
             element->release();
             lisp->set_true_as_true();
             return result;
@@ -2923,12 +2884,9 @@ Element* List::evall_takelist(LispE* lisp) {
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
-            if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(nxt, label);
-            else
-                lisp->recording(nxt, label);
+            save_variable = lisp->record_or_replace(nxt, label);
             
-            e = eval_lambda_min(lisp, (List*)op);
+            e = ((List*)op)->eval_lambda_min(lisp);
             if (e->type != l_return) {
                 if (e->Boolean()) {
                     e->release();
@@ -2942,7 +2900,7 @@ Element* List::evall_takelist(LispE* lisp) {
                 nxt = element->next_iter_exchange(lisp, iter);
                 while (nxt != emptyatom_) {
                     lisp->replacingvalue(nxt, label);
-                    e = call->eval_lambda_min(lisp, (List*)op);
+                    e = ((List*)op)->eval_lambda_min(lisp);
                     if (e->type == l_return)
                         break;
                     if (e->Boolean()) {
@@ -2959,13 +2917,11 @@ Element* List::evall_takelist(LispE* lisp) {
                 }
             }
             element->clean_iter(iter);
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], call->liste[0]->label());
-            else
-                lisp->removefromstack(label);
-            call->release();
+            lisp->reset_in_stack(save_variable, label);
         }
         else {
+            call = lisp->provideList();
+            
             if (op->isList() && op->size()) {
                 for (ps = 0; ps < op->size(); ps++) {
                     call->append(op->index(ps));
@@ -3006,15 +2962,14 @@ Element* List::evall_takelist(LispE* lisp) {
     }
     catch (Error* err) {
         if (op->isLambda()) {
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], call->liste[0]->label());
-            else
-                lisp->removefromstack(label);
+            if (save_variable != this)
+                lisp->reset_in_stack(save_variable, label);
         }
-        
+        else
+            call->release();
+
         if (iter != NULL)
             element->clean_iter(iter);
-        call->release();
         lisp->set_true_as_true();
         element->release();
         result->release();
@@ -3034,7 +2989,8 @@ Element* List::evall_droplist(LispE* lisp) {
     
     lisp->set_true_as_one();
     int16_t ps = 1;
-    List* call = lisp->provideList();
+    List* call = NULL;
+    Element* save_variable = this;
     int16_t label = -1;
     void* iter = NULL;
     
@@ -3069,7 +3025,6 @@ Element* List::evall_droplist(LispE* lisp) {
 
         listsz = element->size();
         if (!listsz) {
-            call->release();
             element->release();
             lisp->set_true_as_true();
             return result;
@@ -3092,12 +3047,9 @@ Element* List::evall_droplist(LispE* lisp) {
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
-            if (lisp->localsave(op->index(1)->index(0), call))
-                lisp->replacingvalue(nxt, label);
-            else
-                lisp->recording(nxt, label);
+            save_variable = lisp->record_or_replace(nxt, label);
             
-            e = eval_lambda_min(lisp, (List*)op);
+            e = ((List*)op)->eval_lambda_min(lisp);
             if (e->type != l_return) {
                 if (e->Boolean()) {
                     e->release();
@@ -3110,7 +3062,7 @@ Element* List::evall_droplist(LispE* lisp) {
                 
                 while (nxt != emptyatom_) {
                     lisp->replacingvalue(nxt, label);
-                    e = call->eval_lambda_min(lisp, (List*)op);
+                    e = ((List*)op)->eval_lambda_min(lisp);
                     if (e->type == l_return)
                         break;
                     if (add || e->Boolean()) {
@@ -3124,13 +3076,10 @@ Element* List::evall_droplist(LispE* lisp) {
                 }
             }
             element->clean_iter(iter);
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], call->liste[0]->label());
-            else
-                lisp->removefromstack(label);
-            call->release();
+            lisp->reset_in_stack(save_variable, label);
         }
         else {
+            call = lisp->provideList();
             if (op->isList() && op->size()) {
                 for (ps = 0; ps < op->size(); ps++) {
                     call->append(op->index(ps));
@@ -3168,16 +3117,14 @@ Element* List::evall_droplist(LispE* lisp) {
     }
     catch (Error* err) {
         if (op->isLambda()) {
-            if (call->size())
-                lisp->replacingvalue(call->liste[1], call->liste[0]->label());
-            else
-                lisp->removefromstack(label);
+            if (save_variable != this)
+                lisp->reset_in_stack(save_variable, label);
         }
-        
+        else
+            call->release();
+
         if (iter != NULL)
             element->clean_iter(iter);
-
-        call->release();
         lisp->set_true_as_true();
         element->release();
         result->release();
@@ -3960,40 +3907,26 @@ Element* List::reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
     if (op->index(1)->size() != 2)
         throw new Error("Error: Wrong number of arguments");
     
-    List* call = lisp->provideList();
     lisp->set_true_as_one();
     int16_t arg1 = 0;
     int16_t arg2 = 0;
-    Element* rarg1 = NULL;
-    Element* rarg2 = NULL;
+    Element* rarg1 = this;
+    Element* rarg2 = this;
     try {
         arg1 = op->index(1)->index(0)->label();
         arg2 = op->index(1)->index(1)->label();
         
         Element* element = l1->index(0)->copying(false);
+        rarg1 = lisp->record_or_replace(element, arg1);
+        rarg2 = lisp->record_or_replace(l1->index(1), arg2);
         
-        //if there is already a variable with this name on the stack
-        //we record it to restore it later...
-        if (lisp->localsave(op->index(1)->index(0), call)) {
-            lisp->replacingvalue(element, arg1);
-            rarg1 = call->liste.back();
-        }
-        else
-            lisp->recording(element, arg1);
-        
-        
-        if (!lisp->localsave(op->index(1)->index(1), call))
-            lisp->recording(l1->index(1), arg2);
-        else
-            rarg2 = call->liste.back();
-        
-        element = eval_lambda_min(lisp, (List*)op);
+        element = ((List*)op)->eval_lambda_min(lisp);
         if (element->type != l_return) {
             lisp->replacingvalue(element, arg1);
             
             for (long i = 2; i < sz; i++) {
                 lisp->replacingvalue(l1->index(i), arg2);
-                element = eval_lambda_min(lisp, (List*)op);
+                element = ((List*)op)->eval_lambda_min(lisp);
                 if (element->type == l_return)
                     break;
                 lisp->replacingvalue(element, arg1);
@@ -4001,34 +3934,18 @@ Element* List::reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
         }
         element->increment();
         
-        if (rarg1 != NULL)
-            lisp->replacingvalue(rarg1, arg1);
-        else
-            lisp->removefromstack(arg1);
-        
-        if (rarg2 != NULL)
-            lisp->replacingvalue(rarg2, arg2);
-        else
-            lisp->removefromstack(arg2);
-        
-        call->release();
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
         l1->release();
         lisp->set_true_as_true();
         element->decrementkeep();
         return element;
     }
     catch(Error* err) {
-        if (rarg1 != NULL)
-            lisp->replacingvalue(rarg1, arg1);
-        else
-            lisp->removefromstack(arg1);
-        
-        if (rarg2 != NULL)
-            lisp->replacingvalue(rarg2, arg2);
-        else
-            lisp->removefromstack(arg2);
-        
-        call->release();
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
         lisp->set_true_as_true();
         throw err;
     }
@@ -4302,12 +4219,11 @@ Element* List::backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz)
     if (op->index(1)->size() != 2)
         throw new Error("Error: Wrong number of arguments");
     
-    List* call = lisp->provideList();
     lisp->set_true_as_one();
     int16_t arg1 = 0;
     int16_t arg2 = 0;
-    Element* rarg1 = NULL;
-    Element* rarg2 = NULL;
+    Element* rarg1 = this;
+    Element* rarg2 = this;
     try {
         Element* element = l1->reverse(lisp);
         l1->release();
@@ -4318,28 +4234,16 @@ Element* List::backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz)
         
         element = l1->index(0)->copying(false);
         
-        //if there is already a variable with this name on the stack
-        //we record it to restore it later...
-        if (lisp->localsave(op->index(1)->index(0), call)) {
-            lisp->replacingvalue(element, arg1);
-            rarg1 = call->liste.back();
-        }
-        else
-            lisp->recording(element, arg1);
+        rarg1 = lisp->record_or_replace(element, arg1);
+        rarg2 = lisp->record_or_replace(l1->index(1), arg2);
         
-        
-        if (!lisp->localsave(op->index(1)->index(1), call))
-            lisp->recording(l1->index(1), arg2);
-        else
-            rarg2 = call->liste.back();
-        
-        element = eval_lambda_min(lisp, (List*)op);
+        element = ((List*)op)->eval_lambda_min(lisp);
         if (element->type != l_return) {
             lisp->replacingvalue(element, arg1);
             
             for (long i = 2; i < sz; i++) {
                 lisp->replacingvalue(l1->index(i), arg2);
-                element = eval_lambda_min(lisp, (List*)op);
+                element = ((List*)op)->eval_lambda_min(lisp);
                 if (element->type == l_return)
                     break;
                 lisp->replacingvalue(element, arg1);
@@ -4348,34 +4252,19 @@ Element* List::backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz)
         
         element->increment();
         
-        if (rarg1 != NULL)
-            lisp->replacingvalue(rarg1, arg1);
-        else
-            lisp->removefromstack(arg1);
-        
-        if (rarg2 != NULL)
-            lisp->replacingvalue(rarg2, arg2);
-        else
-            lisp->removefromstack(arg2);
-        
-        call->release();
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
         l1->release();
         lisp->set_true_as_true();
         element->decrementkeep();
         return element;
     }
     catch(Error* err) {
-        if (rarg1 != NULL)
-            lisp->replacingvalue(rarg1, arg1);
-        else
-            lisp->removefromstack(arg1);
-        
-        if (rarg2 != NULL)
-            lisp->replacingvalue(rarg2, arg2);
-        else
-            lisp->removefromstack(arg2);
-        
-        call->release();
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
+
         lisp->set_true_as_true();
         throw err;
     }
@@ -5304,37 +5193,24 @@ Element* List::scan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
     if (op->index(1)->size() != 2)
         throw new Error("Error: Wrong number of arguments");
     
-    List* call = lisp->provideList();
     List* res = lisp->provideList();
     lisp->set_true_as_one();
+    Element* rarg1 = this;
+    Element* rarg2 = this;
+    
+    int16_t arg1 = op->index(1)->index(0)->label();
+    int16_t arg2 = op->index(1)->index(1)->label();
 
     try {
-        int16_t arg1 = op->index(1)->index(0)->label();
-        int16_t arg2 = op->index(1)->index(1)->label();
-        Element* rarg1 = NULL;
-        Element* rarg2 = NULL;
-        
         Element* e = l1->index(0)->copying(false);
         
-        //if there is already a variable with this name on the stack
-        //we record it to restore it later...
-        if (lisp->localsave(op->index(1)->index(0), call)) {
-            lisp->replacingvalue(e, arg1);
-            rarg1 = call->liste.back();
-        }
-        else
-            lisp->recording(e, arg1);
-        
+        rarg1 = lisp->record_or_replace(e, arg1);
+        rarg2 = lisp->record_or_replace(null_, arg2);
         res->append(e);
-        
-        if (!lisp->localsave(op->index(1)->index(1), call))
-            lisp->recording(null_, arg2);
-        else
-            rarg2 = call->liste.back();
         
         for (long i = 1; i < sz; i++) {
             lisp->replacingvalue(l1->index(i), arg2);
-            e = eval_lambda_min(lisp, (List*)op);
+            e = ((List*)op)->eval_lambda_min(lisp);
             if (e->type == l_return)
                 break;
             e = e->copying(false);
@@ -5342,21 +5218,16 @@ Element* List::scan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
             lisp->replacingvalue(e, arg1);
         }
         
-        if (rarg1 != NULL)
-            lisp->replacingvalue(rarg1, arg1);
-        else
-            lisp->removefromstack(arg1);
-        if (rarg2 != NULL)
-            lisp->replacingvalue(rarg2, arg2);
-        else
-            lisp->removefromstack(arg2);
-        
-        call->release();
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
         l1->release();
         lisp->set_true_as_true();
     }
     catch (Error* err) {
-        call->release();
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
         lisp->set_true_as_true();
         res->release();
         throw err;
@@ -5631,38 +5502,29 @@ Element* List::backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
     if (op->index(1)->size() != 2)
         throw new Error("Error: Wrong number of arguments");
     
-    List* call = lisp->provideList();
     List* res = lisp->provideList();
     lisp->set_true_as_one();
 
+    Element* rarg1 = this;
+    Element* rarg2 = this;
+    
+    int16_t arg1 = op->index(1)->index(0)->label();
+    int16_t arg2 = op->index(1)->index(1)->label();
+
     try {
-        int16_t arg1 = op->index(1)->index(0)->label();
-        int16_t arg2 = op->index(1)->index(1)->label();
-        Element* rarg1 = NULL;
-        Element* rarg2 = NULL;
-        
         sz--;
         Element* e = l1->index(sz)->copying(false);
-        
+
         //if there is already a variable with this name on the stack
         //we record it to restore it later...
-        if (lisp->localsave(op->index(1)->index(0), call)) {
-            lisp->replacingvalue(e, arg1);
-            rarg1 = call->liste.back();
-        }
-        else
-            lisp->recording(e, arg1);
-        
+        rarg1 = lisp->record_or_replace(e, arg1);
+        rarg2 = lisp->record_or_replace(null_, arg2);
+
         res->append(e);
         
-        if (!lisp->localsave(op->index(1)->index(1), call))
-            lisp->recording(null_, arg2);
-        else
-            rarg2 = call->liste.back();
-
         for (long i = sz-1; i >= 0; i--) {
             lisp->replacingvalue(l1->index(i), arg2);
-            e = eval_lambda_min(lisp, (List*)op);
+            e = ((List*)op)->eval_lambda_min(lisp);
             if (e->type == l_return)
                 break;
             e = e->copying(false);
@@ -5670,21 +5532,17 @@ Element* List::backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
             lisp->replacingvalue(e, arg1);
         }
         
-        if (rarg1 != NULL)
-            lisp->replacingvalue(rarg1, arg1);
-        else
-            lisp->removefromstack(arg1);
-        if (rarg2 != NULL)
-            lisp->replacingvalue(rarg2, arg2);
-        else
-            lisp->removefromstack(arg2);
-        
-        call->release();
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
         l1->release();
         lisp->set_true_as_true();
     }
     catch (Error* err) {
-        call->release();
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
+
         lisp->set_true_as_true();
         res->release();
         throw err;
@@ -7629,9 +7487,11 @@ Element* List::evall_heap(LispE* lisp) {
         if (oper == null_ || oper->size() == 0)
             oper = lisp->provideAtom(l_compare);
         
-        compare = lisp->provideCall(oper, 2);
-        
-        tas =  new Heap(compare);
+        if (oper->isLambda())
+            tas =  new Heaplambda((List*)oper);
+        else
+            tas =  new Heap(lisp->provideCall(oper, 2));
+                
         for (long i = 2; i < listsize; i++) {
             second_element = liste[i]->eval(lisp);
             tas->insert(lisp, second_element->copying(false));
@@ -10005,7 +9865,6 @@ Element* List::evall_zipwith(LispE* lisp) {
     
     Element* value = null_;
     List* params = NULL;
-    Integers* labels = NULL;
 
     
     try {
@@ -10034,25 +9893,18 @@ Element* List::evall_zipwith(LispE* lisp) {
 
         //First element is the operation, second element the list
         if (function->isLambda()) {
-            labels = lisp->provideIntegers();
             params = (List*)function->index(1);
             if (params->size() < lsz)
                 throw new Error("Error: Wrong number of arguments");
             
+            //if there is already a variable with this name on the stack
+            //we record it to restore it later...
             for (i = 0; i < lsz; i++) {
-                value = params->liste[i];
-                //if there is already a variable with this name on the stack
-                //we record it to restore it later...
-                if (lisp->localsave(value, call))
-                    lisp->replacingvalue(lists->liste[i]->index(0), value->label());
-                else {
-                    lisp->recording(lists->liste[i]->index(0), value->label());
-                    labels->liste.push_back(value->label());
-                }
+                value = lisp->record_or_replace(lists->liste[i]->index(0), params->liste[i]->label());
+                call->liste.push_raw(value);
             }
             
-            value = null_;
-            value = eval_lambda_min(lisp, (List*)function);
+            value = ((List*)function)->eval_lambda_min(lisp);
             if (value->type == l_return)
                 container = emptylist_;
             else {
@@ -10078,20 +9930,16 @@ Element* List::evall_zipwith(LispE* lisp) {
                 for (j = 1; j < szl; j++) {
                     for (i = 0; i < lsz; i++)
                         lisp->replacingvalue(lists->liste[i]->index(j), params->liste[i]->label());
-                    value = eval_lambda_min(lisp, (List*)function);
+                    value = ((List*)function)->eval_lambda_min(lisp);
                     if (value->type == l_return)
                         break;
                     container->append(value);
                     value->release();
                 }
             }
-            for (i = 0; i < call->size(); i+=2) {
-                lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
-            }
-            call->release();
-            for (i = 0; i < labels->size(); i++)
-                lisp->removefromstack(labels->liste[i]);
-            labels->release();
+            for (i = lsz - 1; i >= 0; i--)
+                lisp->reset_in_stack(call->index(i), params->liste[i]->label());
+            call->rawrelease();
         }
         else {
             function = eval_body_as_argument(lisp, function);
@@ -10137,15 +9985,12 @@ Element* List::evall_zipwith(LispE* lisp) {
     catch (Error* err) {
         container->increment();
         if (params != NULL) {
-            for (i = 0; i < call->size(); i+=2) {
-                lisp->replacingvalue(call->liste[i+1], call->liste[i]->label());
-            }
-            for (i = 0; i < labels->size(); i++)
-                lisp->removefromstack(labels->liste[i]);
-            labels->release();
+            for (i = call->size() - 1; i >= 0; i--)
+                lisp->reset_in_stack(call->index(i), params->liste[i]->label());
+            call->rawrelease();
         }
-
-        call->release();
+        else
+            call->release();
         lists->release();
         container->decrement();
         throw err;

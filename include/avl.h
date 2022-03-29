@@ -28,10 +28,16 @@ class Avl {
     
     void insertion(LispE*, Avl**, Element*, List* compare);
     bool erase(LispE*, Avl** root, Element* current, List* compare);
-    void pop_front(Avl** root);
-    void pop_last(Avl** root);
     Element* search(LispE*, Element* e, List* compare);
     bool check(LispE*, Element* e, List* compare);
+
+    void insertion(LispE*, Avl**, Element*, List* compare, short label);
+    bool erase(LispE*, Avl** root, Element* current, List* compare, short label);
+    Element* search(LispE*, Element* e, List* compare, short label);
+    bool check(LispE*, Element* e, List* compare, short label);
+
+    void pop_front(Avl** root);
+    void pop_last(Avl** root);
     
     Element* front(LispE* lisp);
     Element* back(LispE* lisp);
@@ -206,15 +212,20 @@ public:
     }
     
     
+    virtual Element* evaluate(LispE* lisp) {
+        return compare->eval(lisp);
+    }
+    
     void push_element(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
-    bool remove(LispE* lisp, Element* e);
-    Element* insert(LispE* lisp, Element* e, long idx);
-    Element* insert(LispE* lisp, Element* e);
-    bool check_element(LispE* lisp, Element* element_value);
-    Element* search_element(LispE*, Element* element_value, long idx);
+    virtual bool remove(LispE* lisp, Element* e);
+    virtual Element* insert(LispE* lisp, Element* e, long idx);
+    virtual Element* insert(LispE* lisp, Element* e);
+    virtual bool check_element(LispE* lisp, Element* element_value);
+    virtual Element* search_element(LispE*, Element* element_value, long idx);
+    
     Element* asList(LispE* lisp, List* l);
     Element* asLList(LispE* lisp);
     void flatten(LispE*, List* l) {
@@ -333,4 +344,19 @@ public:
     Element* loop(LispE* lisp, int16_t label, List* code);
     bool egal(Element* e);
 };
+
+class Heaplambda : public Heap {
+public:
+    
+    Heaplambda(List* c) : Heap(c) {}
+  
+    
+    bool remove(LispE* lisp, Element* e);
+    Element* insert(LispE* lisp, Element* e, long idx);
+    Element* insert(LispE* lisp, Element* e);
+    bool check_element(LispE* lisp, Element* element_value);
+    Element* search_element(LispE*, Element* element_value, long idx);
+
+};
+
 #endif

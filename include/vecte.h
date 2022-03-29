@@ -199,6 +199,11 @@ public:
 		//sinon on ajoute l'element en queue...
 		vecteur[last++] = val;
 	}
+    
+    //On ajoute sans vérifier la taille
+    inline void push_raw(Z val) {
+        vecteur[last++] = val;
+    }
 
     void padding(long nb) {
         if (sz < (nb + last)) {

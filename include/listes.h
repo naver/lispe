@@ -988,7 +988,7 @@ public:
     Element* eval_thread(LispE*, List* body);
     Element* eval_data(LispE*, Element* body);
     Element* eval_lambda(LispE*, List* body);
-    Element* eval_lambda_min(LispE*, List* body);
+    Element* eval_lambda_min(LispE*);
     
     void evalAsUString(long i, LispE* lisp, u_ustring& w);
     void evalAsNumber(long i, LispE* lisp, double& d);

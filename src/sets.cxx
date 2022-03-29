@@ -1975,30 +1975,6 @@ Avl::Avl(Element* e) {
     height=0;
 }
 
-void Avl::insertion(LispE* lisp, Avl** courant,Element* ajout, List* compare) {
-    long test;
-    if (*courant==NULL)
-        *courant= new Avl(ajout);
-    else {
-        compare->in_quote(2, (*courant)->value);
-        test = compare->eval(lisp)->asInteger();
-        if (!test) {
-            Avl* dernier=*courant;
-            //On va chercher le dernier element de la liste
-            while (dernier->same!=NULL)
-                dernier=dernier->same;
-            dernier->same= new Avl(ajout);
-        }
-        else {
-            if (test < 0)
-                insertion(lisp, &(*courant)->left,ajout,compare);
-            else
-                insertion(lisp, &(*courant)->right,ajout,compare);
-            check_height(courant);
-        }
-    }
-}
-
 void Avl::tree_shape(Avl** courant,long& type) {
     long hg,hd;
     Avl* element;
@@ -2102,6 +2078,30 @@ void Avl::rebuilding(Avl** courant,long type) {
             *courant=element->right;
             ((*courant)->left)->right=e;
             check_height(&(*courant)->left);
+            check_height(courant);
+        }
+    }
+}
+
+void Avl::insertion(LispE* lisp, Avl** courant,Element* ajout, List* compare) {
+    long test;
+    if (*courant==NULL)
+        *courant= new Avl(ajout);
+    else {
+        compare->in_quote(2, (*courant)->value);
+        test = compare->eval(lisp)->asInteger();
+        if (!test) {
+            Avl* dernier=*courant;
+            //On va chercher le dernier element de la liste
+            while (dernier->same!=NULL)
+                dernier=dernier->same;
+            dernier->same= new Avl(ajout);
+        }
+        else {
+            if (test < 0)
+                insertion(lisp, &(*courant)->left,ajout,compare);
+            else
+                insertion(lisp, &(*courant)->right,ajout,compare);
             check_height(courant);
         }
     }
@@ -2233,6 +2233,158 @@ bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare) {
     return false;
 
 }
+
+void Avl::insertion(LispE* lisp, Avl** courant, Element* ajout, List* compare, short label) {
+    int16_t test;
+    if (*courant==NULL)
+        *courant= new Avl(ajout);
+    else {
+        lisp->replacingvalue((*courant)->value, label);
+        test = compare->eval_lambda_min(lisp)->asShort();
+        if (!test) {
+            Avl* dernier=*courant;
+            //On va chercher le dernier element de la liste
+            while (dernier->same!=NULL)
+                dernier=dernier->same;
+            dernier->same= new Avl(ajout);
+        }
+        else {
+            if (test < 0)
+                insertion(lisp, &(*courant)->left,ajout,compare, label);
+            else
+                insertion(lisp, &(*courant)->right,ajout,compare, label);
+            check_height(courant);
+        }
+    }
+}
+
+Element* Avl::search(LispE* lisp, Element* element, List* compare, short label) {
+    Avl* e = this;
+    int16_t test;
+    while (e != NULL) {
+        lisp->replacingvalue(e->value, label);
+        test = compare->eval_lambda_min(lisp)->asShort();
+        if (!test) {
+            while (e != NULL) {
+                if (e->value->isequal(lisp, element))
+                    return e->value;
+                e = e->same;
+            }
+            return NULL;
+        }
+        
+        if (test < 0)
+            e = e->left;
+        else
+            e = e->right;
+    }
+    return NULL;
+}
+
+bool Avl::check(LispE* lisp, Element* element, List* compare, short label) {
+    Avl* e = this;
+    int16_t test;
+    while (e != NULL) {
+        lisp->replacingvalue(e->value, label);
+        test = compare->eval_lambda_min(lisp)->asShort();
+        if (!test) {
+            while (e != NULL) {
+                if (e->value->isequal(lisp, element))
+                    return true;
+                e = e->same;
+            }
+            return false;
+        }
+        
+        if (test < 0)
+            e = e->left;
+        else
+            e = e->right;
+    }
+    return false;
+}
+
+bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare, short label) {
+    Avl* parent = this;
+    Avl* e=this;
+    int16_t test;
+    char origin = 0;
+    while (e != NULL) {
+        lisp->replacingvalue(e->value, label);
+        test = compare->eval_lambda_min(lisp)->asShort();
+        if (!test) {
+            Avl* clean = e;
+            Avl* moving = e;
+            Avl* prec = NULL;
+            while (moving != NULL) {
+                if (current->isequal(lisp, moving->value)) {
+                    break;
+                }
+                prec = moving;
+                moving = moving->same;
+            }
+            if (moving == NULL)
+                return false;
+            bool change = false;
+            if (e->same == NULL) {
+                change = true;
+                if (e->left != NULL)
+                    moving = e->left;
+                else {
+                    if (e->right != NULL)
+                        moving = e->right;
+                    else
+                        moving = NULL;
+                }
+            }
+            else {
+                if (prec == NULL) {
+                    clean = e;
+                    moving = e->same;
+                    moving->left = e->left;
+                    moving->right = e->right;
+                }
+                else {
+                    prec->same = moving->same;
+                    clean = moving;
+                    moving = e;
+                }
+            }
+            
+            //we replace the current element with moving...
+            if (!origin) {
+                //This is the root of our tree
+                *root = moving;
+            }
+            else {
+                if (origin == -1)
+                    //It was the left node
+                    parent->left = moving;
+                else
+                    parent->right = moving;
+            }
+
+            if (change)
+                check_height(root);
+            
+            clean->value->decrement();
+            delete clean;
+            return true;
+        }
+        parent= e;
+        if (test < 0) {
+            origin = -1;
+            e=e->left;
+        }
+        else {
+            origin = 1;
+            e=e->right;
+        }
+    }
+    return false;
+
+}
+
 
 void Avl::pop_front(Avl** root) {
     Avl* e = this;
@@ -2540,6 +2692,17 @@ Element* Heap::insert(LispE* lisp, Element* element) {
     return this;
 }
 
+bool Heap::remove(LispE* lisp, Element* element) {
+    if (root == NULL)
+        return false;
+    
+    compare->in_quote(1, element);
+    bool del = root->erase(lisp, &root, element, compare);
+    compare->in_quote(1, null_);
+    compare->in_quote(2, null_);
+    return del;
+}
+
 void Heap::push_element(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
@@ -2566,19 +2729,6 @@ void Heap::push_element_back(LispE* lisp, List* l) {
         value->release();
     }
 }
-
-
-bool Heap::remove(LispE* lisp, Element* element) {
-    if (root == NULL)
-        return false;
-    
-    compare->in_quote(1, element);
-    bool del = root->erase(lisp, &root, element, compare);
-    compare->in_quote(1, null_);
-    compare->in_quote(2, null_);
-    return del;
-}
-
 
 Element* Heap::car(LispE* lisp) {
     if (root == NULL)
@@ -2782,4 +2932,136 @@ bool Heap::unify(LispE* lisp, Element* value, bool record) {
         v = ivalue.next();
     }
     return (test && r == NULL && v == NULL);
+}
+
+
+bool Heaplambda::check_element(LispE* lisp, Element* element_value) {
+    if (root == NULL)
+        return false;
+    
+    short lab1 = compare->index(1)->index(0)->label();
+    short lab2 = compare->index(1)->index(1)->label();
+    
+    Element* e1 = lisp->record_or_replace(element_value, lab1);
+    Element* e2 = lisp->record_or_replace(null_, lab2);
+
+    bool res = false;
+    try {
+        res = root->check(lisp, element_value, compare, lab2);
+    }
+    catch(Error* err) {
+        lisp->reset_in_stack(e2, lab2);
+        lisp->reset_in_stack(e1, lab1);
+        throw err;
+    }
+
+    lisp->reset_in_stack(e2, lab2);
+    lisp->reset_in_stack(e1, lab1);
+    
+    return res;
+}
+
+Element* Heaplambda::search_element(LispE* lisp, Element* element_value, long idx) {
+    if (root == NULL)
+        return null_;
+
+    short lab1 = compare->index(1)->index(0)->label();
+    short lab2 = compare->index(1)->index(1)->label();
+    
+    Element* e1 = lisp->record_or_replace(element_value, lab1);
+    Element* e2 = lisp->record_or_replace(null_, lab2);
+
+    Element* res = NULL;
+    try {
+        res = root->search(lisp, element_value, compare, lab2);
+    }
+    catch(Error* err) {
+        lisp->reset_in_stack(e2, lab2);
+        lisp->reset_in_stack(e1, lab1);
+        throw err;
+    }
+    
+    lisp->reset_in_stack(e2, lab2);
+    lisp->reset_in_stack(e1, lab1);
+
+    return (res == NULL)?null_:res;
+}
+
+Element* Heaplambda::insert(LispE* lisp, Element* element, long idx) {
+    if (root == NULL) {
+        root = new Avl(element);
+        return this;
+    }
+    
+    short lab1 = compare->index(1)->index(0)->label();
+    short lab2 = compare->index(1)->index(1)->label();
+    
+    Element* e1 = lisp->record_or_replace(element, lab1);
+    Element* e2 = lisp->record_or_replace(null_, lab2);
+    
+    try {
+        root->insertion(lisp, &root, element, compare, lab2);
+    }
+    catch(Error* err) {
+        lisp->reset_in_stack(e2, lab2);
+        lisp->reset_in_stack(e1, lab1);
+        throw err;
+    }
+
+    lisp->reset_in_stack(e2, lab2);
+    lisp->reset_in_stack(e1, lab1);
+    return this;
+}
+
+Element* Heaplambda::insert(LispE* lisp, Element* element) {
+    if (root == NULL) {
+        root = new Avl(element);
+        return this;
+    }
+    
+    short lab1 = compare->index(1)->index(0)->label();
+    short lab2 = compare->index(1)->index(1)->label();
+    
+    Element* e1 = lisp->record_or_replace(element, lab1);
+    Element* e2 = lisp->record_or_replace(null_, lab2);
+
+    try {
+        root->insertion(lisp, &root, element, compare, lab2);
+    }
+    catch(Error* err) {
+        lisp->reset_in_stack(e2, lab2);
+        lisp->reset_in_stack(e1, lab1);
+        throw err;
+    }
+
+    lisp->reset_in_stack(e2, lab2);
+    lisp->reset_in_stack(e1, lab1);
+    return this;
+}
+
+bool Heaplambda::remove(LispE* lisp, Element* element) {
+    if (root == NULL)
+        return false;
+    
+    short lab1 = compare->index(1)->index(0)->label();
+    short lab2 = compare->index(1)->index(1)->label();
+    
+    Element* e1 = lisp->record_or_replace(element, lab1);
+    Element* e2 = lisp->record_or_replace(null_, lab2);
+
+    bool del = false;
+
+    try {
+        del = root->erase(lisp, &root, element, compare, lab2);
+    }
+    catch(Error* err) {
+        lisp->reset_in_stack(e2, lab2);
+        lisp->reset_in_stack(e1, lab1);
+        throw err;
+    }
+
+    lisp->reset_in_stack(e2, lab2);
+    lisp->reset_in_stack(e1, lab1);
+
+    return del;
 }
