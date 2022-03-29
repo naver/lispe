@@ -125,7 +125,7 @@ void jag_editor::displaythehelp(long noclear) {
     cerr << "   \t- " << m_redbold << "Ctrl-h:" << m_current << " local help" << endl;
 #endif
     cerr << "   \t- " << m_redbold << "Ctrl-k:" << m_current << " delete from cursor up to the end of the line" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " reload file from disk" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " load file from disk" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-n:" << m_current << " find next" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-q:" << m_current << " exit the editor" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-r:" << m_current << " redo last modification" << endl;
@@ -147,7 +147,7 @@ void jag_editor::displaythehelp(long noclear) {
     cerr << "   \t\t- " << m_redital << "d:" << m_current << " debug the code" << endl;
     cerr << "   \t\t- " << m_redital << "r:" << m_current << " run the code" << endl;
     cerr << "   \t\t- " << m_redital << "w:" << m_current << " write and quit" << endl;
-    cerr << "   \t\t- " << m_redital << "l:" << m_current << " load a file" << endl;
+    cerr << "   \t\t- " << m_redital << "l:" << m_current << " reload a file" << endl;
     cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
     cerr << "   \t\t- " << m_redital << "m:" << m_current << " toggle mouse on/off" << endl;
     cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;
@@ -351,7 +351,7 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     modified = true;
     tobesaved = false;
     screensizes();
-    localhelp << m_red<< "^xh" << m_current << ":help " << m_red<< "^k" << m_current << ":del after " << m_red<< "^p" << m_current << ":k-buffer " <<  m_red<< "^d" << m_current << ":del line " << m_red<< "^uz/^r" << m_current << ":un/redo " << m_red<< "^f" << m_current << ":find " << m_red<< "^n" << m_current << ":next " << m_red<< "^g" << m_current << ":go " << m_red<< "^l" << m_current << ":reload " << m_red<< "^t" << m_current << ":indent " << m_red<< "^s/w" << m_current << ":write " << m_red<< "^x" << m_current << ":commands ";
+    localhelp << m_red<< "^xh" << m_current << ":help " << m_red<< "^k" << m_current << ":del after " << m_red<< "^p" << m_current << ":k-buffer " <<  m_red<< "^d" << m_current << ":del line " << m_red<< "^uz/^r" << m_current << ":un/redo " << m_red<< "^f" << m_current << ":find " << m_red<< "^n" << m_current << ":next " << m_red<< "^g" << m_current << ":go " << m_red<< "^l" << m_current << ":load " << m_red<< "^t" << m_current << ":indent " << m_red<< "^s/w" << m_current << ":write " << m_red<< "^x" << m_current << ":commands ";
 
     updateline = true;
     taskel = true;
@@ -1960,14 +1960,8 @@ bool jag_editor::checkcommand(char cmd) {
 			displayonlast("", true);
             return true;
         }
-        case 'l':
-            clearst();
-            st << "load:";
-            displayonlast(false);
-            line = currentfind;
-            currentreplace = L"";
-            posinstring = currentfind.size();
-            option = x_load;
+        case 'l': //reload a file
+            reloadfile();
             return true;
         case 'u':
             if (emode())
@@ -2564,7 +2558,17 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     break;
                 case x_load:
                     loadfile(line);
-                    break;
+                    if (!emode()) {
+                        option = x_none;
+                        displayonlast("", true);
+                    }
+                    else {
+                        noprefix = previous_noprefix;
+                        displaylist(0, row_size);
+                        movetoline(currentline);
+                        movetobeginning();
+                    }
+                    return true;
                 default:
                     break;
             }
@@ -2588,9 +2592,16 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
             line = line.substr(0, posinstring);
             displaygo(true);
             return true;
-        case 12: //ctrl-l: display one line down in the command history or toggle between top/bottom in edit mode
-            if (emode())
-                toggletopbottom();
+        case 12: //ctrl-l: load a file
+            if (emode()) {
+                clearst();
+                st << "load:";
+                displayonlast(false);
+                line = currentfind;
+                currentreplace = L"";
+                posinstring = currentfind.size();
+                option = x_load;
+            }
             return true;
         case 14:
             if (emode()) { //in edit mode looking for the next find

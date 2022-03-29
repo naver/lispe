@@ -942,6 +942,32 @@ public:
 
     void getcursor();
 
+    virtual bool reloadfile() {
+        if (thecurrentfilename == "")
+            return false;
+        
+        ifstream rd(thecurrentfilename, openMode);
+        if (rd.fail()) {
+            cerr << m_redbold << " Cannot load: " << thecurrentfilename << m_current << endl;
+            return false;
+        }
+        string ln;
+        string cde;
+        while (!rd.eof()) {
+            getline(rd, ln);
+            ln = s_trimright(ln);
+            cde += ln + "\n";
+        }
+        wstring code = wconvert(cde);
+        lines.setcode(code, true);
+        displayonlast("Reloaded", true);
+        posinstring = 0;
+        pos = 0;
+        currentline = 0;
+        displaylist(0);
+        return true;
+    }
+    
     void toggletopbottom() {
         if (poslines.size() == 0)
             return;
@@ -1225,6 +1251,8 @@ public:
         s_trimright(code);
         code += "\n\n";
         setcode(code, true);
+        noprefix = previous_noprefix;
+
         return true;
     }
 

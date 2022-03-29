@@ -135,7 +135,7 @@ void lispe_editor::displaythehelp(long i) {
         cerr << "   \t- " << m_redbold << "Ctrl-f:" << m_current << " find a string" << endl;
         cerr << "   \t- " << m_redbold << "Ctrl-n:" << m_current << " find next" << endl;
         cerr << "   \t- " << m_redbold << "Ctrl-g:" << m_current << " move to a specific line, '$' is the end of the code" << endl;
-        cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " reload file from disk" << endl;
+        cerr << "   \t- " << m_redbold << "Ctrl-l:" << m_current << " load file from disk" << endl;
         cerr << "   \t- " << m_redbold << "Ctrl-t:" << m_current << " reindent the code" << endl;
 #ifdef WIN32
         cerr << "   \t- " << m_redbold << "Ctrl+Alt-h:" << m_current << " local help" << endl;
@@ -160,7 +160,7 @@ void lispe_editor::displaythehelp(long i) {
         cerr << "   \t\t- " << m_redital << "d:" << m_current << " debug the code" << endl;
         cerr << "   \t\t- " << m_redital << "r:" << m_current << " run the code" << endl;
         cerr << "   \t\t- " << m_redital << "w:" << m_current << " write and quit" << endl;
-        cerr << "   \t\t- " << m_redital << "l:" << m_current << " load a file" << endl;
+        cerr << "   \t\t- " << m_redital << "l:" << m_current << " reload a file" << endl;
         cerr << "   \t\t- " << m_redital << "h:" << m_current << " full help" << endl;
         cerr << "   \t\t- " << m_redital << "m:" << m_current << " toggle mouse on/off" << endl;
         cerr << "   \t\t- " << m_redital << "u:" << m_current << " toggle between top and bottom of the screen" << endl;

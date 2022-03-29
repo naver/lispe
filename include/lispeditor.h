@@ -458,13 +458,24 @@ public:
         }
         LispSetCode(cde);
         wstring code = WListing();
-        lines.setcode(code, true);
         editors_undos[currentfileid].clear();
         editors_redos[currentfileid].clear();
-        line = L"edit";
-        bool dsp = true;
-        pos = handlingcommands(pos, dsp);
-        displayonlast("Reloaded", true);
+
+        line = L"";
+        lines.setcode(code, true);
+        editmode = true;
+
+        currentline = 0;
+        posinstring = 0;
+        lastline = 0;
+
+        pos = lastline;
+        option = x_none;
+        posinstring = 0;
+        line = lines[lastline];
+        displaylist(lastline, row_size);
+        movetoline(currentline);
+        movetobeginning();
         return true;
     }
     
@@ -476,6 +487,7 @@ public:
             return false;
         
         thecurrentfilename = Normalizefilename(thecurrentfilename);
+        setpathname(thecurrentfilename);
         if (filenames.find(thecurrentfilename) != filenames.end()) {
             if (currentfileid != filenames[thecurrentfilename]) {
                 //We backup our current undo/redo buffer
@@ -526,10 +538,15 @@ public:
             filenames[thecurrentfilename] = currentfileid;
         }
         line = L"";
-        posinstring = 0;
         lines.setcode(code, true);
+        currentline = 0;
+        posinstring = 0;
+        lastline = 0;
+        pos = lastline;
+        
+        option = x_none;
+        line = lines[lastline];
         return true;
-
     }
     
     bool writetofile() {
@@ -719,9 +736,16 @@ public:
                 else
                     printline(pos+1, line, -1);
                 return true;
-            case 12: //ctrl-l: reload file
-                if (emode())
-                    reloadfile();
+            case 12: //ctrl-l: display one line down in the command history or toggle between top/bottom in edit mode
+                if (emode()) {
+                    clearst();
+                    st << "load:";
+                    displayonlast(false);
+                    line = currentfind;
+                    currentreplace = L"";
+                    posinstring = currentfind.size();
+                    option = x_load;
+                }
                 return true;
             case 17:
                 if (emode()) {
