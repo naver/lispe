@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.3.29.10.33";
+static std::string version = "1.2022.4.6.15.38";
 string LispVersion() {
     return version;
 }
@@ -209,7 +209,8 @@ void Delegation::initialisation(LispE* lisp) {
 
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
-    set_instruction(l_index, "at", P_ATLEASTTHREE, &List::evall_index);
+    set_instruction(l_at, "at", P_ATLEASTTHREE, &List::evall_at);
+    set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR, &List::evall_at_shape);
     set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom);
     set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
     set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp);
@@ -380,6 +381,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_seti, "seti", P_ATLEASTONE, &List::evall_seti);
     set_instruction(l_setn, "setn", P_ATLEASTONE, &List::evall_setn);
     set_instruction(l_set_at, "set@", P_ATLEASTFOUR, &List::evall_set_at);
+    set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE, &List::evall_set_shape);
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
     set_instruction(l_sign, "sign", P_TWO, &List::evall_sign);
@@ -515,7 +517,7 @@ void Delegation::initialisation(LispE* lisp) {
     operators[l_and] = true;
     operators[l_xor] = true;
 
-    operators[l_index] = true;
+    operators[l_at] = true;
 
     comparators[l_equal] = true;
     comparators[l_equalonezero] = true;
@@ -746,15 +748,23 @@ void Delegation::initialisation(LispE* lisp) {
 
     //We introduce @ as a substitute to at
     w = U"@";
-    string_to_code[w] = l_index;
+    string_to_code[w] = l_at;
     
     //We introduce @@ as a substitute to extract
     w = U"@@";
     string_to_code[w] = l_extract;
 
+    //We introduce @@@ as a substitute to atshape
+    w = U"@@@";
+    string_to_code[w] = l_at_shape;
+
     //We introduce set@@ as a substitute to setrange
     w = U"set@@";
     string_to_code[w] = l_set_range;
+
+    //We introduce set@@@ as a substitute to setshape
+    w = U"set@@@";
+    string_to_code[w] = l_set_shape;
 
     //We introduce containerkeys as a substitute to keys@
     w = U"containerkeys";
@@ -1591,7 +1601,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                         Element* nxt = e->index(1);
                                         if (nxt->label() < l_final) {
                                             if (nxt->isList()) {
-                                                if (nxt->size() < 2 || nxt->index(0)->label() != l_index) {
+                                                if (nxt->size() < 2 || nxt->index(0)->label() != l_at) {
                                                     wstring msg = L"Error: Expecting an index access with 'at'";
                                                     throw new Error(msg);
                                                 }
@@ -2326,6 +2336,10 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
 
 
 

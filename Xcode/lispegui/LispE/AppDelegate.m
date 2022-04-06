@@ -1,12 +1,12 @@
 /*
- *  Tamgu (탐구)
+ *  LispE
  *
  * Copyright 2019-present NAVER Corp.
  * under BSD 3-clause
  */
 /* --- CONTENTS ---
- Project    : Tamgu (탐구)
- Version    : See tamgu.cxx for the version number
+ Project    : LispE
+ Version    : See lispe.cxx for the version number
  filename   : AppDelegate.m
  Date       : 2017/09/01
  Purpose    : 
@@ -15,7 +15,7 @@
  */
 
 #import "AppDelegate.h"
-#import "tamgudebugger.h"
+#import "lispedebugger.h"
 #import "CodeViewController.h"
 #import "ViewController.h"
 
@@ -26,7 +26,7 @@ BOOL runingmode;
 extern ViewController* vue;
 extern Console* tview;
 AppDelegate* currentdelegate = nil;
-extern tamgudebugger* debugger;
+extern lispedebugger* debugger;
 
 #import "animationSegue.h"
 extern NSMutableDictionary* allfiles;

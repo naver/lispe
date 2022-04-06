@@ -1,12 +1,12 @@
 /*
- *  Tamgu (탐구)
+ *  LispE
  *
  * Copyright 2019-present NAVER Corp.
  * under BSD 3-clause
  */
 /* --- CONTENTS ---
- Project    : Tamgu (탐구)
- Version    : See tamgu.cxx for the version number
+ Project    : LispE
+ Version    : See lispe.cxx for the version number
  filename   : Console.m
  Date       : 2017/09/01
  Purpose    : 
@@ -39,20 +39,20 @@ long computeparenthesis(const char* ln, char checkcar, long limit);
 #import "Console.h"
 #import "ViewController.h"
 #import "animationSegue.h"
-#import "tamgudebugger.h"
+#import "lispedebugger.h"
 
 NSMutableDictionary *allfiles;
 
 extern AppDelegate* currentdelegate;
 
-extern tamgudebugger* debugger;
+extern lispedebugger* debugger;
 
 BOOL nouveau = NO;
 extern BOOL runingmode;
 extern BOOL dark;
 
 Console* tview;
-tamgudebugger* debugcontroller = nil;
+lispedebugger* debugcontroller = nil;
 
 extern ViewController* vue;
 

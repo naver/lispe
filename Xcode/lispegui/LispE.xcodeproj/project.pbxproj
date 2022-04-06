@@ -20,11 +20,14 @@
 		0B4E1AAF260B85D800BBAE21 /* jagget.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9D260B85D800BBAE21 /* jagget.cxx */; };
 		0B4E1AB1260B85D800BBAE21 /* maths.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B4E1A9F260B85D800BBAE21 /* maths.cxx */; };
 		0B4EC62D1FC5C27200082CA6 /* Linenumber.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B4EC62C1FC5C27200082CA6 /* Linenumber.m */; };
-		0B4EC6341FC8150400082CA6 /* tamgudebugger.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B4EC6331FC8150400082CA6 /* tamgudebugger.m */; };
+		0B4EC6341FC8150400082CA6 /* lispedebugger.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B4EC6331FC8150400082CA6 /* lispedebugger.m */; };
 		0B55A5151FC3140F005339A9 /* Lecode.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B55A5141FC3140F005339A9 /* Lecode.m */; };
 		0B55A5181FC316B4005339A9 /* CodeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B55A5171FC316B4005339A9 /* CodeViewController.m */; };
 		0B6B3CBF260DE7460062212D /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0B6B3CBE260DE7460062212D /* AppIcon.icns */; };
 		0B9A3AA3265D2A0F00F1D1DD /* ontology.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */; };
+		0BAF45C827970101004BDD50 /* dictionaries.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C527970101004BDD50 /* dictionaries.cxx */; };
+		0BAF45C927970101004BDD50 /* lists.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C627970101004BDD50 /* lists.cxx */; };
+		0BAF45CA27970101004BDD50 /* sets.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C727970101004BDD50 /* sets.cxx */; };
 		0BF4E3EA1FC2D12D004C0821 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E3E91FC2D12D004C0821 /* AppDelegate.m */; };
 		0BF4E3ED1FC2D12D004C0821 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E3EC1FC2D12D004C0821 /* ViewController.m */; };
 		0BF4E3EF1FC2D12D004C0821 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0BF4E3EE1FC2D12D004C0821 /* Assets.xcassets */; };
@@ -33,9 +36,6 @@
 		0BF4E43A1FC2D357004C0821 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0BF4E4391FC2D34A004C0821 /* Cocoa.framework */; };
 		0BF4E58B1FC2D4B4004C0821 /* Console.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E58A1FC2D4B4004C0821 /* Console.m */; };
 		0BF4E58D1FC2FCEB004C0821 /* interface.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E58C1FC2FCEB004C0821 /* interface.cpp */; };
-		0BF51AE22791CAF7001C1BCE /* lists.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BF51ADF2791CAF7001C1BCE /* lists.cxx */; };
-		0BF51AE32791CAF7001C1BCE /* dictionaries.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BF51AE02791CAF7001C1BCE /* dictionaries.cxx */; };
-		0BF51AE42791CAF7001C1BCE /* sets.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BF51AE12791CAF7001C1BCE /* sets.cxx */; };
 		0BFFCCBA1FCDD5860043CAF3 /* animationSegue.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BFFCCB91FCDD5860043CAF3 /* animationSegue.m */; };
 /* End PBXBuildFile section */
 
@@ -89,15 +89,21 @@
 		0B4E1ABF260B872900BBAE21 /* libfltk_images.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libfltk_images.a; path = ../../gui/libs/macos/libfltk_images.a; sourceTree = "<group>"; };
 		0B4EC62B1FC5C27200082CA6 /* Linenumber.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Linenumber.h; sourceTree = "<group>"; };
 		0B4EC62C1FC5C27200082CA6 /* Linenumber.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Linenumber.m; sourceTree = "<group>"; };
-		0B4EC6321FC8150400082CA6 /* tamgudebugger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tamgudebugger.h; sourceTree = "<group>"; };
-		0B4EC6331FC8150400082CA6 /* tamgudebugger.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = tamgudebugger.m; sourceTree = "<group>"; };
+		0B4EC6321FC8150400082CA6 /* lispedebugger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lispedebugger.h; sourceTree = "<group>"; };
+		0B4EC6331FC8150400082CA6 /* lispedebugger.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = lispedebugger.m; sourceTree = "<group>"; };
+		0B50F0AF279E9DC9003361C6 /* avl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = avl.h; path = ../../../include/avl.h; sourceTree = "<group>"; };
 		0B55A5131FC3140F005339A9 /* Lecode.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Lecode.h; sourceTree = "<group>"; };
 		0B55A5141FC3140F005339A9 /* Lecode.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Lecode.m; sourceTree = "<group>"; };
 		0B55A5161FC316B4005339A9 /* CodeViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CodeViewController.h; sourceTree = "<group>"; };
 		0B55A5171FC316B4005339A9 /* CodeViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CodeViewController.m; sourceTree = "<group>"; };
 		0B6B3CBE260DE7460062212D /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		0B78F07427BFC9F700C0706E /* mapbin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = mapbin.h; path = ../../../include/mapbin.h; sourceTree = "<group>"; };
 		0B7C15FA265E38BE00EC82A5 /* ontology.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ontology.h; path = ../../../include/ontology.h; sourceTree = "<group>"; };
 		0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ontology.cxx; path = ../../../src/ontology.cxx; sourceTree = "<group>"; };
+		0BAF45C527970101004BDD50 /* dictionaries.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dictionaries.cxx; path = ../../../src/dictionaries.cxx; sourceTree = "<group>"; };
+		0BAF45C627970101004BDD50 /* lists.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lists.cxx; path = ../../../src/lists.cxx; sourceTree = "<group>"; };
+		0BAF45C727970101004BDD50 /* sets.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sets.cxx; path = ../../../src/sets.cxx; sourceTree = "<group>"; };
+		0BC14C0A27970E9C0093AC2C /* llistes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = llistes.h; path = ../../../include/llistes.h; sourceTree = "<group>"; };
 		0BF4E3E51FC2D12D004C0821 /* LispE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LispE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BF4E3E81FC2D12D004C0821 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		0BF4E3E91FC2D12D004C0821 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -114,9 +120,6 @@
 		0BF4E5891FC2D4B4004C0821 /* Console.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Console.h; sourceTree = "<group>"; };
 		0BF4E58A1FC2D4B4004C0821 /* Console.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Console.m; sourceTree = "<group>"; };
 		0BF4E58C1FC2FCEB004C0821 /* interface.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = interface.cpp; sourceTree = "<group>"; };
-		0BF51ADF2791CAF7001C1BCE /* lists.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lists.cxx; path = ../../../src/lists.cxx; sourceTree = "<group>"; };
-		0BF51AE02791CAF7001C1BCE /* dictionaries.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dictionaries.cxx; path = ../../../src/dictionaries.cxx; sourceTree = "<group>"; };
-		0BF51AE12791CAF7001C1BCE /* sets.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sets.cxx; path = ../../../src/sets.cxx; sourceTree = "<group>"; };
 		0BFFCCB81FCDD5860043CAF3 /* animationSegue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = animationSegue.h; sourceTree = "<group>"; };
 		0BFFCCB91FCDD5860043CAF3 /* animationSegue.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = animationSegue.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -164,8 +167,8 @@
 				0B4EC62B1FC5C27200082CA6 /* Linenumber.h */,
 				0B4EC62C1FC5C27200082CA6 /* Linenumber.m */,
 				0BF4E3F41FC2D12D004C0821 /* main.m */,
-				0B4EC6321FC8150400082CA6 /* tamgudebugger.h */,
-				0B4EC6331FC8150400082CA6 /* tamgudebugger.m */,
+				0B4EC6321FC8150400082CA6 /* lispedebugger.h */,
+				0B4EC6331FC8150400082CA6 /* lispedebugger.m */,
 				0BF4E3EB1FC2D12D004C0821 /* ViewController.h */,
 				0BF4E3EC1FC2D12D004C0821 /* ViewController.m */,
 			);
@@ -185,17 +188,17 @@
 			isa = PBXGroup;
 			children = (
 				0B4E1A90260B85D700BBAE21 /* composing.cxx */,
-				0BF51AE02791CAF7001C1BCE /* dictionaries.cxx */,
+				0BAF45C527970101004BDD50 /* dictionaries.cxx */,
 				0B4E1A92260B85D700BBAE21 /* elements.cxx */,
 				0B4E1A9B260B85D700BBAE21 /* eval.cxx */,
 				0B4E1A9D260B85D800BBAE21 /* jagget.cxx */,
 				0B4E1A91260B85D700BBAE21 /* lispe.cxx */,
-				0BF51ADF2791CAF7001C1BCE /* lists.cxx */,
+				0BAF45C627970101004BDD50 /* lists.cxx */,
 				0B4E1A9F260B85D800BBAE21 /* maths.cxx */,
 				0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */,
 				0B4E1A98260B85D700BBAE21 /* randoms.cxx */,
 				0B4E1A9C260B85D700BBAE21 /* rgx.cxx */,
-				0BF51AE12791CAF7001C1BCE /* sets.cxx */,
+				0BAF45C727970101004BDD50 /* sets.cxx */,
 				0B4E1A96260B85D700BBAE21 /* sockets.cxx */,
 				0B4E1A94260B85D700BBAE21 /* strings.cxx */,
 				0B4E1A99260B85D700BBAE21 /* systems.cxx */,
@@ -207,6 +210,7 @@
 		0B09F08122930EDB00CD9755 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				0B50F0AF279E9DC9003361C6 /* avl.h */,
 				0B4E1A87260B85B900BBAE21 /* delegation.h */,
 				0B4E1A8D260B85B900BBAE21 /* directorylisting.h */,
 				0B4E1A88260B85B900BBAE21 /* elements.h */,
@@ -215,8 +219,10 @@
 				0B4E1A89260B85B900BBAE21 /* jagrgx.h */,
 				0B4E1A8E260B85B900BBAE21 /* lispe.h */,
 				0B4E1A85260B85B900BBAE21 /* lispeditor.h */,
-				0B7C15FA265E38BE00EC82A5 /* ontology.h */,
 				0B4E1A8B260B85B900BBAE21 /* listes.h */,
+				0BC14C0A27970E9C0093AC2C /* llistes.h */,
+				0B7C15FA265E38BE00EC82A5 /* ontology.h */,
+				0B78F07427BFC9F700C0706E /* mapbin.h */,
 				0B4E1A86260B85B900BBAE21 /* rgx.h */,
 				0B4E1A83260B85B900BBAE21 /* segmentation.h */,
 				0B4E1A8A260B85B900BBAE21 /* stack.h */,
@@ -344,7 +350,7 @@
 				KnownAssetTags = (
 					MonViewController,
 				);
-				LastUpgradeCheck = 0910;
+				LastUpgradeCheck = 1320;
 				ORGANIZATIONNAME = "Claude Roux";
 				TargetAttributes = {
 					0BF4E3E41FC2D12D004C0821 = {
@@ -427,7 +433,8 @@
 				0B4E1AA2260B85D800BBAE21 /* composing.cxx in Sources */,
 				0BF4E58D1FC2FCEB004C0821 /* interface.cpp in Sources */,
 				0B4E1AA6260B85D800BBAE21 /* strings.cxx in Sources */,
-				0B4EC6341FC8150400082CA6 /* tamgudebugger.m in Sources */,
+				0BAF45C827970101004BDD50 /* dictionaries.cxx in Sources */,
+				0B4EC6341FC8150400082CA6 /* lispedebugger.m in Sources */,
 				0B4E1AB1260B85D800BBAE21 /* maths.cxx in Sources */,
 				0B4E1AAE260B85D800BBAE21 /* rgx.cxx in Sources */,
 				0B4E1AAB260B85D800BBAE21 /* systems.cxx in Sources */,
@@ -435,15 +442,14 @@
 				0B4E1AAF260B85D800BBAE21 /* jagget.cxx in Sources */,
 				0BF4E3EA1FC2D12D004C0821 /* AppDelegate.m in Sources */,
 				0BFFCCBA1FCDD5860043CAF3 /* animationSegue.m in Sources */,
-				0BF51AE32791CAF7001C1BCE /* dictionaries.cxx in Sources */,
-				0BF51AE42791CAF7001C1BCE /* sets.cxx in Sources */,
+				0BAF45CA27970101004BDD50 /* sets.cxx in Sources */,
 				0B55A5151FC3140F005339A9 /* Lecode.m in Sources */,
 				0B4EC62D1FC5C27200082CA6 /* Linenumber.m in Sources */,
-				0BF51AE22791CAF7001C1BCE /* lists.cxx in Sources */,
 				0B4E1AA8260B85D800BBAE21 /* sockets.cxx in Sources */,
 				0B4E1AAA260B85D800BBAE21 /* randoms.cxx in Sources */,
 				0B4E1AAC260B85D800BBAE21 /* tools.cxx in Sources */,
 				0B55A5181FC316B4005339A9 /* CodeViewController.m in Sources */,
+				0BAF45C927970101004BDD50 /* lists.cxx in Sources */,
 				0B9A3AA3265D2A0F00F1D1DD /* ontology.cxx in Sources */,
 				0B4E1AA3260B85D800BBAE21 /* lispe.cxx in Sources */,
 			);
@@ -504,6 +510,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -511,8 +518,10 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -559,6 +568,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -566,8 +576,10 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
 				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -602,6 +614,7 @@
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CLANG_X86_VECTOR_INSTRUCTIONS = avx2;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				HEADER_SEARCH_PATHS = ../../include;
@@ -613,7 +626,8 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DPOSIXREGEX",
-					"-DAPPLE",
+					"-fno-math-errno",
+					"-DMACDEBUG",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "NAVER-labs.lispe";
 				PRODUCT_NAME = LispE;
@@ -630,6 +644,7 @@
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_USE_OPTIMIZATION_PROFILE = YES;
 				CLANG_X86_VECTOR_INSTRUCTIONS = avx2;
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_OPTIMIZATION_LEVEL = fast;
@@ -643,7 +658,7 @@
 				OTHER_CPLUSPLUSFLAGS = (
 					"$(OTHER_CFLAGS)",
 					"-DPOSIXREGEX",
-					"-DAPPLE",
+					"-fno-math-errno",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "NAVER-labs.lispe";
 				PRODUCT_NAME = LispE;

@@ -541,6 +541,22 @@ public:
     Element* multiloop(LispE* lisp);
     Element* polyloop(LispE* lisp);
     
+    void set_from(Element* e, long i) {
+        append(e->index(i));
+    }
+    
+    void set_from(Element* e, long i, long j) {
+        while (i != j) {
+            append(e->index(i++));
+        }
+    }
+
+    void set_in(LispE* lisp, Element* e, long i) {
+        liste[i]->decrement();
+        liste[i] = e;
+        e->increment();
+    }
+    
     bool check_element(LispE* lisp, Element* element_value);
     long find_element(LispE*, Element* element_value, long idx);
     Element* search_element(LispE*, Element* element_value, long idx);
@@ -1256,7 +1272,8 @@ public:
     Element* evall_if(LispE* lisp);
     Element* evall_ife(LispE* lisp);
     Element* evall_in(LispE* lisp);
-    Element* evall_index(LispE* lisp);
+    Element* evall_at_shape(LispE* lisp);
+    Element* evall_at(LispE* lisp);
     Element* evall_index_zero(LispE* lisp);
     Element* evall_infix(LispE* lisp);
     Element* evall_innerproduct(LispE* lisp);
@@ -1368,6 +1385,7 @@ public:
     Element* evall_set(LispE* lisp);
     Element* evall_set_at(LispE* lisp);
     Element* evall_set_range(LispE* lisp);
+    Element* evall_set_shape(LispE* lisp);
     Element* evall_setg(LispE* lisp);
     Element* evall_seti(LispE* lisp);
     Element* evall_setn(LispE* lisp);
@@ -1934,6 +1952,20 @@ public:
         return (depth < sz.size() && sz[depth] == size());
     }
     
+    void set_from(Element* c, long i) {
+        liste.push_back(((Floats*)c)->liste[i]);
+    }
+    
+    void set_from(Element* c, long i, long j) {
+        while (i != j) {
+            liste.push_back(((Floats*)c)->liste[i++]);
+        }
+    }
+
+    void set_in(LispE* lisp, Element* c, long i) {
+        liste[i] = c->asFloat();
+    }
+    
     Element* invert_sign(LispE* lisp);
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
@@ -2380,6 +2412,20 @@ public:
         return (depth < sz.size() && sz[depth] == size());
     }
 
+    void set_from(Element* c, long i) {
+        liste.push_back(((Numbers*)c)->liste[i]);
+    }
+    
+    void set_from(Element* c, long i, long j) {
+        while (i != j) {
+            liste.push_back(((Numbers*)c)->liste[i++]);
+        }
+    }
+
+    void set_in(LispE* lisp, Element* c, long i) {
+        liste[i] = c->asNumber();
+    }
+    
     Element* asList(LispE* lisp, List* l);
     
     Element* newInstance(Element* v) {
@@ -2847,6 +2893,20 @@ public:
         return new Shorts(liste.size(), v->asInteger());
     }
 
+    void set_from(Element* c, long i) {
+        liste.push_back(((Shorts*)c)->liste[i]);
+    }
+    
+    void set_from(Element* c, long i, long j) {
+        while (i != j) {
+            liste.push_back(((Shorts*)c)->liste[i++]);
+        }
+    }
+
+    void set_in(LispE* lisp, Element* c, long i) {
+        liste[i] = c->asShort();
+    }
+    
     void concatenate(LispE* lisp, Element* e) {
         if (!e->isList())
             liste.push_back(e->asInteger());
@@ -3249,6 +3309,20 @@ public:
         return (depth < sz.size() && sz[depth] == size());
     }
 
+    void set_from(Element* c, long i) {
+        liste.push_back(((Integers*)c)->liste[i]);
+    }
+    
+    void set_from(Element* c, long i, long j) {
+        while (i != j) {
+            liste.push_back(((Integers*)c)->liste[i++]);
+        }
+    }
+
+    void set_in(LispE* lisp, Element* c, long i) {
+        liste[i] = c->asInteger();
+    }
+    
     Element* asList(LispE* lisp, List* l);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
@@ -4613,6 +4687,20 @@ public:
 
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
+    }
+
+    void set_from(Element* c, long i) {
+        liste.push_back(((Strings*)c)->liste[i]);
+    }
+    
+    void set_from(Element* c, long i, long j) {
+        while (i != j) {
+            liste.push_back(((Strings*)c)->liste[i++]);
+        }
+    }
+
+    void set_in(LispE* lisp, Element* c, long i) {
+        liste[i] = c->asUString(lisp);
     }
 
     Element* newInstance(Element* v) {

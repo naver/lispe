@@ -8792,7 +8792,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -8911,7 +8911,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -9030,7 +9030,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -9151,7 +9151,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -9270,7 +9270,7 @@ Element* List::evall_divideequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -9571,7 +9571,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -9690,7 +9690,7 @@ Element* List::evall_minusequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -9992,7 +9992,7 @@ Element* List::evall_modequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -10112,7 +10112,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -10414,7 +10414,7 @@ Element* List::evall_plusequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -10734,7 +10734,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();
@@ -10853,7 +10853,7 @@ Element* List::evall_powerequal(LispE* lisp) {
 
     if (label < l_final) {
         label = -1;
-        if (liste[1]->isList() && liste[1]->index(0)->label() == l_index) {
+        if (liste[1]->isList() && liste[1]->index(0)->label() == l_at) {
             if (liste[1]->index(1)->label() < l_final)
                 throw new Error("Error: Expecting a variable in embedded '@'");
             exec = lisp->provideList();

@@ -6649,7 +6649,7 @@ Element* List::evall_in(LispE* lisp) {
     return booleans_[res];
 }
 
-Element* List::evall_index(LispE* lisp) {
+Element* List::evall_at(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* result = container;
 
@@ -6731,6 +6731,219 @@ Element* List::evall_index_zero(LispE* lisp) {
     return result;
 }
 
+Element* List::evall_at_shape(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    Element* result = liste[0];
+
+    long instruction_size = liste.size();
+    Integers* shapes = NULL;
+    Element* shape = liste[0];
+
+    try {
+        //The second element is the shape...
+        shape = liste[2]->eval(lisp);
+        long shape_size = shape->size();
+
+        if (!shape->isList() || !shape_size || shape_size < instruction_size - 3)
+            throw new Error("Error: Expecting a list with enough values to match the indexes as second argument");
+        
+        long i;
+
+        if (shape->type == t_integers)
+            shapes = (Integers*)shape;
+        else {
+            shapes = lisp->provideIntegers();
+            for (i = 0; i < shape_size; i++)
+                shapes->liste.push_back(shape->index(i)->asInteger());
+        }
+
+        //The user might have provided a list of indexes
+        //which we use to traverse a complex hierarchical structure...
+        long index = 0;
+        long idx = 0;
+        long cumul = 1;
+        
+        for (i = instruction_size - 1; i >= 3; i--) {
+            evalAsInteger(i, lisp, index);
+            if (index < 0) {
+                i -= 3;
+                break;
+            }
+            idx += index*cumul;
+            cumul *= shapes->liste[i - 3];
+        }
+
+        instruction_size -= 3;
+
+        if (index < 0) {
+            bool choice = (index == -1);
+            result = container->newInstance();
+            //First we need to detect if -1 is in the middle of a structure...
+            cumul = 1;
+            long value_size;
+            long begin = 0;
+            for (index = 0; index < i; index++) {
+                evalAsInteger(index + 3, lisp, value_size);
+                if (value_size < 0)
+                    break;
+                begin += value_size * cumul;
+                cumul *= shapes->liste[index];
+            }
+
+            if (index) {
+                //We have found a restriction
+                cumul = 1;
+                for (; index < shape_size; index++) {
+                    cumul *= shapes->liste[index];
+                }
+                begin *= cumul;
+                value_size = begin + cumul;
+                cumul = 1;
+            }
+            else
+                value_size = container->size();
+            
+            //First we need to find the new bloc size
+            long block_size = 1;
+            if (choice) {
+                for (index = i + 1; index < shape_size; index++) {
+                    block_size *= shapes->liste[index];
+                    cumul *= (index >= instruction_size)?shapes->liste[index]:1;
+                }
+                if (cumul == 1) {
+                    for (i = begin; i < value_size; i += block_size)
+                        result->set_from(container, i + idx);
+                }
+                else {
+                    idx *= cumul;
+                    for (i = begin; i < value_size; i += block_size) {
+                        result->set_from(container, i + idx, i + idx + cumul);
+                    }
+                }
+            }
+            else {
+                for (index = i; index < shape_size; index++) {
+                    block_size *= shapes->liste[index];
+                    cumul *= (index >= instruction_size)?shapes->liste[index]:1;
+                }
+                shape_size = shapes->liste[i];
+                if (cumul == 1) {
+                    for (index = 0; index < shape_size; index++) {
+                        for (i = begin; i < value_size; i += block_size)
+                            result->set_from(container, i + idx + index);
+                    }
+                }
+                else {
+                    idx *= cumul;
+                    for (index = 0; index < shape_size; index++) {
+                        for (i = begin; i < value_size; i += block_size) {
+                            instruction_size = i + idx + (index*cumul);
+                            result->set_from(container, instruction_size, instruction_size + cumul);
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            if (shape_size == instruction_size) {
+                if (idx >= container->size())
+                    throw new Error("Error: Index out of bound");
+                result = container->index(idx)->duplicate_constant(lisp);
+            }
+            else {
+                result = container->newInstance();
+                cumul = 1;
+                for (i = instruction_size; i < shape_size; i++) {
+                    index = shape->index(i)->asInteger();
+                    cumul *= index;
+                    idx *= index;
+                }
+                result->set_from(container, idx, idx + cumul);
+            }
+        }
+        shapes->release();
+        container->release();
+        if (shapes != shape)
+            shape->release();
+    }
+    catch (Error* err) {
+        if (shapes != NULL)
+            shapes->release();
+        if (shape != shapes)
+            shape->release();
+        container->release();
+        result->release();
+        throw err;
+    }
+
+    return result;
+}
+
+Element* List::evall_set_shape(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+
+    int16_t instruction_size = liste.size();
+    Element* value = null_;
+    Element* shape = null_;
+    
+    try {
+        //The second element is the shape...
+        shape = liste[2]->eval(lisp);
+        long shape_size = shape->size();
+        if (!shape->isList() || !shape_size || shape_size < instruction_size - 4)
+            throw new Error("Error: Expecting a list with enough values to match the indexes as second argument");
+
+        value = liste[instruction_size - 1]->eval(lisp);
+
+        //The user might have provided a list of indexes
+        //which we use to traverse a complex hierarchical structure...
+        long i;
+        long index = 0;
+        long idx = 0;
+        long cumul = 1;
+
+        for (i = instruction_size - 2; i >= 3; i--) {
+            evalAsInteger(i, lisp, index);
+            if (index < 0)
+                throw new Error("Error: cannot modify this value");
+            idx += index*cumul;
+            cumul *= shape->index(i - 3)->asInteger();
+        }
+            
+        instruction_size -= 4;
+
+        if (shape_size == instruction_size) {
+            if (idx >= container->size())
+                throw new Error("Error: Index out of bound");
+            container->set_in(lisp, value, idx);
+        }
+        else {
+            cumul = 1;
+            for (i = instruction_size; i < shape_size; i++) {
+                index = shape->index(i)->asInteger();
+                cumul *= index;
+                idx *= index;
+            }
+
+            if (cumul > value->size())
+                throw new Error("Error: cannot store this value in this container");
+            cumul += idx;
+            for (i = idx; i < cumul; i++) {
+                container->set_in(lisp, value->index(i - idx), i);
+            }
+        }
+        value->release();
+        shape->release();
+    }
+    catch (Error* err) {
+        shape->release();
+        value->release();
+        container->release();
+        throw err;
+    }
+
+    return container;
+}
 
 Element* List::evall_set_at(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
@@ -6770,7 +6983,6 @@ Element* List::evall_set_at(LispE* lisp) {
 
     return result;
 }
-
 
 //Infix Expressions: x op y op z op u
 Element* List::evall_infix(LispE* lisp) {

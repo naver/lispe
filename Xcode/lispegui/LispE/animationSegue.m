@@ -1,12 +1,12 @@
 /*
- *  Tamgu (탐구)
+ *  LispE
  *
  * Copyright 2019-present NAVER Corp.
  * under BSD 3-clause
  */
 /* --- CONTENTS ---
- Project    : Tamgu (탐구)
- Version    : See tamgu.cxx for the version number
+ Project    : LispE
+ Version    : See lispe.cxx for the version number
  filename   : animationSegue.m
  Date       : 2017/09/01
  Purpose    : animation to switch to a different window
@@ -16,10 +16,10 @@
 
 #import "AppDelegate.h"
 #import "animationSegue.h"
-#import "tamgudebugger.h"
+#import "lispedebugger.h"
 
 extern AppDelegate* currentdelegate;
-extern tamgudebugger* debugcontroller;
+extern lispedebugger* debugcontroller;
 
 @import QuartzCore;
 

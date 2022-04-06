@@ -1,12 +1,12 @@
 /*
- *  Tamgu (탐구)
+ *  LispE
  *
  * Copyright 2019-present NAVER Corp.
  * under BSD 3-clause
  */
 /* --- CONTENTS ---
- Project    : Tamgu (탐구)
- Version    : See tamgu.cxx for the version number
+ Project    : LispE
+ Version    : See lispe.cxx for the version number
  filename   : ViewController.h
  Date       : 2017/09/01
  Purpose    :  

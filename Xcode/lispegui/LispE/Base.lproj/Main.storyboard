@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="19455" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="B8D-0N-5wS">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="B8D-0N-5wS">
     <dependencies>
-        <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="19455"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="20037"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -884,7 +883,7 @@
         <scene sceneID="spH-xE-ami">
             <objects>
                 <viewController title="Debug" storyboardIdentifier="ledebug" id="SWy-W7-oLi" sceneMemberID="viewController">
-                    <view key="view" id="Lhr-T4-oPJ" customClass="tamgudebugger">
+                    <view key="view" id="Lhr-T4-oPJ" customClass="lispedebugger">
                         <rect key="frame" x="0.0" y="0.0" width="1035" height="755"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
@@ -1017,7 +1016,7 @@
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <clipView key="contentView" drawsBackground="NO" id="haX-Xf-Mhx">
                                     <rect key="frame" x="1" y="1" width="998" height="998"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <textView importsGraphics="NO" horizontallyResizable="YES" verticallyResizable="YES" usesFontPanel="YES" findStyle="panel" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" id="efR-lT-YF5" customClass="Console">
                                             <rect key="frame" x="0.0" y="0.0" width="998" height="998"/>
@@ -1063,7 +1062,7 @@
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <clipView key="contentView" drawsBackground="NO" id="orl-yg-5mG">
                                     <rect key="frame" x="1" y="1" width="998" height="998"/>
-                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <textView importsGraphics="NO" horizontallyResizable="YES" verticallyResizable="YES" usesFontPanel="YES" findStyle="panel" allowsUndo="YES" usesRuler="YES" allowsNonContiguousLayout="YES" id="8df-Xy-qyw" customClass="Lecode">
                                             <rect key="frame" x="0.0" y="0.0" width="998" height="998"/>
