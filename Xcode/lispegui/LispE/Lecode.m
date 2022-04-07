@@ -78,7 +78,7 @@ BOOL dark = false;
     [dateFormat setDateFormat:@"dd/MM/yyyy"];
     NSString *dateString = [dateFormat stringFromDate:today];
     
-    NSString* fileContent = [NSString stringWithFormat:@"\n;Date: %@\n;Author: \n;Description: \n\n\n",dateString];
+    NSString* fileContent = [NSString stringWithFormat:@";Date: %@\n;Author: \n;Description: \n\n\n",dateString];
     fileName = [NSURL fileURLWithPath:@""];
     
     if (nouveau == NO) {

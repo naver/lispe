@@ -431,6 +431,38 @@ long UTF8_Handler::getonchar(u_ustring& w, long position) {
     return i;
 }
 
+void get_one_char(string& utf, string& res, long& i) {
+    res = utf[0];
+    if (!(utf[0] & 0x0080))
+        return;
+
+    res += utf[1];
+
+    //3 more bytes
+    if ((utf[0] & 0xF0)== 0xF0) {
+        if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80) {
+            res += utf[2];
+            res += utf[3];
+            i += 3;
+        }
+        return;
+    }
+    
+    //2 more bytes
+    if ((utf[0] & 0xE0)== 0xE0) {
+        if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80) {
+            res += utf[2];
+            i += 2;
+        }
+        return;
+    }
+    
+    //1 more bytes
+    if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80) {
+        i++;
+    }
+}
+
 #ifdef WIN32
 UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR result, code;
