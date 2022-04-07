@@ -15,16 +15,17 @@
 #include <string>
 #include <vector>
 
-using std::u32string;
+using std::string;
+using std::wstring;
+using u32string;
 
-void c_unicode_to_utf16(wstring& w, u_uchar c) {
+void c_unicode_to_utf16(wstring& w, char32_t c) {
     if (!(c & 0xFFFF0000))
         w = (wchar_t)c;
     else {
-        u_uchar c16;
-        c_unicode_to_utf16(c16, c);
-        w = (wchar_t)(c16 >> 16);
-        w += (wchar_t)(c16 & 0xFFFF);
+        char32_t c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+        w = c16;
+        w += 0xDC00 | (c & 0x3FF);
     }
 }
 
@@ -1539,7 +1540,7 @@ public:
         return a;
     }
     
-    bool check(std::u32string& u, long p) {
+    bool check(u32string& u, long p) {
         if (p == u.size())
             return end;
         Emoji_arc* a = find(u[p]);
@@ -1575,7 +1576,7 @@ public:
         return false;
     }
 
-    bool scan(std::u32string& u, long p, long& i) {
+    bool scan(u32string& u, long p, long& i) {
         Emoji_arc* a = find(u[p]);
         if (a != NULL)
             return a->scan(u, p + 1, i);
@@ -1773,7 +1774,7 @@ public:
         return (complements.find(c) != complements.end());
     }
     
-    bool isemoji(std::u32string& u) {
+    bool isemoji(u32string& u) {
         if (!u.size())
             return false;
 
@@ -1781,7 +1782,7 @@ public:
         return (it != utf32_arcs.end() && it->second->check(u, 1));
     }
     
-    bool scan(std::u32string& u, long& i) {
+    bool scan(u32string& u, long& i) {
         std::unordered_map<char32_t, Emoji_arc*>::iterator it = utf32_arcs.find(u[i]);
         if (it == utf32_arcs.end())
             return false;
@@ -1791,7 +1792,7 @@ public:
         return found;
     }
 
-    bool get(std::u32string& u, std::u32string& res, long& i) {
+    bool get(u32string& u, u32string& res, long& i) {
         std::unordered_map<char32_t, Emoji_arc*>::iterator it = utf32_arcs.find(u[i]);
         if (it == utf32_arcs.end())
             return false;
@@ -1805,7 +1806,7 @@ public:
         return false;
     }
 
-    bool store(std::u32string& u, std::u32string& res, long& i) {
+    bool store(u32string& u, u32string& res, long& i) {
         std::unordered_map<char32_t, Emoji_arc*>::iterator it = utf32_arcs.find(u[i]);
         if (it == utf32_arcs.end())
             return false;

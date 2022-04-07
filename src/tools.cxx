@@ -3631,10 +3631,9 @@ Exporting void c_unicode_to_utf16(wstring& w, u_uchar c) {
     if (!(c & 0xFFFF0000))
         w = (wchar_t)c;
     else {
-        u_uchar c16;
-        c_unicode_to_utf16(c16, c);
-        w = (wchar_t)(c16 >> 16);
-        w += (wchar_t)(c16 & 0xFFFF);
+        u_uchar c_16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+        w = c_16;
+        w += 0xDC00 | (c & 0x3FF);
     }
 }
 
@@ -3657,9 +3656,9 @@ Exporting void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz) {
                 continue;
             }
             
-            c_unicode_to_utf16(c16, c);
-            w += (wchar_t)(c16 >> 16);
-            w += (wchar_t)(c16 & 0xFFFF);
+            c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+            w += c16;
+            w += 0xDC00 | (c & 0x3FF);
             continue;
         }
         w += (wchar_t)*str;
@@ -3690,9 +3689,9 @@ Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
                 continue;
             }
 
-            c_unicode_to_utf16(c16, c);
-            neo[ineo++] = (wchar_t)(c16 >> 16);
-            neo[ineo++] = (wchar_t)(c16 & 0xFFFF);
+            c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+            neo[ineo++] = c16;
+            neo[ineo++] = 0xDC00 | (c & 0x3FF);
             continue;
         }
         neo[ineo++] = (wchar_t)*str;
@@ -4947,9 +4946,9 @@ Exporting wstring u_to_w(u_ustring u) {
             continue;
         }
         
-        c_unicode_to_utf16(c16, c);
-        w += (wchar_t)(c16 >> 16);
-        w += (wchar_t)(c16 & 0xFFFF);
+        c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+        w += c16;
+        w += 0xDC00 | (c & 0x3FF);
     }
     return w;
 }
@@ -4978,9 +4977,9 @@ Exporting wstring _u_to_w(u_ustring& u) {
             continue;
         }
         
-        c_unicode_to_utf16(c16, c);
-        w += (wchar_t)(c16 >> 16);
-        w += (wchar_t)(c16 & 0xFFFF);
+        c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+        w += c16;
+        w += 0xDC00 | (c & 0x3FF);
     }
     return w;
 }
