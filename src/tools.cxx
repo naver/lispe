@@ -431,7 +431,7 @@ long UTF8_Handler::getonchar(u_ustring& w, long position) {
     return i;
 }
 
-void get_one_char(string& utf, string& res, long& i) {
+Exporting void get_one_char(string& utf, string& res, long& i) {
     res = utf[i];
     if (!(utf[i] & 0x0080))
         return;

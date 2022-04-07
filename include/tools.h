@@ -185,6 +185,8 @@ Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code);
 Exporting bool c_utf16(u_uchar code);
 Exporting char* unicode_2_utf8(long code, char* utf);
 
+Exporting void get_one_char(string& utf, string& res, long& i);
+
 Exporting char c_test_utf8(unsigned char* utf);
 
 #define c_is_digit(c) (c >= '0' && c <= '9')
