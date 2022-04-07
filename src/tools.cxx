@@ -432,33 +432,33 @@ long UTF8_Handler::getonchar(u_ustring& w, long position) {
 }
 
 void get_one_char(string& utf, string& res, long& i) {
-    res = utf[0];
-    if (!(utf[0] & 0x0080))
+    res = utf[i];
+    if (!(utf[i] & 0x0080))
         return;
 
-    res += utf[1];
+    res += utf[i + 1];
 
     //3 more bytes
-    if ((utf[0] & 0xF0)== 0xF0) {
-        if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80) {
-            res += utf[2];
-            res += utf[3];
+    if ((utf[i] & 0xF0)== 0xF0) {
+        if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
+            res += utf[i + 2];
+            res += utf[i + 3];
             i += 3;
         }
         return;
     }
     
     //2 more bytes
-    if ((utf[0] & 0xE0)== 0xE0) {
-        if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80) {
-            res += utf[2];
+    if ((utf[i] & 0xE0)== 0xE0) {
+        if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
+            res += utf[i + 2];
             i += 2;
         }
         return;
     }
     
     //1 more bytes
-    if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80) {
+    if ((utf[i] & 0xC0)== 0xC0 && (utf[i + 1] & 0x80)== 0x80) {
         i++;
     }
 }
