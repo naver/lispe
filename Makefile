@@ -6,10 +6,12 @@ COMPPLUSPLUS = g++
 SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx ontology.cxx sets.cxx lists.cxx dictionaries.cxx
 SOURCEMAIN = jag.cxx main.cxx lispeditor.cxx
 SOURCEJAG = jagmain.cxx jag.cxx jagget.cxx jagrgx.cxx jagtools.cxx
+SOURCETESTEMJ = testemoji.cxx
 #------------------------------------------------------------
 OBJECTCXX = $(SOURCE:%.cxx=objs/%.o)
 OBJECTMAIN = $(SOURCEMAIN:%.cxx=objs/%.o)
 OBJECTJAG = $(SOURCEJAG:%.cxx=objs/jag/%.o)
+OBJECTTESTEMJ = $(SOURCETESTEMJ:%.cxx=objs/testemojis/%.o)
 #------------------------------------------------------------
 INCLUDES = -Iinclude
 # Selon les compilateurs, il faudra peut-être choisir l'un des flags suivants
@@ -23,6 +25,10 @@ objs/%.o: src/%.cxx
 
 objs/jag/%.o: src/%.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
+
+objs/testemojis/%.o: src/%.cxx
+	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
+
 #------------------------------------------------------------
 
 # For those who prefer a small executable linked with a dynamic library
@@ -31,6 +37,9 @@ lispe: $(OBJECTCXX) $(OBJECTMAIN)
 
 jag: install $(OBJECTJAG)
 	$(COMPPLUSPLUS) -o bin/jag $(OBJECTJAG) $(LIBBOOST)
+
+testemoji: install $(OBJECTTESTEMJ)
+	$(COMPPLUSPLUS) -o bin/testemoji $(OBJECTTESTEMJ) $(LIBBOOST)
 
 # Version dynamique. Elle est un peu plus compliquée à manipuler:
 # il faut initialiser LD_LIBRARY_PATH (ou DYLD_LIBRARY_PATH sur Mac OS)
@@ -51,6 +60,7 @@ install:
 	mkdir -p bin
 	mkdir -p objs
 	mkdir -p objs/jag
+	mkdir -p objs/testemojis
 
 clean:
 	rm -Rf objs

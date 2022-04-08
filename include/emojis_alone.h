@@ -14,10 +14,13 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <set>
 
 using std::string;
 using std::wstring;
-using u32string;
+using std::u32string;
+using std::vector;
 
 void c_unicode_to_utf16(wstring& w, char32_t c) {
     if (!(c & 0xFFFF0000))
@@ -1552,7 +1555,7 @@ public:
     bool check(string& u, long p) {
         if (p == u.size())
             return end;
-        Emoji_arc* a = find((uchar)u[p]);
+        Emoji_arc* a = find((unsigned char)u[p]);
         if (a != NULL)
             return a->check(u, p + 1);
         return false;
@@ -1570,7 +1573,7 @@ public:
     bool check(unsigned char* u, long p) {
         if (!u[p])
             return end;
-        Emoji_arc* a = find((uchar)u[p]);
+        Emoji_arc* a = find((unsigned char)u[p]);
         if (a != NULL)
             return a->check(u, p + 1);
         return false;
@@ -1589,7 +1592,7 @@ public:
     }
 
     bool scan(string& u, long p, long& i) {
-        Emoji_arc* a = find((uchar)u[p]);
+        Emoji_arc* a = find((unsigned char)u[p]);
         if (a != NULL) {
             return a->scan(u, p + 1, i);
         }
@@ -1632,7 +1635,7 @@ public:
     
 };
 
-class Emoji_s {
+class Emojis {
 public:
     
     std::unordered_map<char, Emoji_arc*> utf8_arcs;
@@ -1641,11 +1644,11 @@ public:
     
     std::set<char32_t> complements;
 
-    Emoji_s() {
+    Emojis() {
         store();
     }
     
-    ~Emoji_s() {
+    ~Emojis() {
         for (const auto& a : utf8_arcs)
             delete a.second;
 
@@ -1676,9 +1679,9 @@ public:
         long i = 1;
         long pos;
         while (i < e.size()) {
-            pos = a->search((uchar)e[i]);
+            pos = a->search((unsigned char)e[i]);
             if (pos == -1) {
-                a = a->add((uchar)e[i]);
+                a = a->add((unsigned char)e[i]);
             }
             else
                 a = a->arcs[pos];
@@ -1735,8 +1738,8 @@ public:
             
             std::unordered_map<char, Emoji_arc*>::iterator itbytes = utf8_arcs.find(utf8[0]);
             if (itbytes == utf8_arcs.end()) {
-                a = new Emoji_arc((uchar)utf8[0]);
-                utf8_arcs[(uchar)utf8[0]] = a;
+                a = new Emoji_arc((unsigned char)utf8[0]);
+                utf8_arcs[(unsigned char)utf8[0]] = a;
             }
             else
                 a = itbytes->second;
