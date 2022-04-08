@@ -12,6 +12,29 @@
 #ifndef conversion_h
 #define conversion_h
 
+bool c_utf16_to_unicode(char32_t& r, char32_t code, bool second) {
+    // If you need an additional UTF-16 code
+    if (second) {
+        //Or it with r
+        r |= code & 0x3FF;
+        return false;
+    }
+    
+    //If the first byte is 0xD8000000 then it is a 4 byte encoding
+    if ((code & 0xFF00) == 0xD800) {
+        //First of all we extract the first part of the code
+        //I know it's horrible... And again we don't take into account the Endian here
+        //c it's just for Windows and Mac OS GUIs
+        r = ((((code & 0x03C0) >> 6) + 1) << 16) | ((code & 0x3F) << 10);
+        //Return true to indicate that a second UTF-16 code is needed
+        return true;
+    }
+    
+    //if not r IS the code
+    r = code;
+    return false;
+}
+
 void c_unicode_to_utf16(wstring& w, char32_t c) {
     if (!(c & 0xFFFF0000))
         w = (wchar_t)c;
