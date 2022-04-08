@@ -147,7 +147,7 @@ void s_utf8_to_unicode(u32string& w, unsigned char* str , long sz) {
         return;
 
     long ineo = 0;
-    char32_t* neo = new char32_t[sz+1];
+    u32string neo;
     neo[0] = 0;
 
     char32_t c;
@@ -159,16 +159,14 @@ void s_utf8_to_unicode(u32string& w, unsigned char* str , long sz) {
             nb = c_utf8_to_unicode(str, c);
             str += nb+1;
             sz = (sz >= nb)?sz-nb:0;
-            neo[ineo++] = c;
+            neo += c;
             continue;
         }
-        neo[ineo++] = (wchar_t)*str;
+        neo += (wchar_t)*str;
         ++str;
     }
 
-    neo[ineo] = 0;
     w += neo;
-    delete[] neo;
 }
 
 unsigned char c_unicode_to_utf8(char32_t code, unsigned char* utf) {
