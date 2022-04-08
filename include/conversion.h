@@ -178,6 +178,7 @@ unsigned char c_utf8_to_unicode(unsigned char* utf, char32_t& code) {
     return 0;
 }
 
+//Implementation of string based methods
 void s_utf16_to_unicode(u32string& u, wstring& w) {
     char32_t c;
     for (long i = 0; i < w.size(); i++) {
