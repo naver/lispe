@@ -22,75 +22,7 @@ using std::wstring;
 using std::u32string;
 using std::vector;
 
-void c_unicode_to_utf16(wstring& w, char32_t c) {
-    if (!(c & 0xFFFF0000))
-        w = (wchar_t)c;
-    else {
-        char32_t c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
-        w = c16;
-        w += 0xDC00 | (c & 0x3FF);
-    }
-}
-
-char* unicode_2_utf8(long code, char* utf) {
-    if (code < 0x0080) {
-        utf[0] = (unsigned char)code;
-        utf[1] = 0;
-        return utf;
-    }
-    if (code < 0x0800) {
-        utf[0] = 0xc0 | (code >> 6);
-        utf[1] = 0x80 | (code & 0x3f);
-        utf[2] = 0;
-        return utf;
-    }
-    if (code < 0x10000) {
-        utf[0] = 0xe0 | (code >> 12);
-        utf[1] = 0x80 | ((code >> 6) & 0x3f);
-        utf[2] = 0x80 | (code & 0x3f);
-        utf[3] = 0;
-        return utf;
-    }
-
-    utf[0] = 0xF0 | (code >> 18);
-    utf[1] = 0x80 | ((code >> 12) & 0x3f);
-    utf[2] = 0x80 | ((code >> 6) & 0x3f);
-    utf[3] = 0x80 | (code & 0x3f);
-    utf[4] = 0;
-    return utf;
-}
-
-void get_one_char(string& utf, string& res, long& i) {
-    res = utf[i];
-    if (!(utf[i] & 0x0080))
-        return;
-
-    res += utf[i + 1];
-
-    //3 more bytes
-    if ((utf[i] & 0xF0)== 0xF0) {
-        if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
-            res += utf[i + 2];
-            res += utf[i + 3];
-            i += 3;
-        }
-        return;
-    }
-    
-    //2 more bytes
-    if ((utf[i] & 0xE0)== 0xE0) {
-        if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
-            res += utf[i + 2];
-            i += 2;
-        }
-        return;
-    }
-    
-    //1 more bytes
-    if ((utf[i] & 0xC0)== 0xC0 && (utf[i + 1] & 0x80)== 0x80) {
-        i++;
-    }
-}
+#include "conversion.h"
 
 char32_t emoji__sequences[][11] = {
     {8986,0,0,0,0,0,0,0,0,0,0},{8987,0,0,0,0,0,0,0,0,0,0},{9193,0,0,0,0,0,0,0,0,0,0},
