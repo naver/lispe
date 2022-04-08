@@ -201,7 +201,7 @@ unsigned char c_unicode_to_utf8(char32_t code, unsigned char* utf) {
     return 4;
 }
 
-void s_unicode_to_utf8(string& s, wstring& str) {
+void s_unicode_to_utf8(string& s, u32string& str) {
     long i = 0;
     char inter[5];
     long sz = str.size();
