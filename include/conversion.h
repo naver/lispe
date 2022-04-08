@@ -169,6 +169,10 @@ void s_utf8_to_unicode(u32string& w, unsigned char* str , long sz) {
     w += neo;
 }
 
+void s_utf8_to_unicode(u32string& w, string& str) {
+    s_utf8_to_unicode(w, (unsigned char*)str.c_str(), str.size());
+}
+
 unsigned char c_unicode_to_utf8(char32_t code, unsigned char* utf) {
     if (code < 0x0080) {
         utf[0] = (unsigned char)code;
