@@ -30,6 +30,7 @@ void s_utf8_to_unicode(u32string& w, string& str);
 void s_unicode_to_utf8(string& s, u32string& str);
 
 void get_one_char(string& utf, string& res, long& i);
+void get_one_char16(wstring& utf, wstring& res, long& i);
 
 /// Implementation
 char* unicode_2_utf8(long code, char* utf) {
@@ -353,6 +354,13 @@ void get_one_char(string& utf, string& res, long& i) {
     //1 more bytes
     if ((utf[i] & 0xC0)== 0xC0 && (utf[i + 1] & 0x80)== 0x80) {
         i++;
+    }
+}
+
+void get_one_char16(wstring& utf, wstring& res, long& i) {
+    res = utf[i];
+    if ((utf[i] & 0xFF00) == 0xD800) {
+        res += utf[++i];
     }
 }
 
