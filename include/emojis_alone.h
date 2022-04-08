@@ -24,7 +24,7 @@ using std::vector;
 
 #include "conversion.h"
 
-char32_t emoji__sequences[][11] = {
+char32_t emoji_sequences[][11] = {
     {8986,0,0,0,0,0,0,0,0,0,0},{8987,0,0,0,0,0,0,0,0,0,0},{9193,0,0,0,0,0,0,0,0,0,0},
     {9194,0,0,0,0,0,0,0,0,0,0},{9195,0,0,0,0,0,0,0,0,0,0},{9196,0,0,0,0,0,0,0,0,0,0},
     {9200,0,0,0,0,0,0,0,0,0,0},{9203,0,0,0,0,0,0,0,0,0,0},{9725,0,0,0,0,0,0,0,0,0,0},
@@ -1646,8 +1646,8 @@ public:
         wstring utf16;
         wstring utf16_c;
         char utf_c[5];
-        while (emoji__sequences[i][0]) {
-            utf32_c = emoji__sequences[i][0];
+        while (emoji_sequences[i][0]) {
+            utf32_c = emoji_sequences[i][0];
             std::unordered_map<char32_t, Emoji_arc*>::iterator it = utf32_arcs.find(utf32_c);
             if (it == utf32_arcs.end()) {
                 a = new Emoji_arc(utf32_c);
@@ -1656,15 +1656,15 @@ public:
             else
                 a = it->second;
             
-            if (emoji__sequences[i][1])
-                traverse(a, &emoji__sequences[i][1]);
+            if (emoji_sequences[i][1])
+                traverse(a, &emoji_sequences[i][1]);
             else
                 a->end = true;
 
             utf8 = unicode_2_utf8(utf32_c, utf_c);
             j = 1;
-            while (emoji__sequences[i][j]) {
-                utf8 += unicode_2_utf8(emoji__sequences[i][j], utf_c);
+            while (emoji_sequences[i][j]) {
+                utf8 += unicode_2_utf8(emoji_sequences[i][j], utf_c);
                 j++;
             }
             
@@ -1681,8 +1681,8 @@ public:
             //UTF16
             c_unicode_to_utf16(utf16, (char32_t)utf32_c);
             j = 1;
-            while (emoji__sequences[i][j]) {
-                c_unicode_to_utf16(utf16_c, (char32_t)emoji__sequences[i][j]);
+            while (emoji_sequences[i][j]) {
+                c_unicode_to_utf16(utf16_c, (char32_t)emoji_sequences[i][j]);
                 utf16 += utf16_c;
                 j++;
             }
