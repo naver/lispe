@@ -23,6 +23,25 @@ void parseutf8(Emojis& e, string strvalue) {
 
 }
 
+void parseutf16(Emojis& e, wstring strvalue) {
+    //a working variable
+    wstring localvalue;
+    
+    cout <<endl << "We display the different codes for each character in this UTF-16 string" << endl;
+
+    for (long i = 0; i < strvalue.size(); i++) {
+        //if the character at the current position is an emoji
+        //then localvalue contains it.
+        //i then points to the last character of the sequence
+        if (!e.get16(strvalue, localvalue, i))
+            localvalue = strvalue[i];
+        //In this case we display the list of codes...
+        for (long u = 0; u < localvalue.size(); u++)
+            cout << localvalue[u] << " ";
+        cout << endl;
+    }
+}
+
 void parseutf32(Emojis& e, u32string strvalue) {
     //a working variable
     u32string localvalue;
@@ -42,16 +61,24 @@ void parseutf32(Emojis& e, u32string strvalue) {
     }
 }
 
+
 void parseWithConversion(Emojis& e, string str) {
     u32string strvalue;
     s_utf8_to_unicode(strvalue, str);
+
+    cout << endl << "We then convert to UTF-16" << endl;
+    wstring w;
+    s_unicode_to_utf16(w, strvalue);
+    parseutf16(e, w);
+
     cout <<endl << "First we convert to UTF-32" << endl;
     parseutf32(e, strvalue);
-    
+
     string strbis;
     cout << endl << "We then convert back to UTF-8" << endl;
     s_unicode_to_utf8(strbis, strvalue);
     parseutf8(e, strbis);
+    
 }
 
 int main(int argc, char *argv[]) {
