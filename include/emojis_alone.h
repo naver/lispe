@@ -24,7 +24,7 @@ using std::vector;
 
 #include "conversion.h"
 
-char32_t emoji_sequences[][11] = {
+const char32_t emoji_sequences[][11] = {
     {8986,0,0,0,0,0,0,0,0,0,0},{8987,0,0,0,0,0,0,0,0,0,0},{9193,0,0,0,0,0,0,0,0,0,0},
     {9194,0,0,0,0,0,0,0,0,0,0},{9195,0,0,0,0,0,0,0,0,0,0},{9196,0,0,0,0,0,0,0,0,0,0},
     {9200,0,0,0,0,0,0,0,0,0,0},{9203,0,0,0,0,0,0,0,0,0,0},{9725,0,0,0,0,0,0,0,0,0,0},
@@ -1591,7 +1591,7 @@ public:
             delete a.second;
     }
     
-    void traverse(Emoji_arc* a, char32_t* e) {
+    void traverse(Emoji_arc* a, const char32_t* e) {
         long i = 0;
         long pos;
         while (e[i]) {
