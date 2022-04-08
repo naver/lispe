@@ -5,28 +5,27 @@
 
 int main(int argc, char *argv[]) {
 
-    //Les chaines UTF-8 sont de type: std::string
+    // UTF-8 strings are of type: std::string
 
     string strvalue = "éèà123👨‍⚕️👩🏾‍🚀🐕‍🦺";
-    //e est un objet de type Emojis
+    //e is an object of type Emojis...
     Emojis e;
 
-    //strvalue est une chaine de type std::string
+    //strvalue is a string of type std::string
     long i;
-    //La taille de notre chaine en éléments de type char
+    //The size of our string in elements of type char
     long sz = strvalue.size();
 
-    //une variable de travail
+    //a working variable
     string localvalue;
 
     for (i = 0; i < sz; i++) {
-        //si le caractère à la position courante est un emoji
-        //alors localvalue le contient.
-        //i pointe dès lors sur le dernier caractère de la séquence
+        //if the character at the current position is an emoji
+        //then localvalue contains it.
+        //i then points to the last character of the sequence
         if (!e.get(strvalue, localvalue, i))
-            get_one_char(strvalue, localvalue, i); //c'est la différence principale
+            get_one_char(strvalue, localvalue, i); // this is the main difference
         std::cout << localvalue.c_str() << std::endl;
 
     }
 }
-
