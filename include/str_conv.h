@@ -9,8 +9,8 @@
 //
 
 
-#ifndef conversion_h
-#define conversion_h
+#ifndef str_conv_h
+#define str_conv_h
 
 //Function Prototypes
 //character based functions
@@ -96,7 +96,7 @@ bool c_utf16_to_unicode(char32_t& r, char32_t code, bool second) {
         r |= code & 0x3FF;
         return false;
     }
-    
+
     //If the first byte is 0xD8000000 then it is a 4 byte encoding
     if ((code & 0xFF00) == 0xD800) {
         //First of all we extract the first part of the code
@@ -106,7 +106,7 @@ bool c_utf16_to_unicode(char32_t& r, char32_t code, bool second) {
         //Return true to indicate that a second UTF-16 code is needed
         return true;
     }
-    
+
     //if not r IS the code
     r = code;
     return false;
@@ -129,7 +129,7 @@ bool c_unicode_to_utf16(char32_t& res, char32_t code) {
         res = code;
         return false;
     }
-    
+
     //00000000 000uuuuu xxxxxxyy yyyyyyyy
     //110110ww    wwxxxxxx    110111yy    yyyyyyyy
     //wwww is uuuu-1
@@ -159,7 +159,7 @@ unsigned char c_utf8_to_unicode(unsigned char* utf, char32_t& code) {
         }
         return 0;
     }
-    
+
     if ((utf[0] & 0xE0)== 0xE0) {
         if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80) {
             code = (utf[0] & 0xF) << 12;
@@ -169,13 +169,13 @@ unsigned char c_utf8_to_unicode(unsigned char* utf, char32_t& code) {
         }
         return 0;
     }
-    
+
     if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80) {
         code = (utf[0] & 0x1F) << 6;
         code |= (utf[1] & 0x3F);
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -192,14 +192,14 @@ void s_utf16_to_unicode(u32string& u, wstring& w) {
 void s_unicode_to_utf16(wstring& w, u32string& u) {
     char32_t c;
     char32_t c16;
-    
+
     for (long i = 0; i < u.size(); i++) {
         c = u[i];
         if (!(c & 0xFFFF0000)) {
             w += (wchar_t)c;
             continue;
         }
-        
+
         c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
         w += c16;
         w += 0xDC00 | (c & 0x3FF);
@@ -239,11 +239,11 @@ void s_utf16_to_utf8(string& s, wstring& str) {
 void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz) {
     if (!sz)
         return;
-    
-    
+
+
     char32_t c;
     unsigned char nb;
-    
+
     char32_t c16;
     while (sz--) {
         if (*str & 0x80) {
@@ -254,7 +254,7 @@ void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz) {
                 w += (wchar_t)c;
                 continue;
             }
-            
+
             c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
             w += c16;
             w += 0xDC00 | (c & 0x3FF);
