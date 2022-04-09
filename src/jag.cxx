@@ -37,7 +37,7 @@ UTF8_Handler special_characters;
 //--------------------------------------------------------
 
 
-#ifdef APPLE
+#ifdef APPLE_COPY
 void quoted_string(string& value) {
     if (value == "")
         return;
@@ -47,7 +47,6 @@ void quoted_string(string& value) {
     value = s_replacingstring(value, "\\t", "\\\\t");
     value = s_replacingstring(value, "\\n", "\\\\n");
     value = s_replacingstring(value, "\\r", "\\\\r");
-
 }
 
 string exec_command(const char* cmd) {

@@ -22,7 +22,7 @@ using std::wstring;
 using std::u32string;
 using std::vector;
 
-#include "conversion.h"
+#include "str_conv.h"
 
 const char32_t emoji_sequences[][11] = {
     {8986,0,0,0,0,0,0,0,0,0,0},{8987,0,0,0,0,0,0,0,0,0,0},{9193,0,0,0,0,0,0,0,0,0,0},
@@ -1454,7 +1454,7 @@ public:
     vector<Emoji_arc*> arcs;
     char32_t label;
     bool end;
-    
+
     Emoji_arc(char32_t e) : label(e), end(false) {}
 
     Emoji_arc* find(char32_t e) {
@@ -1474,7 +1474,7 @@ public:
         arcs.push_back(a);
         return a;
     }
-    
+
     bool check(u32string& u, long p) {
         if (p == u.size())
             return end;
@@ -1515,7 +1515,7 @@ public:
         Emoji_arc* a = find(u[p]);
         if (a != NULL)
             return a->scan(u, p + 1, i);
-        
+
         if (end) {
             i = p;
             return true;
@@ -1539,7 +1539,7 @@ public:
         Emoji_arc* a = find(u[p]);
         if (a != NULL)
             return a->scan(u, p + 1, i);
-        
+
         if (end) {
             i = p;
             return true;
@@ -1551,7 +1551,7 @@ public:
         Emoji_arc* a = find(u[p]);
         if (a != NULL)
             return a->scan(u, p + 1, i);
-        
+
         if (end) {
             i = p;
             return true;
@@ -1564,22 +1564,22 @@ public:
             delete arcs[i];
         }
     }
-    
+
 };
 
 class Emojis {
 public:
-    
+
     std::unordered_map<char, Emoji_arc*> utf8_arcs;
     std::unordered_map<wchar_t, Emoji_arc*> utf16_arcs;
     std::unordered_map<char32_t, Emoji_arc*> utf32_arcs;
-    
+
     std::set<char32_t> complements;
 
     Emojis() {
         store();
     }
-    
+
     ~Emojis() {
         for (const auto& a : utf8_arcs)
             delete a.second;
@@ -1590,7 +1590,7 @@ public:
         for (const auto& a : utf32_arcs)
             delete a.second;
     }
-    
+
     void traverse(Emoji_arc* a, const char32_t* e) {
         long i = 0;
         long pos;
@@ -1655,7 +1655,7 @@ public:
             }
             else
                 a = it->second;
-            
+
             if (emoji_sequences[i][1])
                 traverse(a, &emoji_sequences[i][1]);
             else
@@ -1667,7 +1667,7 @@ public:
                 utf8 += unicode_2_utf8(emoji_sequences[i][j], utf_c);
                 j++;
             }
-            
+
             std::unordered_map<char, Emoji_arc*>::iterator itbytes = utf8_arcs.find(utf8[0]);
             if (itbytes == utf8_arcs.end()) {
                 a = new Emoji_arc((unsigned char)utf8[0]);
@@ -1675,7 +1675,7 @@ public:
             }
             else
                 a = itbytes->second;
-            
+
             traverse(a, utf8);
 
             //UTF16
@@ -1686,7 +1686,7 @@ public:
                 utf16 += utf16_c;
                 j++;
             }
-            
+
             std::unordered_map<wchar_t, Emoji_arc*>::iterator itutf16 = utf16_arcs.find(utf16[0]);
             if (itutf16 == utf16_arcs.end()) {
                 a = new Emoji_arc(utf16[0]);
@@ -1694,21 +1694,21 @@ public:
             }
             else
                 a = itutf16->second;
-            
+
             traverse(a, utf16);
 
             i++;
         }
     }
-    
+
     bool isemoji(char32_t c) {
         return (c > 57 && utf32_arcs.find(c) != utf32_arcs.end());
     }
-    
+
     bool isemojicomplement(char32_t c) {
         return (complements.find(c) != complements.end());
     }
-    
+
     bool isemoji(u32string& u) {
         if (!u.size())
             return false;
@@ -1716,7 +1716,7 @@ public:
         std::unordered_map<char32_t, Emoji_arc*>::iterator it = utf32_arcs.find(u[0]);
         return (it != utf32_arcs.end() && it->second->check(u, 1));
     }
-    
+
     bool scan(u32string& u, long& i) {
         std::unordered_map<char32_t, Emoji_arc*>::iterator it = utf32_arcs.find(u[i]);
         if (it == utf32_arcs.end())
@@ -1849,7 +1849,7 @@ public:
         --i;
         return false;
     }
-    
+
     bool isemoji16(wstring& u) {
         if (!u.size())
             return false;
@@ -1996,5 +1996,4 @@ public:
 };
 
 #endif
-
 
