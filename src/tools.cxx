@@ -433,35 +433,34 @@ long UTF8_Handler::getonchar(u_ustring& w, long position) {
 
 Exporting void get_one_char(string& utf, string& res, long& i) {
     res = utf[i];
-    if (!(utf[i] & 0x0080))
-        return;
-
-    res += utf[i + 1];
-
-    //3 more bytes
-    if ((utf[i] & 0xF0)== 0xF0) {
-        if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
-            res += utf[i + 2];
-            res += utf[i + 3];
-            i += 3;
-        }
-        return;
-    }
     
-    //2 more bytes
-    if ((utf[i] & 0xE0)== 0xE0) {
-        if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
-            res += utf[i + 2];
-            i += 2;
-        }
-        return;
-    }
+    unsigned char check = utf[i] & 0xF0;
     
-    //1 more bytes
-    if ((utf[i] & 0xC0)== 0xC0 && (utf[i + 1] & 0x80)== 0x80) {
-        i++;
+    switch (check) {
+        case 0xC0:
+            if ((utf[i + 1] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                i += 1;
+            }
+            break;
+        case 0xE0:
+            if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                i += 2;
+            }
+            break;
+        case 0xF0:
+            if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                res += utf[i + 3];
+                i += 3;
+            }
+            break;
     }
 }
+
 
 #ifdef WIN32
 UWCHAR getonechar(unsigned char* s, long& i) {
@@ -569,141 +568,158 @@ bool UTF8_Handler::s_is_emoji(wstring& w) {
 //------------------------------------------------------------------------
 Exporting string cs_unicode_to_utf8(UWCHAR code) {
     char utf[5];
-    if (code < 0x0080) {
-        utf[0] = (unsigned char)code;
-        utf[1] = 0;
-        return utf;
+    unsigned char c = (bool(code & 0xFFFF0000) << 3) | (bool(code & 0xF800)<<2) | (bool(code & 0x780) << 1);
+    switch (c) {
+        case 8:
+        case 10:
+        case 12:
+        case 14:
+            utf[0] = 0xF0 | (code >> 18);
+            utf[1] = 0x80 | ((code >> 12) & 0x3f);
+            utf[2] = 0x80 | ((code >> 6) & 0x3f);
+            utf[3] = 0x80 | (code& 0x3f);
+            utf[4] = 0;
+            break;
+        case 4:
+        case 6:
+            utf[0] = 0xe0 | (code >> 12);
+            utf[1] = 0x80 | ((code >> 6) & 0x3f);
+            utf[2] = 0x80 | (code& 0x3f);
+            utf[3] = 0;
+            break;
+        case 2:
+            utf[0] = 0xc0 | (code >> 6);
+            utf[1] = 0x80 | (code& 0x3f);
+            utf[2] = 0;
+            break;
+        default:
+            utf[0] = (unsigned char)code;
+            utf[1] = 0;
+            break;
     }
-    if (code < 0x0800) {
-        utf[0] = 0xc0 | (code >> 6);
-        utf[1] = 0x80 | (code & 0x3f);
-        utf[2] = 0;
-        return utf;
-    }
-    if (code < 0x10000) {
-        utf[0] = 0xe0 | (code >> 12);
-        utf[1] = 0x80 | ((code >> 6) & 0x3f);
-        utf[2] = 0x80 | (code & 0x3f);
-        utf[3] = 0;
-        return utf;
-    }
-
-    utf[0] = 0xF0 | (code >> 18);
-    utf[1] = 0x80 | ((code >> 12) & 0x3f);
-    utf[2] = 0x80 | ((code >> 6) & 0x3f);
-    utf[3] = 0x80 | (code & 0x3f);
-    utf[4] = 0;
     return utf;
 }
 
 unsigned char c_unicode_to_utf8(UWCHAR code, unsigned char* utf) {
-    if (code < 0x0080) {
-        utf[0] = (unsigned char)code;
-        utf[1] = 0;
-        return 1;
-    }
-    if (code < 0x0800) {
-        utf[0] = 0xc0 | (code >> 6);
-        utf[1] = 0x80 | (code& 0x3f);
-        utf[2] = 0;
-        return 2;
-    }
-    if (code < 0x10000) {
-        utf[0] = 0xe0 | (code >> 12);
-        utf[1] = 0x80 | ((code >> 6) & 0x3f);
-        utf[2] = 0x80 | (code& 0x3f);
-        utf[3] = 0;
-        return 3;
-    }
+    unsigned char c = (bool(code & 0xFFFF0000) << 3) | (bool(code & 0xF800)<<2) | (bool(code & 0x780) << 1);
     
-    utf[0] = 0xF0 | (code >> 18);
-    utf[1] = 0x80 | ((code >> 12) & 0x3f);
-    utf[2] = 0x80 | ((code >> 6) & 0x3f);
-    utf[3] = 0x80 | (code& 0x3f);
-    utf[4] = 0;
-    return 4;
+    switch (c) {
+        case 8:
+        case 10:
+        case 12:
+        case 14:
+            utf[0] = 0xF0 | (code >> 18);
+            utf[1] = 0x80 | ((code >> 12) & 0x3f);
+            utf[2] = 0x80 | ((code >> 6) & 0x3f);
+            utf[3] = 0x80 | (code& 0x3f);
+            utf[4] = 0;
+            return 4;
+        case 4:
+        case 6:
+            utf[0] = 0xe0 | (code >> 12);
+            utf[1] = 0x80 | ((code >> 6) & 0x3f);
+            utf[2] = 0x80 | (code& 0x3f);
+            utf[3] = 0;
+            return 3;
+        case 2:
+            utf[0] = 0xc0 | (code >> 6);
+            utf[1] = 0x80 | (code& 0x3f);
+            utf[2] = 0;
+            return 2;
+        default:
+            utf[0] = (unsigned char)code;
+            utf[1] = 0;
+            return 1;
+    }
 }
 
 Exporting char* unicode_2_utf8(long code, char* utf) {
-    if (code < 0x0080) {
-        utf[0] = (unsigned char)code;
-        utf[1] = 0;
-        return utf;
+    unsigned char c = (bool(code & 0xFFFF0000) << 3) | (bool(code & 0xF800)<<2) | (bool(code & 0x780) << 1);
+    switch (c) {
+        case 8:
+        case 10:
+        case 12:
+        case 14:
+            utf[0] = 0xF0 | (code >> 18);
+            utf[1] = 0x80 | ((code >> 12) & 0x3f);
+            utf[2] = 0x80 | ((code >> 6) & 0x3f);
+            utf[3] = 0x80 | (code& 0x3f);
+            utf[4] = 0;
+            break;
+        case 4:
+        case 6:
+            utf[0] = 0xe0 | (code >> 12);
+            utf[1] = 0x80 | ((code >> 6) & 0x3f);
+            utf[2] = 0x80 | (code& 0x3f);
+            utf[3] = 0;
+            break;
+        case 2:
+            utf[0] = 0xc0 | (code >> 6);
+            utf[1] = 0x80 | (code& 0x3f);
+            utf[2] = 0;
+            break;
+        default:
+            utf[0] = (unsigned char)code;
+            utf[1] = 0;
+            break;
     }
-    if (code < 0x0800) {
-        utf[0] = 0xc0 | (code >> 6);
-        utf[1] = 0x80 | (code & 0x3f);
-        utf[2] = 0;
-        return utf;
-    }
-    if (code < 0x10000) {
-        utf[0] = 0xe0 | (code >> 12);
-        utf[1] = 0x80 | ((code >> 6) & 0x3f);
-        utf[2] = 0x80 | (code & 0x3f);
-        utf[3] = 0;
-        return utf;
-    }
-
-    utf[0] = 0xF0 | (code >> 18);
-    utf[1] = 0x80 | ((code >> 12) & 0x3f);
-    utf[2] = 0x80 | ((code >> 6) & 0x3f);
-    utf[3] = 0x80 | (code & 0x3f);
-    utf[4] = 0;
     return utf;
 }
 
 
 string c_unicode_to_utf8(UWCHAR code) {
     char utf[5];
-    if (code < 0x0080) {
-        utf[0] = (unsigned char)code;
-        utf[1] = 0;
-        return utf;
-    }
-    if (code < 0x0800) {
-        utf[0] = 0xc0 | (code >> 6);
-        utf[1] = 0x80 | (code & 0x3f);
-        utf[2] = 0;
-        return utf;
-    }
-    if (code < 0x10000) {
-        utf[0] = 0xe0 | (code >> 12);
-        utf[1] = 0x80 | ((code >> 6) & 0x3f);
-        utf[2] = 0x80 | (code & 0x3f);
-        utf[3] = 0;
-        return utf;
-    }
     
-    utf[0] = 0xF0 | (code >> 18);
-    utf[1] = 0x80 | ((code >> 12) & 0x3f);
-    utf[2] = 0x80 | ((code >> 6) & 0x3f);
-    utf[3] = 0x80 | (code & 0x3f);
-    utf[4] = 0;
+    unsigned char c = (bool(code & 0xFFFF0000) << 3) | (bool(code & 0xF800)<<2) | (bool(code & 0x780) << 1);
+    switch (c) {
+        case 8:
+        case 10:
+        case 12:
+        case 14:
+            utf[0] = 0xF0 | (code >> 18);
+            utf[1] = 0x80 | ((code >> 12) & 0x3f);
+            utf[2] = 0x80 | ((code >> 6) & 0x3f);
+            utf[3] = 0x80 | (code& 0x3f);
+            utf[4] = 0;
+            break;
+        case 4:
+        case 6:
+            utf[0] = 0xe0 | (code >> 12);
+            utf[1] = 0x80 | ((code >> 6) & 0x3f);
+            utf[2] = 0x80 | (code& 0x3f);
+            utf[3] = 0;
+            break;
+        case 2:
+            utf[0] = 0xc0 | (code >> 6);
+            utf[1] = 0x80 | (code& 0x3f);
+            utf[2] = 0;
+            break;
+        default:
+            utf[0] = (unsigned char)code;
+            utf[1] = 0;
+            break;
+    }
     return utf;
 }
 
 Exporting char c_test_utf8(unsigned char* utf) {
-    if (utf == NULL || !(utf[0] & 0x0080))
+    if (utf == NULL)
         return 0;
     
-    if ((utf[0] & 0xF0)== 0xF0) {
-        if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80)
-            return 3;
-        return 0;
+    unsigned char check = utf[0] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            return bool((utf[1] & 0x80)== 0x80)*1;
+        case 0xE0:
+            return bool(((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80))*2;
+        case 0xF0:
+            return bool(((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80))*3;
     }
-
-    if ((utf[0] & 0xE0)== 0xE0) {
-        if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80)
-            return 2;
-        return 0;
-    }
-    
-    if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80)
-        return 1;
-    
     return 0;
 }
 
+ 
 Exporting void c_chars_get_next(unsigned char* m, char* str, long& i) {
     long nb = c_test_utf8(m + i);
     str[0] = (char)m[i];
@@ -1072,37 +1088,34 @@ UTF8_Handler::UTF8_Handler() {
 Exporting unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
     code = utf[0];
 
-    if (!(utf[0] & 0x0080))
-        return 0;
-
-    //....
-    if ((utf[0] & 0xF0)== 0xF0) {
-        if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80) {
-            code = (utf[0] & 0x7) << 18;
-            code |= (utf[1] & 0x3F) << 12;
-            code |= (utf[2] & 0x3F) << 6;
-            code |= (utf[3] & 0x3F);
-            return 3;
-        }
-        return 0;
-    }
+    unsigned char check = utf[0] & 0xF0;
     
-    if ((utf[0] & 0xE0)== 0xE0) {
-        if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80) {
-            code = (utf[0] & 0xF) << 12;
-            code |= (utf[1] & 0x3F) << 6;
-            code |= (utf[2] & 0x3F);
-            return 2;
-        }
-        return 0;
+    switch (check) {
+        case 0xC0:
+            if ((utf[1] & 0x80)== 0x80) {
+                code = (utf[0] & 0x1F) << 6;
+                code |= (utf[1] & 0x3F);
+                return 1;
+            }
+            break;
+        case 0xE0:
+            if ((utf[1] & 0x80)== 0x80 && (utf[2] & 0x80)== 0x80) {
+                code = (utf[0] & 0xF) << 12;
+                code |= (utf[1] & 0x3F) << 6;
+                code |= (utf[2] & 0x3F);
+                return 2;
+            }
+            break;
+        case 0xF0:
+            if ((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80) {
+                code = (utf[0] & 0x7) << 18;
+                code |= (utf[1] & 0x3F) << 12;
+                code |= (utf[2] & 0x3F) << 6;
+                code |= (utf[3] & 0x3F);
+                return 3;
+            }
+            break;
     }
-    
-    if ((utf[0] & 0xC0)== 0xC0 && (utf[1] & 0x80)== 0x80) {
-        code = (utf[0] & 0x1F) << 6;
-        code |= (utf[1] & 0x3F);
-        return 1;
-    }
-    
     return 0;
 }
 
