@@ -6805,11 +6805,11 @@ Element* List::evall_at_shape(LispE* lisp) {
             
             //First we need to find the new bloc size
             long block_size = 1;
+            for (index = i + 1; index < shape_size; index++) {
+                block_size *= shapes->liste[index];
+                cumul *= (index >= instruction_size)?shapes->liste[index]:1;
+            }
             if (choice) {
-                for (index = i + 1; index < shape_size; index++) {
-                    block_size *= shapes->liste[index];
-                    cumul *= (index >= instruction_size)?shapes->liste[index]:1;
-                }
                 if (cumul == 1) {
                     for (i = begin; i < value_size; i += block_size)
                         result->set_from(container, i + idx);
@@ -6822,23 +6822,23 @@ Element* List::evall_at_shape(LispE* lisp) {
                 }
             }
             else {
-                for (index = i; index < shape_size; index++) {
-                    block_size *= shapes->liste[index];
-                    cumul *= (index >= instruction_size)?shapes->liste[index]:1;
-                }
                 shape_size = shapes->liste[i];
                 if (cumul == 1) {
+                    cumul = block_size;
+                    block_size *= shape_size;
                     for (index = 0; index < shape_size; index++) {
+                        instruction_size = idx + index*cumul;
                         for (i = begin; i < value_size; i += block_size)
-                            result->set_from(container, i + idx + index);
+                            result->set_from(container, i + instruction_size);
                     }
                 }
                 else {
                     idx *= cumul;
+                    block_size *= shape_size;
                     for (index = 0; index < shape_size; index++) {
+                        instruction_size = idx + (index*cumul);
                         for (i = begin; i < value_size; i += block_size) {
-                            instruction_size = i + idx + (index*cumul);
-                            result->set_from(container, instruction_size, instruction_size + cumul);
+                            result->set_from(container, instruction_size + i, instruction_size + i + cumul);
                         }
                     }
                 }

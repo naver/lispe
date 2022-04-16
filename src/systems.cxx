@@ -173,6 +173,50 @@ public:
         return lisp->provideString(res);
     }
 
+    Element* loop(LispE* lisp, int16_t label, List* code) {
+        if (!open || mode != file_read)
+            throw new Error ("Error: expecting 'stream' to be in 'read' mode");
+
+        long i_loop;
+        Element* e = null_;
+        lisp->recording(null_, label);
+        Element* element;
+        long sz = code->liste.size();
+        string localvalue;
+        try {
+            while (!myfile.eof()) {
+                getline(myfile, localvalue);
+                localvalue += "\n";
+                element = lisp->provideString(localvalue);
+                lisp->replacingvalue(element, label);
+                _releasing(e);
+                //We then execute our instructions
+                for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+                    e->release();
+                    e = code->liste[i_loop]->eval(lisp);
+                }
+                if (e->type == l_return) {
+                    myfile.close();
+                    mode = file_open;
+                    //the break is local, the return is global to a function
+                    if (e->isBreak())
+                        return null_;
+                    return e;
+                }
+            }
+        }
+        catch(Error* err) {
+            myfile.close();
+            mode = file_open;
+            throw err;
+        }
+        
+        myfile.close();
+        mode = file_open;
+
+        return e;
+    }
+    
     Element* getstruct(LispE* lisp, wstring& o, wstring& c) {
         if (!open || mode != file_read)
             throw new Error ("Error: expecting 'stream' to be in 'read' mode");
