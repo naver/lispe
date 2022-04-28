@@ -21,9 +21,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\jag.cxx" />
     <ClCompile Include="..\..\src\jagrgx.cxx" />
-    <ClCompile Include="..\..\src\jagtools.cxx" />
     <ClCompile Include="..\..\src\jagget.cxx" />
     <ClCompile Include="..\..\src\jagmain.cxx" />
+    <ClCompile Include="..\..\src\jagtools.cxx" />
     <ClCompile Include="..\..\src\jagwin.cxx" />
   </ItemGroup>
   <ItemGroup>
@@ -159,13 +159,14 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;POSIXREGEX;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\..\include</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
