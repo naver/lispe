@@ -43,7 +43,7 @@ if ostype == b"Darwin":
        f.write("COPTION = -Ofast -DAPPLE\n")
     else:
        f.write("PLATFORM = macos\n")
-       f.write("COPTION = -Ofast -DAPPLE -DINTELINTRINSICS -mavx2\n")
+       f.write("COPTION = -Ofast -DAPPLE\n")
     f.write("LIBFLTK = -Llibs/$(PLATFORM) -lfltk -lfltk_images -framework Cocoa")
     exit(-1)
 
