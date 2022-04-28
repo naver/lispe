@@ -2678,19 +2678,19 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
             Floats* n = (Floats*)e;
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((8 - (szl & 7)) & 7);
-                liste.padding((8 - (szl & 7)) & 7);
-                for (i = 0; i < szl; i+= 8) {
+            if (szl >= 24) {
+                long nb = (szl>>3)<<3;
+                for (i = 0; i < nb; i += 8) {
                     _mm256_storeu_ps(&liste[i], _mm256_add_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] += n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             liste.plus(n->liste, szl);
             return this;
         }
@@ -2716,12 +2716,15 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
             float v = e->asFloat();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((8 - (szl & 7)) & 7);
+            if (szl >= 24) {
+                long i;
                 __m256 vb = {v, v, v, v, v, v, v, v};
-                for (long i = 0; i < szl; i+= 8) {
+                long nb = (szl>>3)<<3;
+                for (i = 0; i < nb; i+= 8) {
                     _mm256_storeu_ps(&liste[i], _mm256_add_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] += v;
                 return this;
             }
 #endif
@@ -2743,27 +2746,12 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
         case t_matrix_float: {
             Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
             Floats* n;
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((8 - (szl & 7)) & 7);
-            long pade = (8 - (sze & 7)) & 7;
-            long nb = lmin(szl, sze);
-
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Floats*)result->index(m);
-                n->liste.padding(pade);
-                for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste[i], _mm256_add_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] += liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -2779,19 +2767,19 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
             Floats* n = (Floats*)e;
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((8 - (szl & 7)) & 7);
-                liste.padding((8 - (szl & 7)) & 7);
-                for (i = 0; i < szl; i+= 8) {
+            if (szl >= 24) {
+                long nb = (szl>>3)<<3;
+                for (i = 0; i < nb; i += 8) {
                     _mm256_storeu_ps(&liste[i], _mm256_sub_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] -= n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             liste.minus(n->liste, szl);
             return this;
         }
@@ -2817,12 +2805,15 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
             float v = e->asFloat();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((8 - (szl & 7)) & 7);
+            if (szl >= 24) {
+                long i;
                 __m256 vb = {v, v, v, v, v, v, v, v};
-                for (long i = 0; i < szl; i+= 8) {
+                long nb = (szl>>3)<<3;
+                for (i = 0; i < nb; i += 8) {
                     _mm256_storeu_ps(&liste[i], _mm256_sub_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] -= v;
                 return this;
             }
 #endif
@@ -2844,28 +2835,12 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
         case t_matrix_float: {
             Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
             Floats* n;
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((8 - (szl & 7)) & 7);
-            long pade = (8 - (sze & 7)) & 7;
-            long nb = lmin(szl, sze);
-
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Floats*)result->index(m);
-                n->liste.padding(pade);
-                for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste[i], _mm256_sub_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
-                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] - n->liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -2880,20 +2855,20 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
             Floats* n = (Floats*)e;
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((8 - (szl & 7)) & 7);
-                liste.padding((8 - (szl & 7)) & 7);
-                for (i = 0; i < szl; i+= 8) {
+            if (szl >= 24) {
+                long nb = (szl>>3)<<3;
+                for (i = 0; i < nb; i += 8) {
                     _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] *= n->liste[nb];
                 return this;
             }
 #endif
 
-            szl = lmin(szl, i);
             liste.multiply(n->liste, szl);
             return this;
         }
@@ -2919,12 +2894,14 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
             float v = e->asFloat();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((8 - (szl & 7)) & 7);
+            if (szl >= 24) {
                 __m256 vb = {v, v, v, v, v, v, v, v};
-                for (long i = 0; i < szl; i+= 8) {
+                long nb = (szl>>3)<<3;
+                for (long i = 0; i < nb; i+= 8) {
                     _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] *= v;
                 return this;
             }
 #endif
@@ -2946,28 +2923,12 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
         case t_matrix_float: {
             Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
             Floats* n;
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((8 - (szl & 7)) & 7);
-            long pade = (8 - (sze & 7)) & 7;
-            long nb = lmin(szl, sze);
-
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Floats*)result->index(m);
-                n->liste.padding(pade);
-                for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
-                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] *= liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -2985,19 +2946,19 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
 
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((8 - (szl & 7)) & 7);
-                liste.padding((8 - (szl & 7)) & 7);
-                for (i = 0; i < szl; i+= 8) {
+            if (szl >= 24) {
+                long nb = (szl>>3)<<3;
+                for (i = 0; i < nb; i += 8) {
                     _mm256_storeu_ps(&liste[i], _mm256_div_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] /= n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             for (i = 0; i < szl; i++)
                 liste[i] /= n->liste[i];
             return this;
@@ -3032,12 +2993,14 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                 throw new Error("Error: division by zero");
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((8 - (szl & 7)) & 7, 1);
+            if (szl >= 24) {
                 __m256 vb = {v, v, v, v, v, v, v, v};
-                for (long i = 0; i < szl; i+= 8) {
-                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), vb));
+                long nb = (szl>>3)<<3;
+                for (long i = 0; i < nb; i+= 8) {
+                    _mm256_storeu_ps(&liste[i], _mm256_div_ps(_mm256_loadu_ps(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] /= v;
                 return this;
             }
 #endif
@@ -3063,25 +3026,6 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
         case t_matrix_float: {
             Matrice_float* result = new Matrice_float(lisp, (Matrice_float*)e);
             Floats* n;
-
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((8 - (szl & 7)) & 7, 1);
-            long pade = (8 - (sze & 7)) & 7;
-            long nb = lmin(szl, sze);
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Floats*)result->index(m);
-                if (n->liste.check(0)) {
-                    result->release();
-                    throw new Error("Error: division by zero");
-                }
-                n->liste.padding(pade, 1);
-                for (long i = 0; i < nb; i+= 8) {
-                    _mm256_storeu_ps(&liste[i], _mm256_mul_ps(_mm256_loadu_ps(&liste[i]), _mm256_loadu_ps(&n->liste[i])));
-                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Floats*)result->index(m);
                 if (n->liste.check(0)) {
@@ -3092,7 +3036,6 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
                     n->liste[i] = liste[i] / n->liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -3569,19 +3512,19 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
             Numbers* n = (Numbers*)e;
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((4 - (szl & 3)) & 3);
-                liste.padding((4 - (szl & 3)) & 3);
-                for (i = 0; i < szl; i+= 4) {
+            if (szl >= 20) {
+                long nb = (szl>>2)<<2;
+                for (i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_add_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] += n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             liste.plus(n->liste, szl);
             return this;
         }
@@ -3607,12 +3550,14 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
             double v = e->asNumber();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((4 - (szl & 3)) & 3);
+            if (szl >= 20) {
                 __m256d vb = {v, v, v, v};
-                for (long i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (long i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_add_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] += v;
                 return this;
             }
 #endif
@@ -3634,29 +3579,12 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
         case t_matrix: {
             Matrice* result = new Matrice(lisp, (Matrice*)e);
             Numbers* n;
-
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((4 - (szl & 3)) & 3);
-            long pade = (4 - (sze & 3)) & 3;
-            long nb = lmin(szl, sze);
-
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Numbers*)result->index(m);
-                n->liste.padding(pade);
-                for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste[i], _mm256_add_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
-                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] += liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -3672,19 +3600,19 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
             Numbers* n = (Numbers*)e;
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((4 - (szl & 3)) & 3);
-                liste.padding((4 - (szl & 3)) & 3);
-                for (i = 0; i < szl; i+= 4) {
+            if (szl >= 20) {
+                long nb = (szl>>2)<<2;
+                for (i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_sub_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] -= n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             liste.minus(n->liste, szl);
             return this;
         }
@@ -3710,12 +3638,14 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
             double v = e->asNumber();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((4 - (szl & 3)) & 3);
+            if (szl >= 20) {
                 __m256d vb = {v, v, v, v};
-                for (long i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (long i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_sub_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] -= v;
                 return this;
             }
 #endif
@@ -3737,29 +3667,12 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
         case t_matrix: {
             Matrice* result = new Matrice(lisp, (Matrice*)e);
             Numbers* n;
-
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((4 - (szl & 3)) & 3);
-            long pade = (4 - (sze & 3)) & 3;
-            long nb = lmin(szl, sze);
-
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Numbers*)result->index(m);
-                n->liste.padding(pade);
-                for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste[i], _mm256_sub_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
-                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] - n->liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -3774,20 +3687,20 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
             Numbers* n = (Numbers*)e;
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((4 - (szl & 3)) & 3);
-                liste.padding((4 - (szl & 3)) & 3);
-                for (i = 0; i < szl; i+= 4) {
+            if (szl >= 20) {
+                long nb = (szl>>2)<<2;
+                for (i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_mul_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] *= n->liste[nb];
                 return this;
             }
 #endif
 
-            szl = lmin(szl, i);
             liste.multiply(n->liste, szl);
             return this;
         }
@@ -3813,12 +3726,14 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
             double v = e->asNumber();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((4 - (szl & 3)) & 3);
+            if (szl >= 20) {
                 __m256d vb = {v, v, v, v};
-                for (long i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (long i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_mul_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] *= v;
                 return this;
             }
 #endif
@@ -3840,29 +3755,12 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
         case t_matrix: {
             Matrice* result = new Matrice(lisp, (Matrice*)e);
             Numbers* n;
-
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((4 - (szl & 3)) & 3);
-            long pade = (4 - (sze & 3)) & 3;
-
-            long nb = lmin(szl, sze);
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Numbers*)result->index(m);
-                n->liste.padding(pade);
-                for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste[i], _mm256_mul_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
-                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] *= liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -3880,19 +3778,19 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
 
             long szl = liste.size();
             long i = n->liste.size();
+            szl = lmin(szl, i);
 
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
-                szl = lmin(szl, i);
-                liste.padding((4 - (szl & 3)) & 3);
-                liste.padding((4 - (szl & 3)) & 3);
-                for (i = 0; i < szl; i+= 4) {
+            if (szl >= 20) {
+                long nb = (szl>>2)<<2;
+                for (i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_div_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] /= n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             for (i = 0; i < szl; i++)
                 liste[i] /= n->liste[i];
             return this;
@@ -3927,12 +3825,14 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                 throw new Error("Error: division by zero");
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((4 - (szl & 3)) & 3, 1);
+            if (szl >= 20) {
                 __m256d vb = {v, v, v, v};
-                for (long i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (long i = 0; i < nb; i += 4) {
                     _mm256_storeu_pd(&liste[i], _mm256_div_pd(_mm256_loadu_pd(&liste[i]), vb));
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] /= v;
                 return this;
             }
 #endif
@@ -3959,26 +3859,6 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
             Matrice* result = new Matrice(lisp, (Matrice*)e);
             Numbers* n;
 
-#ifdef INTELINTRINSICS
-            long szl = liste.size();
-            long sze = result->size_y;
-            liste.padding((4 - (szl & 3)) & 3, 1);
-            
-            long pade = (4 - (sze & 3)) & 3;
-
-            long nb = lmin(szl, sze);
-            for (long m = 0; m < result->size_x; m++) {
-                n = (Numbers*)result->index(m);
-                if (n->liste.check(0)) {
-                    result->release();
-                    throw new Error("Error: division by zero");
-                }
-                n->liste.padding(pade, 1);
-                for (long i = 0; i < nb; i+= 4) {
-                    _mm256_storeu_pd(&liste[i], _mm256_div_pd(_mm256_loadu_pd(&liste[i]), _mm256_loadu_pd(&n->liste[i])));
-                }
-            }
-#else
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
                 if (n->liste.check(0)) {
@@ -3989,7 +3869,6 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
                     n->liste[i] = liste[i] / n->liste[i];
                 }
             }
-#endif
             release();
             return result;
         }
@@ -4476,15 +4355,14 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             Integers* n = (Integers*)e;
             long szl = liste.size();
             long i = n->liste.size();
-            
+            szl = lmin(szl, i);
+
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
+            if (szl >= 20) {
                 //if a number can be divided by 4, then the last two bits should be 0
                 //we then compute how many elements are missing to make a vector with a size divisible by 4
-                szl = lmin(szl, i);
-                liste.padding((4 - (szl & 3)) & 3);
-                n->liste.padding((4 - (szl & 3)) & 3);
-                for (i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (i = 0; i < nb; i += 4) {
                     _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_add_epi64(
                                                          _mm256_loadu_si256((const __m256i *)&liste[i]),
@@ -4492,10 +4370,11 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
                                                          )
                                         );
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] += n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             liste.plus(n->liste, szl);
             return this;
         }
@@ -4506,10 +4385,11 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             long v = e->asInteger();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((4 - (szl & 3)) & 3);
+            if (szl >= 20) {
+                long i;
                 __m256i vb = {v, v, v, v};
-                for (long i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (i = 0; i < nb; i+= 4) {
                     _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_add_epi64(
                                                          _mm256_loadu_si256((const __m256i *)&liste[i]),
@@ -4517,6 +4397,8 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
                                                          )
                                         );
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] += v;
                 return this;
             }
 #endif
@@ -4573,15 +4455,14 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             Integers* n = (Integers*)e;
             long szl = liste.size();
             long i = n->liste.size();
-            
+            szl = lmin(szl, i);
+
 #ifdef INTELINTRINSICS
-            if (szl >= 3 && i >= 3) {
+            if (szl >= 20) {
                 //if a number can be divided by 4, then the last two bits should be 0
                 //we then compute how many elements are missing to make a vector with a size divisible by 4
-                szl = lmin(szl, i);
-                liste.padding((4 - (szl & 3)) & 3);
-                n->liste.padding((4 - (szl & 3)) & 3);
-                for (i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (i = 0; i < nb; i += 4) {
                     _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_sub_epi64(
                                                          _mm256_loadu_si256((const __m256i *)&liste[i]),
@@ -4589,10 +4470,11 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
                                                          )
                                         );
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] -= n->liste[nb];
                 return this;
             }
 #endif
-            szl = lmin(szl, i);
             liste.minus(n->liste, szl);
             return this;
         }
@@ -4603,10 +4485,10 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             long v = e->asInteger();
 #ifdef INTELINTRINSICS
             long szl = liste.size();
-            if (szl >= 3) {
-                liste.padding((4 - (szl & 3)) & 3);
+            if (szl >= 20) {
                 __m256i vb = {v, v, v, v};
-                for (long i = 0; i < szl; i+= 4) {
+                long nb = (szl>>2)<<2;
+                for (long i = 0; i < nb; i+= 4) {
                     _mm256_storeu_si256( (__m256i *)&liste[i],
                                         _mm256_sub_epi64(
                                                          _mm256_loadu_si256((const __m256i *)&liste[i]),
@@ -4614,6 +4496,8 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
                                                          )
                                         );
                 }
+                for (;nb < szl; nb++)
+                    liste[nb] -= v;
                 return this;
             }
 #endif
