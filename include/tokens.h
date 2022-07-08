@@ -15,6 +15,10 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "tools.h"
+#include "vecte.h"
+
+#define u_ustring std::u32string
 
 using std::vector;
 using std::unordered_map;
