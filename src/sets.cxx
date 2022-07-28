@@ -2913,7 +2913,7 @@ bool Heap::unify(LispE* lisp, Element* value, bool record) {
         if (value == this) {
             return true;
         }
-        rec = (lisp->extractlabel(car(lisp)) == v_null);
+        rec = (lisp->extractdynamiclabel(car(lisp)) == v_null);
     }
     
     Iter_heap irule(root);

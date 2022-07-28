@@ -467,8 +467,8 @@ public:
         return this;
     }
     
-    void prettyfying(LispE* lisp, string& code);
-    string prettify(LispE* lisp);
+    void prettyfying(LispE* lisp, string& code, long mx);
+    string prettify(LispE* lisp, long mx);
     
     virtual void reserve(long sz) {}
     
@@ -2086,6 +2086,8 @@ public:
         content = c;
     }
 
+    Element* asList(LispE* lisp, List* l);
+    
     void setvalue(u_ustring& v) {
         content = v;
     }

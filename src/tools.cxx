@@ -1263,6 +1263,17 @@ bool UTF8_Handler::u_is_alpha(u_ustring& s) {
     return true;
 }
 
+bool UTF8_Handler::s_is_digit(u_ustring& s) {
+    if (s == U"")
+        return false;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++) {
+        if (!c_is_digit(s[i]))
+            return false;
+    }
+    return true;
+}
+
 bool UTF8_Handler::s_is_alpha(wstring& s) {
     if (s == L"")
         return false;

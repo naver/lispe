@@ -1680,6 +1680,40 @@ public:
     }
 };
 
+class Listreturn : public Element {
+public:
+    
+    Listreturn() : Element(l_return, s_constant) {}
+  
+    long size() {
+        return 1;
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class Listreturnelement : public Element {
+public:
+    Element* action;
+    char terminal;
+    
+    Listreturnelement(List* l) : Element(l_return, s_constant) {
+        terminal = l->terminal;
+        action = l->liste[1];
+    }
+  
+    void setterminal(char v = 1) {
+        terminal |= v;
+    }
+
+    long size() {
+        return 2;
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 class Listlambda : public List {
 public:
 

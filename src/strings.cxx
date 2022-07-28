@@ -167,6 +167,9 @@ void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
         loaded=true;
     }
     
+    if (firstrule == -1)
+        return;
+    
     stacktype.clear();
     
     if (vstack==NULL)
@@ -248,11 +251,11 @@ void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
     delete[] token;
 }
 
-typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base,
+typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
     str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
-    str_rules,str_tokenize_rules, str_getrules, str_setrules, str_execute} string_method;
+    str_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
 
 /*
  First of all we create a new Element derivation
@@ -315,73 +318,6 @@ public:
         ch.charge(lisp, name);
         return parse_json(lisp, ch.content);
     }
-    
-    /*
-    void makeList(LispE* lisp, x_node* xn, List* tree) {
-        if (xn->token[0] >= 'A' && xn->token[0] <= 'Z') {
-            if (!xn->nodes.size()) {
-                tree->pop();
-                tree->append(lisp->provideString(xn->value));
-            }
-            else {
-                for (long i = 0; i < xn->nodes.size(); i++)
-                    makeList(lisp, xn->nodes[i], tree);
-            }
-            return;
-        }
-        
-        tree->append(lisp->provideString(xn->token));
-        if (!xn->nodes.size()) {
-            tree->append(lisp->provideString(xn->value));
-        }
-        else {
-            List* sub;
-            for (long i = 0; i < xn->nodes.size(); i++) {
-                sub = lisp->provideList();
-                tree->append(sub);
-                makeList(lisp, xn->nodes[i], sub);
-            }
-        }
-    }
-
-    Element* methodExecute(LispE* lisp, u_ustring code) {
-        x_tokens tok;
-        tok.access = lisp->handlingutf8;
-        tok.setrules();
-        tok.rules[0] = U" +=#";
-        tok.rules[1] = U"\n=#";
-        tok.rules[2] = U"\t=#";
-        tok.parserules();
-        tok.loaded=true;
-
-        tok.tokenize(code, NULL);
-        
-        bnf_basic bnf(1);
-        
-        x_node* xn = bnf.x_parsing(&tok, FULL);
-        if (xn == NULL) {
-            u_ustring message;
-            message = U"Error while parsing program file: ";
-            if (bnf.errornumber != -1)
-                message += bnf.x_errormsg(bnf.errornumber);
-            else
-                message += bnf.labelerror;
-            message += U" line: ";
-            message += convertToUString(bnf.lineerror);
-            throw new Error(message);
-        }
-        List* tree = lisp->provideList();
-        List* sub;
-        for (long i = 0; i < xn->nodes.size(); i++) {
-            sub = lisp->provideList();
-            makeList(lisp, xn->nodes[i], sub);
-            if (sub->size())
-                tree->append(sub);
-        }
-        delete xn;
-        return tree;
-    }
-    */
     
     Element* methodFormat(LispE* lisp) {
         u_ustring sformat =  lisp->get_variable(v_str)->asUString(lisp);
@@ -662,6 +598,10 @@ public:
             case str_is_alpha: {
                 u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
                 return booleans_[lisp->handlingutf8->u_is_alpha(s)];
+            }
+            case str_is_digit: {
+                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                return booleans_[lisp->handlingutf8->s_is_digit(s)];
             }
             case str_left: {
                 u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
@@ -950,12 +890,6 @@ public:
             case str_base: {
                 return methodBase(lisp);
             }
-            case str_execute: {
-                
-                Element* code = lisp->get_variable(U"code");
-                //return methodExecute(lisp, code->asUString(lisp));
-                return code;
-            }
         }
 		return null_;
     }
@@ -983,6 +917,9 @@ public:
             }
             case str_is_alpha: {
                 return L"Checks if the string contains only alphabetic characters";
+            }
+            case str_is_digit: {
+                return L"Checks if the string contains only digits";
             }
             case str_left: {
                 return L"Returns the 'n' characters to left";
@@ -1058,8 +995,6 @@ public:
                 return L"(convert_in_base str b (convert_from): convert str into b or from base b according to convert_from";
             case str_getstruct:
                 return L"(getstruct str open close (pos)): extracts a sub-string from an 'open' chararacter to a 'close' character starting at 'pos'";
-            case str_execute:
-                return L"Execute some Basic code";
         }
 		return L"";
     }
@@ -1079,6 +1014,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib lowerp (str)", new Stringmethod(lisp, str_is_lowercase));
     lisp->extension("deflib upperp (str)", new Stringmethod(lisp, str_is_uppercase));
     lisp->extension("deflib alphap (str)", new Stringmethod(lisp, str_is_alpha));
+    lisp->extension("deflib digitp (str)", new Stringmethod(lisp, str_is_digit));
     lisp->extension("deflib emojip (str)", new Stringmethod(lisp, str_is_emoji));
     lisp->extension("deflib punctuationp (str)", new Stringmethod(lisp, str_is_punctuation));
     lisp->extension("deflib replace (str fnd rep (index))", new Stringmethod(lisp, str_remplace));
@@ -1108,6 +1044,4 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib json_read (filename)", new Stringmethod(lisp, str_read_json));
     lisp->extension("deflib json_parse (str)", new Stringmethod(lisp, str_parse_json));
     lisp->extension("deflib json (element)", new Stringmethod(lisp, str_string_json));
-    
-    lisp->extension("deflib execute (code)", new Stringmethod(lisp, str_execute));
 }

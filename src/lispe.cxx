@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.4.27.16.23";
+static std::string version = "1.2022.7.28.15.50";
 string LispVersion() {
     return version;
 }
@@ -318,7 +318,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare);
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower);
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal);
-    set_instruction(l_maplist, "maplist", P_THREE, &List::evall_maplist);
+    set_instruction(l_maplist, "maplist", P_THREE | P_FOUR, &List::evall_maplist);
     set_instruction(l_mapping, "#mapping", P_THREE, &List::evall_mapping);
     set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark);
     set_instruction(l_matrix, "matrix", P_TWO | P_THREE | P_FOUR, &List::evall_matrix);
@@ -351,7 +351,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_poplast, "poplast", P_TWO, &List::evall_poplast);
     set_instruction(l_power, "^^", P_ATLEASTTHREE, &List::evall_power);
     set_instruction(l_powerequal, "^^=", P_ATLEASTTHREE, &List::evall_powerequal);
-    set_instruction(l_prettify, "prettify", P_TWO, &List::evall_prettify);
+    set_instruction(l_prettify, "prettify", P_TWO | P_THREE, &List::evall_prettify);
     set_instruction(l_print, "print", P_ATLEASTONE, &List::evall_print);
     set_instruction(l_printerr, "printerr", P_ATLEASTONE, &List::evall_printerr);
     set_instruction(l_printerrln, "printerrln", P_ATLEASTONE, &List::evall_printerrln);
@@ -1746,6 +1746,12 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     lm = new Listswitch((Listincode*)e);
                                     ((Listswitch*)lm)->build(this);
                                     break;
+                                case l_return:
+                                    if (e->size() == 1)
+                                        lm = new Listreturn();
+                                    else
+                                        lm = new Listreturnelement((Listincode*)e);
+                                    break;
                                 default:
                                     lm = new List_execute((Listincode*)e, delegation->evals[lab]);
                             }
@@ -1753,8 +1759,9 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             if (lm != NULL) {
                                 garbaging(lm);
                                 if (!delegation->checkArity(lab, nbarguments)) {
-                                    wstring err = L"Error: Wrong number of argument for: '";
+                                    wstring err = L"Error: Wrong number of arguments for: '";
                                     err += delegation->asString(lab);
+                                    err += L"'";
                                     throw new Error(err);
                                 }
                                 removefromgarbage(e);
@@ -1903,6 +1910,159 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
     return delegation->_TRUE;
 }
 
+Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool quoting) {
+    Element* e = NULL;
+    Element* quoted = courant;
+    double value;
+    char topfunction = false;
+    int16_t lab = -1;
+        
+    while (index < parse.types.size()) {
+        parse.current = index;
+        switch (parse.types[index]) {
+            case c_opening: {
+                lab = -1;
+                index++;
+                //Empty list
+                if (parse.types[index] == c_closing) {
+                    index++;
+                    e = delegation->_EMPTYLIST;
+                }
+                else {
+                    e = provideList();
+                    syntaxTree(e, parse, index, quoting);
+                }
+                
+                courant->append(e);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                break;
+            }
+            case c_closing:
+                index++;
+                if (courant != quoted)
+                    throw new Error("Error: Dangling quote expression");
+                return delegation->_TRUE;
+            case c_opening_brace: {
+                index++;
+                if (parse.types[index] == c_closing_brace) {
+                    index++;
+                    e = delegation->_EMPTYDICTIONARY;
+                }
+                else {
+                    Dictionary_as_list dico;
+                    syntaxTree(&dico, parse, index, quoting);
+                    e = dico.dictionary(this);
+                }
+                courant->append(e);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                break;
+            }
+            case c_opening_data_brace: {
+                index++;
+                if (parse.types[index] == c_closing_brace) {
+                    index++;
+                    e = delegation->_EMPTYDICTIONARY;
+                }
+                else {
+                    Dictionary_as_buffer dico(this);
+                    syntaxTree(&dico, parse, index, quoting);
+                    e = dico.dictionary(this);
+                }
+                courant->append(e);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                break;
+            }
+            case c_closing_brace:
+                index++;
+                return delegation->_TRUE;
+            case t_emptystring:
+                courant->append(delegation->_EMPTYSTRING);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                index++;
+                break;
+            case t_string:
+                e = provideConststring(parse.tokens[index]);
+                courant->append(e);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                index++;
+                break;
+            case t_number:
+                value = parse.numbers[index];
+                if (parse.tokens[index].find(U".") == -1)
+                    e = provideConstinteger(value);
+                else
+                    e = provideConstnumber(value);
+                courant->append(e);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                index++;
+                break;
+            case t_operator:
+                e = provideOperator(encode(parse.tokens[index]));
+                courant->append(e);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                index++;
+                break;
+            case l_cadr:
+                e =  provideCADR(parse.tokens[index]);
+                courant->append(e);
+                quoting = quoting && courant == quoted;
+                courant = quoted;
+                index++;
+                break;
+            case c_colon:
+                if (courant->label() == t_dictionary) {
+                    courant->reversechoice();
+                    index++;
+                    if (parse.types[index] == c_colon)
+                        throw new Error("Error: wrong key/value separator in a dictionary");
+                    break;
+                }
+            case t_atom:
+                e = provideAtom(encode(parse.tokens[index]));
+                if (!quoting && e->label() == l_quote) {
+                    courant->append(e);
+                    quoting = true;
+                }
+                else {
+                    if (!quoting && courant->size() == 0) {
+                        if (e->type >= l_lambda && e->type <= l_defpat) {
+                            if (e->type == l_lambda)
+                                topfunction = 2;
+                            else
+                                topfunction = 3;
+                        }
+                        courant->append(e);
+                    }
+                    else {
+                        courant->append(e);
+                        quoting = quoting && courant == quoted;
+                        courant = quoted;
+                    }
+                }
+                index++;
+                break;
+            case l_quote:
+                e = provideList();
+                e->append(provideAtom(l_quote));
+                courant->append(e);
+                courant = e;
+                quoting = true;
+                index++;
+                break;
+            default:
+                break;
+        }
+    }
+    return courant;
+}
+
 Element* LispE::atomise(u_ustring a) {
     List* l = provideList();
     delegation->atomise(a, l, threaded());
@@ -1993,7 +2153,7 @@ Element* LispE::load(string pathname) {
     delegation->entrypoints[delegation->i_current_file] = delegation->_NULL;
 
     try {
-        Element* tree = compile(code);
+        Element* tree = compile_lisp_code(code);
         delegation->entrypoints[delegation->i_current_file] = tree;
 
         current_path();
@@ -2006,7 +2166,7 @@ Element* LispE::load(string pathname) {
     }
 }
 
-Element* LispE::compile(string& code) {
+Element* LispE::compile_lisp_code(string& code) {
     clearStop();
     //A little trick to compile code sequences
     code = "(__root__ " + code + ")";
@@ -2043,7 +2203,7 @@ Element* LispE::compile(string& code) {
             if (parse.lines.size())
                 delegation->i_current_line = parse.lines.back();
         delegation->forceClean();
-        return err;
+        throw err;
     }
 
     Element* e = courant.liste[0];
@@ -2111,7 +2271,7 @@ Element* LispE::execute(string code) {
     delegation->i_current_file = 0;
     clearStop();
     try {
-        return compile(code)->eval(this);
+        return compile_lisp_code(code)->eval(this);
     }
     catch(Error* err) {
         delegation->forceClean();
@@ -2129,7 +2289,7 @@ Element* LispE::execute(string code, string pathname) {
     }
 
     try {
-        Element* tree = compile(code);
+        Element* tree = compile_lisp_code(code);
         delegation->entrypoints[delegation->i_current_file] = tree;
         current_path();
         delegation->reset_context();
@@ -2336,6 +2496,13 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
+
+
+
+
 
 
 

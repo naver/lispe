@@ -549,7 +549,7 @@ void Element::flatten(LispE* lisp, Numbers* l) {
 
 //------------------------------------------------------------------------------------------
 
-void Element::prettyfying(LispE* lisp, string& code) {
+void Element::prettyfying(LispE* lisp, string& code, long mx) {
     if (isList()) {
         if (size() == 0) {
             code += " ()";
@@ -591,7 +591,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
                 code += params->toString(lisp);
             code += "\n";
             for (long i = 3; i < size(); i++) {
-                index(i)->prettyfying(lisp, code);
+                index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
             return;
@@ -608,14 +608,14 @@ void Element::prettyfying(LispE* lisp, string& code) {
             params = index(2);
             if (params->isList()) {
                 code += "\n";
-                params->prettyfying(lisp, code);
+                params->prettyfying(lisp, code, mx);
             }
             else {
                 code += params->toString(lisp);
                 code += "\n";
             }
             for (long i = 3; i < size(); i++) {
-                index(i)->prettyfying(lisp, code);
+                index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
             return;
@@ -627,17 +627,23 @@ void Element::prettyfying(LispE* lisp, string& code) {
             code += "(";
             code += index(i++)->toString(lisp);
             code += " ";
-            code += index(i++)->toString(lisp);
-            code += "\n";
+            string condition = index(i++)->toString(lisp);
+            if (condition.size() >= mx) {
+                index(i-1)->prettyfying(lisp, code, mx);
+            }
+            else {
+                code += condition;
+                code += "\n";
+            }
             for (; i < size(); i++) {
-                index(i)->prettyfying(lisp, code);
+                index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
             return;
         }
         
         string local = toString(lisp);
-        if (local.size() < 50) {
+        if (local.size() < mx) {
             code += local;
             code += "\n";
             return;
@@ -648,8 +654,14 @@ void Element::prettyfying(LispE* lisp, string& code) {
         if (type == l_while || type == l_setq || type == l_setg || type == l_loopcount || type == l_key || type == l_keyn) {
             code += index(i++)->toString(lisp);
             code += " ";
-            code += index(i++)->toString(lisp);
-            code += "\n";
+            string condition = index(i++)->toString(lisp);
+            if (condition.size() >= mx) {
+                index(i-1)->prettyfying(lisp, code, mx);
+            }
+            else {
+                code += condition;
+                code += "\n";
+            }
         }
         else {
             if (type > t_error && type < l_final) {
@@ -660,7 +672,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
         }
         
         for (; i < size(); i++) {
-            index(i)->prettyfying(lisp, code);
+            index(i)->prettyfying(lisp, code, mx);
             if (code.back() != '\n')
                 code += "\n";
         }
@@ -686,7 +698,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
                     s_unicode_to_utf8(local, key);
                     code += local;
                     code += ":";
-                    a.second->prettyfying(lisp, code);
+                    a.second->prettyfying(lisp, code, mx);
                     if (code.back() != '\n')
                         code += "\n";
                 }
@@ -698,7 +710,7 @@ void Element::prettyfying(LispE* lisp, string& code) {
                 local = convertToString(a.first);
                 code += local;
                 code += ":";
-                a.second->prettyfying(lisp, code);
+                a.second->prettyfying(lisp, code, mx);
                 if (code.back() != '\n')
                     code += "\n";
             }
@@ -713,9 +725,12 @@ void Element::prettyfying(LispE* lisp, string& code) {
 //(defpat action ( [Take 'x] [Take y] )(if (check_object position x) (block (push belongings x) (println "Ok we have picked up" x)) (println "Cannot pick up the" x)))
 //(prettify '((12 3) (4 5 6) (8 9 10) (12 3) (4 5 6) (8 9 10) (12 3) (4 5 6) (8 9 10)))
 
-string Element::prettify(LispE* lisp) {
+string Element::prettify(LispE* lisp, long mx) {
+    if (isString())
+        return toString(lisp);
+    
     string code;
-    prettyfying(lisp, code);
+    prettyfying(lisp, code, mx);
     string body;
     IndentCode(code, body, GetBlankSize(), true, false);
     return body;
@@ -2400,6 +2415,28 @@ void Listincode::protecting(bool protection, LispE* lisp) {
 Element* Element::asList(LispE* lisp, List* l) {
     l->append(copying(false));
     return l;
+}
+
+Element* String::asList(LispE* lisp, List* courant) {
+    Tokenizer parse;
+    string code = toString(lisp);
+    
+    lisp_code retour = lisp->segmenting(code, parse);
+    long index = 0;
+    switch (retour) {
+        case e_error_brace:
+            throw new Error("Error: Braces do not balance");
+        case e_error_bracket:
+            throw new Error("Error: brackets do not balance");
+        case e_error_parenthesis:
+            throw new Error("Error: parentheses do not balance");
+        case e_error_string:
+            throw new Error("Error: missing end of string");
+        default:
+            index = 0;
+    }
+
+    return lisp->syntaxTree(courant, parse, index, false);
 }
 
 //------------------------------------------------------------------------------------------

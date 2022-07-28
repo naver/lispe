@@ -621,16 +621,6 @@ public:
         return v_null;
     }
     
-    //We delve into the argument structure to find the first label
-    inline int16_t extractlabel(Element* e) {
-        while (e->isList()) {
-            if (!e->size())
-                return v_null;
-            e = e->index(0);
-        }
-        return checkDataStructure(e->label());
-    }
-    
     inline Element* getDataStructure(int16_t label) {
         return data_pool.search(label);
     }

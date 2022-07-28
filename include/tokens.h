@@ -516,7 +516,9 @@ public:
                             sub=cc;
                             rule.push_back(sub);
                             ruleelements[i].push_back(xr_char);
-                            j++;
+                            //A rule that starts with a %
+                            if (cc != '%')
+                                j++;
                             break;
                         }
                         

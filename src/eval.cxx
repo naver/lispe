@@ -830,7 +830,7 @@ bool List::unify(LispE* lisp, Element* value, bool record) {
             setmark(false);
             return true;
         }
-        rec = (lisp->extractlabel(liste[0]) == v_null);
+        rec = (lisp->extractdynamiclabel(liste[0]) == v_null);
     }
     
     if (!value->isList()) {
@@ -866,7 +866,7 @@ bool LList::unify(LispE* lisp, Element* value, bool record) {
         if (value == this) {
             return true;
         }
-        rec = (lisp->extractlabel(liste.front()) == v_null);
+        rec = (lisp->extractdynamiclabel(liste.front()) == v_null);
     }
     
     if (!value->isList()) {
@@ -1237,7 +1237,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
         for (i = 1; i <= nbarguments; i++) {
             element = liste[i]->eval(lisp);
             
-            ilabel = lisp->extractlabel(element);
+            ilabel = lisp->extractdynamiclabel(element);
             if (ilabel > l_final && element->type != t_data) {
                 match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
                 if (match != check_ok) {
@@ -2100,7 +2100,7 @@ Element* LispE::eval(string code) {
     bool locked = false;
     try {
         lock();
-        e = compile(code);
+        e = compile_lisp_code(code);
         locked = true;
         unlock();
         e = e->eval(this);
@@ -2254,17 +2254,21 @@ Element* List::evall_quote(LispE* lisp) {
     return liste[1];
 }
 
+Element* Listreturn::eval(LispE* lisp) {
+    return lisp->provideReturn();
+}
+
+Element* Listreturnelement::eval(LispE* lisp) {
+    action->setterminal(terminal);
+    return lisp->provideReturn(action->eval(lisp));
+}
 
 Element* List::evall_return(LispE* lisp) {
     if (liste.size() == 1)
         return lisp->provideReturn(null_);
-
-    try {
-        return lisp->provideReturn(liste[1]->eval(lisp));
-    }
-    catch (Error* err) {
-        throw err;
-    }
+    
+    liste[1]->setterminal(terminal);
+    return lisp->provideReturn(liste[1]->eval(lisp));
 }
 
 Element* List::evall_and(LispE* lisp) {
@@ -2538,10 +2542,17 @@ Element* List::evall_maplist(LispE* lisp) {
     void* iter = NULL;
     Element* save_variable = this;
     List* call = NULL;
+    bool choice = true;
     
     try {
-        element = liste[2]->eval(lisp);
         
+        if (listsz == 4) {
+            element = liste[3]->eval(lisp);
+            choice = element->Boolean();
+            element->release();
+        }
+        
+        element = liste[2]->eval(lisp);
         op = liste[1];
         listsz = element->size();
         if (!listsz) {
@@ -2569,22 +2580,27 @@ Element* List::evall_maplist(LispE* lisp) {
             if (e->type == l_return)
                 container = emptylist_;
             else {
-                switch (e->type) {
-                    case t_string:
-                        container = lisp->provideStrings();
-                        break;
-                    case t_integer:
-                        container = lisp->provideIntegers();
-                        break;
-                    case t_float:
-                        container = lisp->provideFloats();
-                        break;
-                    case t_number:
-                        container = lisp->provideNumbers();
-                        break;
-                    default:
-                        container = lisp->provideList();
+                if (choice) {
+                    switch (e->type) {
+                        case t_string:
+                            container = lisp->provideStrings();
+                            break;
+                        case t_integer:
+                            container = lisp->provideIntegers();
+                            break;
+                        case t_float:
+                            container = lisp->provideFloats();
+                            break;
+                        case t_number:
+                            container = lisp->provideNumbers();
+                            break;
+                        default:
+                            container = lisp->provideList();
+                    }
                 }
+                else
+                    container = lisp->provideList();
+                
                 e = e->copying(false);
                 container->append(e);
                 e->release();
@@ -2617,22 +2633,27 @@ Element* List::evall_maplist(LispE* lisp) {
             Element* nxt = element->next_iter_exchange(lisp, iter);
             call->in_quote(1, nxt);
             e = (call->*met)(lisp);
-            switch (e->type) {
-                case t_string:
-                    container = lisp->provideStrings();
-                    break;
-                case t_integer:
-                    container = lisp->provideIntegers();
-                    break;
-                case t_float:
-                    container = lisp->provideFloats();
-                    break;
-                case t_number:
-                    container = lisp->provideNumbers();
-                    break;
-                default:
-                    container = lisp->provideList();
+            if (choice) {
+                switch (e->type) {
+                    case t_string:
+                        container = lisp->provideStrings();
+                        break;
+                    case t_integer:
+                        container = lisp->provideIntegers();
+                        break;
+                    case t_float:
+                        container = lisp->provideFloats();
+                        break;
+                    case t_number:
+                        container = lisp->provideNumbers();
+                        break;
+                    default:
+                        container = lisp->provideList();
+                }
             }
+            else
+                container = lisp->provideList();
+            
             e = e->copying(false);
             container->append(e);
             e->release();
@@ -2656,8 +2677,10 @@ Element* List::evall_maplist(LispE* lisp) {
             if (save_variable != this)
                 lisp->reset_in_stack(save_variable, label);
         }
-        else
-            call->release();
+        else {
+            if (call != NULL)
+                call->release();
+        }
         
         if (iter != NULL)
             element->clean_iter(iter);
@@ -2804,9 +2827,11 @@ Element* List::evall_filterlist(LispE* lisp) {
             if (save_variable != this)
                 lisp->reset_in_stack(save_variable, label);
         }
-        else
-            call->release();
-        
+        else {
+            if (call != NULL)
+                call->release();
+        }
+
         lisp->set_true_as_true();
         if (iter != NULL)
             element->clean_iter(iter);
@@ -2965,8 +2990,10 @@ Element* List::evall_takelist(LispE* lisp) {
             if (save_variable != this)
                 lisp->reset_in_stack(save_variable, label);
         }
-        else
-            call->release();
+        else {
+            if (call != NULL)
+                call->release();
+        }
 
         if (iter != NULL)
             element->clean_iter(iter);
@@ -3120,8 +3147,10 @@ Element* List::evall_droplist(LispE* lisp) {
             if (save_variable != this)
                 lisp->reset_in_stack(save_variable, label);
         }
-        else
-            call->release();
+        else {
+            if (call != NULL)
+                call->release();
+        }
 
         if (iter != NULL)
             element->clean_iter(iter);
@@ -5900,7 +5929,7 @@ Element* List::evall_consb(LispE* lisp) {
                 result->append(first_element);
                 void* iter = second_element->begin_iter();
                 Element* nxt  = second_element->next_iter_exchange(lisp, iter);
-                while (nxt != NULL) {
+                while (nxt != emptyatom_) {
                     result->append(nxt);
                     nxt = second_element->next_iter_exchange(lisp, iter);
                 }
@@ -9070,7 +9099,10 @@ Element* List::evall_poplast(LispE* lisp) {
 
 Element* List::evall_prettify(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
-    string s = first_element->prettify(lisp);
+    long mx = 50;
+    if (liste.size() == 3)
+        evalAsInteger(2, lisp, mx);
+    string s = first_element->prettify(lisp, mx);
     first_element->release();
     return lisp->provideString(s);
 }
@@ -10077,7 +10109,12 @@ Element* List::evall_zipwith(LispE* lisp) {
     
     Element* value = null_;
     List* params = NULL;
-
+    bool choice = true;
+    
+    if (liste.back()->isAtom()) {
+        listsize--;
+        choice = liste.back()->Boolean();
+    }
     
     try {
         //We combine different lists together with an operator
@@ -10120,22 +10157,26 @@ Element* List::evall_zipwith(LispE* lisp) {
             if (value->type == l_return)
                 container = emptylist_;
             else {
-                switch (value->type) {
-                    case t_string:
-                        container = lisp->provideStrings();
-                        break;
-                    case t_integer:
-                        container = lisp->provideIntegers();
-                        break;
-                    case t_float:
-                        container = lisp->provideFloats();
-                        break;
-                    case t_number:
-                        container = lisp->provideNumbers();
-                        break;
-                    default:
-                        container = lisp->provideList();
+                if (choice) {
+                    switch (value->type) {
+                        case t_string:
+                            container = lisp->provideStrings();
+                            break;
+                        case t_integer:
+                            container = lisp->provideIntegers();
+                            break;
+                        case t_float:
+                            container = lisp->provideFloats();
+                            break;
+                        case t_number:
+                            container = lisp->provideNumbers();
+                            break;
+                        default:
+                            container = lisp->provideList();
+                    }
                 }
+                else
+                    container = lisp->provideList();
                 container->append(value);
                 value->release();
                 
@@ -10163,22 +10204,26 @@ Element* List::evall_zipwith(LispE* lisp) {
             for (i = 0; i < lsz; i++)
                 call->in_quote(i + 1, lists->liste[i]->index(0));
             value = (call->*met)(lisp);
-            switch (value->type) {
-                case t_string:
-                    container = lisp->provideStrings();
-                    break;
-                case t_integer:
-                    container = lisp->provideIntegers();
-                    break;
-                case t_float:
-                    container = lisp->provideFloats();
-                    break;
-                case t_number:
-                    container = lisp->provideNumbers();
-                    break;
-                default:
-                    container = lisp->provideList();
+            if (choice) {
+                switch (value->type) {
+                    case t_string:
+                        container = lisp->provideStrings();
+                        break;
+                    case t_integer:
+                        container = lisp->provideIntegers();
+                        break;
+                    case t_float:
+                        container = lisp->provideFloats();
+                        break;
+                    case t_number:
+                        container = lisp->provideNumbers();
+                        break;
+                    default:
+                        container = lisp->provideList();
+                }
             }
+            else
+                container = lisp->provideList();
             container->append(value);
             value->release();
             for (j = 1; j < szl; j++) {

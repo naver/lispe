@@ -411,11 +411,12 @@ public:
     Element* execute(string code);
     Element* execute(string code, string path_name);
     
-    Element* compile(string& code);
+    Element* compile_lisp_code(string& code);
     Element* load(string chemin);
     lisp_code segmenting(string& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index, bool quoting);
+    Element* syntaxTree(Element* courant, Tokenizer& s, long& index, bool quoting);
     void arguments(std::vector<string>& args);
     void current_path();
     
@@ -687,7 +688,7 @@ public:
                 parameters->change(i, dico);
             }
         }
-        int16_t sublabel = extractlabel(e->index(2));
+        int16_t sublabel = extractlabel(parameters);
         if (globalDeclaration())
             return delegation->recordingMethod(NULL, e, label, sublabel);
         return delegation->recordingMethod(execution_stack.back(), e, label, sublabel);
@@ -726,13 +727,28 @@ public:
         }
     }
 
-    //We delve into the argument structure to find the first label
-    inline int16_t extractlabel(Element* e) {
+    inline int16_t extractdynamiclabel(Element* e) {
         while (e->isList()) {
             if (!e->size())
                 return v_null;
             e = e->index(0);
         }
+        return checkDataStructure(e->label());
+    }
+
+    //We delve into the argument structure to find the first label
+    inline int16_t extractlabel(Element* e) {
+        char depth = 0;
+        while (e->isList()) {
+            depth++;
+            if (!e->size())
+                return v_null;
+            e = e->index(0);
+        }
+        
+        if (depth >= 3)
+            return v_null;
+        
         return checkDataStructure(e->label());
     }
     
@@ -1124,8 +1140,12 @@ public:
         return integers_pool.last?integers_pool.backpop()->set(n, pos):new Integerspool(this, n, pos);
     }
 
-    inline Returnpool* provideReturn(Element* e) {
-        return return_pool.last?return_pool.backpop()->set(e):new Returnpool(this, e);
+    inline Element* provideReturn() {
+        return return_pool.last?return_pool.backpop()->set(n_null):new Returnpool(this, n_null);
+    }
+
+    inline Element* provideReturn(Element* e) {
+        return (e == delegation->_TERMINAL)?e:return_pool.last?return_pool.backpop()->set(e):new Returnpool(this, e);
     }
     
     inline Numbers* provideNumbers(Numbers* n) {
