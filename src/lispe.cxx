@@ -1676,6 +1676,9 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     removefromgarbage(e);
                                     e = &delegation->_BREAKEVAL;
                                     break;
+                                case l_if:
+                                    lm = new List_if((List*)e);
+                                    break;
                                 case l_power:
                                     if (nbarguments == 3 && e->index(2)->equalvalue((long)2))
                                         lm = new List_power2((List*)e);

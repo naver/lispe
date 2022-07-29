@@ -6629,10 +6629,21 @@ Element* List::evall_greaterorequal(LispE* lisp) {
 }
 
 
+Element* List_if::eval(LispE* lisp) {
+    Element* condition = liste[1]->eval(lisp);
+    char test = 3 - condition->Boolean();
+    condition->release();
+    liste[test]->setterminal(terminal);
+    return liste[test]->eval(lisp);
+}
+
 Element* List::evall_if(LispE* lisp) {
     Element* condition = liste[1]->eval(lisp);
     char test = 3 - condition->Boolean();
     condition->release();
+    if (test >= liste.size())
+        return null_;
+    
     liste[test]->setterminal(terminal);
     return liste[test]->eval(lisp);
 }

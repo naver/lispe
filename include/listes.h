@@ -1685,6 +1685,7 @@ public:
     }
 };
 
+
 class Listreturn : public Element {
 public:
     
@@ -1739,6 +1740,13 @@ public:
     Element* eval(LispE* lisp);
 };
 
+
+class List_if : public List {
+public:
+    
+    List_if(List* l) : List(l, 0) {}
+    Element* eval(LispE* lisp);
+};
 
 class List_divide2 : public List {
 public:
