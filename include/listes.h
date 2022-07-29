@@ -123,24 +123,25 @@ public:
         last++;
     }
 
-    inline void extend(ITEM* val, long val_home) {
+    inline void extend(ITEM* val, long val_home, long home) {
         resize(last+val->last);
+        Element* e;
         for (long i = val_home; i < val->last; i++) {
-            val->buffer[i]->increment();
-            buffer[last++] = val->buffer[i];
+            e = val->buffer[i];
+            e->incrementstatus(!e->equal_item(this, home));
+            buffer[last++] = e;
         }
     }
 
-    inline void push_back(Element* val) {
+    inline void push_back(Element* val, long home) {
         resize(last);
         //sinon on ajoute l'element en queue...
         buffer[last++] = val;
-        val->increment();
+        val->incrementstatus(!val->equal_item(this, home));
     }
 
     inline void push_raw(Element* val) {
         resize(last);
-
         //sinon on ajoute l'element en queue...
         buffer[last++] = val;
     }
@@ -330,11 +331,11 @@ public:
     }
 
     inline void push_element(Element* val) {
-        item->push_back(val);
+        item->push_back(val, home);
     }
 
     inline void extend(LIST* val) {
-        item->extend(val->item, val->home);
+        item->extend(val->item, val->home, home);
     }
 
     inline void push_raw(Element* val) {
@@ -535,6 +536,10 @@ public:
     
     void reserve(long sz) {
         liste.reserve(sz);
+    }
+    
+    bool equal_item(ITEM* i, long home) {
+        return (liste.home == home && liste.item == i);
     }
     
     virtual Element* loop(LispE* lisp, int16_t label,  List* code);

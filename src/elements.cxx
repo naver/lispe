@@ -71,7 +71,7 @@ Element* String::copyatom(LispE* lisp, uint16_t s) {
 Element* Dictionary::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
-
+    
     Dictionary* d = lisp->provideDictionary();
     Element* e;
     for (const auto& a: dictionary) {
@@ -85,7 +85,7 @@ Element* Dictionary::copyatom(LispE* lisp, uint16_t s) {
 Element* Dictionary_n::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
-
+    
     Dictionary_n* d = lisp->provideDictionary_n();
     Element* e;
     for (const auto& a: dictionary) {
@@ -99,7 +99,7 @@ Element* Dictionary_n::copyatom(LispE* lisp, uint16_t s) {
 Element* Dictionary_i::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
-
+    
     Dictionary_i* d = lisp->provideDictionary_i();
     Element* e;
     for (const auto& a: dictionary) {
@@ -113,7 +113,7 @@ Element* Dictionary_i::copyatom(LispE* lisp, uint16_t s) {
 Element* Set_s::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
-
+    
     Set_s* st = lisp->provideSet_s();
     st->ensemble = ensemble;
     return st;
@@ -122,7 +122,7 @@ Element* Set_s::copyatom(LispE* lisp, uint16_t s) {
 Element* Set_i::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
-
+    
     Set_i* st = lisp->provideSet_i();
     st->ensemble = ensemble;
     return st;
@@ -131,7 +131,7 @@ Element* Set_i::copyatom(LispE* lisp, uint16_t s) {
 Element* Set_n::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
-
+    
     Set_n* st = lisp->provideSet_n();
     st->ensemble = ensemble;
     return st;
@@ -140,7 +140,7 @@ Element* Set_n::copyatom(LispE* lisp, uint16_t s) {
 Element* Set::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
-
+    
     Set* st = lisp->provideSet();
     st->dictionary = dictionary;
     for (const auto& a : st->dictionary)
@@ -151,7 +151,7 @@ Element* Set::copyatom(LispE* lisp, uint16_t s) {
 Element* List::copyatom(LispE* lisp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
-
+    
     List* l = lisp->provideList();
     for (long i = 0; i < liste.size(); i++) {
         l->append(liste[i]->copyatom(lisp, s));
@@ -175,7 +175,7 @@ Element* Floats::copyatom(LispE* lisp, uint16_t s) {
 Element* Numbers::copyatom(LispE* lisp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
-
+    
     Numbers* n = lisp->provideNumbers(this);
     release();
     return n;
@@ -184,7 +184,7 @@ Element* Numbers::copyatom(LispE* lisp, uint16_t s) {
 Element* Integers::copyatom(LispE* lisp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
-
+    
     Integers* i = lisp->provideIntegers(this);
     release();
     return i;
@@ -193,7 +193,7 @@ Element* Integers::copyatom(LispE* lisp, uint16_t s) {
 Element* Strings::copyatom(LispE* lisp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
-
+    
     Strings* sl = lisp->provideStrings(this);
     release();
     return sl;
@@ -550,9 +550,21 @@ void Element::flatten(LispE* lisp, Numbers* l) {
 //------------------------------------------------------------------------------------------
 
 void Element::prettyfying(LispE* lisp, string& code, long mx) {
+    List* l = NULL;
+    if (type_element() == t_list) {
+        l = (List*)this;
+        if (l->usermark()) {
+            code += "...";
+            return;
+        }
+        l->setusermark(true);
+    }
+    
     if (isList()) {
         if (size() == 0) {
             code += " ()";
+            if (l)
+                l->setusermark(false);
             return;
         }
         
@@ -560,6 +572,8 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         if (type == l_lambda) {
             code += " ";
             code += toString(lisp);
+            if (l)
+                l->setusermark(false);
             return;
         }
         
@@ -594,9 +608,11 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                 index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
+            if (l)
+                l->setusermark(false);
             return;
         }
-
+        
         if (type == l_loop || type == l_multiloop || type == l_polyloop) {
             code += "(";
             //The command name
@@ -618,9 +634,11 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                 index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
+            if (l)
+                l->setusermark(false);
             return;
         }
-
+        
         long i = 0;
         
         if (type == l_if || type == l_check || type == l_ncheck || type == l_ife) {
@@ -639,6 +657,8 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                 index(i)->prettyfying(lisp, code, mx);
             }
             code += ")\n";
+            if (l)
+                l->setusermark(false);
             return;
         }
         
@@ -646,6 +666,8 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         if (local.size() < mx) {
             code += local;
             code += "\n";
+            if (l)
+                l->setusermark(false);
             return;
         }
         
@@ -677,6 +699,8 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                 code += "\n";
         }
         code += ")\n";
+        if (l)
+            l->setusermark(false);
         return;
     }
     if (isString())
@@ -686,6 +710,8 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
             string local = toString(lisp);
             if (local.size() < 50) {
                 code += local;
+                if (l)
+                    l->setusermark(false);
                 return;
             }
             code += "{\n";
@@ -703,6 +729,8 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                         code += "\n";
                 }
                 code += "}\n";
+                if (l)
+                    l->setusermark(false);
                 return;
             }
             unordered_map<double, Element*>& dico = ((Dictionary_n*)this)->dictionary;
@@ -715,10 +743,15 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
                     code += "\n";
             }
             code += "}\n";
+            if (l)
+                l->setusermark(false);
             return;
         }
         else
             code += toString(lisp);
+        
+        if (l)
+            l->setusermark(false);
     }
 }
 
@@ -1234,7 +1267,7 @@ Element* String::insert_with_compare(LispE* lisp, Element* e, List& comparison) 
         content += e->asUString(lisp);
         return this;
     }
-
+    
     String* ct = lisp->provideString();
     
     comparison.in_quote(2, ct);
@@ -1439,12 +1472,12 @@ Element* String::list_or(LispE* lisp, Element* value) {
         if (result->content.find(content[i]) == -1)
             result->content += content[i];
     }
-
+    
     for (i = 0; i < val.size(); i++) {
         if (result->content.find(val[i]) == -1)
             result->content += val[i];
     }
-
+    
     return result;
 }
 
@@ -1463,7 +1496,7 @@ Element* String::list_xor(LispE* lisp, Element* value) {
         if (intersection->content.find(content[i]) == -1 && result->content.find(content[i]) == -1)
             result->content += content[i];
     }
-
+    
     for (i = 0; i < val.size(); i++) {
         if (intersection->content.find(val[i]) == -1 && result->content.find(val[i]) == -1)
             result->content += val[i];
@@ -2191,7 +2224,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     Element* e_from = liste->liste.back()->eval(lisp);
     u_ustring last = e_from->asUString(lisp);
     e_from->release();
-
+    
     e_from = liste->liste[2];
     
     long from;
@@ -2435,7 +2468,7 @@ Element* String::asList(LispE* lisp, List* courant) {
         default:
             index = 0;
     }
-
+    
     return lisp->syntaxTree(courant, parse, index, false);
 }
 
@@ -2481,7 +2514,7 @@ Element* String::cadr(LispE* lisp, u_ustring& action) {
     long sz = size();
     long i;
     u_ustring u;
-
+    
     for (i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
             if (i)

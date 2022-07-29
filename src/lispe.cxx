@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.7.28.15.50";
+static std::string version = "1.2022.7.29.10.22";
 string LispVersion() {
     return version;
 }
@@ -416,7 +416,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith);
 
 #ifdef MACDEBUG
-    set_instruction(l_debug_function, "setb", P_FULL, &List::List::evall_debug_function);
+    set_instruction(l_debug_function, "f_debug", P_FULL, &List::List::evall_debug_function);
 #endif
     
     // High level functions
@@ -2496,6 +2496,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

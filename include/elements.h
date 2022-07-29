@@ -32,6 +32,7 @@ class Numbers;
 class Integers;
 class Floats;
 class Strings;
+class ITEM;
 
 typedef enum {
     //Default values
@@ -43,7 +44,7 @@ typedef enum {
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
-    t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread, 
+    t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function,
@@ -443,6 +444,9 @@ public:
     
     virtual bool unify_kleene(LispE* lisp, Element* value, Element* current, long& i, long& r, bool record) {
         return (i < value->size() && unify(lisp, value->index(i), record));
+    }
+    virtual bool equal_item(ITEM* i, long home) {
+        return false;
     }
     
     virtual bool isequal(LispE* lisp, Element* value);

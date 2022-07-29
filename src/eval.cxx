@@ -10437,7 +10437,7 @@ Element* List::evalt_list(LispE* lisp) {
 #ifdef MACDEBUG
 //This is a stub function, which is used to focus on specific function debugging
 Element* List::evall_debug_function(LispE* lisp) {
-    return evall_set_at(lisp);
+    return evall_nconc(lisp);
 }
 #endif
 
