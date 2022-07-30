@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.7.29.10.22";
+static std::string version = "1.2022.7.30.12.22";
 string LispVersion() {
     return version;
 }
@@ -1773,8 +1773,12 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                         }
                     }
                 }
-                
-                courant->append(e);
+                if (e->size())
+                    courant->append(e);
+                else {
+                    courant->append(delegation->_EMPTYLIST);
+                    removefromgarbage(e);
+                }
                 quoting = quoting && courant == quoted;
                 courant = quoted;
                 break;
@@ -2499,6 +2503,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

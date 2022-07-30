@@ -2455,6 +2455,9 @@ Element* String::asList(LispE* lisp, List* courant) {
     string code = toString(lisp);
     
     lisp_code retour = lisp->segmenting(code, parse);
+    if (!parse.tokens.size())
+        return emptylist_;
+    
     long index = 0;
     switch (retour) {
         case e_error_brace:

@@ -7786,7 +7786,8 @@ Element* List::evall_llist(LispE* lisp) {
 Element* List::evall_to_list(LispE* lisp) {
     Element* values = liste[1]->eval(lisp);
     Element* results = values->asList(lisp, lisp->provideList());
-    values->release();
+    if (values != results)
+        values->release();
     return results;
 }
 

@@ -531,6 +531,7 @@ public:
     }
     
     Element* asList(LispE* lisp, List* l) {
+        l->release();
         return this;
     }
     
