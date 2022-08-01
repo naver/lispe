@@ -10123,7 +10123,7 @@ Element* List::evall_zipwith(LispE* lisp) {
     List* params = NULL;
     bool choice = true;
     
-    if (liste.back()->isAtom()) {
+    if (liste.back() == null_) {
         listsize--;
         choice = liste.back()->Boolean();
     }
