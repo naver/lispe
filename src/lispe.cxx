@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.8.1.9.9";
+static std::string version = "1.2022.8.7.12.21";
 string LispVersion() {
     return version;
 }
@@ -2146,7 +2146,7 @@ Element* LispE::load(string pathname) {
     if (f.fail()) {
         string err = "Unknown file: ";
         err += pathname;
-        return new Error(err);
+        throw new Error(err);
     }
 
     string code;
@@ -2169,7 +2169,7 @@ Element* LispE::load(string pathname) {
     }
     catch(Error* err) {
         delegation->forceClean();
-        return err;
+        throw err;
     }
 }
 
@@ -2503,6 +2503,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
