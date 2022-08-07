@@ -28,6 +28,7 @@ long indentationVirtuel(char* cr, char* acc);
 long* colorparser(UInt16* txt, long, long);
 void deletion(long* c);
 long computeparenthesis(const char* ln, char checkcar, long limit);
+void clearinternalbreakpoints(void);
 
 const char* crgx=NULL;
 
@@ -132,6 +133,7 @@ BOOL dark = false;
 }
 
 -(void)clearallbreakpoints {
+    clearinternalbreakpoints();
     [ruleur clearbreaks];
     [ruleur setNeedsDisplay:YES];
 }

@@ -34,10 +34,10 @@ static bool running = false;
 //The following functions are called from within the GUI to handle debugging
 static LispE* lispe = NULL;
 extern "C" {
-    const char* Inputtext(const char* msg);
-    void Rappel(char threading, const char* txt);
-    void Initlispelibspath();
-    void displaydebug(const char* locals, const char* globals, const char* sstack, const char* filename, long currentline);
+const char* Inputtext(const char* msg);
+void Rappel(char threading, const char* txt);
+void Initlispelibspath();
+void displaydebug(const char* locals, const char* globals, const char* sstack, const char* filename, long currentline);
 }
 //------------------------------------------------------------------------------------------------RUN AND COMPILE
 class Segmentingtype {
@@ -88,7 +88,7 @@ void tokenize_line(const uint16_t* code, Segmentingtype& infos, long sz) {
         for (idx = 0; idx <= 32; idx++) {
             stops[idx] = true;
         }
-
+        
         stops['!'] = true;
         stops['('] = true;
         stops[')'] = true;
@@ -116,10 +116,10 @@ void tokenize_line(const uint16_t* code, Segmentingtype& infos, long sz) {
         stops['<'] = true;
         stops['>'] = true;
         stops['='] = true;
-}
-
+    }
+    
     wstring tampon;
-
+    
     long i, current_i;
     //The first line of the code is 1
     long line_number = 1;
@@ -139,8 +139,8 @@ void tokenize_line(const uint16_t* code, Segmentingtype& infos, long sz) {
                 point = true;
                 break;
             case ';':
-			case '#':
-				point = false;
+            case '#':
+                point = false;
                 idx = i;
                 if (code[i+1] == ';') {
                     idx += 2;
@@ -235,7 +235,7 @@ void tokenize_line(const uint16_t* code, Segmentingtype& infos, long sz) {
                     point = false;
                     break;
                 }
-
+                
                 idx = i + 1;
                 nxt = c;
                 tampon = L"";
@@ -374,428 +374,432 @@ bool debug_function_lispe(LispE* lisp, List* instructions, void* o) {
 
 extern "C" {
 
-    char IsRunning(void) {
-        return running;
-    }
-    
-    void CleanGlobal() {
-        if (lispe != NULL)
-            delete lispe;
-        current_path_name = "";
-        debugmode = false;
-        lispe = NULL;
+char IsRunning(void) {
+    return running;
+}
+
+void CleanGlobal() {
+    if (lispe != NULL)
+        delete lispe;
+    current_path_name = "";
+    debugmode = false;
+    lispe = NULL;
+    windowmode = false;
+}
+
+int Compilecode(const char* cde, const char* filename, char console) {
+    Initlispelibspath();
+    if (lispe == NULL) {
+        lispe = new LispE(&special_characters);
+        lispe->delegation->display_string_function = sendresult;
+        lispe->delegation->reading_string_function = &ProcMacEditor;
         windowmode = false;
     }
+    current_path_name = filename;
+    lispe->set_pathname(current_path_name);
+    current_code = cde;
+    if (current_code.find("fltk_") != -1)
+        windowmode = true;
+    return 0;
+}
 
-    int Compilecode(const char* cde, const char* filename, char console) {
-        Initlispelibspath();
-        if (lispe == NULL) {
-            lispe = new LispE(&special_characters);
-            lispe->delegation->display_string_function = sendresult;
-            lispe->delegation->reading_string_function = &ProcMacEditor;
-            windowmode = false;
-        }
-        current_path_name = filename;
-        lispe->set_pathname(current_path_name);
-        current_code = cde;
-        if (current_code.find("fltk_") != -1)
-            windowmode = true;
-        return 0;
+char NextLine(void) {
+    lispe->stop_at_next_line(debug_next);
+    lispe->releasing_trace_lock();
+    return 1;
+}
+
+char Gotonextbreak(void) {
+    //We reset the current line to allow for a loop
+    //on the same breakpoint
+    last_line = -1;
+    lispe->stop_at_next_line(debug_goto);
+    lispe->releasing_trace_lock();
+    return 1;
+}
+
+char Getin(void) {
+    lispe->stop_at_next_line(debug_inside_function);
+    lispe->releasing_trace_lock();
+    return 1;
+}
+
+char Getout(void) {
+    lispe->stop_at_next_line(debug_none);
+    lispe->releasing_trace_lock();
+    return 1;
+}
+
+char Gotoend(void) {
+    lispe->stop_trace();
+    lispe->releasing_trace_lock();
+    return 1;
+}
+
+void Setdebugmode(char d) {
+    debugmode = d;
+}
+
+void addabreakpoint(const char* filename, long numline, char add) {
+    string fn = filename;
+    if (add)
+        breakpoints[fn].insert(numline);
+    else {
+        if (breakpoints.find(fn) != breakpoints.end() && breakpoints[fn].find(numline) != breakpoints[fn].end())
+            breakpoints[fn].erase(numline);
     }
+}
 
-    char NextLine(void) {
-        lispe->stop_at_next_line(debug_next);
-        lispe->releasing_trace_lock();
-        return 1;
-    }
+void Shortname(char v) {
+    fullstring = v;
+}
 
-    char Gotonextbreak(void) {
-        //We reset the current line to allow for a loop
-        //on the same breakpoint
-        last_line = -1;
-        lispe->stop_at_next_line(debug_goto);
-        lispe->releasing_trace_lock();
-        return 1;
-    }
+char StopDebug(void) {
+    debugmode = false;
+    lispe->stop();
+    lispe->stop_trace();
+    return 1;
+}
 
-    char Getin(void) {
-        lispe->stop_at_next_line(debug_inside_function);
-        lispe->releasing_trace_lock();
-        return 1;
-    }
+char WindowModeActivated(void) {
+    return windowmode;
+}
 
-    char Getout(void) {
-        lispe->stop_at_next_line(debug_none);
-        lispe->releasing_trace_lock();
-        return 1;
-    }
+void Blocked(void) {
+    lispe->blocking_trace_lock();
+}
 
-    char Gotoend(void) {
-        lispe->stop_trace();
-        lispe->releasing_trace_lock();
-        return 1;
-    }
+void Released(void) {
+    lispe->releasing_trace_lock();
+}
 
-    void Setdebugmode(char d) {
-        debugmode = d;
-    }
+long CurrentLine(void) {
+    if (lispe == NULL)
+        return -1;
+    return lispe->delegation->i_current_line;
+}
 
-    void addabreakpoint(const char* filename, long numline, char add) {
-        string fn = filename;
-        if (add)
-            breakpoints[fn].insert(numline);
-        else {
-            if (breakpoints.find(fn) != breakpoints.end() && breakpoints[fn].find(numline) != breakpoints[fn].end())
-                breakpoints[fn].erase(numline);
-        }
-    }
+const char* Currentfilename(void) {
+    static string filename;
+    filename=lispe->current_name_file();
+    return filename.c_str();
+}
 
-    void Shortname(char v) {
-        fullstring = v;
-    }
+const char* Getcurrentfilename(void) {
+    static string filename;
+    filename=lispe->current_name_file();
+    return filename.c_str();
+}
 
-    char StopDebug(void) {
-        debugmode = false;
-        lispe->stop();
-        lispe->stop_trace();
-        return 1;
-    }
+void setlispepath(const char* homepath, const char* v) {
+    char* start=(char*)v;
+    
+    while (start[0]<=32) start++;
+    long lg=strlen(start)-1;
+    while (start[lg]<=32)lg--;
+    start[lg+1]=0;
+    
+    setenv("LISPEPATH",start,1);
+    char path[4096];
+    sprintf(path,"%s/.lispe",homepath);
+    std::ofstream savepath(path);
+    savepath.write(start,strlen(start));
+    savepath.write("\n",1);
+    savepath.close();
+}
 
-    char WindowModeActivated(void) {
-        return windowmode;
-    }
-
-    void Blocked(void) {
-        lispe->blocking_trace_lock();
-    }
-
-    void Released(void) {
-        lispe->releasing_trace_lock();
-    }
-
-    long CurrentLine(void) {
-        if (lispe == NULL)
-            return -1;
-        return lispe->delegation->i_current_line;
-    }
-
-    const char* Currentfilename(void) {
-        static string filename;
-        filename=lispe->current_name_file();
-        return filename.c_str();
-    }
-
-    const char* Getcurrentfilename(void) {
-        static string filename;
-        filename=lispe->current_name_file();
-        return filename.c_str();
-    }
-        
-    void setlispepath(const char* homepath, const char* v) {
-        char* start=(char*)v;
-        
-        while (start[0]<=32) start++;
-        long lg=strlen(start)-1;
-        while (start[lg]<=32)lg--;
-        start[lg+1]=0;
-
-        setenv("LISPEPATH",start,1);
-        char path[4096];
-        sprintf(path,"%s/.lispe",homepath);
+void initlispepath(const char* homepath) {
+    char path[4096];
+    sprintf(path,"%s/.lispe",homepath);
+    std::ifstream getpath(path);
+    if (getpath.fail()) {
+        getpath.close();
         std::ofstream savepath(path);
-        savepath.write(start,strlen(start));
+        strcpy(path,"/usr/local/lib/lispe");
+        savepath.write(path,strlen(path));
         savepath.write("\n",1);
         savepath.close();
+        setenv("LISPEPATH",path,1);
+        return;
     }
+    memset(path,0,4096);
+    getpath.read(path,4096);
+    char* start=path;
     
-    void initlispepath(const char* homepath) {
-        char path[4096];
-        sprintf(path,"%s/.lispe",homepath);
-        std::ifstream getpath(path);
-        if (getpath.fail()) {
-            getpath.close();
-            std::ofstream savepath(path);
-            strcpy(path,"/usr/local/lib/lispe");
-            savepath.write(path,strlen(path));
-            savepath.write("\n",1);
-            savepath.close();
-            setenv("LISPEPATH",path,1);
-            return;
-        }
-        memset(path,0,4096);
-        getpath.read(path,4096);
-        char* start=path;
-        
-        while (start[0]<=32) start++;
-        long lg=strlen(start)-1;
-        while (start[lg]<=32)lg--;
-        start[lg+1]=0;
-        setenv("LISPEPATH",start,1);
-    }
-    
-    const char* Listing(void) {
-        displaybuffer=current_code;
-        return STR(displaybuffer);
-    }
-    
-    const char* Readfile(const char* path) {
-        std::ifstream f(path, openMode);
-        if (f.fail())
-            return NULL;
-        current_code="";
-        string line;
-        while (!f.eof()) {
-            getline(f,line);
-            current_code+=line;
-            current_code += "\n";
-        }
-        displaybuffer = current_code;
-        return STR(displaybuffer);
-    }
-    
-    void StopExecution(void) {
-        if (lispe != NULL)
-            lispe->stop();
-    }
-    
-    void InitialisationDisplay(short id, char th) {
-        static bool threading;
-        
-        threading=th;
-        displaybuffer="";
-    }
-    
-    void Initdisplay(short id) {
-        displaybuffer="";
-    }
-    
-    const char* Getdisplay(void) {
-        static string buff;
-        
-        buff=displaybuffer;
-        buff+="\r";
-        displaybuffer="";
-        return STR(buff);
-    }
-    
-    char Run(short idcode) {
-        if (running)
-            return false;
-        
-        running = true;
+    while (start[0]<=32) start++;
+    long lg=strlen(start)-1;
+    while (start[lg]<=32)lg--;
+    start[lg+1]=0;
+    setenv("LISPEPATH",start,1);
+}
 
-        if (lispe == NULL) {
-            lispe = new LispE(&special_characters);
-            lispe->delegation->display_string_function = sendresult;
-            lispe->delegation->reading_string_function = &ProcMacEditor;
-            windowmode = false;
-        }
-        if (current_code.find("(") == -1 && current_code.find(")") == -1)
-            current_code = "(print "+ current_code + ")";
+const char* Listing(void) {
+    displaybuffer=current_code;
+    return STR(displaybuffer);
+}
 
-        if (debugmode) {
-            last_line = -1;
-            last_file = -1;
-            if (breakpoints.size()) {
-                lispe->delegation->breakpoints.clear();
-                long idfile;
-                string pathname;
-                for (auto& a: breakpoints) {
-                    pathname = NormalizePathname(a.first);
-                    idfile = lispe->id_file(pathname);
-                    for (auto& e: a.second)
-                        lispe->delegation->breakpoints[idfile][e] = true;
-                }
-                lispe->stop_at_next_line(debug_goto);
-            }
-            else
-                lispe->stop_at_next_line(debug_next);
-            lispe->set_debug_function(debug_function_lispe, NULL);
-        }
-        
-        Element* res;
-        try {
-            res = lispe->execute(current_code, current_path_name);
-            displaybuffer = "\n";
-            displaybuffer += res->toString(lispe);
-            displaybuffer += "\n";
-            res->release();
-        }
-        catch(Error* x) {
-            displaybuffer = x->toString(lispe);
-            delete x;
-        }
-        catch (void* x) {
-            displaybuffer = "\nUnknown Error...\n";
-        }
-        Rappel(0, displaybuffer.c_str());
-        running = false;
-        return true;
+const char* Readfile(const char* path) {
+    std::ifstream f(path, openMode);
+    if (f.fail())
+        return NULL;
+    current_code="";
+    string line;
+    while (!f.eof()) {
+        getline(f,line);
+        current_code+=line;
+        current_code += "\n";
     }
+    displaybuffer = current_code;
+    return STR(displaybuffer);
+}
+
+void StopExecution(void) {
+    if (lispe != NULL)
+        lispe->stop();
+}
+
+void InitialisationDisplay(short id, char th) {
+    static bool threading;
     
-    void LispEFinalClean(void) {
-        if (lispe != NULL)
-            delete lispe;
-        current_path_name = "";
-        breakpoints.clear();
-        debugmode = false;
-        lispe = NULL;
+    threading=th;
+    displaybuffer="";
+}
+
+void Initdisplay(short id) {
+    displaybuffer="";
+}
+
+const char* Getdisplay(void) {
+    static string buff;
+    
+    buff=displaybuffer;
+    buff+="\r";
+    displaybuffer="";
+    return STR(buff);
+}
+
+char Run(short idcode) {
+    if (running)
+        return false;
+    
+    running = true;
+    
+    if (lispe == NULL) {
+        lispe = new LispE(&special_characters);
+        lispe->delegation->display_string_function = sendresult;
+        lispe->delegation->reading_string_function = &ProcMacEditor;
         windowmode = false;
-        running = false;
     }
-
-    long indentationVirtuel(char* cr, char* acc) {
-        if (cr == NULL)
-            return 0;
-
-        string codestr(cr);
-        return VirtualIndentation(codestr, true, false);
-    }
+    if (current_code.find("(") == -1 && current_code.find(")") == -1)
+        current_code = "(print "+ current_code + ")";
     
-    const char* lindentation(char* basecode, int blancs) {
-        static string codeindente;
-        
-        string codestr = basecode;
-        s_trimright(codestr);
-        codestr+="\n";
-        bool lisp = false;
-        if (codestr[0] == '(' && codestr[1] == ')')
-            lisp = true;
-
-        cr_normalise(codestr);
-        codeindente = "";
-        IndentCode(codestr, codeindente, GetBlankSize(), true, false);
-        codeindente += "\n";
-        return codeindente.c_str();
-    }
-
-
-    long* colorparser(const uint16_t* txt, long from, long sz) {
-        static vector<long> limits;
-        static Segmentingtype infos;
-        
-        limits.clear();
-        infos.clear();
-        
-        if (lispe == NULL) {
-            lispe = new LispE(&special_characters);
-            lispe->delegation->display_string_function = sendresult;
-            lispe->delegation->reading_string_function = &ProcMacEditor;
-            windowmode = false;
-        }
-
-        tokenize_line(txt, infos, sz);
-        
-        long left = 0, right = 0;
-        wstring sub;
-        short type;
-        for (long isegment = 0; isegment < infos.types.size(); isegment++) {
-            left =  infos.positions[isegment<<1];
-            if (left < from)
-                continue;
-            type = infos.types[isegment];
-            right = infos.positions[1+(isegment<<1)] - left;
-
-            //sub = line.substr(left, right);
-            //left += drift;
-            switch (type) {
-                case t_string:
-                    limits.push_back(1);
-                    limits.push_back(left);
-                    limits.push_back(right);
-                    break;
-                case l_quote:
-                    limits.push_back(2);
-                    limits.push_back(left);
-                    limits.push_back(right);
-                    break;
-                case l_defun:
-                    limits.push_back(4);
-                    limits.push_back(left);
-                    limits.push_back(right);
-                    break;
-                case t_atom:
-                    limits.push_back(5);
-                    limits.push_back(left);
-                    limits.push_back(right);
-                    break;
-                case l_defpat:
-                    limits.push_back(6);
-                    limits.push_back(left);
-                    limits.push_back(right);
-                    break;
-                case t_comment:
-                    limits.push_back(7);
-                    limits.push_back(left);
-                    limits.push_back(right);
-                    break;
-                default:
-                    limits.push_back(8);
-                    limits.push_back(left);
-                    limits.push_back(right);
-                    break;
+    if (debugmode) {
+        last_line = -1;
+        last_file = -1;
+        if (breakpoints.size()) {
+            lispe->delegation->breakpoints.clear();
+            long idfile;
+            string pathname;
+            for (auto& a: breakpoints) {
+                pathname = NormalizePathname(a.first);
+                idfile = lispe->id_file(pathname);
+                for (auto& e: a.second)
+                    lispe->delegation->breakpoints[idfile][e] = true;
             }
+            lispe->stop_at_next_line(debug_goto);
         }
-
-        long* res=new long[limits.size()+1];
-        for (long i=0;i<limits.size();i++) {
-            res[i]=limits[i];
-        }
-        res[limits.size()]=-1;
-        return res;
-    }
-    
-    void deletion(long* l) {
-        delete[] l;
-    }
-
-    long computeparenthesis(const char* w, char checkcar, long limit) {
-        wstring ln;
-        s_utf8_to_unicode(ln, (unsigned char*)w, strlen((char*)w));
-        ln = ln.substr(0, limit+1);
-        long posmatch = -1;
-        vector<long> positions;
-        char check;
-        if (checkcar == ')')
-            check = '(';
         else
-            check = checkcar - 2;
-        
-        for (long i = 0; i < limit; i++) {
-            switch (ln[i]) {
-                case '"':
-                    i++;
-                    while (i < limit && ln[i] != '"') {
-                        if (ln[i] == '\\')
-                            i++;
-                        i++;
-                    }
-                    break;
-                case '`':
-                    i++;
-                    while (i < limit && ln[i] != '`') {
-                        i++;
-                    }
-                    break;
-                case '(':
-                case '{':
-                case '[':
-                    if (check == ln[i])
-                        positions.push_back(i);
-                    break;
-                case ')':
-                case '}':
-                case ']':
-                    if (checkcar == ln[i]) {
-                        if (positions.size())
-                            positions.pop_back();
-                    }
-                    break;
-            }
-        }
-        if (positions.size())
-            posmatch = positions.back();
-        return posmatch;
+            lispe->stop_at_next_line(debug_next);
+        lispe->set_debug_function(debug_function_lispe, NULL);
     }
+    
+    Element* res;
+    try {
+        res = lispe->execute(current_code, current_path_name);
+        displaybuffer = "\n";
+        displaybuffer += res->toString(lispe);
+        displaybuffer += "\n";
+        res->release();
+    }
+    catch(Error* x) {
+        displaybuffer = x->toString(lispe);
+        delete x;
+    }
+    catch (void* x) {
+        displaybuffer = "\nUnknown Error...\n";
+    }
+    Rappel(0, displaybuffer.c_str());
+    running = false;
+    return true;
+}
+
+void LispEFinalClean(void) {
+    if (lispe != NULL)
+        delete lispe;
+    current_path_name = "";
+    breakpoints.clear();
+    debugmode = false;
+    lispe = NULL;
+    windowmode = false;
+    running = false;
+}
+
+void clearinternalbreakpoints(void) {
+    breakpoints.clear();
+}
+
+long indentationVirtuel(char* cr, char* acc) {
+    if (cr == NULL)
+        return 0;
+    
+    string codestr(cr);
+    return VirtualIndentation(codestr, true, false);
+}
+
+const char* lindentation(char* basecode, int blancs) {
+    static string codeindente;
+    
+    string codestr = basecode;
+    s_trimright(codestr);
+    codestr+="\n";
+    bool lisp = false;
+    if (codestr[0] == '(' && codestr[1] == ')')
+        lisp = true;
+    
+    cr_normalise(codestr);
+    codeindente = "";
+    IndentCode(codestr, codeindente, GetBlankSize(), true, false);
+    codeindente += "\n";
+    return codeindente.c_str();
+}
+
+
+long* colorparser(const uint16_t* txt, long from, long sz) {
+    static vector<long> limits;
+    static Segmentingtype infos;
+    
+    limits.clear();
+    infos.clear();
+    
+    if (lispe == NULL) {
+        lispe = new LispE(&special_characters);
+        lispe->delegation->display_string_function = sendresult;
+        lispe->delegation->reading_string_function = &ProcMacEditor;
+        windowmode = false;
+    }
+    
+    tokenize_line(txt, infos, sz);
+    
+    long left = 0, right = 0;
+    wstring sub;
+    short type;
+    for (long isegment = 0; isegment < infos.types.size(); isegment++) {
+        left =  infos.positions[isegment<<1];
+        if (left < from)
+            continue;
+        type = infos.types[isegment];
+        right = infos.positions[1+(isegment<<1)] - left;
+        
+        //sub = line.substr(left, right);
+        //left += drift;
+        switch (type) {
+            case t_string:
+                limits.push_back(1);
+                limits.push_back(left);
+                limits.push_back(right);
+                break;
+            case l_quote:
+                limits.push_back(2);
+                limits.push_back(left);
+                limits.push_back(right);
+                break;
+            case l_defun:
+                limits.push_back(4);
+                limits.push_back(left);
+                limits.push_back(right);
+                break;
+            case t_atom:
+                limits.push_back(5);
+                limits.push_back(left);
+                limits.push_back(right);
+                break;
+            case l_defpat:
+                limits.push_back(6);
+                limits.push_back(left);
+                limits.push_back(right);
+                break;
+            case t_comment:
+                limits.push_back(7);
+                limits.push_back(left);
+                limits.push_back(right);
+                break;
+            default:
+                limits.push_back(8);
+                limits.push_back(left);
+                limits.push_back(right);
+                break;
+        }
+    }
+    
+    long* res=new long[limits.size()+1];
+    for (long i=0;i<limits.size();i++) {
+        res[i]=limits[i];
+    }
+    res[limits.size()]=-1;
+    return res;
+}
+
+void deletion(long* l) {
+    delete[] l;
+}
+
+long computeparenthesis(const char* w, char checkcar, long limit) {
+    wstring ln;
+    s_utf8_to_unicode(ln, (unsigned char*)w, strlen((char*)w));
+    ln = ln.substr(0, limit+1);
+    long posmatch = -1;
+    vector<long> positions;
+    char check;
+    if (checkcar == ')')
+        check = '(';
+    else
+        check = checkcar - 2;
+    
+    for (long i = 0; i < limit; i++) {
+        switch (ln[i]) {
+            case '"':
+                i++;
+                while (i < limit && ln[i] != '"') {
+                    if (ln[i] == '\\')
+                        i++;
+                    i++;
+                }
+                break;
+            case '`':
+                i++;
+                while (i < limit && ln[i] != '`') {
+                    i++;
+                }
+                break;
+            case '(':
+            case '{':
+            case '[':
+                if (check == ln[i])
+                    positions.push_back(i);
+                break;
+            case ')':
+            case '}':
+            case ']':
+                if (checkcar == ln[i]) {
+                    if (positions.size())
+                        positions.pop_back();
+                }
+                break;
+        }
+    }
+    if (positions.size())
+        posmatch = positions.back();
+    return posmatch;
+}
 }
 
