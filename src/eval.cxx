@@ -7785,10 +7785,21 @@ Element* List::evall_llist(LispE* lisp) {
 
 Element* List::evall_to_list(LispE* lisp) {
     Element* values = liste[1]->eval(lisp);
-    if (values->type == t_list)
-        return values;
-    Element* results = values->asList(lisp, lisp->provideList());
-    return results;
+    if (size() == 2) {
+        if (values->type == t_list)
+            return values;
+        Element* results = values->asList(lisp, lisp->provideList());
+        return results;
+    }
+    long counter = 0;
+    evalAsInteger(2, lisp, counter);
+    List* l = lisp->provideList();
+    while (counter > 0) {
+        l->append(values->copying());
+        counter--;
+    }
+    values->release();
+    return l;
 }
 
 Element* List::evall_to_llist(LispE* lisp) {
