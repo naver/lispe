@@ -485,7 +485,10 @@ public:
             return allfiles.at(pathname);
         }
         catch (...) {
-            return -1;
+            long i = allfiles.size();
+            allfiles[pathname] = i;
+            allfiles_names[i] = pathname;
+            return i;
         }
     }
 
