@@ -708,6 +708,10 @@ public:
         return (liste.size() && liste.item->buffer[0]->type == l_lambda);
     }
     
+    bool isNULL() {
+        return liste.empty();
+    }
+    
     bool isEmpty() {
         return liste.empty();
     }

@@ -8417,10 +8417,9 @@ Element* List::evall_not(LispE* lisp) {
 
 Element* List::evall_nullp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
-    if (element == null_)
-        return true_;
+    bool test = element->isNULL();
     element->release();
-    return false_;
+    return booleans_[test];
 }
 
 

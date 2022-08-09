@@ -286,6 +286,10 @@ public:
         return 0;
     }
     
+    virtual bool isNULL() {
+        return false;
+    }
+    
     virtual void getShape(vecte<long>& sz) {}
 
     virtual Element* transposed(LispE* lisp) {
@@ -980,6 +984,10 @@ public:
     
     u_ustring asUString(LispE* lisp) {
         return name;
+    }
+
+    bool isNULL() {
+        return (atome == v_null);
     }
 
     int16_t function_label() {
