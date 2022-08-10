@@ -7789,6 +7789,7 @@ Element* List::evall_to_list(LispE* lisp) {
         if (values->type == t_list)
             return values;
         Element* results = values->asList(lisp, lisp->provideList());
+        values->release();
         return results;
     }
     long counter = 0;

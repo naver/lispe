@@ -645,7 +645,7 @@ public:
     
     bool isExecutable(LispE*);
     
-    char check_match(LispE* lisp, Element* value);
+    virtual char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
     bool isequal(LispE* lisp, Element* value);
@@ -1022,7 +1022,7 @@ public:
     
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
-    int16_t label() {
+    virtual int16_t label() {
         return (liste.is_not_empty()?t_list:v_null);
     }
 
@@ -1519,7 +1519,19 @@ public:
 class Listargumentquote : public List {
 public:
     Listargumentquote(List* l) : List(l, 0) {}
+
+    int16_t label() {
+        return liste[1]->label();
+    }
     
+    char check_match(LispE* lisp, Element* value) {
+        return check_ok;
+    }
+    
+    bool isList() {
+        return false;
+    }
+
     bool unify(LispE* lisp, Element* value, bool record);
 };
 

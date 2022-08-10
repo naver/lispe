@@ -1100,6 +1100,9 @@ Element* List::transformargument(LispE* lisp) {
 
     if (label == l_quote) {
         element = new Listargumentquote(this);
+        label = element->label();
+        if (label >= l_void && !lisp->delegation->data_pool.check(label))
+            lisp->delegation->data_pool[label] = element;
         lisp->removefromgarbage(this);
         return lisp->push_in_garbage(element);
     }
