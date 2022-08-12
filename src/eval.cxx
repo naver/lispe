@@ -1232,7 +1232,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     int16_t ilabel = -1;
     int16_t sublabel = -1;
     char match;
-    char depth = lisp->depths[function_label];
+    char depth = lisp->depths[function_label] - 1;
 
     try {
         for (i = 1; i <= nbarguments; i++) {
