@@ -1232,12 +1232,13 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     int16_t ilabel = -1;
     int16_t sublabel = -1;
     char match;
+    char depth = lisp->depths[function_label];
 
     try {
         for (i = 1; i <= nbarguments; i++) {
             element = liste[i]->eval(lisp);
             
-            ilabel = lisp->extractdynamiclabel(element);
+            ilabel = lisp->extractdynamiclabel(element, depth);
             if (ilabel > l_final && element->type != t_data) {
                 match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
                 if (match != check_ok) {

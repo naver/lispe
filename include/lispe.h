@@ -79,6 +79,8 @@ public:
     unordered_map<long, Integer*> const_integer_pool;
     unordered_map<double, Number*> const_number_pool;
     
+    unordered_map<short, char> depths;
+    
     //Delegation is a class that records any data
     //related to compilation
     Delegation* delegation;
@@ -688,7 +690,9 @@ public:
                 parameters->change(i, dico);
             }
         }
-        int16_t sublabel = extractlabel(parameters);
+        char depth = 0;
+        int16_t sublabel = extractlabel(parameters, depth);
+        depths[label] = std::max(depth, depths[label]);
         if (globalDeclaration())
             return delegation->recordingMethod(NULL, e, label, sublabel);
         return delegation->recordingMethod(execution_stack.back(), e, label, sublabel);
@@ -702,6 +706,10 @@ public:
         return delegation->checkAncestor(ancestor, label->label());
     }
     
+    inline int16_t checkDataStructure(Element* e) {
+        return delegation->checkDataStructure(e);
+    }
+
     inline int16_t checkDataStructure(int16_t label) {
         return delegation->checkDataStructure(label);
     }
@@ -733,22 +741,28 @@ public:
                 return v_null;
             e = e->index(0);
         }
-        return checkDataStructure(e->label());
+        return checkDataStructure(e);
     }
 
-    //We delve into the argument structure to find the first label
-    inline int16_t extractlabel(Element* e) {
-        char depth = 0;
-        while (e->isList()) {
-            depth++;
+    inline int16_t extractdynamiclabel(Element* e, char depth) {
+        while (e->isList() && depth) {
             if (!e->size())
                 return v_null;
             e = e->index(0);
+            depth--;
+        }        
+        return checkDataStructure(e);
+    }
+
+    //We delve into the argument structure to find the first label
+    inline int16_t extractlabel(Element* e, char& depth) {
+        while (e->isList()) {
+            if (!e->size())
+                return v_null;
+            e = e->index(0);
+            depth++;
         }
-        
-        if (depth >= 3)
-            return v_null;
-        
+                
         return checkDataStructure(e->label());
     }
     

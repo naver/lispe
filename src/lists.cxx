@@ -2593,7 +2593,7 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
         if (action[i] == 'a') {
             e = e->protected_index(lisp, pos);
             if (e == null_)
-                throw new Error("Error: You reached the list size limit");
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
             
             pair = (e->type == t_pair);
             sz = e->size();
@@ -2601,7 +2601,7 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
         }
         else {
             if (pos == sz)
-                throw new Error("Error: You reached the list size limit");
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
             pos++;
         }
     }
@@ -2630,7 +2630,7 @@ Element* LList::cadr(LispE* lisp, u_ustring& action) {
     for (long i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
             if (it == NULL)
-                throw new Error("Error: You reached the list size limit");
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
 
             e = it->value;
             if (i == 0)
@@ -2640,7 +2640,7 @@ Element* LList::cadr(LispE* lisp, u_ustring& action) {
         }
         else {
             if (it == NULL)
-                throw new Error("Error: You reached the list size limit");
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
             //We do not try to detect a cycle here...
             it = it->_next;
         }
@@ -3412,12 +3412,16 @@ Element* Numbers::cadr(LispE* lisp, u_ustring& action) {
     
     for (i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
-            if (i)
-                throw new Error("Error: the elements of a list of values are no lists");
+            if (i) {
+                u_ustring err = U"Error: You cannot apply 'cad..r' to: '";
+                err += index(pos)->asUString(lisp);
+                err += U"'";
+                throw new Error(err);
+            }
             return lisp->provideNumber(liste[pos]);
         }
         if (pos == sz)
-            throw new Error("Error: You reached the list size limit");
+            throw new Error("Error: No more elements to traverse with 'cad..r'");
         pos++;
     }
     
@@ -4001,12 +4005,16 @@ Element* Integers::cadr(LispE* lisp, u_ustring& action) {
     for (i = action.size() - 1; i>= 0; i--) {
         for (i = action.size() - 1; i>= 0; i--) {
             if (action[i] == 'a') {
-                if (i)
-                    throw new Error("Error: the elements of a list of values are no lists");
+                if (i) {
+                    u_ustring err = U"Error: You cannot apply 'cad..r' to: '";
+                    err += index(pos)->asUString(lisp);
+                    err += U"'";
+                    throw new Error(err);
+                }
                 return lisp->provideInteger(liste[pos]);
             }
             if (pos == sz)
-                throw new Error("Error: You reached the list size limit");
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
             pos++;
         }
     }
@@ -4934,7 +4942,7 @@ Element* Strings::cadr(LispE* lisp, u_ustring& action) {
         }
         
         if (pos == sz)
-            throw new Error("Error: You reached the list size limit");
+            throw new Error("Error: No more elements to traverse with 'cad..r'");
         pos++;
     }
     
@@ -5520,12 +5528,16 @@ Element* Shorts::cadr(LispE* lisp, u_ustring& action) {
     for (i = action.size() - 1; i>= 0; i--) {
         for (i = action.size() - 1; i>= 0; i--) {
             if (action[i] == 'a') {
-                if (i)
-                    throw new Error("Error: the elements of a list of values are no lists");
+                if (i) {
+                    u_ustring err = U"Error: You cannot apply 'cad..r' to: '";
+                    err += index(pos)->asUString(lisp);
+                    err += U"'";
+                    throw new Error(err);
+                }
                 return new Short(liste[pos]);
             }
             if (pos == sz)
-                throw new Error("Error: You reached the list size limit");
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
             pos++;
         }
     }
@@ -6125,12 +6137,16 @@ Element* Floats::cadr(LispE* lisp, u_ustring& action) {
     
     for (i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
-            if (i)
-                throw new Error("Error: the elements of a list of values are no lists");
+            if (i) {
+                u_ustring err = U"Error: You cannot apply 'cad..r' to: '";
+                err += index(pos)->asUString(lisp);
+                err += U"'";
+                throw new Error(err);
+            }
             return lisp->provideFloat(liste[pos]);
         }
         if (pos == sz)
-            throw new Error("Error: You reached the list size limit");
+            throw new Error("Error: No more elements to traverse with 'cad..r'");
         pos++;
     }
 

@@ -745,6 +745,10 @@ public:
         return type;
     }
     
+    virtual int16_t type_atom() {
+        return v_null;
+    }
+    
     virtual Element* thekeys(LispE* lisp);
     virtual Element* thevalues(LispE* lisp);
     
@@ -994,6 +998,10 @@ public:
         return atome;
     }
     
+    int16_t type_atom() {
+        return t_atom;
+    }
+
     //Atoms cannot be present in the garbage
     void protecting(bool protection, LispE* lisp) {}
 
@@ -1145,6 +1153,10 @@ public:
         return t_atom;
     }
 
+    int16_t type_atom() {
+        return t_atom;
+    }
+    
     bool isInstruction() {
         return true;
     }
@@ -1205,6 +1217,10 @@ public:
     }
     
     int16_t type_element() {
+        return t_atom;
+    }
+
+    int16_t type_atom() {
         return t_atom;
     }
 
@@ -1327,6 +1343,10 @@ public:
     }
     
     int16_t type_element() {
+        return t_atom;
+    }
+
+    int16_t type_atom() {
         return t_atom;
     }
 

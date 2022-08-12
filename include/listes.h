@@ -1604,6 +1604,15 @@ public:
     Listargumentlabel(List* l, int16_t lab) : ilabel(lab), List(l, 0) {}
     
     bool unify(LispE* lisp, Element* value, bool record);
+    
+    bool isList() {
+        return false;
+    }
+
+    int16_t label() {
+        return ilabel;
+    }
+    
 };
 
 class Listargumentfunction : public List {

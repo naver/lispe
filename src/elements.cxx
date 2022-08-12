@@ -2478,15 +2478,21 @@ Element* String::asList(LispE* lisp, List* courant) {
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
-    throw new Error("Error: You reached the list size limit");
+    throw new Error("Error: No more elements to traverse with 'cad..r'");
 }
 
-Element* Element::car(LispE*) {
-    throw new Error("Error: You can only apply 'car' to a list or a string");
+Element* Element::car(LispE* lisp) {
+    u_ustring err = U"Error: You cannot apply 'car' to: '";
+    err += asUString(lisp);
+    err += U"'";
+    throw new Error(err);
 }
 
-Element* Element::cdr(LispE*) {
-    throw new Error("Error: 'cdr' can only be applied to a list or a string");
+Element* Element::cdr(LispE* lisp) {
+    u_ustring err = U"Error: You cannot apply 'cdr' to: '";
+    err += asUString(lisp);
+    err += U"'";
+    throw new Error(err);
 }
 
 Element* String::car(LispE* lisp) {
@@ -2502,8 +2508,11 @@ Element* String::cdr(LispE* lisp) {
     return lisp->provideString(w);
 }
 
-Element* Element::cadr(LispE*, u_ustring& actions) {
-    throw new Error("Error: You reached the list size limit");
+Element* Element::cadr(LispE* lisp, u_ustring& actions) {
+    u_ustring err = U"Error: You cannot apply 'car' or 'cdr' to: '";
+    err += asUString(lisp);
+    err += U"'";
+    throw new Error(err);
 }
 
 //cadr and cdr do not take into account cycles
@@ -2527,7 +2536,7 @@ Element* String::cadr(LispE* lisp, u_ustring& action) {
         }
         else {
             if (pos == sz)
-                throw new Error("Error: You reached the list size limit");
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
             pos++;
         }
     }

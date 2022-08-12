@@ -618,12 +618,23 @@ public:
         return (data_ancestor.check(label) && (data_ancestor.at(label) == ancestor->label()));
     }
     
+    inline int16_t checkDataStructure(Element* e) {
+        if (data_pool.check(e->label()))
+            return e->label();
+        //Atoms have a label which is different from their type
+        //For the other elements, type_atom returns v_null.
+        //So if the label is not part of the data_pool, an atom will still return its type
+        //The rationale behind this complicated structure is to ensure that pattern rules
+        //that are indexed on atom_ will still be chosen and triggered.
+        return e->type_atom();
+    }
+
     inline int16_t checkDataStructure(int16_t label) {
         if (data_pool.check(label))
             return label;
         return v_null;
     }
-    
+
     inline Element* getDataStructure(int16_t label) {
         return data_pool.search(label);
     }
