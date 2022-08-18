@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.8.12.12.5";
+static std::string version = "1.2022.8.16.10.43";
 string LispVersion() {
     return version;
 }
@@ -1184,6 +1184,12 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 i = idx;
                 break;
             }
+            case '.':
+                if (code[i + 1] == ' ') {
+                    tampon = ".";
+                    infos.append(tampon, c_point, line_number, i, i + 1);
+                    break;
+                }
             case '+':
             case '-':
                 if (!isdigit(code[i+1])) {
@@ -1457,6 +1463,12 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
                 tampon = c;
                 res->append(provideString(tampon));
                 break;
+            case '.':
+                if (code[i + 1] == ' ') {
+                    tampon = c;
+                    res->append(provideString(tampon));
+                    break;
+                }
             case '+':
             case '-':
                 if (!isdigit(code[i+1])) {
@@ -1831,6 +1843,22 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
             case c_closing_brace:
                 index++;
                 return delegation->_TRUE;
+            case c_point: {
+                index++;
+                if (courant->size() == 0)
+                    throw new Error("Error: Wrong use of '.'");
+                if (parse.types[index] == c_opening) {
+                    index++;
+                    abstractSyntaxTree(courant, parse, index, quoting);
+                }
+                else {
+                    e = new Pair(n_null);
+                    garbaging(e);
+                    abstractSyntaxTree(e, parse, index, quoting);
+                    courant->append(e);
+                }
+                break;
+            }
             case t_emptystring:
                 courant->append(delegation->_EMPTYSTRING);
                 quoting = quoting && courant == quoted;
@@ -2503,6 +2531,8 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
 
 
 

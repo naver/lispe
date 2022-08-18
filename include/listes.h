@@ -43,9 +43,9 @@ public:
 class ITEM {
 public:
     Element** buffer;
-    long last;
-    long sz;
-    long status;
+    uint64_t last;
+    uint64_t sz;
+    uint64_t status;
 
     ITEM(long t) {
         status = 0; //this is the reference counter
@@ -694,7 +694,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    virtual Element* duplicate_constant(LispE* lisp, bool pair = false);
+    virtual Element* duplicate_constant(LispE* lisp);
     
     virtual bool isList() {
         return true;
@@ -1902,85 +1902,190 @@ public:
     Element* eval(LispE*);
 };
 
-class Pair : public List {
+class Pair : public Element {
 public:
+    Element* object;
     
-    Pair() : List() {
-        type = t_pair;
+    Pair(Element* e) : object(e), Element(t_pair) {
+        object->increment();
+    }
+    
+    void decrement() {
+        status -= not_protected();
+        if (!status) {
+            object->decrement();
+            delete this;
+        }
     }
 
-    //When a CDR is called, we create a copy of LIST, which shared the same ITEM object
-    //but with a different home...
-    Pair(Pair* l, long p) : List((List*)l, p) {}
-
-    Element* fullcopy() {
-        if (liste.marking)
-            return liste.object;
-        
-        liste.marking = true;
-        liste.object = new Pair;
-        for (long i = 0; i < liste.size(); i++) {
-            liste.object->append(liste[i]->fullcopy());
+    void decrementstatus(uint16_t nb) {
+        status -= nb * not_protected();
+        if (!status) {
+            object->decrement();
+            delete this;
         }
-        
-        liste.marking = false;
-        return liste.object;
+    }
+    
+    void append(Element* e) {
+        object = e;
+        object->increment();
+    }
+
+    Element* copyatom(LispE* lisp, uint16_t s) {
+        return (status < s)?this:new Pair(object->copyatom(lisp, s));
+    }
+    
+    Element* fullcopy() {
+        return new Pair(object->fullcopy());
     }
 
     Element* copying(bool duplicate = true) {
-        if (!is_protected() && liste.nocdr() && !duplicate)
+        if (!is_protected() && !duplicate)
             return this;
         
-        Pair* l = new Pair;
-        for (long i = 0; i < liste.size(); i++)
-            l->append(liste[i]->copying(false));
-        return l;
+        return new Pair(object->copying(duplicate));
     }
     
-    Element* cdr(LispE* lisp);
+    Element* cdr(LispE* lisp) {
+        return object;
+    }
+    
+    Element* eval(LispE* lisp) {
+        return object;
+    }
     
     wstring asString(LispE* lisp) {
-        long sz = liste.size();
-        if (!sz)
-            return L"()";
-        
-        sz -= 1;
-        
-        wstring buffer(L"(");
-        
-        for (long i = 0; i <= sz; i++) {
-            if (i == sz)
-                buffer += L" . ";
-            else
-                if (i && i < sz)
-                    buffer+= L" ";
-            
-            buffer += liste[i]->stringInList(lisp);
-        }
-        buffer += L")";
-        return buffer;
+        return object->asString(lisp);
     }
 
+
     u_ustring asUString(LispE* lisp) {
-        long sz = liste.size();
-        if (!sz)
-            return U"()";
-        
-        sz -= 1;
-        
-        u_ustring buffer(U"(");
-        
-        for (long i = 0; i <= sz; i++) {
-            if (i == sz)
-                buffer += U" . ";
-            else
-                if (i && i < sz)
-                    buffer+= U" ";
-            
-            buffer += liste[i]->stringInUList(lisp);
-        }
-        buffer += U")";
+        return object->asUString(lisp);
+    }
+    
+    u_ustring stringInUList(LispE* lisp) {
+        u_ustring buffer(U". ");
+        buffer += object->asUString(lisp);
         return buffer;
+    }
+    
+    Element* bit_not(LispE* l) {
+        Element* v = object->bit_not(l);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    
+    Element* bit_and(LispE* l, Element* e) {
+        Element* v = object->bit_and(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* bit_and_not(LispE* l, Element* e) {
+        Element* v = object->bit_and(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* bit_or(LispE* l, Element* e) {
+        Element* v = object->bit_or(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* bit_xor(LispE* l, Element* e) {
+        Element* v = object->bit_xor(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* plus(LispE* l, Element* e) {
+        Element* v = object->plus(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* minus(LispE* l, Element* e) {
+        Element* v = object->minus(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* multiply(LispE* l, Element* e) {
+        Element* v = object->multiply(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* divide(LispE* l, Element* e) {
+        Element* v = object->divide(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* mod(LispE* l, Element* e) {
+        Element* v = object->mod(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* power(LispE* l, Element* e) {
+        Element* v = object->power(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* leftshift(LispE* l, Element* e) {
+        Element* v = object->leftshift(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
+    }
+    Element* rightshift(LispE* l, Element* e) {
+        Element* v = object->rightshift(l, e);
+        if (v != object) {
+            object->decrement();
+            object = v;
+            v->increment();
+        }
+        return this;
     }
 
 };
@@ -2138,7 +2243,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     bool isList() {
         return true;
@@ -2273,6 +2378,7 @@ public:
     void append(Element* e) {
         liste.push_back(e->asFloat());
     }
+    
     void appendraw(Element* e) {
         liste.push_back(e->asFloat());
     }
@@ -2615,7 +2721,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     bool isList() {
         return true;
@@ -3074,7 +3180,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     bool isList() {
         return true;
@@ -3496,7 +3602,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     bool isList() {
         return true;
@@ -4880,7 +4986,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     bool isList() {
         return true;

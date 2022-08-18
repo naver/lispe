@@ -16,28 +16,28 @@
 #include <math.h>
 #include <algorithm>
 
-Element* Set_s::duplicate_constant(LispE* lisp, bool pair) {
+Element* Set_s::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         return lisp->provideSet_s(this);
     }
     return this;
 }
 
-Element* Set_i::duplicate_constant(LispE* lisp, bool pair) {
+Element* Set_i::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         return lisp->provideSet_i(this);
     }
     return this;
 }
 
-Element* Set_n::duplicate_constant(LispE* lisp, bool pair) {
+Element* Set_n::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         return lisp->provideSet_n(this);
     }
     return this;
 }
 
-Element* Set::duplicate_constant(LispE* lisp, bool pair) {
+Element* Set::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         return lisp->provideSet(this);
     }

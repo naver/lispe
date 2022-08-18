@@ -355,18 +355,6 @@ Element* Stringspool::copyatom(LispE* lsp, uint16_t s) {
 //List methods
 //--------------------------------------------------------------------------------
 
-Element* Pair::cdr(LispE* lisp) {
-    long sz = liste.size();
-    if (!sz)
-        return null_;
-    
-    if (sz == 2)
-        return liste.back();
-    
-    return new Pair(this, 1);
-}
-
-//------------------------------------------------------------------------------------------
 inline bool LIST::compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j) {
     comparison->in_quote(1, item->buffer[i]);
     comparison->in_quote(2, item->buffer[j]);
@@ -1763,6 +1751,9 @@ Element* List::extraction(LispE* lisp, List* l) {
     
     if (nxt == l->size()) {
         //Only one element is returned
+        if (liste[from]->type == t_pair)
+            return liste[from]->eval(lisp);
+
         return liste[from]->copying(false);
     }
     
@@ -1859,8 +1850,11 @@ Element* List::extraction(LispE* lisp, List* l) {
         return emptylist_;
     
     //In this case, we use extraction as a multiple cdr...
-    if (upto >= sz)
+    if (upto >= sz) {
+        if (liste[from]->type == t_pair)
+            return liste[from]->eval(lisp);
         return new Listpool(lisp, this, from);
+    }
 
     l = lisp->provideList();
     for (;from < upto; from++)
@@ -1967,6 +1961,9 @@ Element* LList::extraction(LispE* lisp, List* l) {
         if (e == NULL)
             return emptylist_;
         
+        if (e->type == t_pair)
+            e = e->eval(lisp);
+        
         return e->copying(false);
     }
     
@@ -2067,6 +2064,8 @@ Element* LList::extraction(LispE* lisp, List* l) {
     //Equivalent to multiple cdr
     if (upto >= sz) {
         u_link* it = liste.at(from);
+        if (it->value->type == t_pair)
+            return it->value->eval(lisp);
         return new LList(this, it);
     }
         
@@ -2556,13 +2555,10 @@ Element* LList::replace_in(LispE* lisp, List* l) {
     return ll;
 }
 
-Element* List::duplicate_constant(LispE* lisp, bool pair) {
+Element* List::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         List* l;
-        if (pair)
-            l =  new Pair();
-        else
-            l = lisp->provideList();
+        l = lisp->provideList();
         for (long i = 0; i < liste.size(); i++) {
             l->append(liste[i]->copying(false));
         }
@@ -2571,7 +2567,7 @@ Element* List::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* LList::duplicate_constant(LispE* lisp, bool pair) {
+Element* LList::duplicate_constant(LispE* lisp) {
     if (status == s_constant)
         return back_duplicate();
     return this;
@@ -2587,7 +2583,6 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
     long pos = 0;
     long sz = size();
     Element* e = this;
-    bool pair = (e->type == t_pair);
     
     for (long i = action.size() - 1; i>= 0; i--) {
         if (action[i] == 'a') {
@@ -2595,7 +2590,6 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
             if (e == null_)
                 throw new Error("Error: No more elements to traverse with 'cad..r'");
             
-            pair = (e->type == t_pair);
             sz = e->size();
             pos = 0;
         }
@@ -2609,15 +2603,10 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
     if (pos) {
         if (pos == sz)
             return null_;
-        if (pair) {
-            //The last one...
-            if (pos == sz - 1)
-                return e->index(pos);
-            return new Pair((Pair*)e, pos);
-        }
-        else {
-            return new Listpool(lisp, (List*)e, pos);
-        }
+        if (e->index(pos)->type == t_pair)
+            return e->index(pos)->eval(lisp);
+        
+        return new Listpool(lisp, (List*)e, pos);
     }
     
     return e;
@@ -2646,8 +2635,12 @@ Element* LList::cadr(LispE* lisp, u_ustring& action) {
         }
     }
     
-    if (it != NULL)
+    if (it != NULL) {
+        if (it->value->type == t_pair)
+            return it->value->eval(lisp);
+        
         return new LList(this, it);
+    }
     
     return e;
 }
@@ -2661,6 +2654,8 @@ Element* List::car(LispE* lisp) {
 Element* List::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
+    if (liste[1]->type == t_pair)
+        return liste[1]->eval(lisp);
     return new Listpool(lisp, this, 1);
 }
 
@@ -2675,6 +2670,10 @@ Element* LList::cdr(LispE* lisp) {
     if (it == NULL || it->_next == NULL)
         return null_;
     it = it->_next;
+    
+    if (it->value->type == t_pair)
+        return it->value->eval(lisp);
+
     return new LList(this, it);
 }
 
@@ -3390,7 +3389,7 @@ Element* Numbers::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Numbers::duplicate_constant(LispE* lisp, bool pair) {
+Element* Numbers::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Numbers* l = lisp->provideNumbers();
         l->liste = liste;
@@ -3982,7 +3981,7 @@ Element* Integers::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Integers::duplicate_constant(LispE* lisp, bool pair) {
+Element* Integers::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Integers* l = lisp->provideIntegers();
         l->liste = liste;
@@ -4912,7 +4911,7 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Strings::duplicate_constant(LispE* lisp, bool pair) {
+Element* Strings::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Strings* l = lisp->provideStrings();
         l->liste = liste;
@@ -5505,7 +5504,7 @@ Element* Shorts::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Shorts::duplicate_constant(LispE* lisp, bool pair) {
+Element* Shorts::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Shorts* l = new Shorts;
         l->liste = liste;
@@ -6115,7 +6114,7 @@ Element* Floats::replace_in(LispE* lisp, List* l) {
     return n;
 }
 
-Element* Floats::duplicate_constant(LispE* lisp, bool pair) {
+Element* Floats::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Floats* l = lisp->provideFloats();
         l->liste = liste;

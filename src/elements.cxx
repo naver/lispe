@@ -403,7 +403,7 @@ Element* Constfloat::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideFloat(content);
 }
 
-Element* Constfloat::duplicate_constant(LispE* lisp, bool pair) {
+Element* Constfloat::duplicate_constant(LispE* lisp) {
     return lisp->provideFloat(content);
 }
 
@@ -423,7 +423,7 @@ Element* Constnumber::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideNumber(content);
 }
 
-Element* Constnumber::duplicate_constant(LispE* lisp, bool pair) {
+Element* Constnumber::duplicate_constant(LispE* lisp) {
     return lisp->provideNumber(content);
 }
 
@@ -437,7 +437,7 @@ Element* Constinteger::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideInteger(content);
 }
 
-Element* Constinteger::duplicate_constant(LispE* lisp, bool pair) {
+Element* Constinteger::duplicate_constant(LispE* lisp) {
     return lisp->provideInteger(content);
 }
 
@@ -455,7 +455,7 @@ Element* Constshort::copyatom(LispE* lsp, uint16_t s) {
     return new Short(content);
 }
 
-Element* Constshort::duplicate_constant(LispE* lisp, bool pair) {
+Element* Constshort::duplicate_constant(LispE* lisp) {
     return new Short(content);
 }
 
@@ -479,7 +479,7 @@ Element* Conststring::copyatom(LispE* lsp, uint16_t s) {
     return lsp->provideString(content);
 }
 
-Element* Conststring::duplicate_constant(LispE* lisp, bool pair) {
+Element* Conststring::duplicate_constant(LispE* lisp) {
     return lisp->provideString(content);
 }
 

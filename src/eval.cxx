@@ -5853,57 +5853,44 @@ Element* List::evall_cons(LispE* lisp) {
         first_element = null_;
     
     Element* second_element = null_;
-    Element* third_element;
 
 
     try {
         //merging an element into the next list
         second_element = liste[2]->eval(lisp);
-        if (second_element == null_ || second_element == emptylist_) {
-            third_element = lisp->provideList();
-            third_element->append(first_element);
-            return third_element;
-        }
-
-        if (!second_element->isList()) {
-            third_element = new Pair();
-            third_element->append(first_element);
-            third_element->append(second_element);
-            return third_element;
-        }
-
+        
         switch (second_element->type) {
-            case t_pair: {
-                third_element = new Pair();
+            case t_llist:
+                return second_element->insert(lisp, first_element, 0);
+            case t_list: {
+                second_element = second_element->duplicate_constant(lisp);
+                if (second_element->status) {
+                    second_element->insert(lisp, first_element, 0);
+                    Listpool* third_element = new Listpool(lisp, (List*)second_element, 0);
+                    ((List*)second_element)->liste.home++;
+                    return third_element;
+                }
+                return second_element->insert(lisp, first_element, 0);
+            default:
+                if (second_element == null_ || second_element == emptylist_) {
+                    List* third_element = lisp->provideList();
+                    third_element->append(first_element);
+                    return third_element;
+                }
+
+                List* third_element = lisp->provideList();
                 third_element->append(first_element);
-                for (long i = 0; i < second_element->size(); i++)
-                    third_element->append(second_element->value_on_index(lisp, i));
-                break;
-            }
-            case t_llist: {
-                third_element = new LList(&lisp->delegation->mark);
-                LList* lst = (LList*)second_element;
-                for (u_link* e = lst->liste.last(); e != NULL; e = e->previous())
-                    ((LList*)third_element)->push_front(e->value->copying(false));
-                ((LList*)third_element)->push_front(first_element);
-                break;
-            }
-            default: {
-                third_element = lisp->provideList();
-                third_element->append(first_element);
-                for (long i = 0; i < second_element->size(); i++)
-                    third_element->append(second_element->value_on_index(lisp, i));
+                third_element->append(new Pair(second_element));
+                return third_element;
             }
         }
-        second_element->release();
     }
     catch (Error* err) {
         first_element->release();
         second_element->release();
         throw err;
     }
-
-    return third_element;
+    return null_;
 }
 
 Element* List::evall_consb(LispE* lisp) {
@@ -5925,21 +5912,23 @@ Element* List::evall_consb(LispE* lisp) {
         }
 
         if (!first_element->isList()) {
-            if (second_element->isList()) {
-                result = lisp->provideList();
-                result->append(first_element);
-                void* iter = second_element->begin_iter();
-                Element* nxt  = second_element->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    result->append(nxt);
-                    nxt = second_element->next_iter_exchange(lisp, iter);
+            switch (second_element->type) {
+                case t_llist:
+                    return second_element->insert(lisp, first_element, 0);
+                case t_list: {
+                    second_element = second_element->duplicate_constant(lisp);
+                    if (second_element->status) {
+                        second_element->insert(lisp, first_element, 0);
+                        Element* third_element = new Listpool(lisp, (List*)second_element, 0);
+                        ((List*)second_element)->liste.home++;
+                        return third_element;
+                    }
+                    return second_element->insert(lisp, first_element, 0);
                 }
-                second_element->clean_iter(iter);
-            }
-            else {
-                result = new Pair();
-                result->append(first_element);
-                result->append(second_element);
+                default:
+                    result = lisp->provideList();
+                    result->append(first_element);
+                    result->append(new Pair(second_element));
             }
         }
         else {
@@ -6722,6 +6711,8 @@ Element* List::evall_at(LispE* lisp) {
         throw err;
     }
 
+    if (result->type == t_pair)
+        return result->eval(lisp);
     return result;
 }
 
@@ -7855,77 +7846,42 @@ Element* List::evall_nconc(LispE* lisp) {
     if (listsize == 1)
         return emptylist_;
 
-    Element* last =  liste.back()->eval(lisp);
-    bool  pair = !last->isList();
-
-
-    Element* first_element = null_;
-    Element* second_element = null_;
+    Element* result = null_;
+    Element* element = null_;
     Element* e;
 
     long i, l;
 
     try {
-        second_element = liste[1]->eval(lisp);
-        if (second_element == emptylist_ || second_element == null_) {
-            if (pair) {
-                if (listsize == 3)
-                    return last;
-                first_element = new Pair();
-            }
-            else
-                first_element = lisp->provideList();
-        }
-        else {
-            if (second_element->isList())
-                first_element = second_element->duplicate_constant(lisp,pair);
-            else
-                throw new Error("Error: first element is not a list");
-        }
+        element = liste[1]->eval(lisp);
+        if (element->isList())
+            result = element->duplicate_constant(lisp);
+        else
+            throw new Error("Error: first element is not a list");
 
-        second_element = emptylist_;
-        listsize--;
+        element = emptylist_;
         for (i = 2; i < listsize; i++) {
-            second_element = liste[i]->eval(lisp);
-            if (second_element->isList()) {
-                for (l = 0; l < second_element->size(); l++) {
-                    e = second_element->value_on_index(lisp, l);
-                    first_element->append(e);
+            element = liste[i]->eval(lisp);
+            if (element->isList()) {
+                for (l = 0; l < element->size(); l++) {
+                    e = element->value_on_index(lisp, l);
+                    result->append(e);
                     e->release();
                 }
-                _releasing(second_element);
             }
-            else {
-                std::wstringstream st;
-                if (i == 2)
-                    st << "Error: second argument is not a list";
-                else
-                    if (i == 3)
-                        st << "Error: third argument is not a list";
-                    else
-                        st << "Error: " << i << "th argument is not a list";
-                throw new Error(st.str());
-            }
-        }
-        if (pair)
-            first_element->append(last);
-        else {
-            for (l = 0; l < last->size(); l++) {
-                e = last->value_on_index(lisp, l);
-                first_element->append(e);
-                e->release();
-            }
-            _releasing(last);
+            else
+                result->append(element);
+            
+            _releasing(element);
         }
     }
     catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        last->release();
+        result->release();
+        element->release();
         throw err;
     }
 
-    return first_element;
+    return result;
 }
 
 Element* List::evall_nconcn(LispE* lisp) {
@@ -7933,76 +7889,41 @@ Element* List::evall_nconcn(LispE* lisp) {
     if (listsize == 1)
         return emptylist_;
 
-    Element* last =  liste.back()->eval(lisp);
-    bool pair = !last->isList();
-
+    Element* result = null_;
     Element* element = null_;
-    Element* base = null_;
     Element* e;
 
     long i, l;
 
     try {
-        base = liste[1]->eval(lisp);
-        if (base == emptylist_ || base == null_) {
-            if (pair) {
-                if (listsize == 3)
-                    return last;
-                element = new Pair();
-            }
-            else
-                element = lisp->provideList();
-        }
-        else {
-            if (base->isList())
-                element = base->copyatom(lisp, 1);
-            else
-                throw new Error("Error: first element is not a list");
-        }
+        element = liste[1]->eval(lisp);
+        if (element->isList())
+            result = element->copyatom(lisp, 1);
+        else
+            throw new Error("Error: first element is not a list");
 
-        base = emptylist_;
-        listsize--;
+        element = emptylist_;
         for (i = 2; i < listsize; i++) {
-            base = liste[i]->eval(lisp);
-            if (base->isList()) {
-                for (l = 0; l < base->size(); l++) {
-                    e = base->value_on_index(lisp, l);
-                    element->append(e);
+            element = liste[i]->eval(lisp);
+            if (element->isList()) {
+                for (l = 0; l < element->size(); l++) {
+                    e = element->value_on_index(lisp, l);
+                    result->append(e);
                     e->release();
                 }
-                _releasing(base);
             }
-            else {
-                std::wstringstream st;
-                if (i == 2)
-                    st << "Error: second argument is not a list";
-                else
-                    if (i == 3)
-                        st << "Error: third argument is not a list";
-                    else
-                        st << "Error: " << i << "th argument is not a list";
-                throw new Error(st.str());
-            }
-        }
-        if (pair)
-            element->append(last);
-        else {
-            for (l = 0; l < last->size(); l++) {
-                e = last->value_on_index(lisp, l);
-                element->append(e);
-                e->release();
-            }
-            _releasing(last);
+            else
+                result->append(element);
+            _releasing(element);
         }
     }
     catch (Error* err) {
+        result->release();
         element->release();
-        base->release();
-        last->release();
         throw err;
     }
 
-    return element;
+    return result;
 }
 
 

@@ -23,11 +23,11 @@ public:
     u_link* _next;
     u_link* _previous;
     uint32_t mark;
-    uint64_t status;
+    uint16_t status;
 
     u_link(Element* v) {
-        mark = 0;
         status = 0;
+        mark = 0;
         value = v;
         _next = NULL;
         _previous = NULL;
@@ -41,7 +41,7 @@ public:
         }
     }
 
-    void inc(uint64_t s) {
+    void inc(uint16_t s) {
         status += s;
     }
     
@@ -694,7 +694,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     bool checkShape(long depth, vecte<long>& sz) {
         if (size() != sz[depth])

@@ -678,7 +678,7 @@ bool Dictionary::egal(Element* e) {
     return ((e->type == t_dictionary && e->size() == 0 && dictionary.size() == 0) || e == this);
 }
 
-Element* Dictionary::duplicate_constant(LispE* lisp, bool pair) {
+Element* Dictionary::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Dictionary* d = lisp->provideDictionary();
         Element* e;
@@ -693,7 +693,7 @@ Element* Dictionary::duplicate_constant(LispE* lisp, bool pair) {
 }
 
 
-Element* Dictionary_i::duplicate_constant(LispE* lisp, bool pair) {
+Element* Dictionary_i::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Dictionary_i* d = lisp->provideDictionary_i();
         Element* e;
@@ -707,7 +707,7 @@ Element* Dictionary_i::duplicate_constant(LispE* lisp, bool pair) {
     return this;
 }
 
-Element* Dictionary_n::duplicate_constant(LispE* lisp, bool pair) {
+Element* Dictionary_n::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
         Dictionary_n* d = lisp->provideDictionary_n();
         Element* e;

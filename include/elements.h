@@ -111,7 +111,7 @@ typedef enum {
     l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     l_zip, l_zipwith,
-    c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon,
+    c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon, c_point,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
     t_comment, l_final
 } lisp_code;
@@ -404,7 +404,7 @@ public:
     virtual Element* rank(LispE* lisp, vecte<long>&);
     
     //We only duplicate constant containers...
-    virtual Element* duplicate_constant(LispE* lisp, bool pair = false) {
+    virtual Element* duplicate_constant(LispE* lisp) {
         return this;
     }
     
@@ -1672,7 +1672,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
 };
 
 class Constnumber : public Numberpool {
@@ -1703,7 +1703,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
 };
 
 class Short : public Element {
@@ -2065,7 +2065,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
 };
 
 class Constshort : public Short {
@@ -2089,7 +2089,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
 };
 
 class String : public Element {
@@ -2357,7 +2357,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
 };
 
 class InfiniterangeNumber : public Element {
@@ -2633,7 +2633,7 @@ public:
 
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -3097,7 +3097,7 @@ public:
 
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -3504,7 +3504,7 @@ public:
 
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -4039,7 +4039,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -4333,7 +4333,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -4609,7 +4609,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -4893,7 +4893,7 @@ public:
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false);
+    Element* duplicate_constant(LispE* lisp);
     
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     

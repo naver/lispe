@@ -848,7 +848,6 @@ public:
         return e;
     }
 
-
     Element* provideNonLabelAtom(int16_t code) {
         Element* e =  atom_pool.search(code);
         if (e == NULL) {

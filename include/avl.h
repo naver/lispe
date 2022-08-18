@@ -248,7 +248,7 @@ public:
         return true;
     }
     
-    Element* duplicate_constant(LispE* lisp, bool pair = false) {
+    Element* duplicate_constant(LispE* lisp) {
         if (status == s_constant) {
             return fullcopy();
         }
