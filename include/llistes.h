@@ -45,15 +45,22 @@ public:
         status += s;
     }
     
-    bool check_cycle() {
+    void release() {
+        if (!status) {
+            value->release();
+            delete this;
+        }
+    }
+    
+    virtual bool check_cycle() {
         return (_next != NULL && mark == _next->mark);
     }
     
-    bool check_next() {
+    virtual bool check_next() {
         return (_next != NULL && mark != _next->mark);
     }
     
-    u_link* next() {
+    virtual u_link* next() {
         if (_next != NULL && mark != _next->mark) {
             _next->mark = mark;
             return _next;
@@ -94,13 +101,61 @@ public:
     }
 
     //we insert it after...
-    void push(u_link* e) {
+    virtual void push(u_link* e) {
         e->_previous = this;
         _next = e;
         e->inc(status);
     }
 
+    virtual bool isFinal() {
+        return false;
+    }
+    
+    virtual void connect(Element* v) {
+        _next = new u_link(v);
+        _next->_previous = this;
+        _next->inc(status);
+    }
+
+    virtual void connect_as_last(Element* v);
+
 };
+
+class u_link_last : public u_link {
+public:
+
+    u_link_last(Element* v) : u_link(v) {}
+
+    void push(u_link* e) {
+        throw new Error("Error: Cannot add an element to this linked list");
+    }
+
+    void connect(Element* v) {
+        throw new Error("Error: Cannot add an element to this linked list");
+    }
+
+    void connect_as_last(Element* v) {
+        throw new Error("Error: Cannot add an element to this linked list");
+    }
+
+    bool isFinal() {
+        return true;
+    }
+    
+    bool check_cycle() {
+        return false;
+    }
+    
+    bool check_next() {
+        return false;
+    }
+    
+    u_link* next() {
+        return NULL;
+    }
+
+};
+
 
 class u_links {
 public:
@@ -219,39 +274,7 @@ public:
         }
         return e;
     }
-    
-    void insertbefore(Element* v) {
-        if (first == NULL) {
-            first = new u_link(v);
-            first->inc(1);
-            return;
-        }
-        u_link* u = new u_link(v);
-        if (first->_previous != NULL) {
-            first->_previous->_next = u;
-            u->_previous = first->_previous;
-        }
-        first->_previous = u;
-        u->_next = first;
-        u->inc(1);
-    }
-    
-    void insertafter(Element* v) {
-        if (first == NULL) {
-            first = new u_link(v);
-            first->inc(1);
-            return;
-        }
-        u_link* u = new u_link(v);
-        if (first->_next != NULL) {
-            first->_next->_previous = u;
-            u->_next = first->_next;
-        }
-        u->_previous = first;
-        first->_next = u;
-        u->inc(1);
-    }
-    
+
     void insertbeforelast(Element* v) {
         u_link* e = last_raw();
         if (e == NULL) {
@@ -277,11 +300,8 @@ public:
 
         if (c->_next)
             c->insert(new u_link(v));
-        else {
-            c->_next = new u_link(v);
-            c->_next->_previous = c;
-            c->_next->inc(c->status);
-        }
+        else
+            c->connect(v);
     }
     
     void push_front(Element* v) {
@@ -292,7 +312,9 @@ public:
             first->insert(e);
         first = e;
     }
-    
+
+    void push_front(Element* v, bool is_final);
+
     void push_back(Element* v) {
         u_link* e = last_raw();
         if (e == NULL) {
@@ -300,9 +322,19 @@ public:
             first->inc(1);
             return;
         }
-        e->_next = new u_link(v);
-        e->_next->_previous = e;
-        e->_next->inc(e->status);
+
+        e->connect(v);
+    }
+
+    void push_back_as_last(Element* v) {
+        u_link* e = last_raw();
+        if (e == NULL) {
+            first = new u_link_last(v);
+            first->inc(1);
+            return;
+        }
+
+        e->connect_as_last(v);
     }
 
     void pop_front() {
@@ -430,6 +462,8 @@ public:
             //First, if it in the middle of a longer list
             //we cut it from it...
             u_link* e = last();
+            if (e->isFinal())
+                throw new Error("Error: cannot reverse a linked list with a final '.' element");
             
             u_link* p = e->_next;
             
@@ -471,6 +505,9 @@ public:
         }
         else {
             u = last_raw();
+            if (u->isFinal())
+                throw new Error("Error: Cannot add an element to this linked list");
+            
             u->_next = l.first;
             l.first->_previous = u;
             //if there is no cycle
@@ -544,16 +581,6 @@ public:
         return liste.at_e(idx);
     }
 
-    void insert_before(Element* e) {
-        liste.insertbefore(e);
-        e->increment();
-    }
-
-    void insert_after(Element* e) {
-        liste.insertafter(e);
-        e->increment();
-    }
-
     void insertion(Element* e, long idx) {
         e->increment();
         liste.insert(idx, e);
@@ -603,7 +630,7 @@ public:
         bool cyclic = (a->_next != NULL);
 
         for (; a != NULL; a = a->previous()) {
-            l->push_front(a->value->fullcopy());
+            l->push_front(a->value->fullcopy(), a->isFinal());
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
@@ -634,7 +661,7 @@ public:
         u_link* tail = NULL;
 
         for (; a != NULL; a = a->previous()) {
-            l->push_front(a->value->copyatom(lisp, s));
+            l->push_front(a->value->copyatom(lisp, s), a->isFinal());
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
@@ -662,7 +689,7 @@ public:
         u_link* tail = NULL;
 
         for (; a != NULL; a = a->previous()) {
-            l->push_front(a->value->copying(false));
+            l->push_front(a->value->copying(false), a->isFinal());
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
@@ -867,6 +894,8 @@ public:
                 buffer += L" ";
             else
                 first = false;
+            if (a->isFinal())
+                buffer += L". ";
             buffer += a->value->stringInList(lisp);
         }
         if (prev->_next)
@@ -889,7 +918,9 @@ public:
                 buffer += U" ";
             else
                 first = false;
-            buffer += a->value->stringInUList(lisp);
+            if (a->isFinal())
+                buffer += U". ";
+          buffer += a->value->stringInUList(lisp);
         }
         if (prev->_next)
             buffer += U" ...";
@@ -922,8 +953,18 @@ public:
         e->increment();
     }
 
+    void push_front(Element* e, bool is_final) {
+        liste.push_front(e, is_final);
+        e->increment();
+    }
+
     void append(Element* e) {
         liste.push_back(e);
+        e->increment();
+    }
+
+    void append_as_last(Element* e) {
+        liste.push_back_as_last(e);
         e->increment();
     }
 

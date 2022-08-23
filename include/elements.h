@@ -44,7 +44,7 @@ typedef enum {
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
-    t_pair, t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
+    t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function,
@@ -93,7 +93,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_flatten, l_nconc, l_nconcn,
+    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
     l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings,

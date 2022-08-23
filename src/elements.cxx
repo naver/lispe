@@ -1125,7 +1125,7 @@ Element* Cyclelist::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(null_, label);
     long sz = code->liste.size();
     Element* element = value->eval(lisp);
-    if (!element->isList()) {
+    if (element->type != t_list) {
         element->release();
         throw new Error("Error: we can only cycle on list");
     }

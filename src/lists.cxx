@@ -16,6 +16,28 @@
 #include <algorithm>
 
 //--------------------------------------------------------------------------------
+
+void u_links::push_front(Element* v, bool is_final) {
+    u_link* e;
+    if (is_final)
+        e = new u_link_last(v);
+    else
+        e = new u_link(v);
+    
+    if (first == NULL)
+        e->inc(1);
+    else
+        first->insert(e);
+    first = e;
+}
+
+void u_link::connect_as_last(Element* v) {
+    _next = new u_link_last(v);
+    _next->_previous = this;
+    _next->inc(status);
+}
+
+//--------------------------------------------------------------------------------
 //Pools methods
 //--------------------------------------------------------------------------------
 void Listpool::decrement() {
@@ -1751,9 +1773,6 @@ Element* List::extraction(LispE* lisp, List* l) {
     
     if (nxt == l->size()) {
         //Only one element is returned
-        if (liste[from]->type == t_pair)
-            return liste[from]->eval(lisp);
-
         return liste[from]->copying(false);
     }
     
@@ -1850,11 +1869,8 @@ Element* List::extraction(LispE* lisp, List* l) {
         return emptylist_;
     
     //In this case, we use extraction as a multiple cdr...
-    if (upto >= sz) {
-        if (liste[from]->type == t_pair)
-            return liste[from]->eval(lisp);
+    if (upto >= sz)
         return new Listpool(lisp, this, from);
-    }
 
     l = lisp->provideList();
     for (;from < upto; from++)
@@ -1961,9 +1977,6 @@ Element* LList::extraction(LispE* lisp, List* l) {
         if (e == NULL)
             return emptylist_;
         
-        if (e->type == t_pair)
-            e = e->eval(lisp);
-        
         return e->copying(false);
     }
     
@@ -2064,8 +2077,8 @@ Element* LList::extraction(LispE* lisp, List* l) {
     //Equivalent to multiple cdr
     if (upto >= sz) {
         u_link* it = liste.at(from);
-        if (it->value->type == t_pair)
-            return it->value->eval(lisp);
+        if (it->isFinal())
+            return it->value;
         return new LList(this, it);
     }
         
@@ -2603,9 +2616,6 @@ Element* List::cadr(LispE* lisp, u_ustring& action) {
     if (pos) {
         if (pos == sz)
             return null_;
-        if (e->index(pos)->type == t_pair)
-            return e->index(pos)->eval(lisp);
-        
         return new Listpool(lisp, (List*)e, pos);
     }
     
@@ -2636,8 +2646,8 @@ Element* LList::cadr(LispE* lisp, u_ustring& action) {
     }
     
     if (it != NULL) {
-        if (it->value->type == t_pair)
-            return it->value->eval(lisp);
+        if (it->isFinal())
+            return it->value;
         
         return new LList(this, it);
     }
@@ -2654,8 +2664,6 @@ Element* List::car(LispE* lisp) {
 Element* List::cdr(LispE* lisp) {
     if (liste.size() <= 1)
         return null_;
-    if (liste[1]->type == t_pair)
-        return liste[1]->eval(lisp);
     return new Listpool(lisp, this, 1);
 }
 
@@ -2671,9 +2679,8 @@ Element* LList::cdr(LispE* lisp) {
         return null_;
     it = it->_next;
     
-    if (it->value->type == t_pair)
-        return it->value->eval(lisp);
-
+    if (it->isFinal())
+        return it->value;
     return new LList(this, it);
 }
 
@@ -6897,25 +6904,29 @@ void LList::push_element_front(LispE* lisp, List* l) {
 
 void LList::push_element_back(LispE* lisp, List* l) {
     Element* value = l->liste[2]->eval(lisp);
-
+    
     u_link* current = liste.last_raw();
     u_link* u = new u_link(value->copying(false));
-    u->value->increment();
-    value->release();
-    if (current == NULL) {
-        liste.first = u;
-        u->inc(1);
+    try {
+        if (current == NULL) {
+            liste.first = u;
+            u->inc(1);
+        }
+        else
+            current->push(u);
+        u->value->incrementstatus(u->status);
+        
+        for (long i = 3; i < l->size(); i++) {
+            value = l->liste[i]->eval(lisp);
+            current = u;
+            u = new u_link(value->copying(false));
+            current->push(u);
+            u->value->incrementstatus(u->status);
+        }
     }
-    else
-        current->push(u);
-
-    for (long i = 3; i < l->size(); i++) {
-        value = l->liste[i]->eval(lisp);
-        current = u;
-        u = new u_link(value->copying(false));
-        u->value->increment();
-        value->release();
-        current->push(u);
+    catch(Error* err) {
+        u->release();
+        throw err;
     }
 }
 

@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.8.16.10.43";
+static std::string version = "1.2022.8.21.19.03";
 string LispVersion() {
     return version;
 }
@@ -238,6 +238,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consb, "consb", P_THREE, &List::evall_consb);
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
+    set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
     set_instruction(l_count, "count", P_THREE|P_FOUR, &List::evall_count);
     set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp);
     set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort);
@@ -584,7 +585,6 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_atom] = U"atom_";
     code_to_string[t_heap] = U"heap_";
 
-    code_to_string[t_pair] = U"pair_";
     code_to_string[t_maybe] = U"maybe_";
     code_to_string[t_error] = U"error_";
     
@@ -1528,9 +1528,8 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
  build a sub-list...
  */
 
-Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& index, bool quoting) {
+Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& index, long quoting) {
     Element* e = NULL;
-    Element* quoted = courant;
     double value;
     char topfunction = false;
     int16_t lab = -1;
@@ -1539,6 +1538,8 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
         parse.current = index;
         switch (parse.types[index]) {
             case c_opening: {
+                if (quoting)
+                    quoting++;
                 lab = -1;
                 index++;
                 //Empty list
@@ -1551,7 +1552,17 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     e = new Listincode(parse.lines[index], delegation->i_current_file);
                     garbaging(e);
                     abstractSyntaxTree(e, parse, index, quoting);
-                    if (!quoting) {
+                    if (quoting) {
+                        if (e->size() && e->index(0)->label() == l_conspoint) {
+                            Element* a = e->eval(this);
+                            garbaging(a);
+                            removefromgarbage(e);
+                            courant->append(a);
+                            quoting--;
+                            continue;
+                        }
+                    }
+                    else {
                         if (e->size() >= 1) {
                             lab = e->index(0)->label();
                             bool docompose = true;
@@ -1562,7 +1573,6 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     docompose = false;
                                 }
                             }
-                            
                             switch(lab) {
                                     //for defmacro and link, we evaluate these expressions on the fly
                                 case l_lambda:
@@ -1791,14 +1801,12 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     courant->append(delegation->_EMPTYLIST);
                     removefromgarbage(e);
                 }
-                quoting = quoting && courant == quoted;
-                courant = quoted;
+                if (quoting)
+                    quoting--;
                 break;
             }
             case c_closing:
                 index++;
-                if (courant != quoted)
-                    throw new Error("Error: Dangling quote expression");
                 return delegation->_TRUE;
             case c_opening_brace: {
                 index++;
@@ -1819,8 +1827,6 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     }
                 }
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 break;
             }
             case c_opening_data_brace: {
@@ -1836,40 +1842,18 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     garbaging(e);
                 }
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 break;
             }
             case c_closing_brace:
                 index++;
                 return delegation->_TRUE;
-            case c_point: {
-                index++;
-                if (courant->size() == 0)
-                    throw new Error("Error: Wrong use of '.'");
-                if (parse.types[index] == c_opening) {
-                    index++;
-                    abstractSyntaxTree(courant, parse, index, quoting);
-                }
-                else {
-                    e = new Pair(n_null);
-                    garbaging(e);
-                    abstractSyntaxTree(e, parse, index, quoting);
-                    courant->append(e);
-                }
-                break;
-            }
             case t_emptystring:
                 courant->append(delegation->_EMPTYSTRING);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case t_string:
                 e = provideConststring(parse.tokens[index]);
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case t_number:
@@ -1879,22 +1863,16 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 else
                     e = provideConstnumber(value);                
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case t_operator:
                 e = provideOperator(encode(parse.tokens[index]));
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case l_cadr:
                 e =  provideCADR(parse.tokens[index]);
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case c_colon:
@@ -1903,13 +1881,39 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     index++;
                     if (parse.types[index] == c_colon)
                         throw new Error("Error: wrong key/value separator in a dictionary");
-                    break;
                 }
+                else {
+                    e = provideAtom(encode(parse.tokens[index]));
+                    index++;
+                    courant->append(e);
+                }
+                break;
+            case c_point:
+                if (quoting) {
+                    index++;
+                    if (courant->size() == 0)
+                        throw new Error("Error: Wrong use of '.'");
+                    if (parse.types[index] == c_opening) {
+                        index++;
+                        syntaxTree(courant, parse, index, quoting);
+                    }
+                    else {
+                        syntaxTree(courant, parse, index, true);
+                        ((List*)courant)->liste.insert(0, provideAtom(l_conspoint));
+                    }
+                }
+                else {
+                    e = provideAtom(encode(parse.tokens[index]));
+                    index++;
+                    courant->append(e);
+                }
+                break;
             case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
+                index++;
                 if (!quoting && e->label() == l_quote) {
                     courant->append(e);
-                    quoting = true;
+                    abstractSyntaxTree(courant, parse, index, true);
                 }
                 else {
                     if (!quoting && courant->size() == 0) {
@@ -1919,35 +1923,31 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             else
                                 topfunction = 3;
                         }
-                        courant->append(e);
                     }
-                    else {
-                        courant->append(e);
-                        quoting = quoting && courant == quoted;
-                        courant = quoted;
-                    }
+                    courant->append(e);
                 }
-                index++;
                 break;
             case l_quote:
                 e = new Listincode(parse.lines[index], delegation->i_current_file);
+                index++;
                 garbaging(e);
                 e->append(provideAtom(l_quote));
                 courant->append(e);
-                courant = e;
-                quoting = true;
-                index++;
+                abstractSyntaxTree(e, parse, index, true);
+                if (e->size() != 2)
+                    throw new Error("Error: Wrong number of arguments for 'quote'");
                 break;
             default:
                 break;
         }
+        if (quoting == 1)
+            return delegation->_TRUE;
     }
     return delegation->_TRUE;
 }
 
-Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool quoting) {
+Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long quoting) {
     Element* e = NULL;
-    Element* quoted = courant;
     double value;
     char topfunction = false;
     int16_t lab = -1;
@@ -1956,6 +1956,8 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
         parse.current = index;
         switch (parse.types[index]) {
             case c_opening: {
+                if (quoting)
+                    quoting++;
                 lab = -1;
                 index++;
                 //Empty list
@@ -1966,17 +1968,23 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
                 else {
                     e = provideList();
                     syntaxTree(e, parse, index, quoting);
+                    if (quoting) {
+                        if (e->size() && e->index(0)->label() == l_conspoint) {
+                            Element* a = e->eval(this);
+                            garbaging(a);
+                            removefromgarbage(e);
+                            e = a;
+                        }
+                    }
                 }
                 
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
+                if (quoting)
+                    quoting--;
                 break;
             }
             case c_closing:
                 index++;
-                if (courant != quoted)
-                    throw new Error("Error: Dangling quote expression");
                 return delegation->_TRUE;
             case c_opening_brace: {
                 index++;
@@ -1990,8 +1998,6 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
                     e = dico.dictionary(this);
                 }
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 break;
             }
             case c_opening_data_brace: {
@@ -2006,8 +2012,6 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
                     e = dico.dictionary(this);
                 }
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 break;
             }
             case c_closing_brace:
@@ -2015,15 +2019,11 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
                 return delegation->_TRUE;
             case t_emptystring:
                 courant->append(delegation->_EMPTYSTRING);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case t_string:
                 e = provideConststring(parse.tokens[index]);
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case t_number:
@@ -2033,22 +2033,16 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
                 else
                     e = provideConstnumber(value);
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case t_operator:
                 e = provideOperator(encode(parse.tokens[index]));
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case l_cadr:
                 e =  provideCADR(parse.tokens[index]);
                 courant->append(e);
-                quoting = quoting && courant == quoted;
-                courant = quoted;
                 index++;
                 break;
             case c_colon:
@@ -2057,13 +2051,39 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
                     index++;
                     if (parse.types[index] == c_colon)
                         throw new Error("Error: wrong key/value separator in a dictionary");
-                    break;
                 }
+                else {
+                    e = provideAtom(encode(parse.tokens[index]));
+                    index++;
+                    courant->append(e);
+                }
+                break;
+            case c_point:
+                if (quoting) {
+                    index++;
+                    if (courant->size() == 0)
+                        throw new Error("Error: Wrong use of '.'");
+                    if (parse.types[index] == c_opening) {
+                        index++;
+                        syntaxTree(courant, parse, index, quoting);
+                    }
+                    else {
+                        syntaxTree(courant, parse, index, true);
+                        ((List*)courant)->liste.insert(0, provideAtom(l_conspoint));
+                    }
+                }
+                else {
+                    e = provideAtom(encode(parse.tokens[index]));
+                    index++;
+                    courant->append(e);
+                }
+                break;
             case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
+                index++;
                 if (!quoting && e->label() == l_quote) {
                     courant->append(e);
-                    quoting = true;
+                    syntaxTree(courant, parse, index, true);
                 }
                 else {
                     if (!quoting && courant->size() == 0) {
@@ -2073,27 +2093,24 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, bool
                             else
                                 topfunction = 3;
                         }
-                        courant->append(e);
                     }
-                    else {
-                        courant->append(e);
-                        quoting = quoting && courant == quoted;
-                        courant = quoted;
-                    }
+                    courant->append(e);
                 }
-                index++;
                 break;
             case l_quote:
                 e = provideList();
                 e->append(provideAtom(l_quote));
                 courant->append(e);
-                courant = e;
-                quoting = true;
                 index++;
+                syntaxTree(e, parse, index, true);
+                if (e->size() != 2)
+                    throw new Error("Error: Wrong number of arguments for 'quote'");
                 break;
             default:
                 break;
         }
+        if (quoting == 1)
+            return courant;
     }
     return courant;
 }

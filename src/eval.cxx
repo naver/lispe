@@ -5847,6 +5847,18 @@ Element* List::evall_cond(LispE* lisp) {
     return null_;
 }
 
+
+Element* List::evall_conspoint(LispE* lisp) {
+    LList* lst = new LList(&lisp->delegation->mark);
+    long i;
+    long sz = size() - 1;
+    for (i = 1; i < sz; i++)
+        lst->append(liste[i]);
+    lst->append_as_last(liste[i]);
+    return lst;
+    
+}
+
 Element* List::evall_cons(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (first_element == emptylist_)
@@ -5878,9 +5890,9 @@ Element* List::evall_cons(LispE* lisp) {
                     return third_element;
                 }
 
-                List* third_element = lisp->provideList();
+                LList* third_element = new LList(&lisp->delegation->mark);
                 third_element->append(first_element);
-                third_element->append(new Pair(second_element));
+                third_element->append_as_last(second_element);
                 return third_element;
             }
         }
@@ -5926,9 +5938,10 @@ Element* List::evall_consb(LispE* lisp) {
                     return second_element->insert(lisp, first_element, 0);
                 }
                 default:
-                    result = lisp->provideList();
+                    result = new LList(&lisp->delegation->mark);
                     result->append(first_element);
-                    result->append(new Pair(second_element));
+                    ((LList*)result)->append_as_last(second_element);
+                    return result;
             }
         }
         else {
@@ -6711,8 +6724,6 @@ Element* List::evall_at(LispE* lisp) {
         throw err;
     }
 
-    if (result->type == t_pair)
-        return result->eval(lisp);
     return result;
 }
 
