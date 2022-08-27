@@ -1265,7 +1265,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     }
 
     body = NULL;
-    auto& functions = lisp->delegation->method_pool[function_label];
+    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
     auto subfunction = functions.find(sublabel);
     if (subfunction == functions.end()) {
         sublabel = v_null;
@@ -6213,7 +6213,7 @@ Element* List::evall_bodies(LispE* lisp) {
         List* functions =  lisp->provideList();
         int16_t label = function->protected_index(lisp, (long)1)->label();
         try {
-            for (const auto& a: lisp->delegation->method_pool.at(label)) {
+            for (const auto& a: lisp->delegation->method_pool[lisp->current_space]->at(label)) {
                 for (const auto& b : a.second) {
                     functions->append(b);
                 }

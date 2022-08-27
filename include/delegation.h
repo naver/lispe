@@ -104,7 +104,8 @@ public:
     
     binHash<int16_t> data_ancestor;
     vecte<binHash<Element*>* > function_pool;
-    
+    vecte<unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > >* > method_pool;
+
     binHash<Element*> data_pool;
     
     binSet assignors;
@@ -125,7 +126,6 @@ public:
     binHash<int16_t> namespaces;
     unordered_map<u_ustring, int16_t> string_to_code;
     unordered_map<int16_t, vector<int16_t> > data_descendant;
-    unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > > method_pool;
 
     unordered_map<string, bool> libraries;
     unordered_map<string, long> allfiles;
@@ -581,7 +581,7 @@ public:
         //We need to extract the second label...
         
         try {
-            method_pool.at(label);
+            method_pool[space]->at(label);
         }
         catch (...) {
             //We record the first instance of a defpat declaration
@@ -591,11 +591,11 @@ public:
                 stack->recording(e, label);
         }
         
-        method_pool[label][sublabel].push_back(e);
+        (*method_pool[space])[label][sublabel].push_back(e);
         
         try {
             for (const auto& a: data_descendant.at(sublabel))
-                method_pool[label][a].push_back(e);
+                (*method_pool[space])[label][a].push_back(e);
         }
         catch (...) {}
         

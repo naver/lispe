@@ -118,6 +118,7 @@ Delegation::Delegation() {
 Delegation::~Delegation() {
     clean_get_handler(input_handler);
     function_pool.cleaning();
+    method_pool.cleaning();
     for (auto& a : thread_pool)
         a.second.clear();
 
