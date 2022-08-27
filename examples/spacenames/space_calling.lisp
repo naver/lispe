@@ -7,8 +7,21 @@
 (load (+ _current "space_called.lisp") truc)
 
 
-(space truc (calculus 20 40))
+(defun calculus (x y)
+   (- x y)
+)
+
+; We call the version in load 
+(println (space truc (calculus 20 40)))
+
+; We call the local version
+(println (calculus 20 40))
+
  
+
+
+ 
+
 
 
 
