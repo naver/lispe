@@ -1248,6 +1248,7 @@ public:
     Element* evall_deflibpat(LispE* lisp);
     Element* evall_defmacro(LispE* lisp);
     Element* evall_defpat(LispE* lisp);
+    Element* evall_defspace(LispE* lisp);
     Element* evall_defun(LispE* lisp);
     Element* evall_determinant(LispE* lisp);
     Element* evall_dictionary(LispE* lisp);
@@ -1409,6 +1410,7 @@ public:
     Element* evall_sort(LispE* lisp);
     Element* evall_stringp(LispE* lisp);
     Element* evall_strings(LispE* lisp);
+    Element* evall_space(LispE* lisp);
     Element* evall_sum(LispE* lisp);
     Element* evall_switch(LispE* lisp);
     Element* evall_tensor(LispE* lisp);

@@ -1077,6 +1077,30 @@ Element* List::composing(LispE* lisp, bool docompose) {
     return compose;
 }
 
+//------------------------------------------------------------
+void Listswitch::build(LispE* lisp) {
+    u_ustring key;
+    Element* e;
+    Element* v;
+    for (long i = 2; i < size(); i++) {
+        e = liste[i];
+        if (e->type != t_list || !e->size())
+            throw new Error("Error: wrong 'switch statement'");
+        
+        v = e->index(0);
+        if (v == true_)
+            default_value = (List*)e;
+        else {
+            if (v->isString() || v->isNumber()) {
+                key = v->asUString(lisp);
+                cases[key] = (List*)e;
+            }
+            else
+                throw new Error("Error: Unknown statement");
+        }
+    }
+}
+
 //--------------------------------------------------------------------------------
 Element* Atome::transformargument(LispE* lisp) {
     if (name.back() == '+' || name.back() == '*' || name.back() == '%') {

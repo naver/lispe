@@ -100,6 +100,7 @@ public:
     std::atomic<int16_t> nbjoined;
 
     long id_thread;
+    int16_t current_space;
     
     char trace;
     bool isThread;
@@ -109,6 +110,7 @@ public:
     bool clean_utf8;
     
     LispE(UTF8_Handler* hnd = NULL) {
+        current_space = 0;
         initpools();
         preparingthread = false;
         check_arity_on_fly = false;
@@ -694,8 +696,8 @@ public:
         int16_t sublabel = extractlabel(parameters, depth);
         depths[label] = std::max(depth, depths[label]);
         if (globalDeclaration())
-            return delegation->recordingMethod(NULL, e, label, sublabel);
-        return delegation->recordingMethod(execution_stack.back(), e, label, sublabel);
+            return delegation->recordingMethod(NULL, e, label, sublabel, current_space);
+        return delegation->recordingMethod(execution_stack.back(), e, label, sublabel, current_space);
     }
     
     inline Element* recordingData(Element* e, int16_t label, int16_t ancestor) {
@@ -902,7 +904,8 @@ public:
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
-        delegation->function_pool.search(label, &res) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
         unboundAtomError(label);
 
         return res;
@@ -913,7 +916,8 @@ public:
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
-        delegation->function_pool.search(label, &res) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
         unboundAtomError(label);
 
         return res;
@@ -924,7 +928,8 @@ public:
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
-        delegation->function_pool.search(label, &res) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
         delegation->data_pool.search(label, &res) ||
         unboundAtomError(label);
         
@@ -936,7 +941,7 @@ public:
     }
 
     inline bool checkFunctionLabel(int16_t label) {
-        return delegation->function_pool.check(label);
+        return delegation->function_pool[current_space]->check(label);
     }
     
 

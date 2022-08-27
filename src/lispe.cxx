@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.8.21.19.03";
+static std::string version = "1.2022.8.27.11.51";
 string LispVersion() {
     return version;
 }
@@ -49,8 +49,10 @@ List* Stackelement::atomes(LispE* lisp) {
     binHash<Element*>::iterator a;
     for (a = variables.begin(); a != variables.end(); a++)
         liste->append(lisp->provideAtom(a->first));
-    for (a = lisp->delegation->function_pool.begin(); a != lisp->delegation->function_pool.end(); a++)
-        liste->append(lisp->provideAtom(a->first));
+    for (long i = 0; i < lisp->delegation->function_pool.size(); i++) {
+        for (a = lisp->delegation->function_pool[i]->begin(); a != lisp->delegation->function_pool[i]->end(); a++)
+            liste->append(lisp->provideAtom(a->first));
+    }
     return liste;
 }
 //------------------------------------------------------------
@@ -70,27 +72,6 @@ static u_ustring U(string x) {
     return u;
 }
 //------------------------------------------------------------
-void Listswitch::build(LispE* lisp) {
-    u_ustring key;
-    for (long i = 2; i < size(); i++) {
-        if (liste[i]->type != t_list || !liste[i]->size())
-            throw new Error("Error: wrong 'switch statement'");
-        
-        if (liste[i]->index(0)->isString() || liste[i]->index(0)->isNumber()) {
-            key = liste[i]->index(0)->asUString(lisp);
-            cases[key] = (List*)liste[i];
-        }
-        else {
-            if (liste[i]->index(0) == true_) {
-                default_value = (List*)liste[i];
-            }
-            else
-                throw new Error("Error: Unknown statement");
-        }
-    }
-}
-
-//------------------------------------------------------------
 
 Delegation::Delegation() {
     mark = 0;
@@ -99,6 +80,8 @@ Delegation::Delegation() {
     display_string_function = &lispe_displaystring;
     reading_string_function_object = input_handler;
 
+    function_pool.push_back(new binHash<Element*>());
+    
     id_pool = 1;
     
     error_message = NULL;
@@ -136,6 +119,7 @@ Delegation::Delegation() {
 
 Delegation::~Delegation() {
     clean_get_handler(input_handler);
+    function_pool.cleaning();
     for (auto& a : thread_pool)
         a.second.clear();
 
@@ -251,6 +235,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_deflibpat, "deflibpat", P_THREE, &List::evall_deflibpat);
     set_instruction(l_defmacro, "defmacro", P_FOUR, &List::evall_defmacro);
     set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
+    set_instruction(l_defspace, "defspace", P_TWO, &List::evall_defspace);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTHREE, &List::evall_dictionary);
@@ -310,7 +295,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_listxor, "^^^", P_THREE, &List::evall_listxor);
     set_instruction(l_to_list, "to_list", P_TWO | P_THREE, &List::evall_to_list);
     set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist);
-    set_instruction(l_load, "load", P_TWO, &List::evall_load);
+    set_instruction(l_load, "load", P_TWO | P_THREE, &List::evall_load);
     set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock);
     set_instruction(l_loop, "loop", P_ATLEASTFOUR, &List::evall_loop);
     set_instruction(l_multiloop, "mloop", P_ATLEASTFOUR, &List::multiloop);
@@ -390,6 +375,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_size, "size", P_TWO, &List::evall_size);
     set_instruction(l_sleep, "sleep", P_TWO, &List::evall_sleep);
     set_instruction(l_sort, "sort", P_THREE, &List::evall_sort);
+    set_instruction(l_space, "space", P_ATLEASTTHREE, &List::evall_space);
     set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp);
     set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings);
     set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
@@ -973,6 +959,7 @@ void LispE::cleaning() {
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) {
+    current_space = 0;
     void_function = lisp->void_function;
     preparingthread = false;
     check_arity_on_fly = false;
@@ -1575,6 +1562,9 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             }
                             switch(lab) {
                                     //for defmacro and link, we evaluate these expressions on the fly
+                                case l_defspace:
+                                    current_space = 0;
+                                    continue;
                                 case l_lambda:
                                     e->eval(this);
                                     break;
@@ -1916,12 +1906,22 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     abstractSyntaxTree(courant, parse, index, true);
                 }
                 else {
-                    if (!quoting && courant->size() == 0) {
-                        if (e->type >= l_lambda && e->type <= l_defpat) {
-                            if (e->type == l_lambda)
-                                topfunction = 2;
-                            else
-                                topfunction = 3;
+                    if (!quoting) {
+                        if (courant->size() == 0) {
+                            if (e->type >= l_lambda && e->type <= l_defpat) {
+                                if (e->type == l_lambda)
+                                    topfunction = 2;
+                                else
+                                    topfunction = 3;
+                            }
+                        }
+                        else {
+                            if (courant->size() == 1 && courant->index(0)->label() == l_defspace) {
+                                //We create a new name space in function_pool
+                                courant->append(e);
+                                courant->eval(this);
+                                break;
+                            }
                         }
                     }
                     courant->append(e);
@@ -2548,6 +2548,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

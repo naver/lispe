@@ -103,7 +103,8 @@ public:
     binHashe<string> instructions;
     
     binHash<int16_t> data_ancestor;
-    binHash<Element*> function_pool;
+    vecte<binHash<Element*>* > function_pool;
+    
     binHash<Element*> data_pool;
     
     binSet assignors;
@@ -121,6 +122,7 @@ public:
     binSet number_types;
     
     //------------------------------------------
+    binHash<int16_t> namespaces;
     unordered_map<u_ustring, int16_t> string_to_code;
     unordered_map<int16_t, vector<int16_t> > data_descendant;
     unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > > method_pool;
@@ -566,15 +568,15 @@ public:
         }
     }
     
-    bool recordingFunction(Element* e, int16_t label) {
-        if (function_pool.check(label))
+    bool recordingFunction(Element* e, int16_t label, int16_t space) {
+        if (function_pool[space]->check(label))
             return false;
         
-        function_pool[label] = e;
+        (*function_pool[space])[label] = e;
         return true;
     }
     
-    inline Element* recordingMethod(Stackelement* stack, Element* e, int16_t label, int16_t sublabel) {
+    inline Element* recordingMethod(Stackelement* stack, Element* e, int16_t label, int16_t sublabel, int16_t space) {
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...
         
@@ -584,7 +586,7 @@ public:
         catch (...) {
             //We record the first instance of a defpat declaration
             if (stack == NULL)
-                recordingFunction(e, label);
+                recordingFunction(e, label, space);
             else
                 stack->recording(e, label);
         }

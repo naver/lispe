@@ -6092,7 +6092,7 @@ Element* List::evall_deflib(LispE* lisp) {
     if (!liste[2]->isList())
         throw new Error(L"Error: List of missing parameters in a function declaration");
     if (lisp->globalDeclaration()) {
-        if (!lisp->delegation->recordingFunction(this, label)) {
+        if (!lisp->delegation->recordingFunction(this, label, lisp->current_space)) {
             wstring nm =L"Error: Function '";
             nm += lisp->asString(label);
             nm += L"' already declared";
@@ -6152,6 +6152,39 @@ Element* List::evall_defpat(LispE* lisp) {
     return lisp->recordingMethod(this, label);
 }
 
+Element* List::evall_space(LispE* lisp) {
+    short label = liste[1]->label();
+    if (!lisp->delegation->namespaces.check(label)) {
+        u_ustring w = U"Error: Unknown space: ";
+        w += lisp->asUString(label);
+        throw new Error(w);
+    }
+    lisp->current_space = lisp->delegation->namespaces[label];
+    Element* r = null_;
+    for (long i = 2; i < liste.size(); i++) {
+        r->release();
+        r = liste[i]->eval(lisp);
+    }
+    lisp->current_space = 0;
+    return r;
+}
+
+Element* List::evall_defspace(LispE* lisp) {
+    int16_t label = liste[1]->label();
+    if (label < l_final)
+        throw new Error("Error: Cannot use this label to define a space");
+    
+    if (lisp->delegation->namespaces.check(label))
+        lisp->current_space = lisp->delegation->namespaces[label];
+    else {
+        lisp->current_space = lisp->delegation->function_pool.size();
+        lisp->delegation->function_pool.push_back(new binHash<Element*>());
+        lisp->delegation->namespaces[label] = lisp->current_space;
+    }
+    
+    return true_;
+}
+
 Element* List::evall_defun(LispE* lisp) {
     //if the function was created on the fly, we need to store its contents
     //in the garbage
@@ -6171,7 +6204,7 @@ Element* List::evall_defun(LispE* lisp) {
         throw new Error(L"Error: List of missing parameters in a function declaration");
 
     if (lisp->globalDeclaration()) {
-        if (!lisp->delegation->recordingFunction(this, label)) {
+        if (!lisp->delegation->recordingFunction(this, label, lisp->current_space)) {
             wstring nm =L"Error: Function '";
             nm += lisp->asString(label);
             nm += L"' already declared";
@@ -7942,7 +7975,24 @@ Element* List::evall_load(LispE* lisp) {
     Element* filename = liste[1]->eval(lisp);
     string name = filename->toString(lisp);
     filename->release();
-    return lisp->load(name);
+    if (liste.size() == 2)
+        return lisp->load(name);
+    
+    int16_t label = liste[2]->label();
+    if (label < l_final)
+        throw new Error("Error: Wrong space definition in load");
+    
+    if (lisp->delegation->namespaces.check(label))
+        lisp->current_space = lisp->delegation->namespaces[label];
+    else {
+        lisp->current_space = lisp->delegation->function_pool.size();
+        lisp->delegation->function_pool.push_back(new binHash<Element*>());
+        lisp->delegation->namespaces[label] = lisp->current_space;
+    }
+    
+    filename = lisp->load(name);
+    lisp->current_space = 0;
+    return filename;
 }
 
 
@@ -7952,7 +8002,7 @@ Element* List::evall_lock(LispE* lisp) {
 
     ThreadLock* _lock = lisp->delegation->getlock(key);
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     bool test = lisp->threaded();
     _lock->locking(test);
 
