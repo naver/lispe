@@ -6155,9 +6155,14 @@ Element* List::evall_defpat(LispE* lisp) {
 Element* List::evall_space(LispE* lisp) {
     short label = liste[1]->label();
     if (!lisp->delegation->namespaces.check(label)) {
-        u_ustring w = U"Error: Unknown space: ";
-        w += lisp->asUString(label);
-        throw new Error(w);
+        Element* e = liste[1]->eval(lisp);
+        label = e->label();
+        e->release();
+        if (!lisp->delegation->namespaces.check(label)) {
+            u_ustring w = U"Error: Unknown space: ";
+            w += lisp->asUString(label);
+            throw new Error(w);
+        }
     }
     
     int16_t current = lisp->current_space;
