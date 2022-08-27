@@ -877,6 +877,19 @@ public:
         return execution_stack.back()->variables.at(label);
     }
 
+    void create_name_space(int16_t label) {
+        if (label < l_final && label != v_mainspace)
+            throw new Error("Error: Cannot use this label to define a space");
+        
+        if (delegation->namespaces.check(label))
+            current_space = delegation->namespaces[label];
+        else {
+            current_space = delegation->function_pool.size();
+            delegation->function_pool.push_back(new binHash<Element*>());
+            delegation->namespaces[label] = current_space;
+        }
+    }
+    
     inline bool unboundAtomError(int16_t label) {
         u_ustring err = U"Error: Unbound atom: '";
         err += delegation->code_to_string[label];

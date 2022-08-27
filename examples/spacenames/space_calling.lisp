@@ -18,9 +18,13 @@
 (println (calculus 20 40))
 
  
+(space mainspace_ (calculus 100 20))
+
 
 
  
+
+
 
 
 

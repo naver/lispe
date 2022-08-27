@@ -6159,29 +6159,21 @@ Element* List::evall_space(LispE* lisp) {
         w += lisp->asUString(label);
         throw new Error(w);
     }
+    
+    int16_t current = lisp->current_space;
     lisp->current_space = lisp->delegation->namespaces[label];
     Element* r = null_;
     for (long i = 2; i < liste.size(); i++) {
         r->release();
         r = liste[i]->eval(lisp);
     }
-    lisp->current_space = 0;
+    lisp->current_space = current;
     return r;
 }
 
 Element* List::evall_defspace(LispE* lisp) {
     int16_t label = liste[1]->label();
-    if (label < l_final)
-        throw new Error("Error: Cannot use this label to define a space");
-    
-    if (lisp->delegation->namespaces.check(label))
-        lisp->current_space = lisp->delegation->namespaces[label];
-    else {
-        lisp->current_space = lisp->delegation->function_pool.size();
-        lisp->delegation->function_pool.push_back(new binHash<Element*>());
-        lisp->delegation->namespaces[label] = lisp->current_space;
-    }
-    
+    lisp->create_name_space(label);
     return true_;
 }
 
@@ -7979,17 +7971,7 @@ Element* List::evall_load(LispE* lisp) {
         return lisp->load(name);
     
     int16_t label = liste[2]->label();
-    if (label < l_final)
-        throw new Error("Error: Wrong space definition in load");
-    
-    if (lisp->delegation->namespaces.check(label))
-        lisp->current_space = lisp->delegation->namespaces[label];
-    else {
-        lisp->current_space = lisp->delegation->function_pool.size();
-        lisp->delegation->function_pool.push_back(new binHash<Element*>());
-        lisp->delegation->namespaces[label] = lisp->current_space;
-    }
-    
+    lisp->create_name_space(label);
     filename = lisp->load(name);
     lisp->current_space = 0;
     return filename;

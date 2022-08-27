@@ -78,9 +78,7 @@ Delegation::Delegation() {
     input_handler = get_jag_handler();
     reading_string_function = &lispe_readfromkeyboard;
     display_string_function = &lispe_displaystring;
-    reading_string_function_object = input_handler;
-
-    function_pool.push_back(new binHash<Element*>());
+    reading_string_function_object = input_handler;    
     
     id_pool = 1;
     
@@ -173,7 +171,7 @@ void Delegation::initialisation(LispE* lisp) {
     evals[t_data] = &List::evalt_data;
     evals[t_list] = &List::evalt_list;
 
-
+    lisp->create_name_space(v_mainspace);
 
     // Here is the predefined list of instructions, with their name and arity
     //Important the instruction is counted into the arity. Hence (consp e) is P_TWO.
@@ -582,6 +580,8 @@ void Delegation::initialisation(LispE* lisp) {
 
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
+    
+    code_to_string[v_mainspace] = U"mainspace_";
 
     
     code_to_string[c_opening] = U"(";

@@ -36,7 +36,7 @@ class ITEM;
 
 typedef enum {
     //Default values
-    v_null, v_emptylist, v_emptyatom, v_true,
+    v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, 
     
     //Default types
     t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number,
