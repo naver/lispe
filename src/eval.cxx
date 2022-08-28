@@ -9857,7 +9857,14 @@ Element* List::evall_use(LispE* lisp) {
     Element* lib_name = liste[1]->eval(lisp);
     string nom_bib = lib_name->toString(lisp);
     lib_name->release();
-    return lisp->load_library(nom_bib);
+    if (liste.size() == 2)
+        return lisp->load_library(nom_bib);
+
+    int16_t label = liste[2]->label();
+    lisp->create_name_space(label);
+    lib_name = lisp->load_library(nom_bib);
+    lisp->current_space = 0;
+    return lib_name;
 }
 
 

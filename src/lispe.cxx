@@ -391,7 +391,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger);
     set_instruction(l_type, "type", P_TWO, &List::evall_type);
     set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
-    set_instruction(l_use, "use", P_TWO, &List::evall_use);
+    set_instruction(l_use, "use", P_TWO | P_THREE, &List::evall_use);
     set_instruction(l_values, "values@", P_TWO, &List::evall_values);
     set_instruction(l_wait, "wait", P_ONE, &List::evall_wait);
     set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton);
