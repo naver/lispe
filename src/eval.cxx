@@ -6165,7 +6165,7 @@ Element* List::evall_space(LispE* lisp) {
         }
     }
     
-    int16_t current = lisp->current_space;
+    uint16_t current = lisp->current_space;
     lisp->current_space = lisp->delegation->namespaces[label];
     Element* r = null_;
     for (long i = 2; i < liste.size(); i++) {
@@ -7975,10 +7975,11 @@ Element* List::evall_load(LispE* lisp) {
     if (liste.size() == 2)
         return lisp->load(name);
     
+    uint16_t current = lisp->current_space;
     int16_t label = liste[2]->label();
     lisp->create_name_space(label);
     filename = lisp->load(name);
-    lisp->current_space = 0;
+    lisp->current_space = current;
     return filename;
 }
 
@@ -9860,10 +9861,11 @@ Element* List::evall_use(LispE* lisp) {
     if (liste.size() == 2)
         return lisp->load_library(nom_bib);
 
+    uint16_t current = lisp->current_space;
     int16_t label = liste[2]->label();
     lisp->create_name_space(label);
     lib_name = lisp->load_library(nom_bib);
-    lisp->current_space = 0;
+    lisp->current_space = current;
     return lib_name;
 }
 

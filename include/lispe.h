@@ -100,7 +100,7 @@ public:
     std::atomic<int16_t> nbjoined;
 
     long id_thread;
-    int16_t current_space;
+    uint16_t current_space;
     
     char trace;
     bool isThread;
@@ -880,10 +880,13 @@ public:
     void create_name_space(int16_t label) {
         if (label < l_final && label != v_mainspace)
             throw new Error("Error: Cannot use this label to define a space");
-        
+                
         if (delegation->namespaces.check(label))
             current_space = delegation->namespaces[label];
         else {
+            if (delegation->function_pool.size() > 65534)
+                throw new Error("Error: Maximum number of namespace reached");
+            
             current_space = delegation->function_pool.size();
             delegation->function_pool.push_back(new binHash<Element*>());
             delegation->method_pool.push_back(new unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > >());

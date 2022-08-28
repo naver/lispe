@@ -123,7 +123,7 @@ public:
     binSet number_types;
     
     //------------------------------------------
-    binHash<int16_t> namespaces;
+    binHash<uint16_t> namespaces;
     unordered_map<u_ustring, int16_t> string_to_code;
     unordered_map<int16_t, vector<int16_t> > data_descendant;
 
@@ -568,7 +568,7 @@ public:
         }
     }
     
-    bool recordingFunction(Element* e, int16_t label, int16_t space) {
+    bool recordingFunction(Element* e, int16_t label, uint16_t space) {
         if (function_pool[space]->check(label))
             return false;
         
@@ -576,7 +576,7 @@ public:
         return true;
     }
     
-    inline Element* recordingMethod(Stackelement* stack, Element* e, int16_t label, int16_t sublabel, int16_t space) {
+    inline Element* recordingMethod(Stackelement* stack, Element* e, int16_t label, int16_t sublabel, uint16_t space) {
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...
         

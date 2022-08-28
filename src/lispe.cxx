@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.8.27.11.51";
+static std::string version = "1.2022.8.28.14.12";
 string LispVersion() {
     return version;
 }
@@ -1536,6 +1536,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     e = delegation->_EMPTYLIST;
                 }
                 else {
+                    uint16_t currentspace = current_space;
                     bool equal_op_list = false;
                     e = new Listincode(parse.lines[index], delegation->i_current_file);
                     garbaging(e);
@@ -1564,7 +1565,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             switch(lab) {
                                     //for defmacro and link, we evaluate these expressions on the fly
                                 case l_defspace:
-                                    current_space = 0;
+                                    current_space = currentspace;
                                     continue;
                                 case l_lambda:
                                     e->eval(this);
@@ -2549,6 +2550,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
