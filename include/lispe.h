@@ -31,6 +31,8 @@ typedef int16_t (LispE::*checkBasicEval)(Listincode*);
 //------------------------------------------------------------
 string LispVersion();
 //------------------------------------------------------------
+#define the_char_max(x,y) (x < y)?y:x
+//------------------------------------------------------------
 // The main class to handle the Lisp Interpreter
 //------------------------------------------------------------
 
@@ -694,7 +696,7 @@ public:
         }
         char depth = 0;
         int16_t sublabel = extractlabel(parameters, depth);
-        depths[label] = std::max(depth, depths[label]);
+        depths[label] = the_char_max(depth, depths[label]);
         if (globalDeclaration())
             return delegation->recordingMethod(NULL, e, label, sublabel, current_space);
         return delegation->recordingMethod(execution_stack.back(), e, label, sublabel, current_space);
