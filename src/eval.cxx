@@ -38,7 +38,7 @@ void List::evalAsInteger(long i, LispE* lisp, long& d) {
 
 //------------------------------------------------------------------------------------------
 Element* eval_body_as_argument_min(LispE* lisp, Element* function) {
-    if (function->isOperator())
+    if (function->isInstruction())
         return function;
     
     if (function->isAtom())
