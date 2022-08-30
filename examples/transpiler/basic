@@ -1,0 +1,94 @@
+######################################
+# Grammar for the basic language
+######################################
+# The goal of this grammar is to build a tree in which each node has the rule name as label.
+# The rule name is the element before the := sign.
+# It can be preceded with some special characters.
+######################################
+# The ° in front of a rule defines the entry point of the grammar
+# The ! in front of a rule means that any %x or $xxx will only be tested and will not appear in the final tree.
+# The & in front of a rule means that the rule label will be inserted in the final tree if the number of elements is > 1
+# The ^ in front of a rule means that the tree item will not contain the rule label 
+######################################
+# Comments are introduced with a '#'
+######################################
+# The ^ is the "or" operator, it selects the appropriate value among different calls
+# % is used to check for a specific punctuation while $ checks for a specific string
+# [..] encloses a sequence of actions
+# We use: ? for optional values, * for zero or any values and + for at least one value
+######################################
+# Word, astring and anumber are declared outside the grammar (see compiler.lisp)
+# Word checks if a string is made of alphabetical or digits characters, starting with a character
+# astring checks if it is a string enclosed between ".."
+# anumber checks if it is a number
+######################################
+# Each rule is compiled into one or more LispE functions
+# ?,*,+ when used in a rule triggers the creation of a specific function starting with
+# ? : O_
+# * : S_
+# + : P_
+######################################
+
+# The ° indicates the entry point of the grammar (the top rule)
+°analyse := [function^expressions]+
+
+operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
+
+orand := $or^$and^$xor
+
+comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>
+
+comparison := computing comparator computing [orand comparison]*
+
+!minus := %- anumber
+
+# We have different types of variable:
+
+!setdimvariable :=  Word %[ computing %]
+!setdimvariablestring :=  Word %$ %[ computing %]
+
+!dimvariable := Word %[ computing %]
+!dimvariablestring := Word %$ %[ computing %]
+!stringvariable := Word %$
+variable := Word
+
+!variables := [stringvariable^variable] [%, [stringvariable^variable]]*
+
+!call := Word %( [computing [%, computing]*]? %)
+
+!method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
+
+!declaration := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
+
+!dim :=  $DIM Word %[ computing %]
+!dimstring :=  $DIM Word %$ %[ computing %]
+
+!parenthetic := %( computing %)
+
+# We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
+# It keeps the final tree flatter
+^callitem := method^call^parenthetic^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+
+# The & will skip the computing label if there is no operator
+&computing := callitem  [operator callitem]*
+
+# print 10+20, 30+40
+
+!multiop := Word computing [%, computing]*
+
+# We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
+^expressions := method^call^dimstring^dim^declaration^forin^for^if^while^multiop^computing
+
+!then := $Then expressions+
+!else := $Else expressions+
+
+!function := $Function Word %( variables? %) expressions+ $EndFunction
+
+!if := $If comparison then else? $EndIf
+!while := $While comparison expressions+ $EndWhile
+!forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
+!for := $For declaration %, comparison %, declaration expressions+ $EndFor
+
+
+
+
