@@ -29,6 +29,11 @@ EndFunction
 DIM D[100]
 DIM U$[100]
 
+e = 10 + 20 / 3
+println "e=",e
+e = 10 + (20 / 3)
+println "e=",e
+
 AZ = integers(1, 2, 3)
 AZ.push(100, 200, 300*-1)
 println AZ[2], AZ.size(), AZ, AZ[1].cos()
@@ -112,3 +117,4 @@ println "Fact:", fact(9)
 )
 ;(println (prettify lsp))
 (eval lsp)
+
