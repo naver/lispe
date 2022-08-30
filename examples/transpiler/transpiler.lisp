@@ -4,7 +4,7 @@
 
 (load (+ _current "basic.lisp"))
 
-(defpat parsing ( ['declaration $ d] )
+(defpat parsing ( ['assignment $ d] )
    (setq v (caar d))
    (switch (string v)
       ("setdimvariablestring" (list 'set@ (atom (+ (cadar d) "$")) (parsing (caddar d)) (list 'string (parsing (cdr d)))))
@@ -233,4 +233,5 @@
    )
    code
 )
+
 

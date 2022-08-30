@@ -1,4 +1,4 @@
-;Date: 2022/08/21 19:23:25
+;Date: 2022/08/30 14:28:20
 ;Description: Parser for basic description
 ;Generated with LispE Transpiler
 
@@ -519,8 +519,8 @@
    )
    true)
 
-;!declaration := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
-(defun C_declaration (tokens i0 v)
+;!assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
+(defun C_assignment (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
@@ -537,7 +537,7 @@
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
-         (push v (cons 'declaration v0))
+         (push v (cons 'assignment v0))
       )
    )
 )
@@ -694,7 +694,7 @@
    )
    true)
 
-;^expressions := method^call^dimstring^dim^declaration^forin^for^if^while^multiop^computing
+;^expressions := method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 (defun C_expressions (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -703,7 +703,7 @@
             (C_call tokens i0 v0)
             (C_dimstring tokens i0 v0)
             (C_dim tokens i0 v0)
-            (C_declaration tokens i0 v0)
+            (C_assignment tokens i0 v0)
             (C_forin tokens i0 v0)
             (C_for tokens i0 v0)
             (C_if tokens i0 v0)
@@ -936,7 +936,7 @@
    )
 )
 
-;!for := $For declaration %, comparison %, declaration expressions+ $EndFor
+;!for := $For assignment %, comparison %, assignment expressions+ $EndFor
 (defun C_for (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -944,11 +944,11 @@
             (setq i1 (clone i0))
             (setq v1 ())
             (compare tokens "For" i1 v1 nil)
-            (C_declaration tokens i1 v1)
+            (C_assignment tokens i1 v1)
             (compare tokens "," i1 v1 nil)
             (C_comparison tokens i1 v1)
             (compare tokens "," i1 v1 nil)
-            (C_declaration tokens i1 v1)
+            (C_assignment tokens i1 v1)
             (P_for_0 tokens i1 v1)
             (compare tokens "EndFor" i1 v1 nil)
             (set@ i0 0 (car i1))

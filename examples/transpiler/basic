@@ -58,7 +58,7 @@ variable := Word
 
 !method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
 
-!declaration := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
+!assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 
 !dim :=  $DIM Word %[ computing %]
 !dimstring :=  $DIM Word %$ %[ computing %]
@@ -77,7 +77,7 @@ variable := Word
 !multiop := Word computing [%, computing]*
 
 # We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
-^expressions := method^call^dimstring^dim^declaration^forin^for^if^while^multiop^computing
+^expressions := method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 
 !then := $Then expressions+
 !else := $Else expressions+
@@ -87,7 +87,8 @@ variable := Word
 !if := $If comparison then else? $EndIf
 !while := $While comparison expressions+ $EndWhile
 !forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
-!for := $For declaration %, comparison %, declaration expressions+ $EndFor
+!for := $For assignment %, comparison %, assignment expressions+ $EndFor
+
 
 
 
