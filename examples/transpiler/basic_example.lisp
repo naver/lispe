@@ -18,13 +18,13 @@ function appel(A, B)
 endfunction
 
 
-function fact(A)
-   If  A <> 1 then
-       A * fact(A - 1)
+function fact(a)
+   if a <> 1 then
+      a * fact(a-1)
    else
-        1
-   EndIf
-EndFunction
+      1
+   endif
+endfunction
 
 dim R[5,5,5]
 dim R$[5,5,5]
@@ -124,6 +124,7 @@ println "Fact:", fact(9)
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 
 
 
