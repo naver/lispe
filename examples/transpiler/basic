@@ -44,11 +44,13 @@ comparison := computing comparator computing [orand comparison]*
 
 # We have different types of variable:
 
-!setdimvariable :=  Word %[ computing %]
-!setdimvariablestring :=  Word %$ %[ computing %]
+!indexes := computing [%, computing]*
 
-!dimvariable := Word %[ computing %]
-!dimvariablestring := Word %$ %[ computing %]
+!setdimvariable :=  Word %[ indexes %]
+!setdimvariablestring :=  Word %$ %[ indexes %]
+
+!dimvariable := Word %[ indexes %]
+!dimvariablestring := Word %$ %[ indexes %]
 !stringvariable := Word %$
 variable := Word
 
@@ -60,8 +62,8 @@ variable := Word
 
 !assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 
-!dim :=  $DIM Word %[ computing %]
-!dimstring :=  $DIM Word %$ %[ computing %]
+!dim :=  $DIM Word %[ indexes %]
+!dimstring :=  $DIM Word %$ %[ indexes %]
 
 !parenthetic := %( computing %)
 
@@ -88,6 +90,7 @@ variable := Word
 !while := $While comparison expressions+ $EndWhile
 !forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
 !for := $For assignment %, comparison %, assignment expressions+ $EndFor
+
 
 
 

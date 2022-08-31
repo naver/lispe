@@ -1,4 +1,4 @@
-;Date: 2022/08/31 13:45:10
+;Date: 2022/08/31 14:28:56
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -258,7 +258,41 @@
    )
 )
 
-;!setdimvariable :=  Word %[ computing %]
+;!indexes := computing [%, computing]*
+(defun C_indexes (tokens i0 v)
+   (check (< (car i0) (size tokens))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (C_computing tokens i1 v1)
+            (S_indexes_0 tokens i1 v1)
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'indexes v0))
+      )
+   )
+)
+
+(defun S_indexes_0 (tokens i1 vp)
+   (setq v ())
+   (while (and
+         (setq i2 (clone i1))
+         (setq v2 ())
+         (compare tokens "," i2 v2 nil)
+         (C_computing tokens i2 v2)
+         (set@ i1 0 (car i2))
+         (setq v1 v2)
+      )
+      (nconc v v1)
+   )
+   (check v
+      (nconc vp v)
+   )
+   true)
+
+;!setdimvariable :=  Word %[ indexes %]
 (defun C_setdimvariable (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -267,7 +301,7 @@
             (setq v1 ())
             (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
-            (C_computing tokens i1 v1)
+            (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)
@@ -277,7 +311,7 @@
    )
 )
 
-;!setdimvariablestring :=  Word %$ %[ computing %]
+;!setdimvariablestring :=  Word %$ %[ indexes %]
 (defun C_setdimvariablestring (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -287,7 +321,7 @@
             (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
-            (C_computing tokens i1 v1)
+            (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)
@@ -300,7 +334,7 @@
    )
 )
 
-;!dimvariable := Word %[ computing %]
+;!dimvariable := Word %[ indexes %]
 (defun C_dimvariable (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -309,7 +343,7 @@
             (setq v1 ())
             (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
-            (C_computing tokens i1 v1)
+            (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)
@@ -319,7 +353,7 @@
    )
 )
 
-;!dimvariablestring := Word %$ %[ computing %]
+;!dimvariablestring := Word %$ %[ indexes %]
 (defun C_dimvariablestring (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -329,7 +363,7 @@
             (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
-            (C_computing tokens i1 v1)
+            (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)
@@ -542,7 +576,7 @@
    )
 )
 
-;!dim :=  $DIM Word %[ computing %]
+;!dim :=  $DIM Word %[ indexes %]
 (defun C_dim (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -552,7 +586,7 @@
             (compare tokens "DIM" i1 v1 nil)
             (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
-            (C_computing tokens i1 v1)
+            (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)
@@ -562,7 +596,7 @@
    )
 )
 
-;!dimstring :=  $DIM Word %$ %[ computing %]
+;!dimstring :=  $DIM Word %$ %[ indexes %]
 (defun C_dimstring (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -573,7 +607,7 @@
             (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
-            (C_computing tokens i1 v1)
+            (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)

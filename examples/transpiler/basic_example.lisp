@@ -26,8 +26,14 @@ Function fact(A)
    EndIf
 EndFunction
 
+DIM R[5,5,5]
+DIM R$[5,5,5]
 DIM D[100]
 DIM U$[100]
+
+R = range(0, 125,1)
+R[1,1,1] = 100
+println "R[0,1]=", R[0,1]
 
 e = 10 + 20 / 3
 println "e=",e
@@ -117,4 +123,5 @@ println "Fact:", fact(9)
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 

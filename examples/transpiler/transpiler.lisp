@@ -4,37 +4,80 @@
 
 (load (+ _current "basic.lisp"))
 
+; shapes records the dimensions of a given variables
+(setq shapes (dictionary))
+
+(defun checkshape (n idx values)
+   (if (key shapes n)
+      (nconcn (list 'set@@@ (atom n) (list 'quote (@ shapes n))) idx (list values))
+      (nconcn '(set@) (atom n) idx (list values))
+   )
+)
+
 ; We use pattern matching to parse the abstract syntax tree
 
 ; For an assignment, we can have different types of variables as input
 (defpat parsing ( ['assignment $ d] )
    (setq v (caar d))
    (switch (string v)
-      ("setdimvariablestring" (list 'set@ (atom (+ (cadar d) "$")) (parsing (caddar d)) (list 'string (parsing (cdr d)))))
-      ("setdimvariable" (list 'set@ (atom (cadar d)) (parsing (caddar d)) (list 'number (parsing (cdr d)))))
+      ("setdimvariablestring" (checkshape (+ (cadar d) "$") (parsing (caddar d)) (list 'string (parsing (cdr d)))))
+      ("setdimvariable" (checkshape (cadar d) (parsing (caddar d)) (list 'number (parsing (cdr d)))))
       ("stringvariable" (list 'setq (parsing (car d)) (list 'string (parsing  (cdr d)))))
       ("variable" (list 'setq (parsing (car d)) (parsing  (cdr d))))
    )
 )
 
+; Indexes  10, 20, 30
+(defpat parsing (['indexes $ d] )
+   (maplist 'parsing d)
+)
+
 ; a DIM variable definition: DIM TST[10, 20]
 (defpat parsing (['dim  n $ d] )
-   (list 'setq (atom n) (list 'numbers (list 'to_list 0 (parsing d))))
+   (setq r (parsing d))
+   (ife (eq (size r) 1)
+      (list 'setq (atom n) (list 'numbers (nconcn '(to_list) 0 r)))
+      ;else we have a list of values
+      (set@ shapes n r)
+      (list 'setq (atom n) (list 'numbers (list 'to_list 0 (nconcn  '(*) r))))
+   )
 )
 
 ; a DIM string variable definition: DIM TST$[10]
 (defpat parsing (['dimstring  n $ d] )
-   (list 'setq (atom (+ n "$")) (list 'strings (list 'to_list "" (parsing d))))
+   (setq r (parsing d))
+   (ife (eq (size r) 1)
+      (list 'setq (atom (+ n "$")) (list 'strings (nconcn '(to_list) "" r)))
+      (set@ shapes (+ n "$") r)
+      (list 'setq (atom (+ n "$")) (list 'strings (list 'to_list "" (nconcn '(*) r))))
+   )
 )
 
 ; a dim string variable with indexes: v$[10]
 (defpat parsing ( ['dimvariablestring n  $ d] )
-   (list 'string (list 'at (atom (+ n "$")) (parsing d)))
+   (setq r (parsing d))
+   (if (eq (size r) 1)
+      (list 'string (nconcn '(at) (atom (+ n "$")) r))
+      (ncheck (key shapes n)
+         (throw (+ "Wrong dimension for: " n))
+         (if (eq (size n) (size (key shapes n)))
+            (list 'string (nconcn (list 'atshape (atom (+ n "$")) (list 'quote (@ shapes n))) r))
+            (nconcn (list 'atshape (atom (+ n "$")) (list 'quote (@ shapes n))) r)
+         )
+      )
+   )
 )
 
 ; a dim variable with indexes: v$[10]
 (defpat parsing ( ['dimvariable n  $ d] )
-   (list 'at (atom n) (parsing d))
+   (setq r (parsing d))
+   (if (eq (size r) 1)
+      (nconcn '(at) (atom n) r)
+      (ncheck (key shapes n)
+         (throw (+ "Wrong dimension for: " n))
+         (nconcn (list 'atshape (atom n) (list 'quote (@ shapes n))) r)
+      )
+   )
 )
 
 ; a simple variable
@@ -248,6 +291,7 @@
 
    ; __root__ is a special function that defines the top block of a LispE program
    (setq code '(__root__))
+   (push code '(trace true))
 
    (ife (in (car abstract_tree) "Error")
       (setq code (list 'println (join abstract_tree " ")))
@@ -258,6 +302,4 @@
    )
    code
 )
-
-
 
