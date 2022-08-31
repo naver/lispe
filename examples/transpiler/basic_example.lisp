@@ -34,7 +34,7 @@ DIM U$[100]
 R = range(0, 125,1)
 R[1,1,1] = 100
 println "R[0,1]=", R[0,1]
-println "R[1,1,3]=", R[1,1,3]
+println "R[1,1,13]=", R[1,5,4]
 
 e = 10 + 20 / 3
 println "e=",e
@@ -124,5 +124,7 @@ println "Fact:", fact(9)
 )
 ;(println (prettify lsp))
 (eval lsp)
+
+
 
 
