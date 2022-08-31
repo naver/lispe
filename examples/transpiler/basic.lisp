@@ -1,4 +1,4 @@
-;Date: 2022/08/30 14:28:20
+;Date: 2022/08/31 11:30:26
 ;Description: Parser for basic description
 ;Generated with LispE Transpiler
 
@@ -982,7 +982,7 @@
    
 (setq parser_tok (tokenizer_rules))
 
-(defun retire (rg base)
+(defun remove_rule (rg base)
     (loop i (range 0 (size rg) 1)
        (setq x (@ rg i))
        (check (in x base)
@@ -998,10 +998,12 @@
 (set@ rg 1 "\t+=#")
 (set@ rg 2 "\n+=#")
 
-(retire rg "===0")
-(retire rg "<==0")
-(retire rg ">==0")
-(retire rg "<>=0")
+; Our tokenizer for Basic instructions prevents <> == <= and >= to be one token
+; We remove the rules
+(remove_rule rg "===0")
+(remove_rule rg "<==0")
+(remove_rule rg ">==0")
+(remove_rule rg "<>=0")
 
 (set_tokenizer_rules parser_tok rg)
 
