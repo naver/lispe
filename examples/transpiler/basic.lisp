@@ -1,4 +1,4 @@
-;Date: 2022/08/31 14:28:56
+;Date: 2022/08/31 17:59:27
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -6,7 +6,7 @@
    (check 
       (and
          (< (car i) (size tokens))      
-         (eq (@ tokens (car i)) value)
+         (eq (lower (@ tokens (car i))) (lower value))
       )
       (+= i 1)
       (if keep
@@ -1011,7 +1011,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("or" "and" "xor" "DIM" "Then" "Else" "Function" "EndFunction" "If" "EndIf" "While" "EndWhile" "For" "in" "EndFor") w))
+      (not (in  '("or" "and" "xor" "dim" "then" "else" "function" "endfunction" "if" "endif" "while" "endwhile" "for" "in" "endfor") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))

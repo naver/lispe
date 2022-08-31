@@ -6,30 +6,30 @@
 
 (setq code 
    `
-Function appel(A, B)
+function appel(A, B)
    I = 20
-   If A == B Then
+   if A == B then
       I = I + 100
-   Else
+   else
       I = I + A * B
       println "Appel:", I
-   EndIf
+   endIf
    return I
-EndFunction
+endfunction
 
 
-Function fact(A)
-   If  A <> 1 Then
+function fact(A)
+   If  A <> 1 then
        A * fact(A - 1)
-   Else
+   else
         1
    EndIf
 EndFunction
 
-DIM R[5,5,5]
-DIM R$[5,5,5]
-DIM D[100]
-DIM U$[100]
+dim R[5,5,5]
+dim R$[5,5,5]
+dim D[100]
+dim U$[100]
 
 R = range(0, 125,1)
 R[1,1,1] = 100
@@ -78,14 +78,14 @@ println "Cos:", cos(10)
 
 println("Valeurs:", A + 100 , C$, D[10], U$[10])
 
-If A + 12 <> 11 or B == 30 or E == 101 Then
+if A + 12 <> 11 or B == 30 or E == 101 then
    A = A + 1
    C$ = C$ + ": Alors"
    println "Then:", A, C$
-Else
+else
    B = B - A
    println "Else:", B
-EndIf
+endif
 
 A = 100
 
@@ -95,17 +95,17 @@ While A > 10
 EndWhile
 
 println()
-For A = 0, A < 10 , A = A + 1 
+for A = 0, A < 10 , A = A + 1 
    print "A=", A, " -> "
-   For B = 0, B <= 10, B = B + 2
+   for B = 0, B <= 10, B = B + 2
        println "A + B=", A, B, (A + B), " "
-   EndFor
-EndFor
+   endfor
+endfor
 
-For A in range(1,10,1)
+for A in range(1,10,1)
     println "A in:", A
     println "We loop"
-EndFor
+endfor
 
 println()
 println "Ici:", appel(10,10)
