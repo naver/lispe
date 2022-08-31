@@ -1,6 +1,6 @@
-;Date: 2022/08/31 11:30:26
+;Date: 2022/08/31 13:45:10
 ;Description: Parser for basic description
-;Generated with LispE Transpiler
+;Generated with compiler.lisp
 
 (defun compare (tokens value i v keep)
    (check 

@@ -134,7 +134,7 @@
 ; Our initial program with the out of grammar function implemenations
 (setq the_code `;Date: %2
 ;Description: Parser for %1 description
-;Generated with LispE Transpiler
+;Generated with compiler.lisp
 
 (defun compare (tokens value i v keep)
    (check 
@@ -265,13 +265,16 @@
 
 (setq the_code (format the_code grammar (date)))
 (loop r grammar_rules
-   
+
+   (println r)
+
    ; The most cryptic line of the whole code
    ; We first tokenize then we replace %( %) etc... with their code
    ; Then we join again then apply to_list to this string   
    ; Hence, we are sure that every token will be distinctely separated from the others
    ; In particular, the disjunction operator is isolated with this process
    ; We then apply to_list, which transforms the [...] into sublists.
+
    (setq a_rule (to_list (join  (protecting (tokenize_rules tok r)) " ")))
 
    (setq entrypoint false) ; for °
@@ -284,7 +287,6 @@
       (setq a_rule (cdr a_rule))
    )
 
-   (println a_rule)
    (check (eq (car a_rule) '^)
       (setq build false)
       (setq a_rule (cdr a_rule))
