@@ -65,7 +65,6 @@
 ; the comparison operator
 ; It can be made out of two pieces: == or <> or <= or >=
 (defpat parsing ( ['comparator $ d] )
-   (println 'Comp d)
    (setq a (join (maplist 'parsing d false) ""))
    (switch a
       ("<>" 'neq)
