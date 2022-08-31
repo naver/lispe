@@ -1,6 +1,6 @@
 ;Date: 06/08/2022
 ;Author: Claude Roux
-;Description: Indentation Python
+;Description: We add a end# when an indented structure ends
 
 (setq code (split (fread (+ _current "descent.py")) "\n"))
 
@@ -79,4 +79,5 @@
    (println r)
 )
 (println i)
+
 
