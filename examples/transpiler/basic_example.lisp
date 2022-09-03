@@ -112,6 +112,10 @@ println "Ici:", appel(10,10)
 println "Là:", appel(10,10+40)
 
 println "Fact:", fact(9)
+
+kdata = data 10, 20, 30, 40, 50, "A", "B", "C" endData
+println kdata
+
 `
 )
 
@@ -124,6 +128,7 @@ println "Fact:", fact(9)
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 
 
 
