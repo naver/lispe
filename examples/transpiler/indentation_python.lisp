@@ -2,7 +2,6 @@
 ;Author: Claude Roux
 ;Description: We add a end# when an indented structure ends
 
-(setq code (split (fread (+ _current "descent.py")) "\n"))
 
 (defmacro espace(x) (size (takelist (\(c) (eq c " ")) x)))
 (defmacro inc(i) (+= (@ i 0) 1))
@@ -71,13 +70,13 @@
    )
 )
 
+
+(setq code (split (fread (+ _current "descent.py")) "\n"))
+
 (setq v ())
-(setq i '(0))
-(insert_label code i v)
+(insert_label code '(0) v)
 
 (loop r v
    (println r)
 )
-(println i)
-
 
