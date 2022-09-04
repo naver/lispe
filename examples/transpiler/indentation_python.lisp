@@ -7,7 +7,7 @@
 (defmacro espace(x) (size (takelist (\(c) (eq c " ")) x)))
 (defmacro inc(i) (+= (@ i 0) 1))
 
-(defun skip(i v)
+(defun skip(code i v)
    (setq ligne (@ code (car i)))
    (check 
       (or
@@ -37,16 +37,16 @@
    ligne
 )
 
-(defun insert_label (i v)
+(defun insert_label (code i v)
    (check (< (car i) (size code))
-      (setq ligne (skip i v))
+      (setq ligne (skip code i v))
       (setq cpt (espace ligne))
       (push v ligne)
       (setq ref cpt)
       (inc i)
       (setq colon 0)
       (while (< (car i) (size code))
-         (setq ligne (skip i v))
+         (setq ligne (skip code i v))
          (if (eq (last (trim ligne)) ":")
             (+= colon 1)
          )
@@ -60,7 +60,7 @@
                (push v ligne)
             )
             (true               
-               (insert_label i v)
+               (insert_label code i v)
                (check colon
                   (push v (+ (join (to_list " " ref) "") "end#"))
                   (-= colon 1)
@@ -73,7 +73,7 @@
 
 (setq v ())
 (setq i '(0))
-(insert_label i v)
+(insert_label code i v)
 
 (loop r v
    (println r)
