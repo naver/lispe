@@ -1,5 +1,5 @@
 ######################################
-# Grammar for the basic language
+# Grammaire pour la version française de Basic.
 ######################################
 # The goal of this grammar is to build a tree in which each node has the rule name as label.
 # The rule name is the element before the := sign.
