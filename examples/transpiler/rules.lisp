@@ -16,7 +16,7 @@
 (set@ rg 0 " +=#")
 
 ; We insert a new rule (neu) before a given rule (base)
-(defun remplace (base neu)
+(defun insert_rule (base neu)
    (loop i (range 0 (size rg) 1)
       (setq x (@ rg i))
       (check (in x base)
@@ -28,12 +28,13 @@
 
 ; We create a rule so that a % followed with any characters is a token
 ; Note that % is also the escape character in this formalism, hence the %% in the rule
-(remplace "%=0" "%%.=0")
+(insert_rule "%=0" "%%.=0")
 
 ;We also add a rule to concatenate a $ with any sequence of characters: $TEST
-(remplace "$=0" "$~{%S %p %o}+=0")
+(insert_rule "$=0" "$~{%S %p %o}+=0")
 
 (set_tokenizer_rules tok rg)
+
 
 
 

@@ -80,6 +80,11 @@
    )
 )
 
+; A list of data: data 10, 20, 30 enddata
+(defpat parsing ( ['data $ d] )
+   (list 'quote (maplist 'parsing d false))   
+)
+
 ; a simple variable
 (defpat parsing ( ['variable d] )
    (atom d)
@@ -302,4 +307,5 @@
    )
    code
 )
+
 

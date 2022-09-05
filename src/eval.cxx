@@ -6820,7 +6820,7 @@ Element* List::evall_at_shape(LispE* lisp) {
         if (!shape->isList() || !shape_size || shape_size < instruction_size - 3)
             throw new Error("Error: Expecting a list with enough values to match the indexes as second argument");
         
-        long i;
+        long i, begin;
 
         if (shape->type == t_integers)
             shapes = (Integers*)shape;
@@ -6842,8 +6842,13 @@ Element* List::evall_at_shape(LispE* lisp) {
                 i -= 3;
                 break;
             }
+            else {
+                begin = shapes->liste[i - 3];
+                if (index >= begin)
+                    throw new Error("Error: index mismatch with shape");
+            }
             idx += index*cumul;
-            cumul *= shapes->liste[i - 3];
+            cumul *= begin;
         }
 
         instruction_size -= 3;
@@ -6854,7 +6859,7 @@ Element* List::evall_at_shape(LispE* lisp) {
             //First we need to detect if -1 is in the middle of a structure...
             cumul = 1;
             long value_size;
-            long begin = 0;
+            begin = 0;
             for (index = 0; index < i; index++) {
                 evalAsInteger(index + 3, lisp, value_size);
                 if (value_size < 0)
@@ -6970,7 +6975,7 @@ Element* List::evall_set_shape(LispE* lisp) {
 
         //The user might have provided a list of indexes
         //which we use to traverse a complex hierarchical structure...
-        long i;
+        long i, sh;
         long index = 0;
         long idx = 0;
         long cumul = 1;
@@ -6979,8 +6984,12 @@ Element* List::evall_set_shape(LispE* lisp) {
             evalAsInteger(i, lisp, index);
             if (index < 0)
                 throw new Error("Error: cannot modify this value");
+            sh = shape->index(i - 3)->asInteger();
+            if (index >= sh)
+                throw new Error("Error: index mismatch with shape");
+            
             idx += index*cumul;
-            cumul *= shape->index(i - 3)->asInteger();
+            cumul *= sh;
         }
             
         instruction_size -= 4;

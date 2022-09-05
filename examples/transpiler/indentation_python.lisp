@@ -2,12 +2,11 @@
 ;Author: Claude Roux
 ;Description: We add a end# when an indented structure ends
 
-(setq code (split (fread (+ _current "descent.py")) "\n"))
 
 (defmacro espace(x) (size (takelist (\(c) (eq c " ")) x)))
 (defmacro inc(i) (+= (@ i 0) 1))
 
-(defun skip(i v)
+(defun skip(code i v)
    (setq ligne (@ code (car i)))
    (check 
       (or
@@ -37,18 +36,18 @@
    ligne
 )
 
-(defun parcours (i v)
+(defun insert_label (code i v)
    (check (< (car i) (size code))
-      (setq ligne (skip i v))
+      (setq ligne (skip code i v))
       (setq cpt (espace ligne))
       (push v ligne)
       (setq ref cpt)
       (inc i)
-      (setq deuxpoints 0)
+      (setq colon 0)
       (while (< (car i) (size code))
-         (setq ligne (skip i v))
+         (setq ligne (skip code i v))
          (if (eq (last (trim ligne)) ":")
-            (+= deuxpoints 1)
+            (+= colon 1)
          )
          (setq cpt (espace ligne))  
          (cond
@@ -60,10 +59,10 @@
                (push v ligne)
             )
             (true               
-               (parcours i v)
-               (check deuxpoints
+               (insert_label code i v)
+               (check colon
                   (push v (+ (join (to_list " " ref) "") "end#"))
-                  (-= deuxpoints 1)
+                  (-= colon 1)
                )
             )
          )
@@ -71,13 +70,13 @@
    )
 )
 
+
+(setq code (split (fread (+ _current "descent.py")) "\n"))
+
 (setq v ())
-(setq i '(0))
-(parcours i v)
+(insert_label code '(0) v)
 
 (loop r v
    (println r)
 )
-(println i)
-
 

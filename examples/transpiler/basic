@@ -67,9 +67,11 @@ variable := Word
 
 !parenthetic := %( computing %)
 
+!data := $data computing [%, computing]* $enddata
+
 # We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
 # It keeps the final tree flatter
-^callitem := method^call^parenthetic^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+^callitem := method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 
 # The & will skip the computing label if there is no operator
 &computing := callitem  [operator callitem]*
@@ -90,6 +92,7 @@ variable := Word
 !while := $While comparison expressions+ $EndWhile
 !forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
 !for := $For assignment %, comparison %, assignment expressions+ $EndFor
+
 
 
 

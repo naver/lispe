@@ -122,7 +122,7 @@
       )
       (block 
          (check (eq (@ val 0) "$")
-            (push keywords (@@ val 1 0))
+            (push keywords (lower (@@ val 1 0)))
          )
          (list 'compare 'tokens (@@ val 1 0) var (results idx) keep)
       )
@@ -140,7 +140,7 @@
    (check 
       (and
          (< (car i) (size tokens))      
-         (eq (@ tokens (car i)) value)
+         (eq (lower (@ tokens (car i))) (lower value))
       )
       (+= i 1)
       (if keep
@@ -354,7 +354,7 @@
 
 (setq nokeyword `
 (defun nokeywords(w)
-      (not (in  '%1 w))
+      (not (in  '%1 (lower w)))
 )
    `
 )
@@ -409,4 +409,5 @@
 
 ; We check if the code is well-formed LispE program.
 (eval the_code)
+
 

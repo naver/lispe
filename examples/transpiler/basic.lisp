@@ -1,4 +1,4 @@
-;Date: 2022/08/31 14:28:56
+;Date: 2022/09/03 17:06:27
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -6,7 +6,7 @@
    (check 
       (and
          (< (car i) (size tokens))      
-         (eq (@ tokens (car i)) value)
+         (eq (lower (@ tokens (car i))) (lower value))
       )
       (+= i 1)
       (if keep
@@ -635,7 +635,43 @@
    )
 )
 
-;^callitem := method^call^parenthetic^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+;!data := $data computing [%, computing]* $enddata
+(defun C_data (tokens i0 v)
+   (check (< (car i0) (size tokens))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (compare tokens "data" i1 v1 nil)
+            (C_computing tokens i1 v1)
+            (S_data_0 tokens i1 v1)
+            (compare tokens "enddata" i1 v1 nil)
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'data v0))
+      )
+   )
+)
+
+(defun S_data_0 (tokens i1 vp)
+   (setq v ())
+   (while (and
+         (setq i2 (clone i1))
+         (setq v2 ())
+         (compare tokens "," i2 v2 nil)
+         (C_computing tokens i2 v2)
+         (set@ i1 0 (car i2))
+         (setq v1 v2)
+      )
+      (nconc v v1)
+   )
+   (check v
+      (nconc vp v)
+   )
+   true)
+
+;^callitem := method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 (defun C_callitem (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -643,6 +679,7 @@
             (C_method tokens i0 v0)
             (C_call tokens i0 v0)
             (C_parenthetic tokens i0 v0)
+            (C_data tokens i0 v0)
             (C_astring tokens i0 v0)
             (C_minus tokens i0 v0)
             (C_anumber tokens i0 v0)
@@ -1011,7 +1048,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("or" "and" "xor" "DIM" "Then" "Else" "Function" "EndFunction" "If" "EndIf" "While" "EndWhile" "For" "in" "EndFor") w))
+      (not (in  '("or" "and" "xor" "dim" "data" "enddata" "then" "else" "function" "endfunction" "if" "endif" "while" "endwhile" "for" "in" "endfor") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))
