@@ -1,4 +1,4 @@
-;Date: 2022/09/05 15:09:49
+;Date: 2022/09/06 10:40:25
 ;Description: Parser for basicois description
 ;Generated with compiler.lisp
 
@@ -95,6 +95,15 @@
    )
 )
 
+(link "affiche" 'print)
+(link "afficheln" 'println)
+(link "renvoie" 'return)
+(link "interval" 'range)
+(link "entiers" 'integers)
+(link "empile" 'push)
+(link "ou" 'or)
+(link "et" 'and)
+(link "xou" 'xor)
 ;operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
 (defun C_operator (tokens i0 v)
    (check (< (car i0) (size tokens))
@@ -635,7 +644,50 @@
    )
 )
 
-;^callitem := method^call^parenthetic^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+;!data := $données computing [%, computing]* $findonnées
+(defun C_data (tokens i0 v)
+   (check (< (car i0) (size tokens))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (compare tokens "données" i1 v1 nil)
+            (C_computing tokens i1 v1)
+            (S_data_0 tokens i1 v1)
+            (
+               compare
+               tokens
+               "findonnées"
+               i1
+               v1
+               nil
+            )
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'data v0))
+      )
+   )
+)
+
+(defun S_data_0 (tokens i1 vp)
+   (setq v ())
+   (while (and
+         (setq i2 (clone i1))
+         (setq v2 ())
+         (compare tokens "," i2 v2 nil)
+         (C_computing tokens i2 v2)
+         (set@ i1 0 (car i2))
+         (setq v1 v2)
+      )
+      (nconc v v1)
+   )
+   (check v
+      (nconc vp v)
+   )
+   true)
+
+;^callitem := method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 (defun C_callitem (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -643,6 +695,7 @@
             (C_method tokens i0 v0)
             (C_call tokens i0 v0)
             (C_parenthetic tokens i0 v0)
+            (C_data tokens i0 v0)
             (C_astring tokens i0 v0)
             (C_minus tokens i0 v0)
             (C_anumber tokens i0 v0)
@@ -1021,7 +1074,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("ou" "et" "xou" "dim" "alors" "sinon" "fonction" "finfonction" "si" "finsi" "tantque" "tant" "que" "fintantque" "pour" "dans" "finpour") (lower w)))
+      (not (in  '("ou" "et" "xou" "dim" "données" "findonnées" "alors" "sinon" "fonction" "finfonction" "si" "finsi" "tantque" "tant" "que" "fintantque" "pour" "dans" "finpour") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))
@@ -1051,7 +1104,7 @@
 
 (set_tokenizer_rules parser_tok rg)
 
-(defun basicois_abstract_tree (code)
+(defun abstract_tree (code)
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))

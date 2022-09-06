@@ -1,4 +1,4 @@
-;Date: 2022/09/03 17:06:27
+;Date: 2022/09/06 10:40:18
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -1078,7 +1078,7 @@
 
 (set_tokenizer_rules parser_tok rg)
 
-(defun basic_abstract_tree (code)
+(defun abstract_tree (code)
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))

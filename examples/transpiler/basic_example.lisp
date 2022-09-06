@@ -2,17 +2,18 @@
 ;Author: 
 ;Description: 
 
+(load (+ _current "basic.lisp")) 
 (load (+ _current "transpiler.lisp"))
 
 (setq code 
    `
-function appel(A, B)
+function mycall(A, B)
    I = 20
    if A == B then
       I = I + 100
    else
       I = I + A * B
-      println "Appel:", I
+      println "Call:", I
    endIf
    return I
 endfunction
@@ -49,23 +50,23 @@ A12 = -9.987
 A = 100
 B = 30
 E = 3
-C$ = "Chaine de test"
+C$ = "Test String"
 
-U$[10] = "test de dim de strings"
+U$[10] = "test of dim of strings"
 D[10] = -1 + A - B + 10
 
 A12 =  -1 * B
 
 If A12 < 0 Then
-   println "Négatif:", A12
+   println "Negative:", A12
    A12 = A12 * -1
-   println "A12 vaut:", A12
+   println "A12 is:", A12
 EndIf
 
 If A12 > 0 Then
-   println "Positif enfin:", A12
+   println "Positive:", A12
 Else
-   println "Toujours négatif:", A12
+   println "Negative:", A12
 EndIf
 
 A = A + (100 * B) + 20
@@ -108,8 +109,8 @@ for A in range(1,10,1)
 endfor
 
 println()
-println "Ici:", appel(10,10)
-println "Là:", appel(10,10+40)
+println "Here:", mycall(10,10)
+println "There:", mycall(10,10+40)
 
 println "Fact:", fact(9)
 
@@ -119,15 +120,16 @@ println kdata
 `
 )
 
-(setq tree (basic_abstract_tree code))
+;(setq tree (abstract_tree code))
 
-(println 'temps
+(println 'time
    (elapse
       (setq lsp (transpile code))
    )
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 
 
 

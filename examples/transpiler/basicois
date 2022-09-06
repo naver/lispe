@@ -1,5 +1,7 @@
 ######################################
 # Grammaire pour la version française de Basic.
+# Note that the only thing that was modified is the keywords, which are translated in French
+# We DO not modified the rules and their heads, which are the same as in basic
 ######################################
 # The goal of this grammar is to build a tree in which each node has the rule name as label.
 # The rule name is the element before the := sign.
@@ -31,6 +33,22 @@
 
 # The ° indicates the entry point of the grammar (the top rule)
 °analyse := [function^expressions]+
+
+# Some basic equivalences.
+# We will be able to use affiche instead of print in code
+@affiche := print
+@afficheln := println
+@renvoie := return
+@interval := range
+@entiers := integers
+@empile := push
+
+# As ou, et, xou are directly embedded as function calls
+# We need some equivalence as well
+@ou := or
+@et := and
+@xou := xor
+
 
 operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
 
@@ -67,9 +85,11 @@ variable := Word
 
 !parenthetic := %( computing %)
 
+!data := $données computing [%, computing]* $findonnées
+
 # We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
 # It keeps the final tree flatter
-^callitem := method^call^parenthetic^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+^callitem := method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 
 # The & will skip the computing label if there is no operator
 &computing := callitem  [operator callitem]*
@@ -90,3 +110,4 @@ variable := Word
 !while := [$tantque^[$tant $que]] comparison expressions+ $FinTantQue
 !forin := $Pour [stringvariable^variable] $dans callitem expressions+ $FinPour
 !for := $Pour assignment %, comparison %, assignment expressions+ $FinPour
+

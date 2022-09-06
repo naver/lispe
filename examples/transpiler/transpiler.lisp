@@ -2,8 +2,6 @@
 ;Author: Claude Roux
 ;Description: Execute Basic
 
-(load (+ _current "basic.lisp"))
-
 ; shapes records the dimensions of a given variables
 (setq shapes (dictionary))
 
@@ -292,20 +290,21 @@
 
 (defun transpile (code)
    ; Transpiling into LispE
-   (setq abstract_tree (basic_abstract_tree code))
+   (setq tree (abstract_tree code))
 
    ; __root__ is a special function that defines the top block of a LispE program
    (setq code '(__root__))
    (push code '(trace true))
 
-   (ife (in (car abstract_tree) "Error")
-      (setq code (list 'println (join abstract_tree " ")))
-      (loop line (cdr abstract_tree)
+   (ife (in (car tree) "Error")
+      (setq code (list 'println (join tree " ")))
+      (loop line (cdr tree)
          (setq c (parsing line))
          (push code c)
       )
    )
    code
 )
+
 
 

@@ -6,6 +6,10 @@
 (load (+ _current "rules.lisp"))
 
 ; Our grammar is called basic
+; Note that this variable is also used to access the corresponding file
+; To compile a different grammar, you need to modify this name for your own purpose
+; For instance, you can recompile basicois, if you replace basic with it
+;(setq grammar "basicois")
 (setq grammar "basic")
 
 ; We read our grammar file
@@ -276,79 +280,81 @@
    ; We then apply to_list, which transforms the [...] into sublists.
 
    (setq a_rule (to_list (join  (protecting (tokenize_rules tok r)) " ")))
+   (ife (eq (car a_rule) '@)
+      (+= the_code (format `(link "%1" '%2)` (cadr a_rule) (caddddr a_rule) ) "\n")
+      (setq entrypoint false) ; for °
+      (setq build true) ; for ^
+      (setg keep true) ; for !
+      (setq dontskip true) ; for &
 
-   (setq entrypoint false) ; for °
-   (setq build true) ; for ^
-   (setg keep true) ; for !
-   (setq dontskip true) ; for &
+      (check (eq (car a_rule) '°)
+         (setq entrypoint true)
+         (setq a_rule (cdr a_rule))
+      )
 
-   (check (eq (car a_rule) '°)
-      (setq entrypoint true)
-      (setq a_rule (cdr a_rule))
-   )
+      (check (eq (car a_rule) '^)
+         (setq build false)
+         (setq a_rule (cdr a_rule))
+      )
 
-   (check (eq (car a_rule) '^)
-      (setq build false)
-      (setq a_rule (cdr a_rule))
-   )
+      (check (eq (car a_rule) '!)
+         (setg keep nil)
+         (setq a_rule (cdr a_rule))
+      )
 
-   (check (eq (car a_rule) '!)
-      (setg keep nil)
-      (setq a_rule (cdr a_rule))
-   )
+      (check (eq (car a_rule) '&)
+         (setq dontskip false)
+         (setq a_rule (cdr a_rule))
+      )
 
-   (check (eq (car a_rule) '&)
-      (setq dontskip false)
-      (setq a_rule (cdr a_rule))
-   )
-
-   ; This rule_name, which the head of rule, will be used to create a LispE function with this as a name
-   (setq rule_name (car a_rule))
-   (setq corps (transpiling (cdddr a_rule) 0))
-   (setq corps
-      (list 'defun (atom (+ "C_" rule_name)) '(tokens i0 v)
-         (list 'check '(< (car i0) (size tokens))
-            (list 'setq 'v0 ())
-            (list 'if corps
-               (if entrypoint
-                  (list 'cons (list 'quote rule_name) 'v0)
-                  (if build
-                     (ife dontskip
-                        (list 'push 'v (list 'cons (list 'quote rule_name) 'v0))
-                        (list 'if
-                           (list 'eq (list 'size 'v0) 1)
-                           (list 'nconc 'v 'v0)
+      ; This rule_name, which the head of rule, will be used to create a LispE function with this as a name
+      (setq rule_name (car a_rule))
+      (setq corps (transpiling (cdddr a_rule) 0))
+      (setq corps
+         (list 'defun (atom (+ "C_" rule_name)) '(tokens i0 v)
+            (list 'check '(< (car i0) (size tokens))
+               (list 'setq 'v0 ())
+               (list 'if corps
+                  (if entrypoint
+                     (list 'cons (list 'quote rule_name) 'v0)
+                     (if build
+                        (ife dontskip
                            (list 'push 'v (list 'cons (list 'quote rule_name) 'v0))
+                           (list 'if
+                              (list 'eq (list 'size 'v0) 1)
+                              (list 'nconc 'v 'v0)
+                              (list 'push 'v (list 'cons (list 'quote rule_name) 'v0))
+                           )
                         )
+                        (list 'nconc 'v 'v0)
                      )
-                     (list 'nconc 'v 'v0)
                   )
                )
             )
          )
       )
-   )
-   (if entrypoint
-      (+= the_code (+ ";" r " (entry point)\n"))
-      (+= the_code (+ ";" r "\n"))
-   )
-   (+= the_code (prettify corps 40) "\n")
-   ; If there are some functions created for ?+* then we create their body here
-   ; Using the above patterns.   
-   (check functions
-      (loop f functions
-         (setq idx (caadr f))
-         (setq val (cadadr f))
-         (setq tst (caddadr f))
-         (setq func "")
-         (switch (@ (string (car f)) 0)
-            ("O" (setq func (format opt_func (car f) tst val idx)))
-            ("P" (setq func (format plus_func (car f) tst val idx)))
-            ("S" (setq func (format star_func (car f) tst val idx)))
-         )         
-         (+= the_code (prettify (car (to_list func))) "\n")
+      (if entrypoint
+         (+= the_code (+ ";" r " (entry point)\n"))
+         (+= the_code (+ ";" r "\n"))
       )
-      (setq functions ())
+      (+= the_code (prettify corps 40) "\n")
+      ; If there are some functions created for ?+* then we create their body here
+      ; Using the above patterns.   
+      (check functions
+         (loop f functions
+            (setq idx (caadr f))
+            (setq val (cadadr f))
+            (setq tst (caddadr f))
+            (setq func "")
+            (switch (@ (string (car f)) 0)
+               ("O" (setq func (format opt_func (car f) tst val idx)))
+               ("P" (setq func (format plus_func (car f) tst val idx)))
+               ("S" (setq func (format star_func (car f) tst val idx)))
+            )         
+            (+= the_code (prettify (car (to_list func))) "\n")
+         )
+         (setq functions ())
+      )
    )
 )
 
@@ -389,7 +395,7 @@
 
 (set_tokenizer_rules parser_tok rg)
 
-(defun %1_abstract_tree (code)
+(defun abstract_tree (code)
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))
@@ -404,11 +410,10 @@
 
 ; This line creates an entry point  for our grammar transpiling
 ; In our case, it will implement the function: basic_abstract_tree
-(+= the_code (format func grammar))
+(+= the_code func)
 (fwrite (+ _current (+ grammar ".lisp")) (prettify the_code))
 
 ; We check if the code is well-formed LispE program.
 (eval the_code)
-
 
 
