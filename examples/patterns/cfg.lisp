@@ -6,13 +6,16 @@
    `S : NP VP
    PP : PREP NNP
    NP : DET NOUN PP
+   NP : DET ADJ NOUN
    NNP : DET NLOC
+   NNP : DET ADJ NLOC
    VP : VERB NP
    DET : "the"  "a" "this" "that"
    NOUN : "cat"  "dog"  "bat" "man" "woman" "child" "puppy"
    NLOC : "house" "barn" "flat" "city" "country"
    VERB : "eats"  "chases"  "bites" "sees"
    PREP : "of" "from"
+   ADJ : "big" "small" "blue" "red" "yellow" "petite"
    `
 )
 
@@ -35,7 +38,10 @@
 )
 
 (defpat build( [n ":" $ r] d)
-   (key d n r)
+   (if (key d n)
+      (push (key d n) r)
+      (key d n (list r))
+   )
 )
 
 (defun compile(r)
@@ -66,7 +72,10 @@
 ; We go down our list to find a terminal POS (starting with a "%")
 (defpat generate([POS $ current_pos] tree)
    (setq r (key grammar POS))
-   (generate (nconcn () r current_pos) tree)
+   (if (consp r)
+      (generate (nconcn () (random_choice 1 r 10) current_pos) tree)
+      (generate (nconcn () r current_pos) tree)
+   )
 )  
 
 ; All has been generated
@@ -104,7 +113,10 @@
       (push tree POS)
       (println tree)
    )
-   (match (nconcn () r current_pos) s tree consume)
+   (if (consp r)
+      (match (nconcn (car r) current_pos) s tree consume)
+      (match (nconcn () r current_pos) s tree consume)
+   )
 )
 
 ; We have consumed all elements from current_pos
@@ -114,7 +126,7 @@
 (defun parse (s POS tree) 
    (setq r (key grammar POS))
    (push tree POS)
-   (match r s tree ())
+   (match (car r) s tree ())
 )
 
 (defun analyse(sentence)
@@ -126,5 +138,4 @@
 
 ; we start with an incomplete sequence of words
 (analyse "a cat of this")
-
 
