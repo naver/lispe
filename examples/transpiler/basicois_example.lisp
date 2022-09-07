@@ -124,6 +124,9 @@ finsi
 
 afficheln réel("199") + 20.98
 
+contenu = liref(_current + "basicois")
+afficheln contenu.extraire(0, 1000)
+
 `
 )
 
