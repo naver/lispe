@@ -18,7 +18,6 @@ fonction appel(A, B)
    renvoie I
 finfonction
 
-
 fonction fact(a)
    si a <> 1 alors
       a * fact(a-1)
@@ -53,7 +52,7 @@ E = 3
 C$ = "Chaine de test"
 
 U$[10] = "test de dim de strings"
-D[10] = -1 + A - B + 10
+D[10] = -1 + A + B + 10
 
 A12 =  -1 * B
 
