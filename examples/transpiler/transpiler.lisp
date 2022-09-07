@@ -298,7 +298,6 @@
 
    ; __root__ is a special function that defines the top block of a LispE program
    (setq code '(__root__))
-   (push code '(trace true))
 
    (ife (in (car tree) "Error")
       (setq code (list 'println (join tree " ")))
