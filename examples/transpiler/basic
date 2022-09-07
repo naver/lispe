@@ -36,7 +36,7 @@ operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
 
 orand := $or^$and^$xor
 
-comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>
+comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$in
 
 comparison := computing comparator computing [orand comparison]*
 
@@ -92,6 +92,7 @@ variable := Word
 !while := $While comparison expressions+ $EndWhile
 !forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
 !for := $For assignment %, comparison %, assignment expressions+ $EndFor
+
 
 
 

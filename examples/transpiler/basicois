@@ -42,6 +42,7 @@
 @interval := range
 @entiers := integers
 @empile := push
+@dans := in
 
 # As ou, et, xou are directly embedded as function calls
 # We need some equivalence as well
@@ -54,7 +55,7 @@ operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
 
 orand := $ou^$et^$xou
 
-comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>
+comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$dans
 
 comparison := computing comparator computing [orand comparison]*
 
@@ -110,4 +111,5 @@ variable := Word
 !while := [$tantque^[$tant $que]] comparison expressions+ $FinTantQue
 !forin := $Pour [stringvariable^variable] $dans callitem expressions+ $FinPour
 !for := $Pour assignment %, comparison %, assignment expressions+ $FinPour
+
 

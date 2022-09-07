@@ -117,6 +117,12 @@ println "Fact:", fact(9)
 kdata = data 10, 20, 30, 40, 50, "A", "B", "C" endData
 println kdata
 
+if "ab" in "abc" then
+   println "Yes"
+else
+   println "No"
+endif
+
 `
 )
 
@@ -129,6 +135,7 @@ println kdata
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 
 
 

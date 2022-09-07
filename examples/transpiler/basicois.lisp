@@ -1,4 +1,4 @@
-;Date: 2022/09/06 10:40:25
+;Date: 2022/09/07 15:09:17
 ;Description: Parser for basicois description
 ;Generated with compiler.lisp
 
@@ -101,6 +101,7 @@
 (link "interval" 'range)
 (link "entiers" 'integers)
 (link "empile" 'push)
+(link "dans" 'in)
 (link "ou" 'or)
 (link "et" 'and)
 (link "xou" 'xor)
@@ -169,7 +170,7 @@
    )
 )
 
-;comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>
+;comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$dans
 (defun C_comparator (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -208,6 +209,7 @@
             )
             (compare tokens "<" i0 v0 true)
             (compare tokens ">" i0 v0 true)
+            (compare tokens "dans" i0 v0 true)
          )
          (push v (cons 'comparator v0))
       )
@@ -1074,7 +1076,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("ou" "et" "xou" "dim" "données" "findonnées" "alors" "sinon" "fonction" "finfonction" "si" "finsi" "tantque" "tant" "que" "fintantque" "pour" "dans" "finpour") (lower w)))
+      (not (in  '("ou" "et" "xou" "dans" "dim" "données" "findonnées" "alors" "sinon" "fonction" "finfonction" "si" "finsi" "tantque" "tant" "que" "fintantque" "pour" "finpour") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))

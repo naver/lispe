@@ -240,7 +240,11 @@
 
 ; a comparison: A < 10 or B > 10 and C <> 8
 (defpat parsing ( ['comparison a1 op a2 $ d] )
-   (setq res (list (parsing op) (parsing a1) (parsing a2)))
+   (setq op (parsing op))
+   (if (eq op 'in)
+      (setq res (list op (parsing a2) (parsing a1)))
+      (setq res (list op (parsing a1) (parsing a2)))
+   )
    (check d
       (setq orand (atom (parsing (car d))))
       (setq reste (parsing (cadr d)))
@@ -305,6 +309,4 @@
    )
    code
 )
-
-
 

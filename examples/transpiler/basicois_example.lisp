@@ -117,6 +117,12 @@ afficheln "Fact:", fact(9)
 kdonnées = données 10, 20, 30, 40, 50, "A", "B", "C" findonnées
 afficheln kdonnées
 
+si "ab" dans "abc" alors
+   afficheln "Oui"
+sinon
+   afficheln "Non"
+finsi
+
 `
 )
 
@@ -129,4 +135,5 @@ afficheln kdonnées
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 

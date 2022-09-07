@@ -1,4 +1,4 @@
-;Date: 2022/09/06 10:40:18
+;Date: 2022/09/07 15:09:14
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -160,7 +160,7 @@
    )
 )
 
-;comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>
+;comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$in
 (defun C_comparator (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -199,6 +199,7 @@
             )
             (compare tokens "<" i0 v0 true)
             (compare tokens ">" i0 v0 true)
+            (compare tokens "in" i0 v0 true)
          )
          (push v (cons 'comparator v0))
       )
@@ -1048,7 +1049,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("or" "and" "xor" "dim" "data" "enddata" "then" "else" "function" "endfunction" "if" "endif" "while" "endwhile" "for" "in" "endfor") (lower w)))
+      (not (in  '("or" "and" "xor" "in" "dim" "data" "enddata" "then" "else" "function" "endfunction" "if" "endif" "while" "endwhile" "for" "endfor") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))
