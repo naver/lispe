@@ -40,8 +40,18 @@
 @afficheln := println
 @renvoie := return
 @interval := range
-@entiers := integers
 @empile := push
+@dépile := pop
+@taille := size
+@liref := fread
+@écriref := fwrite
+
+@entiers := integers
+@réels := numbers
+@chaines := strings
+@entier := integer
+@réel := number
+@chaine := string
 
 # As dans, ou, et, xou are directly embedded as function calls
 # We need some equivalence as well
@@ -111,5 +121,4 @@ variable := Word
 !while := [$tantque^[$tant $que]] comparison expressions+ $FinTantQue
 !forin := $Pour [stringvariable^variable] $dans callitem expressions+ $FinPour
 !for := $Pour assignment %, comparison %, assignment expressions+ $FinPour
-
 

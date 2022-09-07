@@ -1,4 +1,4 @@
-;Date: 2022/09/07 15:09:14
+;Date: 2022/09/07 15:22:53
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 

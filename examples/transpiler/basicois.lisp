@@ -1,4 +1,4 @@
-;Date: 2022/09/07 15:09:17
+;Date: 2022/09/07 15:28:58
 ;Description: Parser for basicois description
 ;Generated with compiler.lisp
 
@@ -99,8 +99,17 @@
 (link "afficheln" 'println)
 (link "renvoie" 'return)
 (link "interval" 'range)
-(link "entiers" 'integers)
 (link "empile" 'push)
+(link "dépile" 'pop)
+(link "taille" 'size)
+(link "liref" 'fread)
+(link "écriref" 'fwrite)
+(link "entiers" 'integers)
+(link "réels" 'numbers)
+(link "chaines" 'strings)
+(link "entier" 'integer)
+(link "réel" 'number)
+(link "chaine" 'string)
 (link "dans" 'in)
 (link "ou" 'or)
 (link "et" 'and)

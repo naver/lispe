@@ -44,7 +44,7 @@ afficheln "e=",e
 
 AZ = entiers(1, 2, 3)
 AZ.empile(100, 200, 300*-1)
-afficheln AZ[2], AZ.size(), AZ, AZ[1].cos()
+afficheln AZ[2], AZ.taille(), AZ, AZ[1].cos()
 
 A12 = -9.987
 A = 100
@@ -73,7 +73,7 @@ A = A + (100 * B) + 20
 
 B = sin(E) + A
 
-afficheln "C:", C$.size()
+afficheln "C:", C$.taille()
 
 afficheln "Cos:", cos(10)
 
@@ -115,13 +115,15 @@ afficheln "Là:", appel(10,10+40)
 afficheln "Fact:", fact(9)
 
 kdonnées = données 10, 20, 30, 40, 50, "A", "B", "C" findonnées
-afficheln kdonnées
+afficheln kdonnées, kdonnées[5], kdonnées.taille()
 
 si "ab" dans "abc" alors
    afficheln "Oui"
 sinon
    afficheln "Non"
 finsi
+
+afficheln réel("199") + 20.98
 
 `
 )
