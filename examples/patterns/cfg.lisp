@@ -5,6 +5,7 @@
 (setq current_poss 
    `S : NP VP
    PP : PREP NNP
+   NP : DET NOUN
    NP : DET NOUN PP
    NP : DET ADJ NOUN
    NNP : DET NLOC
@@ -63,9 +64,8 @@
 ; Note that we randomly select a potential word from within the grammar
 (defpat generate( [terminal current_pos] tree)
    (setq rg (random_choice 1 (key grammar (car current_pos)) 10))
-   (nconc tree rg)
    ; we proceed with the rest of the current_pos elements
-   (generate (cdr current_pos) tree)
+   (generate (cdr current_pos) (nconc tree rg))
 )
 
 ; Generation from a POS
@@ -73,13 +73,13 @@
 (defpat generate([POS $ current_pos] tree)
    (setq r (key grammar POS))
    (if (consp r)
-      (generate (nconcn () (random_choice 1 r 10) current_pos) tree)
-      (generate (nconcn () r current_pos) tree)
+      (generate (nconcn (random_choice 1 r 10) current_pos) tree)
+      (generate (nconc (list r) current_pos) tree)
    )
 )  
 
 ; All has been generated
-(defpat generate ([] tree) (push tree "%%") )
+(defpat generate ([] tree) (nconc tree "%%") )
 
 ; If the first element in current_pos is a terminal element
 ; then we check if the word exists in the grammar
@@ -98,9 +98,7 @@
 ; according to the available rules.
 (defpat match ( [terminal current_pos]  [] tree consume)   
    ; this symbol "*" indicates where the word list starts in the final tree
-   (push tree "*")   
-   (nconc tree (reverse consume))   
-   (generate current_pos tree)
+   (generate current_pos (nconcn tree "*" (reverse consume)))
 )
 
 ; We check the first POS from current_pos
@@ -108,34 +106,35 @@
 ; Otherwise, we take the rule and replace the current POS
 ; with its rule description.
 (defpat match ( [POS $ current_pos] s tree consume)
-   (setq r (key grammar POS))
-   (if (consp r)
-      (push tree POS)
-      (println tree)
-   )
-   (if (consp r)
-      (match (nconcn (car r) current_pos) s tree consume)
-      (match (nconcn () r current_pos) s tree consume)
+   (setq R (key grammar POS))
+   (ncheck (consp R)
+      (match (nconcn (list R) current_pos) s tree consume)
+      (loop r R
+         (setq  poslst (match (nconcn r current_pos) s (nconcn tree POS) consume))
+         (if poslst
+            (return poslst)
+         )
+      )
    )
 )
 
 ; We have consumed all elements from current_pos
-(defpat match ([] [] tree consume) (push tree "$$") )
+(defpat match ([] [] tree consume) 
+   (nconcn tree "$$") 
+)
 
 ; POS is the first rule we start our analysis with
 (defun parse (s POS tree) 
    (setq r (key grammar POS))
-   (push tree POS)
-   (match (car r) s tree ())
+   (match (car r) s (nconcn tree POS) ())
 )
 
 (defun analyse(sentence)
-   (setq tree ())
-   (parse (tokenize sentence) "S" tree)
+   (setq tree (parse (tokenize sentence) "S" ()))
    (println 'Tree tree)
    (@@ tree - "*" -1)
 )
 
 ; we start with an incomplete sequence of words
-(analyse "a cat of this")
+(analyse "a cat")
 

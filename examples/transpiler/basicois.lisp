@@ -1,6 +1,11 @@
-;Date: 2022/09/07 16:05:48
+;Date: 2022/09/08 16:01:39
 ;Description: Parser for basicois description
 ;Generated with compiler.lisp
+
+(defun C_comment(tokens i v)
+   (println 'commentaire (@@ tokens (car i) (+ 10 (car i))))
+   (+= i 1)
+)
 
 (defun compare (tokens value i v keep)
    (check 
@@ -699,11 +704,12 @@
    )
    true)
 
-;^callitem := method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+;^callitem := lambda^method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 (defun C_callitem (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (or
+            (C_λ tokens i0 v0)
             (C_method tokens i0 v0)
             (C_call tokens i0 v0)
             (C_parenthetic tokens i0 v0)
@@ -758,6 +764,72 @@
    )
    true)
 
+;body := expressions+
+(defun C_body (tokens i0 v)
+   (check (< (car i0) (size tokens))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (P_body_0 tokens i1 v1)
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'body v0))
+      )
+   )
+)
+
+(defun P_body_0 (tokens i1 vp)
+   (setq v ())
+   (setq v1 ())
+   (check (C_expressions tokens i1 v1)
+      (push v v1)
+      (setq v1 ())
+      (while (C_expressions tokens i1 v1)
+         (nconc v v1)
+         (setq v1 ())
+      )
+   )
+   (if v
+      (nconc vp v)
+   )
+)
+
+;!arguments := computing [%, computing]*
+(defun C_arguments (tokens i0 v)
+   (check (< (car i0) (size tokens))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (C_computing tokens i1 v1)
+            (S_arguments_0 tokens i1 v1)
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'arguments v0))
+      )
+   )
+)
+
+(defun S_arguments_0 (tokens i1 vp)
+   (setq v ())
+   (while (and
+         (setq i2 (clone i1))
+         (setq v2 ())
+         (compare tokens "," i2 v2 nil)
+         (C_computing tokens i2 v2)
+         (set@ i1 0 (car i2))
+         (setq v1 v2)
+      )
+      (nconc v v1)
+   )
+   (check v
+      (nconc vp v)
+   )
+   true)
+
 ;!multiop := Word computing [%, computing]*
 (defun C_multiop (tokens i0 v)
    (check (< (car i0) (size tokens))
@@ -793,11 +865,12 @@
    )
    true)
 
-;^expressions := method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
+;^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 (defun C_expressions (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (or
+            (C_λ tokens i0 v0)
             (C_method tokens i0 v0)
             (C_call tokens i0 v0)
             (C_dimstring tokens i0 v0)
@@ -932,6 +1005,37 @@
       (nconc vp v)
    )
 )
+
+;!lambda := %[ %( variables? %) body %] %( arguments %)
+(defun C_λ (tokens i0 v)
+   (check (< (car i0) (size tokens))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (compare tokens "[" i1 v1 nil)
+            (compare tokens "(" i1 v1 nil)
+            (O_λ_0 tokens i1 v1)
+            (compare tokens ")" i1 v1 nil)
+            (C_body tokens i1 v1)
+            (compare tokens "]" i1 v1 nil)
+            (compare tokens "(" i1 v1 nil)
+            (C_arguments tokens i1 v1)
+            (compare tokens ")" i1 v1 nil)
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'λ v0))
+      )
+   )
+)
+
+(defun O_λ_0 (tokens i1 vp)
+   (setq v1 ())
+   (check (C_variables tokens i1 v1)
+      (nconc vp v1)
+   )
+   true)
 
 ;!if := $Si comparison then else? $FinSi
 (defun C_if (tokens i0 v)
@@ -1101,6 +1205,17 @@
    )
 )
 
+; We insert a new rule (neu) before a given rule (base)
+(defun inserting_rule (base neu)
+   (loop i (range 0 (size rg) 1)
+      (setq x (@ rg i))
+      (check (in x base)
+         (insert rg neu i)
+         (break)
+      )
+   )
+)
+
 (setq rg (get_tokenizer_rules parser_tok))
 
 (set@ rg 0 " +=#")
@@ -1117,6 +1232,8 @@
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
+   (setq comments (rgx_findall (rgx ";?+%r") code))
+   (maplist (\(x) (setq code (replace code x ""))) comments)
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))

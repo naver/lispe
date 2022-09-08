@@ -10,7 +10,7 @@
 ; To compile a different grammar, you need to modify this name for your own purpose
 ; For instance, you can recompile basicois, if you replace basic with it
 ;(setq grammar "basicois")
-(setq grammar "basic")
+(setq grammar "basicois")
 
 ; We read our grammar file
 (setq grammaire (fread (+ _current grammar)))
@@ -139,6 +139,11 @@
 (setq the_code `;Date: %2
 ;Description: Parser for %1 description
 ;Generated with compiler.lisp
+
+(defun C_comment(tokens i v)
+   (println 'commentaire (@@ tokens (car i) (+ 10 (car i))))
+   (+= i 1)
+)
 
 (defun compare (tokens value i v keep)
    (check 
@@ -380,6 +385,17 @@
    )
 )
 
+; We insert a new rule (neu) before a given rule (base)
+(defun inserting_rule (base neu)
+   (loop i (range 0 (size rg) 1)
+      (setq x (@ rg i))
+      (check (in x base)
+         (insert rg neu i)
+         (break)
+      )
+   )
+)
+
 (setq rg (get_tokenizer_rules parser_tok))
 
 (set@ rg 0 " +=#")
@@ -396,6 +412,8 @@
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
+   (setq comments (rgx_findall (rgx ";?+%r") code))
+   (maplist (\(x) (setq code (replace code x ""))) comments)
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))
@@ -415,5 +433,4 @@
 
 ; We check if the code is well-formed LispE program.
 (eval the_code)
-
 

@@ -127,6 +127,10 @@ afficheln réel("199") + 20.98
 contenu = liref(_current + "basicois")
 afficheln taille(contenu.extraire(0, "dans"))
 
+; Une lambda
+A = [(x,y) si x > y alors x+y sinon x*y finsi](10,20)
+afficheln A
+
 `
 )
 
@@ -139,5 +143,6 @@ afficheln taille(contenu.extraire(0, "dans"))
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 
 

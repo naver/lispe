@@ -101,25 +101,31 @@ variable := Word
 
 # We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
 # It keeps the final tree flatter
-^callitem := method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+^callitem := lambda^method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 
 # The & will skip the computing label if there is no operator
 &computing := callitem  [operator callitem]*
+
+body := expressions+
+!arguments := computing [%, computing]*
 
 # print 10+20, 30+40
 
 !multiop := Word computing [%, computing]*
 
 # We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
-^expressions := method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
+^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 
 !then := $Alors expressions+
 !else := $Sinon expressions+
 
 !function := $Fonction Word %( variables? %) expressions+ $FinFonction
 
+!lambda := %[ %( variables? %) body %] %( arguments %)
+
 !if := $Si comparison then else? $FinSi
 !while := [$tantque^[$tant $que]] comparison expressions+ $FinTantQue
 !forin := $Pour [stringvariable^variable] $dans callitem expressions+ $FinPour
 !for := $Pour assignment %, comparison %, assignment expressions+ $FinPour
+
 

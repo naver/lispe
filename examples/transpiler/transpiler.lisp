@@ -142,6 +142,12 @@
    (nconcn (list 'defun (atom name) (map 'parsing (cdr parameters))) code)
 )
 
+; lambda
+(defpat parsing (['lambda parameters code arguments] )
+   (setq code (maplist 'parsing (cdr code) false))   
+   (cons (nconcn (list 'lambda (map 'parsing (cdr parameters))) code) (map 'parsing (cdr arguments)))
+)
+   
 ; forin: For A in range(1,10,1)... EndFor
 (defpat parsing ( ['forin init rg $ code] )
    (setq code (maplist 'parsing code))
@@ -308,4 +314,5 @@
    )
    code
 )
+
 

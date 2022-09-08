@@ -7,6 +7,8 @@
 
 (setq code 
    `
+; This is a first function
+
 function mycall(A, B)
    I = 20
    if A == B then
@@ -18,12 +20,13 @@ function mycall(A, B)
    return I
 endfunction
 
+; This is a second function
 
 function fact(a)
    if a <> 1 then
       a * fact(a-1)
    else
-      1
+      1   ; un simple retour
    endif
 endfunction
 
@@ -123,10 +126,13 @@ else
    println "No"
 endif
 
+A = [(x,y) if x > y then x+y else x*y endif](10,20)
+println A
+
 `
 )
 
-;(setq tree (abstract_tree code))
+(setq tree (abstract_tree code))
 
 (println 'time
    (elapse
@@ -135,6 +141,7 @@ endif
 )
 ;(println (prettify lsp))
 (eval lsp)
+
 
 
 
