@@ -7,8 +7,8 @@
 
 (setq code 
    `
-; This is a first function
-
+REM first function definition ;
+   
 function mycall(A, B)
    I = 20
    if A == B then
@@ -20,13 +20,13 @@ function mycall(A, B)
    return I
 endfunction
 
-; This is a second function
+REM fact definition ;
 
 function fact(a)
    if a <> 1 then
       a * fact(a-1)
    else
-      1   ; un simple retour
+      1
    endif
 endfunction
 

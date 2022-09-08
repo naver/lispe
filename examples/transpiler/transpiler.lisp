@@ -136,6 +136,10 @@
    )
 )
 
+(defpat parsing ( ['comment $ code] ) 
+   (list 'quote (list (+ "comment: " (join (, code) " "))))
+)
+
 ; a function definition
 (defpat parsing ( ['function  name parameters  $ code] )
    (setq code (maplist 'parsing code false))   
@@ -147,7 +151,7 @@
    (setq code (maplist 'parsing (cdr code) false))   
    (cons (nconcn (list 'lambda (map 'parsing (cdr parameters))) code) (map 'parsing (cdr arguments)))
 )
-   
+
 ; forin: For A in range(1,10,1)... EndFor
 (defpat parsing ( ['forin init rg $ code] )
    (setq code (maplist 'parsing code))
@@ -314,5 +318,4 @@
    )
    code
 )
-
 

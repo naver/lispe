@@ -109,12 +109,14 @@ variable := Word
 body := expressions+
 !arguments := computing [%, computing]*
 
+!comment := $rem any+ %;
+
 # print 10+20, 30+40
 
 !multiop := Word computing [%, computing]*
 
 # We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
-^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
+^expressions := comment^lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 
 !then := $Alors expressions+
 !else := $Sinon expressions+

@@ -1,10 +1,16 @@
-;Date: 2022/09/08 16:01:39
+;Date: 2022/09/08 17:32:22
 ;Description: Parser for basicois description
 ;Generated with compiler.lisp
 
-(defun C_comment(tokens i v)
-   (println 'commentaire (@@ tokens (car i) (+ 10 (car i))))
-   (+= i 1)
+(defun C_any(tokens i v)
+   (check (< (car i) (size tokens))
+      (setq w (@ tokens (car i)))
+      (check (neq w ";") 
+         (+= i 1)
+         (push v w)
+         (return true)
+      )
+   )
 )
 
 (defun compare (tokens value i v keep)
@@ -830,6 +836,40 @@
    )
    true)
 
+;!comment := $rem any+ %;
+(defun C_comment (tokens i0 v)
+   (check (< (car i0) (size tokens))
+      (setq v0 ())
+      (if (and
+            (setq i1 (clone i0))
+            (setq v1 ())
+            (compare tokens "rem" i1 v1 nil)
+            (P_comment_0 tokens i1 v1)
+            (compare tokens ";" i1 v1 nil)
+            (set@ i0 0 (car i1))
+            (setq v0 v1)
+         )
+         (push v (cons 'comment v0))
+      )
+   )
+)
+
+(defun P_comment_0 (tokens i1 vp)
+   (setq v ())
+   (setq v1 ())
+   (check (C_any tokens i1 v1)
+      (push v v1)
+      (setq v1 ())
+      (while (C_any tokens i1 v1)
+         (nconc v v1)
+         (setq v1 ())
+      )
+   )
+   (if v
+      (nconc vp v)
+   )
+)
+
 ;!multiop := Word computing [%, computing]*
 (defun C_multiop (tokens i0 v)
    (check (< (car i0) (size tokens))
@@ -865,11 +905,12 @@
    )
    true)
 
-;^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
+;^expressions := comment^lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 (defun C_expressions (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (or
+            (C_comment tokens i0 v0)
             (C_λ tokens i0 v0)
             (C_method tokens i0 v0)
             (C_call tokens i0 v0)
@@ -1190,7 +1231,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("ou" "et" "xou" "dans" "dim" "données" "findonnées" "alors" "sinon" "fonction" "finfonction" "si" "finsi" "tantque" "tant" "que" "fintantque" "pour" "finpour") (lower w)))
+      (not (in  '("ou" "et" "xou" "dans" "dim" "données" "findonnées" "rem" "alors" "sinon" "fonction" "finfonction" "si" "finsi" "tantque" "tant" "que" "fintantque" "pour" "finpour") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))
@@ -1201,17 +1242,6 @@
        (check (in x base)
           (pop rg i)
           (break)
-      )
-   )
-)
-
-; We insert a new rule (neu) before a given rule (base)
-(defun inserting_rule (base neu)
-   (loop i (range 0 (size rg) 1)
-      (setq x (@ rg i))
-      (check (in x base)
-         (insert rg neu i)
-         (break)
       )
    )
 )
@@ -1232,8 +1262,6 @@
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
-   (setq comments (rgx_findall (rgx ";?+%r") code))
-   (maplist (\(x) (setq code (replace code x ""))) comments)
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))
