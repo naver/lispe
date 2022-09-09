@@ -102,7 +102,7 @@ pour A = 0, A < 10 , A = A + 1
    FinPour
 FinPour
 
-Pour A dans range(1,10,1)
+Pour A dans interval(1,10,1)
     afficheln "A in:", A
     afficheln "Nous bouclons"
 FinPour
@@ -146,6 +146,7 @@ afficheln A
 ;lsp contains the transpiled code as a list
 ;(println (prettify lsp))
 (eval lsp)
+
 
 
 
