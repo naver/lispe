@@ -407,6 +407,7 @@
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
+   ; The magic of LIsp. A one-liner to get rid of lines that starts with REM
    (setq code (join (filterlist (\(x) (neq (lower (@@ (trim x) 0 4)) "rem ")) (split code "\n")) "\n"))
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
@@ -427,6 +428,8 @@
 
 ; We check if the code is well-formed LispE program.
 (eval the_code)
+
+
 
 
 
