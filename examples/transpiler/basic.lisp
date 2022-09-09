@@ -1,4 +1,4 @@
-;Date: 2022/09/09 10:17:44
+;Date: 2022/09/09 12:01:12
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -458,14 +458,17 @@
    )
    true)
 
-;!call := Word %( [computing [%, computing]*]? %)
+;!call := [lambda^Word] %( [computing [%, computing]*]? %)
 (defun C_call (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_Word tokens i1 v1)
+            (or
+               (C_λ tokens i1 v1)
+               (C_Word tokens i1 v1)
+            )
             (compare tokens "(" i1 v1 nil)
             (O_call_1 tokens i1 v1)
             (compare tokens ")" i1 v1 nil)
@@ -683,14 +686,14 @@
    )
    true)
 
-;^callitem := lambda^method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+;^callitem := method^call^lambda^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 (defun C_callitem (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (or
-            (C_λ tokens i0 v0)
             (C_method tokens i0 v0)
             (C_call tokens i0 v0)
+            (C_λ tokens i0 v0)
             (C_parenthetic tokens i0 v0)
             (C_data tokens i0 v0)
             (C_astring tokens i0 v0)
@@ -844,14 +847,14 @@
    )
    true)
 
-;^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
+;^expressions := method^call^lambda^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 (defun C_expressions (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (or
-            (C_λ tokens i0 v0)
             (C_method tokens i0 v0)
             (C_call tokens i0 v0)
+            (C_λ tokens i0 v0)
             (C_dimstring tokens i0 v0)
             (C_dim tokens i0 v0)
             (C_assignment tokens i0 v0)
@@ -985,7 +988,7 @@
    )
 )
 
-;!lambda := %[ %( variables? %) body %] %( arguments %)
+;!lambda := %[ %( variables? %) body %]
 (defun C_λ (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -998,9 +1001,6 @@
             (compare tokens ")" i1 v1 nil)
             (C_body tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
-            (compare tokens "(" i1 v1 nil)
-            (C_arguments tokens i1 v1)
-            (compare tokens ")" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )

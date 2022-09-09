@@ -10,7 +10,7 @@
 ; To compile a different grammar, you need to modify this name for your own purpose
 ; For instance, you can recompile basicois, if you replace basic with it
 ;(setq grammar "basicois")
-(setq grammar "basic")
+(setq grammar "basicois")
 
 ; We read our grammar file
 (setq grammaire (fread (+ _current grammar)))
@@ -428,6 +428,7 @@
 
 ; We check if the code is well-formed LispE program.
 (eval the_code)
+
 
 
 

@@ -130,9 +130,12 @@
 
 ; a function call: call(x,...)
 (defpat parsing ( ['call n $ arguments] )
-   (if arguments
-      (consb (atom n) (maplist 'parsing arguments false))
-      (list (atom n))
+   (if (consp n)
+      (cons (parsing n) (maplist 'parsing arguments false))
+      (if arguments
+         (consb (atom n) (maplist 'parsing arguments false))
+         (list (atom n))
+      )
    )
 )
 
@@ -143,9 +146,9 @@
 )
 
 ; lambda
-(defpat parsing (['lambda parameters code arguments] )
+(defpat parsing (['lambda parameters code] )
    (setq code (maplist 'parsing (cdr code) false))   
-   (cons (nconcn (list 'lambda (map 'parsing (cdr parameters))) code) (map 'parsing (cdr arguments)))
+   (nconcn (list 'lambda (map 'parsing (cdr parameters))) code)
 )
 
 ; forin: For A in range(1,10,1)... EndFor
@@ -314,5 +317,4 @@
    )
    code
 )
-
 

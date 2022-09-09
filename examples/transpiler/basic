@@ -56,7 +56,7 @@ variable := Word
 
 !variables := [stringvariable^variable] [%, [stringvariable^variable]]*
 
-!call := Word %( [computing [%, computing]*]? %)
+!call := [lambda^Word] %( [computing [%, computing]*]? %)
 
 !method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
 
@@ -71,7 +71,7 @@ variable := Word
 
 # We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
 # It keeps the final tree flatter
-^callitem := lambda^method^call^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+^callitem := method^call^lambda^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 
 # The & will skip the computing label if there is no operator
 &computing := callitem  [operator callitem]*
@@ -84,19 +84,20 @@ body := expressions+
 !arguments := computing [%, computing]*
 
 # We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
-^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
+^expressions := method^call^lambda^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 
 !then := $Then expressions+
 !else := $Else expressions+
 
 !function := $Function Word %( variables? %) expressions+ $EndFunction
 
-!lambda := %[ %( variables? %) body %] %( arguments %)
+!lambda := %[ %( variables? %) body %]
 
 !if := $If comparison then else? $EndIf
 !while := $While comparison expressions+ $EndWhile
 !forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
 !for := $For assignment %, comparison %, assignment expressions+ $EndFor
+
 
 
 
