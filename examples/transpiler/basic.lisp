@@ -1,4 +1,4 @@
-;Date: 2022/09/08 17:31:33
+;Date: 2022/09/09 10:14:43
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -68,7 +68,7 @@
    )
 )
 
-;°analyse := [function^comment^expressions]+ (entry point)
+;°analyse := [function^expressions]+ (entry point)
 (defun C_analyse (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -89,14 +89,12 @@
    (setq v1 ())
    (check (or
          (C_function tokens i1 v1)
-         (C_comment tokens i1 v1)
          (C_expressions tokens i1 v1)
       )
       (push v v1)
       (setq v1 ())
       (while (or
             (C_function tokens i1 v1)
-            (C_comment tokens i1 v1)
             (C_expressions tokens i1 v1)
          )
          (nconc v v1)
@@ -846,40 +844,6 @@
    )
    true)
 
-;!comment := $rem any+ %;
-(defun C_comment (tokens i0 v)
-   (check (< (car i0) (size tokens))
-      (setq v0 ())
-      (if (and
-            (setq i1 (clone i0))
-            (setq v1 ())
-            (compare tokens "rem" i1 v1 nil)
-            (P_comment_0 tokens i1 v1)
-            (compare tokens ";" i1 v1 nil)
-            (set@ i0 0 (car i1))
-            (setq v0 v1)
-         )
-         (push v (cons 'comment v0))
-      )
-   )
-)
-
-(defun P_comment_0 (tokens i1 vp)
-   (setq v ())
-   (setq v1 ())
-   (check (C_any tokens i1 v1)
-      (push v v1)
-      (setq v1 ())
-      (while (C_any tokens i1 v1)
-         (nconc v v1)
-         (setq v1 ())
-      )
-   )
-   (if v
-      (nconc vp v)
-   )
-)
-
 ;^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 (defun C_expressions (tokens i0 v)
    (check (< (car i0) (size tokens))
@@ -1195,7 +1159,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("or" "and" "xor" "in" "dim" "data" "enddata" "rem" "then" "else" "function" "endfunction" "if" "endif" "while" "endwhile" "for" "endfor") (lower w)))
+      (not (in  '("or" "and" "xor" "in" "dim" "data" "enddata" "then" "else" "function" "endfunction" "if" "endif" "while" "endwhile" "for" "endfor") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))
@@ -1226,6 +1190,7 @@
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
+   (setq code (join (filterlist (\(x) (neq (lower (@@ (trim x) 0 4)) "rem ")) (split code "\n")) "\n"))
    (setq tokens (tokenize_rules parser_tok code))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))

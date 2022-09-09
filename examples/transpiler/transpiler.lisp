@@ -136,10 +136,6 @@
    )
 )
 
-(defpat parsing ( ['comment $ code] ) 
-   (list 'quote (list (+ "comment: " (join (, code) " "))))
-)
-
 ; a function definition
 (defpat parsing ( ['function  name parameters  $ code] )
    (setq code (maplist 'parsing code false))   
@@ -318,4 +314,5 @@
    )
    code
 )
+
 

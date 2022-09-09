@@ -7,7 +7,7 @@
 
 (setq code 
    `
-REM first function definition ;
+REM first function definition
    
 function mycall(A, B)
    I = 20
@@ -20,7 +20,7 @@ function mycall(A, B)
    return I
 endfunction
 
-REM fact definition ;
+REM fact definition
 
 function fact(a)
    if a <> 1 then
@@ -132,15 +132,17 @@ println A
 `
 )
 
-(setq tree (abstract_tree code))
+;(setq tree (abstract_tree code))
 
 (println 'time
    (elapse
       (setq lsp (transpile code))
    )
 )
+;lsp contains the transpiled code as a list
 ;(println (prettify lsp))
 (eval lsp)
+
 
 
 

@@ -30,7 +30,7 @@
 ######################################
 
 # The ° indicates the entry point of the grammar (the top rule)
-°analyse := [function^comment^expressions]+
+°analyse := [function^expressions]+
 
 operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
 
@@ -83,8 +83,6 @@ variable := Word
 body := expressions+
 !arguments := computing [%, computing]*
 
-!comment := $rem any+ %;
-
 # We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
 ^expressions := lambda^method^call^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 
@@ -99,6 +97,7 @@ body := expressions+
 !while := $While comparison expressions+ $EndWhile
 !forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
 !for := $For assignment %, comparison %, assignment expressions+ $EndFor
+
 
 
 
