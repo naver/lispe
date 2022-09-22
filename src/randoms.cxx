@@ -34,12 +34,19 @@
 //---------------------------------------------------------
 // UUID
 //---------------------------------------------------------
+static long* random_seed;
+
 uint32_t random32() {
+    static bool lisperestrandom = true;
     static uint64_t x = 123456789;
     static uint64_t y = 362436069;
     static uint64_t z = 521288629;
     static int64_t w = time(0);
-    
+    if (lisperestrandom) {
+        w *= (int64_t)&random_seed;
+        lisperestrandom = false;
+    }
+
     unsigned long t;
     
     t = x ^ (x << 11);
@@ -49,11 +56,16 @@ uint32_t random32() {
 }
 
 uint16_t random16() {
+    static bool lisperestrandom = true;
     static uint64_t x = 123456789;
     static uint64_t y = 362436069;
     static uint64_t z = 521288629;
     static int64_t w = time(0);
-    
+    if (lisperestrandom) {
+        w *= (int64_t)&random_seed;
+        lisperestrandom = false;
+    }
+
     unsigned long t;
     
     t = x ^ (x << 11);
@@ -90,7 +102,10 @@ public:
 Element* Proc_UUID(LispE* lisp) {
     UUID_base base;
     string str = base.str();
-    return lisp->provideString(str);
+    u_ustring res(U"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx");
+    for (long i = 0; i < 32; i++)
+        res[i] = str[i];
+    return lisp->provideString(res);
 }
 
 
@@ -118,12 +133,13 @@ double localrandom(long mx) {
     static unsigned long y = 362436069;
     static unsigned long z = 521288629;
     static long w = time(0);
-    unsigned long t;
     if (lisperestrandom) {
-        w = time(0);
+        w *= (int64_t)&random_seed;
         lisperestrandom = false;
     }
-    
+
+    unsigned long t;
+
     t = x ^ (x << 11);
     x = y; y = z; z = w;
     w = w ^ (w >> 19) ^ (t ^ (t >> 8));
