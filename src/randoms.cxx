@@ -31,8 +31,70 @@
 #include <algorithm>
 
 //This 'random' library is done in two steps
+//---------------------------------------------------------
+// UUID
+//---------------------------------------------------------
+uint32_t random32() {
+    static uint64_t x = 123456789;
+    static uint64_t y = 362436069;
+    static uint64_t z = 521288629;
+    static int64_t w = time(0);
+    
+    unsigned long t;
+    
+    t = x ^ (x << 11);
+    x = y; y = z; z = w;
+    w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+    return (uint32_t)w;
+}
 
-typedef enum {rnd_random, rnd_shuffle, rnd_random_choice,rnd_uniform,rnd_bernoulli_distribution,rnd_binomial_distribution,rnd_negative_binomial_distribution,rnd_geometric_distribution,rnd_poisson_distribution,rnd_exponential_distribution,rnd_gamma_distribution,rnd_weibull_distribution,rnd_extreme_value_distribution,rnd_normal_distribution,rnd_lognormal_distribution,rnd_chi_squared_distribution,rnd_cauchy_distribution,rnd_fisher_distribution,rnd_student_distribution,rnd_discrete_distribution,rnd_piecewise_constant_distribution,rnd_piecewise_linear_distribution} aleatoire;
+uint16_t random16() {
+    static uint64_t x = 123456789;
+    static uint64_t y = 362436069;
+    static uint64_t z = 521288629;
+    static int64_t w = time(0);
+    
+    unsigned long t;
+    
+    t = x ^ (x << 11);
+    x = y; y = z; z = w;
+    w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+    return (uint16_t)w;
+}
+
+struct UUID_base {
+public:
+    uint32_t premier;
+    uint16_t second;
+    uint16_t troisieme;
+    uint16_t quatrieme;
+    uint32_t dernier;
+    
+    UUID_base() {
+        premier = random32();
+        dernier = random32();
+        second = random16();
+        troisieme = random16();
+        quatrieme = random16();
+    }
+    
+    string str() {
+        char res[132];
+        sprintf_s(res, 128, "%08x-%04x-%04x-%04x-%08x",premier,second,troisieme,quatrieme,dernier);
+        res[9] = '4';
+        res[14] = '1';
+        return res;
+    }
+};
+
+Element* Proc_UUID(LispE* lisp) {
+    UUID_base base;
+    string str = base.str();
+    return lisp->provideString(str);
+}
+
+
+typedef enum {rnd_random, rnd_shuffle, rnd_uuid, rnd_random_choice,rnd_uniform,rnd_bernoulli_distribution,rnd_binomial_distribution,rnd_negative_binomial_distribution,rnd_geometric_distribution,rnd_poisson_distribution,rnd_exponential_distribution,rnd_gamma_distribution,rnd_weibull_distribution,rnd_extreme_value_distribution,rnd_normal_distribution,rnd_lognormal_distribution,rnd_chi_squared_distribution,rnd_cauchy_distribution,rnd_fisher_distribution,rnd_student_distribution,rnd_discrete_distribution,rnd_piecewise_constant_distribution,rnd_piecewise_linear_distribution} aleatoire;
 
 
 /*
@@ -685,6 +747,8 @@ public:
             }
             case rnd_shuffle:
                 return Proc_shuffle(lisp);
+            case rnd_uuid:
+                return Proc_UUID(lisp);
             case rnd_random_choice:
                 return Proc_random_choice(lisp);
             case rnd_discrete_distribution:
@@ -737,6 +801,8 @@ public:
                 return L"returns a random value between 0 and nb";
             case rnd_shuffle:
                 return L"Randomly mixes the values of a list";
+            case rnd_uuid:
+                return L"a Universally Unique Identifier";
             case rnd_random_choice:
                 return L"returns a list of nb random values among the elements in 'list', and (initial/size list) > 1";
             case rnd_uniform:
@@ -789,6 +855,7 @@ void moduleAleatoire(LispE* lisp) {
     //body is now a list to which we add an instance of our new class
     lisp->extension("deflib random (nb)", new Aleatoire(lisp, rnd_random));
     lisp->extension("deflib shuffle (liste)", new Aleatoire(lisp, rnd_shuffle));
+    lisp->extension("deflib uuid ()", new Aleatoire(lisp, rnd_uuid));
     lisp->extension("deflib random_choice (nb liste initial)", new Aleatoire(lisp, rnd_random_choice));
     lisp->extension("deflib uniform_distribution (nb (alpha 0) (beta 1))", new Aleatoire(lisp, rnd_uniform));
     lisp->extension("deflib bernoulli_distribution (nb (alpha 0.5))", new Aleatoire(lisp, rnd_bernoulli_distribution));
