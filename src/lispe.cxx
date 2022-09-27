@@ -365,7 +365,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_sets, "sets", P_ATLEASTONE, &List::evall_sets);
     set_instruction(l_seti, "seti", P_ATLEASTONE, &List::evall_seti);
     set_instruction(l_setn, "setn", P_ATLEASTONE, &List::evall_setn);
-    set_instruction(l_set_at, "set@", P_ATLEASTFOUR, &List::evall_set_at);
+    set_instruction(l_set_at, "set@", P_ATLEASTTHREE, &List::evall_set_at);
     set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE, &List::evall_set_shape);
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);

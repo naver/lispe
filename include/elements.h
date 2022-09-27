@@ -1384,6 +1384,11 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        content = e->asFloat();
+        return this;
+    }
+    
     void setvalue(float v) {content = v;}
 
     
@@ -1516,6 +1521,11 @@ public:
     
     bool equalvalue(double v) {
         return (v == content);
+    }
+
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        content = e->asNumber();
+        return this;
     }
 
     Element* invert_sign(LispE* lisp);
@@ -1720,6 +1730,11 @@ public:
         return (content == n);
     }
     
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        content = e->asShort();
+        return this;
+    }
+
     Element* invert_sign(LispE* lisp);
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
@@ -1886,7 +1901,11 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
-    
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        content = e->asInteger();
+        return this;
+    }
+
     void setvalue(long v) { content = v;}
 
     char check_match(LispE* lisp, Element* value) {
@@ -2116,6 +2135,11 @@ public:
     }
     String(u_ustring c, uint16_t s) : Element(t_string, s) {
         content = c;
+    }
+
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        content = e->asUString(lisp);
+        return this;
     }
 
     Element* asList(LispE* lisp, List* l);
