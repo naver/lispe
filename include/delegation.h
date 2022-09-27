@@ -122,6 +122,8 @@ public:
 
     binSet number_types;
     
+    Stackelement thread_stack;
+    
     //------------------------------------------
     binHash<uint16_t> namespaces;
     unordered_map<u_ustring, int16_t> string_to_code;

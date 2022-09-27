@@ -110,8 +110,10 @@ public:
     bool check_arity_on_fly;
     bool preparingthread;
     bool clean_utf8;
+    bool check_thread_stack;
     
     LispE(UTF8_Handler* hnd = NULL) {
+        check_thread_stack = false;
         current_space = 0;
         initpools();
         preparingthread = false;
@@ -923,6 +925,7 @@ public:
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
         unboundAtomError(label);
@@ -935,6 +938,7 @@ public:
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
         unboundAtomError(label);
@@ -947,6 +951,7 @@ public:
         Element* res;
         execution_stack.back()->variables.search(label, &res) ||
         execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
         (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
         delegation->function_pool[0]->search(label, &res) ||
         delegation->data_pool.search(label, &res) ||

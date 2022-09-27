@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.9.22.11.21";
+static std::string version = "1.2022.9.27.10.45";
 string LispVersion() {
     return version;
 }
@@ -369,6 +369,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE, &List::evall_set_shape);
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
+    set_instruction(l_seth, "seth", P_THREE, &List::evall_seth);
     set_instruction(l_sign, "sign", P_TWO, &List::evall_sign);
     set_instruction(l_signp, "signp", P_TWO, &List::evall_signp);
     set_instruction(l_size, "size", P_TWO, &List::evall_size);
@@ -384,6 +385,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_threadclear, "threadclear", P_ONE | P_TWO, &List::evall_threadclear);
     set_instruction(l_threadretrieve, "threadretrieve", P_ONE | P_TWO, &List::evall_threadretrieve);
     set_instruction(l_threadstore, "threadstore", P_THREE, &List::evall_threadstore);
+    set_instruction(l_threadspace, "threadspace", P_ATLEASTONE, &List::evall_threadspace);
     set_instruction(l_throw, "throw", P_TWO, &List::evall_throw);
     set_instruction(l_trace, "trace", P_ONE | P_TWO, &List::evall_trace);
     set_instruction(l_transpose, "transpose", P_TWO, &List::evall_transpose);
@@ -868,6 +870,8 @@ void Delegation::initialisation(LispE* lisp) {
     moduleGUI(lisp);
 #endif
     
+    thread_stack.function = null_;
+    
     atom_basic_pool.set(atom_pool.base, atom_pool.tsize, atom_pool.indexes);
     number_types.push(t_shorts);
     number_types.push(t_floats);
@@ -886,6 +890,7 @@ void LispE::cleaning() {
     if (!isThread) {
         //we force all remaining threads to stop
         stop();
+        delegation->thread_stack.clear();
     }
 
     //Then if some of them are still running
@@ -965,6 +970,8 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
     preparingthread = false;
     check_arity_on_fly = false;
     delegation = lisp->delegation;
+    
+    check_thread_stack = false;
 
     _BOOLEANS[0] = delegation->_NULL;
     _BOOLEANS[1] = delegation->_TRUE;
@@ -2550,6 +2557,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

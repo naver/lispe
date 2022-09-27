@@ -9476,6 +9476,15 @@ Element* List::evall_setq(LispE* lisp) {
     return true_;
 }
 
+Element* List::evall_seth(LispE* lisp) {
+    if (lisp->check_thread_stack) {
+        Element* element = liste[2]->eval(lisp);
+        lisp->delegation->thread_stack.storing_variable(element->duplicate_constant(lisp), liste[1]->label());
+        return true_;
+    }
+    throw new Error("Error: this instruction can only be used in a 'threadspace' block");
+}
+
 Element* List::evall_signp(LispE* lisp) {
     double v = 0;
 
@@ -9800,6 +9809,33 @@ Element* List::evall_threadstore(LispE* lisp) {
     value->release();
 
     return true_;
+}
+
+Element* List::evall_threadspace(LispE* lisp) {
+    lisp->delegation->lock.locking();
+    lisp->check_thread_stack = true;
+    int16_t listsize = liste.size();
+    
+    //We might need to mark the last element as being terminal
+    //the block might belong to an if
+    liste.back()->setterminal(terminal);
+        
+    Element* element = null_;
+    
+    try {
+        for (long i = 1; i < listsize && element->type != l_return; i++) {
+            element->release();
+            element = liste[i]->eval(lisp);
+        }
+    }
+    catch(Error* err) {
+        lisp->check_thread_stack = false;
+        lisp->delegation->lock.unlocking();
+        throw err;
+    }
+    lisp->check_thread_stack = false;
+    lisp->delegation->lock.unlocking();
+    return element;
 }
 
 

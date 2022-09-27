@@ -1402,6 +1402,7 @@ public:
     Element* evall_seti(LispE* lisp);
     Element* evall_setn(LispE* lisp);
     Element* evall_setq(LispE* lisp);
+    Element* evall_seth(LispE* lisp);
     Element* evall_sign(LispE* lisp);
     Element* evall_signp(LispE* lisp);
     Element* evall_size(LispE* lisp);
@@ -1418,6 +1419,7 @@ public:
     Element* evall_threadclear(LispE* lisp);
     Element* evall_threadretrieve(LispE* lisp);
     Element* evall_threadstore(LispE* lisp);
+    Element* evall_threadspace(LispE* lisp);
     Element* evall_heap(LispE* lisp);
     Element* evall_throw(LispE* lisp);
     Element* evall_trace(LispE* lisp);

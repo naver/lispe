@@ -280,10 +280,12 @@ public:
     
     void copy(Stackelement* stack) {
         //We only copy constant values...
-        binHash<Element*>::iterator a;
-        for (a = stack->variables.begin(); a != stack->variables.end(); a++) {
-            if (a->second->status == s_constant && a->second->type <= t_error)
-                variables[a->first] = a.second;
+        if (stack != NULL) {
+            binHash<Element*>::iterator a;
+            for (a = stack->variables.begin(); a != stack->variables.end(); a++) {
+                if (a->second->status == s_constant && a->second->type <= t_error)
+                    variables[a->first] = a.second;
+            }
         }
     }
     

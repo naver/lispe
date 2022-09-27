@@ -53,12 +53,12 @@ typedef enum {
     l_number, l_float, l_string, l_short, l_integer, l_atom,
         
     //threads
-    l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear,
+    l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear, l_threadspace,
     
     //Recording in the stack or in memory
     l_sleep, l_wait,
     l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
-    l_setq, l_setg, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape,
+    l_setq, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape,
     l_block, l_root, l_elapse,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
     l_catch, l_throw, l_maybe,
