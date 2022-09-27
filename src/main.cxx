@@ -194,6 +194,7 @@ int main(int argc, char *argv[]) {
     string codeinitial;
     string codefinal;
     bool darkmode = false;
+    bool vt100 = false;
     
 #ifdef __apple_build_version__
         char path[2048];
@@ -211,6 +212,8 @@ int main(int argc, char *argv[]) {
             cout << "    lispe"<< endl << endl;
             cout << m_red << "    dark mode" << m_current << endl;
             cout << "    lispe -b"<< endl << endl;
+            cout << m_red << "    VT100 mouse mode" << m_current << endl;
+            cout << "    lispe -vt100"<< endl << endl;
             cout << m_red << "    This help" << m_current << endl;
             cout << "    lispe -h|-help|--h|--help"<< endl << endl;
             cout << m_red << "    Execution of 'filename'" << m_current << endl;
@@ -294,6 +297,11 @@ int main(int argc, char *argv[]) {
                     color << ";";
             }
             --i;
+            continue;
+        }
+        
+        if (args == "-vt100") {
+            vt100 = true;
             continue;
         }
         
@@ -395,6 +403,7 @@ int main(int argc, char *argv[]) {
         if (args == "-d") {
             JAGEDITOR = new lispe_editor();
             JAGEDITOR->setnoprefix();
+            JAGEDITOR->vt100 = vt100;
             string a_file_name;
             string line;
             if (i < argc - 1) {
@@ -433,6 +442,7 @@ int main(int argc, char *argv[]) {
         if (args == "-e") {
             JAGEDITOR = new lispe_editor();
             JAGEDITOR->setnoprefix();
+            JAGEDITOR->vt100 = vt100;
             string a_file_name;
             if (i < argc - 1) {
                 i++;
@@ -471,6 +481,7 @@ int main(int argc, char *argv[]) {
     
     JAGEDITOR = new lispe_editor();
     JAGEDITOR->setnoprefix();
+    JAGEDITOR->vt100 = vt100;
     JAGEDITOR->launchterminal(darkmode, 2, arguments, newcolors);
 }
 #endif

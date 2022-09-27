@@ -116,7 +116,7 @@ void jag_editor::displaythehelp(long noclear) {
 
     cerr << "   " << m_redbold << "Commands" << m_current << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-d:" << m_current << " delete a full line" << endl;
-    cerr << "   \t- " << m_redbold << "Ctrl-f:" << m_current << " find a string" << endl;
+    cerr << "   \t- " << m_redbold << "Ctrl-f:" << m_current << " find a string (press 'tab' to switch between case sensitive or not)" << endl;
     cerr << "   \t- " << m_redbold << "Ctrl-g:" << m_current << " move to a specific line, '$' is the end of the code" << endl;
 #ifdef WIN32
     cerr << "   \t- " << m_redbold << "Ctrl+Alt-h:" << m_current << " local help" << endl;
@@ -876,12 +876,19 @@ void jag_editor::displaygo(bool full) {
             cout << back << "Prgx:" << convert(line);
             break;
         case x_find:
-			clearline();
+            clearline();
             cout << back << "Find:" << convert(line);
+            break;
+        case x_findnocase:
+            clearline();
+            cout << back << "find:" << convert(line);
             break;
         case x_replace:
             clearline();
-            cout << back << "Find:" << convert(currentfind) << "  Replace:" << convert(line);
+            if (regularexpressionfind == 3)
+                cout << back << "find:" << convert(currentfind) << "  replace:" << convert(line);
+            else
+                cout << back << "Find:" << convert(currentfind) << "  Replace:" << convert(line);
             break;
         case x_replacergx:
             clearline();
@@ -1061,7 +1068,14 @@ bool jag_editor::search(wstring& l, long& first, long& last, long ps) {
         return false;
     }
 #endif
-    first = l.find(currentfind, ps);
+    if (regularexpressionfind == 3) {
+        wstring u = special_characters.s_to_lower(l);
+        wstring c = special_characters.s_to_lower(currentfind);
+        first = u.find(c, ps);
+    }
+    else
+        first = l.find(currentfind, ps);
+    
     if (first == -1)
         return false;
     last = first + currentfind.size();
@@ -1662,7 +1676,7 @@ bool jag_editor::evaluateescape(string& buff) {
 
 #endif
         //ctrl-up, up 10 lines
-    if (buff == c_up) {
+    if (buff == c_up || buff == page_up) {
         if ((pos - row_size) < 0) {
             pos = 0;
             currentline = 0;
@@ -1678,7 +1692,7 @@ bool jag_editor::evaluateescape(string& buff) {
     }
 
         //ctrl-down, down 10 lines
-    if (buff == c_down) {
+    if (buff == c_down  || buff == page_down) {
         long mxline = poslines.size() - 1;
 
         posinstring = 0;
@@ -2377,6 +2391,20 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                 deleteline(0);
             return true;
         case 9:
+            if (option == x_find) {
+                option = x_findnocase;
+                regularexpressionfind = 3;
+                string sub = "find:";
+                displayonlast(sub, false);
+                return true;
+            }
+            if (option == x_findnocase) {
+                option = x_find;
+                regularexpressionfind = 0;
+                string sub = "Find:";
+                displayonlast(sub, false);
+                return true;
+            }
             if (emode())
                 return false;
             checkpath(false);
@@ -2434,6 +2462,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     option = x_none;
                     return true;
                 case x_find: //find
+                case x_findnocase:
                 case x_rgx:
                 case x_prgx:
                     currentfind = line;
@@ -2617,10 +2646,13 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
         case 17: //ctrl-q terminate
             return !terminate();
         case 18: //ctrl-r: redo...
-            if (option == x_find || option == x_rgx || option == x_prgx) { //replace mode called after a ctrl-f
+            if (option == x_find || option == x_findnocase ||option == x_rgx || option == x_prgx) { //replace mode called after a ctrl-f
                 currentfind = line;
                 line = L"";
-                cout << "  Replace:";
+                if (option == x_findnocase)
+                    cout << "  replace:";
+                else
+                    cout << "  Replace:";
                 option = (x_option)((int)option + 1);
                 return true;
             }

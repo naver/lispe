@@ -645,7 +645,7 @@ public:
 //--------------------------------------------------------------------------------
 
 
-typedef enum { x_none, x_goto, x_find, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_paste, x_pasteselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
+typedef enum { x_none, x_goto, x_find, x_findnocase, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_paste, x_pasteselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
 
 
 class Jag_automaton;
