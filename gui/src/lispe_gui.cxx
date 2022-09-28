@@ -154,7 +154,7 @@ static void fltk_callback(Fl_Widget *w, void *data) {
     Element* func = widget->function;
 
     LispE* lisp = widget->lisp;
-    
+
     if (func != NULL) {
         List* call = lisp->provideCall(func, 2);
         call->in_quote(1, widget);
@@ -177,11 +177,11 @@ static void fltk_callback(Fl_Widget *w, void *data) {
 static void fltk_close_callback(Fl_Widget *w, void *data) {
     Fltk_window* widget = (Fltk_window*)data;
     Element* func = widget->on_close_function;
-    
+
     bool closing = true;
-    
+
     LispE* lisp = widget->lisp;
-    
+
     if (func != NULL) {
         List* call = lisp->provideCall(func, 2);
         call->in_quote(1, widget);
@@ -200,7 +200,7 @@ static void fltk_close_callback(Fl_Widget *w, void *data) {
         res->release();
         call->release();
     }
-    
+
     if (closing)
         close_callback(widget->window(), widget);
 }
@@ -285,7 +285,7 @@ Element* Fltk_widget::widget_label(LispE* lisp) {
         throw new Error(L"WND(805): Widget not initialized");
 
     Element* name = lisp->get_variable(U"name");
-    
+
     string label;
     if (name == null_) {
         label = widget->label();
@@ -389,7 +389,7 @@ void Fltk_widget::drawText(LispE* lisp) {
     if (fl_graphics_driver->font_descriptor() == NULL)
         fl_font(FL_HELVETICA, 12);
 #endif
-    Element* t = lisp->get_variable(U"text");
+    Element* t = lisp->get_variable(U"txt");
     Element* x = lisp->get_variable(U"x");
     Element* y = lisp->get_variable(U"y");
     string buf = t->toString(lisp);
@@ -1072,7 +1072,7 @@ Element* Fltk_output::value(LispE* lisp) {
 
     Element* val = lisp->get_variable(U"val");
 
-    
+
     if (val == null_) {
         locking(lisp);
         buf = ((Fl_Output*)widget)->value();
@@ -1198,11 +1198,11 @@ void Fltk_button::bitmap(LispE* lisp) {
         throw new Error("WND(805): Button not initialized");
     if (!image)
         throw new Error("WND(809): Image button required");
-    
+
     Element* kbitmap = lisp->get_variable(U"bitmap");
     if (kbitmap->type != fltk_type_bitmap)
         throw new Error("Error: this is not a bitmap");
-    
+
     Fl_Color color = lisp->get_variable(U"color")->asInt();
 
     ((ButtonImage*)widget)->thecolor = color;
@@ -1215,11 +1215,11 @@ void Fltk_button::gif_image(LispE* lisp) {
         throw new Error("WND(805): Button not initialized");
     if (!image)
         throw new Error("WND(809): Image button required");
-    
+
     Element* gif = lisp->get_variable(U"gif");
     if (gif->type != fltk_type_gif)
         throw new Error("Error: this is not a GIF object");
-    
+
     ((ButtonImage*)widget)->myimage = ((Fltk_gif*)gif)->image;
 }
 
@@ -1279,7 +1279,7 @@ Fltk_bitmap::Fltk_bitmap(LispE* lisp, short ty, List* kbitmaps, int w, int h, in
     //If you do not have any parameters, then your function might return whatever you want... Here itself
     szw = w;
     szh = h;
-    
+
     int rowBytes = (szw + 7) >> 3;
     bm = new uchar[rowBytes*szh];
     for (int i = 0; i < sz; i++) {
@@ -1384,7 +1384,7 @@ void Fltk_window::run() {
     fltk_reinit();
     main_window = true;
     Error* error = NULL;
-    
+
     if (widget != NULL) {
         long tt = 1;
         while (!stopall && tt && !lisp->hasStopped()) {
@@ -1402,7 +1402,7 @@ void Fltk_window::bitmap(LispE* lisp) {
     Element* kbitmap = lisp->get_variable(U"bitmap");
     if (kbitmap->type != fltk_type_bitmap)
         throw new Error("Error: this is not a bitmap");
-    
+
     Fl_Color color = lisp->get_variable(U"color")->asInt();
 
     int x = lisp->get_variable(U"x")->asInt();
@@ -1424,11 +1424,11 @@ void Fltk_window::bitmap(LispE* lisp) {
 void Fltk_window::gif_image(LispE* lisp) {
     if (widget == NULL)
         throw new Error("Error: Window does not exist");
-    
+
     Element* gif = lisp->get_variable(U"gif");
     if (gif->type != fltk_type_gif)
         throw new Error("Error: this is not a GIF image");
- 
+
     int x = lisp->get_variable(U"x")->asInt();
     int y = lisp->get_variable(U"y")->asInt();
     int wx = lisp->get_variable(U"wx")->asInt();
@@ -1965,10 +1965,10 @@ Exporting bool InitialisationModule(LispE* lisp) {
     short fltk_gui = lisp->encode(nom);
     nom = U"fltk_widget_";
     short fltk_widget = lisp->encode(nom);
-    
+
     nom = U"fltk_bitmap_";
     fltk_type_bitmap = lisp->encode(nom);
-    
+
     nom = U"fltk_gif_image_";
     fltk_type_gif = lisp->encode(nom);
 
@@ -2086,7 +2086,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
 
     lisp->extension("deflib fltk_create (x y w h label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create));
     lisp->extension("deflib fltk_create_resizable (x y label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create_resizable));
-    
+
     lisp->extension("deflib fltk_resize (widget minw minh maxw maxh)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_resize));
     lisp->extension("deflib fltk_end (widget (timer))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_end));
     lisp->extension("deflib fltk_run (widget)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_run));
@@ -2173,3 +2173,4 @@ void moduleGUI(LispE* lisp) {
     InitialisationModule(lisp);
 }
 #endif
+
