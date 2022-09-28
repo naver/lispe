@@ -1202,6 +1202,8 @@ public:
     
     Element* eval_error(LispE* lisp);
     
+    Element* evalthreadspace(LispE* lisp, long listsize, long first);
+    
     Element* evall_addr_(LispE* lisp);
     Element* evall_and(LispE* lisp);
     Element* evall_apply(LispE* lisp);

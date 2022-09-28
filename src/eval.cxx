@@ -189,6 +189,33 @@ bool List::isExecutable(LispE* lisp) {
 bool Atome::isExecutable(LispE* lisp) {
     return lisp->checkFunctionLabel(atome);
 }
+
+Element* List::evalthreadspace(LispE* lisp, long listsize, long i) {
+    lisp->delegation->lock.locking();
+    lisp->check_thread_stack = true;
+    
+    //We might need to mark the last element as being terminal
+    //the block might belong to an if
+    liste.back()->setterminal(terminal);
+        
+    Element* element = null_;
+    
+    try {
+        for (; i < listsize && element->type != l_return; i++) {
+            element->release();
+            element = liste[i]->eval(lisp);
+        }
+    }
+    catch(Error* err) {
+        lisp->check_thread_stack = false;
+        lisp->delegation->lock.unlocking();
+        throw err;
+    }
+    lisp->check_thread_stack = false;
+    lisp->delegation->lock.unlocking();
+    return element;
+}
+
 //------------------------------------------------------------------------------------------
 //null_ unifies with all
 bool Element::unify(LispE* lisp, Element* value, bool record) {
@@ -2273,7 +2300,7 @@ Element* List::evall_return(LispE* lisp) {
 }
 
 Element* List::evall_and(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element = null_;
     bool test = true;
         
@@ -2399,7 +2426,7 @@ Element* List::evall_addr_(LispE* lisp) {
 
 
 Element* List::evall_root(LispE* lisp) {
-    int16_t listsize = liste.size();
+    size_t listsize = liste.size();
 
     lisp->delegation->reset_context();
     
@@ -2409,7 +2436,7 @@ Element* List::evall_root(LispE* lisp) {
     
     Element* element = null_;
     
-    for (long i = 1; i < listsize && element->type != l_return; i++) {
+    for (size_t i = 1; i < listsize && element->type != l_return; i++) {
         element->release();
         element = liste[i]->eval(lisp);
     }
@@ -2428,7 +2455,7 @@ Element* List::evall_root(LispE* lisp) {
 
 
 Element* List::evall_block(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     
     //We might need to mark the last element as being terminal
     //the block might belong to an if
@@ -2449,7 +2476,7 @@ Element* List::evall_block(LispE* lisp) {
 
 
 Element* List::evall_elapse(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element = null_;
     double diff = 0;
     
@@ -5666,7 +5693,7 @@ Element* List::evall_backscan(LispE* lisp) {
 }
 
 Element* List::evall_catch(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* element = null_;
 
     
@@ -5715,7 +5742,7 @@ Element* List::evall_check(LispE* lisp) {
         return null_;
     }
     
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     _releasing(element);
     liste.back()->setterminal(terminal);
     for (long i = 2; i < listsize && element->type != l_return; i++) {
@@ -5768,7 +5795,7 @@ Element* List::evall_compose(LispE* lisp) {
     Element* values = null_;
     List* loop = (List*)liste.back();
     int16_t i = 4;
-    int16_t listsize = liste.size()-1;
+    long listsize = liste.size()-1;
     int16_t label;
     
 	bool nxt = lisp->delegation->next_stop;
@@ -5807,7 +5834,7 @@ Element* List::evall_compose(LispE* lisp) {
 
 
 Element* List::evall_cond(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* first_element = liste[0];
     Element* second_element = null_;
     Element* third_element = null_;
@@ -6048,7 +6075,7 @@ Element* List::evall_data(LispE* lisp) {
         garbaging_values(lisp);
     }
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize < 2)
         throw new Error("Error: wrong number of arguments");
     Element* second_element = null_;
@@ -6154,6 +6181,9 @@ Element* List::evall_defpat(LispE* lisp) {
 
 Element* List::evall_space(LispE* lisp) {
     short label = liste[1]->label();
+    if (label == l_thread)
+        return evalthreadspace(lisp, liste.size(), 2);
+    
     if (!lisp->delegation->namespaces.check(label)) {
         Element* e = liste[1]->eval(lisp);
         label = e->label();
@@ -6253,7 +6283,7 @@ Element* List::evall_different(LispE* lisp) {
 
 Element* List::evall_eq(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
 
     Element* second_element;
     bool test;
@@ -6570,7 +6600,7 @@ Element* List::evall_getchar(LispE* lisp) {
 Element* List::evall_greater(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Integers* res = NULL;
     Element* test;
 
@@ -6618,7 +6648,7 @@ Element* List::evall_greater(LispE* lisp) {
 Element* List::evall_greaterorequal(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element;
     Integers* res = NULL;
     Element* test;
@@ -6691,7 +6721,7 @@ Element* List::evall_ife(LispE* lisp) {
         return liste[2]->eval(lisp);
     }
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     liste.back()->setterminal(terminal);
     _releasing(element);
     
@@ -6727,7 +6757,7 @@ Element* List::evall_at(LispE* lisp) {
     Element* result = container;
 
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* value = null_;
     
     try {
@@ -6761,7 +6791,7 @@ Element* List::evall_index_zero(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* result = container;
 
-    int16_t listsize = liste.size() - 1;
+    long listsize = liste.size() - 1;
     Element* value;
     long i = 2;
 
@@ -7031,7 +7061,7 @@ Element* List::evall_set_at(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* result = container;
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
 	Element* value = null_;
 	Element* ix;
 
@@ -7069,7 +7099,7 @@ Element* List::evall_set_at(LispE* lisp) {
 //Infix Expressions: x op y op z op u
 Element* List::evall_infix(LispE* lisp) {
     Element* expression = liste[1]->eval(lisp);
-    int16_t listsize = expression->size();
+    long listsize = expression->size();
 
     if (expression->type != t_list || !listsize)
         return expression;
@@ -7213,7 +7243,7 @@ Element* List::evall_infix(LispE* lisp) {
 
 //Infix Expressions: x op y op z op u
 Element* Listincode::eval_infix(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize % 2)
         throw new Error("Error: Infix expression is malformed");
     
@@ -7381,7 +7411,7 @@ Element* List::evall_join(LispE* lisp) {
 
 
 Element* List::evall_key(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary();
@@ -7478,7 +7508,7 @@ Element* List::evall_key(LispE* lisp) {
 
 
 Element* List::evall_keyi(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_i();
@@ -7539,7 +7569,7 @@ Element* List::evall_keyi(LispE* lisp) {
 }
 
 Element* List::evall_keyn(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_n();
@@ -7598,7 +7628,7 @@ Element* List::evall_keyn(LispE* lisp) {
 }
 
 Element* List::evall_dictionary(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary();
@@ -7632,7 +7662,7 @@ Element* List::evall_dictionary(LispE* lisp) {
 
 
 Element* List::evall_dictionaryi(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_i();
@@ -7665,7 +7695,7 @@ Element* List::evall_dictionaryi(LispE* lisp) {
 }
 
 Element* List::evall_dictionaryn(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1) {
         //We create an empty dictionary
         return lisp->provideDictionary_n();
@@ -7745,7 +7775,7 @@ Element* List::evall_last(LispE* lisp) {
 }
 
 Element* List::evall_list(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1)
         return emptylist_;
 
@@ -7767,7 +7797,7 @@ Element* List::evall_list(LispE* lisp) {
 }
 
 Element* List::evall_heap(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* oper = null_;
     List* compare = NULL;
     Heap* tas = NULL;
@@ -7804,7 +7834,7 @@ Element* List::evall_heap(LispE* lisp) {
 
 
 Element* List::evall_llist(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1)
         return new LList(&lisp->delegation->mark);
 
@@ -7892,7 +7922,7 @@ Element* List::evall_to_llist(LispE* lisp) {
 }
 
 Element* List::evall_nconc(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1)
         return emptylist_;
 
@@ -7935,7 +7965,7 @@ Element* List::evall_nconc(LispE* lisp) {
 }
 
 Element* List::evall_nconcn(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     if (listsize == 1)
         return emptylist_;
 
@@ -8046,7 +8076,7 @@ Element* List::evall_loopcount(LispE* lisp) {
     long counter;
     evalAsInteger(1, lisp, counter);
     
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     
     
     Element* result = null_;
@@ -8089,7 +8119,7 @@ Element* List::evall_compare(LispE* lisp) {
 Element* List::evall_lower(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element;
     Integers* res = NULL;
     Element* test;
@@ -8136,7 +8166,7 @@ Element* List::evall_lower(LispE* lisp) {
 Element* List::evall_lowerorequal(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element;
     Integers* res = NULL;
     Element* test;
@@ -8213,7 +8243,7 @@ Element* List::evall_mapping(LispE* lisp) {
 Element* List::evall_minmax(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
 
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
 
     Element* max_element = first_element;
     Element* min_element = first_element;
@@ -8266,7 +8296,7 @@ Element* List::evall_minmax(LispE* lisp) {
 
 Element* List::evall_max(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element;
 
     try {
@@ -8298,7 +8328,7 @@ Element* List::evall_max(LispE* lisp) {
 
 
 Element* List::evall_maybe(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* first_element;
 
     
@@ -8329,7 +8359,7 @@ Element* List::evall_maybe(LispE* lisp) {
 
 Element* List::evall_min(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element;
 
     try {
@@ -8371,7 +8401,7 @@ Element* List::evall_ncheck(LispE* lisp) {
     }
     
     
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     _releasing(element);
     
     liste.back()->setterminal(terminal);
@@ -8991,7 +9021,7 @@ Element* List::evall_strings(LispE* lisp) {
 
 
 Element* List::evall_or(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* element = null_;
     bool test = false;
     
@@ -9112,7 +9142,7 @@ Element* List::evall_prettify(LispE* lisp) {
 
 
 Element* List::evall_print(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* element = null_;
     
     string val;
@@ -9130,7 +9160,7 @@ Element* List::evall_print(LispE* lisp) {
 
 
 Element* List::evall_printerr(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* element;
     
     
@@ -9148,7 +9178,7 @@ Element* List::evall_printerr(LispE* lisp) {
 
 
 Element* List::evall_printerrln(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* element;
     
     
@@ -9168,7 +9198,7 @@ Element* List::evall_printerrln(LispE* lisp) {
 
 
 Element* List::evall_println(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* element;
     string val;
     
@@ -9442,7 +9472,7 @@ Element* List::evall_replaceall(LispE* lisp) {
 
 
 Element* List::evall_select(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* second_element = null_;
     for (long i = 1; i < listsize && second_element == null_; i++) {
         liste[i]->setterminal(terminal);
@@ -9812,30 +9842,7 @@ Element* List::evall_threadstore(LispE* lisp) {
 }
 
 Element* List::evall_threadspace(LispE* lisp) {
-    lisp->delegation->lock.locking();
-    lisp->check_thread_stack = true;
-    int16_t listsize = liste.size();
-    
-    //We might need to mark the last element as being terminal
-    //the block might belong to an if
-    liste.back()->setterminal(terminal);
-        
-    Element* element = null_;
-    
-    try {
-        for (long i = 1; i < listsize && element->type != l_return; i++) {
-            element->release();
-            element = liste[i]->eval(lisp);
-        }
-    }
-    catch(Error* err) {
-        lisp->check_thread_stack = false;
-        lisp->delegation->lock.unlocking();
-        throw err;
-    }
-    lisp->check_thread_stack = false;
-    lisp->delegation->lock.unlocking();
-    return element;
+    return evalthreadspace(lisp, liste.size(), 1);
 }
 
 
@@ -9942,7 +9949,7 @@ Element* List::evall_while(LispE* lisp) {
     bool test = condition->Boolean();
     condition->release();
     
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* result = null_;
     
     try {
@@ -9978,7 +9985,7 @@ Element* List::evall_xor(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     char check = (char)element->Boolean();
     
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     char test = true;
     
     
@@ -10050,7 +10057,7 @@ Element* List::evall_link(LispE* lisp) {
 }
 
 Element* List::evall_zip(LispE* lisp) {
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     List* lists = lisp->provideList();
     Element* container = null_;
     Element* result = null_;
@@ -10151,7 +10158,7 @@ Element* List::evall_zipwith(LispE* lisp) {
     
     long lsz;
     long i, j = 0;
-    int16_t listsize = liste.size();
+    long listsize = liste.size();
     Element* function = liste[1];
     
     Element* value = null_;

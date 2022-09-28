@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.9.27.10.45";
+static std::string version = "1.2022.9.28.9.58";
 string LispVersion() {
     return version;
 }
@@ -580,6 +580,8 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_pattern] = U"pattern_";
     code_to_string[t_lambda] = U"lambda_";
     code_to_string[t_thread] = U"thread_";
+    
+    code_to_string[l_thread] = U"thread";
 
     code_to_string[v_null] = U"nil";
     code_to_string[v_true] = U"true";
@@ -2557,6 +2559,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
