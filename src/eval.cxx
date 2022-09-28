@@ -6208,6 +6208,9 @@ Element* List::evall_space(LispE* lisp) {
 
 Element* List::evall_defspace(LispE* lisp) {
     int16_t label = liste[1]->label();
+    if (label == l_thread)
+        throw new Error("Error: 'thread' is a reserved space name");
+    
     lisp->create_name_space(label);
     return true_;
 }
