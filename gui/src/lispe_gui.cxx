@@ -389,7 +389,7 @@ void Fltk_widget::drawText(LispE* lisp) {
     if (fl_graphics_driver->font_descriptor() == NULL)
         fl_font(FL_HELVETICA, 12);
 #endif
-    Element* t = lisp->get_variable(U"txt");
+    Element* t = lisp->get_variable(U"text");
     Element* x = lisp->get_variable(U"x");
     Element* y = lisp->get_variable(U"y");
     string buf = t->toString(lisp);
@@ -2093,7 +2093,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
 
     lisp->extension("deflib fltk_arc(widget x y w h a1 (a2))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_arc));
     lisp->extension("deflib fltk_selection_color(widget (color))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_selectioncolor));
-    lisp->extension("deflib fltk_drawtext(widget txt x y)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_drawtext));
+    lisp->extension("deflib fltk_drawtext(widget text x y)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_drawtext));
     lisp->extension("deflib fltk_rectangle(widget x y wx hy (color))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_rectangle));
     lisp->extension("deflib fltk_rectanglefill(widget x y wx hy (color))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_rectanglefill));
     lisp->extension("deflib fltk_pie(widget x y w h a1 a2)", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_pie));
