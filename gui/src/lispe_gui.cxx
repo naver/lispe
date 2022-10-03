@@ -1538,7 +1538,11 @@ void Doublewindow::draw() {
             lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
             err->release();
         }
-
+        catch(...) {
+            res->release();
+            call->release();
+            return;
+        }
         res->release();
         call->release();
     }

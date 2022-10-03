@@ -1000,6 +1000,7 @@ public:
     
     Element* composing(LispE*, bool compose);
     virtual Element* eval(LispE*);
+    Element* eval_no_fail(LispE*);
         
     bool Boolean() {
         return (liste.size());

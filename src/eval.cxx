@@ -2193,6 +2193,15 @@ Element* List::evall_emptylist(LispE* lisp) {
     return emptylist_;
 }
 
+Element* List::eval_no_fail(LispE* lisp) {
+    try {
+        return (this->*lisp->delegation->evals[lisp->checkState(this, liste.size())])(lisp);
+    }
+    catch (Error* err) {
+        return err;
+    }
+}
+
 Element* List::eval(LispE* lisp) {
     try {
         return (this->*lisp->delegation->evals[lisp->checkState(this, liste.size())])(lisp);
