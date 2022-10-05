@@ -62,6 +62,8 @@ using std::endl;
 
 #define hmap std::unordered_map
 //------------------------------------------------------------------------------------
+bool ishangul(wchar_t ucs);
+
 Exporting string jsonstring(string value);
 Exporting wstring wjsonstring(wstring value);
 Exporting wstring wjsonstring(u_ustring value);

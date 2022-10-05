@@ -102,6 +102,9 @@ static const double arConvertExp[] =
     1.e30, 1.e31, 1.e32,
 };
 
+bool ishangul(wchar_t ucs) {
+        return ((ucs >= 0x1100 && ucs <= 0x115f) || (ucs >= 0xac00 && ucs <= 0xd7a3));
+}
 
 static inline double power10(long n)
 {
@@ -453,7 +456,7 @@ bool UTF8_Handler::c_is_emojicomp(unsigned char* m, long& i) {
 bool UTF8_Handler::s_is_emoji(string& s) {
     if (s == "")
         return false;
-    
+
     long lg = s.size();
     long p;
     for (long i = 0; i < lg; i++) {
@@ -472,7 +475,7 @@ bool UTF8_Handler::u_is_emoji(u_ustring& s) {
         return false;
     long lg = s.size();
     u_uchar c;
-    
+
     for (long i = 0; i < lg; i++) {
         if (scan_emoji(s, i))
             continue;

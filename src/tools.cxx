@@ -114,6 +114,10 @@ static inline double power10(long n)
 #define isadigit(c) (c >= '0' && c <= '9')
 #define uchar unsigned char
 
+bool ishangul(wchar_t ucs) {
+    return ((ucs >= 0x1100 && ucs <= 0x115f) || (ucs >= 0xac00 && ucs <= 0xd7a3));
+}
+
 wstring convertToWString(long d) {
     wchar_t buff[20];
     swprintf_s(buff, 20, L"%ld", d);

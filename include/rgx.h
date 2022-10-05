@@ -148,6 +148,10 @@ public:
                 if (car >= 913 && car <= 987)
                     return vero;
                 return !vero;
+            case 'H':
+                if (ishangul(car))
+                    return vero;
+                return !vero;
             case 'E':
                 if (met->c_is_emojicomp(car))
                     return vero;

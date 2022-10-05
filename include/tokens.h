@@ -39,6 +39,7 @@ using std::unordered_map;
 #define xr_skiprule 2048
 
 #define verif(a,b) ((a&b)==b)
+bool ckjchar(wchar_t ucs);
 
 class x_tokens {
 public:
@@ -230,6 +231,7 @@ public:
          %C  is any uppercase character
          %c  is any lowercase character
          %d  is any digits
+         %h  is a Greek letter
          %H  is any hangul character
          %n  is a non-breaking space
          %o  is any operators
@@ -340,7 +342,7 @@ public:
         
         // Rules start here
         //This character should be interpreted as one
-        rules.push_back(U"{%a %d %H}+=4");               //49    label a combination of alpha, digits and hangul characters
+        rules.push_back(U"{%a %d %h %H}+=4");               //49    label a combination of alpha, digits and Greek characters
         rules.push_back(U"%n=#");                        //1     non-breaking space (not kept)
         rules.push_back(U"%o=40");                        //51    operators
         rules.push_back(U"%p=30");                        //50    punctuation
@@ -762,49 +764,33 @@ public:
                 case '.':
                     return true;
                 case 'C':
-                    if (access->c_is_upper(car))
-                        return true;
-                    return false;
+                    return (access->c_is_upper(car));
                 case 'a':
-                    if (car=='_' || car == '#' || access->c_is_alpha(car))
-                        return true;
-                    return false;
+                    return (car=='_' || car == '#' || access->c_is_alpha(car));
                 case 'c':
-                    if (access->c_is_lower(car))
-                        return true;
-                    return false;
+                    return (access->c_is_lower(car));
                 case 'd':
-                    if (c_is_digit(car))
-                        return true;
-                    return false;
+                    return (c_is_digit(car));
+                case 'h': //Greek characters
+                    return (car >= 913 && car <= 987);
+                case 'H':
+                    return ishangul(car);
                 case 'n': //non-breaking space
-                    if (car == 160)
-                        return true;
-                    return false;
+                    return (car == 160);
                 case 'p':
-                    if (access->c_is_punctuation(car))
+                    return (access->c_is_punctuation(car));
                         return true;
                     return false;
                 case 'o':
-                    if (operators.find(chr) != operators.end())
-                        return true;
-                    return false;
+                    return (operators.find(chr) != operators.end());
                 case 'S':
-                    if (car <= 32)
-                        return true;
-                    return false;
+                    return (car <= 32);
                 case 's':
-                    if (car == 9 || car == 32)
-                        return true;
-                    return false;
+                    return (car == 9 || car == 32);
                 case 'r':
-                    if (car == 10 || car == 13)
-                        return true;
-                    return false;
+                    return (car == 10 || car == 13);
                 default:
-                    if (lb == (uchar)car)
-                        return true;
-                    return false;
+                    return (lb == (uchar)car);
             }
             return false;
         }
