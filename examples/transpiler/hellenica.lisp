@@ -1,4 +1,4 @@
-;Date: 2022/10/05 15:24:18
+;Date: 2022/10/05 15:33:59
 ;Description: Parser for hellenica description
 ;Generated with compiler.lisp
 
@@ -126,7 +126,7 @@
 (link "επιστροφή" 'return)
 (link "εύρος" 'range)
 (link "στοιβάζω" 'push)
-(link "dépile" 'pop)
+(link "έβγαλε" 'pop)
 (link "μέγεθος" 'size)
 (link "διαβάστεαρ" 'fread)
 (link "γράψτεαρ" 'fwrite)
@@ -626,14 +626,21 @@
    )
 )
 
-;!dim :=  $διαστ WordH %[ indexes %]
+;!dim :=  $διάσταση WordH %[ indexes %]
 (defun C_dim (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (compare tokens "διαστ" i1 v1 nil)
+            (
+               compare
+               tokens
+               "διάσταση"
+               i1
+               v1
+               nil
+            )
             (C_WordH tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
             (C_indexes tokens i1 v1)
@@ -646,14 +653,21 @@
    )
 )
 
-;!dimstring :=  $διαστ WordH %$ %[ indexes %]
+;!dimstring :=  $διάσταση WordH %$ %[ indexes %]
 (defun C_dimstring (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (compare tokens "διαστ" i1 v1 nil)
+            (
+               compare
+               tokens
+               "διάσταση"
+               i1
+               v1
+               nil
+            )
             (C_WordH tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
@@ -1250,7 +1264,7 @@
 
 
 (defun nokeywords(w)
-      (not (in  '("ή" "και" "ήή" "μέσα" "διαστ" "δεδομένα" "τέλοςδεδομένα" "τότε" "αλλιώς" "συνάρτηση" "τέλοςσυνάρτησης" "αν" "τέλοςαν" "ενώ" "τέλοςενώ" "για" "τέλοςγια") (lower w)))
+      (not (in  '("ή" "και" "ήή" "μέσα" "διάσταση" "δεδομένα" "τέλοςδεδομένα" "τότε" "αλλιώς" "συνάρτηση" "τέλοςσυνάρτησης" "αν" "τέλοςαν" "ενώ" "τέλοςενώ" "για" "τέλοςγια") (lower w)))
 )
    
 (setq parser_tok (tokenizer_rules))

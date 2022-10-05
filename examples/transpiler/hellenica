@@ -92,8 +92,8 @@ variable := WordH
 
 !assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 
-!dim :=  $διαστ WordH %[ indexes %]
-!dimstring :=  $διαστ WordH %$ %[ indexes %]
+!dim :=  $διάσταση WordH %[ indexes %]
+!dimstring :=  $διάσταση WordH %$ %[ indexes %]
 
 !parenthetic := %( computing %)
 
@@ -127,5 +127,6 @@ body := expressions+
 !while := $ενώ comparison expressions+ $τέλοςενώ
 !forin := $για [stringvariable^variable] $μέσα callitem expressions+ $τέλοςγια
 !for := $για assignment %, comparison %, assignment expressions+ $τέλοςγια
+
 
 
