@@ -144,6 +144,10 @@ public:
                 if (met->c_is_emoji(car))
                     return vero;
                 return !vero;
+            case 'h': //Greek characters
+                if (car >= 913 && car <= 987)
+                    return vero;
+                return !vero;
             case 'E':
                 if (met->c_is_emojicomp(car))
                     return vero;

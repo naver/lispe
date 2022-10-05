@@ -76,24 +76,24 @@ comparison := computing comparator computing [orand comparison]*
 
 !indexes := computing [%, computing]*
 
-!setdimvariable :=  WordH %[ indexes %]
-!setdimvariablestring :=  WordH %$ %[ indexes %]
+!setdimvariable :=  Word %[ indexes %]
+!setdimvariablestring :=  Word %$ %[ indexes %]
 
-!dimvariable := WordH %[ indexes %]
-!dimvariablestring := WordH %$ %[ indexes %]
-!stringvariable := WordH %$
-variable := WordH
+!dimvariable := Word %[ indexes %]
+!dimvariablestring := Word %$ %[ indexes %]
+!stringvariable := Word %$
+variable := Word
 
 !variables := [stringvariable^variable] [%, [stringvariable^variable]]*
 
-!call := [lambda^WordH] %( [computing [%, computing]*]? %)
+!call := [lambda^Word] %( [computing [%, computing]*]? %)
 
-!method := [dimvariablestring^dimvariable^stringvariable^variable] %. WordH %( [computing [%, computing]*]? %)
+!method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
 
 !assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 
-!dim :=  $διάσταση WordH %[ indexes %]
-!dimstring :=  $διάσταση WordH %$ %[ indexes %]
+!dim :=  $διάσταση Word %[ indexes %]
+!dimstring :=  $διάσταση Word %$ %[ indexes %]
 
 !parenthetic := %( computing %)
 
@@ -111,7 +111,7 @@ body := expressions+
 
 # print 10+20, 30+40
 
-!multiop := WordH computing [%, computing]*
+!multiop := Word computing [%, computing]*
 
 # We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
 ^expressions := method^call^lambda^dimstring^dim^assignment^forin^for^if^while^multiop^computing
@@ -119,7 +119,7 @@ body := expressions+
 !then := $τότε expressions+
 !else := $αλλιώς expressions+
 
-!function := $συνάρτηση WordH %( variables? %) expressions+ $τέλοςσυνάρτησης
+!function := $συνάρτηση Word %( variables? %) expressions+ $τέλοςσυνάρτησης
 
 !lambda := %[ %( variables? %) body %]
 
@@ -127,6 +127,7 @@ body := expressions+
 !while := $ενώ comparison expressions+ $τέλοςενώ
 !forin := $για [stringvariable^variable] $μέσα callitem expressions+ $τέλοςγια
 !for := $για assignment %, comparison %, assignment expressions+ $τέλοςγια
+
 
 
 

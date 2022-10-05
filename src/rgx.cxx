@@ -885,6 +885,7 @@ bool checkmeta(u_ustring& tok) {
         case 'c':
         case 'd':
         case 'e':
+        case 'h':
         case 'n':
         case 'p':
         case 'r':

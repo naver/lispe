@@ -1,4 +1,4 @@
-;Date: 2022/10/05 15:33:59
+;Date: 2022/10/05 15:49:01
 ;Description: Parser for hellenica description
 ;Generated with compiler.lisp
 
@@ -27,27 +27,12 @@
    )
 )
 
-(defun C_WordH (tokens i v)
-   (check (< (car i) (size tokens))
-      (setq w (@ tokens (car i)))
-      (check 
-         (and
-            (rgx "{%aΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡ΢ΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗϘϙϚϛ}{%a%dΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡ΢ΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗϘϙϚϛ_}*" w)
-            (nokeywords w)
-         )
-         (+= i 1)
-         (push v w)
-         (return true)
-      )
-   )
-)
-
 (defun C_Word (tokens i v)
    (check (< (car i) (size tokens))
       (setq w (@ tokens (car i)))
       (check 
          (and
-            (rgx "%a{%a%d_}*" w)
+            (rgx "{%a%h}{%a%h%d_}*" w)
             (nokeywords w)
          )
          (+= i 1)
@@ -339,14 +324,14 @@
    )
    true)
 
-;!setdimvariable :=  WordH %[ indexes %]
+;!setdimvariable :=  Word %[ indexes %]
 (defun C_setdimvariable (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
             (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
@@ -358,14 +343,14 @@
    )
 )
 
-;!setdimvariablestring :=  WordH %$ %[ indexes %]
+;!setdimvariablestring :=  Word %$ %[ indexes %]
 (defun C_setdimvariablestring (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
             (C_indexes tokens i1 v1)
@@ -381,14 +366,14 @@
    )
 )
 
-;!dimvariable := WordH %[ indexes %]
+;!dimvariable := Word %[ indexes %]
 (defun C_dimvariable (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
             (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
@@ -400,14 +385,14 @@
    )
 )
 
-;!dimvariablestring := WordH %$ %[ indexes %]
+;!dimvariablestring := Word %$ %[ indexes %]
 (defun C_dimvariablestring (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
             (C_indexes tokens i1 v1)
@@ -420,14 +405,14 @@
    )
 )
 
-;!stringvariable := WordH %$
+;!stringvariable := Word %$
 (defun C_stringvariable (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (set@ i0 0 (car i1))
             (setq v0 v1)
@@ -437,14 +422,14 @@
    )
 )
 
-;variable := WordH
+;variable := Word
 (defun C_variable (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -493,7 +478,7 @@
    )
    true)
 
-;!call := [lambda^WordH] %( [computing [%, computing]*]? %)
+;!call := [lambda^Word] %( [computing [%, computing]*]? %)
 (defun C_call (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -502,7 +487,7 @@
             (setq v1 ())
             (or
                (C_λ tokens i1 v1)
-               (C_WordH tokens i1 v1)
+               (C_Word tokens i1 v1)
             )
             (compare tokens "(" i1 v1 nil)
             (O_call_1 tokens i1 v1)
@@ -546,7 +531,7 @@
    )
    true)
 
-;!method := [dimvariablestring^dimvariable^stringvariable^variable] %. WordH %( [computing [%, computing]*]? %)
+;!method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
 (defun C_method (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -560,7 +545,7 @@
                (C_variable tokens i1 v1)
             )
             (compare tokens "." i1 v1 nil)
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "(" i1 v1 nil)
             (O_method_1 tokens i1 v1)
             (compare tokens ")" i1 v1 nil)
@@ -626,7 +611,7 @@
    )
 )
 
-;!dim :=  $διάσταση WordH %[ indexes %]
+;!dim :=  $διάσταση Word %[ indexes %]
 (defun C_dim (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -641,7 +626,7 @@
                v1
                nil
             )
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
             (C_indexes tokens i1 v1)
             (compare tokens "]" i1 v1 nil)
@@ -653,7 +638,7 @@
    )
 )
 
-;!dimstring :=  $διάσταση WordH %$ %[ indexes %]
+;!dimstring :=  $διάσταση Word %$ %[ indexes %]
 (defun C_dimstring (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -668,7 +653,7 @@
                v1
                nil
             )
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
             (C_indexes tokens i1 v1)
@@ -875,14 +860,14 @@
    )
    true)
 
-;!multiop := WordH computing [%, computing]*
+;!multiop := Word computing [%, computing]*
 (defun C_multiop (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (C_computing tokens i1 v1)
             (S_multiop_0 tokens i1 v1)
             (set@ i0 0 (car i1))
@@ -1006,7 +991,7 @@
    )
 )
 
-;!function := $συνάρτηση WordH %( variables? %) expressions+ $τέλοςσυνάρτησης
+;!function := $συνάρτηση Word %( variables? %) expressions+ $τέλοςσυνάρτησης
 (defun C_function (tokens i0 v)
    (check (< (car i0) (size tokens))
       (setq v0 ())
@@ -1021,7 +1006,7 @@
                v1
                nil
             )
-            (C_WordH tokens i1 v1)
+            (C_Word tokens i1 v1)
             (compare tokens "(" i1 v1 nil)
             (O_function_0 tokens i1 v1)
             (compare tokens ")" i1 v1 nil)

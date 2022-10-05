@@ -165,27 +165,12 @@
    )
 )
 
-(defun C_WordH (tokens i v)
-   (check (< (car i) (size tokens))
-      (setq w (@ tokens (car i)))
-      (check 
-         (and
-            (rgx "{%aΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡ΢ΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗϘϙϚϛ}{%a%dΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡ΢ΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗϘϙϚϛ_}*" w)
-            (nokeywords w)
-         )
-         (+= i 1)
-         (push v w)
-         (return true)
-      )
-   )
-)
-
 (defun C_Word (tokens i v)
    (check (< (car i) (size tokens))
       (setq w (@ tokens (car i)))
       (check 
          (and
-            (rgx "%a{%a%d_}*" w)
+            (rgx "{%a%h}{%a%h%d_}*" w)
             (nokeywords w)
          )
          (+= i 1)
@@ -443,6 +428,7 @@
 
 ; We check if the code is well-formed LispE program.
 (eval the_code)
+
 
 
 
