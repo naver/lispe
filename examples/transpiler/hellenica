@@ -1,0 +1,131 @@
+######################################
+# Grreek version
+# Note that the only thing that was modified is the keywords, which are translated in French
+# We DO not modified the rules and their heads, which are the same as in basic
+######################################
+# The goal of this grammar is to build a tree in which each node has the rule name as label.
+# The rule name is the element before the := sign.
+# It can be preceded with some special characters.
+######################################
+# The ° in front of a rule defines the entry point of the grammar
+# The ! in front of a rule means that any %x or $xxx will only be tested and will not appear in the final tree.
+# The & in front of a rule means that the rule label will be inserted in the final tree if the number of elements is > 1
+# The ^ in front of a rule means that the tree item will not contain the rule label 
+######################################
+# Comments are introduced with a '#'
+######################################
+# The ^ is the "or" operator, it selects the appropriate value among different calls
+# % is used to check for a specific punctuation while $ checks for a specific string
+# [..] encloses a sequence of actions
+# We use: ? for optional values, * for zero or any values and + for at least one value
+######################################
+# Word, astring and anumber are declared outside the grammar (see compiler.lisp)
+# Word checks if a string is made of alphabetical or digits characters, starting with a character
+# astring checks if it is a string enclosed between ".."
+# anumber checks if it is a number
+######################################
+# Each rule is compiled into one or more LispE functions
+# ?,*,+ when used in a rule triggers the creation of a specific function starting with
+# ? : O_
+# * : S_
+# + : P_
+######################################
+
+# The ° indicates the entry point of the grammar (the top rule)
+°analyse := [function^expressions]+
+
+# Some basic equivalences.
+# We will be able to use affiche instead of print in code
+@εμφάνισε := print
+@εμφάνισεγρ := println
+@επιστροφή := return
+@εύρος := range
+@στοιβάζω := push
+@έβγαλε := pop
+@μέγεθος := size
+@διαβάστεαρ := fread
+@γράψτεαρ := fwrite
+
+@ακέραιοι := integers
+@αριθμοί := numbers
+@συμβολοσειρές := strings
+@ακέραιος := integer
+@αριθμός := number
+@συμβολοσειρά := string
+@εξάγετε := extract
+
+# As dans, ou, et, xou are directly embedded as function calls
+# We need some equivalence as well
+@μέσα := in
+@ή := or
+@και := and
+@ήή := xor
+
+
+operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
+
+orand := $ή^$και^$ήή
+
+comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$μέσα
+
+comparison := computing comparator computing [orand comparison]*
+
+!minus := %- anumber
+
+# We have different types of variable:
+
+!indexes := computing [%, computing]*
+
+!setdimvariable :=  WordH %[ indexes %]
+!setdimvariablestring :=  WordH %$ %[ indexes %]
+
+!dimvariable := WordH %[ indexes %]
+!dimvariablestring := WordH %$ %[ indexes %]
+!stringvariable := WordH %$
+variable := WordH
+
+!variables := [stringvariable^variable] [%, [stringvariable^variable]]*
+
+!call := [lambda^WordH] %( [computing [%, computing]*]? %)
+
+!method := [dimvariablestring^dimvariable^stringvariable^variable] %. WordH %( [computing [%, computing]*]? %)
+
+!assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
+
+!dim :=  $διαστ WordH %[ indexes %]
+!dimstring :=  $διαστ WordH %$ %[ indexes %]
+
+!parenthetic := %( computing %)
+
+!data := $δεδομένα computing [%, computing]* $τέλοςδεδομένα
+
+# We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
+# It keeps the final tree flatter
+^callitem := method^call^lambda^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
+
+# The & will skip the computing label if there is no operator
+&computing := callitem  [operator callitem]*
+
+body := expressions+
+!arguments := computing [%, computing]*
+
+# print 10+20, 30+40
+
+!multiop := WordH computing [%, computing]*
+
+# We put a ^ to avoid building a sub-list (expression ...) for each element, we simply return the result as such
+^expressions := method^call^lambda^dimstring^dim^assignment^forin^for^if^while^multiop^computing
+
+!then := $τότε expressions+
+!else := $αλλιώς expressions+
+
+!function := $συνάρτηση WordH %( variables? %) expressions+ $τέλοςσυνάρτησης
+
+!lambda := %[ %( variables? %) body %]
+
+!if := $αν comparison then else? $τέλοςαν
+!while := $ενώ comparison expressions+ $τέλοςενώ
+!forin := $για [stringvariable^variable] $μέσα callitem expressions+ $τέλοςγια
+!for := $για assignment %, comparison %, assignment expressions+ $τέλοςγια
+
+

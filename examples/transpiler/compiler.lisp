@@ -10,7 +10,7 @@
 ; To compile a different grammar, you need to modify this name for your own purpose
 ; For instance, you can recompile basicois, if you replace basic with it
 ;(setq grammar "basicois")
-(setq grammar "basicois")
+(setq grammar "hellenica")
 
 ; We read our grammar file
 (setq grammaire (fread (+ _current grammar)))
@@ -162,6 +162,21 @@
          (push v value)
       )
       (return true)
+   )
+)
+
+(defun C_WordH (tokens i v)
+   (check (< (car i) (size tokens))
+      (setq w (@ tokens (car i)))
+      (check 
+         (and
+            (rgx "{%aΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡ΢ΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗϘϙϚϛ}{%a%dΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡ΢ΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϏϐϑϒϓϔϕϖϗϘϙϚϛ_}*" w)
+            (nokeywords w)
+         )
+         (+= i 1)
+         (push v w)
+         (return true)
+      )
    )
 )
 
@@ -428,6 +443,8 @@
 
 ; We check if the code is well-formed LispE program.
 (eval the_code)
+
+
 
 
 
