@@ -774,7 +774,7 @@ public:
                 case 'h': //Greek characters
                     return (car >= 913 && car <= 987);
                 case 'H':
-                    return ishangul(car);
+                    return ckjchar(car);
                 case 'n': //non-breaking space
                     return (car == 160);
                 case 'p':

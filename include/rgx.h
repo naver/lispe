@@ -149,7 +149,7 @@ public:
                     return vero;
                 return !vero;
             case 'H':
-                if (ishangul(car))
+                if (ckjchar(car))
                     return vero;
                 return !vero;
             case 'E':

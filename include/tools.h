@@ -62,7 +62,11 @@ using std::endl;
 
 #define hmap std::unordered_map
 //------------------------------------------------------------------------------------
-bool ishangul(wchar_t ucs);
+//The actual size of the displayed string, the problem here is that multibyte characters are sometimes displayed with an extra-space...
+//Especially for CJK characters.... (Chinese, Japanese, Korean)... We need to integrate this extra-space into our calculus...
+
+//Lines extracted from the function "mk_wcwidth": https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+bool ckjchar(wchar_t ucs);
 
 Exporting string jsonstring(string value);
 Exporting wstring wjsonstring(wstring value);
