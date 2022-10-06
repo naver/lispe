@@ -54,6 +54,9 @@
 @συμβολοσειρά := string
 @εξάγετε := extract
 
+@κοσ := cos
+@ιγμόρεια := sin
+
 # As dans, ou, et, xou are directly embedded as function calls
 # We need some equivalence as well
 @μέσα := in
@@ -127,6 +130,7 @@ body := expressions+
 !while := $ενώ comparison expressions+ $τέλοςενώ
 !forin := $για [stringvariable^variable] $μέσα callitem expressions+ $τέλοςγια
 !for := $για assignment %, comparison %, assignment expressions+ $τέλοςγια
+
 
 
 

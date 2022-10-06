@@ -1,4 +1,4 @@
-;Date: 2022/10/05 15:49:01
+;Date: 2022/10/06 16:01:16
 ;Description: Parser for hellenica description
 ;Generated with compiler.lisp
 
@@ -122,6 +122,8 @@
 (link "αριθμός" 'number)
 (link "συμβολοσειρά" 'string)
 (link "εξάγετε" 'extract)
+(link "κοσ" 'cos)
+(link "ιγμόρεια" 'sin)
 (link "μέσα" 'in)
 (link "ή" 'or)
 (link "και" 'and)
