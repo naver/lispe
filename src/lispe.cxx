@@ -117,6 +117,7 @@ Delegation::Delegation() {
 
 Delegation::~Delegation() {
     clean_get_handler(input_handler);
+    binHash<Element*>::iterator a;
     function_pool.cleaning();
     method_pool.cleaning();
     for (auto& a : thread_pool)
@@ -125,7 +126,6 @@ Delegation::~Delegation() {
     for (const auto& a: locks)
         delete a.second;
 
-    binHash<Element*>::iterator a;
 	for (a = atom_pool.begin(); a != atom_pool.end(); a++)
         delete a->second;
 
@@ -893,6 +893,12 @@ void LispE::cleaning() {
         //we force all remaining threads to stop
         stop();
         delegation->thread_stack.clear();
+        binHash<Element*>::iterator a;
+        for (long i = 0; i < delegation->function_pool.size(); i++) {
+            for (a = delegation->function_pool[i]->begin(); a != delegation->function_pool[i]->end(); a++) {
+                a->second->decrement();
+            }
+        }
     }
 
     //Then if some of them are still running
@@ -2577,56 +2583,4 @@ void LispE::current_path() {
         e->release();
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
