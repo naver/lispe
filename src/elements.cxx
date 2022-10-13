@@ -2454,6 +2454,7 @@ Element* String::asList(LispE* lisp, List* courant) {
     Tokenizer parse;
     string code = toString(lisp);
     
+    parse.asList = true;
     lisp_code retour = lisp->segmenting(code, parse);
     if (!parse.tokens.size())
         return emptylist_;

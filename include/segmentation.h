@@ -34,8 +34,14 @@ public:
     vector<long> positions;
     
     long current;
+    bool asList;
 
+    Tokenizer() {
+        asList = false;
+    }
+    
     void clear() {
+        asList = false;
         current = -1;
         tokens.clear();
         numbers.clear();

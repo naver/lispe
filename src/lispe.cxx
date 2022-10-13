@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.10.5.15.40";
+static std::string version = "1.2022.10.11.9.59";
 string LispVersion() {
     return version;
 }
@@ -1052,6 +1052,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     int16_t string_end;
     long sz = code.size();
     long i, current_i;
+    int in_quote = 0;
     int nb_parentheses = 0;
     int nb_braces = 0;
     int nb_brackets = 0;
@@ -1081,47 +1082,6 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 }
                 break;
             }
-            case ';':
-			case '#':
-                idx = i;
-                if (code[i+1] == ';') {
-                    //we need to find the next line where it appears
-                    i+=2;
-                    while (i < sz-1 && (code[i] != ';' || code[i+1] != ';')) {
-                        if (code[i] == '\n') {
-                            if (add == true) {
-                                current_line = code.substr(idx, i-idx+1);
-                                add_to_listing(line_number, current_line);
-                                current_line = "";
-                            }
-                            else {
-                                if (add == 2) {
-                                    tampon = code.substr(idx, i-idx+1);
-                                    infos.append(tampon, t_comment, line_number, idx, i);
-                                }
-                            }
-                            line_number++;
-                            idx = i + 1;
-                        }
-                        i++;
-                    }
-                }
-                else {
-                    while (i < sz && code[i] != '\n') i++;
-                    line_number++;
-                    if (add == true) {
-                        current_line = code.substr(idx, i-idx+1);
-                        add_to_listing(line_number, current_line);
-                        current_line = "";
-                    }
-                    else {
-                        if (add == 2) {
-                            tampon = code.substr(idx, i-idx+1);
-                            infos.append(tampon, t_comment, line_number, idx, i);
-                        }
-                    }
-                }
-                break;
             case '\n':
                 if (add == true) {
                     current_line += c;
@@ -1229,9 +1189,16 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 break;
             }
             case '\'':
-                if (add == true)
-                    current_line += c;
-                infos.append(c, l_quote, line_number, i, i+1);
+                if (!in_quote && !infos.asList) {
+                    if (add == true)
+                        current_line += c;
+                    infos.append(c, l_quote, line_number, i, i+1);
+                    in_quote = 1;
+                }
+                else {
+                    tampon = "'";
+                    infos.append(tampon, l_quote, line_number, i, i + 1);
+                }
                 break;
             case '`':
                 string_end = '`';
@@ -1268,6 +1235,48 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 line_number += ln;
                 break;
             }
+            case ';':
+                if (!in_quote && !infos.asList) {
+                    idx = i;
+                    if (code[i+1] == ';') {
+                        //we need to find the next line where it appears
+                        i+=2;
+                        while (i < sz-1 && (code[i] != ';' || code[i+1] != ';')) {
+                            if (code[i] == '\n') {
+                                if (add == true) {
+                                    current_line = code.substr(idx, i-idx+1);
+                                    add_to_listing(line_number, current_line);
+                                    current_line = "";
+                                }
+                                else {
+                                    if (add == 2) {
+                                        tampon = code.substr(idx, i-idx+1);
+                                        infos.append(tampon, t_comment, line_number, idx, i);
+                                    }
+                                }
+                                line_number++;
+                                idx = i + 1;
+                            }
+                            i++;
+                        }
+                    }
+                    else {
+                        while (i < sz && code[i] != '\n') i++;
+                        line_number++;
+                        if (add == true) {
+                            current_line = code.substr(idx, i-idx+1);
+                            add_to_listing(line_number, current_line);
+                            current_line = "";
+                        }
+                        else {
+                            if (add == 2) {
+                                tampon = code.substr(idx, i-idx+1);
+                                infos.append(tampon, t_comment, line_number, idx, i);
+                            }
+                        }
+                    }
+                    break;
+                }
             default: {
 				if (c < 32)
 					continue;
@@ -1321,6 +1330,9 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 }
 
                 lc = (lisp_code)delegation->check_atom(tampon);
+                
+                if (in_quote == 1 && lc != c_opening)
+                    in_quote = 0;
 
                 switch (lc) {
                     case l_composenot:
@@ -1329,6 +1341,8 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     case c_opening:
                         nb_parentheses++;
                         infos.append(c, c_opening, line_number, current_i, i);
+                        if (in_quote)
+                            in_quote++;
                         break;
                     case c_closing:
                         nb_parentheses--;
@@ -1337,6 +1351,8 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                                 culprit = line_number;
                         }
                         infos.append(c, c_closing, line_number, current_i, i);
+                        if (in_quote)
+                            in_quote--;
                         break;
                     case c_opening_brace:
                         nb_braces++;
@@ -1384,6 +1400,8 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                             infos.append(tampon, t_operator, line_number, current_i, i);
                         else
                             infos.append(tampon, t_atom, line_number, current_i, i);
+                        if (!in_quote && lc == l_quote)
+                            in_quote = 1;
                 }
 
                 if (i != current_i)
@@ -2559,6 +2577,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
