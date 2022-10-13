@@ -894,8 +894,8 @@ void LispE::cleaning() {
         stop();
         delegation->thread_stack.clear();
         binHash<Element*>::iterator a;
-        for (long i = 0; i < delegation->function_pool.size(); i++) {
-            for (a = delegation->function_pool[i]->begin(); a != delegation->function_pool[i]->end(); a++) {
+        for (long i = 0; i < delegation->bodies.size(); i++) {
+            for (a = delegation->bodies[i]->begin(); a != delegation->bodies[i]->end(); a++) {
                 a->second->decrement();
             }
         }

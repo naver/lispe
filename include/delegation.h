@@ -104,6 +104,7 @@ public:
     
     binHash<int16_t> data_ancestor;
     vecte<binHash<Element*>* > function_pool;
+    vecte<binHash<Element*>* > bodies;
     vecte<unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > >* > method_pool;
 
     binHash<Element*> data_pool;
@@ -581,9 +582,12 @@ public:
 
     bool replaceFunction(Element* e, int16_t label, uint16_t space) {
         if (function_pool[space]->check(label)) {
-            (*function_pool[space])[label]->decrement();
-            (*function_pool[space])[label] = e;
+            if (bodies[space]->check(label))
+                (*bodies[space])[label]->decrement();
+            
+            (*bodies[space])[label] = e;
             e->increment();
+            (*function_pool[space])[label] = e;
             return true;
         }
         return false;

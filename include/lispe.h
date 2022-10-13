@@ -893,6 +893,7 @@ public:
             
             current_space = delegation->function_pool.size();
             delegation->function_pool.push_back(new binHash<Element*>());
+            delegation->bodies.push_back(new binHash<Element*>());
             delegation->method_pool.push_back(new unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > >());
             delegation->namespaces[label] = current_space;
         }
