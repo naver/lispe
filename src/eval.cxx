@@ -9505,12 +9505,14 @@ Element* List::evall_set_max_stack_size(LispE* lisp) {
 }
 #endif
 
+
 Element* List::evall_setg(LispE* lisp) {
+    int16_t label = liste[1]->label();
     Element* element = liste[2]->eval(lisp);
-    lisp->storing_global(element, liste[1]->label());
+    if (!lisp->delegation->replaceFunction(element, label, lisp->current_space))
+        lisp->storing_global(element, label);
     return true_;
 }
-
 
 Element* List::evall_setq(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);

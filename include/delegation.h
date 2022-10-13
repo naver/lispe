@@ -570,6 +570,7 @@ public:
         }
     }
     
+    
     bool recordingFunction(Element* e, int16_t label, uint16_t space) {
         if (function_pool[space]->check(label))
             return false;
@@ -577,7 +578,17 @@ public:
         (*function_pool[space])[label] = e;
         return true;
     }
-    
+
+    bool replaceFunction(Element* e, int16_t label, uint16_t space) {
+        if (function_pool[space]->check(label)) {
+            (*function_pool[space])[label]->decrement();
+            (*function_pool[space])[label] = e;
+            e->increment();
+            return true;
+        }
+        return false;
+    }
+
     inline Element* recordingMethod(Stackelement* stack, Element* e, int16_t label, int16_t sublabel, uint16_t space) {
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...
