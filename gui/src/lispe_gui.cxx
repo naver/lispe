@@ -292,11 +292,12 @@ Element* Fltk_widget::widget_label(LispE* lisp) {
         return lisp->provideString(label);
     }
     label = name->toString(lisp);
-    char* ltxt = (char*)malloc(label.size() + 1);
+    char* ltxt = new char[label.size() + 1];
     memcpy(ltxt, STR(label), label.size());
     ltxt[label.size()] = 0;
     strcpy_s(ltxt, label.size() + 1, label.c_str());
     widget->label(ltxt);
+    delete[] ltxt;
     return true_;
 }
 
