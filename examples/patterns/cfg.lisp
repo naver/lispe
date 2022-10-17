@@ -15,14 +15,14 @@
    NOUN : "cat"  "dog"  "bat" "man" "woman" "child" "puppy"
    NLOC : "house" "barn" "flat" "city" "country"
    VERB : "eats"  "chases"  "bites" "sees"
-   PREP : "of" "from"
+   PREP : "of" "from" "in"
    ADJ : "big" "small" "blue" "red" "yellow" "petite"
    `
 )
 
 
 (defpat add ( ["\"" m "\"" $ r] n d)
-   (push (key d n) m)
+   (push (@ d n) m)
    (add r n d)
 )
 
@@ -32,16 +32,16 @@
 ; This POS:%POS is a dictionary entry where the value is NOT a list
 ; The %POS is the key to word lists in the grammar
 (defpat build( [n ":" "\"" m "\"" $ r] d)
-   (key d n (+ "%" n))
+   (set@ d n (+ "%" n))
    (setq n (+ "%" n))
-   (key d n (list m))
+   (set@ d n (list m))
    (add r n d)
 )
 
 (defpat build( [n ":" $ r] d)
    (if (key d n)
-      (push (key d n) r)
-      (key d n (list r))
+      (push (@ d n) r)
+      (set@ d n (list r))
    )
 )
 
@@ -137,4 +137,6 @@
 
 ; we start with an incomplete sequence of words
 (analyse "a cat")
+
+
 
