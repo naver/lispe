@@ -167,6 +167,6 @@
 
 ; we start with an incomplete sequence of words
 (loopcount 50
-   (println (remplace (join (analyse "une") " ")))
+   (println (remplace (join (analyse "une chatonne chasse") " ")))
 )
 
