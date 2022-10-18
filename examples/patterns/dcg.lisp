@@ -135,16 +135,10 @@
    (@@ tree - "*" -1)
 )
 
-(defun replacing(s)
-   (setq s (replace s "de un" "d'un"))
-   (setq s (replace s "de le" "du"))
-   s
-)
-
 ; we start with an incomplete sequence of words
 ; we start with an incomplete sequence of words
 (loopcount 50
-   (println (replacing (join (analyse "a cat") " ")))
+   (println (join (analyse "a cat") " "))
 )
 
 
