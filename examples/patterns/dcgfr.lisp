@@ -106,6 +106,14 @@
 ; All has been generated
 (defpat generate ([] tree) (nconc tree "%%") )
 
+; we check if the word list is empty
+; We then generate our words by a random selection out of the grammar
+; according to the available rules.
+(defpat match ( current_pos  [] tree consume)   
+   ; this symbol "*" indicates where the word list starts in the final tree
+   (generate current_pos (nconcn tree "*" (reverse consume)))
+)
+
 ; If the first element in current_pos is a terminal element
 ; then we check if the word exists in the grammar
 (defpat match ( [terminal current_pos]  [w $ sentence] tree consume)
@@ -116,14 +124,6 @@
    (if (in rg w)
       (match (cdr current_pos) sentence tree (cons w consume))
    )
-)
-
-; If the above function call fails, we check if the word list is empty
-; We then generate our words by a random selection out of the grammar
-; according to the available rules.
-(defpat match ( [terminal current_pos]  [] tree consume)   
-   ; this symbol "*" indicates where the word list starts in the final tree
-   (generate current_pos (nconcn tree "*" (reverse consume)))
 )
 
 ; We check the first POS from current_pos
