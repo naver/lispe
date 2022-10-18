@@ -143,7 +143,7 @@
 
 ; we start with an incomplete sequence of words
 ; we start with an incomplete sequence of words
-(loopcount 40
+(loopcount 50
    (println (replacing (join (analyse "a cat") " ")))
 )
 
