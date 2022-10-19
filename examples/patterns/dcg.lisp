@@ -82,27 +82,27 @@
 (defpat generate ([] tree) (nconc tree "%%") )
 
 ; We have consumed all elements from current_pos
-(defpat match ([] [] tree consume) 
-   (nconcn tree "$$") 
+(defpat match ([] [] consume) 
+   (nconcn consume "$$")
 )
 
 ; we check if the word list is empty
 ; We then generate our words by a random selection out of the grammar
 ; according to the available rules.
-(defpat match ( current_pos  [] tree consume)   
+(defpat match ( current_pos  []  consume)   
    ; this symbol "*" indicates where the word list starts in the final tree
-   (generate current_pos (nconcn tree "*" (reverse consume)))
+   (generate current_pos (cons "*" (reverse consume)))
 )
 
 ; If the first element in current_pos is a terminal element
 ; then we check if the word exists in the grammar
-(defpat match ( [terminal current_pos]  [w $ sentence] tree consume)
+(defpat match ( [terminal current_pos]  [w $ sentence]  consume)
    (setq rg (key grammar (car current_pos)))
    ;If the word exists in the grammar
    ;We continue to analyse of sequence of POS
    ;Else we simply stop
    (if (in rg w)
-      (match (cdr current_pos) sentence tree (cons w consume))
+      (match (cdr current_pos) sentence  (cons w consume))
    )
 )
 
@@ -110,12 +110,12 @@
 ; We check if it is a lexicon rule (r is not a list then)
 ; Otherwise, we take the rule and replace the current POS
 ; with its rule description.
-(defpat match ( [POS $ current_pos] s tree consume)
+(defpat match ( [POS $ current_pos] s consume)
    (setq R (key grammar POS))
    (ncheck (consp R)
-      (match (nconcn (list R) current_pos) s tree consume)
+      (match (nconcn (list R) current_pos) s consume)
       (loop r R
-         (setq  poslst (match (nconcn r current_pos) s (nconcn tree POS) consume))
+         (setq  poslst (match (nconcn r current_pos) s consume))
          (if poslst
             (return poslst)
          )
@@ -127,13 +127,13 @@
 ; POS is the first rule we start our analysis with
 (defun parse (s POS tree) 
    (setq r (key grammar POS))
-   (match (car r) s (nconcn tree POS) ())
+   (match (car r) s ())
 )
 
 (defun analyse(sentence)
-   (setq tree (parse (tokenize sentence) "S" ()))
-;   (println 'Tree tree)
-   (@@ tree - "*" -1)
+   (setq sentence (parse (tokenize sentence) "S" ()))
+;   (println 'Tree sentence)
+   (@@ sentence - "*" -1)
 )
 
 ; we start with an incomplete sequence of words
@@ -141,6 +141,7 @@
 (loopcount 50
    (println (join (analyse "a cat") " "))
 )
+
 
 
 
