@@ -54,18 +54,14 @@
 
 (setq grammar (compile current_poss))
 
-(defpat terminal( [POS $ _])
-   (eq (@ POS 0) "%")
-)
-
 ; Generation of a word
 ; First we check is the first POS in current_pos is a terminal POS
 ; A terminal POS starts with "%"
 ; Note that we randomly select a potential word from within the grammar
-(defpat generate( [terminal current_pos] tree)
-   (setq rg (random_choice 1 (key grammar (car current_pos)) 10))
+(defpat generate( [(eq "%" (@ POS 0)) $ current_pos] tree)
+   (setq rg (random_choice 1 (key grammar POS) 10))
    ; we proceed with the rest of the current_pos elements
-   (generate (cdr current_pos) (nconc tree rg))
+   (generate current_pos (nconc tree rg))
 )
 
 ; Generation from a POS
@@ -96,13 +92,13 @@
 
 ; If the first element in current_pos is a terminal element
 ; then we check if the word exists in the grammar
-(defpat match ( [terminal current_pos]  [w $ sentence]  consume)
-   (setq rg (key grammar (car current_pos)))
+(defpat match ( [ (eq "%" (@ POS 0)) $ current_pos]  [w $ sentence]  consume)
+   (setq rg (key grammar POS))
    ;If the word exists in the grammar
    ;We continue to analyse of sequence of POS
    ;Else we simply stop
    (if (in rg w)
-      (match (cdr current_pos) sentence  (nconcn consume w))
+      (match current_pos sentence  (nconcn consume w))
    )
 )
 
@@ -141,6 +137,7 @@
 (loopcount 50
    (println (join (analyse "a big cat") " "))
 )
+
 
 
 
