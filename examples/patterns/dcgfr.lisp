@@ -79,11 +79,16 @@
 
 (setq grammar (compile current_poss))
 
+(defmacro testterminal (POS)
+   (eq "%" (@ POS 0))
+)
+
+
 ; Generation of a word
 ; First we check is the first POS in current_pos is a terminal POS
 ; A terminal POS starts with "%"
 ; Note that we randomly select a potential word from within the grammar
-(defpat generate( [(eq "%" (@ POS 0)) $ current_pos] tree)
+(defpat generate( [(testterminal POS) $ current_pos] tree)
    (setq rg (random_choice 1 (key grammar POS) 10))
    ; we proceed with the rest of the current_pos elements
    (generate current_pos (nconc tree rg))
@@ -117,7 +122,7 @@
 
 ; If the first element in current_pos is a terminal element
 ; then we check if the word exists in the grammar
-(defpat match ( [ (eq "%" (@ POS 0)) $ current_pos]  [w $ sentence]  consume)
+(defpat match ( [ (testterminal POS) $ current_pos]  [w $ sentence]  consume)
    (setq rg (key grammar POS))
    ;If the word exists in the grammar
    ;We continue to analyse of sequence of POS
