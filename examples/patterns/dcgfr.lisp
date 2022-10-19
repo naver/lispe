@@ -106,6 +106,11 @@
 ; All has been generated
 (defpat generate ([] tree) (nconc tree "%%") )
 
+; We have consumed all elements from current_pos
+(defpat match ([] [] tree consume) 
+   (nconcn tree "$$") 
+)
+
 ; we check if the word list is empty
 ; We then generate our words by a random selection out of the grammar
 ; according to the available rules.
@@ -143,11 +148,6 @@
    )
 )
 
-; We have consumed all elements from current_pos
-(defpat match ([] [] tree consume) 
-   (nconcn tree "$$") 
-)
-
 ; POS is the first rule we start our analysis with
 (defun parse (s POS tree) 
    (setq r (key grammar POS))
@@ -169,4 +169,5 @@
 (loopcount 50
    (println (remplace (join (analyse "une chatonne chasse") " ")))
 )
+
 

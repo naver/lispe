@@ -5,9 +5,9 @@
 (setq current_poss 
    `S : NP VP
    PP : PREP NNP
-   NP : DET NOUN
    NP : DET NOUN PP
    NP : DET ADJ NOUN
+   NP : DET NOUN
    NNP : DET NLOC
    NNP : DET ADJ NLOC
    VP : VERB NP
@@ -81,6 +81,11 @@
 ; All has been generated
 (defpat generate ([] tree) (nconc tree "%%") )
 
+; We have consumed all elements from current_pos
+(defpat match ([] [] tree consume) 
+   (nconcn tree "$$") 
+)
+
 ; we check if the word list is empty
 ; We then generate our words by a random selection out of the grammar
 ; according to the available rules.
@@ -118,10 +123,6 @@
    )
 )
 
-; We have consumed all elements from current_pos
-(defpat match ([] [] tree consume) 
-   (nconcn tree "$$") 
-)
 
 ; POS is the first rule we start our analysis with
 (defun parse (s POS tree) 
@@ -140,6 +141,7 @@
 (loopcount 50
    (println (join (analyse "a cat") " "))
 )
+
 
 
 
