@@ -116,7 +116,7 @@
 ; according to the available rules.
 (defpat match ( current_pos  []  consume)   
    ; this symbol "*" indicates where the word list starts in the final tree
-   (generate current_pos (cons "*" (reverse consume)))
+   (generate current_pos (reverse consume))
 )
 
 ; If the first element in current_pos is a terminal element
@@ -156,7 +156,7 @@
 
 (defun analyse(sentence)
    (setq sentence (parse (tokenize sentence) "S" ()))
-   (@@ sentence - "*" -1)
+   (@@ sentence 0 -1)
 )
 
 (defun remplace(s)
@@ -169,6 +169,7 @@
 (loopcount 50
    (println (remplace (join (analyse "une chatonne chasse") " ")))
 )
+
 
 
 

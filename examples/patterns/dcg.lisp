@@ -91,7 +91,7 @@
 ; according to the available rules.
 (defpat match ( current_pos  []  consume)   
    ; this symbol "*" indicates where the word list starts in the final tree
-   (generate current_pos (cons "*" (reverse consume)))
+   (generate current_pos (reverse consume))
 )
 
 ; If the first element in current_pos is a terminal element
@@ -133,7 +133,7 @@
 (defun analyse(sentence)
    (setq sentence (parse (tokenize sentence) "S" ()))
 ;   (println 'Tree sentence)
-   (@@ sentence - "*" -1)
+   (@@ sentence 0 -1)
 )
 
 ; we start with an incomplete sequence of words
@@ -141,6 +141,7 @@
 (loopcount 50
    (println (join (analyse "a cat") " "))
 )
+
 
 
 
