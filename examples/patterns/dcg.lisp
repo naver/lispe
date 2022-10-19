@@ -91,7 +91,7 @@
 ; according to the available rules.
 (defpat match ( current_pos  []  consume)   
    ; this symbol "*" indicates where the word list starts in the final tree
-   (generate current_pos (reverse consume))
+   (generate current_pos consume)
 )
 
 ; If the first element in current_pos is a terminal element
@@ -102,7 +102,7 @@
    ;We continue to analyse of sequence of POS
    ;Else we simply stop
    (if (in rg w)
-      (match (cdr current_pos) sentence  (cons w consume))
+      (match (cdr current_pos) sentence  (nconcn consume w))
    )
 )
 
@@ -139,7 +139,7 @@
 ; we start with an incomplete sequence of words
 ; we start with an incomplete sequence of words
 (loopcount 50
-   (println (join (analyse "a cat") " "))
+   (println (join (analyse "a big cat") " "))
 )
 
 
