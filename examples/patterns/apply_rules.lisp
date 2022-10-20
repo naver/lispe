@@ -35,16 +35,16 @@
 ; Otherwise, we take the rule and replace the current POS
 ; with its rule description.
 (defpat match ( [POS $ current_pos] [w $ sentence] consume)
-   (setq R (key grammar POS))
-   (ncheck (consp R)
-      (if (in (key grammar R) w)
-         (match current_pos sentence (nconcn consume w))
-      )
-      (loop r R
+   (setq rule (key grammar POS))
+   (if (consp rule)
+      (loop r rule
          (setq  poslst (match (nconcn r current_pos) (cons w sentence) consume))
          (if poslst
             (return poslst)
          )
+      )
+      (if (in (key grammar rule) w)
+         (match current_pos sentence (nconcn consume w))
       )
    )
 )
