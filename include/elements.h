@@ -79,7 +79,7 @@ typedef enum {
     l_bitandequal, l_bitandnotequal, l_bitorequal, l_bitxorequal,
     l_divideequal,l_modequal,
     l_concatenate, l_sum, l_product, l_stringf, l_size,
-    l_and, l_or, l_xor, l_not, l_eq, l_neq,
+    l_andvalue, l_and, l_or, l_xor, l_not, l_eq, l_neq,
     l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max, l_compare,
     
     l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
@@ -94,7 +94,7 @@ typedef enum {
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
     l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
-    l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
+    l_pushtrue, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings,
     l_set, l_setn, l_seti, l_sets,
@@ -331,6 +331,7 @@ public:
     virtual void append(LispE* lisp, long v) {}
     
     virtual void push_element(LispE* lisp, List* l);
+    virtual void push_element_true(LispE* lisp, List* l);
     virtual void push_element_front(LispE* lisp, List* l);
     virtual void push_element_back(LispE* lisp, List* l);
     
@@ -2153,6 +2154,7 @@ public:
     }
     
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -4181,6 +4183,7 @@ public:
     Element* protected_index(LispE*, Element* k);
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -4473,6 +4476,7 @@ public:
     }
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -4749,6 +4753,7 @@ public:
     }
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -5050,6 +5055,7 @@ public:
     Element* protected_index(LispE*, Element* k);
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 

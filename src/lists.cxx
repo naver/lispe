@@ -6848,6 +6848,10 @@ void Element::push_element(LispE* lisp, List* l) {
     throw new Error("Error: cannot push in this kind of elements");
 }
 
+void Element::push_element_true(LispE* lisp, List* l) {
+    throw new Error("Error: cannot push in this kind of elements");
+}
+
 void Element::push_element_front(LispE* lisp, List* l) {
     throw new Error("Error: cannot push in this kind of elements");
 }
@@ -6863,6 +6867,17 @@ void List::push_element(LispE* lisp, List* l) {
         value = l->liste[i]->eval(lisp);
         append(value->copying(false));
         value->release();
+    }
+}
+
+void List::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            append(value->copying(false));
+            value->release();
+        }
     }
 }
 
@@ -6890,6 +6905,17 @@ void LList::push_element(LispE* lisp, List* l) {
         value = l->liste[i]->eval(lisp);
         push_front(value->copying(false));
         value->release();
+    }
+}
+
+void LList::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            push_front(value->copying(false));
+            value->release();
+        }
     }
 }
 
@@ -6939,6 +6965,17 @@ void Integers::push_element(LispE* lisp, List* l) {
     }
 }
 
+void Integers::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            liste.push_back(value->asInteger());
+            value->release();
+        }
+    }
+}
+
 void Integers::push_element_front(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
@@ -6963,6 +7000,17 @@ void Numbers::push_element(LispE* lisp, List* l) {
         value = l->liste[i]->eval(lisp);
         liste.push_back(value->asNumber());
         value->release();
+    }
+}
+
+void Numbers::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            liste.push_back(value->asNumber());
+            value->release();
+        }
     }
 }
 
@@ -6993,6 +7041,17 @@ void Floats::push_element(LispE* lisp, List* l) {
     }
 }
 
+void Floats::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            liste.push_back(value->asFloat());
+            value->release();
+        }
+    }
+}
+
 void Floats::push_element_front(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
@@ -7020,6 +7079,17 @@ void Shorts::push_element(LispE* lisp, List* l) {
     }
 }
 
+void Shorts::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            liste.push_back(value->asShort());
+            value->release();
+        }
+    }
+}
+
 void Shorts::push_element_front(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
@@ -7044,6 +7114,17 @@ void Strings::push_element(LispE* lisp, List* l) {
         value = l->liste[i]->eval(lisp);
         liste.push_back(value->asUString(lisp));
         value->release();
+    }
+}
+
+void Strings::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            liste.push_back(value->asUString(lisp));
+            value->release();
+        }
     }
 }
 

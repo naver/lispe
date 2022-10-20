@@ -1866,6 +1866,17 @@ void Set::push_element(LispE* lisp, List* l) {
     }
 }
 
+void Set::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            append(value->copying(false));
+            value->release();
+        }
+    }
+}
+
 void Set::push_element_front(LispE* lisp, List* l)  {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
@@ -1890,6 +1901,17 @@ void Set_s::push_element(LispE* lisp, List* l) {
         value = l->liste[i]->eval(lisp);
         ensemble.insert(value->asUString(lisp));
         value->release();
+    }
+}
+
+void Set_s::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            ensemble.insert(value->asUString(lisp));
+            value->release();
+        }
     }
 }
 
@@ -1920,6 +1942,17 @@ void Set_i::push_element(LispE* lisp, List* l) {
     }
 }
 
+void Set_i::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            ensemble.insert(value->asInteger());
+            value->release();
+        }
+    }
+}
+
 void Set_i::push_element_front(LispE* lisp, List* l)  {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
@@ -1944,6 +1977,17 @@ void Set_n::push_element(LispE* lisp, List* l) {
         value = l->liste[i]->eval(lisp);
         ensemble.insert(value->asNumber());
         value->release();
+    }
+}
+
+void Set_n::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            ensemble.insert(value->asNumber());
+            value->release();
+        }
     }
 }
 
@@ -2709,6 +2753,17 @@ void Heap::push_element(LispE* lisp, List* l) {
         value = l->liste[i]->eval(lisp);
         insert(lisp, value->copying(false));
         value->release();
+    }
+}
+
+void Heap::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            insert(lisp, value->copying(false));
+            value->release();
+        }
     }
 }
 

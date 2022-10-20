@@ -934,6 +934,7 @@ public:
     }
     
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -1207,6 +1208,7 @@ public:
     
     Element* evall_addr_(LispE* lisp);
     Element* evall_and(LispE* lisp);
+    Element* evall_andvalue(LispE* lisp);
     Element* evall_apply(LispE* lisp);
     Element* evall_atomise(LispE* lisp);
     Element* evall_atomp(LispE* lisp);
@@ -1371,6 +1373,7 @@ public:
     Element* evall_printerrln(LispE* lisp);
     Element* evall_println(LispE* lisp);
     Element* evall_product(LispE* lisp);
+    Element* evall_pushtrue(LispE* lisp);
     Element* evall_push(LispE* lisp);
     Element* evall_pushfirst(LispE* lisp);
     Element* evall_pushlast(LispE* lisp);
@@ -2188,6 +2191,7 @@ public:
     
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -2665,6 +2669,7 @@ public:
     }
     
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -3130,6 +3135,7 @@ public:
     }
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -3552,6 +3558,7 @@ public:
     }
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 
@@ -4950,6 +4957,7 @@ public:
     }
     
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 

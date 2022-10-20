@@ -941,6 +941,7 @@ public:
     void sorting(LispE* lisp, List* comparison);
 
     void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
 

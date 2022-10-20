@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.10.13.10.47";
+static std::string version = "1.2022.10.20.14.39";
 string LispVersion() {
     return version;
 }
@@ -191,6 +191,7 @@ void Delegation::initialisation(LispE* lisp) {
 
 
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
+    set_instruction(l_andvalue, "andvalue", P_ATLEASTTHREE, &List::evall_andvalue);
     set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
     set_instruction(l_at, "at", P_ATLEASTTHREE, &List::evall_at);
     set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR, &List::evall_at_shape);
@@ -343,6 +344,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_println, "println", P_ATLEASTONE, &List::evall_println);
     set_instruction(l_product, "product", P_TWO, &List::evall_product);
     set_instruction(l_push, "push", P_ATLEASTTHREE, &List::evall_push);
+    set_instruction(l_pushtrue, "pushtrue", P_ATLEASTTHREE, &List::evall_pushtrue);
     set_instruction(l_pushfirst, "pushfirst", P_ATLEASTTHREE, &List::evall_pushfirst);
     set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE, &List::evall_pushlast);
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
@@ -2583,4 +2585,5 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 

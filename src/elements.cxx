@@ -1226,6 +1226,17 @@ void String::push_element(LispE* lisp, List* l) {
     }
 }
 
+void String::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value != null_ && value != emptylist_) {
+            content += value->asUString(lisp);
+            value->release();
+        }
+    }
+}
+
 void String::push_element_front(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {

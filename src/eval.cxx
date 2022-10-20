@@ -2322,6 +2322,19 @@ Element* List::evall_and(LispE* lisp) {
     return booleans_[test];
 }
 
+Element* List::evall_andvalue(LispE* lisp) {
+    long listsize = liste.size();
+    Element* second_element = null_;
+    bool test = true;
+        
+    for (long i = 1; i < listsize && test; i++) {
+        second_element->release();
+        second_element = liste[i]->eval(lisp);
+        test = (second_element == true_);
+    }
+    return second_element;
+}
+
 
 Element* List::evall_apply(LispE* lisp) {
     Element* function = liste[1]->eval(lisp);
@@ -9268,6 +9281,22 @@ Element* List::evall_extend(LispE* lisp) {
             container->append(value);
         }
         value->release();
+    }
+    catch (Error* err) {
+        container->release();
+        throw err;
+    }
+    
+    return container;
+}
+
+Element* List::evall_pushtrue(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    container = container->duplicate_constant(lisp);
+    
+    
+    try {
+        container->push_element_true(lisp, this);
     }
     catch (Error* err) {
         container->release();
