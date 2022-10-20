@@ -3,38 +3,40 @@
 ;Description: Compiler
 
 
-(defpat add ( ["\"" m "\"" $ r] n d)
-   (push (@ d n) m)
-   (add r n d)
+; We push the different words, without their quotes, into the grammar
+(defpat add ( ["\"" wrd "\"" $ words] POS gram)
+   (push (@ gram POS) wrd)
+   (add words POS gram)
 )
 
-(defpat add ( _ _ _) _)
+; Final operation, the word list is empty
+(defpat add ([] _ _) _)
 
+; We use a pattern to detect lexical rules, in which each word is between quotes 
 ; Note that for each terminal POS, we generate a: POS : %POS rule
 ; This POS:%POS is a dictionary entry where the value is NOT a list
 ; The %POS is the key to word lists in the grammar
-(defpat build( [n ":" "\"" m "\"" $ r] d)
-   (set@ d n (+ "%" n))
-   (setq n (+ "%" n))
-   (set@ d n (list m))
-   (add r n d)
+(defpat build( [POS ":" "\"" wrd "\"" $ words] gram)
+   ; A double entry in the grammar.
+   (setq lexPOS (+ "%" POS))
+   ; POS points to %POS
+   (set@ gram POS lexPOS)
+   ; %POS points to the list of words
+   (set@ gram lexPOS (list wrd)) ; this is an entry in the grammar
+   (add words lexPOS gram)
 )
 
-(defpat build( [n ":" $ r] d)
-   (if (key d n)
-      (push (@ d n) r)
-      (set@ d n (list r))
+; a rule pattern is: POS : POS1 POS2...POSN
+(defpat build( [POS ":" $ rest] gram)
+   (if (key gram POS)
+      (push (@ gram POS) rest)
+      (set@ gram POS (list rest))
    )
 )
 
-(defun compile(r)
-   (setq s (maplist 'tokenize (maplist 'trim (split (trim r) "\n"))))
-   (setq d (dictionary))
-   (maplist (\(x) (build x d)) s)
-   (setg grammar d)
+(defun compile(therules)
+   (setq rules (maplist 'tokenize (maplist 'trim (split (trim therules) "\n"))))
+   (setg grammar (dictionary))
+   (maplist (\(x) (build x grammar)) rules)
 )
-
-
-
-
 
