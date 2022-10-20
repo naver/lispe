@@ -14,3 +14,15 @@
 
 (println r)
 
+
+(setq l ())
+(loop r (irange 0 10 1)
+   (pushtrue l 
+       (andvalue
+          (eq (% r 2) 0)
+          (* 2 r)
+       )
+    )
+)
+
+(println l)
