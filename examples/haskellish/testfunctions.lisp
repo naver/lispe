@@ -1,4 +1,4 @@
-# Some examples on how to use map, filter, zip or zipwith
+; Some examples on how to use map, filter, zip or zipwith
 
 (println 'map (map '(+ 1) '(1 2 3)))
 (println 'map (map '(lambda (x) (* x 3 (- x 1))) '(3 4 5)))
@@ -47,7 +47,8 @@
 (println 'map_composed_with_scan (map '* (scanl1 '+ '(10 20 30))))
 
 ; We prevent LispE from composing in the following expression:
-(println 'non_composition_map (!map '* (scanl1 '+ '(10 20 30))))
+(println 'non_composition_map (?map '* (scanl1 '+ '(10 20 30))))
+
 
 
 
