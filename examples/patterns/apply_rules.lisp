@@ -8,23 +8,13 @@
 )
 
 
-; Generation of a word
-; First we check is the first POS in current_pos is a terminal POS
-; A terminal POS starts with "%"
-; Note that we randomly select a potential word from within the grammar
-(defpat generate( [(islexicalrule POS) $ current_pos] tree)
-   (setq rg (random_choice 1 (key grammar POS) 10))
-   ; we proceed with the rest of the current_pos elements
-   (generate current_pos (nconc tree rg))
-)
-
 ; Generation from a POS
 ; We go down our list to find a terminal POS (starting with a "%")
 (defpat generate([POS $ current_pos] tree)
    (setq r (key grammar POS))
    (if (consp r)
       (generate (nconcn (random_choice 1 r 30) current_pos) tree)
-      (generate (nconc (list r) current_pos) tree)
+      (generate current_pos (nconc tree (random_choice 1 (key grammar r) 30)))
    )
 )  
 
