@@ -3,7 +3,7 @@
 ;Description: Apply rules
 
 
-(defmacro testterminal (POS)
+(defmacro islexicalrule (POS)
    (eq "%" (@ POS 0))
 )
 
@@ -12,7 +12,7 @@
 ; First we check is the first POS in current_pos is a terminal POS
 ; A terminal POS starts with "%"
 ; Note that we randomly select a potential word from within the grammar
-(defpat generate( [(testterminal POS) $ current_pos] tree)
+(defpat generate( [(islexicalrule POS) $ current_pos] tree)
    (setq rg (random_choice 1 (key grammar POS) 10))
    ; we proceed with the rest of the current_pos elements
    (generate current_pos (nconc tree rg))
@@ -46,7 +46,7 @@
 
 ; If the first element in current_pos is a terminal element
 ; then we check if the word exists in the grammar
-(defpat match ( [ (testterminal POS) $ current_pos]  [w $ sentence]  consume)
+(defpat match ( [ (islexicalrule POS) $ current_pos]  [w $ sentence]  consume)
    ;If the word exists in the grammar
    ;We continue to analyse our sequence of POS
    ;Else we simply stop
