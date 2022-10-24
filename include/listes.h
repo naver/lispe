@@ -1402,6 +1402,7 @@ public:
     Element* evall_sets(LispE* lisp);
     Element* evall_set(LispE* lisp);
     Element* evall_set_at(LispE* lisp);
+    Element* evall_set_const(LispE* lisp);
     Element* evall_set_range(LispE* lisp);
     Element* evall_set_shape(LispE* lisp);
     Element* evall_setg(LispE* lisp);

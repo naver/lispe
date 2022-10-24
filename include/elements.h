@@ -58,7 +58,7 @@ typedef enum {
     //Recording in the stack or in memory
     l_sleep, l_wait,
     l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
-    l_setq, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape,
+    l_set_const, l_setq, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape,
     l_block, l_root, l_elapse,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
     l_catch, l_throw, l_maybe,

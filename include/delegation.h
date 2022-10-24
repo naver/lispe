@@ -114,7 +114,8 @@ public:
     binSet math_operators;
     binSet comparators;
     binSet logicals;
-
+    binSet const_values;
+    
     binhash<Element*> atom_pool;
 
     binHash<Element*> operator_pool;

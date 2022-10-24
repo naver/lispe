@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.10.24.9.56";
+static std::string version = "1.2022.10.24.16.56";
 string LispVersion() {
     return version;
 }
@@ -369,6 +369,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_seti, "seti", P_ATLEASTONE, &List::evall_seti);
     set_instruction(l_setn, "setn", P_ATLEASTONE, &List::evall_setn);
     set_instruction(l_set_at, "set@", P_ATLEASTTHREE, &List::evall_set_at);
+    set_instruction(l_set_const, "setconst", P_THREE, &List::evall_set_const);
     set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE, &List::evall_set_shape);
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
@@ -1603,6 +1604,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                 case l_defspace:
                                     current_space = currentspace;
                                     continue;
+                                case l_set_const:
                                 case l_lambda:
                                     e->eval(this);
                                     break;
@@ -1625,14 +1627,27 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     e->eval(this);
                                     continue;
                                 }
+                                case l_set_range:
+                                case l_set_shape:
                                 case l_setq:
+                                case l_seth:
                                 case l_set_at:
                                 case l_setg:
-                                    if (e->size() > 1 && e->index(1)->label() < l_final) {
-                                        wstring msg = L"Error: Invalid variable name: '";
-                                        msg += e->index(1)->asString(this);
-                                        msg += L"' (keyword)";
-                                        throw new Error(msg);
+                                    if (e->size() > 1) {
+                                        if (e->index(1)->label() < l_final) {
+                                            wstring msg = L"Error: Invalid variable name: '";
+                                            msg += e->index(1)->asString(this);
+                                            msg += L"' (keyword)";
+                                            throw new Error(msg);
+                                        }
+                                        else {
+                                            if (delegation->const_values.check(e->index(1)->label())) {
+                                                wstring msg = L"Error: '";
+                                                msg += e->index(1)->asString(this);
+                                                msg += L"' is a constant value";
+                                                throw new Error(msg);
+                                            }
+                                        }
                                     }
                                     break;
                                 case l_plusequal:
@@ -1661,6 +1676,14 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                                 wstring msg = L"Error: Invalid variable name: '";
                                                 msg += e->index(1)->asString(this);
                                                 msg += L"' (keyword)";
+                                                throw new Error(msg);
+                                            }
+                                        }
+                                        else {
+                                            if (delegation->const_values.check(e->index(1)->label())) {
+                                                wstring msg = L"Error: '";
+                                                msg += e->index(1)->asString(this);
+                                                msg += L"' is a constant value";
                                                 throw new Error(msg);
                                             }
                                         }
@@ -2586,6 +2609,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 
