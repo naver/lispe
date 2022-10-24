@@ -115,8 +115,9 @@ public:
     binSet comparators;
     binSet logicals;
 
+    binhash<Element*> atom_pool;
+
     binHash<Element*> operator_pool;
-    binHash<Element*> atom_pool;
     binSet atom_basic_pool;
     binHash<unsigned long> arities;
     binHash<Element*> macros;

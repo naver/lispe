@@ -877,7 +877,7 @@ void Delegation::initialisation(LispE* lisp) {
     
     thread_stack.function = null_;
     
-    atom_basic_pool.set(atom_pool.base, atom_pool.tsize, atom_pool.indexes);
+    atom_basic_pool.set(0, atom_pool.tsize, atom_pool.indexes);
     number_types.push(t_shorts);
     number_types.push(t_floats);
     number_types.push(t_integers);
