@@ -2592,7 +2592,7 @@ Element* List::evall_maplist(LispE* lisp) {
     void* iter = NULL;
     Element* save_variable = this;
     List* call = NULL;
-    bool choice = true;
+    bool choice = (liste[0]->label() == l_maplist);
     
     try {
         
