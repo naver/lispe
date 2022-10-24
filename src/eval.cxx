@@ -9540,6 +9540,8 @@ Element* List::evall_set_const(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     lisp->delegation->const_values[label] = true;
     lisp->storing_global(element, label);
+    if (element->status != s_constant)
+        lisp->garbaging(element);
     return true_;
 }
 
