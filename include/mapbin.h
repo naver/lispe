@@ -458,7 +458,7 @@ public:
 };
 
 template <class Z> class binhash {
-    public:
+public:
     Z** table;
     uint64_t* indexes;
     uint16_t tsize;
@@ -493,101 +493,12 @@ template <class Z> class binhash {
         return (i < tsize && (indexes[i] & binVal64[r & binMin]));
     }
 
-    void put(uint16_t r, Z a) {
-        table[(r >> binBits)][r & binMin] = a;
-    }
-    
-    //Only if you are sure that the element exists...
-    inline Z&  at(uint16_t r) {
-        return table[(r >> binBits)][r & binMin];
-    }
-
-    inline Z  at(int16_t i, int16_t r) {
-        return table[i][r];
-    }
-
-    bool empty() {
-        for (int16_t i = 0; i < tsize; i++) {
-            if (indexes[i])
-                return false;
-        }
-        return true;
-    }
-
     inline Z search(uint16_t r) {
         uint16_t i = (r >> binBits);
         r &= binMin;
         return (i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
     }
 
-    inline bool search(uint16_t r, Z* e) {
-        uint16_t i = (r >> binBits);
-        r &= binMin;
-        *e = (i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
-        return *e;
-    }
-
-    iterator find(uint16_t r) {
-        uint16_t i = (r >> binBits);
-        r &= binMin;
-        if (i < tsize && (indexes[i] & binVal64[r]))
-            return iterator(table, indexes, tsize, i, r);
-        
-        return iterator();
-    }
-
-    void erase(uint16_t r) {
-        uint16_t i = (r >> binBits);
-        r &= binMin;
-        if (i < tsize && indexes[i])
-            indexes[i] &= ~binVal64[r];
-    }
-    
-    size_t size() {
-        size_t nb = 0;
-        uint64_t filter;
-        
-        for (int16_t i = 0; i < tsize; i++) {
-            if (table[i] != NULL) {
-                filter = indexes[i];
-                while (filter) {
-                    if (!(filter & 1)) {
-                        while (!(filter & 65535))
-                            filter >>= 16;
-                        while (!(filter & 255))
-                            filter >>= 8;
-                        while (!(filter & 15))
-                            filter >>= 4;
-                        while (!(filter & 1))
-                            filter >>= 1;
-                    }
-                    nb++;
-                    filter >>= 1;
-                }
-            }
-        }
-        
-        return nb;
-    }
-
-    //nettoyage
-    void clear() {
-        if (tsize >= 10) {
-            for (int16_t i = 0; i < tsize; i++) {
-                if (table[i] != NULL)
-                    delete[] table[i];
-            }
-            tsize = 1;
-            table = (Z**)realloc(table, sizeof(Z*)*tsize);
-            indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*tsize);
-            table[0] = NULL;
-            indexes[0] = 0;
-        }
-        else {
-            memset(indexes, 0, sizeof(uint64_t)*tsize);
-        }
-    }
-    
     void resize(int16_t sz) {
         table = (Z**)realloc(table, sizeof(Z*)*sz);
         indexes = (uint64_t*)realloc(indexes, sizeof(uint64_t)*sz);
