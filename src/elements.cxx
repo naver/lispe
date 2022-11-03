@@ -514,6 +514,7 @@ Infinitelist::Infinitelist(LispE* lisp) : Element(t_list) {
 
 Cyclelist::Cyclelist(LispE* lisp) : Element(t_list) {
     value = null_;
+    idx = 0;
 }
 
 Dictionary_as_buffer::Dictionary_as_buffer(LispE* lisp) : Element(t_dictionary) {
@@ -613,7 +614,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
             return;
         }
         
-        if (type == l_loop || type == l_multiloop || type == l_polyloop) {
+        if (type == l_loop || type == l_mloop || type == l_lloop) {
             code += "(";
             //The command name
             code += lisp->toString(type);

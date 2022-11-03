@@ -45,9 +45,10 @@ typedef enum {
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
+    t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
     
     //System instructions
-    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function,
+    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, l_next,
     
     //Default Lisp instructions
     l_number, l_float, l_string, l_short, l_integer, l_atom,
@@ -58,8 +59,8 @@ typedef enum {
     //Recording in the stack or in memory
     l_sleep, l_wait,
     l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
-    l_set_const, l_setq, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape,
-    l_block, l_root, l_elapse,
+    l_set_const, l_setq, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
+    l_block, l_root, l_elapse, l_code,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
     l_catch, l_throw, l_maybe,
     
@@ -104,12 +105,15 @@ typedef enum {
     l_print, l_println, l_printerr, l_printerrln, l_prettify, l_bodies,
     
     l_mark, l_resetmark,
-    l_while, l_loop, l_loopcount, l_range, l_rangein, l_irange, l_irangein, l_multiloop, l_polyloop,
+    l_while, l_loop, l_loopcount, l_range, l_rangein, l_irange, l_irangein, l_mloop, l_lloop,
     l_atoms, l_atomise, l_join, l_sort,
     l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
     l_apply, l_maplist, l_mapcar, l_filterlist, l_droplist, l_takelist, l_mapping, l_checking, l_folding,
-    l_composenot, l_data, l_compose, l_map, l_filter, l_take, l_repeat, l_cycle, l_replicate, l_drop, l_takewhile, l_dropwhile,
+    l_data, l_replicate,
+    
+    l_map, l_filter, l_take, l_repeat, l_cycle, l_drop, l_takewhile, l_dropwhile,
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
+    
     l_zip, l_zipwith,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon, c_point,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
@@ -235,6 +239,10 @@ public:
     void replaceVariableNames(LispE* lisp, binHash<Element*>& names);
     bool replaceVariableNames(LispE* lisp);
 
+    virtual Element* next_element() {
+        return this;
+    }
+    
     virtual bool isArgumentFunction() {
         return false;
     }
@@ -563,9 +571,25 @@ public:
     virtual void change(long i, Element* e) {}
     virtual void changelast(Element* e) {}
     
-    virtual Element* composing(LispE*, bool compose) {
+    
+    //-----------------
+    //Composing functions
+    virtual Element* compose(LispE*, Element* var, Element* e) {
         return this;
     }
+    
+    virtual Element* to_code(LispE*, Element* var1, Element* var2) {
+        return this;
+    }
+    
+    virtual bool hasAction() {
+        return false;
+    }
+    
+    virtual bool isComposable() {
+        return false;
+    }
+    //-----------------
     
     virtual Element* eval(LispE*) {
         return this;
@@ -2388,19 +2412,20 @@ public:
 
 class InfiniterangeNumber : public Element {
 public:
+    Constnumber exchange_value;
     double initial_value;
     double increment;
     double bound;
     bool infinite_loop;
 
-    InfiniterangeNumber(double v, double i) : Element(l_list) {
+    InfiniterangeNumber(double v, double i) : Element(l_list), exchange_value(v) {
         initial_value = v;
         increment = i;
         infinite_loop = true;
         bound = 0;
     }
     
-    InfiniterangeNumber(double v, double i, double b) : Element(l_list) {
+    InfiniterangeNumber(double v, double i, double b) : Element(l_list), exchange_value(v) {
         initial_value = v;
         increment = i;
         infinite_loop = false;
@@ -2418,8 +2443,38 @@ public:
     bool isList() {
         return true;
     }
+    
+    long size() {
+        if (infinite_loop)
+            return (((uint64_t)-1) >> 1);
+
+        long nb = 0;
+        double v = initial_value;
+        
+        if (increment < 0) {
+            while (v > bound) {
+                nb++;
+                v += increment;
+            }
+        }
+        else {
+            while (v < bound) {
+                nb++;
+                v += increment;
+            }
+        }
+        
+        return nb;
+    }
 
     wstring asString(LispE* lisp);
+    
+    Element* index(long i) {
+        exchange_value.content = initial_value + increment*i;
+        return &exchange_value;
+    }
+    
+    Element* value_on_index(LispE* lisp, long i);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* car(LispE*);
@@ -2428,19 +2483,20 @@ public:
 
 class InfiniterangeInteger : public Element {
 public:
+    Constinteger exchange_value;
     long initial_value;
     long increment;
     long bound;
     bool infinite_loop;
     
-    InfiniterangeInteger(long v, long i) : Element(l_list) {
+    InfiniterangeInteger(long v, long i) : Element(l_list), exchange_value(v) {
         initial_value = v;
         increment = i;
         infinite_loop = true;
         bound = 0;
     }
     
-    InfiniterangeInteger(long v, long i, long b) : Element(l_list) {
+    InfiniterangeInteger(long v, long i, long b) : Element(l_list), exchange_value(v)  {
         initial_value = v;
         increment = i;
         infinite_loop = false;
@@ -2459,8 +2515,20 @@ public:
         return true;
     }
     
+    long size() {
+        if (infinite_loop || !bound)
+            return (((uint64_t)-1) >> 1);
+        return (1 + ((abs(bound - initial_value) - 1)/increment));
+    }
+
     wstring asString(LispE* lisp);
 
+    Element* index(long i) {
+        exchange_value.content = initial_value + increment*i;
+        return &exchange_value;
+    }
+
+    Element* value_on_index(LispE* lisp, long i);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* car(LispE*);
@@ -2492,12 +2560,17 @@ public:
         value = e;
     }
     
+    Element* next_element() {
+        return value->copying(false);
+    }
+
     Element* loop(LispE* lisp, int16_t label,  List* code);
 };
 
 class Cyclelist : public Element {
 public:
     Element* value;
+    long idx;
     
     Cyclelist(LispE* lisp);
     
@@ -2515,10 +2588,18 @@ public:
         value = e;
     }
     
+    Element* next_element() {
+        if (idx == value->size())
+            idx = 0;
+        Element* v = value->index(idx++);
+        return v->copying(false);
+    }
+    
     u_ustring asUString(LispE* lisp);
     wstring asString(LispE* lisp);
 
     Element* loop(LispE* lisp, int16_t label,  List* code);
+    
 };
 
 

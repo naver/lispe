@@ -161,7 +161,6 @@ public:
     
     Atome* _ERROR;
     Atome* _TERMINAL;
-    Atome* _COMPOSE;
     Atome* _TRUE;
     Atome* _NULL;
     Atome* _EMPTYATOM;
@@ -267,6 +266,9 @@ public:
         return (type == l_plus || type == l_minus || comparators.check(type) || logicals.check(type));
     }
 
+    bool isComparator(int16_t type) {
+        return comparators.check(type);
+    }
 
     inline string toString(int16_t c) {
         string s;

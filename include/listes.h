@@ -544,8 +544,8 @@ public:
     }
     
     virtual Element* loop(LispE* lisp, int16_t label,  List* code);
-    Element* multiloop(LispE* lisp);
-    Element* polyloop(LispE* lisp);
+    Element* mloop(LispE* lisp);
+    Element* lloop(LispE* lisp);
     
     void set_from(Element* e, long i) {
         append(e->index(i));
@@ -999,7 +999,6 @@ public:
         return this;
     }
     
-    Element* composing(LispE*, bool compose);
     virtual Element* eval(LispE*);
     Element* eval_no_fail(LispE*);
         
@@ -1232,8 +1231,6 @@ public:
     Element* evall_catch(LispE* lisp);
     Element* evall_cdr(LispE* lisp);
     Element* evall_check(LispE* lisp);
-    Element* evall_checking(LispE* lisp);
-    Element* evall_compose(LispE* lisp);
     Element* evall_concatenate(LispE* lisp);
     Element* evall_cond(LispE* lisp);
     Element* evall_cons(LispE* lisp);
@@ -1323,6 +1320,7 @@ public:
     Element* evall_to_list(LispE* lisp);
     Element* evall_to_llist(LispE* lisp);
     Element* evall_load(LispE* lisp);
+    Element* evall_let(LispE* lisp);
     Element* evall_lock(LispE* lisp);
     Element* evall_loop(LispE* lisp);
     Element* evall_loopcount(LispE* lisp);
@@ -1351,6 +1349,7 @@ public:
     Element* evall_nconc(LispE* lisp);
     Element* evall_nconcn(LispE* lisp);
     Element* evall_neq(LispE* lisp);
+    Element* evall_next(LispE* lisp);
     Element* evall_not(LispE* lisp);
     Element* evall_nullp(LispE* lisp);
     Element* evall_numberp(LispE* lisp);
@@ -1386,6 +1385,7 @@ public:
     Element* evall_rank(LispE* lisp);
     Element* evall_reduce(LispE* lisp);
     Element* evall_replaceall(LispE* lisp);
+    Element* evall_replicate(LispE*);
     Element* evall_resetmark(LispE* lisp);
     Element* evall_return(LispE* lisp);
     Element* evall_reverse(LispE* lisp);
@@ -1459,6 +1459,26 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
+
+
+    //Composable functions
+    Element* evall_map_cps(LispE*);
+    Element* evall_filter_cps(LispE*);
+    Element* evall_take_cps(LispE*);
+    Element* evall_repeat_cps(LispE*);
+    Element* evall_cycle_cps(LispE*);
+    Element* evall_drop_cps(LispE*);
+    Element* evall_takewhile_cps(LispE*);
+    Element* evall_dropwhile_cps(LispE*);
+    Element* evall_for_cps(LispE*);
+    Element* evall_foldl_cps(LispE*);
+    Element* evall_scanl_cps(LispE*);
+    Element* evall_foldr_cps(LispE*);
+    Element* evall_scanr_cps(LispE*);
+    Element* evall_foldl1_cps(LispE*);
+    Element* evall_scanl1_cps(LispE*);
+    Element* evall_foldr1_cps(LispE*);
+    Element* evall_scanr1_cps(LispE*);
 
 #ifdef MACDEBUG
     Element* evall_debug_function(LispE* lisp);

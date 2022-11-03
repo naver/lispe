@@ -809,7 +809,7 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
-Element* List::multiloop(LispE* lisp) {
+Element* List::mloop(LispE* lisp) {
     List* values = lisp->provideList();
     List* indexes = lisp->provideList();
     Element* e = null_;
@@ -869,7 +869,7 @@ Element* List::multiloop(LispE* lisp) {
     return e;
 }
 
-Element* List::polyloop(LispE* lisp) {
+Element* List::lloop(LispE* lisp) {
     List* values = lisp->provideList();
     Element* e = null_;
     unsigned long sz;
@@ -1518,6 +1518,52 @@ Element* LList::last_element(LispE* lisp) {
         return null_;
     return liste.back();
 }
+
+
+Element* InfiniterangeNumber::value_on_index(LispE* lisp, long i) {
+    double v = initial_value + increment*i;
+    if (infinite_loop) {
+        exchange_value.content = v;
+        return &exchange_value;
+    }
+    
+    if (increment < 0) {
+        if (v > bound) {
+            exchange_value.content = v;
+            return &exchange_value;
+        }
+    }
+    else {
+        if (v < bound) {
+            exchange_value.content = v;
+            return &exchange_value;
+        }
+    }
+    return null_;
+}
+
+Element* InfiniterangeInteger::value_on_index(LispE* lisp, long i) {
+    long v = initial_value + increment*i;
+    if (infinite_loop) {
+        exchange_value.content = v;
+        return &exchange_value;
+    }
+    
+    if (increment < 0) {
+        if (v > bound) {
+            exchange_value.content = v;
+            return &exchange_value;
+        }
+    }
+    else {
+        if (v < bound) {
+            exchange_value.content = v;
+            return &exchange_value;
+        }
+    }
+    return null_;
+}
+
 
 Element* List::value_on_index(LispE* lisp, long i) {
     if (i >= 0 && i < liste.size())

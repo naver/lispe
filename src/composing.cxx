@@ -29,7 +29,7 @@
  
  For instance: (map '+ '(1 2 3)) is transformed into:
  
- (push #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (push #recipient #accu))
+ (setq #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (push #recipient #accu))
  
  #i is the iterator variable
  #accu the accumulator in which different operations are computed
@@ -40,7 +40,7 @@
  
  (filter '(< 10) '(1 2 3)) is implemented as:
  
- (push #recipient ()) (loop #i '(1 2 3) (check (< #i 10) (push #recipient #i)))
+ (setq #recipient ()) (loop #i '(1 2 3) (check (< #i 10) (push #recipient #i)))
  
  Combining
  ---------
@@ -52,11 +52,11 @@
  Then, we keep only one single loop, in which we add our conditions:
  ----------------------------------
  
- First the map: (push #recipient ()) (loop #i '(1 3 5 9 6 4) (setq #accu (+ #i #i)) (push #recipient #accu))
+ First the map: (setq #recipient ()) (loop #i '(1 3 5 9 6 4) (setq #accu (+ #i #i)) (push #recipient #accu))
  
  Then the filtering, whose condition now encapsulates '(push #recipient #)'
  
- (push #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (check (< #accu 10) (push #recipient #accu)))
+ (setq #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (check (< #accu 10) (push #recipient #accu)))
  
  Note that the 'check' now takes #accu as the variable to check against
  
@@ -67,113 +67,60 @@
  
  In this case, we simply modify the operation twice:
  
- The first map: (push #recipient ()) (loop #i '(1 2 3 4) (setq #accu (+ #i #i)) (push #recipient #accu))
+ The first map: (setq #recipient ()) (loop #i '(1 2 3 4) (setq #accu (+ #i #i)) (push #recipient #accu))
  
  The second map:
  
- (push #recipient ()) (loop #i '(1 3 5 9 6 4) (setq #accu (* (+ #i #i) (+ #i #i))) (push #recipient #accu))
+ (setq #recipient ()) (loop #i '(1 3 5 9 6 4) (setq #accu (* (+ #i #i) (+ #i #i))) (push #recipient #accu))
 
- Tracking which part to modify
- -----------------------------
- To track, which parts to modify, we need to track the operation and the checks and ifs.
- 
- 1) operation tracks the different operations, its initial value is nil, when only filterings are applied
- 2) final_section tracks the different checks, its initial value is: (push #recipient #accu)
- 
- In the 'compose' list, operation is stored in liste[2] and final_section in liste[3]...
- 
+
  If we take the following example:
  
  (map '* (filter '(< 20) (map '+ '(1 3 5 9 6 4))))
  -------------------------------------------------
  
  a) First we create our initial loop:
- 
- (push #recipient ()) (loop #i '(1 3 5 9 6 4) (setq #accu (+ #i #i)) (push #recipient #accu))
- 
- operation = (set #accu (+ #i #i))
- final_section = (push #recipient #accu)
+ (setq #recipient ()) (loop #i '(1 3 5 9 6 4) (setq #accu (+ #i #i)) (push #recipient #accu))
  
  b) Second, we introduce our filter:
- (push #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (check (< #accu 10) (push #recipient #accu)))
- 
- operation = (set #accu (+ #i #i))
- final_section = (check (< #accu 10) (push #recipient #accu))
+ (setq #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (check (< #accu 10) (push #recipient #accu)))
  
  c) Third, we add the final map:
- (push #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (check (< #accu 10) (setq ##accu (* #accu #accu0)) (push #recipient ##accu)))
+ (setq #recipient ()) (loop #i '(1 2 3) (setq #accu (+ #i #i)) (check (< #accu 10) (setq ##accu (* #accu0 #accu0)) (push #recipient ##accu)))
  
  Note that we have introduced an new accumulator: ##accu, since we cannot modify the initial #accu, on which the test depends...
- 
- operation = (setq ##accu (* #accu #accu0))
- final_section = (check (< #accu 10) (setq ##accu (* #accu #accu0)) (push #recipient ##accu))
- 
- Hence if add another layer on top:
- 
+  
  (filter '(!= 100) (map '* (filter '(< 20) (map '+ '(1 3 5 9 6 4)))))
  --------------------------------------------------------------------
  
  The loop is now:
  
- (push #recipient ())
- (loop #i '(1 2 3)
-    (setq #accu (+ #i #i))
-    (check (< #accu 10)
-            (setq ##accu (* #accu #accu0))
-            (check (!= ##accu 100) (push #recipient ##accu))
+ (setq %content0 ())
+ (loop %i0
+    '(1 3 5 9 6 4)
+    (setq %v0 (+ %i0 %i0))
+    (check (< %v0 20)
+       (setq %v0_ (* %v0 %v0))
+       (check (!= %v0_ 100)
+          (push %content0 %v0_)
+       )
     )
  )
-
- with
- 
- operation = (setq ##accu (* #accu #accu0))
- final_section = (check (!= ##accu 100) (push #recipient ##accu)); this is the most embedded 'check'
  
  Note how the last 'check' in the structure now bears on ##accu and not on #accu...
 
- However, if we add a new map on the top:
- 
- (map '(!= 100) (map '* (filter '(< 20) (map '+ '(1 3 5 9 6 4)))))
- -----------------------------------------------------------------
-
- Then we modify the operation:
- 
- (push #recipient ())
- (loop #i '(1 2 3)
-    (setq #accu (+ #i #i))
-    (check (< #accu 10)
-            (setq ##accu  (+ (* #accu #accu0) (* #accu #accu0)))
-            (push #recipient ##accu)
-    )
- )
-
- operation = (setq ##accu  (+ (* #accu #accu0) (* #accu #accu0)))
- final_section = (check (< #accu 10) (setq ##accu  (+ (* #accu #accu) (* #accu #accu))) (push #recipient ##accu))
- 
- 
- check/ncheck
- ------------
- 
- The core idea in this implementation is that the final section is ALWAYS the last element of the structure.
- 
-a) (check CONDITION FINAL)
-b) (ncheck CONDITION ELSE FINAL)
- 
-The difference between check and ncheck is that ncheck executes the ELSE when the CONDITION is nil.
- 
- Hence, whenever an update is implemented through a composition, we always know where to modifiy the final_section instruction set.
-
  This method is used at compile time to evaluate take, takewhile, repeat, map, filter etc..
  In order to compose them when they are embedded...
- case l_cycle:
- case l_repeat:
- case l_take:
- case l_drop:
- case l_takewhile:
- case l_dropwhile:
- case l_filter:
- case l_map:
- case l_scan
+ case l_cycle
+ case l_repeat
+ case l_take
+ case l_drop
+ case l_takewhile
+ case l_dropwhile
+ case l_filter
+ case l_map
+ case l_scan(l|r)(1)
+ case l_fold(l|r)(1)
  
  This section is akin to a complex macro, which transforms these instructions into LispE loops.
  Hence, we build a single loop, in which we introduce our tests and our intermediate computations.
@@ -202,879 +149,930 @@ The difference between check and ncheck is that ncheck executes the ELSE when th
  //(defun xx(v) (for i (map '+ (range 1 10 1)) (+ i 10) (> i 3)))
  */
 
-#define P(x) lisp->provideAtom(x)
+#define C_INS create_instruction
 
-static bool findvariable(Element* L, Element* v) {
-    if (L == v)
-        return true;
+class Code : public Element {
+public:
+    Element* code;
     
-    if (L->isList()) {
-        for (long i = 0; i < L->size(); i++) {
-            if (findvariable(L->index(i), v))
-                return true;
-        }
+    Code(LispE* lisp, Element* c) : Element(t_code) {
+        code = c;
+        lisp->clean_compositions.push_back(this);
     }
-    return false;
-}
 
-static void replacevariable(Element* L, Element* v, Element* n) {
-    if (L->isList()) {
-        Element* e;
-        for (long i = 0; i < L->size(); i++) {
-            e = L->index(i);
-            if (e->label() == l_lambda)
-                return;
-            if (e == v)
-                L->change(i, n);
-            else
-                replacevariable(e, v, n);
-        }
-    }
-}
-
-
-static bool replace_recipient(Element* L, Element* rec, Element* accu) {
-    int16_t label = L->index(0)->label();
-    if (L->index(1) == rec && (label == l_push || label == l_insert)) {
-        L->change(2, accu);
+    bool isComposable() {
         return true;
     }
-    if (L->isList()) {
-        for (long i = 0; i < L->size(); i++) {
-            if (replace_recipient(L->index(i), rec, accu))
-                return true;
-        }
+
+    Element* next_element() {
+        return code->next_element();
     }
-    return false;
-}
+
+    Element* index(long i) {
+        return code->index(i);
+    }
+
+    string toString(LispE* lisp) {
+        return code->toString(lisp);
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        return code->asUString(lisp);
+    }
+};
 
 
-
-Element* List::composing(LispE* lisp, bool docompose) {
-    static int idx_var = 0;
-
-    long listsize = liste.size();
-    Element* first_element = liste[0];
-    
-    Element* element;
-    Element* final_section = NULL;
-    List* compose = NULL;
-    List* loop;
-    Element* iterator_variable;
-    
-    Element* _iterator = null_;
-    Element* _recipient;
-    Element* _value;
-    Element* _check = null_;
-    Element* operation = null_;
+class Action : public Element {
+public:
     Element* action;
-    Element* _first = null_;
-    Element* _id_var;
     
-    //Then we can compose our elements...
-    int16_t labeltype = first_element->type;
-    if (!lisp->delegation->checkArity(labeltype, listsize)) {
-        u_ustring err(U"Error: wrong number of arguments for: '");
-        err += lisp->asUString(labeltype);
-        err += U"'";
-        throw new Error(err);
+    Action(LispE* lisp, Element* a) : Element(t_action){
+        if (a->index(0)->type == l_quote)
+            a = a->index(1);
+        action = a;
+        lisp->clean_compositions.push_back(this);
     }
     
-    first_element = liste[1];
+    bool isComposable() {
+        return true;
+    }
+
+    string toString(LispE* lisp) {
+        return action->toString(lisp);
+    }
     
-    if (labeltype == l_for) {
-        element = liste[2];
-        _iterator = liste[1];
-        if (docompose && element->index(0)->label() == l_compose) {
-            //We are composing with a substructure...
-            compose = (List*)element;
-            //First, we replace the current variable with our local iterator
-            replacevariable(compose, compose->liste.back()->index(1), _iterator);
-            if (listsize == 5) {
-                //We first create a filter
-                loop = (List*)lisp->create_local_instruction(l_filter, liste[4], compose, _iterator);
-                _check = loop->composing(lisp, true);
-                //Then we create our map...
-                compose = (List*)lisp->create_local_instruction(l_map, liste[3], _check, _iterator);
-                operation =  compose->composing(lisp, true);
-                loop->release();
-                compose->release();
-                return operation;
+    u_ustring asUString(LispE* lisp) {
+        return action->asUString(lisp);
+    }
+
+    Element* index(long i) {
+        return action->index(i);
+    }
+    
+    bool hasAction() {
+        return true;
+    }
+    
+    Element* to_code(LispE* lisp, Element* var, Element* c) {
+        c = lisp->create_instruction(l_setq, var, action);
+        return new Code(lisp, c);
+    }
+    
+    Element* next_element() {
+        return action;
+    }
+    
+    Element* compose(LispE* lisp, Element* var, Element* e) {
+        if (e != NULL)
+            var =  ((Action*)e)->action;
+        
+        if (action->isList()) {
+            if (action->isLambda()) {
+                List* a = new Listincode();
+                lisp->garbaging(a);
+                a->append(action);
+                a->append(var);
+                action = a;
+                return this;
             }
-            compose = (List*)lisp->create_local_instruction(l_map, liste[3], compose, _iterator);
-            operation =  compose->composing(lisp, true);
-            compose->release();
-            return operation;
+            if (action->size() == 2) {
+                if (action->index(0)->isOperator()) {
+                    List* a = new Listincode();
+                    lisp->garbaging(a);
+                    a->append(action->index(0));
+                    a->append(var);
+                    a->append(action->index(1));
+                    action = a;
+                    return this;
+                }
+                if (action->index(1)->isOperator()) {
+                    List* a = new Listincode();
+                    lisp->garbaging(a);
+                    a->append(action->index(1));
+                    a->append(action->index(0));
+                    a->append(var);
+                    action = a;
+                    return this;
+                }
+            }
+            throw new Error("Error: missing operator");
         }
-        docompose = false;
+        List* a = new Listincode();
+        lisp->garbaging(a);
+        a->append(action);
+        a->append(var);
+        if (action->isOperator())
+            a->append(var);
+        action = a;
+        return this;
     }
-    else {
-        if (labeltype == l_repeat || labeltype == l_cycle) {
-            if (labeltype == l_cycle)
-                element = new Cyclelist(lisp);
-            else
-                element = new Infinitelist(lisp);
-            lisp->garbaging(element);
+
+};
+
+class Condition : public Element {
+public:
+    Element* condition;
+    
+    Condition(LispE* lisp, Element* c, int16_t lb = t_condition) : Element(lb){
+        if (c->index(0)->type == l_quote)
+            c = c->index(1);
+        condition = c;
+        lisp->clean_compositions.push_back(this);
+    }
+    
+    bool isComposable() {
+        return true;
+    }
+
+    Element* index(long i) {
+        return condition->index(i);
+    }
+
+    Element* next_element() {
+        return condition;
+    }
+
+    virtual Element* to_code(LispE* lisp, Element* var, Element* c) {
+        condition = lisp->create_instruction(l_check, condition);
+        return this;
+    }
+
+    string toString(LispE* lisp) {
+        return condition->toString(lisp);
+    }
+    
+    u_ustring asUString(LispE* lisp) {
+        return condition->asUString(lisp);
+    }
+
+    Element* compose(LispE* lisp, Element* var, Element* e) {
+        Element* c = condition;
+        if (condition->isList()) {
+            if (condition->isLambda()) {
+                List* a = new Listincode();
+                lisp->garbaging(a);
+                a->append(condition);
+                a->append(var);
+                c = a;
+            }
+            else {
+                if (condition->size() == 2) {
+                    if (lisp->isComparator(condition->index(0))) {
+                        List* a = new Listincode();
+                        lisp->garbaging(a);
+                        a->append(condition->index(0));
+                        a->append(var);
+                        a->append(condition->index(1));
+                        c = a;
+                    }
+                    else {
+                        if (lisp->isComparator(condition->index(1))) {
+                            List* a = new Listincode();
+                            lisp->garbaging(a);
+                            a->append(condition->index(1));
+                            a->append(condition->index(0));
+                            a->append(var);
+                            c = a;
+                        }
+                        else
+                            throw new Error("Error: missing operator");
+                    }
+                }
+            }
         }
         else {
-            if (listsize == 4 && (labeltype == l_map || labeltype == l_filter)) {
-                //This map or this filter was issued from a for interpretation
-                _iterator = liste[3];
-                listsize = 3;
-            }
-            if (listsize == 3)
-                element = liste[2];
-            else
-                element = liste[3];
-        }
-    }
-    wchar_t buffer[20];
-
-    int idx = idx_var;
-    bool creation = true;
-    if (docompose && element->index(0)->label() == l_compose) {
-        creation = false;
-        compose = (List*)element;
-        _id_var = compose->liste[1];
-        idx = (int)_id_var->index(0)->asInteger();
-    }
-    else {
-        _id_var = new List;
-        lisp->garbaging(_id_var);
-        _value = new Integer(idx_var++);
-        lisp->garbaging(_value);
-        _id_var->append(_value);
-        _id_var->append(zero_);
-        //We only create a certain number of variables
-        //we expect encapsulation to be less than 16...
-        if (idx_var == 16)
-            idx_var = 0;
-    }
-
-    if (_iterator == null_) {
-        swprintf_s(buffer,20, L"#i%d", idx);
-        _iterator = P(buffer);
-    }
-    
-    swprintf_s(buffer,20, L"#recipient%d", idx);
-    _recipient = P(buffer);
-    
-    swprintf_s(buffer,20, L"#accu%d", idx);
-    _value = P(buffer);
-
-    int16_t fold_ordering = 0;
-    if (creation) {
-        //We need to create our structure from scratch
-        iterator_variable = _iterator;
-        switch (labeltype) {
-            case l_replicate:
-                final_section = lisp->create_instruction(l_push, _recipient, element);
-                loop = lisp->create_instruction(l_loopcount, _iterator, final_section);
-                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                compose = lisp->create_instruction(l_block, element, loop);
-                break;
-            case l_map:
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-                final_section = lisp->create_instruction(l_push, _recipient, _value);
-                loop = lisp->create_instruction(l_loop, _iterator, element, operation, final_section);
-                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, loop);
-                break;
-            case l_for:
-                operation = lisp->create_instruction(l_setq, _value, liste[3]);
-                final_section = lisp->create_instruction(l_push, _recipient, _value);
-                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                if (listsize == 5) {
-                    action = lisp->create_instruction(l_check, liste[4], operation, final_section);
-                    loop = lisp->create_instruction(l_loop, _iterator, liste[2], action);
-                    compose = lisp->create_instruction(l_compose, _id_var, operation, action, element, loop);
-                    _id_var->change(1, one_);
-                }
-                else {
-                    loop = lisp->create_instruction(l_loop, _iterator, liste[2], operation, final_section);
-                    compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, loop);
-                }
-                return compose;
-            case l_foldl:
-                //First we need to initialize out value
-                //(foldl op init list)
-                //In this case, the initialisation value is provided as the third parameter
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-                //The fourth parameter is the list to loop on
-                final_section = lisp->create_instruction(l_setq, _recipient, _value);
-                loop = lisp->create_instruction(l_loop, _iterator, liste[3], operation, final_section);
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, _recipient, action, loop);
-                fold_ordering = 1;
-                break;
-            case l_scanl:
-                //First we need to initialize out value
-                //(scanl op init list)
-                //(setq value init)...(setq recipient (cons value ())
-                //In this case, the initialisation value is provided as the third parameter
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-                //The fourth parameter is the list to loop on
-                final_section = lisp->create_instruction(l_push, _recipient, _value);
-                loop = lisp->create_instruction(l_loop, _iterator, liste[3], operation, final_section);
-                element = lisp->create_instruction(l_setq, _recipient, lisp->create_instruction(l_cons, liste[2], emptylist_));
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, action, loop);
-                fold_ordering = 1;
-                break;
-            case l_foldr:
-                //In this case, the initialisation value is provided as the third parameter
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-                //The fourth parameter is the list to loop on
-                loop = lisp->create_instruction(l_reverse, liste[3]);
-                final_section = lisp->create_instruction(l_setq, _recipient, _value);
-                loop = lisp->create_instruction(l_loop, _iterator, loop, operation, final_section);
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, _recipient, action, loop);
-                fold_ordering = 2;
-                break;
-            case l_scanr:
-                //In this case, the initialisation value is provided as the third parameter
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-                //The fourth parameter is the list to loop on
-                loop = lisp->create_instruction(l_reverse, liste[3]);
-                final_section = lisp->create_instruction(l_insert, _recipient, _value, zero_);
-                loop = lisp->create_instruction(l_loop, _iterator, loop, operation, final_section);
-                element = lisp->create_instruction(l_setq, _recipient, lisp->create_instruction(l_cons, liste[2], emptylist_));
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, action, loop);
-                fold_ordering = 2;
-                break;
-            case l_foldl1:
-                //First we need to initialize out value
-                //In this case, the initialisation value is provided as the first element from the list
-                //(foldl1 op list)
-                //The fourth parameter is the list to loop on
-                
-                swprintf_s(buffer,20, L"#first%d", idx);
-                _first = P(buffer);
-                
-                //This is the prototype of operation, the last element will be modified
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-
-                //We need to initialize our process with the first element from the list
-                //(ncheck #first (setq #value #i) (setq #first nil) (setq #value #i))
-                action = lisp->create_instruction(l_ncheck, _first);
-                action->append(operation);
-                action->append(lisp->create_instruction(l_setq, _first, null_));
-                action->append(lisp->create_instruction(l_setq, _value, _iterator));
-
-                final_section = lisp->create_instruction(l_setq, _recipient, _value);
-                loop = lisp->create_instruction(l_loop, _iterator, liste[2], action, final_section);
-                action = lisp->create_instruction(l_setq, _first, true_);
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, _recipient, action, loop);
-                fold_ordering = 1;
-                break;
-            case l_scanl1:
-                //First we need to initialize out value
-                swprintf_s(buffer,20, L"#first%d", idx);
-                _first = P(buffer);
-                
-
-                //In this case, the initialisation value is provided as the first element from the list
-                //(foldl1 op list)
-                //This is the prototype of operation, the last element will be modified
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-
-                //We need to initialize our process with the first element from the list
-                //(ncheck #first (setq #value #i) (setq #first nil) (setq #value #i))
-                action = lisp->create_instruction(l_ncheck, _first);
-                action->append(operation);
-                action->append(lisp->create_instruction(l_setq, _first, null_));
-                action->append(lisp->create_instruction(l_setq, _value, _iterator));
-
-                final_section = lisp->create_instruction(l_push, _recipient, _value);
-                loop = lisp->create_instruction(l_loop, _iterator, liste[2], action, final_section);
-                action = lisp->create_instruction(l_setq, _first, true_);
-                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, action, loop);
-                fold_ordering = 1;
-                break;
-            case l_foldr1:
-                //First we need to initialize out value
-                swprintf_s(buffer,20, L"#first%d", idx);
-                _first = P(buffer);
-                
-                //In this case, the initialisation value is provided as the last element from the list
-                //(foldr1 op list)
-                //The fourth parameter is the list to loop on
-                loop = lisp->create_instruction(l_reverse, liste[2]);
-                
-                //This is the prototype of operation, the last element will be modified
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-
-                //We need to initialize our process with the first element from the list
-                //(ncheck #first (setq #value #i) (setq #first nil) (setq #value #i))
-                action = lisp->create_instruction(l_ncheck, _first);
-                action->append(operation);
-                action->append(lisp->create_instruction(l_setq, _first, null_));
-                action->append(lisp->create_instruction(l_setq, _value, _iterator));
-
-                final_section = lisp->create_instruction(l_setq, _recipient, _value);
-                loop = lisp->create_instruction(l_loop, _iterator, loop, action, final_section);
-                action = lisp->create_instruction(l_setq, _first, true_);
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, _recipient, action, loop);
-                fold_ordering = 2;
-                break;
-            case l_scanr1:
-                //First we need to initialize out value
-                swprintf_s(buffer,20, L"#first%d", idx);
-                _first = P(buffer);
-                
-                //In this case, the initialisation value is provided as the last element from the list
-                //(foldr1 op list)
-                //The fourth parameter is the list to loop on
-                loop = lisp->create_instruction(l_reverse, liste[2]);
-
-                //This is the prototype of operation, the last element will be modified
-                operation = lisp->create_instruction(l_setq, _value, _iterator);
-
-                //We need to initialize our process with the first element from the list
-                //(ncheck #first (setq #value #i) (setq #first nil) (setq #value #i))
-                action = lisp->create_instruction(l_ncheck, _first);
-                action->append(operation);
-                action->append(lisp->create_instruction(l_setq, _first, null_));
-                action->append(lisp->create_instruction(l_setq, _value, _iterator));
-
-                final_section = lisp->create_instruction(l_insert, _recipient, _value, zero_);
-                loop = lisp->create_instruction(l_loop, _iterator, loop, action, final_section);
-                action = lisp->create_instruction(l_setq, _first, true_);
-                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                compose = lisp->create_instruction(l_compose, _id_var, operation, final_section, element, action, loop);
-                fold_ordering = 2;
-                break;
-            case l_drop:
-                //We need to add a check...
-                swprintf_s(buffer,20, L"#count%d", idx);
-                _check = P(buffer);
-                final_section = lisp->create_instruction(l_push, _recipient, _iterator);
-                loop = lisp->create_instruction(l_loop, _iterator, element, final_section);
-                action = lisp->create_instruction(l_size, _recipient);
-                action = lisp->create_instruction(l_minus, one_, action);
-                action = lisp->create_instruction(l_setq, _check, action);
-                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                _id_var->change(1, one_);
-                compose = lisp->create_instruction(l_compose, _id_var, null_, final_section, element, action, loop);
-                break;
-            case l_dropwhile:
-                swprintf_s(buffer,20, L"#check%d", idx);
-                _check = P(buffer);
-                final_section = lisp->create_instruction(l_push, _recipient, _iterator);
-                loop = lisp->create_instruction(l_loop, _iterator, element, final_section);
-                action = lisp->create_instruction(l_setq, _check, true_);
-                element = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                _id_var->change(1, one_);
-                compose = lisp->create_instruction(l_compose, _id_var, null_, final_section, element, action, loop);
-                break;
-            default:
-                final_section = lisp->create_instruction(l_push, _recipient, _iterator);
-                loop = lisp->create_instruction(l_loop, _iterator, element, final_section);
-                action = lisp->create_instruction(l_setq, _recipient, emptylist_);
-                _id_var->change(1, one_);
-                compose = lisp->create_instruction(l_compose, _id_var, null_, final_section, action, loop);
-        }
-    }
-    else {
-        //-----------------------------------------------------------------
-        // COMPOSITION
-        //-----------------------------------------------------------------
-        //We will update our compose structure by combining the new
-        //instruction with existing ones...
-        //-----------------------------------------------------------------
-        operation = (List*)compose->liste[2];
-        final_section = (List*)compose->liste[3];
-        loop = (List*)compose->last();
-
-
-        iterator_variable = _iterator;
-        switch(labeltype) {
-                //The function returns an element, we push it in #l
-            case l_map:
-                if (!compose->index(4)->isList())
-                    throw new Error("Error: 'map' can only apply to lists");
-            case l_foldl:
-            case l_scanl:
-            case l_foldr:
-            case l_scanr: {
-                //we already have an operation stored in _value
-                //We use a new accumulator value. IF we are in this section
-                //it means that a test on current _value has already been implemented
-                //we do not want to interfer with it:
-                int16_t label = final_section->index(0)->label();
-                if (label == l_check || label == l_ncheck) {
-                    Element* accu = NULL;
-                    if (operation == null_) {
-                        operation = lisp->create_instruction(l_setq, _value, _iterator);
-                        accu = _value;
-                        replace_recipient(final_section, _recipient, _value);
-                    }
-                    else {
-                        if (labeltype != l_map || findvariable(final_section->index(1), operation->index(1))) {
-                            wstring wvalue = operation->index(1)->asString(lisp);
-                            wvalue = L"#" + wvalue;
-                            accu = P(wvalue);
-                            operation = lisp->create_instruction(l_setq, accu, _value);
-                            replace_recipient(final_section, _recipient, operation->index(1));
-                            if (labeltype != l_map) {
-                                _value = accu;
-                            }
-                        }
-                    }
-                    
-                    if (accu != NULL) {
-                        compose->liste[2] = operation;
-                        final_section->beforelast(operation);
-                    }
-                }
-                iterator_variable = operation->index(2);
-                break;
-            }
-            case l_foldl1:
-            case l_scanl1:
-            case l_foldr1:
-            case l_scanr1: {
-                swprintf_s(buffer,20, L"#first%d", idx);
-                wstring code(buffer);
-                _first = P(code);
-                while (findvariable(compose, _first)) {
-                    code = L"#"+code;
-                    _first = P(code);
-                }
-
-                action = lisp->create_instruction(l_ncheck, _first);
-                
-                int16_t label = final_section->index(0)->label();
-                if (label == l_check || label == l_ncheck) {
-                    Element* accu = _value;
-                    if (operation == null_) {
-                        operation = lisp->create_instruction(l_setq, _value, _iterator);
-                        _check = lisp->create_instruction(l_setq, _value, _iterator);
-                        compose->liste[2] = operation;
-                        replace_recipient(final_section, _recipient, _value);
-                    }
-                    else {
-                        wstring wvalue = operation->index(1)->asString(lisp);
-                        wvalue = L"#" + wvalue;
-                        accu = P(wvalue);
-                        _check =  lisp->create_instruction(l_setq, accu, operation->index(1));
-                        operation = lisp->create_instruction(l_setq, accu, _value);
-                        compose->liste[2] = operation;
-                        replace_recipient(final_section, _recipient, accu);
-                        _value = accu;
-                    }
-
-                    action->append(operation);
-                    action->append(lisp->create_instruction(l_setq, _first, null_));
-                    action->append(_check);
-
-                    final_section->beforelast(action);
-                }
-                else {
-                    //Test to use the first element
-                    action->append(operation);
-                    action->append(lisp->create_instruction(l_setq, _first, null_));
-                    action->append(lisp->create_instruction(l_setq, _value, _iterator));
-                    loop->change(3, action);
-                }
-                iterator_variable = operation->index(2);
-                break;
-            }
-            default:
-                if (_id_var->index(1) == one_)
-                    iterator_variable = _iterator;
-                else {
-                    iterator_variable = operation->index(1);
-                }
-                
-                if (!compose->index(4)->isList()) {
-                    std::wstringstream err;
-                    err << L"'" << lisp->asString(labeltype) << "' can only apply to lists";
-                    throw new Error(err.str());
-                }
+            List* a = new Listincode();
+            lisp->garbaging(a);
+            a->append(condition);
+            a->append(var);
+            c = a;
         }
         
-        switch(labeltype) {
-            //The function returns an element, we push it in #l
-            case l_foldl:
-                compose->liste[4] = _recipient;
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                compose->beforelast(action);
-                fold_ordering = final_section->index(0)->label();
-                if (fold_ordering == l_block || fold_ordering == l_check || fold_ordering == l_ncheck)
-                    final_section->last()->change(0, P(l_setq));
-                else
-                    final_section->change(0, P(l_setq));
-                fold_ordering = 1;
-                break;
-            case l_scanl:
-                if (!compose->index(4)->isList())
-                    throw new Error("Error: 'scanl' can only apply to lists");
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                compose->beforelast(action);
-                compose->liste[4] = lisp->create_instruction(l_setq, _recipient, lisp->create_instruction(l_cons, liste[2], emptylist_));
-                fold_ordering = 1;
-                break;
-            case l_foldr:
-                compose->liste[4] = _recipient;
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                compose->beforelast(action);
-                fold_ordering = final_section->index(0)->label();
-                if (fold_ordering == l_block || fold_ordering == l_check || fold_ordering == l_ncheck)
-                    final_section->last()->change(0, P(l_setq));
-                else
-                    final_section->change(0, P(l_setq));
-                loop->change(2, lisp->create_instruction(l_reverse, loop->index(2)));
-                fold_ordering = 2;
-                break;
-            case l_scanr:
-                if (!compose->index(4)->isList())
-                    throw new Error("Error: 'scanr' can only apply to lists");
-                action = lisp->create_instruction(l_setq, _value, liste[2]);
-                compose->beforelast(action);
-                compose->liste[4] = lisp->create_instruction(l_setq, _recipient, lisp->create_instruction(l_cons, liste[2], emptylist_));
-                loop->change(2, lisp->create_instruction(l_reverse, loop->index(2)));
-                fold_ordering = final_section->index(0)->label();
-                if (fold_ordering == l_block || fold_ordering == l_check || fold_ordering == l_ncheck) {
-                    final_section->last()->change(0, P(l_insert));
-                    final_section->last()->append(zero_);
-                }
-                else {
-                    final_section->change(0, P(l_insert));
-                    final_section->append(zero_);
-                }
-                fold_ordering = 2;
-                break;
-            case l_foldl1: {
-                fold_ordering = 1;
-                compose->liste[4] = _recipient;
-                action = lisp->create_instruction(l_setq, _first, true_);
-                compose->beforelast(action);
-                Element* recipient = final_section;
-                int16_t label = recipient->index(0)->label();
-                if (label == l_check || label == l_ncheck) {
-                    recipient = recipient->last();
-                    label = recipient->index(0)->label();
-                }
-                if (label == l_push)
-                    recipient->change(0, P(l_setq));
-                else {
-                    if (label == l_insert) {
-                        recipient->change(0, P(l_setq));
-                        recipient->removelast();
-                    }
-                }
-                break;
-            }
-            case l_scanl1:
-                if (!compose->index(4)->isList())
-                    throw new Error("Error: 'scanl1' can only apply to lists");
-                fold_ordering = 1;
-                action = lisp->create_instruction(l_setq, _first, true_);
-                compose->beforelast(action);
-                break;
-            case l_foldr1: {
-                fold_ordering = 2;
-                compose->liste[4] = _recipient;
-                action = lisp->create_instruction(l_setq, _first, true_);
-                compose->beforelast(action);
-                
-                Element* recipient = final_section;
-                int16_t label = recipient->index(0)->label();
-                if (label == l_check || label == l_ncheck) {
-                    recipient = recipient->last();
-                    label = recipient->index(0)->label();
-                }
-                if (label == l_push)
-                    recipient->change(0, P(l_setq));
-                else {
-                    if (label == l_insert) {
-                        recipient->change(0, P(l_setq));
-                        recipient->removelast();
-                    }
-                }
-                
-                loop->change(2, lisp->create_instruction(l_reverse, loop->index(2)));
-                break;
-            }
-            case l_scanr1: {
-                if (!compose->index(4)->isList())
-                    throw new Error("Error: 'scanr1' can only apply to lists");
-                fold_ordering = 2;
-                action = lisp->create_instruction(l_setq, _first, true_);
-                compose->beforelast(action);
-                Element* recipient = final_section;
-                int16_t label = recipient->index(0)->label();
-                if (label == l_check || label == l_ncheck) {
-                    recipient = recipient->last();
-                    label = recipient->index(0)->label();
-                }
-                if (label == l_push) {
-                    recipient->change(0, P(l_insert));
-                    recipient->append(zero_);
-                }
-
-                loop->change(2, lisp->create_instruction(l_reverse, loop->index(2)));
-                break;
-            }
-            case l_drop: {
-                swprintf_s(buffer,20, L"#count%d", idx);
-                wstring code(buffer);
-                _check = P(code);
-                while (findvariable(compose, _check)) {
-                    code = L"#"+code;
-                    _check = P(code);
-                }
-                action = lisp->create_instruction(l_size, _recipient);
-                action = lisp->create_instruction(l_minus, one_, action);
-                action = lisp->create_instruction(l_setq, _check, action);
-                compose->beforelast(action);
-                break;
-            }
-            case l_dropwhile:
-                swprintf_s(buffer,20, L"#check%d", idx);
-                wstring code(buffer);
-                _check = P(code);
-                while (findvariable(compose, _check)) {
-                    code = L"#"+code;
-                    _check = P(code);
-                }
-                action = lisp->create_instruction(l_setq, _check, true_);
-                compose->beforelast(action);
-                break;
+        
+        if (e == NULL) {
+            condition = c;
+            return this;
         }
+        
+        Element* cnd = ((Condition*)e)->condition;
+        if (cnd->index(0)->label() == l_and) {
+            cnd->append(c);
+            return e;
+        }
+        
+        condition = lisp->create_instruction(l_and, c, cnd);
+        return this;
+    }
+};
+
+class Conditiontake : public Condition {
+public:
+    Conditiontake(LispE* lisp, Element* c) : Condition(lisp, c, t_conditiontake) {}
+
+    Element* to_code(LispE* lisp, Element* var, Element* c) {
+        return this;
     }
     
-    action = NULL;
-    if (findvariable(first_element, _iterator)) {
-        //We are in a "for" action through a map recomposition
-        //(for i (map '+ '(1 2 3)) (+ i 10))
-        // --> (map (+ i 10) (compose ...))
-        // iterator_variable is: (+ #i1 #i1)
-        // --> we replace "i" with the iterator_variable
-        replacevariable(first_element, _iterator, iterator_variable);
-        action = first_element;
+};
+
+class Conditiondrop : public Condition {
+public:
+    
+    Conditiondrop(LispE* lisp, Element* c) : Condition(lisp, c, t_conditiondrop) {}
+
+    Element* to_code(LispE* lisp, Element* var, Element* c) {
+        return this;
     }
-    else {
-        if ((labeltype >= l_take && labeltype <= l_drop))
-            action = first_element;
-        else {
-            if (first_element->isList()) {
-                first_element = first_element->eval(lisp);
+    
+};
+
+class Counter : public Element {
+public:
+    Element* counter;
+    
+    Counter(LispE* lisp, Element* c, int16_t lb) : Element(lb) {
+        counter = c;
+        lisp->clean_compositions.push_back(this);
+    }
+    
+    bool isComposable() {
+        return true;
+    }
+
+    Element* next_element() {
+        return counter;
+    }
+
+    string toString(LispE* lisp) {
+        return counter->toString(lisp);
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        return counter->asUString(lisp);
+    }
+
+    Element* to_code(LispE* lisp, Element* var, Element* c) {
+        return this;
+    }
+    
+    Element* compose(LispE* lisp, Element* var, Element* e) {
+        if (e == NULL || counter->more(lisp,e) == false_)
+            return this;
+        return e;
+    }
+};
+
+
+class Forlist : public Element {
+public:
+    Element* variable;
+    Element* action;
+    
+    Forlist(LispE* lisp, Element* v, Element* a) : Element(l_for) {
+        variable = v;
+        action = a;
+        lisp->clean_compositions.push_back(this);
+    }
+    
+    bool isComposable() {
+        return true;
+    }
+
+    string toString(LispE* lisp) {
+        return variable->toString(lisp);
+    }
+    
+    u_ustring asUString(LispE* lisp) {
+        return variable->asUString(lisp);
+    }
+
+
+    Element* next_element() {
+        return variable;
+    }
+
+    Element* to_code(LispE* lisp, Element* var, Element* c) {
+        return new Action(lisp, action);
+    }
+    
+    Element* compose(LispE* lisp, Element* var, Element* e) {
+        return this;
+    }
+};
+
+class Fold : public Element {
+public:
+    Element* initial;
+    Element* action;
+    Element* counter;
+    Element* variable;
+    Element* recipient;
+    
+    Fold(LispE* lisp, Element* i, Element* a, int16_t lb) : Element(lb) {
+        initial = i;
+        if (a->index(0)->type == l_quote)
+            a = a->index(1);
+        action = a;
+        counter = NULL;
+        lisp->clean_compositions.push_back(this);
+    }
+    
+    bool isComposable() {
+        return true;
+    }
+
+    string toString(LispE* lisp) {
+        return action->toString(lisp);
+    }
+    
+    u_ustring asUString(LispE* lisp) {
+        return action->asUString(lisp);
+    }
+
+    bool hasAction() {
+        return true;
+    }
+
+    Element* next_element() {
+        return action;
+    }
+
+    //var is our accumulator
+    Element* to_code(LispE* lisp, Element* rec_var, Element* c) {
+        counter = c;
+        recipient = rec_var;
+        List* a = new Listincode;
+        lisp->garbaging(a);
+        a->append(action);
+        switch (type) {
+            case l_foldl:
+            case l_foldl1:
+            case l_scanl:
+            case l_scanl1:
+                a->append(counter);
+                a->append(variable);
+                break;
+            default:
+                a->append(variable);
+                a->append(counter);
+        }
+        action = a;
+        return this;
+    }
+    
+    Element* compose(LispE* lisp, Element* var, Element* e) {
+        variable = var;
+        return this;
+    }
+    
+};
+
+//-------------------------------------------------------------------------------------------
+//Methods associated with high level functions
+//-------------------------------------------------------------------------------------------
+
+Element* List::evall_repeat_cps(LispE* lisp) {
+    /*
+     (repeat value)
+     */
+    if (!lisp->composition_stack.empty())
+         throw new Error("Error: cannot apply 'repeat' with a context");
+    
+    Element* e = new Infinitelist(lisp);
+    e->append(liste[1]);
+    lisp->garbaging(e);
+    lisp->composition_stack.push_back(e);
+    return e;
+}
+
+Element* List::evall_cycle_cps(LispE* lisp) {
+    /*
+     (cycle value)
+     */
+    if (!lisp->composition_stack.empty())
+         throw new Error("Error: cannot apply 'cycle' with a context");
+    Element* c = new Cyclelist(lisp);
+    c->append(liste[1]);
+    lisp->garbaging(c);
+    lisp->composition_stack.push_back(c);
+    return c;
+}
+
+Element* List::evall_map_cps(LispE* lisp) {
+    /*
+     (map action list)
+     Five kind of actions:
+     'function
+     'operator
+     '(lambda)
+     '(operator v)
+     '(v operator)
+    */
+    //First we push the list into the composition
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'map'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'map'");
+    lisp->composition_stack.push_back(new Action(lisp, liste[1]));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_filter_cps(LispE* lisp) {
+    /*
+     (filter boolean list)
+     Five kind of actions:
+     'function
+     'operator
+     '(lambda)
+     '(operator v)
+     '(v operator)
+    */
+    //First we push the list into the composition
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'filter'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'filter'");
+
+    lisp->composition_stack.push_back(new Condition(lisp, liste[1]));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_take_cps(LispE* lisp) {
+    /*
+     (take nb list)
+     */
+    
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'take'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'take'");
+
+    lisp->composition_stack.push_back(new Counter(lisp, liste[1], t_countertake));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_drop_cps(LispE* lisp) {
+    /*
+     (drop nb list)
+     */
+    
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'drop'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'drop'");
+
+    lisp->composition_stack.push_back(new Counter(lisp, liste[1], t_counterdrop));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_takewhile_cps(LispE* lisp) {
+    /*
+     (takewhile condition list)
+     */
+    
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'takewhile'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'takewhile'");
+
+    lisp->composition_stack.push_back(new Conditiontake(lisp, liste[1]));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_dropwhile_cps(LispE* lisp) {
+    /*
+     (dropwhile condition list)
+     */
+    
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'dropwhile'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'dropwhile'");
+
+    lisp->composition_stack.push_back(new Conditiondrop(lisp, liste[1]));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_for_cps(LispE* lisp) {
+    if (size() < 4)
+        throw new Error("Error: Wrong number of arguments for 'for'");
+
+    if (lisp->composition_stack.empty())
+        lisp->composition_stack.push_back(liste[2]);
+
+    lisp->composition_stack.push_back(new Forlist(lisp, liste[1], liste[3]));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_foldl_cps(LispE* lisp) {
+    /*
+     (foldl action initial list)
+     */
+    if (lisp->composition_stack.empty()) {
+        if (size() < 4)
+            throw new Error("Error: Wrong number of arguments for 'foldl'");
+        lisp->composition_stack.push_back(liste[3]);
+    }
+    else
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'foldl'");
+
+    lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_foldl));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_scanl_cps(LispE* lisp) {
+    /*
+     (foldl action initial list)
+     */
+    if (lisp->composition_stack.empty()) {
+        if (size() < 4)
+            throw new Error("Error: Wrong number of arguments for 'scanl'");
+        lisp->composition_stack.push_back(liste[3]);
+    }
+    else
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'scanl'");
+    lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_scanl));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_foldr_cps(LispE* lisp) {
+    /*
+     (foldl action initial list)
+     */
+    if (lisp->composition_stack.empty()) {
+        if (size() < 4)
+            throw new Error("Error: Wrong number of arguments for 'foldr'");
+        lisp->composition_stack.push_back(liste[3]);
+    }
+    else
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'foldr'");
+    
+    lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_foldr));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_scanr_cps(LispE* lisp) {
+    /*
+     (foldl action initial list)
+     */
+    if (lisp->composition_stack.empty()) {
+        if (size() < 4)
+            throw new Error("Error: Wrong number of arguments for 'scanr'");
+        lisp->composition_stack.push_back(liste[3]);
+    }
+    else
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'scanr'");
+    lisp->composition_stack.push_back(new Fold(lisp, liste[2], liste[1], l_scanr));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_foldl1_cps(LispE* lisp) {
+    /*
+     (foldl action list)
+     */
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'foldl1'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'foldl1'");
+    lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_foldl1));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_scanl1_cps(LispE* lisp) {
+    /*
+     (foldl action list)
+     */
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'scanl1'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'scanl1'");
+    lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_scanl1));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_foldr1_cps(LispE* lisp) {
+    /*
+     (foldl action list)
+     */
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'foldr1'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'foldr1'");
+    lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_foldr1));
+    return lisp->composition_stack.back();
+}
+
+Element* List::evall_scanr1_cps(LispE* lisp) {
+    if (lisp->composition_stack.empty()) {
+        if (size() < 3)
+            throw new Error("Error: Wrong number of arguments for 'scanr1'");
+        lisp->composition_stack.push_back(liste[2]);
+    }
+    else
+        if (size() < 2)
+            throw new Error("Error: Wrong number of arguments for 'scanr1'");
+    lisp->composition_stack.push_back(new Fold(lisp, null_, liste[1], l_scanr1));
+    return lisp->composition_stack.back();
+}
+
+
+//The compose method itself
+
+Element* LispE::compose(Element* fin) {
+    static u_uchar idx_var = 48;
+    
+    
+    u_ustring s_idx(U"%i");
+    s_idx += idx_var;
+
+    u_ustring s_recipient(U"%v");
+    s_recipient += idx_var;
+
+    u_ustring s_counter(U"%c");
+    s_counter += idx_var;
+    
+    u_ustring s_content(U"%content");
+    s_content += idx_var;
+    
+    Element* idx = provideAtom(s_idx);
+    Element* basic_idx = idx;
+    Element* recipient = provideAtom(s_recipient);
+    Element* current_recipient = recipient;
+    Element* content = provideAtom(s_content);
+    Element* counter = provideAtom(s_counter);
+    
+    Element* e;
+    char usedvar = false;
+
+    
+    vector<Element*> composed;
+    composed.push_back(composition_stack[1]->compose(this, idx, NULL));
+    Element* last = composed.back();
+    if (last->label() == l_for) {
+        idx = last->next_element();
+        basic_idx = idx;
+        e = last->to_code(this, recipient, NULL);
+        composed.pop_back();
+        composed.push_back(e);
+        usedvar = true;
+    }
+    
+    int16_t act;
+    long i;
+    for (i = 2; i < composition_stack.size(); i++) {
+        last = composed.back();
+        act = composition_stack[i]->label();
+        if (act == last->label() && last->label() != t_code && act < l_for) {
+            e = composition_stack[i]->compose(this, idx, last);
+            if (e != last) {
+                composed.pop_back();
+                composed.push_back(e);
             }
-            else
-                if (first_element->isInstruction())
-                    return first_element->eval(lisp); //we send an error message back
-            
-            if (first_element->isList()) {
-                long sz = first_element->size();
-                if (sz == 2) {
-                    action = lisp->provideList();
-                    // (map '(- 1) '(1 2 3 4))
-                    if (first_element->index(0)->isInstruction()) {
-                        action->append(first_element->index(0));
-                        action->append(iterator_variable); //the iterator variable
-                        action->append(first_element->index(1));
-                    }
-                    else { // (_map '(1 -) '(1 2 3 4))
-                        // First we append the operator
-                        if (first_element->index(1)->isInstruction()) {
-                            action->append(first_element->index(1));
-                            action->append(first_element->index(0)); //finally the number itself so as to have: (- x 1)
-                            action->append(iterator_variable); //the position of the second number
-                        }
-                        else {
-                            //This is a tricky case, the operator or the function could be given as an atom, which is
-                            //should be evaluated later on the fly
-                            action->append(P(l_checking));
-                            action->append(first_element->index(0)); //this could be an instruction or else
-                            action->append(first_element->index(1));
-                            action->append(iterator_variable);
-                        }
-                    }
-                }
-                else {//lambda
-                    if (sz && first_element->index(0)->label() == l_lambda) {
-                        action = new Listlambda;
-                        action->append(first_element);
-                        switch (fold_ordering) {
-                            case 0:
-                                action->append(iterator_variable);
-                                break;
-                            case 1:
-                                action->append(_value);
-                                action->append(iterator_variable);
-                                break;
-                            case 2:
-                                action->append(iterator_variable);
-                                action->append(_value);
-                                break;
-                        }
-                    }
-                    else
-                        action = liste[1];
+        }
+        else {
+            if (act == l_for) {
+                idx = composition_stack[i]->next_element();
+                basic_idx = idx;
+            }
+
+            e = last->to_code(this, recipient, counter);
+            act = last->label();
+
+            if (last->hasAction()) {
+                usedvar = true;
+                idx = recipient;
+                s_recipient += U"_";
+                current_recipient = recipient;
+                recipient = provideAtom(s_recipient);
+            }
+
+            if (e == last) {
+                if (act >= l_foldl && act <= l_scanr1) {
+                    //We use a counter then
+                    s_counter += U"_";
+                    counter = provideAtom(s_counter);
                 }
             }
             else {
-                if (lisp->is_math_operator(first_element->type)) {
-                    //This is a single operator (map only)
-                    //we use the variable twice then
-                    switch (fold_ordering) {
-                        case 0:
-                            if (labeltype == l_map) {
-                                action = lisp->provideList();
-                                action->append(first_element);
-                                action->append(iterator_variable);
-                                action->append(iterator_variable);
-                            }
-                            break;
-                        case 1: {
-                            action = lisp->provideList();
-                            //We push our value first then the iterator variable
-                            action->append(first_element);
-                            action->append(_value);
-                            action->append(iterator_variable);
-                            break;
-                        }
-                        case 2: {
-                            action = lisp->provideList();
-                            //We push our iterator variable first
-                            action->append(first_element);
-                            action->append(iterator_variable);
-                            action->append(_value);
-                        }
-                    }
-                }
-                else {
-                    if (first_element->isAtom()) {
-                        //then it has to be a function name or an instruction
-                        //otherwise it will fail
-                        action = lisp->provideList();
-                        //if it is not a quoted expression, we add a l_mapping
-                        if (liste[1] == first_element)
-                            action->append(P(l_mapping));
-                        
-                        switch (fold_ordering) {
-                            case 0:
-                                //We will check on the fly what to do with this structure
-                                action->append(first_element);
-                                action->append(iterator_variable);
-                                break;
-                            case 1:
-                                //We push our value first then the iterator variable
-                                action->append(first_element);
-                                action->append(_value);
-                                action->append(iterator_variable);
-                                break;
-                            case 2:
-                                //We push our iterator variable first
-                                action->append(first_element);
-                                action->append(iterator_variable);
-                                action->append(_value);
-                        }
-                    }
-                }
+                composed.pop_back();
+                composed.push_back(e);
             }
+            composed.push_back(composition_stack[i]->compose(this, idx, NULL));
         }
-    }
-    if (action == NULL) {
-        wstring msg = L"Error: cannot use: '";
-        msg += first_element->asString(lisp);
-        msg += L"'";
-        throw new Error(msg);
     }
     
-    //If the value does not belong to a pool or the garbage
-    //we need to keep track of it
-    if (action->status != s_constant)
-        lisp->garbaging(action);
-    
-    //The recipient variable
-    List* test = NULL;
-    switch(labeltype) {
-            //The function returns an element, we push it in #l
-        case l_map:
-        case l_foldl:
-        case l_scanl:
-        case l_foldl1:
-        case l_scanl1:
-        case l_foldr:
-        case l_scanr:
-        case l_foldr1:
-        case l_scanr1:
-            operation->change(2,action);
-            return compose;
-        case l_cycle:
-        case l_repeat: {
-            //(push #l iterator_value)
-            element->append(action);
-            return compose;
-        }
-        case l_replicate:
-            //l_loopcount, we add the integer value
-            loop->liste[1] = action;
-            return compose;
-        case l_filter: {
-            //The final_section should ALWAYS be the last element in the structure
-            //We insert the test within the final section
-            //(check action <fin>)
-            test = lisp->create_instruction(l_check, action);
-            break;
-        }
-        case l_take: {
-            //The final_section should ALWAYS be the last element in the structure
-            //(ncheck (< (size _recipient) action) (break) <fin>)
-            test = lisp->create_instruction(l_ncheck);
-            _check = lisp->create_instruction(l_size, _recipient);
-            test->append(lisp->create_instruction(l_lower, _check, action));
-            test->append(lisp->create_instruction(l_break));
-            break;
-        }
-        case l_drop: {
-            //The final_section should ALWAYS be the last element in the structure
-            //(ncheck (> #check action) (+= #check 1) <fin>)
-            test = lisp->create_instruction(l_ncheck);
-            test->append(lisp->create_instruction(l_greater, _check, action));
-            test->append(lisp->create_instruction(l_plusequal, _check, one_));
-            break;
-        }
-        case l_takewhile: {
-            //as long as the value is correct we store
-            //The final_section should ALWAYS be the last element in the structure
-            //(ncheck (action) (break) <fin>)
-            //We insert the test within the final section
-            test = lisp->create_instruction(l_ncheck, action, lisp->create_instruction(l_break));
-            break;
-        }
-        case l_dropwhile: {
-            //The final_section should ALWAYS be the last element in the structure
-            //(check (not (and #check action)) (setq #check false) <fin>)
-            //as long as the value is correct we drop it
-            test = lisp->create_instruction(l_and, _check, action);
-            test = lisp->create_instruction(l_not, test);
-            test = lisp->create_instruction(l_check, test);
-            test->append(lisp->create_instruction(l_setq, _check, false_));
-            break;
-        }
-        default:
-            return compose;
-    }
+    last = composed.back();
+     
+    act = last->label();
+    e = last->to_code(this, recipient, counter);
 
-    //Last operation for filter, take, takewhile, drop, dropwhile
-    labeltype = final_section->index(0)->label();
-    if (labeltype == l_check || labeltype == l_ncheck) {
-        test->append(final_section->last());
-        final_section->changelast(test);
+    if (last->hasAction()) {
+        current_recipient = recipient;
+        usedvar = true;
+    }
+    
+    if (e == last) {
+        if (act >= l_foldl && act <= l_scanr1) {
+            //We use a counter then
+            s_counter += U"_";
+            counter = provideAtom(s_counter);
+        }
     }
     else {
-        test->append(loop->last());
-        loop->changelast(test);
+        composed.pop_back();
+        composed.push_back(e);
     }
-    compose->liste[3] = test;
-    return compose;
+    
+    List* initialisations = C_INS(l_block);
+    List* default_init = C_INS(l_setq, content, n_emptylist);
+    
+    Element* loop_on_list = composition_stack[0];
+
+    Element* return_result = content;
+    Element* current = new Listincode;
+    garbaging(current);
+    Element* base = current;
+    Element* root = NULL;
+    Fold* fold;
+    
+    u_ustring s_to_loop_on(U"#l");
+    s_to_loop_on += idx_var;
+    Element* to_loop_on = provideAtom(s_to_loop_on);
+    
+    bool content_initialisation = false;
+
+    for (i= 0; i < composed.size(); i++) {
+        last = composed[i];
+        act = last->label();
+        switch (act) {
+            case t_condition:
+                last = last->next_element();
+                current->append(last);
+                current = last;
+                break;
+            case t_countertake:
+                last = last->next_element();
+                e = C_INS(l_ife, C_INS(l_eq, C_INS(l_size,content), last), C_INS(l_break));
+                if (root != NULL)
+                    ((List*)e)->extend((List*)root);
+                root = e;
+                break;
+            case t_counterdrop:
+                last = last->next_element();
+                return_result = C_INS(l_extract, return_result, last, n_zero);
+                break;
+            case t_conditiontake:
+                last = last->next_element();
+                e = C_INS(l_ife, C_INS(l_not, last), C_INS(l_break));
+                current->append(e);
+                current = e;
+                break;
+            case t_conditiondrop:
+                last = last->next_element();
+                initialisations->append(C_INS(l_setq, counter, n_null));
+                e = C_INS(l_ncheck, counter, C_INS(l_if, (C_INS(l_not, last)), C_INS(l_setq, counter, n_true)));
+                current->append(e);
+                current = e;
+                s_counter += U"_";
+                counter = provideAtom(s_counter);
+                break;
+                
+            case l_foldr:
+                loop_on_list = C_INS(l_reverse, loop_on_list);
+            case l_foldl:
+                fold = (Fold*)last;
+                usedvar = 2;
+                default_init = C_INS(l_setq, content, fold->counter);
+                initialisations->append(C_INS(l_setq, fold->counter, fold->initial));
+                current->append(C_INS(l_setq, fold->counter, fold->action));
+                current->append(C_INS(l_setq, fold->recipient, fold->counter));
+                break;
+            case l_scanr:
+                loop_on_list = C_INS(l_reverse, loop_on_list);
+            case l_scanl:
+                fold = (Fold*)last;
+                initialisations->append(C_INS(l_setq, fold->counter, fold->initial));
+                current->append(C_INS(l_setq, fold->counter, fold->action));
+                current->append(C_INS(l_setq, fold->recipient, fold->counter));
+                default_init->release();
+                if (act == l_scanl)
+                    default_init = C_INS(l_setq, content, C_INS(l_list, fold->counter));
+                else
+                    default_init = C_INS(l_setq, content, C_INS(l_llist, fold->counter));
+                content_initialisation = true;
+                break;
+            case l_foldr1:
+                initialisations->append(C_INS(l_setq, to_loop_on, C_INS(l_reverse, loop_on_list)));
+            case l_foldl1:
+                fold = (Fold*)last;
+                usedvar = 2;
+                default_init->release();
+                default_init = C_INS(l_setq, content, fold->counter);
+                if (act == l_foldl1)
+                    initialisations->append(C_INS(l_setq, to_loop_on, loop_on_list));
+                loop_on_list = C_INS(l_cdr, to_loop_on);
+                initialisations->append(C_INS(l_setq, fold->counter, C_INS(l_car, to_loop_on)));
+                current->append(C_INS(l_setq, fold->counter, fold->action));
+                current->append(C_INS(l_setq, fold->recipient, fold->counter));
+                break;
+            case l_scanr1:
+                initialisations->append(C_INS(l_setq, to_loop_on, C_INS(l_reverse, loop_on_list)));
+            case l_scanl1:
+                fold = (Fold*)last;
+                if (act == l_scanl1)
+                    initialisations->append(C_INS(l_setq, to_loop_on, loop_on_list));
+                loop_on_list = C_INS(l_cdr, to_loop_on);
+                initialisations->append(C_INS(l_setq, fold->counter, C_INS(l_car, to_loop_on)));
+                current->append(C_INS(l_setq, fold->counter, fold->action));
+                current->append(C_INS(l_setq, fold->recipient, fold->counter));
+                default_init->release();
+                if (act == l_scanl1)
+                    default_init = C_INS(l_setq, content, C_INS(l_list, fold->counter));
+                else
+                    default_init = C_INS(l_setq, content, C_INS(l_llist, fold->counter));
+                content_initialisation = true;
+                break;
+            default:
+                last = last->next_element();
+                current->append(last);
+        }
+    }
+    
+    List* code = C_INS(l_loop, basic_idx, loop_on_list);
+    initialisations->append(default_init);
+    
+    if (usedvar) {
+        if (usedvar == 2)
+            e = C_INS(l_setq, content, current_recipient);
+        else
+            e = C_INS(l_push, content, current_recipient);
+    }
+    else
+        e = C_INS(l_push, content, idx);
+                            
+    current->append(e);
+    
+    if (root == NULL)
+        code->extend((List*)base);
+    else {
+        ((List*)root)->extend((List*)base);
+        code->append((List*)root);
+    }
+    
+    initialisations->append(code);
+    code = initialisations;
+    
+    //Final value that is returned
+    code->append(return_result);
+    //cerr << code->toString(this) << endl;
+    idx_var++;
+    if (idx_var == 58)
+        idx_var = 48;
+    
+    clean_compositions.clean();
+    composition_stack.clear();
+    fin->append(code);
+    return fin;
 }
 
 //------------------------------------------------------------

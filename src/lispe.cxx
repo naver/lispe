@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.10.24.16.56";
+static std::string version = "1.2022.10.28.15.55";
 string LispVersion() {
     return version;
 }
@@ -184,10 +184,16 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_set_max_stack_size, "_max_stack_size", P_ONE | P_TWO, &List::evall_set_max_stack_size);
 #endif
 
+
     set_instruction(l_void, "%__void__%", P_FULL, &List::evall_void);
     set_instruction(l_emptylist, "%__empty__%", P_ONE, &List::evall_emptylist);
     set_instruction(l_quoted, "%__quote__%", P_ONE, &List::evall_quoted);
+    set_instruction(l_next, "%__next__%", P_TWO, &List::evall_next);
+
+    //Note that __root__ is the top function that evaluate the whole code
+    //root_ on the other hand is the variable that points to the whole code
     set_instruction(l_root, "__root__", P_ATLEASTONE, &List::evall_root);
+    code_to_string[l_code] = U"_root";
 
 
     set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
@@ -216,8 +222,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_catch, "catch", P_ATLEASTTWO, &List::evall_catch);
     set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr);
     set_instruction(l_check, "check", P_ATLEASTTWO, &List::evall_check);
-    set_instruction(l_checking, "#checking", P_FOUR, &List::evall_checking);
-    set_instruction(l_compose, "#compose", P_FULL, &List::evall_compose);
     set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consb, "consb", P_THREE, &List::evall_consb);
@@ -295,11 +299,12 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_listxor, "^^^", P_THREE, &List::evall_listxor);
     set_instruction(l_to_list, "to_list", P_TWO | P_THREE, &List::evall_to_list);
     set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist);
+    set_instruction(l_let, "let", P_THREE, &List::evall_let);
     set_instruction(l_load, "load", P_TWO | P_THREE, &List::evall_load);
     set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock);
     set_instruction(l_loop, "loop", P_ATLEASTFOUR, &List::evall_loop);
-    set_instruction(l_multiloop, "mloop", P_ATLEASTFOUR, &List::multiloop);
-    set_instruction(l_polyloop, "lloop", P_ATLEASTFOUR, &List::polyloop);
+    set_instruction(l_mloop, "mloop", P_ATLEASTFOUR, &List::mloop);
+    set_instruction(l_lloop, "lloop", P_ATLEASTFOUR, &List::lloop);
     set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE, &List::evall_loopcount);
     set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare);
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower);
@@ -412,27 +417,24 @@ void Delegation::initialisation(LispE* lisp) {
 #endif
     
     // High level functions
-    set_instruction(l_composenot, "?", P_FULL, &List::evall_compose);
-
-    set_instruction(l_cycle, "cycle", P_TWO, &List::evall_compose);
-    set_instruction(l_repeat, "repeat", P_TWO, &List::evall_compose);
-    set_instruction(l_replicate, "replicate", P_THREE, &List::evall_compose);
-
-    set_instruction(l_drop, "drop", P_THREE, &List::evall_compose);
-    set_instruction(l_dropwhile, "dropwhile", P_THREE, &List::evall_compose);
-    set_instruction(l_filter, "filter", P_THREE, &List::evall_compose);
-    set_instruction(l_foldl, "foldl", P_FOUR, &List::evall_compose);
-    set_instruction(l_foldl1, "foldl1", P_THREE, &List::evall_compose);
-    set_instruction(l_foldr, "foldr", P_FOUR, &List::evall_compose);
-    set_instruction(l_foldr1, "foldr1", P_THREE, &List::evall_compose);
-    set_instruction(l_map, "map", P_THREE, &List::evall_compose);
-    set_instruction(l_scanl, "scanl", P_FOUR, &List::evall_compose);
-    set_instruction(l_scanl1, "scanl1", P_THREE, &List::evall_compose);
-    set_instruction(l_scanr, "scanr", P_FOUR, &List::evall_compose);
-    set_instruction(l_scanr1, "scanr1", P_THREE, &List::evall_compose);
-    set_instruction(l_take, "take", P_THREE, &List::evall_compose);
-    set_instruction(l_takewhile, "takewhile", P_THREE, &List::evall_compose);
-    set_instruction(l_for, "for", P_FOUR|P_FIVE, &List::evall_compose);
+    set_instruction(l_cycle, "cycle", P_TWO, &List::evall_cycle_cps);
+    set_instruction(l_drop, "drop", P_THREE, &List::evall_drop_cps);
+    set_instruction(l_dropwhile, "dropwhile", P_THREE, &List::evall_dropwhile_cps);
+    set_instruction(l_filter, "filter", P_THREE, &List::evall_filter_cps);
+    set_instruction(l_foldl, "foldl", P_FOUR, &List::evall_foldl_cps);
+    set_instruction(l_foldl1, "foldl1", P_THREE, &List::evall_foldl1_cps);
+    set_instruction(l_foldr, "foldr", P_FOUR, &List::evall_foldr_cps);
+    set_instruction(l_foldr1, "foldr1", P_THREE, &List::evall_foldr1_cps);
+    set_instruction(l_for, "for", P_FOUR, &List::evall_for_cps);
+    set_instruction(l_map, "map", P_THREE, &List::evall_map_cps);
+    set_instruction(l_repeat, "repeat", P_TWO, &List::evall_repeat_cps);
+    set_instruction(l_replicate, "replicate", P_THREE, &List::evall_replicate);
+    set_instruction(l_scanl, "scanl", P_FOUR, &List::evall_scanl_cps);
+    set_instruction(l_scanl1, "scanl1", P_THREE, &List::evall_scanl1_cps);
+    set_instruction(l_scanr, "scanr", P_FOUR, &List::evall_scanr_cps);
+    set_instruction(l_scanr1, "scanr1", P_THREE, &List::evall_scanr1_cps);
+    set_instruction(l_take, "take", P_THREE, &List::evall_take_cps);
+    set_instruction(l_takewhile, "takewhile", P_THREE, &List::evall_takewhile_cps);
 
     
     //APL-like
@@ -592,7 +594,6 @@ void Delegation::initialisation(LispE* lisp) {
     
     code_to_string[v_mainspace] = U"mainspace_";
 
-    
     code_to_string[c_opening] = U"(";
     code_to_string[c_closing] = U")";
     code_to_string[c_opening_brace] = U"{";
@@ -615,7 +616,6 @@ void Delegation::initialisation(LispE* lisp) {
     _NULL = (Atome*)lisp->provideAtomOrInstruction(v_null);
     _ERROR = (Atome*)lisp->provideAtomOrInstruction(t_error);
     _TERMINAL = (Atome*)lisp->provideAtomOrInstruction(l_terminal);
-    _COMPOSE = (Atome*)lisp->provideAtomOrInstruction(l_compose);
     _TRUE = (Atome*)lisp->provideAtomOrInstruction(v_true);
     _EMPTYATOM = (Atome*)lisp->provideAtomOrInstruction(v_emptyatom);
     _DEFPAT = (Atome*)lisp->provideAtomOrInstruction(l_defpat);
@@ -910,6 +910,7 @@ void LispE::cleaning() {
     while (nbjoined) {}
 
     clearStack();
+    clean_compositions.clean();
     for (long i = 0; i < garbages.size(); i++)
         delete garbages[i];
     garbages.clear();
@@ -1014,6 +1015,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
     stack_pool[0]->copy(lisp->stack_pool[0]);
 
     n_null = delegation->_NULL;
+    n_emptylist = delegation->_EMPTYLIST;
     n_true = delegation->_TRUE;
     n_zero = delegation->_ZERO;
     n_one = delegation->_ONE;
@@ -1345,9 +1347,6 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     in_quote = 0;
 
                 switch (lc) {
-                    case l_composenot:
-                        infos.append(c, t_atom, line_number, current_i, i);
-                        break;
                     case c_opening:
                         nb_parentheses++;
                         infos.append(c, c_opening, line_number, current_i, i);
@@ -1553,11 +1552,12 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
  build a sub-list...
  */
 
-Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& index, long quoting) {
+Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, long& index, long quoting) {
     Element* e = NULL;
     double value;
     char topfunction = false;
     int16_t lab = -1;
+    Element* check_composition_depth = NULL;
         
     while (index < parse.types.size()) {
         parse.current = index;
@@ -1575,6 +1575,13 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 else {
                     uint16_t currentspace = current_space;
                     bool equal_op_list = false;
+                    
+                    //If we are dealing with two compositional elements (map, filter, take etc...)
+                    //which are at the same level, then we must first compose our composition stack
+                    if (check_composition_depth == current_program && composition_stack.size())
+                        compose(current_program);
+                    
+                    check_composition_depth = NULL;
                     e = new Listincode(parse.lines[index], delegation->i_current_file);
                     garbaging(e);
                     abstractSyntaxTree(e, parse, index, quoting);
@@ -1583,7 +1590,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             Element* a = e->eval(this);
                             garbaging(a);
                             removefromgarbage(e);
-                            courant->append(a);
+                            current_program->append(a);
                             quoting--;
                             continue;
                         }
@@ -1591,14 +1598,13 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     else {
                         if (e->size() >= 1) {
                             lab = e->index(0)->label();
-                            bool docompose = true;
-                            if (lab == l_composenot) {
-                                ((List*)e)->liste.erase(0);
-                                if (e->size()) {
-                                    lab = e->index(0)->label();
-                                    docompose = false;
-                                }
-                            }
+                            
+                            //if it is a high level function, then we push it into composition_stack
+                            //otherwise, we compose the expressions in composition_stack,
+                            //beforehand.
+                            if (composition_stack.size() && (lab < l_map || lab > l_scanr1))
+                                compose(e);
+                            
                             switch(lab) {
                                     //for defmacro and link, we evaluate these expressions on the fly
                                 case l_defspace:
@@ -1627,6 +1633,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                     e->eval(this);
                                     continue;
                                 }
+                                case l_let:
                                 case l_set_range:
                                 case l_set_shape:
                                 case l_setq:
@@ -1698,7 +1705,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                         e->append(void_function);
 
                                     //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
-                                    if (topfunction && topfunction <= courant->size())
+                                    if (topfunction && topfunction <= current_program->size())
                                         e->setterminal();
                                     break;
                                 case l_infix: {
@@ -1713,15 +1720,17 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                 }
                                 default: {
                                     if (lab >= l_map && lab <= l_scanr1) {
-                                        Element* inter = e->composing(this, docompose);
-                                        if (inter != e) {
-                                            removefromgarbage(e);
-                                            e = inter;
-                                            lab = 0;
+                                        if (composition_stack.size() && (composition_stack.back()->label() == t_countertake || composition_stack.back()->label() == t_counterdrop)) {
+                                            List lst;
+                                            compose(&lst);
+                                            composition_stack.push_back(lst.liste[0]);
                                         }
+                                        e = e->eval(this);
+                                        check_composition_depth = current_program;
+                                        continue;
                                     }
                                     else {
-                                        if (topfunction && topfunction <= courant->size()) {
+                                        if (topfunction && topfunction <= current_program->size()) {
                                             //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
                                             e->setterminal();
                                         }
@@ -1729,8 +1738,9 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                                 }
                             }
                         }
-
+                                                                        
                         e = generate_macro(e);
+
 
                         /*
                         We detect if it is an instruction beforehand, in order
@@ -1846,10 +1856,10 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                         }
                     }
                 }
-                if (e->size())
-                    courant->append(e);
+                if (e->size() || e->isComposable())
+                    current_program->append(e);
                 else {
-                    courant->append(delegation->_EMPTYLIST);
+                    current_program->append(delegation->_EMPTYLIST);
                     removefromgarbage(e);
                 }
                 if (quoting)
@@ -1877,7 +1887,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             control_garbaging(e->index(i));
                     }
                 }
-                courant->append(e);
+                current_program->append(e);
                 break;
             }
             case c_opening_data_brace: {
@@ -1892,19 +1902,19 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     e = dico.dictionary(this);
                     garbaging(e);
                 }
-                courant->append(e);
+                current_program->append(e);
                 break;
             }
             case c_closing_brace:
                 index++;
                 return delegation->_TRUE;
             case t_emptystring:
-                courant->append(delegation->_EMPTYSTRING);
+                current_program->append(delegation->_EMPTYSTRING);
                 index++;
                 break;
             case t_string:
                 e = provideConststring(parse.tokens[index]);
-                courant->append(e);
+                current_program->append(e);
                 index++;
                 break;
             case t_number:
@@ -1913,22 +1923,22 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                     e = provideConstinteger(value);
                 else
                     e = provideConstnumber(value);                
-                courant->append(e);
+                current_program->append(e);
                 index++;
                 break;
             case t_operator:
                 e = provideOperator(encode(parse.tokens[index]));
-                courant->append(e);
+                current_program->append(e);
                 index++;
                 break;
             case l_cadr:
                 e =  provideCADR(parse.tokens[index]);
-                courant->append(e);
+                current_program->append(e);
                 index++;
                 break;
             case c_colon:
-                if (courant->label() == t_dictionary) {
-                    courant->reversechoice();
+                if (current_program->label() == t_dictionary) {
+                    current_program->reversechoice();
                     index++;
                     if (parse.types[index] == c_colon)
                         throw new Error("Error: wrong key/value separator in a dictionary");
@@ -1936,39 +1946,39 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 else {
                     e = provideAtom(encode(parse.tokens[index]));
                     index++;
-                    courant->append(e);
+                    current_program->append(e);
                 }
                 break;
             case c_point:
                 if (quoting) {
                     index++;
-                    if (courant->size() == 0)
+                    if (current_program->size() == 0)
                         throw new Error("Error: Wrong use of '.'");
                     if (parse.types[index] == c_opening) {
                         index++;
-                        syntaxTree(courant, parse, index, quoting);
+                        syntaxTree(current_program, parse, index, quoting);
                     }
                     else {
-                        syntaxTree(courant, parse, index, true);
-                        ((List*)courant)->liste.insert(0, provideAtom(l_conspoint));
+                        syntaxTree(current_program, parse, index, true);
+                        ((List*)current_program)->liste.insert(0, provideAtom(l_conspoint));
                     }
                 }
                 else {
                     e = provideAtom(encode(parse.tokens[index]));
                     index++;
-                    courant->append(e);
+                    current_program->append(e);
                 }
                 break;
             case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
                 index++;
                 if (!quoting && e->label() == l_quote) {
-                    courant->append(e);
-                    abstractSyntaxTree(courant, parse, index, true);
+                    current_program->append(e);
+                    abstractSyntaxTree(current_program, parse, index, true);
                 }
                 else {
                     if (!quoting) {
-                        if (courant->size() == 0) {
+                        if (current_program->size() == 0) {
                             if (e->type >= l_lambda && e->type <= l_defpat) {
                                 if (e->type == l_lambda)
                                     topfunction = 2;
@@ -1977,15 +1987,15 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                             }
                         }
                         else {
-                            if (courant->size() == 1 && courant->index(0)->label() == l_defspace) {
+                            if (current_program->size() == 1 && current_program->index(0)->label() == l_defspace) {
                                 //We create a new name space in function_pool
-                                courant->append(e);
-                                courant->eval(this);
+                                current_program->append(e);
+                                current_program->eval(this);
                                 break;
                             }
                         }
                     }
-                    courant->append(e);
+                    current_program->append(e);
                 }
                 break;
             case l_quote:
@@ -1993,7 +2003,7 @@ Element* LispE::abstractSyntaxTree(Element* courant, Tokenizer& parse, long& ind
                 index++;
                 garbaging(e);
                 e->append(provideAtom(l_quote));
-                courant->append(e);
+                current_program->append(e);
                 abstractSyntaxTree(e, parse, index, true);
                 if (e->size() != 2)
                     throw new Error("Error: Wrong number of arguments for 'quote'");
@@ -2323,9 +2333,12 @@ Element* LispE::compile_lisp_code(string& code) {
     
     if (e->size() == 2) {
         //The block contains only one element that can be evaluated immediately
-        return e->index(1);
+        e = e->index(1);
     }
-    //It's really a big block
+    
+    if (!checkvariable(l_code))
+        recordingunique(e, l_code);
+
     return e;
 }
 
@@ -2609,6 +2622,9 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
 
 
 

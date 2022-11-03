@@ -72,6 +72,8 @@ public:
     
     vecte<Returnpool*> return_pool;
 
+    vecte<Element*> composition_stack;
+    vecte<Element*> clean_compositions;
     //------------------------------------------
     
     unordered_map<wstring, Element*> pools;
@@ -94,6 +96,7 @@ public:
     LispE* thread_ancestor;
     
     Element* n_null;
+    Element* n_emptylist;
     Element* n_true;
     Element* n_zero;
     Element* n_one;
@@ -138,6 +141,7 @@ public:
         }
         delegation->initialisation(this);
         n_null = delegation->_NULL;
+        n_emptylist = delegation->_EMPTYLIST;
         n_true = delegation->_TRUE;
         n_zero = delegation->_ZERO;
         n_one = delegation->_ONE;
@@ -428,8 +432,14 @@ public:
     void arguments(std::vector<string>& args);
     void current_path();
     
+    Element* compose(Element* fin);
+    
     void blocking_trace_lock() {
         delegation->blocking();
+    }
+    
+    bool isComparator(Element* e) {
+        return delegation->isComparator(e->label());
     }
     
     void releasing_trace_lock() {
@@ -547,6 +557,10 @@ public:
 
     inline long nbvariables() {
         return execution_stack.back()->size();
+    }
+    
+    inline bool checkvariable(uint16_t label) {
+        return execution_stack.back()->variables.check(label);
     }
     
     inline void atomsOnStack(vector<Element*>& v_atoms) {

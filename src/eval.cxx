@@ -5774,87 +5774,6 @@ Element* List::evall_check(LispE* lisp) {
     return element;
 }
 
-
-Element* List::evall_checking(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = null_;
-    Element* result;
-
-    List* call = NULL;
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        if (first_element->isInstruction()) {
-            call = lisp->provideCall(first_element, 2);
-            call->in_quote(1, liste[3]);
-            call->in_quote(2, second_element);
-        }
-        else {
-            if (second_element->isInstruction()) {
-                call = lisp->provideCall(second_element, 2);
-                call->in_quote(1, first_element);
-                call->in_quote(2, liste[3]);
-            }
-            else
-                throw new Error("Error: condition or operation cannot be evaluated: missing instruction");
-        }
-        result = call->eval(lisp);
-        call->release();
-    }
-    catch (Error* err) {
-        if (call == NULL)
-            first_element->release();
-        else
-            call->release();
-        throw err;
-    }
-
-    return result;
-}
-
-
-Element* List::evall_compose(LispE* lisp) {
-    Element* values = null_;
-    List* loop = (List*)liste.back();
-    int16_t i = 4;
-    long listsize = liste.size()-1;
-    int16_t label;
-    
-	bool nxt = lisp->delegation->next_stop;
-
-    lisp->set_true_as_one();
-    
-    //When liste[4], the recipient variable is not a list
-    //Then we are dealing with a fold
-    if (liste[4]->isList())
-        label = liste[4]->index(1)->label();
-    else {
-        //this is a fold, and liste[4] != (setq recipient ())
-        //hence no need to execute it...
-        label = liste[4]->label();
-        i = 5;
-    }
-        
-    try {
-        for (; i < listsize; i++) {
-            liste[i]->eval(lisp);
-        }
-        
-        values = loop->liste[2]->eval(lisp);
-        values->loop(lisp, loop->liste[1]->label(), loop);
-    }
-    catch (Error* err) {
-        lisp->set_true_as_true();
-        throw err;
-    }
-
-    lisp->set_true_as_true();
-	lisp->delegation->next_stop = nxt;
-    values->release();
-    return lisp->get(label);
-}
-
-
 Element* List::evall_cond(LispE* lisp) {
     long listsize = liste.size();
     Element* first_element = liste[0];
@@ -8442,6 +8361,10 @@ Element* List::evall_neq(LispE* lisp) {
     return booleans_[!evall_eq(lisp)->Boolean()];
 }
 
+Element* List::evall_next(LispE* lisp) {
+    return liste[1]->eval(lisp)->next_element();
+}
+
 
 Element* List::evall_not(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
@@ -9352,6 +9275,22 @@ Element* List::evall_pushlast(LispE* lisp) {
     return container;
 }
 
+Element* List::evall_replicate(LispE* lisp) {
+    /*
+     (replicate nb list)
+     */
+    long nb;
+    evalAsInteger(1, lisp, nb);
+    List* l = lisp->provideList();
+    Element* element = liste[2]->eval(lisp);
+    
+    while (nb) {
+        l->append(element->copying());
+        nb--;
+    }
+    element->release();
+    return l;
+}
 
 Element* List::evall_reverse(LispE* lisp) {
     Element* matrix = liste[1]->eval(lisp);
@@ -9550,6 +9489,12 @@ Element* List::evall_setg(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     if (!lisp->delegation->replaceFunction(element, label, lisp->current_space))
         lisp->storing_global(element, label);
+    return true_;
+}
+
+Element* List::evall_let(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    lisp->storing_variable(element, liste[1]->label());
     return true_;
 }
 
