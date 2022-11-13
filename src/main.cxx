@@ -23,7 +23,7 @@ extern UTF8_Handler special_characters;
 int main(int argc, char *argv[]) {
     LispE lisp;
     Element* e;
-
+    
     if (argc == 2) {
         string pathname = argv[1];
         e = lisp.load(pathname);
@@ -31,12 +31,12 @@ int main(int argc, char *argv[]) {
         e->release();
         return 0;
     }
-
-
+    
+    
     string code;
-
+    
     cout << endl << "Lisp Elémentaire (" << LispVersion() << ")" << endl << endl;
-
+    
     while (true) {
         std::cout << "> ";
         while (getline(std::cin, code)) {
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 void execute_pipe(string& code, string& codeinitial, string& codefinal, string& rgx, bool with_file) {
     LispE lisp(&special_characters);
     Element* e;
-
+    
     if (codeinitial != "") {
         e = lisp.eval(codeinitial);
         if (e->isError()) {
@@ -73,9 +73,9 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
             exit(-1);
         }
     }
-
+    
     lisp.eval("(setq accu1 0) (setq accu2 0) (setq accu3 0) (setq accu4 0) (setq accu5 0) (setq accu6 0) (setq accu7 0) (setq accu8 0) (setq accu9 0)");
-
+    
     if (with_file) {
         e = lisp.load(code);
         if (e->isError()) {
@@ -88,7 +88,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
         }
         code = "(runpipe)";
     }
-
+    
     string line_in;
     vector<string> fields;
     string blanc(" ");
@@ -114,25 +114,25 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
         setq.str("");
         setq.clear();
     }
-
-
+    
+    
     while (!std::cin.eof()) {
         getline(std::cin, line_in);
-
+        
         s_trim(line_in);
         if (line_in == "")
             continue;
-
+        
         //Initialisation des champs
         setq << "(setq l0 " << jsonstring(line_in) << ")" << endl;
         setq << "(setq ln " << fields.size() << ")" << endl;
-
+        
         if (rgxtype[0]) {
             setq << "(if (eq (" << rgxtype << "gx_find rx l0) ``) (print) (block ";
         }
-
+        
         fields.clear();
-
+        
         s_split(line_in, blanc, fields);
         setq_list << "(setq ll (list";
         for (i = 0; i < fields.size(); i++) {
@@ -149,23 +149,23 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
             setq << endl;
         }
         setq_list << "))";
-
+        
         for (i = fields.size(); i < 16; i++)
             setq << "(setq l" << i + 1 << "\"\")" << endl;
-
+        
         setq << setq_list.str() << endl << code << endl;
-
+        
         if (rgxtype[0])
             setq << "))" << endl;
-
-
+        
+        
         e = lisp.eval(setq.str());
-
+        
         line_in = e->toString(&lisp);
         if (line_in != "" && codefinal == "")
             std::cout << line_in << endl;
         e->release();
-
+        
         setq_list.str("");
         setq_list.clear();
         setq.str("");
@@ -184,9 +184,9 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
 int main(int argc, char *argv[]) {
     vector<string> arguments;
     vector<string> newcolors;
-
+    
     const char* coloring = m_blue;
-
+    
     string args;
     string code;
     string file_name;
@@ -195,25 +195,35 @@ int main(int argc, char *argv[]) {
     string codefinal;
     bool darkmode = false;
     bool vt100 = false;
-
+    bool mouse_on = false;
+    
+    
+    
 #ifdef __apple_build_version__
-        char path[2048];
-        strcpy(path, "/usr/local/lib/lispe");
-        setenv("LISPEPATH", path, 1);
+    char path[2048];
+    strcpy(path, "/usr/local/lib/lispe");
+    setenv("LISPEPATH", path, 1);
+    mouse_on = true;
 #endif
-
+    
+#ifdef WIN32
+    mouse_on = true;
+#endif
+    
     long i;
     for (i = 1; i < argc; i++) {
         args = argv[i];
         if (args == "-h" || args == "--help" || args == "-help" || args == "--h") {
             cout << endl << m_red << "Different types of operation: " << m_current << endl << endl;
-
+            
             cout << m_red << "    Interactive mode" << m_current << endl;
             cout << "    lispe"<< endl << endl;
             cout << m_red << "    dark mode" << m_current << endl;
             cout << "    lispe -b"<< endl << endl;
             cout << m_red << "    VT100 mouse mode" << m_current << endl;
             cout << "    lispe -vt100"<< endl << endl;
+            cout << m_red << "    Activates mouse" << m_current << endl;
+            cout << "    lispe -m"<< endl << endl;
             cout << m_red << "    This help" << m_current << endl;
             cout << "    lispe -h|-help|--h|--help"<< endl << endl;
             cout << m_red << "    Execution of 'filename'" << m_current << endl;
@@ -252,7 +262,7 @@ int main(int argc, char *argv[]) {
             cout << endl << endl;
             return -1;
         }
-
+        
         if (args == "-syncolor") {
             if (i < argc) {
                 args = argv[i + 1];
@@ -269,7 +279,7 @@ int main(int argc, char *argv[]) {
                     continue;
                 }
             }
-
+            
             long nb = 3*nbdenomination;
             if ((i + nb) >= argc) {
                 cerr << "There should be: "<< nb << " values, 3 digits for each denomination: string, definition, instruction, quote, comments, call, selection" << endl;
@@ -300,11 +310,16 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        if (args == "-m") {
+            mouse_on = true;
+            continue;
+        }
+
         if (args == "-vt100") {
             vt100 = true;
             continue;
         }
-
+        
         if (args == "-mg") {
             if (i >= argc - 1) {
                 cerr << "Missing code for option '-mg'" << endl;
@@ -315,7 +330,7 @@ int main(int argc, char *argv[]) {
                 margin_value_reference = v;
             continue;
         }
-
+        
         //Lecture du pipe dans args
         if (args == "-a") {
             while (!std::cin.eof()) {
@@ -328,13 +343,13 @@ int main(int argc, char *argv[]) {
             std::cin.clear();
             continue;
         }
-
+        
         if (args == "-b") {
             darkmode = true;
             coloring = m_blueblack;
             continue;
         }
-
+        
         if (args == "-pb") {
             if (i >= argc - 1) {
                 cerr << "Missing code for option '-pb'" << endl;
@@ -343,7 +358,7 @@ int main(int argc, char *argv[]) {
             codeinitial = argv[++i];
             continue;
         }
-
+        
         if (args == "-pe") {
             if (i >= argc - 1) {
                 cerr << "Missing code for option '-pe'" << endl;
@@ -352,7 +367,7 @@ int main(int argc, char *argv[]) {
             codefinal = argv[++i];
             continue;
         }
-
+        
         if (args == "-r") {
             if (i >= argc - 1) {
                 cerr << "Missing regular expression for option  '-r'" << endl;
@@ -362,7 +377,7 @@ int main(int argc, char *argv[]) {
             rgx += argv[++i];
             continue;
         }
-
+        
         if (args == "-R") {
             if (i >= argc - 1) {
                 cerr << "Missing regular expression for option '-R'" << endl;
@@ -372,7 +387,7 @@ int main(int argc, char *argv[]) {
             rgx += argv[++i];
             continue;
         }
-
+        
         //Lecture du pipe
         if (args == "-p") {
             if (i >= argc - 1) {
@@ -388,7 +403,7 @@ int main(int argc, char *argv[]) {
             execute_pipe(code, codeinitial, codefinal, rgx, false);
             exit(0);
         }
-
+        
         if (args == "-P") {
             if (i >= argc - 1) {
                 cerr << "Missing program file for option '-P'" << endl;
@@ -399,11 +414,12 @@ int main(int argc, char *argv[]) {
             execute_pipe(file_name,codeinitial, codefinal, rgx, true);
             exit(0);
         }
-
+        
         if (args == "-d") {
             JAGEDITOR = new lispe_editor();
             JAGEDITOR->setnoprefix();
             JAGEDITOR->vt100 = vt100;
+            JAGEDITOR->activate_mouse = mouse_on;
             string a_file_name;
             string line;
             if (i < argc - 1) {
@@ -438,11 +454,12 @@ int main(int argc, char *argv[]) {
             JAGEDITOR->launchterminal(darkmode, 4, arguments, newcolors);
             return 0;
         }
-
+        
         if (args == "-e") {
             JAGEDITOR = new lispe_editor();
             JAGEDITOR->setnoprefix();
             JAGEDITOR->vt100 = vt100;
+            JAGEDITOR->activate_mouse = mouse_on;
             string a_file_name;
             if (i < argc - 1) {
                 i++;
@@ -463,28 +480,28 @@ int main(int argc, char *argv[]) {
             JAGEDITOR->launchterminal(darkmode, 3, arguments, newcolors);
             return 0;
         }
-
+        
         if (file_name == "")
             file_name = argv[i];
         arguments.push_back(argv[i]);
     }
-
+    
     if (file_name != "") {
         LispE lisp(&special_characters);
         lisp.arguments(arguments);
         string the_file = file_name;
         Element* e = lisp.n_null;
         try {
-          e = lisp.load(the_file);
+            e = lisp.load(the_file);
         }
         catch(Error* err) {
-          e = err;
+            e = err;
         }
         std::cout << e->toString(&lisp) << std::endl;
         e->release();
         return 0;
     }
-
+    
     JAGEDITOR = new lispe_editor();
     JAGEDITOR->setnoprefix();
     JAGEDITOR->vt100 = vt100;

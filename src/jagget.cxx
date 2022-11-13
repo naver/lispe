@@ -102,6 +102,7 @@ jag_get::jag_get(bool inside) {
     
     inside_editor = inside;
     mouse_status = false;
+    activate_mouse = false;
 	nbclicks = 0;
     
     vt100 = false;
