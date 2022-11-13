@@ -52,11 +52,15 @@ int main(int argc, char *argv[]) {
 
     JAGEDITOR = new jag_editor;
     JAGEDITOR->setnoprefix();
-    
+
     std::vector<std::string> args;
     bool darkmode = false;
     int i = 1;
     string cmd;
+
+#if defined(APPLE) || defined(WIN32)
+    JAGEDITOR->mouseon();
+#endif
 
     while(i < argc) {
         cmd = argv[i++];
