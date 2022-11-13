@@ -238,6 +238,8 @@ public:
     
     void togglemouse() {
         mouse_status = 1 - mouse_status;
+        if (mouse_status)
+            activate_mouse = true;
     }
     
 #else
@@ -263,6 +265,7 @@ public:
             else
                 sendcommand(enablemouse);
             mouse_status = true;
+            activate_mouse = true;
         }
         else {
             sendcommand(disablemouse);
