@@ -3558,6 +3558,40 @@ Exporting void s_utf16_to_utf8(string& s, wstring& str) {
 	delete[] neo;
 }
 
+Exporting void s_utf16_to_utf8(string& s, u_ustring& str) {
+    long sz = str.size();
+    if (!sz)
+        return;
+
+    long i = 0;
+    char inter[5];
+    long ineo = 0;
+    long szo = 1 + (sz << 1);
+    char* neo = new char[szo];
+    neo[0] = 0;
+    long nb;
+    UWCHAR c;
+
+    while (i < sz) {
+        if (str[i] < 0x0080 && ineo < szo - 1) {
+            neo[ineo++] = (char)str[i];
+            i++;
+            continue;
+        }
+
+        if (c_utf16_to_unicode(c, str[i], false))
+            c_utf16_to_unicode(c, str[++i], true);
+
+        nb = c_unicode_to_utf8(c, (uchar*)inter);
+        neo = concatstrings(neo, inter, ineo, szo, nb);
+        i++;
+    }
+
+    neo[ineo] = 0;
+    s += neo;
+    delete[] neo;
+}
+
 #ifdef WIN32
 Exporting void s_unicode_to_utf8_clean(string& s, wstring& str) {
 	s = "";
@@ -4976,6 +5010,36 @@ Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second) {
     r = code;
     return false;
 }
+
+void s_unicode_to_utf16(wstring& w, u_ustring& u) {
+    w = L"";
+    u_uchar c;
+    u_uchar c16;
+    
+    for (long i = 0; i < u.size(); i++) {
+        c = u[i];
+        if (!(c & 0xFFFF0000)) {
+            w += (wchar_t)c;
+            continue;
+        }
+        
+        c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+        w += c16;
+        w += 0xDC00 | (c & 0x3FF);
+    }
+}
+
+void s_utf16_to_unicode(u_ustring& u, wstring& w) {
+    u = U"";
+    
+    u_uchar c;
+    for (long i = 0; i < w.size(); i++) {
+        if (c_utf16_to_unicode(c, w[i], false))
+            c_utf16_to_unicode(c, w[++i], true);
+        u += c;
+    }
+}
+
 
 #ifdef WIN32
 Exporting wstring u_to_w(u_ustring u) {

@@ -68,6 +68,10 @@ using std::endl;
 //Lines extracted from the function "mk_wcwidth": https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
 bool ckjchar(wchar_t ucs);
 
+void s_unicode_to_utf16(wstring& w, u_ustring& u);
+void s_utf16_to_unicode(u_ustring& u, wstring& w);
+Exporting void s_utf16_to_utf8(string& s, u_ustring& str);
+
 Exporting string jsonstring(string value);
 Exporting wstring wjsonstring(wstring value);
 Exporting wstring wjsonstring(u_ustring value);

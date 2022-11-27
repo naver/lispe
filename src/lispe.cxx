@@ -75,11 +75,18 @@ static u_ustring U(string x) {
 
 Delegation::Delegation() {
     mark = 0;
+#ifdef LISPE_WASM
+    input_handler = NULL;
+    reading_string_function = NULL;
+    reading_string_function_object = NULL;
+#else
     input_handler = get_jag_handler();
     reading_string_function = &lispe_readfromkeyboard;
+    reading_string_function_object = input_handler;
+#endif
+
     display_string_function = &lispe_displaystring;
-    reading_string_function_object = input_handler;    
-    
+
     id_pool = 1;
     
     error_message = NULL;
@@ -116,7 +123,9 @@ Delegation::Delegation() {
 }
 
 Delegation::~Delegation() {
+#ifndef LISPE_WASM
     clean_get_handler(input_handler);
+#endif
     binHash<Element*>::iterator a;
     function_pool.cleaning();
     method_pool.cleaning();
@@ -145,7 +154,9 @@ void moduleChaines(LispE* lisp);
 void moduleMaths(LispE* lisp);
 void moduleAleatoire(LispE* lisp);
 void moduleRGX(LispE* lisp);
+#ifndef LISPE_WASM
 void moduleSocket(LispE* lisp);
+#endif
 void moduleOntology(LispE* lisp);
 #ifdef FLTKGUI
 void moduleGUI(LispE* lisp);
@@ -267,14 +278,16 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_folding, "#folding", P_FOUR, &List::evall_folding);
     set_instruction(l_fread, "fread", P_TWO, &List::evall_fread);
     set_instruction(l_fwrite, "fwrite", P_THREE, &List::evall_fwrite);
-    set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
     set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater);
     set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal);
     set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if);
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife);
     set_instruction(l_in, "in", P_THREE, &List::evall_in);
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix);
+#ifndef LISPE_WASM
+    set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
+#endif
     set_instruction(l_insert, "insert", P_THREE | P_FOUR, &List::evall_insert);
     set_instruction(l_addr_, "addr_", P_TWO, &List::evall_addr_);
     set_instruction(l_shorts, "shorts", P_ATLEASTONE, &List::evall_shorts);
@@ -870,7 +883,9 @@ void Delegation::initialisation(LispE* lisp) {
     moduleMaths(lisp);
     moduleAleatoire(lisp);
     moduleRGX(lisp);
+#ifndef LISPE_WASM
     moduleSocket(lisp);
+#endif
     moduleOntology(lisp);
 #ifdef FLTKGUI
     moduleGUI(lisp);
