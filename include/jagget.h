@@ -201,6 +201,8 @@ public:
     bool mouse_status;
     bool vt100;
     
+    bool activate_mouse;
+    
     jag_get(bool inside);
     ~jag_get() {
         resetterminal();
@@ -227,6 +229,7 @@ public:
 #ifdef WIN32
     void mouseon() {
         mouse_status = true;
+        activate_mouse = true;
     }
     
     void mouseoff() {
@@ -235,6 +238,8 @@ public:
     
     void togglemouse() {
         mouse_status = 1 - mouse_status;
+        if (mouse_status)
+            activate_mouse = true;
     }
     
 #else
@@ -245,6 +250,7 @@ public:
         else
             sendcommand(enablemouse);
         mouse_status = true;
+        activate_mouse = true;
     }
     
     void mouseoff() {
@@ -259,6 +265,7 @@ public:
             else
                 sendcommand(enablemouse);
             mouse_status = true;
+            activate_mouse = true;
         }
         else {
             sendcommand(disablemouse);

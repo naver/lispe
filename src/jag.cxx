@@ -332,7 +332,7 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     colors.push_back(m_green); //4
     colors.push_back(m_yellow); //5
     colors.push_back(m_selectgray); //6
-    
+
     poscommand = 0;
     option = x_none;
     pos = 0;
@@ -885,10 +885,11 @@ void jag_editor::displaygo(bool full) {
             break;
         case x_replace:
             clearline();
-            if (regularexpressionfind == 3)
-                cout << back << "find:" << convert(currentfind) << "  replace:" << convert(line);
-            else
-                cout << back << "Find:" << convert(currentfind) << "  Replace:" << convert(line);
+            cout << back << "Find:" << convert(currentfind) << "  Replace:" << convert(line);
+            break;
+        case x_replacenocase:
+            clearline();
+            cout << back << "find:" << convert(currentfind) << "  replace:" << convert(line);
             break;
         case x_replacergx:
             clearline();
@@ -1075,7 +1076,7 @@ bool jag_editor::search(wstring& l, long& first, long& last, long ps) {
     }
     else
         first = l.find(currentfind, ps);
-    
+
     if (first == -1)
         return false;
     last = first + currentfind.size();
@@ -1123,7 +1124,7 @@ bool jag_editor::processfind() {
     }
 
     clearline();
-    cout << back << "Not found";
+    cout << back << "'"  << convert(currentfind) << "' Not found";
     movetoline(currentline);
     movetoend();
     return false;
@@ -2471,6 +2472,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     option = x_none;
                     return true;
                 case x_replace: //replace
+                case x_replacenocase:
                 case x_replacergx:
                 case x_replaceprgx:
                     if (processfind()) {
@@ -3627,7 +3629,7 @@ long jag_editor::deleteachar(wstring& l, bool last, long pins) {
                     l.erase(i, sz - i + 1);
                 }
                 else
-                    l.pop_back();                    
+                    l.pop_back();
             }
             mx--;
         }
@@ -3662,7 +3664,7 @@ void jag_editor::backwardemoji() {
     posinstring--;
     if (posinstring < 0)
         return;
-    
+
     long p = 0;
     for (long i = 0; i < line.size(); i++) {
         p = i;

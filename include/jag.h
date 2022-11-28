@@ -82,7 +82,7 @@ const int16_t nbdenomination = 7;
 
 class wstring_controlled : public wstring {
 public:
-    
+
     inline wchar_t& operator [](long pos) {
         if (pos >= 0 && pos < size())
             return at(pos);
@@ -121,7 +121,7 @@ public:
     bool updatesize();
 
     long indent(long p);
-    
+
     //we check if we have spaces from the start of the string and on
     void checkspace(long pos, long l, char code) {
         for (long i = 0; i < pos; i++) {
@@ -137,7 +137,7 @@ public:
         char l_strings = 0;
         char l_comments = 0;
         long pos;
-        
+
         for (long i = 0; i < lines.size(); i++) {
             if (lines[i].find(L";;") != -1) {
                 if (l_comments) {
@@ -150,12 +150,12 @@ public:
                 }
                 continue;
             }
-            
+
             if (l_comments) {
                 longlines.push_back(l_comments);
                 continue;
             }
-            
+
             pos = lines[i].find(L"«");
             if (pos != -1) {
                 if (lines[i].find(L"»") == -1) {
@@ -188,7 +188,7 @@ public:
             }
         }
     }
-    
+
     void detectpython() {
         char l_strings = 0;
         long pos;
@@ -222,7 +222,7 @@ public:
             }
         }
     }
-    
+
     void detectclike() {
         char l_comments = 0;
         long pos;
@@ -246,12 +246,12 @@ public:
             }
         }
     }
-    
+
     void detecttamgu() {
         char l_strings = 0;
         char l_comments = 0;
         long pos;
-        
+
         for (long i = 0; i < lines.size(); i++) {
             if (lines[i].find(L"/@") != -1) {
                 if (lines[i].find(L"@/") == -1) {
@@ -292,7 +292,7 @@ public:
             }
         }
     }
-    
+
     void detectlongstrings(file_types ftype) {
         longlines.clear();
         switch (ftype) {
@@ -314,7 +314,7 @@ public:
         }
     }
 
-    
+
     void numbers() {
         long nb = 0;
         numeros.clear();
@@ -504,7 +504,7 @@ public:
     wstring back() {
         return lines.back();
     }
-    
+
     bool checkfullsize(wstring&, bool&);
     bool checksize(long p);
     void undo(wstring& l, long p, char a);
@@ -645,7 +645,7 @@ public:
 //--------------------------------------------------------------------------------
 
 
-typedef enum { x_none, x_goto, x_find, x_findnocase, x_replace, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_paste, x_pasteselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
+typedef enum { x_none, x_goto, x_find, x_replace, x_findnocase, x_replacenocase, x_rgx, x_replacergx, x_prgx, x_replaceprgx, x_write, x_count, x_delete, x_copy, x_cut, x_paste, x_pasteselect, x_deleting, x_cutting, x_load, x_exitprint, x_debug, x_togglemouse} x_option;
 
 
 class Jag_automaton;
@@ -654,7 +654,7 @@ class jag_editor : public jag_get {
 public:
 
     vector<string> arguments;
-    
+
     vector<wstring> commandlines;
     vector<long> longstrings;
     vector<string> colors;
@@ -666,10 +666,10 @@ public:
     editor_keep redos;
 
     file_types filetype;
-    
+
     std::stringstream localhelp;
     std::wstringstream st;
-    
+
     string thecurrentfilename;
     string prefix;
 
@@ -681,9 +681,9 @@ public:
     wstring copybuffer;
 
     long selected_x, selected_y, selected_pos, selected_posnext, selected_firstline, double_click;
-    
+
     long poscommand;
-    
+
     long linematch;
 
     long pos;
@@ -707,7 +707,7 @@ public:
 	bool insertaline;
     bool taskel;
     bool moveup;
-        
+
     Au_automate* rgx;
 
 #ifdef POSIXREGEX
@@ -726,7 +726,7 @@ public:
     virtual string coloringline(wstring& l, long i);
 
     virtual void displaythehelp(long noclear = 0);
-    
+
     void deleteselection();
     void displayextract(wstring& sub, long pos, long from_pos, long to_pos, bool select = true);
     void selectlines(long from_line, long to_line, long from_pos, long to_pos);
@@ -734,7 +734,7 @@ public:
     virtual void handlemousectrl(string& mousectrl);
     void indentplus();
     void deindentminus();
-    
+
     void setpathname(string path) {
         thecurrentfilename =  path;
         if (thecurrentfilename.find(".lisp") != -1)
@@ -774,7 +774,7 @@ public:
         wstring name = wconvert(thecurrentfilename);
         return name;
     }
-    
+
     void setscrolling();
     void resetscrolling();
 
@@ -792,7 +792,7 @@ public:
             return true;
         return false;
     }
-    
+
     bool checkpath(bool checkcmd = true);
     void ls(string cmd, string path, vector<wstring>& paths);
 
@@ -809,7 +809,7 @@ public:
             check = '(';
         else
             check = checkcar - 2;
-        
+
         for (long i = 0; i < limit; i++) {
             switch (ln[i]) {
                 case '"':
@@ -846,7 +846,7 @@ public:
             posmatch = positions.back();
         return posmatch;
     }
-    
+
     void setnoprefix() {
         noprefix = 1 - noprefix;
         previous_noprefix = noprefix;
@@ -925,7 +925,7 @@ public:
     virtual bool reloadfile() {
         if (thecurrentfilename == "")
             return false;
-        
+
         ifstream rd(thecurrentfilename, openMode);
         if (rd.fail()) {
             cerr << m_redbold << " Cannot load: " << thecurrentfilename << m_current << endl;
@@ -947,7 +947,7 @@ public:
         displaylist(0);
         return true;
     }
-    
+
     void toggletopbottom() {
         if (poslines.size() == 0)
             return;
@@ -973,7 +973,7 @@ public:
     virtual string prefixstring(long n) {
         return prefix;
     }
-    
+
     long prefixesize(long sz) {
         if (noprefix)
             return 0;
@@ -1058,7 +1058,7 @@ public:
 
     long size_upto(wstring& l, long p);
     void computeposition(int& p, long line);
-    
+
     long linesize() {
         if (emode())
             return lines[poslines[currentline]].size();
@@ -1099,7 +1099,7 @@ public:
             colors[5] = m_yellow;
         }
     }
-    
+
     void displaylist(long beg);
     virtual void displaylist(long beg, long end) {
         displaylist(beg);
@@ -1264,14 +1264,14 @@ public:
     //This is the main instruction to add characters into the editor
     void addabuffer(wstring& b, bool instring);
     void cleanheaders(wstring& w);
-    
+
     void handleblock(wstring& bl);
 
     //This section handles combined commands introduced with Ctrl-x
     virtual bool checkcommand(char);
     void handlecommands();
     virtual void stopExecution() {}
-    
+
     //This a case of copy/paste within the editor, we need to remove the prefixes
     //This is the main method that launches the terminal
     virtual void launchterminal(bool darkmode, char loadedcode, vector<string>& args, vector<string>& newcolors);
