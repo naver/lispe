@@ -32,6 +32,7 @@ public:
     vector<lisp_code> types;
     vector<long> lines;
     vector<long> positions;
+    binHash<Element*> defun_functions;
     
     long current;
     bool asList;

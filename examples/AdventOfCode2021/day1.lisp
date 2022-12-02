@@ -5,8 +5,9 @@
 
 ; Résolution du jour 1
 
-(setq codes (fread (+ _current "data/codes_day1.txt")))
-(setq codes (integers (split codes "\n")))
+(setq DATA (fread (+ _current "data/codes_day1.txt")))
+
+(setq codes (integers (split DATA "\n")))
 
 (defun p2(liste nb)
    (if (eq (size liste) 1)
@@ -21,7 +22,7 @@
    )
 )
 
-(println (p2 codes 0))
+(println 'P2 (p2 codes 0))
 
 
 (defun p3(liste nb)
@@ -37,9 +38,5 @@
    )
 )
 
-(p3 codes 0)
-
-
-
-
+(println 'P3 (p3 codes 0))
 

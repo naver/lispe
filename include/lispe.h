@@ -424,6 +424,8 @@ public:
     Element* execute(string code, string path_name);
     
     Element* compile_lisp_code(string& code);
+    Element* compile_eval(string& code);
+
     Element* load(string chemin);
     lisp_code segmenting(string& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);

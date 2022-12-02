@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.10.28.15.55";
+static std::string version = "1.2022.12.2.18.59";
 string LispVersion() {
     return version;
 }
@@ -233,6 +233,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_catch, "catch", P_ATLEASTTWO, &List::evall_catch);
     set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr);
     set_instruction(l_check, "check", P_ATLEASTTWO, &List::evall_check);
+    set_instruction(l_compile, "loadcode", P_TWO, &List::evall_compile);
     set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consb, "consb", P_THREE, &List::evall_consb);
@@ -1755,6 +1756,32 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         }
                                                                         
                         e = generate_macro(e);
+                        
+                        if (lab > l_final) {
+                            if (parse.defun_functions.check(lab)) {
+                                Element* body = parse.defun_functions[lab];
+                                //This is a call to a function: t_atom, a1, a2...
+                                if (body->index(0)->label() == l_defun)
+                                    body = new List_function_call(this, (Listincode*)e, (List*)body);
+                                else
+                                    body = new List_pattern_call((Listincode*)e, (List*)body);
+                                
+                                garbaging(body);
+                                removefromgarbage(e);
+                                e = body;
+                            }
+                            else {
+                                if (delegation->function_pool[current_space]->check(lab)) {
+                                    Element* body = (*delegation->function_pool[current_space])[lab];
+                                    if (body->index(0)->label() == l_deflib) {
+                                        body = new List_library_call((Listincode*)e, (List*)body);
+                                        garbaging(body);
+                                        removefromgarbage(e);
+                                        e = body;
+                                    }
+                                }
+                            }
+                        }
 
 
                         /*
@@ -1986,6 +2013,8 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 break;
             case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
+                if (parse.tokens[index] == U"fib")
+                    cerr << "";
                 index++;
                 if (!quoting && e->label() == l_quote) {
                     current_program->append(e);
@@ -2009,6 +2038,12 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                 break;
                             }
                         }
+                    }
+                    if (current_program->size() == 1 &&
+                        (current_program->index(0)->label() == l_defun ||
+                         current_program->index(0)->label() == l_defpat)) {
+                        //We are defining a function, we can record it now...
+                        parse.defun_functions[e->label()] = current_program;
                     }
                     current_program->append(e);
                 }
@@ -2296,6 +2331,17 @@ Element* LispE::load(string pathname) {
 
         current_path();
         delegation->reset_context();
+        return tree->eval(this);
+    }
+    catch(Error* err) {
+        delegation->forceClean();
+        throw err;
+    }
+}
+
+Element* LispE::compile_eval(string& code) {
+    try {
+        Element* tree = compile_lisp_code(code);
         return tree->eval(this);
     }
     catch(Error* err) {
@@ -2637,6 +2683,9 @@ void LispE::current_path() {
         e->release();
     }
 }
+
+
+
 
 
 

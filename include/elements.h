@@ -107,7 +107,7 @@ typedef enum {
     l_mark, l_resetmark,
     l_while, l_loop, l_loopcount, l_range, l_rangein, l_irange, l_irangein, l_mloop, l_lloop,
     l_atoms, l_atomise, l_join, l_sort,
-    l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
+    l_compile, l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
     l_apply, l_maplist, l_mapcar, l_filterlist, l_droplist, l_takelist, l_mapping, l_checking, l_folding,
     l_data, l_replicate,
     
@@ -744,7 +744,7 @@ public:
     virtual Element* cdr(LispE*);
     virtual Element* cadr(LispE*, u_ustring& actions);
     
-    virtual long argumentsize(LispE*, long sz) {
+    virtual long argumentsize(long sz) {
         return -1;
     }
     

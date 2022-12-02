@@ -136,7 +136,7 @@ public:
     }
     
     Element* methodCreateServer(LispE* lisp, int nbclients, int kport, string server_name) {
-        //TamguThreadLock _lock(general);
+        //LispEThreadLock _lock(general);
         //In our example, we have only two parameters
         if (hp != NULL)
             throw new Error("Error: SOCKET(831): Server already launched on this socket");
@@ -190,7 +190,7 @@ public:
     }
     
     Element* methodWait(LispE* lisp) {
-        //TamguThreadLock _lock(waiting);
+        //LispEThreadLock _lock(waiting);
         struct sockaddr_in cliAddr;
         SOCKET socketclient = -1;
         if (server == true) {
@@ -258,7 +258,7 @@ public:
     Element* methodReadRaw(LispE* lisp, SOCKET currentsock, int nbbytes) {
         string res;
         long nb = -1;
-        //TamguThreadLock _lock(reading);
+        //LispEThreadLock _lock(reading);
         bool decrement = false;
         if (server == true) {
             if (currentsock == SOCKET_ERROR)
@@ -375,7 +375,7 @@ public:
     }
     
     Element* methodClose(LispE* lisp, int socketclient) {
-        //TamguThreadLock _lock(general);
+        //LispEThreadLock _lock(general);
         if (server == true) {
             if (hp == NULL || sock == SOCKET_ERROR)
                 return null_;
@@ -393,7 +393,7 @@ public:
     }
     
     Element* methodBlocking(LispE* lisp, bool blocking) {
-        //TamguThreadLock _lock(general);
+        //LispEThreadLock _lock(general);
 #ifdef WIN32
         u_long iMode = 0;
         if (blocking == false)
@@ -412,7 +412,7 @@ public:
     }
     
     Element* methodTimeout(LispE* lisp, int v_timeout) {
-        //TamguThreadLock _lock(general);
+        //LispEThreadLock _lock(general);
         //In our example, we have only two parameters
         if (v_timeout == -1) {
             timeout = false;
@@ -796,9 +796,9 @@ public:
             case sock_receive:
                 return L"read a string on a socket in a raw environment. On the server side 'socketClientId' is the value returned by 'wait()'. Use 'receive()' on the client side";
             case sock_get:
-                return L"get one character from a socket in a non Tamgu environment. On the server side 'socketClientId' is the value returned by 'wait()'. Use 'get()' on the client side";
+                return L"get one character from a socket in a non LispE environment. On the server side 'socketClientId' is the value returned by 'wait()'. Use 'get()' on the client side";
             case sock_send:
-                return L"write the string s on the socket in a non Tamgu environment. On the server side num is the value returned by wait()'. Use 'send(string s)' on the client side";
+                return L"write the string s on the socket in a non LispE environment. On the server side num is the value returned by wait()'. Use 'send(string s)' on the client side";
             case sock_close:
                 return L"Close a socket. On the server side if 'socketClientId' is provided (it is the value returned by wait()) it closes the client socket otherwise it closes the current socket.";
             case sock_blocking:

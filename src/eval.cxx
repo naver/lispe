@@ -1246,6 +1246,138 @@ bool Strings::isequal(LispE* lisp, Element* value) {
     return true;
 }
 //------------------------------------------------------------------------------------------
+Element* List_pattern_call::eval(LispE* lisp) {
+    List* arguments = lisp->provideList();
+    Element* element;
+    Element* body;
+    
+    long i;
+    //We calculate our values in advance, in the case of a recursive call, we must
+    //use current values on the stack
+    long nbarguments = liste.size()-1;
+    int16_t ilabel = -1;
+    int16_t sublabel = -1;
+    char match;
+    char depth = lisp->depths[function_label] - 1;
+
+    try {
+        for (i = 1; i <= nbarguments; i++) {
+            element = liste[i]->eval(lisp);
+            
+            ilabel = lisp->extractdynamiclabel(element, depth);
+            if (ilabel > l_final && element->type != t_data) {
+                match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
+                if (match != check_ok) {
+                    arguments->clear();
+                    if (match == check_mismatch)
+                        throw new Error(L"Error: Size mismatch between argument list and data structure definition");
+                    else {
+                        std::wstringstream message;
+                        message << L"Error: Mismatch on argument: " << match;
+                        message << " (" << lisp->asString(lisp->getDataStructure(ilabel)->index(match)->label()) << " required)";
+                        throw new Error(message.str());
+                    }
+                }
+            }
+            //We keep the track of the first element as it used as an index to gather pattern methods
+            if (i == 1)
+                sublabel = ilabel;
+            arguments->append(element->duplicate_constant(lisp));
+        }
+    }
+    catch(Error* err) {
+        arguments->release();
+        throw err;
+    }
+
+    body = NULL;
+    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
+    auto subfunction = functions.find(sublabel);
+    if (subfunction == functions.end()) {
+        sublabel = v_null;
+        //We check, if we have a rollback function
+        subfunction = functions.find(sublabel);
+        if (subfunction == functions.end()) {
+            arguments->release();
+            wstring message = L"Error: Could not find a match for function: '";
+            message += lisp->asString(function_label);
+            message += L"'";
+            throw new Error(message);
+        }
+    }
+
+    body = subfunction->second[0];
+
+    ilabel = 1;
+    match = 0;
+    long sz = subfunction->second.size();
+    lisp->push(body);
+
+    while (body != NULL) {
+        lisp->setstackfunction(body);
+        element = body->index(2);
+        if (element->size() == nbarguments) {
+            match = true;
+            for (i = 0; i < nbarguments && match; i++) {
+                match = element->index(i)->unify(lisp, arguments->liste[i], true);
+            }
+            if (match)
+                break;
+            
+            lisp->clear_top_stack();
+        }
+        body = NULL;
+        if (ilabel < sz)
+            body = subfunction->second[ilabel++];
+        else {
+            if (sublabel != v_null) {
+                sublabel = v_null;
+                ilabel = 1;
+                //We check, if we have a rollback function
+                subfunction = functions.find(sublabel);
+                if (subfunction != functions.end()) {
+                    body = subfunction->second[0];
+                    sz = subfunction->second.size();
+                }
+            }
+        }
+    }
+
+    if (!match) {
+        lisp->pop();
+        arguments->release();
+        wstring message = L"Error: Could not find a match for function: '";
+        message += lisp->asString(function_label);
+        message += L"'";
+        throw new Error(message);
+    }
+    
+    element = null_;
+    try {
+        nbarguments = body->size();
+        for (i = 3; i < nbarguments && element->type != l_return; i++) {
+            element->release();
+            element = body->index(i)->eval(lisp);
+        }
+        
+        if (element->type == l_return) {
+            body = element->eval(lisp);
+            element->release();
+            //This version protects 'e' from being destroyed in the stack.
+            arguments->release(body);
+            return lisp->pop(body);
+        }
+    }
+    catch(Error* err) {
+        arguments->release();
+        lisp->pop();
+        throw err;
+    }
+
+    arguments->release(element);
+    //This version protects 'e' from being destroyed in the stack.
+    return lisp->pop(element);
+}
 
 Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     List* arguments = lisp->provideList();
@@ -1416,7 +1548,7 @@ void launchthread(LispE* call) {
 
 //This function is only used to compare the number of
 //parameters of a function and its arguments
-long List::argumentsize(LispE* lisp, long sz) {
+long List::argumentsize(long sz) {
     long listsz = liste.size();
     if (listsz == sz) {
         while (sz > 0 && liste[sz-1]->isList())
@@ -1425,7 +1557,8 @@ long List::argumentsize(LispE* lisp, long sz) {
     }
     if (listsz < sz) {
         //If the last argument is a list
-        if (listsz && liste.back()->isNotEmptyList() && liste.back()->index(0) == emptylist_)
+        Element* last = liste.back();
+        if (listsz && last->isNotEmptyList() && last->index(0)->isEmpty())
             return listsz-1;
         return -1;
     }
@@ -1750,6 +1883,58 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
     }
 }
 
+Element* List_function_call::eval(LispE* lisp) {
+    //terminal helps detects terminal recursion...
+    //A terminal recursion can be processed in a quasi iterative way.
+    //When a if or cond is processed, their last element is automatically set to terminal
+    //When it corresponds to a function call, then it is processed here
+    //We do not create any new stack element and we store our arguments back into the stack
+    //with their new values in case of terminal recursion.
+    if (terminal && lisp->called() == body) {
+        if (defaultarguments == parameters->size())
+            sameSizeTerminalArguments(lisp, (List*)parameters);
+        else
+            differentSizeTerminalArguments(lisp, (List*)parameters, nbarguments, defaultarguments);
+        return terminal_;
+    }
+    
+    if (defaultarguments == parameters->size())
+        sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
+    else
+        differentSizeNoTerminalArguments(lisp, body, (List*)parameters, nbarguments, defaultarguments);
+        
+    //This is a very specific case, we do not want to go into recursion
+    //but handle the call properly as an iteration
+    //We do not try to execute the code again, we simply returns back to the original loop.
+
+    long i;
+    long nb_instructions = body->size();
+    Element* element;
+    try {
+        do  {
+            element = null_;
+            for (i = 3; i < nb_instructions && element != terminal_ && element->type != l_return; i++) {
+                element->release();
+                element = body->liste[i]->eval(lisp);
+            }
+            if (element->type == l_return) {
+                Element* current_value = element->eval(lisp);
+                element->release();
+                //This version protects 'e' from being destroyed in the stack.
+                return lisp->pop(current_value);
+            }
+        }
+        while (element == terminal_);
+    }
+    catch (Error* err) {
+        lisp->pop();
+        throw err;
+    }
+    
+    //This version protects 'e' from being destroyed in the stack.
+    return lisp->pop(element);
+}
+
 Element* List::eval_function(LispE* lisp, List* body) {
     // It is either a lambda or a function
     //otherwise it's an error
@@ -1760,7 +1945,7 @@ Element* List::eval_function(LispE* lisp, List* body) {
     //the third element is the argument list .
     //we need our body to be the same number
     parameters = body->liste[2];
-    long defaultarguments = parameters->argumentsize(lisp, nbarguments);
+    long defaultarguments = parameters->argumentsize(nbarguments);
     if (defaultarguments == -1) {
         wstring message = L"Error: Wrong number of arguments in call to: '(";
         message += body->liste[1]->asString(lisp);
@@ -1826,6 +2011,25 @@ Element* List::eval_function(LispE* lisp, List* body) {
     return lisp->pop(element);
 }
     
+Element* List_library_call::eval(LispE* lisp) {
+    if (defaultarguments == parameters->size())
+        sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
+    else
+        differentSizeNoTerminalArguments(lisp, body, (List*)parameters, nbarguments, defaultarguments);
+        
+    Element* element;
+    try {
+        element = body->liste[3]->eval(lisp);
+    }
+    catch (Error* err) {
+        lisp->pop();
+        throw err;
+    }
+    
+    //This version protects 'e' from being destroyed in the stack.
+    return lisp->pop(element);
+}
+
 Element* List::eval_library_function(LispE* lisp, List* body) {
     // It is either a lambda or a function
     //otherwise it's an error
@@ -1836,7 +2040,7 @@ Element* List::eval_library_function(LispE* lisp, List* body) {
     //the third element is the argument list .
     //we need our body to be the same number
     parameters = body->liste[2];
-    long defaultarguments = parameters->argumentsize(lisp, nbarguments);
+    long defaultarguments = parameters->argumentsize(nbarguments);
     
     if (defaultarguments == parameters->size())
         sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
@@ -1874,7 +2078,7 @@ Element* List::eval_thread(LispE* lisp, List* body) {
     //the third element is the argument list .
     //we need our body to be the same number
     parameters = body->liste[2];
-    long defaultarguments = parameters->argumentsize(lisp, nbarguments);
+    long defaultarguments = parameters->argumentsize(nbarguments);
     if (defaultarguments == -1) {
         wstring message = L"Error: Wrong number of arguments in call to: '(";
         message += body->liste[1]->asString(lisp);
@@ -7966,6 +8170,12 @@ Element* List::evall_load(LispE* lisp) {
     return filename;
 }
 
+Element* List::evall_compile(LispE* lisp) {
+    Element* the_code = liste[1]->eval(lisp);
+    string code = the_code->toString(lisp);
+    the_code->release();
+    return lisp->compile_eval(code);
+}
 
 Element* List::evall_lock(LispE* lisp) {
     u_ustring key;

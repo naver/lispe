@@ -801,7 +801,7 @@ public:
 
     //This function is only used to compare the number of
     //parameters of a function and its arguments
-    long argumentsize(LispE* lisp, long sz);
+    long argumentsize(long sz);
     
     Element* car(LispE* lisp);
     virtual Element* cdr(LispE* lisp);
@@ -1231,6 +1231,7 @@ public:
     Element* evall_catch(LispE* lisp);
     Element* evall_cdr(LispE* lisp);
     Element* evall_check(LispE* lisp);
+    Element* evall_compile(LispE* lisp);
     Element* evall_concatenate(LispE* lisp);
     Element* evall_cond(LispE* lisp);
     Element* evall_cons(LispE* lisp);
@@ -1798,6 +1799,60 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_function_call : public Listincode {
+public:
+    List* body;
+    Element* parameters;
+    long nbarguments, defaultarguments;
+    
+    List_function_call(LispE* lisp, Listincode* l, List* b) : body(b), Listincode(l) {        
+        nbarguments = liste.size() - 1;
+        //the third element is the argument list .
+        //we need our body to be the same number
+        parameters = body->liste[2];
+        defaultarguments = parameters->argumentsize(nbarguments);
+        if (defaultarguments == -1) {
+            wstring message = L"Error: Wrong number of arguments in call to: '(";
+            message += body->liste[1]->asString(lisp);
+            message += L" ";
+            message += body->liste[2]->asString(lisp);
+            message += L"...)'";
+            throw new Error(message);
+        }
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_library_call : public Listincode {
+public:
+    List* body;
+    Element* parameters;
+    long nbarguments;
+    long defaultarguments;
+    
+    //the third element is the argument list .
+    //we need our body to be the same number
+    List_library_call(Listincode* l, List* b) : body(b), Listincode(l) {
+        nbarguments = liste.size() - 1;
+        parameters = body->liste[2];
+        defaultarguments = parameters->argumentsize(nbarguments);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_pattern_call : public Listincode {
+public:
+    List* body;
+    int16_t function_label;
+    
+    List_pattern_call(Listincode* l, List* b) : body(b), Listincode(l) {
+        function_label = body->liste[1]->label();
+    }
+    
+    Element* eval(LispE* lisp);
+};
 
 class List_if : public List {
 public:
