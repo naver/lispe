@@ -182,6 +182,7 @@ void Delegation::initialisation(LispE* lisp) {
     evals[t_thread] = &List::evalt_thread;
     evals[t_data] = &List::evalt_data;
     evals[t_list] = &List::evalt_list;
+    evals[t_call] = &List::evalt_call;
 
     lisp->create_name_space(v_mainspace);
 

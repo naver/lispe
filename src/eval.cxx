@@ -10582,19 +10582,19 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     int16_t label = body->function_label();
     switch(label) {
         case l_defpat:
-            liste[0] = new Atomefonction(body, t_pattern);
+            liste[0] = new List_pattern_call(this, (List*)body);
             lisp->garbaging(liste[0]);
-            return eval_pattern(lisp, body->index(1)->label());
+            return liste[0]->eval(lisp);
+        case l_defun:
+            liste[0] = new List_function_call(lisp, this, (List*)body);
+            lisp->garbaging(liste[0]);
+            return liste[0]->eval(lisp);
+        case l_deflib:
+            liste[0] = new List_library_call(this, (List*)body);
+            lisp->garbaging(liste[0]);
+            return liste[0]->eval(lisp);
         case l_dethread:
             return eval_thread(lisp, (List*)body);
-        case l_deflib:
-            liste[0] = new Atomefonction(body, t_library_function);
-            lisp->garbaging(liste[0]);
-            return eval_library_function(lisp, (List*)body);
-        case l_defun:
-            liste[0] = new Atomefonction(body, t_function);
-            lisp->garbaging(liste[0]);
-            return eval_function(lisp, (List*)body);
         case l_lambda:
             liste[0] = new Atomefonction(body, t_lambda);
             lisp->garbaging(liste[0]);
@@ -10641,19 +10641,19 @@ Element* Listincode::eval_call_self(LispE* lisp) {
     int16_t label = body->function_label();
     switch(label) {
         case l_defpat:
-            liste[0] = new Atomefonction(body, t_pattern);
+            liste[0] = new List_pattern_call(this, (List*)body);
             lisp->garbaging(liste[0]);
-            return eval_pattern(lisp, body->index(1)->label());
+            return liste[0]->eval(lisp);
+        case l_defun:
+            liste[0] = new List_function_call(lisp, this, (List*)body);
+            lisp->garbaging(liste[0]);
+            return liste[0]->eval(lisp);
+        case l_deflib:
+            liste[0] = new List_library_call(this, (List*)body);
+            lisp->garbaging(liste[0]);
+            return liste[0]->eval(lisp);
         case l_dethread:
             return eval_thread(lisp, (List*)body);
-        case l_deflib:
-            liste[0] = new Atomefonction(body, t_library_function);
-            lisp->garbaging(liste[0]);
-            return eval_library_function(lisp, (List*)body);
-        case l_defun:
-            liste[0] = new Atomefonction(body, t_function);
-            lisp->garbaging(liste[0]);
-            return eval_function(lisp, (List*)body);
         case l_lambda:
             liste[0] = new Atomefonction(body, t_lambda);
             lisp->garbaging(liste[0]);

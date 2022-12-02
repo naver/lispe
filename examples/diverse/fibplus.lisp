@@ -3,6 +3,10 @@
 ;Description: Fibonacci
 
 
+(defun fibo(x)
+   (fib x)
+)
+
 (defun fib(x)
    (if (eq x 1)
       1
@@ -11,7 +15,8 @@
 )
 
 
-(fib 100)
+(fibo 100)
+
 
 
 

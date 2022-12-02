@@ -24,7 +24,6 @@
 
 (println 'P2 (p2 codes 0))
 
-
 (defun p3(liste nb)
    (if (eq (size liste) 3)
       nb
@@ -39,4 +38,5 @@
 )
 
 (println 'P3 (p3 codes 0))
+
 
