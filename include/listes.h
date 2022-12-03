@@ -1803,6 +1803,222 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_at_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_at_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_set_at_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_set_at_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_push_eval : public Listincode {
+public:
+    
+    List_push_eval(Listincode* l) : Listincode(l) {}
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_pop_eval : public Listincode {
+public:
+    
+    List_pop_eval(Listincode* l) : Listincode(l) {
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_in_eval : public Listincode {
+public:
+    
+    List_in_eval(Listincode* l) : Listincode(l) {
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_and_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_and_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_or_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_or_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_check_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_check_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_ncheck_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_ncheck_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_cons_eval : public Listincode {
+public:
+    
+    List_cons_eval(Listincode* l) : Listincode(l) {
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_list_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_list_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_cond_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_cond_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_integer_eval : public Listincode {
+public:
+    
+    List_integer_eval(Listincode* l) : Listincode(l) {
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_number_eval : public Listincode {
+public:
+    
+    List_number_eval(Listincode* l) : Listincode(l) {
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_string_eval : public Listincode {
+public:
+    
+    List_string_eval(Listincode* l) : Listincode(l) {
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_integers_eval : public Listincode {
+public:
+    long listsz;
+    
+    List_integers_eval(Listincode* l) : Listincode(l) {
+        listsz = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_numbers_eval : public Listincode {
+public:
+    long listsz;
+    
+    List_numbers_eval(Listincode* l) : Listincode(l) {
+        listsz = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_strings_eval : public Listincode {
+public:
+    long listsz;
+    
+    List_strings_eval(Listincode* l) : Listincode(l) {
+        listsz = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_key_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_key_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_keyi_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_keyi_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_keyn_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_keyn_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 class List_function_call : public List {
 public:
     List* body;

@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.12.2.18.59";
+static std::string version = "1.2022.12.3.19.51";
 string LispVersion() {
     return version;
 }
@@ -1881,6 +1881,69 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     else
                                         lm = new Listreturnelement((Listincode*)e);
                                     break;
+                                case l_key:
+                                    lm = new List_key_eval((Listincode*)e);
+                                    break;
+                                case l_keyi:
+                                    lm = new List_keyi_eval((Listincode*)e);
+                                    break;
+                                case l_keyn:
+                                    lm = new List_keyn_eval((Listincode*)e);
+                                    break;
+                                case l_at:
+                                    lm = new List_at_eval((Listincode*)e);
+                                    break;
+                                case l_set_at:
+                                    lm = new List_set_at_eval((Listincode*)e);
+                                    break;
+                                case l_push:
+                                    lm = new List_push_eval((Listincode*)e);
+                                    break;
+                                case l_pop:
+                                    lm = new List_pop_eval((Listincode*)e);
+                                    break;
+                                case l_in:
+                                    lm = new List_in_eval((Listincode*)e);
+                                    break;
+                                case l_and:
+                                    lm = new List_and_eval((Listincode*)e);
+                                    break;
+                                case l_or:
+                                    lm = new List_or_eval((Listincode*)e);
+                                    break;
+                                case l_check:
+                                    lm = new List_check_eval((Listincode*)e);
+                                    break;
+                                case l_ncheck:
+                                    lm = new List_ncheck_eval((Listincode*)e);
+                                    break;
+                                case l_cons:
+                                    lm = new List_cons_eval((Listincode*)e);
+                                    break;
+                                case l_list:
+                                    lm = new List_list_eval((Listincode*)e);
+                                    break;
+                                case l_cond:
+                                    lm = new List_cond_eval((Listincode*)e);
+                                    break;
+                                case l_integer:
+                                    lm = new List_integer_eval((Listincode*)e);
+                                    break;
+                                case l_number:
+                                    lm = new List_number_eval((Listincode*)e);
+                                    break;
+                                case l_string:
+                                    lm = new List_string_eval((Listincode*)e);
+                                    break;
+                                case l_integers:
+                                    lm = new List_integers_eval((Listincode*)e);
+                                    break;
+                                case l_numbers:
+                                    lm = new List_numbers_eval((Listincode*)e);
+                                    break;
+                                case l_strings:
+                                    lm = new List_strings_eval((Listincode*)e);
+                                    break;
                                 default:
                                     lm = new List_execute((Listincode*)e, delegation->evals[lab]);
                             }
@@ -2014,8 +2077,6 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 break;
             case t_atom:
                 e = provideAtom(encode(parse.tokens[index]));
-                if (parse.tokens[index] == U"fib")
-                    cerr << "";
                 index++;
                 if (!quoting && e->label() == l_quote) {
                     current_program->append(e);
@@ -2684,6 +2745,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

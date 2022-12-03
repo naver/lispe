@@ -3,11 +3,11 @@
 
 (defun fibo (n (d {1:1}) )
    (select 
-      (at d n)
+      (keyi d n)
       (if (<= n 1)
          1
-         (key
-            (key d n
+         (keyi
+            (keyi d n
                (+
                   (fibo (- n 1) d)
                   (fibo (- n 2) d)
@@ -19,7 +19,12 @@
    )
 )
 
-(println (fibo 20))
+(println (fibo 10))
+
+
+
+
+
 
 
 

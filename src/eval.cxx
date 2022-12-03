@@ -1694,8 +1694,10 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
                     //If the argument was not provided, then we rely on the default value
                     //if it is available
                     if (data == NULL) {
-                        if (label == 2)
+                        if (label == 2) {
                             data = element->index(1)->eval(lisp); //default value
+                            data = data->duplicate_constant(lisp);
+                        }
                         else
                             data = null_;
                     }
@@ -2511,6 +2513,20 @@ Element* List::evall_return(LispE* lisp) {
     liste[1]->setterminal(terminal);
     return lisp->provideReturn(liste[1]->eval(lisp));
 }
+
+Element* List_and_eval::eval(LispE* lisp) {
+    Element* second_element = null_;
+    bool test = true;
+        
+    for (long i = 1; i < listsize && test; i++) {
+        second_element->release();
+        second_element = liste[i]->eval(lisp);
+        test = second_element->Boolean();
+    }
+    second_element->release();
+    return booleans_[test];
+}
+
 
 Element* List::evall_and(LispE* lisp) {
     long listsize = liste.size();
@@ -5960,6 +5976,63 @@ Element* List::evall_cdr(LispE* lisp) {
     return c;
 }
 
+Element* List_check_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    
+    if (!element->Boolean()) {
+        element->release();
+        return null_;
+    }
+
+    _releasing(element);
+    liste.back()->setterminal(terminal);
+    for (long i = 2; i < listsize && element->type != l_return; i++) {
+        element->release();
+        element = liste[i]->eval(lisp);
+    }
+    return element;
+}
+
+Element* List_cond_eval::eval(LispE* lisp) {
+    Element* first_element = liste[0];
+    Element* second_element = null_;
+    Element* third_element = null_;
+
+
+    try {
+        long szv;
+        for (long i = 1; i < listsize; i++) {
+            second_element = liste[i];
+            szv = second_element->size();
+
+            if (!second_element->isList() || szv <= 1)
+                throw new Error(L"Error: in a 'cond' the first element must be a list");
+
+            List* code = (List*)second_element;
+            third_element = code->liste[0]->eval(lisp);
+            if (third_element->Boolean()) {
+                _releasing(third_element);
+                first_element = null_;
+                code->liste.back()->setterminal(terminal);
+                for (long int j = 1; j < szv; j++) {
+                    _releasing(first_element);
+                    first_element = code->liste[j]->eval(lisp);
+                }
+                return first_element;
+            }
+            _releasing(third_element);
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        third_element->release();
+        throw err;
+    }
+
+    return null_;
+}
+
 Element* List::evall_check(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     
@@ -6031,6 +6104,51 @@ Element* List::evall_conspoint(LispE* lisp) {
     
 }
 
+Element* List_cons_eval::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    if (first_element == emptylist_)
+        first_element = null_;
+    
+    Element* second_element = null_;
+
+
+    try {
+        //merging an element into the next list
+        second_element = liste[2]->eval(lisp);
+        
+        switch (second_element->type) {
+            case t_llist:
+                return second_element->insert(lisp, first_element, 0);
+            case t_list: {
+                second_element = second_element->duplicate_constant(lisp);
+                if (second_element->status) {
+                    second_element->insert(lisp, first_element, 0);
+                    Listpool* third_element = new Listpool(lisp, (List*)second_element, 0);
+                    ((List*)second_element)->liste.home++;
+                    return third_element;
+                }
+                return second_element->insert(lisp, first_element, 0);
+            default:
+                if (second_element == null_ || second_element == emptylist_) {
+                    List* third_element = lisp->provideList();
+                    third_element->append(first_element);
+                    return third_element;
+                }
+
+                LList* third_element = new LList(&lisp->delegation->mark);
+                third_element->append(first_element);
+                third_element->append_as_last(second_element);
+                return third_element;
+            }
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        second_element->release();
+        throw err;
+    }
+    return null_;
+}
 Element* List::evall_cons(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (first_element == emptylist_)
@@ -6178,6 +6296,28 @@ Element* List::evall_converttoatom(LispE* lisp) {
 Element* List::evall_converttoshort(LispE* lisp) {
     Element* value = liste[1]->eval(lisp);
     Element* element = new Short(value->asShort());
+    value->release();
+    return element;
+}
+
+Element* List_integer_eval::eval(LispE* lisp) {
+    Element* value = liste[1]->eval(lisp);
+    Element* element = lisp->provideInteger(value->asInteger());
+    value->release();
+    return element;
+}
+
+Element* List_number_eval::eval(LispE* lisp) {
+    Element* value = liste[1]->eval(lisp);
+    Element* element = lisp->provideNumber(value->asNumber());
+    value->release();
+    return element;
+}
+
+Element* List_string_eval::eval(LispE* lisp) {
+    Element* value = liste[1]->eval(lisp);
+    u_ustring strvalue = value->asUString(lisp);
+    Element* element = lisp->provideString(strvalue);
     value->release();
     return element;
 }
@@ -6880,6 +7020,25 @@ Element* List::evall_ife(LispE* lisp) {
     return element;
 }
 
+Element* List_in_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    Element* search_value;
+    bool res = false;
+    
+    try {
+        search_value = liste[2]->eval(lisp);
+        res = container->check_element(lisp, search_value);
+        container->release();
+        search_value->release();
+    }
+    catch (Error* err) {
+        container->release();
+        throw err;
+    }
+
+    return booleans_[res];
+}
+
 
 Element* List::evall_in(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
@@ -6898,6 +7057,39 @@ Element* List::evall_in(LispE* lisp) {
     }
 
     return booleans_[res];
+}
+
+Element* List_at_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    Element* result = container;
+
+    Element* value = null_;
+    
+    try {
+        //The user might have provided a list of indexes
+        //which we use to traverse a complex hierarchical structure...
+        for (long i = 2; i < listsize; i++) {
+            value = liste[i]->eval(lisp);
+            result = result->protected_index(lisp, value);
+            _releasing(value);
+        }
+        if (container->element_container()) {
+            result->increment();
+            container->release();
+            result->decrementkeep();
+        }
+        else
+            container->release();
+    }
+    catch (Error* err) {
+        value->release();
+        container->release();
+        if (container != result)
+            result->release();
+        throw err;
+    }
+
+    return result;
 }
 
 Element* List::evall_at(LispE* lisp) {
@@ -7203,6 +7395,44 @@ Element* List::evall_set_shape(LispE* lisp) {
     }
 
     return container;
+}
+
+Element* List_set_at_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    Element* result = container;
+
+    Element* value = null_;
+    Element* ix;
+
+
+    try {
+        value = liste[listsize - 1]->eval(lisp)->copying(false);
+        for (long i = 2; i < listsize - 2; i++) {
+            ix = liste[i]->eval(lisp);
+            result = result->protected_index(lisp, ix);
+            ix->release();
+        }
+        ix = liste[listsize-2]->eval(lisp);
+        result->replace(lisp, ix, value);
+        value->release();
+        ix->release();
+        if (container->element_container()) {
+            result->increment();
+            container->release();
+            result->decrementkeep();
+        }
+        else
+            container->release();
+    }
+    catch (Error* err) {
+        value->release();
+        container->release();
+        if (container != result)
+            result->release();
+        throw err;
+    }
+
+    return result;
 }
 
 Element* List::evall_set_at(LispE* lisp) {
@@ -7557,6 +7787,218 @@ Element* List::evall_join(LispE* lisp) {
     return second_element;
 }
 
+Element* List_key_eval::eval(LispE* lisp) {
+    if (listsize == 1) {
+        //We create an empty dictionary
+        return lisp->provideDictionary();
+    }
+
+    Element* first_element = liste[1]->eval(lisp);
+    Element* second_element;
+
+
+    try {
+        if (listsize == 3 && first_element->isDictionary()) {
+            //The second element is an a_key
+            switch (first_element->type) {
+                case t_dictionary: {
+                    u_ustring a_key;
+                    evalAsUString(2, lisp, a_key);
+                    second_element = first_element->protected_index(lisp, a_key);
+                    first_element->release();
+                    return second_element;
+                }
+                case t_dictionaryi: {
+                    long a_key;
+                    evalAsInteger(2, lisp, a_key);
+                    second_element = first_element->protected_index(lisp, a_key);
+                    first_element->release();
+                    return second_element;
+                }
+                case t_dictionaryn: {
+                    double a_key;
+                    evalAsNumber(2, lisp, a_key);
+                    second_element = first_element->protected_index(lisp, a_key);
+                    first_element->release();
+                    return second_element;
+                }
+            }
+        }
+
+        long first = 2;
+        if (first_element->isDictionary()) {
+            if ((listsize % 2 ))
+                throw new Error("Error: wrong number of arguments for 'key'");
+            // It is out of question to manipulate a dictionary declared in the code
+            first_element = first_element->duplicate_constant(lisp);
+        }
+        else {
+            if (!(listsize % 2 ))
+                throw new Error("Error: wrong number of arguments for 'key'");
+            first = 3;
+            u_ustring a_key = first_element->asUString(lisp);
+            first_element->release();
+            first_element = lisp->provideDictionary();
+            second_element = liste[2]->eval(lisp);
+            first_element->recording(a_key, second_element->copying(false));
+        }
+
+        //We store values
+        switch (first_element->type) {
+            case t_dictionary: {
+                u_ustring a_key;
+                for (long i = first; i < listsize; i+=2) {
+                    evalAsUString(i, lisp, a_key);
+                    second_element = liste[i+1]->eval(lisp);
+                    first_element->recording(a_key, second_element->copying(false));
+                }
+                break;
+            }
+            case t_dictionaryi: {
+                long a_key;
+                for (long i = 2; i < listsize; i+=2) {
+                    evalAsInteger(i, lisp, a_key);
+                    second_element = liste[i+1]->eval(lisp);
+                    first_element->recording(a_key, second_element->copying(false));
+                }
+                break;
+            }
+            case t_dictionaryn: {
+                double a_key;
+                for (long i = 2; i < listsize; i+=2) {
+                    evalAsNumber(i, lisp, a_key);
+                    second_element = liste[i+1]->eval(lisp);
+                    first_element->recording(a_key, second_element->copying(false));
+                }
+                break;
+            }
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+Element* List_keyi_eval::eval(LispE* lisp) {
+    if (listsize == 1) {
+        //We create an empty dictionary
+        return lisp->provideDictionary_i();
+    }
+    
+    Element* first_element = liste[1]->eval(lisp);
+    Element* second_element;
+
+
+    try {
+
+        long a_key;
+        if (listsize == 3 && first_element->isDictionary()) {
+            if (first_element->type != t_dictionaryi)
+                throw new Error("Error: wrong dictionary type for 'keyi'");
+
+            evalAsInteger(2, lisp, a_key);
+            second_element = first_element->protected_index(lisp, a_key);
+            first_element->release();
+            return second_element;
+        }
+
+        long first;
+        if (first_element->isDictionary()) {
+            if (first_element->type != t_dictionaryi)
+                throw new Error("Error: wrong dictionary type for 'keyi'");
+
+            if ((listsize % 2 ))
+                throw new Error("Error: wrong number of arguments for 'keyi'");
+            first = 2;
+            // It is out of question to manipulate a dictionary declared in the code
+            first_element = first_element->duplicate_constant(lisp);
+        }
+        else {
+            if (!(listsize % 2 ))
+                throw new Error("Error: wrong number of arguments for 'keyi'");
+            first = 3;
+            a_key = first_element->asInteger();
+            first_element->release();
+            first_element = lisp->provideDictionary_i();
+            second_element = liste[2]->eval(lisp);
+            first_element->recording(a_key, second_element->copying(false));
+        }
+
+        //We store the values
+        for (long i = first; i < listsize; i+=2) {
+            evalAsInteger(i, lisp, a_key);
+            second_element = liste[i+1]->eval(lisp);
+            first_element->recording(a_key, second_element->copying(false));
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
+
+Element* List_keyn_eval::eval(LispE* lisp) {
+    if (listsize == 1) {
+        //We create an empty dictionary
+        return lisp->provideDictionary_n();
+    }
+    Element* first_element = liste[1]->eval(lisp);
+    Element* second_element;
+
+
+    try {
+        double a_key;
+        if (listsize == 3 && first_element->isDictionary()) {
+            if (first_element->type != t_dictionaryn)
+                throw new Error("Error: wrong dictionary type for 'keyn'");
+
+            evalAsNumber(2, lisp, a_key);
+            second_element = first_element->protected_index(lisp, a_key);
+            first_element->release();
+            return second_element;
+        }
+
+        long first;
+        if (first_element->isDictionary()) {
+            if (first_element->type != t_dictionaryn)
+                throw new Error("Error: wrong dictionary type for 'keyn'");
+
+            if ((listsize % 2 ))
+                throw new Error("Error: wrong number of arguments for 'keyn'");
+            first = 2;
+            // It is out of question to manipulate a dictionary declared in the code
+            first_element = first_element->duplicate_constant(lisp);
+        }
+        else {
+            if (!(listsize % 2 ))
+                throw new Error("Error: wrong number of arguments for 'keyn'");
+            first = 3;
+            a_key = first_element->asNumber();
+            first_element->release();
+            first_element = lisp->provideDictionary_n();
+            second_element = liste[2]->eval(lisp);
+            first_element->recording(a_key, second_element->copying(false));
+        }
+
+        //We store the values
+        for (long i = first; i < listsize; i+=2) {
+            evalAsNumber(i, lisp, a_key);
+            second_element = liste[i+1]->eval(lisp);
+            first_element->recording(a_key, second_element->copying(false));
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    return first_element;
+}
 
 Element* List::evall_key(LispE* lisp) {
     long listsize = liste.size();
@@ -7920,6 +8362,27 @@ Element* List::evall_last(LispE* lisp) {
     Element* value = container->last_element(lisp);
     container->release();
     return value;
+}
+
+Element* List_list_eval::eval(LispE* lisp) {
+    if (listsize == 1)
+        return emptylist_;
+
+    Element* a_list = lisp->provideList();
+    Element* value;
+
+    try {
+        for (long i = 1; i < listsize; i++) {
+            value = liste[i]->eval(lisp);
+            a_list->append(value->copying(false));
+        }
+    }
+    catch (Error* err) {
+        a_list->release();
+        throw err;
+    }
+
+    return a_list;
 }
 
 Element* List::evall_list(LispE* lisp) {
@@ -8544,6 +9007,27 @@ Element* List::evall_min(LispE* lisp) {
 }
 
 
+Element* List_ncheck_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    
+    if (!element->Boolean()) {
+        element->release();
+        liste[2]->setterminal(terminal);
+        return liste[2]->eval(lisp);
+    }
+    
+    
+    _releasing(element);
+    
+    liste.back()->setterminal(terminal);
+    for (long i = 3; i < listsize && element->type != l_return; i++) {
+        element->release();
+        element = liste[i]->eval(lisp);
+    }
+    return element;
+}
+
+
 
 Element* List::evall_ncheck(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -8827,6 +9311,36 @@ Element* List::evall_floats(LispE* lisp) {
     return n;
 }
 
+Element* List_numbers_eval::eval(LispE* lisp) {
+    if (listsz == 1)
+        return lisp->provideNumbers();
+
+    Numbers* n = lisp->provideNumbers();
+    Element* values;
+
+
+    try {
+        n->liste.reserve(listsz<<1);
+        for (long e = 1; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->isList()) {
+                for (long i = 0; i < values->size(); i++) {
+                    n->liste.push_back(values->index(i)->asNumber());
+                }
+            }
+            else
+                n->liste.push_back(values->asNumber());
+            values->release();
+        }
+    }
+    catch (Error* err) {
+        n->release();
+        throw err;
+    }
+
+    return n;
+}
+
 Element* List::evall_numbers(LispE* lisp) {
     long listsz = size();
     if (listsz == 1)
@@ -8889,6 +9403,38 @@ Element* List::evall_shorts(LispE* lisp) {
 
     return n;
 }
+
+Element* List_integers_eval::eval(LispE* lisp) {
+    if (listsz == 1)
+        return lisp->provideIntegers();
+
+    Integers* n = lisp->provideIntegers();
+    Element* values;
+
+
+    try {
+        n->liste.reserve(listsz<<1);
+        for (long e = 1; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->isList()) {
+                for (long i = 0; i < values->size(); i++) {
+                    n->liste.push_back(values->index(i)->asInteger());
+                }
+            }
+            else
+                n->liste.push_back(values->asInteger());
+            values->release();
+        }
+        
+    }
+    catch (Error* err) {
+        n->release();
+        throw err;
+    }
+
+    return n;
+}
+
 
 Element* List::evall_integers(LispE* lisp) {
     long listsz = size();
@@ -9145,6 +9691,37 @@ Element* List::evall_setn(LispE* lisp) {
     return n;
 }
 
+Element* List_strings_eval::eval(LispE* lisp) {
+    if (listsz == 1)
+        return lisp->provideStrings();
+
+    Strings* n = lisp->provideStrings();
+    Element* values;
+
+
+    try {
+        n->liste.reserve(listsz<<1);
+        for (long e = 1; e < listsz; e++) {
+            values = liste[e]->eval(lisp);
+            if (values->isList()) {
+                for (long i = 0; i < values->size(); i++) {
+                    n->liste.push_back(values->index(i)->asUString(lisp));
+                }
+            }
+            else
+                n->liste.push_back(values->asUString(lisp));
+            values->release();
+        }
+        
+    }
+    catch (Error* err) {
+        n->release();
+        throw err;
+    }
+
+    return n;
+}
+
 Element* List::evall_strings(LispE* lisp) {
     long listsz = size();
     if (listsz == 1)
@@ -9177,6 +9754,20 @@ Element* List::evall_strings(LispE* lisp) {
     return n;
 }
 
+Element* List_or_eval::eval(LispE* lisp) {
+    Element* element = null_;
+    bool test = false;
+    
+    for (long i = 1; i < listsize && !test; i++) {
+        element->release();
+        element = liste[i]->eval(lisp);
+        test = element->Boolean();
+    }
+    
+    element->release();
+    return booleans_[test];
+}
+
 
 Element* List::evall_or(LispE* lisp) {
     long listsize = liste.size();
@@ -9205,6 +9796,56 @@ Element* List::evall_pipe(LispE* lisp) {
     return lisp->provideString(code);
 }
 
+Element* List_pop_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    if (container->isString()) {
+        long keyvalue;
+        u_ustring strvalue = container->asUString(lisp);
+        if (liste.size() == 3)
+            evalAsInteger(2, lisp, keyvalue);
+        else {
+            if (!strvalue.size())
+                return emptystring_;
+            strvalue.pop_back();
+            return lisp->provideString(strvalue);
+        }
+
+        if (keyvalue < 0 || keyvalue >= strvalue.size())
+            return emptystring_;
+        strvalue.erase(strvalue.begin()+keyvalue);
+        container->release();
+        return lisp->provideString(strvalue);
+    }
+
+    if (liste.size() != 3) {
+        if (container->type == t_llist) {
+            if (container->removefirst())
+                return container;
+        }
+        else {
+            if (container->removelast())
+                return container;
+        }
+        container->release();
+        return null_;
+    }
+    
+    try {
+        Element* key = liste[2]->eval(lisp);
+        if (container->remove(lisp, key)) {
+            key->release();
+            return container;
+        }
+        key->release();
+        container->release();
+    }
+    catch (Error* err) {
+        container->release();
+        throw err;
+    }
+    
+    return null_;
+}
 Element* List::evall_pop(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     if (container->isString()) {
@@ -9430,6 +10071,22 @@ Element* List::evall_pushtrue(LispE* lisp) {
     
     try {
         container->push_element_true(lisp, this);
+    }
+    catch (Error* err) {
+        container->release();
+        throw err;
+    }
+    
+    return container;
+}
+
+Element* List_push_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    container = container->duplicate_constant(lisp);
+    
+    
+    try {
+        container->push_element(lisp, this);
     }
     catch (Error* err) {
         container->release();
