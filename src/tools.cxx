@@ -3491,6 +3491,40 @@ Exporting void s_utf16_to_utf8_clean(string& s, wstring& str) {
 	s_utf16_to_utf8(s, str);
 }
 
+Exporting void s_utf16_to_utf8(string& s, int32_t* str, long sz) {
+    s = "";
+    if (!sz)
+        return;
+
+    long i = 0;
+    char inter[5];
+    long ineo = 0;
+    long szo = 1 + (sz << 1);
+    char* neo = new char[szo];
+    neo[0] = 0;
+    long nb;
+    UWCHAR c;
+
+    while (i < sz) {
+        if (str[i] < 0x0080 && ineo < szo - 1) {
+            neo[ineo++] = (char)str[i];
+            i++;
+            continue;
+        }
+
+        if (c_utf16_to_unicode(c, str[i], false))
+            c_utf16_to_unicode(c, str[++i], true);
+
+        nb = c_unicode_to_utf8(c, (uchar*)inter);
+        neo = concatstrings(neo, inter, ineo, szo, nb);
+        i++;
+    }
+
+    neo[ineo] = 0;
+    s += neo;
+    delete[] neo;
+}
+
 Exporting void s_utf16_to_utf8(string& s, wchar_t* str, long sz) {
 	if (!sz)
 		return;

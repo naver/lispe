@@ -36,13 +36,11 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_lispe(int32_t* str, int32_t sz, int32_t start,
         return sz;
     }
     
-    for (long i = 0; i < sz; i++)
-        code += str[i];
     
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, code);
+    s_utf16_to_utf8(cde, str, sz);
     Element* executed_code= lispe->execute(cde, ".");
     code = executed_code->asUString(lispe);
     //We clean our result
@@ -64,26 +62,22 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_lispe(int32_t* str, int32_t sz, int32_t start,
 }
 
 EMSCRIPTEN_KEEPALIVE int32_t eval_as_int_lispe(int32_t* str, int32_t sz, int32_t mx) {
-    u_ustring code;
     if (lispe == NULL) {
-        code = U"LispE was not initialized";
+        u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str[i] = code[i];
         return sz*-1;
     }
-    
-    for (long i = 0; i < sz; i++)
-        code += str[i];
-    
+        
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, code);
+    s_utf16_to_utf8(cde, str, sz);
     Element* executed_code= lispe->execute(cde, ".");
     
     if (executed_code->type == t_error) {
-        code = executed_code->asUString(lispe);
+        u_ustring code = executed_code->asUString(lispe);
         //We clean our result
         executed_code->release();
         //code is encoded in UTF-32
@@ -108,25 +102,21 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_as_int_lispe(int32_t* str, int32_t sz, int32_t
 }
 
 EMSCRIPTEN_KEEPALIVE double eval_as_float_lispe(int32_t* str, int32_t sz, int32_t mx) {
-    u_ustring code;
     if (lispe == NULL) {
-        code = U"LispE was not initialized";
+        u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str[i] = code[i];
         return sz*-1;
     }
-    
-    for (long i = 0; i < sz; i++)
-        code += str[i];
-    
+        
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, code);
+    s_utf16_to_utf8(cde, str, sz);
     Element* executed_code= lispe->execute(cde, ".");
     if (executed_code->type == t_error) {
-        code = executed_code->asUString(lispe);
+        u_ustring code = executed_code->asUString(lispe);
         //We clean our result
         executed_code->release();
         //code is encoded in UTF-32
@@ -151,25 +141,21 @@ EMSCRIPTEN_KEEPALIVE double eval_as_float_lispe(int32_t* str, int32_t sz, int32_
 }
 
 EMSCRIPTEN_KEEPALIVE int32_t eval_to_floats_lispe(int32_t* str, int32_t sz, int32_t start, double* values, int32_t mx) {
-    u_ustring code;
     if (lispe == NULL) {
-        code = U"LispE was not initialized";
+        u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str[i] = code[i];
         return sz*-1;
     }
     
-    for (long i = 0; i < sz; i++)
-        code += str[i];
-    
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, code);
+    s_utf16_to_utf8(cde, str, sz);
     Element* executed_code= lispe->execute(cde, ".");
     if (executed_code->type == t_error) {
-        code = executed_code->asUString(lispe);
+        u_ustring code = executed_code->asUString(lispe);
         //We clean our result
         executed_code->release();
         //code is encoded in UTF-32
@@ -223,25 +209,21 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_floats_lispe(int32_t* str, int32_t sz, int3
 }
 
 EMSCRIPTEN_KEEPALIVE int32_t eval_to_ints_lispe(int32_t* str, int32_t sz, int32_t start, int32_t* values, int32_t mx) {
-    u_ustring code;
     if (lispe == NULL) {
-        code = U"LispE was not initialized";
+        u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
             str[i] = code[i];
         return sz*-1;
     }
-    
-    for (long i = 0; i < sz; i++)
-        code += str[i];
-    
+        
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, code);
+    s_utf16_to_utf8(cde, str, sz);
     Element* executed_code= lispe->execute(cde, ".");
     if (executed_code->type == t_error) {
-        code = executed_code->asUString(lispe);
+        u_ustring code = executed_code->asUString(lispe);
         //We clean our result
         executed_code->release();
         //code is encoded in UTF-32
@@ -303,14 +285,11 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_strings_lispe(int32_t* str, int32_t sz, int
             values[i + start] = code[i];
         return sz;
     }
-    
-    for (long i = 0; i < sz; i++)
-        code += str[i];
-    
+        
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, code);
+    s_utf16_to_utf8(cde, str, sz);
     Element* executed_code= lispe->execute(cde, ".");
     wstring result;
     long idx = 0;
