@@ -2626,6 +2626,13 @@ Element* List::evall_atomise(LispE* lisp) {
     return theatoms;
 }
 
+Element* List_atomp_eval::eval(LispE* lisp) {
+    Element* atome = liste[1]->eval(lisp);
+    if (atome == emptylist_ || atome->isAtom())
+        return true_;
+    atome->release();
+    return false_;
+}
 
 Element* List::evall_atomp(LispE* lisp) {
     Element* atome = liste[1]->eval(lisp);
@@ -2695,6 +2702,23 @@ Element* List::evall_root(LispE* lisp) {
     return element;
 }
 
+Element* List_block_eval::eval(LispE* lisp) {
+    //We might need to mark the last element as being terminal
+    //the block might belong to an if
+    liste.back()->setterminal(terminal);
+    
+    if (listsize == 2)
+        return liste[1]->eval(lisp);
+    
+    Element* element = null_;
+
+    for (long i = 1; i < listsize && element->type != l_return; i++) {
+        element->release();
+        element = liste[i]->eval(lisp);
+    }
+
+    return element;
+}
 
 Element* List::evall_block(LispE* lisp) {
     long listsize = liste.size();
@@ -2747,12 +2771,42 @@ Element* List::evall_elapse(LispE* lisp) {
     return lisp->provideNumber(diff);
 }
 
+Element* List_emptyp_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    bool b = element->isEmpty();
+    element->release();
+    return booleans_[b];
+}
+
 Element* List::evall_emptyp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     bool b = element->isEmpty();
     element->release();
     return booleans_[b];
 }
+
+Element* List_cadr_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    Element* cdr_result;
+
+    try {
+        cdr_result = liste[0]->cadr(lisp, container);
+        if (container->element_container()) {
+            cdr_result->increment();
+            container->release();
+            cdr_result->decrementkeep();
+        }
+        else
+            container->release();
+    }
+    catch (Error* err) {
+        container->release();
+        throw err;
+    }
+
+    return cdr_result;
+}
+
 
 Element* List::evall_cadr(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
@@ -2776,6 +2830,27 @@ Element* List::evall_cadr(LispE* lisp) {
     return cdr_result;
 }
 
+Element* List_car_eval::eval(LispE* lisp) {
+    Element* container = liste[1]->eval(lisp);
+    Element* car_result;
+    
+    try {
+        car_result = container->car(lisp);
+        if (container->element_container()) {
+            car_result->increment();
+            container->release();
+            car_result->decrementkeep();
+        }
+        else
+            container->release();
+    }
+    catch (Error* err) {
+        container->release();
+        throw err;
+    }
+    
+    return car_result;
+}
 
 Element* List::evall_car(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
@@ -5954,6 +6029,27 @@ Element* List::evall_catch(LispE* lisp) {
     return element;
 }
 
+Element* List_cdr_eval::eval(LispE* lisp) {
+    Element* lst = liste[1]->eval(lisp);
+    Element* c;
+    
+    try {
+        c = lst->cdr(lisp);
+        if (lst->element_container()) {
+            c->increment();
+            lst->release();
+            c->decrementkeep();
+        }
+        else
+            lst->release();
+    }
+    catch (Error* err) {
+        lst->release();
+        throw err;
+    }
+    return c;
+}
+
 
 Element* List::evall_cdr(LispE* lisp) {
     Element* lst = liste[1]->eval(lisp);
@@ -6250,6 +6346,12 @@ Element* List::evall_consb(LispE* lisp) {
     return result;
 }
 
+Element* List_consp_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    bool b = element->isList();
+    element->release();
+    return booleans_[b];
+}
 
 Element* List::evall_consp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -9067,6 +9169,12 @@ Element* List::evall_not(LispE* lisp) {
     return booleans_[!test];
 }
 
+Element* List_nullp_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    bool test = element->isNULL();
+    element->release();
+    return booleans_[test];
+}
 
 Element* List::evall_nullp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -9075,6 +9183,12 @@ Element* List::evall_nullp(LispE* lisp) {
     return booleans_[test];
 }
 
+Element* List_numberp_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    bool b = element->isNumber();
+    element->release();
+    return booleans_[b];
+}
 
 Element* List::evall_numberp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -10574,6 +10688,13 @@ Element* List::evall_sort(LispE* lisp) {
     }
 }
 
+Element* List_stringp_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    bool test = element->isString();
+    element->release();
+    return booleans_[test];
+}
+
 Element* List::evall_stringp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     bool test = element->isString();
@@ -10896,6 +11017,11 @@ Element* List::evall_resetmark(LispE* lisp) {
     return true_;
 }
 
+Element* List_zerop_eval::eval(LispE* lisp) {
+    long n;
+    evalAsInteger(1, lisp, n);
+    return booleans_[!n];
+}
 
 Element* List::evall_zerop(LispE* lisp) {
     long n;

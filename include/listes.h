@@ -1814,6 +1814,17 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_block_eval : public Listincode {
+public:
+    long listsize;
+    
+    List_block_eval(Listincode* l) : Listincode(l) {
+        listsize = l->size();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 class List_set_at_eval : public Listincode {
 public:
     long listsize;
@@ -1822,6 +1833,79 @@ public:
         listsize = l->size();
     }
     
+    Element* eval(LispE* lisp);
+};
+
+class List_car_eval : public Listincode {
+public:
+    
+    List_car_eval(Listincode* l) : Listincode(l) {}
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_cdr_eval : public Listincode {
+public:
+    
+    List_cdr_eval(Listincode* l) : Listincode(l) {}
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_cadr_eval : public Listincode {
+public:
+    
+    List_cadr_eval(Listincode* l) : Listincode(l) {}
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_atomp_eval : public Listincode {
+public:
+    List_atomp_eval(Listincode* l) : Listincode(l) {}
+
+    Element* eval(LispE* lisp);
+};
+
+class List_numberp_eval : public Listincode {
+public:
+    List_numberp_eval(Listincode* l) : Listincode(l) {}
+
+    Element* eval(LispE* lisp);
+};
+
+class List_consp_eval : public Listincode {
+public:
+    List_consp_eval(Listincode* l) : Listincode(l) {}
+
+    Element* eval(LispE* lisp);
+};
+
+class List_emptyp_eval : public Listincode {
+public:
+    List_emptyp_eval(Listincode* l) : Listincode(l) {}
+
+    Element* eval(LispE* lisp);
+};
+
+class List_zerop_eval : public Listincode {
+public:
+    List_zerop_eval(Listincode* l) : Listincode(l) {}
+
+    Element* eval(LispE* lisp);
+};
+
+class List_nullp_eval : public Listincode {
+public:
+    List_nullp_eval(Listincode* l) : Listincode(l) {}
+
+    Element* eval(LispE* lisp);
+};
+
+class List_stringp_eval : public Listincode {
+public:
+    List_stringp_eval(Listincode* l) : Listincode(l) {}
+
     Element* eval(LispE* lisp);
 };
 

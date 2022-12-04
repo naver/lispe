@@ -1893,14 +1893,47 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                 case l_at:
                                     lm = new List_at_eval((Listincode*)e);
                                     break;
+                                case l_block:
+                                    lm = new List_block_eval((Listincode*)e);
+                                    break;
                                 case l_set_at:
                                     lm = new List_set_at_eval((Listincode*)e);
+                                    break;
+                                case l_car:
+                                    lm = new List_car_eval((Listincode*)e);
+                                    break;
+                                case l_cdr:
+                                    lm = new List_cdr_eval((Listincode*)e);
+                                    break;
+                                case l_cadr:
+                                    lm = new List_cadr_eval((Listincode*)e);
                                     break;
                                 case l_push:
                                     lm = new List_push_eval((Listincode*)e);
                                     break;
                                 case l_pop:
                                     lm = new List_pop_eval((Listincode*)e);
+                                    break;
+                                case l_atomp:
+                                    lm = new List_atomp_eval((Listincode*)e);
+                                    break;
+                                case l_numberp:
+                                    lm = new List_numberp_eval((Listincode*)e);
+                                    break;
+                                case l_consp:
+                                    lm = new List_consp_eval((Listincode*)e);
+                                    break;
+                                case l_emptyp:
+                                    lm = new List_emptyp_eval((Listincode*)e);
+                                    break;
+                                case l_zerop:
+                                    lm = new List_zerop_eval((Listincode*)e);
+                                    break;
+                                case l_nullp:
+                                    lm = new List_nullp_eval((Listincode*)e);
+                                    break;
+                                case l_stringp:
+                                    lm = new List_stringp_eval((Listincode*)e);
                                     break;
                                 case l_in:
                                     lm = new List_in_eval((Listincode*)e);
