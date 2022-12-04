@@ -47,7 +47,7 @@
 - (IBAction)squareroot:(id)sender;
 - (IBAction)cubicroot:(id)sender;
 - (IBAction)stopexecution:(id)sender;
-- (IBAction)abouttamgu:(id)sender;
+- (IBAction)aboutlispe:(id)sender;
 - (IBAction)listing:(id)sender;
 - (IBAction)clearallbreakpoints:(id)sender;
 - (IBAction)runnotclean:(id)sender;

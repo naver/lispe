@@ -1244,7 +1244,7 @@ public:
 
     wstring wconvert(string& s) {
         wstring w;
-        s_utf8_to_unicode(w, USTR(s), s.size());
+        s_utf8_to_unicode(w, s, s.size());
         return w;
     }
 

@@ -9,7 +9,7 @@
  Version    : See lispe.cxx for the version number
  filename   : interface.cpp
  Date       : 2017/09/01
- Purpose    : Functions and Methods to communicate with Tamgu API
+ Purpose    : Functions and Methods to communicate with LispE API
  Programmer : Claude ROUX (claude.roux@naverlabs.com)
  Reviewer   :
  */
@@ -288,7 +288,7 @@ void tokenize_line(const uint16_t* code, Segmentingtype& infos, long sz) {
 
 
 //In the case of a mac GUI, we need to call a specific version of kget, which is based on alert...
-//This function is only called if we are not implementing a FLTK GUI, in that case we use ProcEditor (in tamgufltk.cxx)
+//This function is only called if we are not implementing a FLTK GUI, in that case we use ProcEditor
 void ProcMacEditor(string& code, void* o) {
     string label = code;
     if (label == "")
@@ -590,8 +590,11 @@ char Run(short idcode) {
         lispe->delegation->reading_string_function = &ProcMacEditor;
         windowmode = false;
     }
-    if (current_code.find("(") == -1 && current_code.find(")") == -1)
+    bool eval_code = false;
+    if (current_code.find("(") == -1 && current_code.find(")") == -1) {
         current_code = "(print "+ current_code + ")";
+        eval_code = true;
+    }
     
     if (debugmode) {
         last_line = -1;
@@ -615,7 +618,10 @@ char Run(short idcode) {
     
     Element* res;
     try {
-        res = lispe->execute(current_code, current_path_name);
+        if (eval_code)
+            res = lispe->eval(current_code);
+        else
+            res = lispe->execute(current_code, current_path_name);
         displaybuffer = "\n";
         displaybuffer += res->toString(lispe);
         displaybuffer += "\n";
@@ -755,7 +761,7 @@ void deletion(long* l) {
 
 long computeparenthesis(const char* w, char checkcar, long limit) {
     wstring ln;
-    s_utf8_to_unicode(ln, (unsigned char*)w, strlen((char*)w));
+    s_utf8_to_unicode_u(ln, (unsigned char*)w, strlen((char*)w));
     ln = ln.substr(0, limit+1);
     long posmatch = -1;
     vector<long> positions;

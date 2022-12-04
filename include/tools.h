@@ -79,12 +79,12 @@ Exporting wstring wjsonstring(u_ustring value);
 Exporting u_ustring ujsonstring(u_ustring value);
 Exporting string cs_unicode_to_utf8(UWCHAR code);
 
-UWCHAR getonechar(unsigned char* s, long& i);
+UWCHAR getonechar(string& s, long& i);
 
 string NormalizePathname(string n);
 bool c_is_space(u_uchar code);
 long size_c(string& s);
-Exporting long size_raw_c(unsigned char* contenu, long sz);
+Exporting long size_raw_c(string& contenu, long sz);
 Exporting void SetBlankSize(long sz);
 Exporting long GetBlankSize();
 long VirtualIndentation(string& codestr, bool lisp, bool python);
@@ -172,13 +172,15 @@ u_ustring& u_trim(u_ustring& strvalue);
 u_ustring& u_trimleft(u_ustring& strvalue);
 u_ustring& u_trimright(u_ustring& strvalue);
 
-Exporting void c_chars_get_next(unsigned char* m, char* str, size_t& i);
 Exporting void c_unicode_to_utf16(wstring& w, u_uchar c);
 Exporting bool c_char_index_insert(string& s, string c, long i);
-Exporting void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz);
-Exporting void s_utf8_to_unicode(wstring& s, unsigned char* str, long sz);
-Exporting void s_utf8_to_unicode(u_ustring& s, unsigned char* str, long sz);
-Exporting void s_utf8_to_unicode_clean(wstring& s, unsigned char* str, long sz);
+Exporting void s_utf8_to_utf16(wstring& w, string& str , long sz);
+Exporting void s_utf8_to_unicode(wstring& s, string& str, long sz);
+Exporting void s_utf8_to_unicode(u_ustring& s, string& str, long sz);
+Exporting void s_utf8_to_unicode_clean(wstring& s, string& str, long sz);
+Exporting unsigned char c_utf8_to_unicode(string& utf, long i, UWCHAR& code);
+
+Exporting void s_utf8_to_unicode_u(wstring& w, unsigned char* str , long sz);
 Exporting unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code);
 
 Exporting void s_utf16_to_utf8(string& s, wchar_t* str, long sz);
@@ -190,7 +192,7 @@ Exporting void s_unicode_to_utf8(string& s, wstring& str);
 Exporting void s_unicode_to_utf8_clean(string& s, wstring& str);
 
 Exporting void s_unicode_to_utf8(string& s, u_ustring& str);
-Exporting bool s_is_utf8(unsigned char* contenu, long longueur);
+Exporting bool s_is_utf8(string& contenu, long longueur);
 Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second);
 Exporting bool c_unicode_to_utf16(u_uchar& res, u_uchar code);
 Exporting bool c_utf16(u_uchar code);
@@ -198,6 +200,7 @@ Exporting char* unicode_2_utf8(long code, char* utf);
 
 Exporting void get_one_char(string& utf, string& res, long& i);
 
+Exporting char c_test_utf8(string& utf, long i);
 Exporting char c_test_utf8(unsigned char* utf);
 
 #define c_is_digit(c) (c >= '0' && c <= '9')
@@ -260,8 +263,8 @@ public:
     bool s_is_upper(wstring& s);
     bool s_is_alpha(wstring& s);
     
-    long c_bytetocharposition(unsigned char* contenu, long charpos);
-    long c_bytetoutf16position(unsigned char* contenu, long charpos);
+    long c_bytetocharposition(string& contenu, long charpos);
+    long c_bytetoutf16position(string& contenu, long charpos);
     
     char c_is_alpha(u_uchar);
     char c_is_alpha(wchar_t);
@@ -298,9 +301,12 @@ public:
     bool u_is_emoji(u_ustring& s);
     bool s_is_emoji(wstring& s);
     bool s_is_emoji(string& s);
+    bool c_is_emojicomp(string& m, long& i);
+    bool c_is_emoji(string& m, long& i);
+
     bool c_is_emojicomp(unsigned char* m, long& i);
     bool c_is_emoji(unsigned char* m, long& i);
-    
+
     uint32_t min_emojicomp;
     
     long size_w(u_ustring& w);

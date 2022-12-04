@@ -2768,7 +2768,7 @@ Exporting void s_doubleutf8_to_unicode(wstring& s, wchar_t* str, long l) {
         sutf8 += lc;
         sutf8 += lr;
     }
-    s_utf8_to_unicode(s, USTR(sutf8), sutf8.size());
+    s_utf8_to_unicode(s, sutf8, sutf8.size());
 }
 
 Exporting long conversion_utf8_to_fat(unsigned char* contenu, vector<string>& l) {
@@ -3095,7 +3095,7 @@ Exporting string c_char_get(unsigned char* m, long& i) {
         }
         i += nb;
     }
-        
+
     return str;
 }
 

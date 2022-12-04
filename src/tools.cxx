@@ -418,22 +418,22 @@ bool UTF8_Handler::store_emoji(u_ustring& u, u_ustring& res, long& i) {
 
 //------------------------------------------------------------------------
 
-long UTF8_Handler::c_bytetocharposition(unsigned char* contenu, long charpos) {
+long UTF8_Handler::c_bytetocharposition(string& contenu, long charpos) {
     long i = 0;
     long sz = 0;
     while (i < charpos) {
-        i += 1 + c_test_utf8(contenu + i);
+        i += 1 + c_test_utf8(contenu, i);
         sz++;
     }
     return sz;
 }
 
-long UTF8_Handler::c_bytetoutf16position(unsigned char* contenu, long charpos) {
+long UTF8_Handler::c_bytetoutf16position(string& contenu, long charpos) {
     long i = 0;
     long sz = 0;
     UWCHAR code;
     while (i < charpos) {
-        i += 1 + c_utf8_to_unicode(contenu + i, code);
+        i += 1 + c_utf8_to_unicode(contenu, i, code);
         if (code & 0xFFFF0000)
             sz++;
         sz++;
@@ -482,7 +482,6 @@ Exporting void get_one_char(string& utf, string& res, long& i) {
     }
 }
 
-
 #ifdef WIN32
 UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR result, code;
@@ -493,10 +492,26 @@ UWCHAR getonechar(unsigned char* s, long& i) {
     }
     return result;
 }
+
+UWCHAR getonechar(string& s, long& i) {
+    UWCHAR result, code;
+    i += c_utf8_to_unicode(s, i, code);
+    if (c_utf16_to_unicode(result, code, false)) {
+        i += c_utf8_to_unicode(s, i, code);
+        c_utf16_to_unicode(result, code,  true);
+    }
+    return result;
+}
 #else
 UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR code;
     i += c_utf8_to_unicode(s + i, code);
+    return code;
+}
+
+UWCHAR getonechar(string& s, long& i) {
+    UWCHAR code;
+    i += c_utf8_to_unicode(s, i, code);
     return code;
 }
 #endif
@@ -541,6 +556,14 @@ bool UTF8_Handler::c_is_emoji(UWCHAR c) {
 
 bool UTF8_Handler::c_is_emojicomp(UWCHAR c) {
     return emojis_characters->isemojicomplement(c);
+}
+
+bool UTF8_Handler::c_is_emoji(string& m, long& i) {
+    return emojis_characters->isemoji(getonechar(m, i));
+}
+
+bool UTF8_Handler::c_is_emojicomp(string& m, long& i) {
+    return emojis_characters->isemojicomplement(getonechar(m, i));
 }
 
 bool UTF8_Handler::c_is_emoji(unsigned char* m, long& i) {
@@ -723,6 +746,23 @@ string c_unicode_to_utf8(UWCHAR code) {
     return utf;
 }
 
+Exporting char c_test_utf8(string& utf, long i) {
+    if (i == utf.size())
+        return 0;
+    
+    unsigned char check = utf[i] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            return bool((utf[i + 1] & 0x80)== 0x80)*1;
+        case 0xE0:
+            return bool(((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80))*2;
+        case 0xF0:
+            return bool(((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80))*3;
+    }
+    return 0;
+}
+
 Exporting char c_test_utf8(unsigned char* utf) {
     if (utf == NULL)
         return 0;
@@ -738,36 +778,6 @@ Exporting char c_test_utf8(unsigned char* utf) {
             return bool(((utf[1] & 0x80) == 0x80 && (utf[2] & 0x80)== 0x80 && (utf[3] & 0x80)== 0x80))*3;
     }
     return 0;
-}
-
- 
-Exporting void c_chars_get_next(unsigned char* m, char* str, long& i) {
-    long nb = c_test_utf8(m + i);
-    str[0] = (char)m[i];
-    
-    switch (nb) {
-        case 0:
-            str[1] = 0;
-            i++;
-            return;
-        case 1:
-            str[1] = m[i + 1];
-            str[2] = 0;
-            i += 2;
-            return;
-        case 2:
-            str[1] = m[i + 1];
-            str[2] = m[i + 2];
-            str[3] = 0;
-            i += 3;
-            return;
-        case 3:
-            str[1] = m[i + 1];
-            str[2] = m[i + 2];
-            str[3] = m[i + 3];
-            str[4] = 0;
-            i += 4;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -1140,6 +1150,39 @@ Exporting unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
     return 0;
 }
 
+Exporting unsigned char c_utf8_to_unicode(string& utf, long i, UWCHAR& code) {
+    code = utf[i];
+
+    unsigned char check = utf[i] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            if ((utf[i + 1] & 0x80)== 0x80) {
+                code = (utf[i] & 0x1F) << 6;
+                code |= (utf[i + 1] & 0x3F);
+                return 1;
+            }
+            break;
+        case 0xE0:
+            if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
+                code = (utf[i] & 0xF) << 12;
+                code |= (utf[i + 1] & 0x3F) << 6;
+                code |= (utf[i + 2] & 0x3F);
+                return 2;
+            }
+            break;
+        case 0xF0:
+            if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
+                code = (utf[i] & 0x7) << 18;
+                code |= (utf[i + 1] & 0x3F) << 12;
+                code |= (utf[i + 2] & 0x3F) << 6;
+                code |= (utf[i + 3] & 0x3F);
+                return 3;
+            }
+            break;
+    }
+    return 0;
+}
 //--------------------------------------------------------------------
 Exporting bool c_is_hexa(wchar_t code) {
     static const char hexas[]= {'a','b','c','d','e','f','A','B','C','D','E','F'};
@@ -1381,7 +1424,7 @@ wchar_t UTF8_Handler::c_to_upper(wchar_t c) {
 string UTF8_Handler::u_to_lower(string& u) {
 	u_ustring res;
 	u_ustring s;
-	s_utf8_to_unicode(s, USTR(u), u.size());
+	s_utf8_to_unicode(s, u, u.size());
 	long lg = s.size();
 	for (long i = 0; i < lg; i++)
 		res += (u_uchar)uc_to_lower(s[i]);
@@ -1431,10 +1474,9 @@ bool c_is_space(u_uchar code) {
 bool UTF8_Handler::s_is_space(string& str) {
     static unsigned char spaces[] = { 9, 10, 13, 32, 160 };
     long lg = str.size();
-    uchar* contenu = USTR(str);
 	UWCHAR code;
     for (long i = 0; i < lg; i++) {
-        i += c_utf8_to_unicode(contenu + i, code);
+        i += c_utf8_to_unicode(str, i, code);
         if ((code <= 160 && !strchr((char*)spaces, (char)code)) && code != 0x202F && code != 0x3000)
             return false;
     }
@@ -1521,11 +1563,12 @@ bool s_is_digit(string& str) {
     return true;
 }
 
-Exporting bool s_is_utf8(unsigned char* contenu, long longueur) {
+Exporting bool s_is_utf8(string& contenu, long longueur) {
+    long i = 0;
     while (longueur--) {
-        if ((*contenu & 0x80) && c_test_utf8(contenu))
+        if ((contenu[i] & 0x80) && c_test_utf8(contenu, i))
             return true;
-        ++contenu;
+        i++;
     }
     return false;
 }
@@ -1720,13 +1763,26 @@ long getindex(unsigned char* contenu, long lg, long i) {
     return x;
 }
 
-Exporting long size_raw_c(unsigned char* contenu, long sz) {
+long getindex(string& contenu, long lg, long i) {
+    long x = 0;
+    
+    long nb;
+    while (i > 0 && x < lg) {
+        nb = c_test_utf8(contenu, x);
+        x += nb + 1;
+        i--;
+    }
+    
+    return x;
+}
+
+Exporting long size_raw_c(string& contenu, long sz) {
     long i = 0;
     long size = i;
     long nb;
     
     while (i < sz) {
-        nb = c_test_utf8(contenu + i);
+        nb = c_test_utf8(contenu, i);
         i += nb + 1;
         ++size;
     }
@@ -1735,7 +1791,7 @@ Exporting long size_raw_c(unsigned char* contenu, long sz) {
 }
 
 long size_c(string& s) {
-    return size_raw_c(USTR(s), s.size());
+    return size_raw_c(s, s.size());
 }
 
 string s_left(string& s, long nb) {
@@ -1743,7 +1799,7 @@ string s_left(string& s, long nb) {
         return "";
     
     long lg = s.size();
-    nb = getindex(USTR(s), lg, nb);
+    nb = getindex(s, lg, nb);
     if (nb >= lg)
         return s;
     
@@ -1755,26 +1811,24 @@ string s_right(string& s, long nb) {
 
     long lg = s.size();
 
-    long l = size_raw_c(USTR(s), lg) - nb;
+    long l = size_raw_c(s, lg) - nb;
 
     if (l <= 0)
         return s;
     
-    l = getindex(USTR(s), lg, l);
+    l = getindex(s, lg, l);
     return s.substr(l, lg);
 }
 
 string s_middle(string& s, long l, long nb) {
     long lg = s.size();
 
-    uchar* contenu = USTR(s);
-    
-    long i = getindex(contenu, lg, l);
+    long i = getindex(s, lg, l);
     if (i >= lg)
         return "";
 
     nb += l;
-    nb = getindex(contenu, lg, nb);
+    nb = getindex(s, lg, nb);
     return s.substr(i, nb - i);
 }
 
@@ -3459,9 +3513,8 @@ Exporting bool c_char_index_insert(string& s, string c, long x) {
         return false;
     long i;
     long lg = s.size();
-    uchar* contenu = USTR(s);
     for (i = 0; i<lg && x>0; i++) {
-        i += c_test_utf8(contenu + i);
+        i += c_test_utf8(s, i);
         x--;
     }
     if (i == lg)
@@ -3735,7 +3788,7 @@ Exporting void s_unicode_to_utf8(string& s, u_ustring& str) {
 	delete[] neo;
 }
 
-Exporting void s_utf8_to_unicode_clean(wstring& w, unsigned char* str , long sz) {
+Exporting void s_utf8_to_unicode_clean(wstring& w, string& str , long sz) {
     w = L"";
     s_utf8_to_unicode(w, str , sz);
 }
@@ -3750,7 +3803,7 @@ Exporting void c_unicode_to_utf16(wstring& w, u_uchar c) {
     }
 }
 
-Exporting void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz) {
+Exporting void s_utf8_to_utf16(wstring& w, string& str , long sz) {
     if (!sz)
         return;
     
@@ -3759,10 +3812,11 @@ Exporting void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz) {
     uchar nb;
     
     UWCHAR c16;
+    long i = 0;
     while (sz--) {
-        if (*str & 0x80) {
-            nb = c_utf8_to_unicode(str, c);
-            str += nb + 1;
+        if (str[i] & 0x80) {
+            nb = c_utf8_to_unicode(str, i, c);
+            i += nb + 1;
             sz = (sz >= nb)?sz-nb:0;
             if (!(c & 0xFFFF0000)) {
                 w += (wchar_t)c;
@@ -3774,12 +3828,11 @@ Exporting void s_utf8_to_utf16(wstring& w, unsigned char* str , long sz) {
             w += 0xDC00 | (c & 0x3FF);
             continue;
         }
-        w += (wchar_t)*str;
-        ++str;
-    }    
+        w += str[i++];
+    }
 }
 
-Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
+Exporting void s_utf8_to_unicode_u(wstring& w, unsigned char* str , long sz) {
     if (!sz)
         return;
 
@@ -3829,7 +3882,56 @@ Exporting void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
     delete[] neo;
 }
 
-Exporting void s_utf8_to_unicode(u_ustring& w, unsigned char* str , long sz) {
+Exporting void s_utf8_to_unicode(wstring& w, string& str , long sz) {
+    if (!sz)
+        return;
+
+    long ineo = 0;
+    wchar_t* neo = new wchar_t[sz+1];
+    neo[0] = 0;
+
+    UWCHAR c;
+    uchar nb;
+    long i = 0;
+    
+#ifdef WIN32
+    UWCHAR c16;
+    while (sz--) {
+        if (str[i] & 0x80) {
+            nb = c_utf8_to_unicode(str, i, c);
+            i += nb + 1;
+            sz = (sz >= nb)?sz-nb:0;
+            if (!(c & 0xFFFF0000)) {
+                neo[ineo++] = (wchar_t)c;
+                continue;
+            }
+
+            c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+            neo[ineo++] = c16;
+            neo[ineo++] = 0xDC00 | (c & 0x3FF);
+            continue;
+        }
+        neo[ineo++] = (wchar_t)str[i++];
+    }
+#else
+    while (sz--) {
+        if (str[i] & 0x80) {
+            nb = c_utf8_to_unicode(str, i, c);
+            i += nb+1;
+            sz = (sz >= nb)?sz-nb:0;
+            neo[ineo++] = c;
+            continue;
+        }
+        neo[ineo++] = (wchar_t)str[i++];
+    }
+#endif
+    
+    neo[ineo] = 0;
+    w += neo;
+    delete[] neo;
+}
+
+Exporting void s_utf8_to_unicode(u_ustring& w, string& str , long sz) {
     if (!sz)
         return;
 
@@ -3839,18 +3941,17 @@ Exporting void s_utf8_to_unicode(u_ustring& w, unsigned char* str , long sz) {
 
     UWCHAR c;
     uchar nb;
-    
+    long i = 0;
 
     while (sz--) {
-        if (*str & 0x80) {
-            nb = c_utf8_to_unicode(str, c);
-            str += nb+1;
+        if (str[i] & 0x80) {
+            nb = c_utf8_to_unicode(str, i, c);
+            i += nb+1;
             sz = (sz >= nb)?sz-nb:0;
             neo[ineo++] = c;
             continue;
         }
-        neo[ineo++] = (wchar_t)*str;
-        ++str;
+        neo[ineo++] = (wchar_t)str[i++];
     }
     
     neo[ineo] = 0;
@@ -3929,7 +4030,7 @@ Exporting long GetBlankSize() {
 static const unsigned char _tocheck[] = {'"', '\'', '`', '@', ':', ',','-', '+','0','1','2','3','4','5', '6','7','8', '9','[',']','{', '}', 171, 187, 0};
 static const char _checkingmore[] = {'\n', '/', '(', ')', '<', '>','=',';', 0};
 
-void split_container(unsigned char* src, long lensrc, vector<long>& pos, bool forindent) {
+void split_container(string& src, long lensrc, vector<long>& pos, bool forindent) {
     uchar c;
     
     for (long e = 0; e < lensrc; e++) {
@@ -3953,7 +4054,7 @@ long IndentationCode(string& codestr) {
     string token;
 
     long szstr = codestr.size();
-    split_container(USTR(codestr), szstr, pos, true);
+    split_container(codestr, szstr, pos, true);
 
     long sz = pos.size();
     long r = 0;
@@ -4207,7 +4308,7 @@ void IndentationCode(string& str, string& codeindente) {
     
     uchar c;
 
-    split_container(codestr, szstr, pos, true);
+    split_container(str, szstr, pos, true);
     sz = pos.size();
 
     for (i = 0; i < sz; i++) {
@@ -4598,65 +4699,50 @@ Element* LispE::load_library(string nom_bib) {
     
     void* LoadMe;
     
-    char lname[4096];
-    char rawlname[4096];
+    string lname;
+    string rawlname;
     
-    strcpy_s(lname, 4096, STR(name));
-    strcpy_s(rawlname, 4096, STR(name));
+    lname = name;
+    rawlname = name;
     
     char* error;
-    char* pt = strrchr(lname, '/');
-    char* rawpt = strrchr(rawlname, '/');
-    char buff[4096];
-    bool addso = true;
+    long ipt = lname.rfind('/');
+    bool addso = (lname.substr(lname.size()-3,3) != ".so");
     string basename;
     string rawbasename;
-    if (strstr(lname + strlen(lname) - 3, ".so"))
-        addso = false;
-    if (pt != NULL) {
-        if (memcmp(pt + 1, "lib", 3)) {
-            if (addso)
-                sprintf(buff, "lib%s.so", pt + 1);
-            else
-                sprintf(buff, "lib%s", pt + 1);
-        }
-        else {
-            if (addso)
-                sprintf(buff, "%s.so", pt + 1);
-            else
-                strcpy(buff, pt + 1);
-        }
-        basename = buff;
+    string pt;
+    string rawpt;
+    if (ipt != -1) {
+        pt = lname.substr(ipt + 1, lname.size());
+        if (pt.substr(0,3) == "lib")
+            basename = pt;
+        else
+            basename = "lib" + pt;
+        
+        if (addso)
+            basename += ".so";
         //no lib
         rawbasename = basename.substr(3, basename.size());
-        strcpy(pt + 1, buff);
-        strcpy(rawpt + 1, STR(basename));
+        lname = lname.substr(0, ipt + 1) + basename;
+        rawlname = rawlname.substr(0, ipt + 1) + rawbasename;
     }
     else {
-        if (memcmp(lname, "lib", 3)) {
-            if (addso)
-                sprintf(buff, "lib%s.so", lname);
-            else
-                sprintf(buff, "lib%s", lname);
-        }
-        else {
-            if (addso)
-                sprintf(buff, "%s.so", lname);
-            else
-                strcpy(buff, lname);
-        }
-        basename = buff;
+        if (lname.substr(0,3) == "lib")
+            basename = lname;
+        else
+            basename = "lib" + lname;
+        
+        if (addso)
+            basename += ".so";
+        
         //no lib
         rawbasename = basename.substr(3, basename.size());
-        strcpy(lname, buff);
-        strcpy(rawlname, STR(basename));
+        lname = basename;
+        rawlname = rawbasename;
     }
     
-    NormalizeFileName(buff, lname, 4096);
-    strcpy(lname, buff);
-
-    NormalizeFileName(buff, rawlname, 4096);
-    strcpy(rawlname, buff);
+    lname = NormalizePathname(lname);
+    rawlname = NormalizePathname(rawlname);
 
     string moduleinitname = "InitialisationModule";
     
@@ -4664,10 +4750,10 @@ Element* LispE::load_library(string nom_bib) {
 
     nom_bib = lname;
 
-    LoadMe = dlopen(lname, RTLD_LAZY | RTLD_GLOBAL);
+    LoadMe = dlopen(lname.c_str(), RTLD_LAZY | RTLD_GLOBAL);
     if (LoadMe == NULL) {
         nom_bib = rawlname;
-        LoadMe = dlopen(rawlname, RTLD_LAZY | RTLD_GLOBAL);
+        LoadMe = dlopen(rawlname.c_str(), RTLD_LAZY | RTLD_GLOBAL);
     }
     
     string baselib;

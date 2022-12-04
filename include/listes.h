@@ -5271,7 +5271,7 @@ public:
     
     void append(string& k) {
         u_ustring w;
-        s_utf8_to_unicode(w, USTR(k), k.size());
+        s_utf8_to_unicode(w, k, k.size());
         liste.push_back(w);
     }
     

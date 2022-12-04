@@ -402,13 +402,13 @@ public:
 
     wstring asString(LispE* lisp) {
         wstring res;
-        s_utf8_to_unicode(res, USTR(pathname), pathname.size());
+        s_utf8_to_unicode(res, pathname, pathname.size());
         return res;
     }
 
     u_ustring asUString(LispE* lisp) {
         u_ustring res;
-        s_utf8_to_unicode(res, USTR(pathname), pathname.size());
+        s_utf8_to_unicode(res, pathname, pathname.size());
         return res;
     }
     

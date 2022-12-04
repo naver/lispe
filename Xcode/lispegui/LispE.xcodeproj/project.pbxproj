@@ -58,6 +58,8 @@
 
 /* Begin PBXFileReference section */
 		0B0B6D812629B89A003B81C8 /* tokens.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = tokens.h; path = ../../../include/tokens.h; sourceTree = "<group>"; };
+		0B3EE46727FF0E2A00BD237F /* emojis.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = emojis.h; path = ../../../include/emojis.h; sourceTree = "<group>"; };
+		0B3EE4692800196A00BD237F /* fullstring.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = fullstring.h; path = ../../../include/fullstring.h; sourceTree = "<group>"; };
 		0B46A89620DD397200DD338E /* LispE.profdata */ = {isa = PBXFileReference; lastKnownFileType = file; path = LispE.profdata; sourceTree = "<group>"; };
 		0B4E1A82260B85B900BBAE21 /* vecte.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = vecte.h; path = ../../../include/vecte.h; sourceTree = "<group>"; };
 		0B4E1A83260B85B900BBAE21 /* segmentation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = segmentation.h; path = ../../../include/segmentation.h; sourceTree = "<group>"; };
@@ -212,8 +214,10 @@
 			children = (
 				0B50F0AF279E9DC9003361C6 /* avl.h */,
 				0B4E1A87260B85B900BBAE21 /* delegation.h */,
+				0B3EE4692800196A00BD237F /* fullstring.h */,
 				0B4E1A8D260B85B900BBAE21 /* directorylisting.h */,
 				0B4E1A88260B85B900BBAE21 /* elements.h */,
+				0B3EE46727FF0E2A00BD237F /* emojis.h */,
 				0B4E1A84260B85B900BBAE21 /* jag.h */,
 				0B4E1A8F260B85B900BBAE21 /* jagget.h */,
 				0B4E1A89260B85B900BBAE21 /* jagrgx.h */,

@@ -680,7 +680,7 @@ const char* Inputtext(const char* msg) {
     [tview displayinconsole:@"\n\nbreak...\n\n"];
 }
 
-- (IBAction)abouttamgu:(id)sender {
+- (IBAction)aboutlispe:(id)sender {
     NSString* message = [NSString stringWithUTF8String:lispversion()];
     NSAlert *alert = [[NSAlert alloc] init];
     [alert addButtonWithTitle:@"OK"];

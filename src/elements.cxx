@@ -1723,7 +1723,7 @@ wstring Error::asString(LispE* lisp) {
     if (lisp != NULL && lisp->delegation->i_current_file != -1) {
         string s = lisp->delegation->allfiles_names[lisp->delegation->i_current_file];
         wstring w;
-        s_utf8_to_unicode(w, USTR(s), s.size());
+        s_utf8_to_unicode(w, s, s.size());
         std::wstringstream msg;
         msg << message << L", line: " << lisp->delegation->i_current_line << L" in: " << w;
         return msg.str();

@@ -72,7 +72,7 @@ public:
     }
     wstring asString(LispE* lisp) {
         wstring nm;
-        s_utf8_to_unicode(nm, USTR(name), name.size());
+        s_utf8_to_unicode(nm, name, name.size());
         return nm;
     }
 
@@ -155,7 +155,7 @@ public:
             return L"";
         wstring n;
         string s = (char*)node->name;
-        s_utf8_to_unicode(n, USTR(s), s.size());
+        s_utf8_to_unicode(n, s, s.size());
         return n;
     }
 
@@ -238,7 +238,7 @@ public:
                 key = (char*)propriete->name;
                 value = (char*)propriete->children->content;
                 wkey = L"";
-                s_utf8_to_unicode(wkey, USTR(key), key.size());
+                s_utf8_to_unicode(wkey, key, key.size());
                 kmap->recording(key, lisp->provideString(value));
                 propriete = propriete->next;
             }

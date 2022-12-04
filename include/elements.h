@@ -876,7 +876,7 @@ public:
     wstring message;
     
     Error(string m) : Element(t_error) {
-        s_utf8_to_unicode(message, USTR(m), m.size());
+        s_utf8_to_unicode(message, m, m.size());
     }
     
     Error(wstring m) : message(m), Element(t_error) {}
@@ -2148,7 +2148,7 @@ public:
         content = (u_uchar)c;
     }
     String(string c) : Element(t_string) {
-        s_utf8_to_unicode(content, USTR(c), c.size());
+        s_utf8_to_unicode(content, c, c.size());
     }
     String(wstring c) : Element(t_string) {
         content = _w_to_u(c);
@@ -2329,7 +2329,7 @@ public:
         }
         
         content = U"";
-        s_utf8_to_unicode(content, USTR(ch), ch.size());
+        s_utf8_to_unicode(content, ch, ch.size());
         return this;
     }
     
@@ -2950,7 +2950,7 @@ public:
     
     void recording(string& c, Element* e) {
         u_ustring k;
-        s_utf8_to_unicode(k, USTR(c), c.size());
+        s_utf8_to_unicode(k, c, c.size());
         auto it = dictionary.find(k);
         if (it != dictionary.end()) {
             it->second->decrement();
@@ -4295,7 +4295,7 @@ public:
     
     void append(string& k) {
         u_ustring w;
-        s_utf8_to_unicode(w, USTR(k), k.size());
+        s_utf8_to_unicode(w, k, k.size());
         ensemble.insert(w);
     }
     

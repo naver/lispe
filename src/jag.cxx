@@ -2882,7 +2882,7 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
                 res += ln.substr(posmatch+1,ln.size());
                 wstring lsave = line;
                 line = L"";
-                s_utf8_to_unicode(line, USTR(res), res.size());
+                s_utf8_to_unicode(line, res, res.size());
                 displaygo(true);
                 line = lsave;
                 posinstring += b.size();

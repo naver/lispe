@@ -322,7 +322,7 @@ public:
         
     int16_t encode(string& str) {
         u_ustring s;
-        s_utf8_to_unicode(s, USTR(str), str.size());
+        s_utf8_to_unicode(s, str, str.size());
         try {
             return string_to_code.at(s);
         }
@@ -396,7 +396,7 @@ public:
 
     lisp_code check_atom(string& w) {
         u_ustring s;
-        s_utf8_to_unicode(s, USTR(w), w.size());
+        s_utf8_to_unicode(s, w, w.size());
         try {
             int16_t code = string_to_code.at(s);
             if (atom_pool.check(code))
@@ -409,7 +409,7 @@ public:
 
     int16_t is_atom(string& w) {
         u_ustring s;
-        s_utf8_to_unicode(s, USTR(w), w.size());
+        s_utf8_to_unicode(s, w, w.size());
         try {
             int16_t code = string_to_code.at(s);
             if (atom_pool.check(code))
@@ -528,7 +528,7 @@ public:
         arities[instruction_code] = arity;
         evals[instruction_code] = m;
         u_ustring n;
-        s_utf8_to_unicode(n, USTR(name), name.size());
+        s_utf8_to_unicode(n, name, name.size());
         code_to_string[instruction_code] = n;
     }
 
@@ -536,7 +536,7 @@ public:
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         u_ustring n;
-        s_utf8_to_unicode(n, USTR(name), name.size());
+        s_utf8_to_unicode(n, name, name.size());
         code_to_string[instruction_code] = n;
     }
 

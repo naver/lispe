@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.12.3.19.51";
+static std::string version = "1.2022.12.4.12.6";
 string LispVersion() {
     return version;
 }
@@ -68,7 +68,7 @@ void lispe_displaystring(string& code, void*) {
 //for large Unicode characters
 static u_ustring U(string x) {
     u_ustring u;
-    s_utf8_to_unicode(u, USTR(x), x.size());
+    s_utf8_to_unicode(u, x, x.size());
     return u;
 }
 //------------------------------------------------------------
@@ -1096,7 +1096,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
     for (i = 0; i < sz; i++) {
         string_end = 187;
         current_i = i;
-        c = getonechar(USTR(code), i);
+        c = getonechar(code, i);
         switch (c) {
             case 27: {//if it is an escape character
                 //We might have a color definition
@@ -1182,7 +1182,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                     idx = i + 1;
                     nxt = 0;
                     while (idx < sz) {
-                        nxt = getonechar(USTR(code), idx);
+                        nxt = getonechar(code, idx);
                         if (nxt == 8220 || (nxt < 172 && stops[nxt]))
                             break;
                         i = idx;
@@ -1317,7 +1317,7 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
                 nxt = c;
                 while (idx <= sz && nxt != 8220 && (nxt > 171 || !stops[nxt])) {
                     i = idx;
-                    nxt = getonechar(USTR(code), idx);
+                    nxt = getonechar(code, idx);
                     idx++;
                 }
 
@@ -2684,7 +2684,7 @@ bool Element::replaceVariableNames(LispE* lisp) {
 //The strings described in the code are kept.
 Element* LispE::provideString(string& str) {
     u_ustring s;
-    s_utf8_to_unicode(s, USTR(str), str.size());
+    s_utf8_to_unicode(s, str, str.size());
     return provideString(s);
 }
 
@@ -2745,6 +2745,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

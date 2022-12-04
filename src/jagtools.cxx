@@ -283,6 +283,62 @@ static wchar_t codingtable[] = { 65,97,2,66,98,2,67,99,2,68,100,2,69,101,2,70,10
     65262,1,65263,65263,1,65264,65264,1,65265,65265,1,65266,65266,1,65267,65267,1,65268,65268,1,0};
 
 //------------------------------------------------------------------------
+Exporting void s_utf8_to_unicode_clean(wstring& w, string& str , long sz) {
+    w = L"";
+    s_utf8_to_unicode(w, str , sz);
+}
+
+Exporting void s_utf8_to_unicode(wstring& w, string& str , long sz) {
+    if (!sz)
+        return;
+
+    long ineo = 0;
+    wchar_t* neo = new wchar_t[sz+1];
+    neo[0] = 0;
+
+    UWCHAR c;
+    uchar nb;
+    long i = 0;
+    
+#ifdef WIN32
+    UWCHAR c16;
+    while (sz--) {
+        if (str[i] & 0x80) {
+            nb = c_utf8_to_unicode(str, i, c);
+            i += nb + 1;
+            sz = (sz >= nb)?sz-nb:0;
+            if (!(c & 0xFFFF0000)) {
+                neo[ineo++] = (wchar_t)c;
+                continue;
+            }
+
+            c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+            neo[ineo++] = c16;
+            neo[ineo++] = 0xDC00 | (c & 0x3FF);
+            continue;
+        }
+        neo[ineo++] = (wchar_t)str[i++];
+    }
+#else
+    while (sz--) {
+        if (str[i] & 0x80) {
+            nb = c_utf8_to_unicode(str, i, c);
+            i += nb+1;
+            sz = (sz >= nb)?sz-nb:0;
+            neo[ineo++] = c;
+            continue;
+        }
+        neo[ineo++] = (wchar_t)str[i++];
+    }
+#endif
+    
+    neo[ineo] = 0;
+    w += neo;
+    delete[] neo;
+}
+
+//------------------------------------------------------------------------
+
 long UTF8_Handler::size_w(u_ustring& s) {
     long sz = 0;
     for (long i = 0; i < s.size(); i++) {
@@ -1014,6 +1070,40 @@ UTF8_Handler::UTF8_Handler() {
     wvowels[101] = 101;
     wvowels[79] = 79;
     wvowels[89] = 89;
+}
+
+Exporting unsigned char c_utf8_to_unicode(string& utf, long i, UWCHAR& code) {
+    code = utf[i];
+
+    unsigned char check = utf[i] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            if ((utf[i + 1] & 0x80)== 0x80) {
+                code = (utf[i] & 0x1F) << 6;
+                code |= (utf[i + 1] & 0x3F);
+                return 1;
+            }
+            break;
+        case 0xE0:
+            if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
+                code = (utf[i] & 0xF) << 12;
+                code |= (utf[i + 1] & 0x3F) << 6;
+                code |= (utf[i + 2] & 0x3F);
+                return 2;
+            }
+            break;
+        case 0xF0:
+            if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
+                code = (utf[i] & 0x7) << 18;
+                code |= (utf[i + 1] & 0x3F) << 12;
+                code |= (utf[i + 2] & 0x3F) << 6;
+                code |= (utf[i + 3] & 0x3F);
+                return 3;
+            }
+            break;
+    }
+    return 0;
 }
 
 unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code) {
@@ -2514,60 +2604,6 @@ void s_unicode_to_utf8(string& s, wstring& str) {
     delete[] neo;
 }
 
-void s_utf8_to_unicode_clean(wstring& w, unsigned char* str , long sz) {
-    w = L"";
-    s_utf8_to_unicode(w, str , sz);
-}
-
-void s_utf8_to_unicode(wstring& w, unsigned char* str , long sz) {
-    if (!sz)
-        return;
-
-    long ineo = 0;
-    wchar_t* neo = new wchar_t[sz+1];
-    neo[0] = 0;
-
-    UWCHAR c;
-    uchar nb;
-
-#ifdef WIN32
-    UWCHAR c16;
-    while (sz--) {
-        if (*str & 0x80) {
-            nb = c_utf8_to_unicode(str, c);
-            str += nb + 1;
-            sz -= nb;
-            if (!(c & 0xFFFF0000)) {
-                neo[ineo++] = (wchar_t)c;
-                continue;
-            }
-
-            c_unicode_to_utf16(c16, c);
-            neo[ineo++] = (wchar_t)(c16 >> 16);
-            neo[ineo++] = (wchar_t)(c16 & 0xFFFF);
-            continue;
-        }
-        neo[ineo++] = (wchar_t)*str;
-        ++str;
-    }
-#else
-    while (sz--) {
-        if (*str & 0x80) {
-            nb = c_utf8_to_unicode(str, c);
-            str += nb+1;
-            sz-=nb;
-            neo[ineo++] = c;
-            continue;
-        }
-        neo[ineo++] = (wchar_t)*str;
-        ++str;
-    }
-#endif
-
-    neo[ineo] = 0;
-    w += neo;
-    delete[] neo;
-}
 //------------------------------------------------------------------------
 void s_split(string& s, string& splitter, vector<string>& vs, bool keepblanks) {
     size_t pos = 0;

@@ -275,7 +275,7 @@ Exporting wstring s_replacestring(wstring& str, wstring reg, wstring rep);
 
 
 Exporting long size_utf16(unsigned char* str, long sz, long& charsize);
-Exporting long size_raw_c(unsigned char* contenu, long sz);
+Exporting long size_raw_c(string& contenu, long sz);
 
 #ifdef WSTRING_IS_UTF16
 Exporting size_t size_w(wchar_t* w);
@@ -341,7 +341,7 @@ public:
 	agnostring(TRANSCHAR b) : string(c_unicode_to_utf8(b)) { bytepos = 0; charpos = 0; }
 
 	bool isutf8() {
-		return s_is_utf8((unsigned char*)c_str(), size());
+		return s_is_utf8(*this, size());
 	}
 
 	void begin() {
@@ -462,7 +462,7 @@ public:
 		size_t i = bytepos;
 		string s = c_char_get_next((unsigned char*)c_str(), i);
 		wstring ws;
-		s_utf8_to_unicode(ws, USTR(s), s.size());
+		s_utf8_to_unicode(ws, s, s.size());
 		return ws;
 	}
 
@@ -502,7 +502,7 @@ public:
 	}
 
 	size_t sizec() {
- 		return size_raw_c((unsigned char*)c_str(), size());
+ 		return size_raw_c(*this, size());
 	}
 
 	wchar_t code(size_t i) {
@@ -515,7 +515,7 @@ public:
 
     wstring utf8tounicode() {
         wstring ws;
-        s_utf8_to_unicode(ws, (unsigned char*)c_str(), size());
+        s_utf8_to_unicode(ws, *this, size());
         return ws;
     }
 

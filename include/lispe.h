@@ -382,7 +382,7 @@ public:
     
     bool is_instruction(string str) {
         wstring s;
-        s_utf8_to_unicode(s, USTR(str), str.size());
+        s_utf8_to_unicode(s, str, str.size());
         return delegation->is_instruction(s);
     }
     
@@ -404,7 +404,7 @@ public:
     
     int16_t is_atom(string str) {
         u_ustring s;
-        s_utf8_to_unicode(s, USTR(str), str.size());
+        s_utf8_to_unicode(s, str, str.size());
         return delegation->is_atom(s);
     }
     

@@ -52,7 +52,7 @@ public:
 
 class Lispe_sqlite : public Element {
 public:
-    
+
     string command;
     string dbname;
     sqlite3 *db;
@@ -60,8 +60,8 @@ public:
     string bindcommand;
     sqlite3_stmt* stmt;
     vector<int> insertstructure;
-    
-    
+
+
     //---------------------------------------------------------------------------------------------------------------------
     Lispe_sqlite(short ty) : Element(ty) {
         dbname = "";
@@ -69,25 +69,25 @@ public:
         sqlcommand = "";
         stmt = NULL;
     }
-    
+
     ~Lispe_sqlite() {
         if (db != NULL)
             sqlite3_close(db);
     }
-    
-    
+
+
     //We use this instruction to return a description of the instruction
     //Indeed, just do: (print sqlite_example) to get this information
     wstring asString(LispE* lisp) {
         wstring cmd;
-        s_utf8_to_unicode(cmd, USTR(dbname), dbname.size());
+        s_utf8_to_unicode(cmd, dbname, dbname.size());
         return cmd;
     }
-    
+
     bool Boolean() {
         return (db != NULL);
     }
-    
+
     Element* sqliteOpen(LispE* lisp);
     Element* sqliteClose(LispE* lisp);
     Element* sqliteCreate(LispE* lisp);
@@ -115,10 +115,10 @@ static string Quotting(string& si) {
 
 class Couple_LispE {
 public:
-    
+
     LispE* lisp;
     List* results;
-    
+
     Couple_LispE(LispE* lsp) {
         lisp = lsp;
         results = new List;
@@ -131,14 +131,14 @@ static int callback(void *asql, int argc, char **argv, char **azColName){
     //We use our first parameter as the place where to store our stuff
     List* vresults = cpl->results;
     LispE* lisp = cpl->lisp;
-    
+
     Dictionary* kmap = new Dictionary;
     u_ustring wkey;
     string key;
     string value;
     for (i = 0; i < argc; i++) {
         key = azColName[i];
-        s_utf8_to_unicode(wkey, USTR(key), key.size());
+        s_utf8_to_unicode(wkey, key, key.size());
         if (argv[i] == NULL)
             kmap->dictionary[wkey] = emptystring_;
         else {
@@ -232,7 +232,7 @@ void LispE_sqlite_iteration::Storevalue() {
 
     for (int i = 0; i < columnCount; i++) {
         key = columnnames[i];
-        s_utf8_to_unicode(wkey, USTR(key), key.size());
+        s_utf8_to_unicode(wkey, key, key.size());
         switch (sqlite3_column_type(stmt, i)) {
         case SQLITE_INTEGER:
             k = lisp->provideInteger(sqlite3_column_int(stmt, i));
@@ -484,9 +484,9 @@ class Lispe_sqlite_method : public Element {
 public:
     lsql_type action;
     short sqlite_var;
-    
+
     Lispe_sqlite_method(short ty, short var, lsql_type a) : action(a), sqlite_var(var), Element(ty) {}
-    
+
     Element* eval(LispE* lisp) {
         switch (action) {
             case lsql_sql:
@@ -548,7 +548,7 @@ public:
         }
         return null_;
     }
-    
+
     wstring asString(LispE* lisp) {
         switch (action) {
             case lsql_sql:
@@ -597,5 +597,4 @@ Exporting bool InitialisationModule(LispE* lisp) {
     return true;
 }
 }
-
 

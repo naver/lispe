@@ -55,7 +55,7 @@ public:
         string token;
         token = car;
         u_ustring segment;
-        s_utf8_to_unicode(segment, USTR(token), token.size());
+        s_utf8_to_unicode(segment, token, token.size());
         tokens.push_back(segment);
         numbers.push_back(0);
         types.push_back(t);
@@ -66,7 +66,7 @@ public:
 
     void append(string& token, lisp_code t, long l, long posbeg, long posend) {
         u_ustring segment;
-        s_utf8_to_unicode(segment, USTR(token), token.size());
+        s_utf8_to_unicode(segment, token, token.size());
         tokens.push_back(segment);
         numbers.push_back(0);
         types.push_back(t);
@@ -77,7 +77,7 @@ public:
 
     void append(double valeur, string& token, lisp_code t, long l, long posbeg, long posend) {
         u_ustring segment;
-        s_utf8_to_unicode(segment, USTR(token), token.size());
+        s_utf8_to_unicode(segment, token, token.size());
         tokens.push_back(segment);
         numbers.push_back(valeur);
         types.push_back(t);

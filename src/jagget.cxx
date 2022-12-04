@@ -233,7 +233,7 @@ void jag_get::get_a_string(string& string_input) {
     
     std::wstring input_string;
     
-    s_utf8_to_unicode(input_string, USTR(string_input), string_input.size());
+    s_utf8_to_unicode(input_string, string_input, string_input.size());
     
     long cursor = input_string.size();
     long i;
@@ -342,7 +342,7 @@ void jag_get::get_a_string(string& string_input) {
         }
         
         cout << buff;
-        s_utf8_to_unicode_clean(wbuff, USTR(buff), buff.size());
+        s_utf8_to_unicode_clean(wbuff, buff, buff.size());
         
         if (cursor < input_string.size()) {
             sub = input_string.substr(cursor,input_string.size());

@@ -278,7 +278,7 @@ Element* Lispe_curl::eval(LispE* lisp) {
 //en effet, il suffit de faire: (print curl_exemple) pour obtenir cette information
 wstring Lispe_curl::asString(LispE* lisp) {
     wstring res;
-    s_utf8_to_unicode(res, USTR(data), data.size());
+    s_utf8_to_unicode(res, data, data.size());
     return res;
 }
 

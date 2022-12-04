@@ -40,10 +40,10 @@ public:
         automaton = NULL;
         modified = false;
     }
-    
+
     wstring asString() {
         wstring n;
-        s_utf8_to_unicode(n, USTR(name), name.size());
+        s_utf8_to_unicode(n, name, name.size());
         return n;
     }
 
@@ -54,18 +54,18 @@ public:
     }
 
     Element* methodInitial(LispE* lisp) {
-        
+
         Element* filename = lisp->get_variable(U"filename");
         if (filename == null_)
             return this;
-        
+
         automaton = new DoubleSideAutomaton;
         string sname = filename->toString(lisp);
         if (!automaton->load(sname)) {
             sname += " cannot be loaded";
             throw new Error(sname);
         }
-        
+
         automaton->fillencoding(false);
         automaton->sorting();
         automaton->start.shuffle();
@@ -73,7 +73,7 @@ public:
     }
 
     Element* methodLoad(LispE* lisp) {
-        
+
         Element* filename = lisp->get_variable(U"filename");
         if (automaton != NULL)
             delete automaton;
@@ -83,7 +83,7 @@ public:
             sname += " cannot be loaded";
             throw new Error(sname);
         }
-        
+
         automaton->fillencoding(false);
         automaton->sorting();
         automaton->start.shuffle();
@@ -136,7 +136,7 @@ public:
         string output = lisp->get_variable(U"outputfile")->toString(lisp);
         bool norm  = lisp->get_variable(U"normalize")->Boolean();
         long latinencoding = lisp->get_variable(U"latintable")->asInteger();
-        
+
         if (automaton != NULL)
             delete automaton;
 
@@ -149,7 +149,7 @@ public:
             return null_;
 
         automaton->factorize(0);
-        
+
         return true_;
     }
 
@@ -158,7 +158,7 @@ public:
             return null_;
         string words = lisp->get_variable(U"sentence")->toString(lisp);
         words+=" ";
-        
+
         long option = lisp->get_variable(U"option")->asInteger();
         long threshold = lisp->get_variable(U"threshold")->asInteger();
         short flags = lisp->get_variable(U"flags")->asInteger();
@@ -179,7 +179,7 @@ public:
             if (automaton->process(currentreader, kvs, option, threshold, flags)) {
                 if (kvs.size()==0)
                     continue;
-                
+
                 if (option == 1) { //no features, but offsets...
                     str << currentreader.cbegin;
                     kvs.push_back(str.str());
@@ -188,7 +188,7 @@ public:
                     kvs.push_back(str.str());
                     str.str("");
                 }
-                
+
                 inter = new Strings;
                 for (long i = 0; i < kvs.size(); i++) {
                     inter->append(kvs[i]);
@@ -222,43 +222,43 @@ public:
     }
 
     Element* methodLookdown(LispE* lisp) {
-        
+
         if (automaton == NULL)
             return null_;
-        
+
         wstring word = lisp->get_variable(U"word")->asString(lisp);
         char lemma = lisp->get_variable(U"lemma")->asInteger();
-        
+
         vector<string> kvs;
         automaton->down(word, kvs, lemma);
         Strings* inter = new Strings;
         for (long i = 0; i < kvs.size(); i++) {
             inter->append(kvs[i]);
         }
-        
+
         return inter;
     }
 
     Element* methodCompilergx(LispE* lisp) {
         if (automaton == NULL)
             automaton = new DoubleSideAutomaton();
-        
+
         Element* regular = lisp->get_variable(U"regular");
-        
+
         if (regular == null_) {
             automaton->regulars();
             return true_;
         }
-        
+
         string expression = regular->toString(lisp);
-        
+
         agnostring rgx(expression);
         Element* kfeat = lisp->get_variable(U"vector");
         if (!kfeat->isList())
             throw new Error("Error: We expect the second argument to be a list.");
 
         string name = lisp->get_variable(U"name")->toString(lisp);
-        
+
         //we first transform each of our features into indexes...
         vector<uint32_t> indexes;
         string s;
@@ -283,11 +283,11 @@ public:
 class Lispe_transducer : public Element {
 public:
     trans_action action;
-    
+
     Lispe_transducer(short ty, trans_action a) : Element(ty) {
         action =a ;
     }
-    
+
     Element* eval(LispE* lisp) {
         Automaton* automaton = NULL;
         if (action != trans_trans && action != trans_flags) {
@@ -334,7 +334,7 @@ public:
         }
         return null_;
     }
-    
+
     wstring asString(LispE* lisp) {
         switch (action) {
             case trans_trans:
@@ -385,7 +385,7 @@ public:
         }
         return L"";
     }
-    
+
 };
 
 extern "C" {
@@ -418,11 +418,10 @@ Exporting bool InitialisationModule(LispE* lisp) {
     code += "(setg a_longest 512)\n";
     code += "(setg a_offsets 1)\n";
     code += "(setg a_features 2)\n";
-    
+
     lisp->execute(code);
 
     return true;
 }
 }
-
 
