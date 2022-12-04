@@ -1585,7 +1585,7 @@ void List::sameSizeNoTerminalArguments(LispE* lisp, Element* data, List* paramet
         for (long i = 0; i < sz; i++) {
             label = parameters->liste[i]->label();
             //The evaluation must be done on the previous stage of the stack
-            data = liste[i+1]->eval(lisp);
+            data = liste[i+1]->eval(lisp)->duplicate_constant(lisp);
             s->record_argument(data, label);
         }
     }
@@ -1696,7 +1696,6 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
                     if (data == NULL) {
                         if (label == 2) {
                             data = element->index(1)->eval(lisp); //default value
-                            data = data->duplicate_constant(lisp);
                         }
                         else
                             data = null_;
@@ -1713,6 +1712,7 @@ void List::differentSizeNoTerminalArguments(LispE* lisp, Element* data, List* pa
 
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
+            data = data->duplicate_constant(lisp);
             s->record_argument(data, label);
         }
     }
