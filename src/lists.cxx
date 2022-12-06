@@ -2698,7 +2698,7 @@ Element* LList::cadr(LispE* lisp, u_ustring& action) {
         return new LList(this, it);
     }
     
-    return e;
+    return null_;
 }
 
 Element* List::car(LispE* lisp) {
