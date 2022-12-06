@@ -26,6 +26,37 @@ EMSCRIPTEN_KEEPALIVE void reset_lispe() {
     lispe = new LispE();
 }
 
+EMSCRIPTEN_KEEPALIVE int32_t eval_indent_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, int32_t mx) {
+    u_ustring code;
+    if (lispe == NULL) {
+        code = U"LispE was not initialized";
+        sz = code.size();
+        for (long i = 0; i < sz; i++)
+            str_as_int[start + i] = code[i];
+        return sz;
+    }
+    
+    
+    string cde;
+    string codeindente;
+    //We first convert from UTF-16 into UTF-8
+    //JavaScript strings are in UTF-16
+    s_utf16_to_utf8(cde, str_as_int + first , sz);
+    IndentCode(cde, codeindente, 3, true,false);
+    //We then replace the initial array (str) with our new values
+    //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
+    wstring result;
+    s_utf8_to_utf16(result, codeindente , codeindente.size());
+
+    sz = result.size();
+    sz = sz < mx ? sz : mx - 1;
+
+    for (long i = 0; i < sz; i++)
+        str_as_int[start + i] = result[i];
+    return sz;
+}
+
+
 EMSCRIPTEN_KEEPALIVE int32_t eval_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, int32_t mx) {
     u_ustring code;
     if (lispe == NULL) {

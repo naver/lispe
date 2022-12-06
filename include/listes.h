@@ -1555,7 +1555,9 @@ public:
 
 class Listargumentquote : public List {
 public:
-    Listargumentquote(List* l) : List(l, 0) {}
+    Listargumentquote(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
 
     int16_t label() {
         return liste[1]->label();
@@ -1586,7 +1588,9 @@ public:
 class Listargumentdata : public List {
 public:
     
-    Listargumentdata(List* l) : List(l, 0) {}
+    Listargumentdata(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     
     bool unify(LispE* lisp, Element* value, bool record);
 };
@@ -1594,7 +1598,9 @@ public:
 class Listseparator : public List {
 public:
     
-    Listseparator(List* l) : List(l, 0) {}
+    Listseparator(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     
     bool unify(LispE* lisp, Element* value, bool record);
 };
@@ -1602,7 +1608,9 @@ public:
 class Listargumentset : public List {
 public:
     
-    Listargumentset(List* l) : List(l, 0) {}
+    Listargumentset(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     
     bool isList() {
         return false;
@@ -1795,6 +1803,16 @@ public:
 //-------------------------------------------------------
 // Direct call to basic operations
 //-------------------------------------------------------
+class List_emptylist_eval : public Listincode {
+public:
+    
+    List_emptylist_eval() {
+        status = s_constant;
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 class List_execute : public Listincode {
 public:
     methodEval method;
@@ -1816,11 +1834,10 @@ public:
 
 class List_block_eval : public Listincode {
 public:
-    long listsize;
-    
     List_block_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
     }
+    
+    List_block_eval() {}
     
     Element* eval(LispE* lisp);
 };
@@ -1840,6 +1857,7 @@ class List_car_eval : public Listincode {
 public:
     
     List_car_eval(Listincode* l) : Listincode(l) {}
+    List_car_eval() {}
     
     Element* eval(LispE* lisp);
 };
@@ -1848,6 +1866,7 @@ class List_cdr_eval : public Listincode {
 public:
     
     List_cdr_eval(Listincode* l) : Listincode(l) {}
+    List_cdr_eval() {}
     
     Element* eval(LispE* lisp);
 };
@@ -1913,6 +1932,7 @@ class List_push_eval : public Listincode {
 public:
     
     List_push_eval(Listincode* l) : Listincode(l) {}
+    List_push_eval() {}
     
     Element* eval(LispE* lisp);
 };
@@ -1959,22 +1979,20 @@ public:
 
 class List_check_eval : public Listincode {
 public:
-    long listsize;
     
-    List_check_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
-    }
+    List_check_eval(Listincode* l) : Listincode(l) {}
+    
+    List_check_eval() {}
     
     Element* eval(LispE* lisp);
 };
 
 class List_ncheck_eval : public Listincode {
 public:
-    long listsize;
     
-    List_ncheck_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
-    }
+    List_ncheck_eval(Listincode* l) : Listincode(l) {}
+    
+    List_ncheck_eval() {}
     
     Element* eval(LispE* lisp);
 };
@@ -2180,139 +2198,257 @@ public:
 
 };
 
-
-class List_if : public List {
+class List_not_eval : public List {
 public:
     
-    List_if(List* l) : List(l, 0) {}
+    List_not_eval(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
+    
+    List_not_eval() {}
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_setq_eval : public List {
+public:
+    
+    List_setq_eval(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
+    
+    List_setq_eval() {}
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_if_eval : public List {
+public:
+    
+    List_if_eval(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
+    
+    List_if_eval() {}
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_ife_eval : public List {
+public:
+    
+    List_ife_eval(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
+    
+    List_ife_eval() {}
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_loop_eval : public List {
+public:
+
+    List_loop_eval(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
+    
+    List_loop_eval() {}
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_while_eval : public List {
+public:
+    long listsize;
+    
+    List_while_eval(List* l) : List(l, 0) {
+        terminal = l->terminal;
+        listsize = liste.size();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_loopcount_eval : public List {
+public:
+    long listsize;
+
+    List_loopcount_eval(List* l) : List(l, 0) {
+        terminal = l->terminal;
+        listsize = liste.size();
+    }
     Element* eval(LispE* lisp);
 };
 
 class List_divide2 : public List {
 public:
-    List_divide2(List* l) : List(l, 0) {}
+    List_divide2(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_plus2 : public List {
 public:
-    List_plus2(List* l) : List(l, 0) {}
+    List_plus2(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_minus2 : public List {
 public:
-    List_minus2(List* l) : List(l, 0) {}
+    List_minus2(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_multiply2 : public List {
 public:
-    List_multiply2(List* l) : List(l, 0) {}
+    List_multiply2(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_divide3 : public List {
 public:
-    List_divide3(List* l) : List(l, 0) {}
+    List_divide3(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_plus3 : public List {
 public:
-    List_plus3(List* l) : List(l, 0) {}
+    List_plus3(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_minus3 : public List {
 public:
-    List_minus3(List* l) : List(l, 0) {}
+    List_minus3(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_multiply3 : public List {
 public:
-    List_multiply3(List* l) : List(l, 0) {}
+    List_multiply3(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_dividen : public List {
 public:
-    List_dividen(List* l) : List(l, 0) {}
+    List_dividen(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_plusn : public List {
 public:
-    List_plusn(List* l) : List(l, 0) {}
+    List_plusn(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_minusn : public List {
 public:
-    List_minusn(List* l) : List(l, 0) {}
+    List_minusn(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_multiplyn : public List {
 public:
-    List_multiplyn(List* l) : List(l, 0) {}
+    List_multiplyn(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 
 class List_power2 : public List {
 public:
-    List_power2(List* l) : List(l, 0) {}
+    List_power2(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 
 class List_divideequal_var : public List {
 public:
-    List_divideequal_var(List* l) : List(l, 0) {}
+    List_divideequal_var(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_plusequal_var : public List {
 public:
-    List_plusequal_var(List* l) : List(l, 0) {}
+    List_plusequal_var(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_minusequal_var : public List {
 public:
-    List_minusequal_var(List* l) : List(l, 0) {}
+    List_minusequal_var(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_multiplyequal_var : public List {
 public:
-    List_multiplyequal_var(List* l) : List(l, 0) {}
+    List_multiplyequal_var(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_divideequal_list : public List {
 public:
-    List_divideequal_list(List* l) : List(l, 0) {}
+    List_divideequal_list(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_plusequal_list : public List {
 public:
-    List_plusequal_list(List* l) : List(l, 0) {}
+    List_plusequal_list(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_minusequal_list : public List {
 public:
-    List_minusequal_list(List* l) : List(l, 0) {}
+    List_minusequal_list(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 
 class List_multiplyequal_list : public List {
 public:
-    List_multiplyequal_list(List* l) : List(l, 0) {}
+    List_multiplyequal_list(List* l) : List(l, 0) {
+        terminal = l->terminal;
+    }
     Element* eval(LispE*);
 };
 

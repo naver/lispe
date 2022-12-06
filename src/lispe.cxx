@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.12.6.11.10";
+static std::string version = "1.2022.12.6.18.15";
 string LispVersion() {
     return version;
 }
@@ -649,7 +649,7 @@ void Delegation::initialisation(LispE* lisp) {
 
     _THEEND = new Error(L"Break Requested", s_constant);
 
-    _EMPTYLIST = new List(s_constant);
+    _EMPTYLIST = new List_emptylist_eval();
 
     _EMPTYDICTIONARY = new Dictionary(s_constant);
 
@@ -995,6 +995,7 @@ void LispE::cleaning() {
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) {
+    depth_stack = 0;
     current_space = 0;
     void_function = lisp->void_function;
     preparingthread = false;
@@ -1802,8 +1803,17 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     removefromgarbage(e);
                                     e = &delegation->_BREAKEVAL;
                                     break;
+                                case l_not:
+                                    lm = new List_not_eval((List*)e);
+                                    break;
+                                case l_setq:
+                                    lm = new List_setq_eval((List*)e);
+                                    break;
                                 case l_if:
-                                    lm = new List_if((List*)e);
+                                    lm = new List_if_eval((List*)e);
+                                    break;
+                                case l_ife:
+                                    lm = new List_ife_eval((List*)e);
                                     break;
                                 case l_power:
                                     if (nbarguments == 3 && e->index(2)->equalvalue((long)2))
@@ -1943,6 +1953,15 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     break;
                                 case l_or:
                                     lm = new List_or_eval((Listincode*)e);
+                                    break;
+                                case l_loop:
+                                    lm = new List_loop_eval((Listincode*)e);
+                                    break;
+                                case l_loopcount:
+                                    lm = new List_loopcount_eval((Listincode*)e);
+                                    break;
+                                case l_while:
+                                    lm = new List_while_eval((Listincode*)e);
                                     break;
                                 case l_check:
                                     lm = new List_check_eval((Listincode*)e);
@@ -2345,8 +2364,46 @@ List* LispE::create_instruction(int16_t label,
                                 Element* e5,
                                 Element* e6,
                                 Element* e7) {
-    List* l = provideList();
-
+    List* l;
+    
+    switch (label) {
+        case l_block:
+            l = new List_block_eval();
+            break;
+        case l_loop:
+            l = new List_loop_eval();
+            break;
+        case l_check:
+            l = new List_check_eval();
+            break;
+        case l_ncheck:
+            l = new List_ncheck_eval();
+            break;
+        case l_if:
+            l = new List_if_eval();
+            break;
+        case l_ife:
+            l = new List_ife_eval();
+            break;
+        case l_not:
+            l = new List_not_eval();
+            break;
+        case l_setq:
+            l = new List_setq_eval();
+            break;
+        case l_push:
+            l = new List_push_eval();
+            break;
+        case l_car:
+            l = new List_car_eval();
+            break;
+        case l_cdr:
+            l = new List_cdr_eval();
+            break;
+        default:
+            l = provideList();
+    }
+    
     garbaging(l);
     l->append(provideAtom(label));
     if (!l->append_not_null(e1))
@@ -2374,7 +2431,45 @@ List* LispE::create_local_instruction(int16_t label,
                                 Element* e5,
                                 Element* e6,
                                 Element* e7) {
-    List* l = provideList();
+    List* l;
+    
+    switch (label) {
+        case l_block:
+            l = new List_block_eval();
+            break;
+        case l_loop:
+            l = new List_loop_eval();
+            break;
+        case l_check:
+            l = new List_check_eval();
+            break;
+        case l_ncheck:
+            l = new List_ncheck_eval();
+            break;
+        case l_if:
+            l = new List_if_eval();
+            break;
+        case l_ife:
+            l = new List_ife_eval();
+            break;
+        case l_not:
+            l = new List_not_eval();
+            break;
+        case l_setq:
+            l = new List_setq_eval();
+            break;
+        case l_push:
+            l = new List_push_eval();
+            break;
+        case l_car:
+            l = new List_car_eval();
+            break;
+        case l_cdr:
+            l = new List_cdr_eval();
+            break;
+        default:
+            l = provideList();
+    }
 
     l->append(provideAtom(label));
     if (!l->append_not_null(e1))
@@ -2426,6 +2521,7 @@ Element* LispE::load(string pathname) {
 
         current_path();
         delegation->reset_context();
+        depth_stack = 0;
         return tree->eval(this);
     }
     catch(Error* err) {
@@ -2437,6 +2533,7 @@ Element* LispE::load(string pathname) {
 Element* LispE::compile_eval(string& code) {
     try {
         Element* tree = compile_lisp_code(code);
+        depth_stack = 0;
         return tree->eval(this);
     }
     catch(Error* err) {
@@ -2575,6 +2672,7 @@ Element* LispE::execute(string code, string pathname) {
         delegation->entrypoints[delegation->i_current_file] = tree;
         current_path();
         delegation->reset_context();
+        depth_stack = 0;
         return tree->eval(this);
     }
     catch(Error* err) {
@@ -2778,6 +2876,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

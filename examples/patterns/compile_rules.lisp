@@ -35,8 +35,10 @@
 )
 
 (defun compile(therules)
-   (setq rules (maplist 'tokenize (maplist 'trim (split (trim therules) "\n"))))
+   (setq rules (maplist 'segment (maplist 'trim (split (trim therules) "\n"))))
+   (println rules)
    (setg grammar (dictionary))
    (maplist (\(x) (build x grammar)) rules)
 )
+
 

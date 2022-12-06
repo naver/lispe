@@ -1261,6 +1261,7 @@ Element* List_pattern_call::eval(LispE* lisp) {
     char depth = lisp->depths[function_label] - 1;
 
     try {
+        lisp->checkStack();
         for (i = 1; i <= nbarguments; i++) {
             element = liste[i]->eval(lisp);
             
@@ -1286,6 +1287,7 @@ Element* List_pattern_call::eval(LispE* lisp) {
         }
     }
     catch(Error* err) {
+        lisp->resetStack();
         arguments->release();
         throw err;
     }
@@ -1302,6 +1304,7 @@ Element* List_pattern_call::eval(LispE* lisp) {
             wstring message = L"Error: Could not find a match for function: '";
             message += lisp->asString(function_label);
             message += L"'";
+            lisp->resetStack();
             throw new Error(message);
         }
     }
@@ -1349,6 +1352,7 @@ Element* List_pattern_call::eval(LispE* lisp) {
         wstring message = L"Error: Could not find a match for function: '";
         message += lisp->asString(function_label);
         message += L"'";
+        lisp->resetStack();
         throw new Error(message);
     }
     
@@ -1365,16 +1369,19 @@ Element* List_pattern_call::eval(LispE* lisp) {
             element->release();
             //This version protects 'e' from being destroyed in the stack.
             arguments->release(body);
+            lisp->resetStack();
             return lisp->pop(body);
         }
     }
     catch(Error* err) {
         arguments->release();
         lisp->pop();
+        lisp->resetStack();
         throw err;
     }
 
     arguments->release(element);
+    lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
@@ -1394,6 +1401,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     char depth = lisp->depths[function_label] - 1;
 
     try {
+        lisp->checkStack();
         for (i = 1; i <= nbarguments; i++) {
             element = liste[i]->eval(lisp);
             
@@ -1420,6 +1428,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     }
     catch(Error* err) {
         arguments->release();
+        lisp->resetStack();
         throw err;
     }
 
@@ -1435,6 +1444,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
             wstring message = L"Error: Could not find a match for function: '";
             message += lisp->asString(function_label);
             message += L"'";
+            lisp->resetStack();
             throw new Error(message);
         }
     }
@@ -1482,6 +1492,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
         wstring message = L"Error: Could not find a match for function: '";
         message += lisp->asString(function_label);
         message += L"'";
+        lisp->resetStack();
         throw new Error(message);
     }
     
@@ -1498,16 +1509,19 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
             element->release();
             //This version protects 'e' from being destroyed in the stack.
             arguments->release(body);
+            lisp->resetStack();
             return lisp->pop(body);
         }
     }
     catch(Error* err) {
         arguments->release();
         lisp->pop();
+        lisp->resetStack();
         throw err;
     }
 
     arguments->release(element);
+    lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
@@ -1900,6 +1914,7 @@ Element* List_function_call::eval(LispE* lisp) {
         return terminal_;
     }
     
+
     if (defaultarguments == parameters->size())
         sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
     else
@@ -1913,6 +1928,7 @@ Element* List_function_call::eval(LispE* lisp) {
     long nb_instructions = body->size();
     Element* element;
     try {
+        lisp->checkStack();
         do  {
             element = null_;
             for (i = 3; i < nb_instructions && element != terminal_ && element->type != l_return; i++) {
@@ -1923,16 +1939,19 @@ Element* List_function_call::eval(LispE* lisp) {
                 Element* current_value = element->eval(lisp);
                 element->release();
                 //This version protects 'e' from being destroyed in the stack.
+                lisp->resetStack();
                 return lisp->pop(current_value);
             }
         }
         while (element == terminal_);
     }
     catch (Error* err) {
+        lisp->resetStack();
         lisp->pop();
         throw err;
     }
     
+    lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
@@ -1989,6 +2008,7 @@ Element* List::eval_function(LispE* lisp, List* body) {
     long i;
     nbarguments = body->size();
     try {
+        lisp->checkStack();
         do  {
             element = null_;
             for (i = 3; i < nbarguments && element != terminal_ && element->type != l_return; i++) {
@@ -1999,17 +2019,20 @@ Element* List::eval_function(LispE* lisp, List* body) {
                 parameters = element->eval(lisp);
                 element->release();
                 //This version protects 'e' from being destroyed in the stack.
+                lisp->resetStack();
                 return lisp->pop(parameters);
             }
         }
         while (element == terminal_);
     }
     catch (Error* err) {
+        lisp->resetStack();
         lisp->pop();
         throw err;
     }
     
     //This version protects 'e' from being destroyed in the stack.
+    lisp->resetStack();
     return lisp->pop(element);
 }
     
@@ -2021,13 +2044,16 @@ Element* List_library_call::eval(LispE* lisp) {
         
     Element* element;
     try {
+        lisp->checkStack();
         element = body->liste[3]->eval(lisp);
     }
     catch (Error* err) {
+        lisp->resetStack();
         lisp->pop();
         throw err;
     }
     
+    lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
@@ -2043,7 +2069,7 @@ Element* List::eval_library_function(LispE* lisp, List* body) {
     //we need our body to be the same number
     parameters = body->liste[2];
     long defaultarguments = parameters->argumentsize(nbarguments);
-    
+        
     if (defaultarguments == parameters->size())
         sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
     else
@@ -2052,15 +2078,17 @@ Element* List::eval_library_function(LispE* lisp, List* body) {
     //This is a very specific case, we do not want to go into recursion
     //but handle the call properly as an iteration
     //We do not try to execute the code again, we simply returns back to the original loop.
-
     try {
+        lisp->checkStack();
         element = body->liste[3]->eval(lisp);
     }
     catch (Error* err) {
+        lisp->resetStack();
         lisp->pop();
         throw err;
     }
     
+    lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
@@ -2199,6 +2227,7 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
         }
     }
     catch (Error* err) {
+        lisp->resetStack();
         //We must call reset_in_stack from end to begin
         //the status should popped out from Stack::status
         for (i = labels.size() - 1; i >= 0; i--)
@@ -2212,8 +2241,8 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
 
     nbarguments = body->size();
     Element* stackfunction = lisp->exchangestackfunction(body);
-    
     try {
+        lisp->checkStack();
         do  {
             element = null_;
             for (i = 2; i < nbarguments && element != terminal_ && element->type != l_return; i++) {
@@ -2227,12 +2256,14 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
                 //the status should popped out from Stack::status
                 for (i = labels.size() - 1; i >= 0; i--)
                     lisp->reset_in_stack(recorded[i], labels[i], e);
+                lisp->resetStack();
                 return e;
             }
         }
         while (element == terminal_);
     }
     catch (Error* err) {
+        lisp->resetStack();
         lisp->setstackfunction(stackfunction);
         for (i = labels.size() - 1; i >= 0; i--)
             lisp->reset_in_stack(recorded[i], labels[i]);
@@ -2242,6 +2273,7 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
     for (i = labels.size() - 1; i >= 0; i--)
         lisp->reset_in_stack(recorded[i], labels[i], element);
     lisp->setstackfunction(stackfunction);
+    lisp->resetStack();
     return element;
 }
 
@@ -2395,13 +2427,20 @@ Element* List::evall_void(LispE* lisp) {
     return null_;
 }
 
+
+Element* List_emptylist_eval::eval(LispE* lisp) {
+    return emptylist_;
+}
+
 Element* List::evall_emptylist(LispE* lisp) {
     return emptylist_;
 }
 
 Element* List::eval_no_fail(LispE* lisp) {
     try {
-        return (this->*lisp->delegation->evals[lisp->checkState(this, liste.size())])(lisp);
+        Element* e = (this->*lisp->delegation->evals[lisp->checkState(this, liste.size())])(lisp);
+        lisp->resetStack();
+        return e;
     }
     catch (Error* err) {
         return err;
@@ -2410,9 +2449,12 @@ Element* List::eval_no_fail(LispE* lisp) {
 
 Element* List::eval(LispE* lisp) {
     try {
-        return (this->*lisp->delegation->evals[lisp->checkState(this, liste.size())])(lisp);
+        Element* e = (this->*lisp->delegation->evals[lisp->checkState(this, liste.size())])(lisp);
+        lisp->resetStack();
+        return e;
     }
     catch (Error* err) {
+        lisp->resetStack();
         if (err != lisp->delegation->_THEEND)
             throw err;
         
@@ -2432,9 +2474,12 @@ Element* List::eval(LispE* lisp) {
 
 Element* Listincode::eval(LispE* lisp) {
     try {
-        return (this->*lisp->delegation->evals[lisp->checkBasicState(this)])(lisp);
+        Element* e = (this->*lisp->delegation->evals[lisp->checkBasicState(this)])(lisp);
+        lisp->resetStack();
+        return e;
     }
     catch (Error* err) {
+        lisp->resetStack();
         lisp->delegation->set_error_context(line, fileidx);
         if (err != lisp->delegation->_THEEND)
             throw err;
@@ -2456,9 +2501,12 @@ Element* Listincode::eval(LispE* lisp) {
 Element* List_execute::eval(LispE* lisp) {
     try {
         lisp->checkPureState(this);
-        return (this->*method)(lisp);
+        Element* e = (this->*method)(lisp);
+        lisp->resetStack();
+        return e;
     }
     catch(Error* err) {
+        lisp->resetStack();
         lisp->delegation->set_error_context(line, fileidx);
         if (err != lisp->delegation->_THEEND)
             throw err;
@@ -2705,19 +2753,27 @@ Element* List::evall_root(LispE* lisp) {
 Element* List_block_eval::eval(LispE* lisp) {
     //We might need to mark the last element as being terminal
     //the block might belong to an if
+    long listsize = liste.size();
     liste.back()->setterminal(terminal);
-    
-    if (listsize == 2)
-        return liste[1]->eval(lisp);
-    
-    Element* element = null_;
 
-    for (long i = 1; i < listsize && element->type != l_return; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
+    try {
+        lisp->checkStack();
+        if (listsize == 2)
+            return liste[1]->eval(lisp);
+        
+        Element* element = null_;
+        
+        for (long i = 1; i < listsize && element->type != l_return; i++) {
+            element->release();
+            element = liste[i]->eval(lisp);
+        }
+        lisp->resetStack();
+        return element;
     }
-
-    return element;
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
 }
 
 Element* List::evall_block(LispE* lisp) {
@@ -2757,10 +2813,9 @@ Element* List::evall_elapse(LispE* lisp) {
         
         if (second_element->type == l_return) {
             Element* body = second_element->eval(lisp);
-            _releasing(second_element);
             body->release();
         }
-        
+        second_element->release();
         diff = std::chrono::duration_cast<std::chrono::milliseconds>( chrono_end - chrono_beg).count();
     }
     catch (Error* err) {
@@ -6073,20 +6128,30 @@ Element* List::evall_cdr(LispE* lisp) {
 }
 
 Element* List_check_eval::eval(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    
-    if (!element->Boolean()) {
-        element->release();
-        return null_;
+    try {
+        lisp->checkStack();
+        Element* element = liste[1]->eval(lisp);
+        
+        if (!element->Boolean()) {
+            lisp->resetStack();
+            element->release();
+            return null_;
+        }
+        
+        long listsize = liste.size();
+        _releasing(element);
+        liste.back()->setterminal(terminal);
+        for (long i = 2; i < listsize && element->type != l_return; i++) {
+            element->release();
+            element = liste[i]->eval(lisp);
+        }
+        lisp->resetStack();
+        return element;
     }
-
-    _releasing(element);
-    liste.back()->setterminal(terminal);
-    for (long i = 2; i < listsize && element->type != l_return; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
     }
-    return element;
 }
 
 Element* List_cond_eval::eval(LispE* lisp) {
@@ -7082,12 +7147,21 @@ Element* List::evall_greaterorequal(LispE* lisp) {
 }
 
 
-Element* List_if::eval(LispE* lisp) {
-    Element* condition = liste[1]->eval(lisp);
-    char test = 3 - condition->Boolean();
-    condition->release();
-    liste[test]->setterminal(terminal);
-    return liste[test]->eval(lisp);
+Element* List_if_eval::eval(LispE* lisp) {
+    try {
+        lisp->checkStack();
+        Element* condition = liste[1]->eval(lisp);
+        char test = 3 - condition->Boolean();
+        condition->release();
+        liste[test]->setterminal(terminal);
+        condition = liste[test]->eval(lisp);
+        lisp->resetStack();
+        return condition;
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
 }
 
 Element* List::evall_if(LispE* lisp) {
@@ -7099,6 +7173,34 @@ Element* List::evall_if(LispE* lisp) {
     
     liste[test]->setterminal(terminal);
     return liste[test]->eval(lisp);
+}
+
+Element* List_ife_eval::eval(LispE* lisp) {
+    try {
+        lisp->checkStack();
+        Element* element = liste[1]->eval(lisp);
+        
+        if (element->Boolean()) {
+            element->release();
+            liste[2]->setterminal(terminal);
+            return liste[2]->eval(lisp);
+        }
+        
+        long listsize = liste.size();
+        liste.back()->setterminal(terminal);
+        _releasing(element);
+        
+        for (long i = 3; i < listsize && element->type != l_return; i++) {
+            element->release();
+            element = liste[i]->eval(lisp);
+        }
+        lisp->resetStack();
+        return element;
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
 }
 
 
@@ -8739,15 +8841,7 @@ Element* List::evall_compile(LispE* lisp) {
     Element* the_code = liste[1]->eval(lisp);
     string code = the_code->toString(lisp);
     the_code->release();
-    if (liste.size() == 2)
-        return lisp->compile_eval(code);
-
-    uint16_t current = lisp->current_space;
-    int16_t label = liste[2]->label();
-    lisp->create_name_space(label);
-    the_code = lisp->compile_eval(code);
-    lisp->current_space = current;
-    return the_code;
+    return lisp->compile_eval(code);
 }
 
 Element* List::evall_lock(LispE* lisp) {
@@ -8776,6 +8870,60 @@ Element* List::evall_lock(LispE* lisp) {
     return value;
 }
 
+Element* List_loop_eval::eval(LispE* lisp) {
+    int16_t label = liste[1]->label();
+    if (label == v_null)
+        throw new Error(L"Error: Missing label for 'loop'");
+
+    Element* container = liste[2]->eval(lisp);
+    Element* result;
+
+    try {
+        lisp->checkStack();
+        //We loop in a list
+        result = container->loop(lisp, label, this);
+    }
+    catch (Error* err) {
+        lisp->resetStack();
+        container->release();
+        throw err;
+    }
+
+    lisp->resetStack();
+    container->release();
+    return result;
+}
+
+
+Element* List_loopcount_eval::eval(LispE* lisp) {
+    long counter;
+    evalAsInteger(1, lisp, counter);
+    
+    Element* result = null_;
+    try {
+        lisp->checkStack();
+        while (counter > 0) {
+            for (long i = 2; i < listsize && result->type != l_return; i++) {
+                result->release();
+                result = liste[i]->eval(lisp);
+            }
+            //If a 'return' or a 'break' has been placed in the code
+            if (result->type == l_return) {
+                if (result->isBreak())
+                    return null_;
+                //this is a return, it goes back to the function call
+                return result;
+            }
+            counter--;
+        }
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
+    lisp->resetStack();
+    return result;
+}
 
 Element* List::evall_loop(LispE* lisp) {
     int16_t label = liste[1]->label();
@@ -9116,28 +9264,35 @@ Element* List::evall_min(LispE* lisp) {
     return first_element;
 }
 
-
 Element* List_ncheck_eval::eval(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    
-    if (!element->Boolean()) {
-        element->release();
-        liste[2]->setterminal(terminal);
-        return liste[2]->eval(lisp);
+    try {
+        lisp->checkStack();
+        Element* element = liste[1]->eval(lisp);
+        
+        if (!element->Boolean()) {
+            element->release();
+            liste[2]->setterminal(terminal);
+            lisp->resetStack();
+            return liste[2]->eval(lisp);
+        }
+        
+        
+        _releasing(element);
+
+        long listsize = liste.size();
+        liste.back()->setterminal(terminal);
+        for (long i = 3; i < listsize && element->type != l_return; i++) {
+            element->release();
+            element = liste[i]->eval(lisp);
+        }
+        lisp->resetStack();
+        return element;
     }
-    
-    
-    _releasing(element);
-    
-    liste.back()->setterminal(terminal);
-    for (long i = 3; i < listsize && element->type != l_return; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
     }
-    return element;
 }
-
-
 
 Element* List::evall_ncheck(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -9169,6 +9324,12 @@ Element* List::evall_next(LispE* lisp) {
     return liste[1]->eval(lisp)->next_element();
 }
 
+Element* List_not_eval::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    bool test = first_element->Boolean();
+    first_element->release();
+    return booleans_[!test];
+}
 
 Element* List::evall_not(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
@@ -10487,6 +10648,12 @@ Element* List::evall_let(LispE* lisp) {
     return true_;
 }
 
+Element* List_setq_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    lisp->storing_variable(element, liste[1]->label());
+    return true_;
+}
+
 Element* List::evall_setq(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     lisp->storing_variable(element, liste[1]->label());
@@ -10937,6 +11104,43 @@ Element* List::evall_waiton(LispE* lisp) {
     return true_;
 }
 
+Element* List_while_eval::eval(LispE* lisp) {
+    Element* condition = liste[1]->eval(lisp);
+    bool test = condition->Boolean();
+    condition->release();
+        
+    Element* result = null_;
+    
+    try {
+        lisp->checkStack();
+        while (test) {
+            for (long i = 2; i < listsize && result->type != l_return; i++) {
+                _releasing(result);
+                result = liste[i]->eval(lisp);
+            }
+            
+            //if a 'return' has been placed in the code
+            if (result->type == l_return) {
+                lisp->stop_at_next_line(lisp->trace);
+                if (result->isBreak())
+                    return null_;
+                //this is a return, it goes back to the function call
+                return result;
+            }
+            
+            condition = liste[1]->eval(lisp);
+            test = condition->Boolean();
+            condition->release();
+        }
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        result->release();
+        throw err;
+    }
+    lisp->resetStack();
+    return result;
+}
 
 Element* List::evall_while(LispE* lisp) {
     Element* condition = liste[1]->eval(lisp);
@@ -11399,9 +11603,8 @@ Element* Listincode::eval_call_function(LispE* lisp) {
 }
 
 Element* Listincode::eval_call_self(LispE* lisp) {
-    Element* body = lisp->called();
-
     if (lisp->delegation->trace_on) {
+        Element* body = lisp->called();
         if (lisp->trace) {
             //We also retrieve its label (which is l_defun or l_defpat or...)
             int16_t label = body->index(0)->label();
@@ -11426,35 +11629,7 @@ Element* Listincode::eval_call_self(LispE* lisp) {
             return evalfunction(lisp, body);
     }
 
-    if (lisp->threaded())
-        return evalfunction(lisp, body);
-    
-    int16_t label = body->function_label();
-    switch(label) {
-        case l_defpat:
-            liste[0] = new List_pattern_call(this, (List*)body);
-            lisp->garbaging(liste[0]);
-            return liste[0]->eval(lisp);
-        case l_defun:
-            liste[0] = new List_function_call(lisp, this, (List*)body);
-            lisp->garbaging(liste[0]);
-            return liste[0]->eval(lisp);
-        case l_deflib:
-            liste[0] = new List_library_call(this, (List*)body);
-            lisp->garbaging(liste[0]);
-            return liste[0]->eval(lisp);
-        case l_dethread:
-            return eval_thread(lisp, (List*)body);
-        case l_lambda:
-            liste[0] = new Atomefonction(body, t_lambda);
-            lisp->garbaging(liste[0]);
-            return eval_lambda(lisp, (List*)body);
-        default:
-            body = lisp->getDataStructure(label);
-            liste[0] = new Atomefonction(body, t_data);
-            lisp->garbaging(liste[0]);
-            return eval_data(lisp, body);
-    }
+    return evalfunction(lisp, lisp->called());
 }
 
 Element* List::eval_call_self(LispE* lisp) {

@@ -56,7 +56,10 @@
 )
 
 (defun analyse(sentence)
-   (setq sentence (parse (tokenize sentence) "S" ()))
+   (setq sentence (parse (segment sentence) "S" ()))
    (@@ sentence 0 -1)
 )
+
+
+
 

@@ -284,7 +284,7 @@ public:
     int16_t v_rep;
     int16_t v_nb;
     int16_t v_pos;
-    int16_t l_tokenize;
+    int16_t v_tokenize;
     
     Stringmethod(LispE* lisp, string_method s) : met(s), Element(l_lib) {
         //We know the names of variables in advance, so we might as well take advantage of it to retrieve their codes.
@@ -299,7 +299,7 @@ public:
         nom = U"pos";
         v_pos = lisp->encode(nom);
         nom = U"tokenize_rule";
-        l_tokenize = lisp->encode(nom);
+        v_tokenize = lisp->encode(nom);
     }
     
     Element* parse_json(LispE* lisp, u_ustring& w) {
@@ -833,11 +833,11 @@ public:
                 return lisp->provideString(s);
             }
             case str_tokenizer_rules: {
-                return new Rulemethod(lisp, l_tokenize);
+                return new Rulemethod(lisp, v_tokenize);
             }
             case str_tokenize_rules: {
                 Element* tok = lisp->get_variable(U"rules");
-                if (tok->type != l_tokenize)
+                if (tok->type != v_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
                 Element* types = lisp->get_variable(U"types");
                 u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
@@ -855,7 +855,7 @@ public:
             }
             case str_getrules: {
                 Element* tok = lisp->get_variable(U"rules");
-                if (tok->type != l_tokenize)
+                if (tok->type != v_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
                 Strings* vstr = lisp->provideStrings();
                 ((Rulemethod*)tok)->tok.getrules(vstr->liste);
@@ -863,7 +863,7 @@ public:
             }
             case str_setrules: {
                 Element* tok = lisp->get_variable(U"rules");
-                if (tok->type != l_tokenize)
+                if (tok->type != v_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
                 Element* lst = lisp->get_variable(U"lst");
                 if (!lst->isList())

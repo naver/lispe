@@ -85,6 +85,8 @@ public:
     
     unordered_map<short, char> depths;
     
+    long depth_stack;
+    
     //Delegation is a class that records any data
     //related to compilation
     Delegation* delegation;
@@ -116,6 +118,7 @@ public:
     bool check_thread_stack;
     
     LispE(UTF8_Handler* hnd = NULL) {
+        depth_stack = 0;
         check_thread_stack = false;
         current_space = 0;
         initpools();
@@ -489,15 +492,29 @@ public:
     }
     
     inline int16_t checkLispState() {
-        return (execution_stack.last >= max_stack_size?0x200:delegation->stop_execution);
+        return (depth_stack >= max_stack_size?0x200:delegation->stop_execution);
     }
-        
+
+
     inline bool sendError() {
         throw delegation->_THEEND;
     }
     
     inline bool sendError(u_ustring msg) {
         throw new Error(msg);
+    }
+
+    inline bool sendStackError() {
+        depth_stack++;
+        throw new Error(U"Stack overflow");
+    }
+
+    inline void checkStack() {
+         depth_stack == max_stack_size?sendStackError():depth_stack++;
+    }
+
+    inline void resetStack() {
+        depth_stack--;
     }
     
     //2
@@ -507,10 +524,11 @@ public:
     }
 
     inline int16_t checkState(List* l, long sz) {
+        checkStack();
         delegation->checkExecution();
         return (!sz)?l_emptylist:(!check_arity_on_fly)?l->liste.get0():check_arity(l, sz);
     }
-
+    
     //1
     inline int16_t check_basic_trace(Listincode* l) {
         trace_and_context(l);
@@ -523,6 +541,7 @@ public:
     }
 
     inline void checkPureState(Listincode* l) {
+        checkStack();
         delegation->checkExecution();
         if (trace) {
             trace_and_context(l);
