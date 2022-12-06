@@ -20,7 +20,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.12.4.12.6";
+static std::string version = "1.2022.12.6.11.10";
 string LispVersion() {
     return version;
 }
@@ -2778,6 +2778,7 @@ void LispE::current_path() {
         e->release();
     }
 }
+
 
 
 

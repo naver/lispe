@@ -26,13 +26,13 @@ EMSCRIPTEN_KEEPALIVE void reset_lispe() {
     lispe = new LispE();
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_lispe(int32_t* str, int32_t sz, int32_t start, int32_t* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, int32_t mx) {
     u_ustring code;
     if (lispe == NULL) {
         code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            values[start + i] = code[i];
+            str_as_int[start + i] = code[i];
         return sz;
     }
     
@@ -40,7 +40,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_lispe(int32_t* str, int32_t sz, int32_t start,
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, str, sz);
+    s_utf16_to_utf8(cde, str_as_int + first , sz);
     Element* executed_code= lispe->execute(cde, ".");
     code = executed_code->asUString(lispe);
     //We clean our result
@@ -57,23 +57,23 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_lispe(int32_t* str, int32_t sz, int32_t start,
     //We then replace the initial array (str) with our new values
     //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
     for (long i = 0; i < sz; i++)
-        values[start + i] = result[i];
+        str_as_int[start + i] = result[i];
     return sz;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_as_int_lispe(int32_t* str, int32_t sz, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_as_int_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t mx) {
     if (lispe == NULL) {
         u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
         
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, str, sz);
+    s_utf16_to_utf8(cde, str_as_int + first , sz);
     Element* executed_code= lispe->execute(cde, ".");
     
     if (executed_code->type == t_error) {
@@ -91,7 +91,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_as_int_lispe(int32_t* str, int32_t sz, int32_t
         //We then replace the initial array (str) with our new values
         //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
         for (long i = 0; i < sz; i++)
-            str[i] = result[i];
+            str_as_int[first + i] = result[i];
         return sz*-1;
     }
     
@@ -101,19 +101,19 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_as_int_lispe(int32_t* str, int32_t sz, int32_t
     return sz;
 }
 
-EMSCRIPTEN_KEEPALIVE double eval_as_float_lispe(int32_t* str, int32_t sz, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE double eval_as_float_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t mx) {
     if (lispe == NULL) {
         u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
         
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, str, sz);
+    s_utf16_to_utf8(cde, str_as_int + first , sz);
     Element* executed_code= lispe->execute(cde, ".");
     if (executed_code->type == t_error) {
         u_ustring code = executed_code->asUString(lispe);
@@ -130,7 +130,7 @@ EMSCRIPTEN_KEEPALIVE double eval_as_float_lispe(int32_t* str, int32_t sz, int32_
         //We then replace the initial array (str) with our new values
         //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
         for (long i = 0; i < sz; i++)
-            str[i] = result[i];
+            str_as_int[first + i] = result[i];
         return sz*-1;
     }
     
@@ -140,19 +140,19 @@ EMSCRIPTEN_KEEPALIVE double eval_as_float_lispe(int32_t* str, int32_t sz, int32_
     return v;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_to_floats_lispe(int32_t* str, int32_t sz, int32_t start, double* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_to_floats_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, double* values, int32_t mx) {
     if (lispe == NULL) {
         u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
     
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, str, sz);
+    s_utf16_to_utf8(cde, str_as_int + first , sz);
     Element* executed_code= lispe->execute(cde, ".");
     if (executed_code->type == t_error) {
         u_ustring code = executed_code->asUString(lispe);
@@ -169,7 +169,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_floats_lispe(int32_t* str, int32_t sz, int3
         //We then replace the initial array (str) with our new values
         //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
         for (long i = 0; i < sz; i++)
-            str[i] = result[i];
+            str_as_int[first + i] = result[i];
         return sz*-1;
     }
     
@@ -208,19 +208,19 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_floats_lispe(int32_t* str, int32_t sz, int3
     return sz;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_to_ints_lispe(int32_t* str, int32_t sz, int32_t start, int32_t* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_to_ints_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, int32_t mx) {
     if (lispe == NULL) {
         u_ustring code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
         
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, str, sz);
+    s_utf16_to_utf8(cde, str_as_int + first , sz);
     Element* executed_code= lispe->execute(cde, ".");
     if (executed_code->type == t_error) {
         u_ustring code = executed_code->asUString(lispe);
@@ -237,7 +237,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_ints_lispe(int32_t* str, int32_t sz, int32_
         //We then replace the initial array (str) with our new values
         //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
         for (long i = 0; i < sz; i++)
-            str[i] = result[i];
+            str_as_int[first + i] = result[i];
         return sz*-1;
     }
     
@@ -246,7 +246,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_ints_lispe(int32_t* str, int32_t sz, int32_
         case t_short:
         case t_number:
         case t_float:
-            values[start] = executed_code->asInteger();
+            str_as_int[start] = executed_code->asInteger();
             sz = 1;
             break;
         case t_integers:
@@ -257,13 +257,13 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_ints_lispe(int32_t* str, int32_t sz, int32_
             sz = executed_code->size();
             sz = sz < mx ? sz : mx - 1;
             for (long i = 0; i < sz; i++)
-                values[start + i] = executed_code->index(i)->asInteger();
+                str_as_int[start + i] = executed_code->index(i)->asInteger();
             break;
         case t_llist: {
             sz = 0;
             u_link* a = ((LList*)executed_code)->liste.begin();
             for (; a != NULL && sz < mx; a = a->next()) {
-                values[start + sz] = a->value->asInteger();
+                str_as_int[start + sz] = a->value->asInteger();
                 sz++;
             }
             break;
@@ -276,20 +276,20 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_ints_lispe(int32_t* str, int32_t sz, int32_
     return sz;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_to_strings_lispe(int32_t* str, int32_t sz, int32_t start, int32_t* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_to_strings_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, int32_t mx) {
     u_ustring code;
     if (lispe == NULL) {
         code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            values[i + start] = code[i];
+            str_as_int[i + start] = code[i];
         return sz;
     }
         
     string cde;
     //We first convert from UTF-16 into UTF-8
     //JavaScript strings are in UTF-16
-    s_utf16_to_utf8(cde, str, sz);
+    s_utf16_to_utf8(cde, str_as_int + first , sz);
     Element* executed_code= lispe->execute(cde, ".");
     wstring result;
     long idx = 0;
@@ -308,11 +308,11 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_strings_lispe(int32_t* str, int32_t sz, int
                 //We then replace the initial array (str) with our new values
                 //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
                 for (long i = 0; i < result.size() && idx < mx; i++)  {
-                    values[start + idx] = result[i];
+                    str_as_int[start + idx] = result[i];
                     idx++;
                 }
                 if (idx < mx) {
-                    values[start + idx] = 0;
+                    str_as_int[start + idx] = 0;
                     idx++;
                 }
                 else
@@ -328,12 +328,12 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_strings_lispe(int32_t* str, int32_t sz, int
                 //We then replace the initial array (str) with our new values
                 //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
                 for (long i = 0; i < result.size() && idx < mx; i++)  {
-                    values[start + idx] = result[i];
+                    str_as_int[start + idx] = result[i];
                     idx++;
                 }
                 
                 if (idx < mx) {
-                    values[start + idx] = 0;
+                    str_as_int[start + idx] = 0;
                     idx++;
                 }
                 else
@@ -347,11 +347,11 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_strings_lispe(int32_t* str, int32_t sz, int
             //We then replace the initial array (str) with our new values
             //WASM cannot handle strings directly, we have to pass them as arrays of uint_32 elements
             for (long i = 0; i < result.size() && idx < mx; i++)  {
-                values[start + idx] = result[i];
+                str_as_int[start + idx] = result[i];
                 idx++;
             }
             if (idx < mx) {
-                values[start + idx] = 0;
+                str_as_int[start + idx] = 0;
                 idx++;
             }
         }
@@ -360,19 +360,19 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_to_strings_lispe(int32_t* str, int32_t sz, int
     return idx;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t* str, int32_t sz, int32_t start, int32_t* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, int32_t mx) {
     wstring cde;
     u_ustring code;
     if (lispe == NULL) {
         code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
     
     for (long i = 0; i < sz; i++)
-        cde += str[i];
+        cde += str_as_int[first + i];
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
@@ -382,7 +382,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t* str, int32_t sz, int3
     Integers* ints = lispe->provideIntegers();
     long v;
     for (long i = 0; i < mx; i++) {
-        v = values[i + start];
+        v = str_as_int[i + start];
         ints->append(lispe, v);
     }
     
@@ -390,19 +390,19 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_ints_lispe(int32_t* str, int32_t sz, int3
     return true;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_floats_lispe(int32_t* str, int32_t sz, int32_t start, double* values, int32_t mx) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_floats_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, double* values, int32_t mx) {
     wstring cde;
     u_ustring code;
     if (lispe == NULL) {
         code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
     
     for (long i = 0; i < sz; i++)
-        cde += str[i];
+        cde += str_as_int[first + i];
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
@@ -417,19 +417,19 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_floats_lispe(int32_t* str, int32_t sz, in
     return true;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_int_lispe(int32_t* str, int32_t sz, int32_t value) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_int_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t value) {
     wstring cde;
     u_ustring code;
     if (lispe == NULL) {
         code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
     
     for (long i = 0; i < sz; i++)
-        cde += str[i];
+        cde += str_as_int[first + i];
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
@@ -441,19 +441,19 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_int_lispe(int32_t* str, int32_t sz, int32
     return true;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_float_lispe(int32_t* str, int32_t sz, double value) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_float_lispe(int32_t* str_as_int, int32_t first, int32_t sz, double value) {
     wstring cde;
     u_ustring code;
     if (lispe == NULL) {
         code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
     
     for (long i = 0; i < sz; i++)
-        cde += str[i];
+        cde += str_as_int[first + i];
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
@@ -465,19 +465,19 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_float_lispe(int32_t* str, int32_t sz, dou
     return true;
 }
 
-EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t* str, int32_t sz, int32_t start, int32_t* value, int32_t nb) {
+EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t* str_as_int, int32_t first, int32_t sz, int32_t start, int32_t nb) {
     wstring cde;
     u_ustring code;
     if (lispe == NULL) {
         code = U"LispE was not initialized";
         sz = code.size();
         for (long i = 0; i < sz; i++)
-            str[i] = code[i];
+            str_as_int[first + i] = code[i];
         return sz*-1;
     }
     
     for (long i = 0; i < sz; i++)
-        cde += str[i];
+        cde += str_as_int[first + i];
     
     //This is our variable name
     s_utf16_to_unicode(code, cde);
@@ -485,7 +485,7 @@ EMSCRIPTEN_KEEPALIVE int32_t eval_setq_string_lispe(int32_t* str, int32_t sz, in
     
     wstring c = L"";
     for (long i  = 0; i < nb; i++)
-        c += value[start + i];
+        c += str_as_int[start + i];
     
     code = U"";
     s_utf16_to_unicode(code, c);

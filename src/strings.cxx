@@ -252,10 +252,10 @@ void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
 }
 
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
-    str_tokenize_lispe, str_tokenize_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
+    str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
-    str_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
+    str_tokenizer_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
 
 /*
  First of all we create a new Element derivation
@@ -661,11 +661,11 @@ public:
                 strvalue = u_trimright(strvalue);
                 return lisp->provideString(strvalue);
             }
-            case str_tokenize_lispe: {
+            case str_segment_lispe: {
                 wstring strvalue =  lisp->get_variable(v_str)->asString(lisp);
                 return lisp->tokenize(strvalue, false);
             }
-            case str_tokenize_empty: {
+            case str_segment_empty: {
                 wstring strvalue =  lisp->get_variable(v_str)->asString(lisp);
                 return lisp->tokenize(strvalue, true);
             }
@@ -832,7 +832,7 @@ public:
                 s = lisp->handlingutf8->s_deaccentuate(s);
                 return lisp->provideString(s);
             }
-            case str_rules: {
+            case str_tokenizer_rules: {
                 return new Rulemethod(lisp, l_tokenize);
             }
             case str_tokenize_rules: {
@@ -971,9 +971,9 @@ public:
                 return L"Check if a string only contains consonants";
             case str_deaccentuate:
                 return L"Remove the accents from letters in a string";
-            case str_tokenize_lispe:
+            case str_segment_lispe:
                 return L"Tokenize a string into a list of tokens with LispE tokenizer";
-            case str_tokenize_empty:
+            case str_segment_empty:
                 return L"Tokenize a string into a list of tokens with LispE tokenize. Keep also the blanks";
             case str_tokenize_rules:
                 return L"Tokenize a string into a list of tokens with internal rules";
@@ -981,7 +981,7 @@ public:
                 return L"Return the internal tokenization rules";
             case str_setrules:
                 return L"Set the internal tokenization rules";
-            case str_rules:
+            case str_tokenizer_rules:
                 return L"Return a rule object";
             case str_format:
                 return L"Takes as input a format and a list of variables. Variables in the format of the form: %n, where 1<=n<=9 are replaced with their corresponding arguments";
@@ -1024,8 +1024,8 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib right (str nb)", new Stringmethod(lisp, str_right));
     lisp->extension("deflib middle (str pos nb)", new Stringmethod(lisp, str_middle));
     lisp->extension("deflib getstruct (str open close (pos 0))", new Stringmethod(lisp, str_getstruct));
-    lisp->extension("deflib tokenize (str)", new Stringmethod(lisp, str_tokenize_lispe));
-    lisp->extension("deflib tokenizee (str)", new Stringmethod(lisp, str_tokenize_empty));
+    lisp->extension("deflib segment (str)", new Stringmethod(lisp, str_segment_lispe));
+    lisp->extension("deflib segment_e (str)", new Stringmethod(lisp, str_segment_empty));
     lisp->extension("deflib split (str (fnd))", new Stringmethod(lisp, str_split));
     lisp->extension("deflib splite (str (fnd))", new Stringmethod(lisp, str_split_empty));
     lisp->extension("deflib ord (str)", new Stringmethod(lisp, str_ord));
@@ -1036,8 +1036,10 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib vowelp (str)", new Stringmethod(lisp, str_is_vowel));
     lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
-    lisp->extension("deflib tokenizer_rules ()", new Stringmethod(lisp, str_rules));
+    lisp->extension("deflib tokenizer_rules ()", new Stringmethod(lisp, str_tokenizer_rules));
     lisp->extension("deflib tokenize_rules (rules str (types))", new Stringmethod(lisp, str_tokenize_rules));
+    lisp->extension("deflib tokenizer ()", new Stringmethod(lisp, str_tokenizer_rules));
+    lisp->extension("deflib tokenize (rules str (types))", new Stringmethod(lisp, str_tokenize_rules));
     lisp->extension("deflib get_tokenizer_rules (rules)", new Stringmethod(lisp, str_getrules));
     lisp->extension("deflib set_tokenizer_rules (rules lst)", new Stringmethod(lisp, str_setrules));
 
