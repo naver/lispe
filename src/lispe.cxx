@@ -234,7 +234,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_catch, "catch", P_ATLEASTTWO, &List::evall_catch);
     set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr);
     set_instruction(l_check, "check", P_ATLEASTTWO, &List::evall_check);
-    set_instruction(l_compile, "loadcode", P_TWO, &List::evall_compile);
+    set_instruction(l_compile, "loadcode", P_TWO | P_THREE, &List::evall_compile);
     set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
     set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
     set_instruction(l_consb, "consb", P_THREE, &List::evall_consb);

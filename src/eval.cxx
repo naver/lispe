@@ -8739,7 +8739,15 @@ Element* List::evall_compile(LispE* lisp) {
     Element* the_code = liste[1]->eval(lisp);
     string code = the_code->toString(lisp);
     the_code->release();
-    return lisp->compile_eval(code);
+    if (liste.size() == 2)
+        return lisp->compile_eval(code);
+
+    uint16_t current = lisp->current_space;
+    int16_t label = liste[2]->label();
+    lisp->create_name_space(label);
+    the_code = lisp->compile_eval(code);
+    lisp->current_space = current;
+    return the_code;
 }
 
 Element* List::evall_lock(LispE* lisp) {
