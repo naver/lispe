@@ -7,37 +7,23 @@
 ; We create a tokenizer object
 (setq tok (tokenizer_rules))
 
-; We extract the rules associated to this object 
-(setq rg (get_tokenizer_rules tok))
-
-; rg is a list of rules
-; we modify the first rule, which extracts spaces, to skip these spaces
-; the =# indicates that the characters detected by the rules should ne skipped
-(set@ rg 0 " +=#")
-
-; We insert a new rule (neu) before a given rule (base)
-(defun insert_rule (base neu)
-   (loop i (range 0 (size rg) 1)
-      (setq x (@ rg i))
-      (check (in x base)
-         (insert rg neu i)
-         (break)
-      )
-   )
+(setq rg `#32+=#
+#9+=#
+#10+=#
+"{[\-"] ~%r}*"=34
+%%?=0
+${%a %d %h}+=0
+%d+=57
+%o=63
+%p=32
+%h{%h %d}*=65
+%a{%a %d}*=65
+`
 )
 
-; We create a rule so that a % followed with any characters is a token
-; Note that % is also the escape character in this formalism, hence the %% in the rule
-(insert_rule "%=0" "%%.=0")
+(setq rg (split rg "\n"))
+(setq rg (maplist 'trim rg))
 
-;We also add a rule to concatenate a $ with any sequence of characters: $TEST
-(insert_rule "$=0" "$~{%S %p %o}+=0")
-
+; rg is a list of rules
 (set_tokenizer_rules tok rg)
-
-
-
-
-
-
 

@@ -207,21 +207,80 @@ bool checkOtherCases(u_ustring& u) {
     return (u == U"_current" || u == U"_args" || u == U"_pi" || u == U"_e" || u == U"_tau" || u == U"_phi" || u == U"π" || u ==U"τ" || u == U"ℯ" || u == U"ϕ");
 }
 
+//all characters are ascii
+static u_ustring from_ascii(string s) {
+    u_ustring c(s.size(),0);
+    for (long i = 0; i < s.size(); i++)
+        c[i] = (u_uchar)s[i];
+    return c;
+}
 
-string lispe_editor::coloringline(string line, long current_pos, bool thread) {
-    if (line == "")
-        return line;
+class coloring_automaton : public tokenizer_automaton {
+public:
+    
+    coloring_automaton(UTF8_Handler* a) : tokenizer_automaton(a) {}
+    
+    void setrules() {
+        rules.push_back(U"%S+=#");                                  //we skip all spaces
+        
+        rules.push_back(U"';+=#");
+        rules.push_back(U"'=39");
+        
+        rules.push_back(U"#27%[{%d;,}+m=#");           //Color definition in terminal
+
+        rules.push_back(U"%(=40");
+        rules.push_back(U"%[=40");
+        rules.push_back(U"%{=40");
+        
+        rules.push_back(U";;?*;;=#");
+        rules.push_back(U";?*%r=#");
+        
+        //Strings
+		rules.push_back(U"\"\"\"?*\"\"\"=34");                   //long strings Python way """.."""
+        rules.push_back(U"\"{[\\-\"] ~%r}*\"=34");     //string "" does not contain CR and can escape characters
+        rules.push_back(U"`?*`=34");                   //long strings Unix way
+#ifdef WIN32
+		rules.push_back(U"#171?*#187=34");                   //long strings French way
+		rules.push_back(U"#8220?*#8221=34");                   //long strings English
+		rules.push_back(U"#8216?*#8217=34");                   //long strings with single quotes (English)
+		rules.push_back(U"#8222?*#8221=34");                //long strings German/Polish
+		rules.push_back(U"#10077?*#10078=34");                   //long strings
+#else
+		rules.push_back(U"«?*»=34");                   //long strings French way
+		rules.push_back(U"“?*”=34");                   //long strings English
+		rules.push_back(U"‘?*’=34");                   //long strings with single quotes (English)
+		rules.push_back(U"„?*{“”}=34");                //long strings German/Polish
+		rules.push_back(U"❝?*❞=34");                   //long strings
+#endif
+
+        rules.push_back(U"%a{%a %d %o}+=65");       //Regular strings
+        rules.push_back(U"%h{%h %d %o}+=65");       //Regular strings
+        rules.push_back(U"%H{%H %d %o}+=65");       //Regular strings
+        
+        rules.push_back(U"%d+=#");
+        rules.push_back(U"%p=#");
+        rules.push_back(U"%o=#");
+    }
+    
+};
+
+string lispe_editor::coloringline(string line_of_code, long current_pos, bool thread) {
+    static tokenizer_result<u_ustring> segments;
+    static coloring_automaton lsp_tokenizer(&special_characters);
+
+    if (line_of_code == "")
+        return line_of_code;
     
     if (current_pos >= 0 && current_pos < lines.longlines.size()) {
         char long_line = lines.longlines[current_pos];
         if (long_line == 1) {
-            line = colors[0] + line + m_current;
-            return line;
+            line_of_code = colors[0] + line_of_code + m_current;
+            return line_of_code;
         }
         else {
             if (long_line == 2) {
-                line = colors[4] + line + m_current;
-                return line;
+                line_of_code = colors[4] + line_of_code + m_current;
+                return line_of_code;
             }
         }
     }
@@ -232,10 +291,10 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
         if (lines[current_pos].find(L'"') != -1) {
             q = true;
             if (evaluate_quotes(lines[current_pos-1])) {
-                long nb = line.find("\"");
+                long nb = line_of_code.find("\"");
                 if (nb != -1) {
                     nb++;
-                    root = colors[0] + line.substr(0, nb);
+                    root = colors[0] + line_of_code.substr(0, nb);
                     root += m_current;
                     line = line.substr(nb,line.size());
                 }
@@ -243,76 +302,81 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
         }
         current_pos--;
         while (current_pos > 0 && lines.Status(current_pos) == concat_line) current_pos--;
-        if (current_pos && (lines[current_pos][0] == '#' || lines[current_pos][0] == ';')) {
-            line = colors[4] + line + m_current;
-            return line;
+        if (current_pos && lines[current_pos][0] == ';') {
+            line_of_code = colors[4] + line_of_code + m_current;
+            return line_of_code;
         }
     }
     
-    Tokenizer* segments = &parse;
-    if (thread)
-        segments = new Tokenizer;
-    else
-        segments->clear();
     
-    string sub = line;
-    s_trimleft(sub);
-    if (sub[0] == ';' || sub[0] == '#') {
-        line = colors[4] + line + m_current;
-        return line;
+    string checkcolor = line_of_code;
+    s_trimleft(checkcolor);
+    if (checkcolor[0] == ';') {
+        line_of_code = colors[4] + line_of_code + m_current;
+        return line_of_code;
     }
-    
-    string substring;
     
     initlisp(false, true);
     
     bool add = false;
     
-    bool addlisting = lispe->delegation->add_to_listing;
-    lispe->delegation->add_to_listing = false;
-    lispe->segmenting(line, *segments);
-    lispe->delegation->add_to_listing = addlisting;
+    u_ustring current_line;
+    s_utf8_to_unicode(current_line, line_of_code, line_of_code.size());
     
+    lsp_tokenizer.tokenize(current_line, segments);
+    
+#ifdef MACDEBUG
+    //for debugging
+    vector<u_ustring> codes;
+    segments.stack.to_vector(codes);
+    vector<int16_t> icodes;
+    segments.stacktype.to_vector(icodes);
+#endif
+
+    u_ustring subline;
+
     long left, right = -1;
-    for (long isegment = segments->tokens.size() - 1, ipos = segments->positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
-        left = segments->positions[ipos-1];
-        right = segments->positions[ipos];
-        sub = line.substr(0, left);
+    bool quote = false;
+    for (long isegment = segments.size() - 1, ipos = segments.positions.size() -1; ipos >= 0; ipos-=2, isegment--) {
+        left = segments.positions[ipos-1];
+        right = segments.positions[ipos];
+        subline = current_line.substr(0, left);
         add = false;
-        if (isegment > 0 && segments->types[isegment - 1] == l_quote) {
-            sub += colors[3];
-            add = true;
-        }
-        switch (segments->types[isegment]) {
-            case t_emptystring:
-            case t_string:
+        if (isegment > 0 && segments.stacktype[isegment - 1] == '\'')
+            quote = true;
+        switch (segments.stacktype[isegment]) {
+            case '"':
                 right += 1;
-                sub += colors[0];
+                subline += from_ascii(colors[0]);
+                add = true;
+                quote = false;
+                break;
+            case '\'':
+                subline += from_ascii(colors[3]);
                 add = true;
                 break;
-            case l_quote:
-                sub += colors[3];
-                add = true;
-                break;
-            case l_cadr:
-                sub += colors[2];
-                add = true;
-                break;
-            case t_atom: //methods
-                if (lispe->is_instruction(segments->tokens[isegment]) || checkOtherCases(segments->tokens[isegment])) {
-                    sub += colors[2];
+            case 'A': //methods
+                if (quote) {
+                    subline += from_ascii(colors[3]);
+                    quote = false;
                     add = true;
                 }
                 else {
-                    if (isegment > 0) {
-                        if (segments->tokens[isegment-1] == U"(") {
-                            sub += colors[5];
-                            add = true;
-                        }
-                        else {
-                            if (isegment > 1 && segments->tokens[isegment-2] == U"(") {
-                                sub += colors[1];
+                    if (lispe->is_instruction(segments.stack[isegment]) || checkOtherCases(segments.stack[isegment])) {
+                        subline += from_ascii(colors[2]);
+                        add = true;
+                    }
+                    else {
+                        if (isegment > 0) {
+                            if (segments.stacktype[isegment-1] == '(') {
+                                subline += from_ascii(colors[5]);
                                 add = true;
+                            }
+                            else {
+                                if (isegment > 1 && segments.stacktype[isegment-2] == '(') {
+                                    subline += from_ascii(colors[1]);
+                                    add = true;
+                                }
                             }
                         }
                     }
@@ -320,26 +384,27 @@ string lispe_editor::coloringline(string line, long current_pos, bool thread) {
                 break;
             default:
                 add = false;
+                quote = false;
         }
         
         if (add) {
             if (right > left)
-                sub += line.substr(left, right-left);
-            sub += m_current;
-            if (right < line.size())
-                sub += line.substr(right, line.size() - right);
-            line = sub;
+                subline += current_line.substr(left, right-left);
+            subline += from_ascii(m_current);
+            if (right < current_line.size())
+                subline += current_line.substr(right, current_line.size() - right);
+            current_line = subline;
         }
         
     }
     
-    if (thread)
-        delete segments;
+    line_of_code = "";
+    s_unicode_to_utf8(line_of_code, current_line);
     
     if (root != "")
-        line = root + line;
+        line_of_code = root + line_of_code;
     
-    return line;
+    return line_of_code;
 }
 
 bool lispe_editor::checkcommand(char c) {

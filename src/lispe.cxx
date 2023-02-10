@@ -14,13 +14,14 @@
 #include "lispe.h"
 #include "segmentation.h"
 #include "tools.h"
+#include "tokens.h"
 
 #ifdef UNIX
 #include <sys/resource.h>
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2022.12.6.18.15";
+static std::string version = "1.2023.2.10.10.38";
 string LispVersion() {
     return version;
 }
@@ -73,7 +74,7 @@ static u_ustring U(string x) {
 }
 //------------------------------------------------------------
 
-Delegation::Delegation() {
+Delegation::Delegation() : main_tokenizer(NULL) {
     mark = 0;
 #ifdef LISPE_WASM
     input_handler = NULL;
@@ -135,6 +136,10 @@ Delegation::~Delegation() {
     for (const auto& a: locks)
         delete a.second;
 
+    binHash<Listincode*>::iterator al;
+    for (al = straight_eval.begin(); al != straight_eval.end(); al++)
+        delete al->second;
+    
 	for (a = atom_pool.begin(); a != atom_pool.end(); a++)
         delete a->second;
 
@@ -165,6 +170,9 @@ void moduleGUI(LispE* lisp);
 //We initialize our structures
 void Delegation::initialisation(LispE* lisp) {
 
+    main_tokenizer.access = lisp->handlingutf8;
+    main_tokenizer.initialize();    
+    
     //We initialize all instructions with eval_error
     //Only those for which an instruction exists will be replaced with
     //the proper call...
@@ -183,6 +191,7 @@ void Delegation::initialisation(LispE* lisp) {
     evals[t_data] = &List::evalt_data;
     evals[t_list] = &List::evalt_list;
     evals[t_call] = &List::evalt_call;
+    evals[t_eval] = &List::eval;
 
     lisp->create_name_space(v_mainspace);
 
@@ -196,7 +205,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_set_max_stack_size, "_max_stack_size", P_ONE | P_TWO, &List::evall_set_max_stack_size);
 #endif
 
-
     set_instruction(l_void, "%__void__%", P_FULL, &List::evall_void);
     set_instruction(l_emptylist, "%__empty__%", P_ONE, &List::evall_emptylist);
     set_instruction(l_quoted, "%__quote__%", P_ONE, &List::evall_quoted);
@@ -207,46 +215,49 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_root, "__root__", P_ATLEASTONE, &List::evall_root);
     code_to_string[l_code] = U"_root";
 
-
-    set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and);
-    set_instruction(l_andvalue, "andvalue", P_ATLEASTTHREE, &List::evall_andvalue);
-    set_instruction(l_apply, "apply", P_THREE, &List::evall_apply);
-    set_instruction(l_at, "at", P_ATLEASTTHREE, &List::evall_at);
-    set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR, &List::evall_at_shape);
-    set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom);
-    set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise);
-    set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp);
+    set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and, new List_and_eval());
+    set_instruction(l_andvalue, "andvalue", P_ATLEASTTHREE, &List::evall_andvalue, new List_andvalue_eval());
+    set_instruction(l_apply, "apply", P_THREE, &List::evall_apply, new List_apply_eval());
+    set_instruction(l_at, "at", P_ATLEASTTHREE, &List::evall_at, new List_at_eval());
+    set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR, &List::evall_at_shape, new List_at_shape_eval());
+    set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom, new List_converttoatom_eval());
+    set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise, new List_atomise_eval());
+    set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp, new List_atomp_eval());
     set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
     set_instruction(l_bitand, "&", P_ATLEASTTWO, &List::evall_bitand);
-    set_instruction(l_bitandequal, "&=", P_ATLEASTTWO, &List::evall_bitandequal);
+    set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
     set_instruction(l_bitandnot, "&~", P_ATLEASTTWO, &List::evall_bitandnot);
-    set_instruction(l_bitandnotequal, "&~=", P_ATLEASTTWO, &List::evall_bitandnotequal);
+    set_instruction(l_bitandnotequal, "&~=", P_ATLEASTTHREE, &List::evall_bitandnotequal);
     set_instruction(l_bitnot, "~", P_TWO, &List::evall_bitnot);
     set_instruction(l_bitor, "|", P_ATLEASTTWO, &List::evall_bitor);
-    set_instruction(l_bitorequal, "|=", P_ATLEASTTWO, &List::evall_bitorequal);
+    set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE, &List::evall_bitorequal);
     set_instruction(l_bitxor, "^", P_ATLEASTTWO, &List::evall_bitxor);
-    set_instruction(l_bitxorequal, "^=", P_ATLEASTTWO, &List::evall_bitxorequal);
-    set_instruction(l_block, "block", P_ATLEASTONE, &List::evall_block);
-    set_instruction(l_bodies, "bodies", P_TWO, &List::evall_bodies);
+    set_instruction(l_bitxorequal, "^=", P_ATLEASTTHREE, &List::evall_bitxorequal);
+    set_instruction(l_block, "block", P_ATLEASTONE, &List::evall_block, new List_block_eval());
+    set_instruction(l_bodies, "bodies", P_TWO, &List::evall_bodies, new List_bodies_eval());
     set_instruction(l_break, "break", P_ONE, &List::evall_break);
-    set_instruction(l_cadr, "cadr", P_TWO, &List::evall_cadr);
-    set_instruction(l_car, "car", P_TWO, &List::evall_car);
-    set_instruction(l_catch, "catch", P_ATLEASTTWO, &List::evall_catch);
-    set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr);
-    set_instruction(l_check, "check", P_ATLEASTTWO, &List::evall_check);
+    set_instruction(l_cadr, "cadr", P_TWO, &List::evall_cadr, new List_cadr_eval());
+    set_instruction(l_car, "car", P_TWO, &List::evall_car, new List_car_eval());
+    set_instruction(l_catch, "catch", P_ATLEASTTWO, &List::evall_catch, new List_catch_eval());
+    set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr, new List_cdr_eval());
+    set_instruction(l_check, "check", P_ATLEASTTWO, &List::evall_check, new List_check_eval());
     set_instruction(l_compile, "loadcode", P_TWO | P_THREE, &List::evall_compile);
-    set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond);
-    set_instruction(l_cons, "cons", P_THREE, &List::evall_cons);
-    set_instruction(l_consb, "consb", P_THREE, &List::evall_consb);
-    set_instruction(l_consp, "consp", P_TWO, &List::evall_consp);
+    set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond, new List_cond_eval());
+    set_instruction(l_cons, "cons", P_THREE, &List::evall_cons, new List_cons_eval());
+    set_instruction(l_consb, "consb", P_THREE, &List::evall_consb, new List_consb_eval());
+    set_instruction(l_consp, "consp", P_TWO, &List::evall_consp, new List_consp_eval());
     set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
-    set_instruction(l_count, "count", P_THREE|P_FOUR, &List::evall_count);
-    set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp);
-    set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort);
-    set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger);
-    set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat);
-    set_instruction(l_number, "number", P_TWO, &List::evall_converttonumber);
-    set_instruction(l_string, "string", P_TWO, &List::evall_converttostring);
+    set_instruction(l_count, "count", P_THREE|P_FOUR, &List::evall_count, new List_count_eval());
+    set_instruction(l_cutlist, "cutlist", P_THREE, &List::evall_cutlist, new List_cutlist_eval());
+    set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp, new List_cyclicp_eval());
+    set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
+    set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
+    set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat, new List_converttofloat_eval());
+    set_instruction(l_complex, "complex", P_THREE, &List::evall_complex, new List_complex_eval());
+    set_instruction(l_real, "real", P_TWO, &List::evall_real, new List_real_eval());
+    set_instruction(l_imaginary, "imaginary", P_TWO, &List::evall_imaginary, new List_imaginary_eval());
+    set_instruction(l_number, "number", P_TWO, &List::evall_converttonumber, new List_number_eval());
+    set_instruction(l_string, "string", P_TWO, &List::evall_converttostring, new List_string_eval());
     set_instruction(l_data, "data", P_ATLEASTTWO, &List::evall_data);
     set_instruction(l_deflib, "deflib", P_THREE, &List::evall_deflib);
     set_instruction(l_deflibpat, "deflibpat", P_THREE, &List::evall_deflibpat);
@@ -255,177 +266,178 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_defspace, "defspace", P_TWO, &List::evall_defspace);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
-    set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTHREE, &List::evall_dictionary);
-    set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryi);
-    set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryn);
-    set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different);
-    set_instruction(l_divide, "/", P_ATLEASTTWO, &List::evall_divide);
-    set_instruction(l_divideequal, "/=", P_ATLEASTTWO, &List::evall_divideequal);
-    set_instruction(l_clone, "clone", P_TWO, &List::evall_clone);
-    set_instruction(l_elapse, "elapse", P_ATLEASTONE, &List::evall_elapse);
-    set_instruction(l_emptyp, "emptyp", P_TWO, &List::evall_emptyp);
-    set_instruction(l_eq, "eq", P_ATLEASTTHREE, &List::evall_eq);
-    set_instruction(l_equal, "=", P_THREE, &List::evall_equal);
-    set_instruction(l_eval, "eval", P_TWO, &List::evall_eval);
-    set_instruction(l_extend, "extend", P_THREE, &List::evall_extend);
-    set_instruction(l_extract, "extract", P_THREE|P_FOUR|P_FIVE|P_SIX, &List::evall_extract);
-    set_instruction(l_factorial, "!", P_TWO, &List::evall_factorial);
-    set_instruction(l_fappend, "fappend", P_THREE, &List::evall_fappend);
-    set_instruction(l_filterlist, "filterlist", P_THREE, &List::evall_filterlist);
-    set_instruction(l_stringf, "stringf", P_THREE, &List::evall_stringf);
-    set_instruction(l_takelist, "takelist", P_THREE, &List::evall_takelist);
-    set_instruction(l_droplist, "droplist", P_THREE, &List::evall_droplist);
-    set_instruction(l_flatten, "flatten", P_TWO, &List::evall_flatten);
-    set_instruction(l_flip, "flip", P_TWO, &List::evall_flip);
-    set_instruction(l_folding, "#folding", P_FOUR, &List::evall_folding);
-    set_instruction(l_fread, "fread", P_TWO, &List::evall_fread);
-    set_instruction(l_fwrite, "fwrite", P_THREE, &List::evall_fwrite);
-    set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater);
-    set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal);
-    set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if);
-    set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife);
-    set_instruction(l_in, "in", P_THREE, &List::evall_in);
-    set_instruction(l_infix, "infix", P_TWO, &List::evall_infix);
+    set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTHREE, &List::evall_dictionary, new List_dictionary_eval());
+    set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryi, new List_dictionaryi_eval());
+    set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryn, new List_dictionaryn_eval());
+    set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different, new List_different_eval());
+    set_instruction(l_divide, "/", P_ATLEASTTWO, &List::evall_divide, new List_dividen());
+    set_instruction(l_divideequal, "/=", P_ATLEASTTHREE, &List::evall_divideequal);
+    set_instruction(l_clone, "clone", P_TWO, &List::evall_clone, new List_clone_eval());
+    set_instruction(l_elapse, "elapse", P_ATLEASTONE, &List::evall_elapse, new List_elapse_eval());
+    set_instruction(l_emptyp, "emptyp", P_TWO, &List::evall_emptyp, new List_emptyp_eval());
+    set_instruction(l_eq, "eq", P_ATLEASTTHREE, &List::evall_eq, new List_eq_eval());
+    set_instruction(l_equal, "=", P_THREE, &List::evall_equal, new List_equal_eval());
+    set_instruction(l_eval, "eval", P_TWO, &List::evall_eval, new List_eval_eval());
+    set_instruction(l_extend, "extend", P_THREE, &List::evall_extend, new List_extend_eval());
+    set_instruction(l_extract, "extract", P_THREE|P_FOUR|P_FIVE|P_SIX, &List::evall_extract, new List_extract_eval());
+    set_instruction(l_factorial, "!", P_TWO, &List::evall_factorial, new List_factorial_eval());
+    set_instruction(l_fappend, "fappend", P_THREE, &List::evall_fappend, new List_fappend_eval());
+    set_instruction(l_stringf, "stringf", P_THREE, &List::evall_stringf, new List_stringf_eval());
+    set_instruction(l_filterlist, "filterlist", P_THREE | P_FOUR, &List::evall_filterlist, new List_filterlist_eval());
+    set_instruction(l_droplist, "droplist", P_THREE | P_FOUR, &List::evall_droplist, new List_droplist_eval());
+    set_instruction(l_takelist, "takelist", P_THREE | P_FOUR, &List::evall_takelist, new List_takelist_eval());
+    set_instruction(l_filtercar, "filtercar", P_THREE, &List::evall_filterlist, new List_filterlist_eval());
+    set_instruction(l_dropcar, "dropcar", P_THREE, &List::evall_droplist, new List_droplist_eval());
+    set_instruction(l_takecar, "takecar", P_THREE, &List::evall_takelist, new List_takelist_eval());
+    set_instruction(l_flatten, "flatten", P_TWO, &List::evall_flatten, new List_flatten_eval());
+    set_instruction(l_flip, "flip", P_TWO, &List::evall_flip, new List_flip_eval());
+    set_instruction(l_fread, "fread", P_TWO, &List::evall_fread, new List_fread_eval());
+    set_instruction(l_fwrite, "fwrite", P_THREE, &List::evall_fwrite, new List_fwrite_eval());
+    set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater, new List_greater_eval());
+    set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal, new List_greaterorequal_eval());
+    set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if, new List_if_eval());
+    set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife, new List_ife_eval());
+    set_instruction(l_in, "in", P_THREE, &List::evall_in, new List_in_eval());
+    set_instruction(l_infix, "infix", P_TWO, &List::evall_infix, new List_infix_eval());
 #ifndef LISPE_WASM
     set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
 #endif
-    set_instruction(l_insert, "insert", P_THREE | P_FOUR, &List::evall_insert);
+    set_instruction(l_insert, "insert", P_THREE | P_FOUR, &List::evall_insert, new List_insert_eval());
     set_instruction(l_addr_, "addr_", P_TWO, &List::evall_addr_);
-    set_instruction(l_shorts, "shorts", P_ATLEASTONE, &List::evall_shorts);
-    set_instruction(l_integers, "integers", P_ATLEASTONE, &List::evall_integers);
-    set_instruction(l_irange, "irange", P_THREE | P_FOUR, &List::evall_irange);
-    set_instruction(l_irangein, "irangein", P_THREE | P_FOUR, &List::evall_irangein);
-    set_instruction(l_join, "join", P_TWO | P_THREE, &List::evall_join);
-    set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE, &List::evall_key);
-    set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE, &List::evall_keyi);
-    set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE, &List::evall_keyn);
-    set_instruction(l_keys, "keys@", P_TWO, &List::evall_keys);
-    set_instruction(l_label, "label", P_THREE, &List::evall_label);
+    set_instruction(l_shorts, "shorts", P_ATLEASTONE, &List::evall_shorts, new List_shorts_eval());
+    set_instruction(l_integers, "integers", P_ATLEASTONE, &List::evall_integers, new List_integers_eval());
+    set_instruction(l_irange, "irange", P_THREE | P_FOUR, &List::evall_irange, new List_irange_eval());
+    set_instruction(l_irangein, "irangein", P_THREE | P_FOUR, &List::evall_irangein, new List_irangein_eval());
+    set_instruction(l_join, "join", P_TWO | P_THREE, &List::evall_join, new List_join_eval());
+    set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE, &List::evall_key, new List_key_eval());
+    set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE, &List::evall_keyi, new List_keyi_eval());
+    set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE, &List::evall_keyn, new List_keyn_eval());
+    set_instruction(l_keys, "keys@", P_TWO, &List::evall_keys, new List_keys_eval());
+    set_instruction(l_label, "label", P_THREE, &List::evall_label, new List_label_eval());
     set_instruction(l_lambda, "λ", P_ATLEASTTHREE, &List::evall_lambda);
-    set_instruction(l_last, "last", P_TWO, &List::evall_last);
-    set_instruction(l_leftshift, "<<", P_ATLEASTTHREE, &List::evall_leftshift);
-    set_instruction(l_leftshiftequal, "<<=", P_ATLEASTTWO, &List::evall_leftshiftequal);
+    set_instruction(l_last, "last", P_TWO, &List::evall_last, new List_last_eval());
+    set_instruction(l_leftshift, "<<", P_ATLEASTTWO, &List::evall_leftshift, new List_leftshift_eval());
+    set_instruction(l_leftshiftequal, "<<=", P_ATLEASTTHREE, &List::evall_leftshiftequal);
     set_instruction(l_link, "link", P_THREE, &List::evall_link);
-    set_instruction(l_list, "list", P_ATLEASTONE, &List::evall_list);
-    set_instruction(l_llist, "llist", P_ATLEASTONE, &List::evall_llist);
-    set_instruction(l_listand, "&&&", P_THREE, &List::evall_listand);
-    set_instruction(l_listor, "|||", P_THREE, &List::evall_listor);
-    set_instruction(l_listxor, "^^^", P_THREE, &List::evall_listxor);
-    set_instruction(l_to_list, "to_list", P_TWO | P_THREE, &List::evall_to_list);
-    set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist);
-    set_instruction(l_let, "let", P_THREE, &List::evall_let);
+    set_instruction(l_list, "list", P_ATLEASTONE, &List::evall_list, new List_list_eval());
+    set_instruction(l_llist, "llist", P_ATLEASTONE, &List::evall_llist, new List_llist_eval());
+    set_instruction(l_listand, "&&&", P_ATLEASTTWO, &List::evall_listand, new List_listand_eval());
+    set_instruction(l_listor, "|||", P_ATLEASTTWO, &List::evall_listor, new List_listor_eval());
+    set_instruction(l_listxor, "^^^", P_ATLEASTTWO, &List::evall_listxor, new List_listxor_eval());
+    set_instruction(l_to_list, "to_list", P_TWO | P_THREE, &List::evall_to_list, new List_to_list_eval());
+    set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist, new List_to_llist_eval());
+    set_instruction(l_let, "let", P_THREE, &List::evall_let, new List_let_eval());
     set_instruction(l_load, "load", P_TWO | P_THREE, &List::evall_load);
-    set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock);
-    set_instruction(l_loop, "loop", P_ATLEASTFOUR, &List::evall_loop);
-    set_instruction(l_mloop, "mloop", P_ATLEASTFOUR, &List::mloop);
-    set_instruction(l_lloop, "lloop", P_ATLEASTFOUR, &List::lloop);
-    set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE, &List::evall_loopcount);
-    set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare);
-    set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower);
-    set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal);
-    set_instruction(l_maplist, "maplist", P_THREE | P_FOUR, &List::evall_maplist);
-    set_instruction(l_mapcar, "mapcar", P_THREE, &List::evall_maplist);
-    set_instruction(l_mapping, "#mapping", P_THREE, &List::evall_mapping);
-    set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark);
-    set_instruction(l_matrix, "matrix", P_TWO | P_THREE | P_FOUR, &List::evall_matrix);
-    set_instruction(l_matrix_float, "matrix_float", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_float);
-    set_instruction(l_minmax, "minmax", P_ATLEASTTWO, &List::evall_minmax);
-    set_instruction(l_max, "max", P_ATLEASTTWO, &List::evall_max);
-    set_instruction(l_maybe, "maybe", P_ATLEASTTWO, &List::evall_maybe);
-    set_instruction(l_min, "min", P_ATLEASTTWO, &List::evall_min);
-    set_instruction(l_minus, "-", P_ATLEASTTWO, &List::evall_minus);
-    set_instruction(l_minusequal, "-=", P_ATLEASTTWO, &List::evall_minusequal);
-    set_instruction(l_mod, "%", P_ATLEASTTWO, &List::evall_mod);
-    set_instruction(l_modequal, "%=", P_ATLEASTTWO, &List::evall_modequal);
-    set_instruction(l_multiply, "*", P_ATLEASTTWO, &List::evall_multiply);
-    set_instruction(l_multiplyequal, "*=", P_ATLEASTTWO, &List::evall_multiplyequal);
-    set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE, &List::evall_ncheck);
-    set_instruction(l_nconc, "nconc", P_ATLEASTONE, &List::evall_nconc);
-    set_instruction(l_nconcn, "nconcn", P_ATLEASTONE, &List::evall_nconcn);
-    set_instruction(l_neq, "neq", P_ATLEASTTHREE, &List::evall_neq);
-    set_instruction(l_not, "not", P_TWO, &List::evall_not);
-    set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp);
-    set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp);
-    set_instruction(l_floats, "floats", P_ATLEASTONE, &List::evall_floats);
-    set_instruction(l_numbers, "numbers", P_ATLEASTONE, &List::evall_numbers);
-    set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or);
-    set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe);
-    set_instruction(l_plus, "+", P_ATLEASTTWO, &List::evall_plus);
-    set_instruction(l_plusequal, "+=", P_ATLEASTTWO, &List::evall_plusequal);
-    set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop);
-    set_instruction(l_popfirst, "popfirst", P_TWO, &List::evall_popfirst);
-    set_instruction(l_poplast, "poplast", P_TWO, &List::evall_poplast);
-    set_instruction(l_power, "^^", P_ATLEASTTHREE, &List::evall_power);
+    set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock, new List_lock_eval());
+    set_instruction(l_loop, "loop", P_ATLEASTFOUR, &List::evall_loop, new List_loop_eval());
+    set_instruction(l_mloop, "mloop", P_ATLEASTFOUR, &List::mloop, new List_mloop_eval());
+    set_instruction(l_lloop, "lloop", P_ATLEASTFOUR, &List::lloop, new List_lloop_eval());
+    set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE, &List::evall_loopcount, new List_loopcount_eval());
+    set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare, new List_compare_eval());
+    set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower, new List_lower_eval());
+    set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal, new List_lowerorequal_eval());
+    set_instruction(l_maplist, "maplist", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
+    set_instruction(l_mapcar, "mapcar", P_THREE, &List::evall_maplist, new List_maplist_eval());
+    set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark, new List_mark_eval());
+    set_instruction(l_matrix, "matrix", P_TWO | P_THREE | P_FOUR, &List::evall_matrix, new List_matrix_eval());
+    set_instruction(l_matrix_float, "matrix_float", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_float, new List_matrix_float_eval());
+    set_instruction(l_minmax, "minmax", P_ATLEASTTWO, &List::evall_minmax, new List_minmax_eval());
+    set_instruction(l_max, "max", P_ATLEASTTWO, &List::evall_max, new List_max_eval());
+    set_instruction(l_maybe, "maybe", P_ATLEASTTWO, &List::evall_maybe, new List_maybe_eval());
+    set_instruction(l_min, "min", P_ATLEASTTWO, &List::evall_min, new List_min_eval());
+    set_instruction(l_minus, "-", P_ATLEASTTWO, &List::evall_minus, new List_minusn());
+    set_instruction(l_minusequal, "-=", P_ATLEASTTHREE, &List::evall_minusequal);
+    set_instruction(l_mod, "%", P_ATLEASTTWO, &List::evall_mod, new List_mod_eval());
+    set_instruction(l_modequal, "%=", P_ATLEASTTHREE, &List::evall_modequal);
+    set_instruction(l_multiply, "*", P_ATLEASTTWO, &List::evall_multiply, new List_multiplyn());
+    set_instruction(l_multiplyequal, "*=", P_ATLEASTTHREE, &List::evall_multiplyequal);
+    set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE, &List::evall_ncheck, new List_ncheck_eval());
+    set_instruction(l_nconc, "nconc", P_ATLEASTONE, &List::evall_nconc, new List_nconc_eval());
+    set_instruction(l_nconcn, "nconcn", P_ATLEASTONE, &List::evall_nconcn, new List_nconcn_eval());
+    set_instruction(l_neq, "neq", P_ATLEASTTHREE, &List::evall_neq, new List_neq_eval());
+    set_instruction(l_not, "¬", P_TWO, &List::evall_not, new List_not_eval());
+    set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp, new List_nullp_eval());
+    set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp, new List_numberp_eval());
+    set_instruction(l_floats, "floats", P_ATLEASTONE, &List::evall_floats, new List_floats_eval());
+    set_instruction(l_numbers, "numbers", P_ATLEASTONE, &List::evall_numbers, new List_numbers_eval());
+    set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or, new List_or_eval());
+    set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe, new List_pipe_eval());
+    set_instruction(l_plus, "+", P_ATLEASTTWO, &List::evall_plus, new List_plusn());
+    set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
+    set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop, new List_pop_eval());
+    set_instruction(l_popfirst, "popfirst", P_TWO, &List::evall_popfirst, new List_popfirst_eval());
+    set_instruction(l_poplast, "poplast", P_TWO, &List::evall_poplast, new List_poplast_eval());
+    set_instruction(l_power, "^^", P_ATLEASTTWO, &List::evall_power);
     set_instruction(l_powerequal, "^^=", P_ATLEASTTHREE, &List::evall_powerequal);
-    set_instruction(l_prettify, "prettify", P_TWO | P_THREE, &List::evall_prettify);
-    set_instruction(l_print, "print", P_ATLEASTONE, &List::evall_print);
-    set_instruction(l_printerr, "printerr", P_ATLEASTONE, &List::evall_printerr);
-    set_instruction(l_printerrln, "printerrln", P_ATLEASTONE, &List::evall_printerrln);
-    set_instruction(l_println, "println", P_ATLEASTONE, &List::evall_println);
-    set_instruction(l_product, "product", P_TWO, &List::evall_product);
-    set_instruction(l_push, "push", P_ATLEASTTHREE, &List::evall_push);
-    set_instruction(l_pushtrue, "pushtrue", P_ATLEASTTHREE, &List::evall_pushtrue);
-    set_instruction(l_pushfirst, "pushfirst", P_ATLEASTTHREE, &List::evall_pushfirst);
-    set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE, &List::evall_pushlast);
+    set_instruction(l_prettify, "prettify", P_TWO | P_THREE, &List::evall_prettify, new List_prettify_eval());
+    set_instruction(l_print, "print", P_ATLEASTONE, &List::evall_print, new List_print_eval());
+    set_instruction(l_printerr, "printerr", P_ATLEASTONE, &List::evall_printerr, new List_printerr_eval());
+    set_instruction(l_printerrln, "printerrln", P_ATLEASTONE, &List::evall_printerrln, new List_printerrln_eval());
+    set_instruction(l_println, "println", P_ATLEASTONE, &List::evall_println, new List_println_eval());
+    set_instruction(l_product, "∏", P_TWO, &List::evall_product, new List_product_eval());
+    set_instruction(l_push, "push", P_ATLEASTTHREE, &List::evall_push, new List_push_eval());
+    set_instruction(l_pushtrue, "pushtrue", P_ATLEASTTHREE, &List::evall_pushtrue, new List_pushtrue_eval());
+    set_instruction(l_pushfirst, "pushfirst", P_ATLEASTTHREE, &List::evall_pushfirst, new List_pushfirst_eval());
+    set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE, &List::evall_pushlast, new List_pushlast_eval());
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
-    set_instruction(l_range, "range", P_FOUR, &List::evall_range);
-    set_instruction(l_rangein, "rangein", P_FOUR, &List::evall_rangein);
-    set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark);
+    set_instruction(l_range, "range", P_FOUR, &List::evall_range, new List_range_eval());
+    set_instruction(l_rangein, "rangein", P_FOUR, &List::evall_rangein, new List_rangein_eval());
+    set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark, new List_resetmark_eval());
     set_instruction(l_return, "return", P_ONE | P_TWO , &List::evall_return);
-    set_instruction(l_replaceall, "replaceall", P_FOUR, &List::evall_replaceall);
-    set_instruction(l_reverse, "reverse", P_TWO | P_THREE, &List::evall_reverse);
-    set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch);
-    set_instruction(l_rightshift, ">>", P_ATLEASTTHREE, &List::evall_rightshift);
-    set_instruction(l_rightshiftequal, ">>=", P_ATLEASTTWO, &List::evall_rightshiftequal);
-    set_instruction(l_rotate, "rotate", P_TWO | P_THREE, &List::evall_rotate);
-    set_instruction(l_search, "find", P_THREE|P_FOUR, &List::evall_search);
-    set_instruction(l_searchall, "findall", P_THREE|P_FOUR, &List::evall_searchall);
-    set_instruction(l_select, "select", P_ATLEASTTWO, &List::evall_select);
+    set_instruction(l_replaceall, "replaceall", P_FOUR, &List::evall_replaceall, new List_replaceall_eval());
+    set_instruction(l_reverse, "⌽", P_TWO | P_THREE, &List::evall_reverse, new List_reverse_eval());
+    set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch, new List_revertsearch_eval());
+    set_instruction(l_rightshift, ">>", P_ATLEASTTWO, &List::evall_rightshift, new List_rightshift_eval());
+    set_instruction(l_rightshiftequal, ">>=", P_ATLEASTTHREE, &List::evall_rightshiftequal);
+    set_instruction(l_rotate, "rotate", P_TWO | P_THREE, &List::evall_rotate, new List_rotate_eval());
+    set_instruction(l_search, "find", P_THREE|P_FOUR, &List::evall_search, new List_search_eval());
+    set_instruction(l_searchall, "findall", P_THREE|P_FOUR, &List::evall_searchall, new List_searchall_eval());
+    set_instruction(l_select, "select", P_ATLEASTTWO, &List::evall_select, new List_select_eval());
     set_instruction(l_self, "self", P_ATLEASTONE, &List::eval_call_self);
-    set_instruction(l_set_range, "setrange", P_FOUR|P_FIVE|P_SIX|P_SEVEN, &List::evall_set_range);
-    set_instruction(l_set, "set", P_ATLEASTONE, &List::evall_set);
-    set_instruction(l_sets, "sets", P_ATLEASTONE, &List::evall_sets);
-    set_instruction(l_seti, "seti", P_ATLEASTONE, &List::evall_seti);
-    set_instruction(l_setn, "setn", P_ATLEASTONE, &List::evall_setn);
-    set_instruction(l_set_at, "set@", P_ATLEASTTHREE, &List::evall_set_at);
-    set_instruction(l_set_const, "setconst", P_THREE, &List::evall_set_const);
-    set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE, &List::evall_set_shape);
-    set_instruction(l_setg, "setg", P_THREE, &List::evall_setg);
-    set_instruction(l_setq, "setq", P_THREE, &List::evall_setq);
-    set_instruction(l_seth, "seth", P_THREE, &List::evall_seth);
-    set_instruction(l_sign, "sign", P_TWO, &List::evall_sign);
-    set_instruction(l_signp, "signp", P_TWO, &List::evall_signp);
-    set_instruction(l_size, "size", P_TWO, &List::evall_size);
-    set_instruction(l_sleep, "sleep", P_TWO, &List::evall_sleep);
-    set_instruction(l_sort, "sort", P_THREE, &List::evall_sort);
-    set_instruction(l_space, "space", P_ATLEASTTHREE, &List::evall_space);
-    set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp);
-    set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings);
+    set_instruction(l_set_range, "setrange", P_FOUR|P_FIVE|P_SIX|P_SEVEN, &List::evall_set_range, new List_set_range_eval());
+    set_instruction(l_set, "set", P_ATLEASTONE, &List::evall_set, new List_set_eval());
+    set_instruction(l_sets, "sets", P_ATLEASTONE, &List::evall_sets, new List_sets_eval());
+    set_instruction(l_seti, "seti", P_ATLEASTONE, &List::evall_seti, new List_seti_eval());
+    set_instruction(l_setn, "setn", P_ATLEASTONE, &List::evall_setn, new List_setn_eval());
+    set_instruction(l_set_at, "set@", P_ATLEASTTHREE, &List::evall_set_at, new List_set_at_eval());
+    set_instruction(l_set_const, "setconst", P_THREE, &List::evall_set_const, new List_set_const_eval());
+    set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE, &List::evall_set_shape, new List_set_shape_eval());
+    set_instruction(l_setg, "setg", P_THREE, &List::evall_setg, new List_setg_eval());
+    set_instruction(l_setq, "setq", P_THREE, &List::evall_setq, new List_setq_eval());
+    set_instruction(l_seth, "seth", P_THREE, &List::evall_seth, new List_seth_eval());
+    set_instruction(l_sign, "sign", P_TWO, &List::evall_sign, new List_sign_eval());
+    set_instruction(l_signp, "signp", P_TWO, &List::evall_signp, new List_signp_eval());
+    set_instruction(l_size, "size", P_TWO, &List::evall_size, new List_size_eval());
+    set_instruction(l_sleep, "sleep", P_TWO, &List::evall_sleep, new List_sleep_eval());
+    set_instruction(l_sort, "sort", P_THREE, &List::evall_sort, new List_sort_eval());
+    set_instruction(l_space, "space", P_ATLEASTTHREE, &List::evall_space, new List_space_eval());
+    set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp, new List_stringp_eval());
+    set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings, new List_strings_eval());
     set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
-    set_instruction(l_sum, "sum", P_TWO, &List::evall_sum);
-    set_instruction(l_tensor, "tensor", P_ATLEASTTWO, &List::evall_tensor);
-    set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO, &List::evall_tensor_float);
+    set_instruction(l_sum, "∑", P_TWO, &List::evall_sum, new List_sum_eval());
+    set_instruction(l_tensor, "tensor", P_ATLEASTTWO, &List::evall_tensor, new List_tensor_eval());
+    set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO, &List::evall_tensor_float, new List_tensor_float_eval());
     set_instruction(l_threadclear, "threadclear", P_ONE | P_TWO, &List::evall_threadclear);
     set_instruction(l_threadretrieve, "threadretrieve", P_ONE | P_TWO, &List::evall_threadretrieve);
     set_instruction(l_threadstore, "threadstore", P_THREE, &List::evall_threadstore);
     set_instruction(l_threadspace, "threadspace", P_ATLEASTONE, &List::evall_threadspace);
     set_instruction(l_throw, "throw", P_TWO, &List::evall_throw);
     set_instruction(l_trace, "trace", P_ONE | P_TWO, &List::evall_trace);
-    set_instruction(l_transpose, "transpose", P_TWO, &List::evall_transpose);
-    set_instruction(l_heap, "heap", P_ATLEASTONE, &List::evall_heap);
-    set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger);
-    set_instruction(l_type, "type", P_TWO, &List::evall_type);
-    set_instruction(l_unique, "unique", P_TWO, &List::evall_unique);
+    set_instruction(l_transpose, "⍉", P_TWO, &List::evall_transpose, new List_transpose_eval());
+    set_instruction(l_heap, "heap", P_ATLEASTONE, &List::evall_heap, new List_heap_eval());
+    set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger, new List_trigger_eval());
+    set_instruction(l_type, "type", P_TWO, &List::evall_type, new List_type_eval());
+    set_instruction(l_unique, "unique", P_TWO, &List::evall_unique, new List_unique_eval());
     set_instruction(l_use, "use", P_TWO | P_THREE, &List::evall_use);
-    set_instruction(l_values, "values@", P_TWO, &List::evall_values);
-    set_instruction(l_wait, "wait", P_ONE, &List::evall_wait);
-    set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton);
-    set_instruction(l_while, "while", P_ATLEASTTHREE, &List::evall_while);
-    set_instruction(l_xor, "xor", P_ATLEASTTHREE, &List::evall_xor);
-    set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop);
-    set_instruction(l_zip, "zip", P_ATLEASTTHREE, &List::evall_zip);
-    set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith);
+    set_instruction(l_values, "values@", P_TWO, &List::evall_values, new List_values_eval());
+    set_instruction(l_wait, "wait", P_ONE, &List::evall_wait, new List_wait_eval());
+    set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton, new List_waiton_eval());
+    set_instruction(l_while, "while", P_ATLEASTTHREE, &List::evall_while, new List_while_eval());
+    set_instruction(l_xor, "xor", P_ATLEASTTHREE, &List::evall_xor, new List_xor_eval());
+    set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop, new List_zerop_eval());
+    set_instruction(l_zip, "zip", P_ATLEASTTHREE, &List::evall_zip, new List_zip_eval());
+    set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith, new List_zipwith_eval());
 
 #ifdef MACDEBUG
     set_instruction(l_debug_function, "f_debug", P_FULL, &List::List::evall_debug_function);
@@ -443,7 +455,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_for, "for", P_FOUR, &List::evall_for_cps);
     set_instruction(l_map, "map", P_THREE, &List::evall_map_cps);
     set_instruction(l_repeat, "repeat", P_TWO, &List::evall_repeat_cps);
-    set_instruction(l_replicate, "replicate", P_THREE, &List::evall_replicate);
+    set_instruction(l_replicate, "replicate", P_THREE, &List::evall_replicate, new List_replicate_eval());
     set_instruction(l_scanl, "scanl", P_FOUR, &List::evall_scanl_cps);
     set_instruction(l_scanl1, "scanl1", P_THREE, &List::evall_scanl1_cps);
     set_instruction(l_scanr, "scanr", P_FOUR, &List::evall_scanr_cps);
@@ -453,26 +465,27 @@ void Delegation::initialisation(LispE* lisp) {
 
     
     //APL-like
-    set_instruction(l_innerproduct, ".", P_FIVE, &List::evall_innerproduct);
-    set_instruction(l_outerproduct, "°", P_FOUR, &List::evall_outerproduct);
-    set_instruction(l_iota, "iota", P_ATLEASTTWO, &List::evall_iota);
-    set_instruction(l_invert, "invert", P_TWO | P_THREE, &List::evall_invert);
-    set_instruction(l_solve, "solve", P_THREE, &List::evall_solve);
-    set_instruction(l_determinant, "determinant", P_TWO, &List::evall_determinant);
-    set_instruction(l_ludcmp, "ludcmp", P_TWO, &List::evall_ludcmp);
-    set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb);
-    set_instruction(l_iota0, "iota0", P_ATLEASTTWO, &List::evall_iota0);
-    set_instruction(l_irank, "irank", P_ATLEASTTHREE, &List::evall_irank);
-    set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce);
-    set_instruction(l_scan, "scan", P_THREE, &List::evall_scan);
-    set_instruction(l_backreduce, "backreduce", P_TWO | P_THREE, &List::evall_backreduce);
-    set_instruction(l_backscan, "backscan", P_THREE, &List::evall_backscan);
-    set_instruction(l_rank, "rank", P_ATLEASTTWO, &List::evall_rank);
-    set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero);
-    set_instruction(l_rho, "rho", P_ATLEASTTWO, &List::evall_rho);
-    set_instruction(l_member, "member", P_THREE, &List::evall_member);
-    set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate);
-    
+    set_instruction(l_innerproduct, ".", P_FIVE, &List::evall_innerproduct, new List_innerproduct_eval());
+    set_instruction(l_outerproduct, "°", P_FOUR, &List::evall_outerproduct, new List_outerproduct_eval());
+    set_instruction(l_iota, "⍳", P_ATLEASTTWO, &List::evall_iota, new List_iota_eval());
+    set_instruction(l_invert, "⌹", P_TWO | P_THREE, &List::evall_invert, new List_invert_eval());
+    set_instruction(l_solve, "solve", P_THREE, &List::evall_solve, new List_solve_eval());
+    set_instruction(l_determinant, "determinant", P_TWO, &List::evall_determinant, new List_determinant_eval());
+    set_instruction(l_ludcmp, "ludcmp", P_TWO, &List::evall_ludcmp, new List_ludcmp_eval());
+    set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb, new List_lubksb_eval());
+    set_instruction(l_iota0, "⍳0", P_ATLEASTTWO, &List::evall_iota0, new List_iota0_eval());
+    set_instruction(l_irank, "irank", P_ATLEASTTHREE, &List::evall_irank, new List_irank_eval());
+    set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce, new List_reduce_eval());
+    set_instruction(l_scan, "scan", P_THREE, &List::evall_scan, new List_scan_eval());
+    set_instruction(l_backreduce, "⌿", P_TWO | P_THREE, &List::evall_backreduce, new List_backreduce_eval());
+    set_instruction(l_backscan, "⍀", P_THREE, &List::evall_backscan, new List_backscan_eval());
+    set_instruction(l_rank, "⍤", P_ATLEASTTWO, &List::evall_rank, new List_rank_eval());
+    set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero, new List_equalonezero_eval());
+    set_instruction(l_rho, "⍴", P_ATLEASTTWO, &List::evall_rho, new List_rho_eval());
+    set_instruction(l_member, "∈", P_THREE, &List::evall_member, new List_member_eval());
+    set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate, new List_concatenate_eval());
+
+
 
     //The void function
     lisp->void_function = new Listincode;
@@ -572,6 +585,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_floats] = U"floats_";
     code_to_string[t_numbers] = U"numbers_";
     code_to_string[t_integer] = U"integer_";
+    code_to_string[t_complex] = U"complex_";
     code_to_string[t_short] = U"short_";
     code_to_string[t_strings] = U"strings_";
     code_to_string[t_integers] = U"integers_";
@@ -667,8 +681,7 @@ void Delegation::initialisation(LispE* lisp) {
     _ONE = lisp->provideConstinteger(1);
     _TWO = lisp->provideConstinteger(2);
     _MINUSONE = lisp->provideConstinteger(-1);
-    
-    
+        
     _COMPARE_BOOLEANS[0] = _ONE;
     _COMPARE_BOOLEANS[1] = _ZERO;
     _COMPARE_BOOLEANS[2] = _MINUSONE;
@@ -677,8 +690,12 @@ void Delegation::initialisation(LispE* lisp) {
     _NUMERICAL_BOOLEANS[0] = _ZERO;
     _NUMERICAL_BOOLEANS[1] = _ONE;
 
-    lisp->_BOOLEANS[0] = _NULL;
-    lisp->_BOOLEANS[1] = _TRUE;
+    lisp->_BOOLEANS[0][0] = _NULL;
+    lisp->_BOOLEANS[0][1] = _TRUE;
+    lisp->_BOOLEANS[1][0] = _ZERO;
+    lisp->_BOOLEANS[1][1] = _ONE;
+    
+    lisp->select_bool_as_one = false;
 
     //On crée un espace global dans la pile (la fonction associée est _NUL)
     lisp->push(_NULL);
@@ -696,6 +713,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_float);
     provideAtomType(t_floats);
     provideAtomType(t_integer);
+    provideAtomType(t_complex);
     provideAtomType(t_short);
     provideAtomType(t_shorts);
     provideAtomType(t_strings);
@@ -730,6 +748,7 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_number, _NULL), t_number, v_null);
     recordingData(lisp->create_instruction(t_short, _NULL), t_short, v_null);
     recordingData(lisp->create_instruction(t_integer, _NULL), t_integer, v_null);
+    recordingData(lisp->create_instruction(t_complex, _NULL), t_complex, v_null);
     recordingData(lisp->create_instruction(t_numbers, _NULL), t_numbers, v_null);
     recordingData(lisp->create_instruction(t_strings, _NULL), t_strings, v_null);
     recordingData(lisp->create_instruction(t_integers, _NULL), t_integers, v_null);
@@ -759,7 +778,11 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce @ as a substitute to at
     w = U"@";
     string_to_code[w] = l_at;
-    
+
+    //We introduce nth as a substitute to at (as in Common Lisp)
+    w = U"nth";
+    string_to_code[w] = l_at;
+
     //We introduce @@ as a substitute to extract
     w = U"@@";
     string_to_code[w] = l_extract;
@@ -776,6 +799,10 @@ void Delegation::initialisation(LispE* lisp) {
     w = U"set@@@";
     string_to_code[w] = l_set_shape;
 
+    //We introduce dotimes as a substitute to loopcount (Common Lisp)
+    w = U"dotimes";
+    string_to_code[w] = l_loopcount;
+    
     //We introduce containerkeys as a substitute to keys@
     w = U"containerkeys";
     string_to_code[w] = l_keys;
@@ -813,47 +840,46 @@ void Delegation::initialisation(LispE* lisp) {
     w = U"-//";
     string_to_code[w] = l_backreduce;
 
-    w = U("⌿");
+    w = U("backreduce");
     string_to_code[w] = l_backreduce;
 
     w = U"-\\\\";
     string_to_code[w] = l_backscan;
 
-    w = U("⍀");
+    w = U("backscan");
     string_to_code[w] = l_backscan;
 
-    w = U("⍳");
+    w = U("iota");
     string_to_code[w] = l_iota;
 
-    w = U("⍳0");
+    w = U("iota0");
     string_to_code[w] = l_iota0;
     
-    w = U("⍴");
+    w = U("rho");
     string_to_code[w] = l_rho;
     
-    w = U("⍉");
+    w = U("transpose");
     string_to_code[w] = l_transpose;
 
-
-    w = U("⌽");
+    w = U("reverse");
     string_to_code[w] = l_reverse;
 
-    w = U("¬");
+    w = U("not");
     string_to_code[w] = l_not;
 
-    w = U("∑");
+    w = U("sum");
     string_to_code[w] = l_sum;
 
-    w = U("∏");
+    w = U("product");
     string_to_code[w] = l_product;
 
-    w = U("⌹");
+    w = U("invert");
     string_to_code[w] = l_invert;
 
-    w = U("⍤");
+    w = U("rank");
     string_to_code[w] = l_rank;
     
-    w = U("∈");
+    w = U("member");
     string_to_code[w] = l_member;
     
     //Small tip, to avoid problems
@@ -994,7 +1020,8 @@ void LispE::cleaning() {
     }
 }
 
-LispE::LispE(LispE* lisp, List* function, List* body) {
+LispE::LispE(LispE* lisp, List* function, List* body) : segmenter(lisp->handlingutf8){
+	current_path_set = true;
     depth_stack = 0;
     current_space = 0;
     void_function = lisp->void_function;
@@ -1004,19 +1031,23 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
     
     check_thread_stack = false;
 
-    _BOOLEANS[0] = delegation->_NULL;
-    _BOOLEANS[1] = delegation->_TRUE;
+    _BOOLEANS[0][0] = delegation->_NULL;
+    _BOOLEANS[0][1] = delegation->_TRUE;
+    _BOOLEANS[1][0] = delegation->_ZERO;
+    _BOOLEANS[1][1] = delegation->_ONE;
+    
+    select_bool_as_one = false;
+    
     id_thread = delegation->id_pool++;
 
     //For threads, the stack limit is much smaller
     max_stack_size = 1000;
 
-
     thread_ancestor = lisp;
 
     clean_utf8 = false;
     handlingutf8 = lisp->handlingutf8;
-
+    
     isThread = true;
     trace = lisp->trace;
 
@@ -1054,390 +1085,290 @@ LispE::LispE(LispE* lisp, List* function, List* body) {
  code (line)
  */
 
-lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
-    static uchar stops[172];
-    static bool init = false;
-    long idx;
-    if (!init) {
-        init = true;
-        memset(stops, 0, 172);
-        for (idx = 0; idx <= 32; idx++) {
-            stops[idx] = true;
+//we check cadr as a token. It requires a specific processing
+//and it must be identified beforehand
+static inline bool checkcadr(u_ustring& l, long sz) {
+    if (sz > 3 && l[0] == 'c' && l.back() == 'r') {
+        sz--;
+        for (short i = 1; i < sz; i++) {
+            if (l[i] != 'a' && l[i] != 'd')
+                return false;
         }
-
-        stops['?'] = true;
-        stops['('] = true;
-        stops[')'] = true;
-        stops[':'] = true;
-        stops['"'] = true;
-        stops['['] = true;
-        stops[']'] = true;
-        stops['{'] = true;
-        stops['}'] = true;
-
-        stops[39] = true;
-        stops[171] = true;
+        return true;
     }
+    return false;
+}
 
-    int16_t string_end;
-    long sz = code.size();
-    long i, current_i;
+lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
+    u_ustring buffer;
+
+    long line_number = 0;
+
+    long nb_parentheses = 0;
+    long nb_braces = 0;
+    long nb_brackets = 0;
+    long culprit;
+    
+    int16_t lc = 0;
     int in_quote = 0;
-    int nb_parentheses = 0;
-    int nb_braces = 0;
-    int nb_brackets = 0;
-    //The first line of the code is 1
-    long line_number = 1;
-    long culprit = -1;
-    u_uchar c, nxt;
-    char add = delegation->add_to_listing;
-    lisp_code lc;
-    string current_line;
-    string tampon;
-    for (i = 0; i < sz; i++) {
-        string_end = 187;
-        current_i = i;
-        c = getonechar(code, i);
-        switch (c) {
-            case 27: {//if it is an escape character
-                //We might have a color definition
-                idx = i + 1;
-                if (code[idx] == '[') {
-                    //we are looking for the final 'm'
-                    while (idx < sz && code[idx] != 'm')
-                        idx++;
+    double d;
+    long lg_value = 0;
+    long left = 0;
+    long right = 0;
 
-                    if (idx != sz)
-                        i = idx;
+    if (delegation->add_to_listing) {
+        culprit = 0;
+        string s;
+
+        while (lg_value != string::npos) {
+            culprit = code.find(U"\n", lg_value);
+            if (culprit != string::npos) {
+                buffer = code.substr(lg_value, culprit - lg_value);
+                if (buffer != U"") {
+                    s = "";
+                    s_unicode_to_utf8(s, buffer);
+                    add_to_listing(line_number, s);
                 }
-                break;
-            }
-            case '\n':
-                if (add == true) {
-                    current_line += c;
-                    add_to_listing(line_number, current_line);
-                    current_line = "";
-                }
+                lg_value = culprit + 1;
                 line_number++;
-                break;
-            case '\t':
-            case '\r':
-            case ' ':
-                if (add == true)
-                    current_line += c;
-                continue;
-            case '"': {
-                idx = i + 1;
-                tampon = "";
-                while (idx < sz && code[idx] != '"') {
-                    c = (uchar)code[idx];
-                    if (c < 32) {
-                        infos.append(tampon, t_emptystring, line_number, i, idx);
-                        return e_error_string;
-                    }
-
-                    if (c == '\\') {
-                        idx++;
-                        switch (code[idx]) {
-                            case 'n':
-                                tampon += '\n';
-                                idx++;
-                                continue;
-                            case 'r':
-                                tampon += '\r';
-                                idx++;
-                                continue;
-                            case 't':
-                                tampon += '\t';
-                                idx++;
-                                continue;
-
-                        }
-                    }
-                    tampon += code[idx];
-                    idx++;
-                }
-
-                if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
-                else
-                    infos.append(tampon, t_string, line_number, i, idx);
-
-                if (add == true) {
-                    current_line += "\"";
-                    current_line += tampon;
-                    current_line += "\"";
-                }
-                i = idx;
-                break;
             }
-            case '.':
-                if (code[i + 1] == ' ') {
-                    tampon = ".";
-                    infos.append(tampon, c_point, line_number, i, i + 1);
-                    break;
-                }
-            case '+':
-            case '-':
-                if (!isdigit(code[i+1])) {
-                    idx = i + 1;
-                    nxt = 0;
-                    while (idx < sz) {
-                        nxt = getonechar(code, idx);
-                        if (nxt == 8220 || (nxt < 172 && stops[nxt]))
-                            break;
-                        i = idx;
-                        idx++;
-                    }
-                    tampon = code.substr(current_i, i - current_i + 1);
-                    if (add == true)
-                        current_line += tampon;
-
-                    idx = delegation->is_atom(tampon);
-                    if (idx >= l_minus_plus && idx <= l_modequal)
-                        infos.append(tampon, t_operator, line_number, current_i, i);
-                    else
-                        infos.append(tampon, t_atom, line_number, current_i, i);
-                    break;
-                }
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9': {
-                double d = convertingfloathexa(code.c_str() + i, idx);
-                tampon = code.substr(i, idx);
-                if (add == true)
-                    current_line += tampon;
-                infos.append(d, tampon, t_number, line_number, i, i + idx);
-                i += idx - 1;
+            else
                 break;
-            }
-            case '\'':
-                if (!in_quote && !infos.asList) {
-                    if (add == true)
-                        current_line += c;
-                    infos.append(c, l_quote, line_number, i, i+1);
-                    in_quote = 1;
-                }
-                else {
-                    tampon = "'";
-                    infos.append(tampon, l_quote, line_number, i, i + 1);
-                }
-                break;
-            case '`':
-                string_end = '`';
-            case 171: { // a string containing what we want... either «» or ``
-                idx = i + 1;
-                tampon = "";
-                long ln = 0;
-                while (idx < sz && code[idx] != string_end) {
-                    if (code[idx] == '\n')
-                        ln++;
-                    idx++;
-                }
-                if (idx == sz && add)
-                    return e_error_string;
-
-                tampon = code.substr(i+1, idx-i-1);
-                if (tampon == "")
-                    infos.append(tampon, t_emptystring, line_number, i, idx);
-                else
-                    infos.append(tampon, t_string, line_number, i, idx);
-                if (add == true) {
-                    if (string_end == 187) {
-                        current_line += "«";
-                        current_line += tampon;
-                        current_line += "»";
-                    }
-                    else {
-                        current_line += "`";
-                        current_line += tampon;
-                        current_line += "`";
-                    }
-                }
-                i = idx;
-                line_number += ln;
-                break;
-            }
-            case ';':
-                if (!in_quote && !infos.asList) {
-                    idx = i;
-                    if (code[i+1] == ';') {
-                        //we need to find the next line where it appears
-                        i+=2;
-                        while (i < sz-1 && (code[i] != ';' || code[i+1] != ';')) {
-                            if (code[i] == '\n') {
-                                if (add == true) {
-                                    current_line = code.substr(idx, i-idx+1);
-                                    add_to_listing(line_number, current_line);
-                                    current_line = "";
-                                }
-                                else {
-                                    if (add == 2) {
-                                        tampon = code.substr(idx, i-idx+1);
-                                        infos.append(tampon, t_comment, line_number, idx, i);
-                                    }
-                                }
-                                line_number++;
-                                idx = i + 1;
-                            }
-                            i++;
-                        }
-                    }
-                    else {
-                        while (i < sz && code[i] != '\n') i++;
-                        line_number++;
-                        if (add == true) {
-                            current_line = code.substr(idx, i-idx+1);
-                            add_to_listing(line_number, current_line);
-                            current_line = "";
-                        }
-                        else {
-                            if (add == 2) {
-                                tampon = code.substr(idx, i-idx+1);
-                                infos.append(tampon, t_comment, line_number, idx, i);
-                            }
-                        }
-                    }
-                    break;
-                }
-            default: {
-				if (c < 32)
-					continue;
-
-                //If the character is a multi-byte character, we need
-                //to position on the beginning of the character again
-                //Cases to stop looking for an atom: ()]{}'9 32 10 13" 171 8220
-                idx = i + 1;
-                nxt = c;
-                while (idx <= sz && nxt != 8220 && (nxt > 171 || !stops[nxt])) {
-                    i = idx;
-                    nxt = getonechar(code, idx);
-                    idx++;
-                }
-
-                if ((i - current_i) <= 1) {
-                    tampon = c;
-                    if (add == true)
-                        current_line += c;
-                    
-                    //if it is a dictionary data structure, it starts with @{..}
-                    if (c == '@' && nxt == '{') {
-                        tampon += nxt;
-                        i++;
-                        if (add == true)
-                            current_line += '{';
-                    }
-                }
-                else {
-                    tampon = code.substr(current_i, i - current_i);
-                    if (add == true)
-                        current_line += tampon;
-
-                    if (tampon[0] == 'c' && tampon.back() == 'r' && tampon.size() > 3) {
-                        // we check if we don't have a variation on car/cdr/cadr/caar etc...
-                        idx = 1;
-                        bool ok = true;
-                        while (tampon[idx] !='r') {
-                            if (tampon[idx] != 'a' && tampon[idx] != 'd') {
-                                ok = false;
-                                break;
-                            }
-                            idx++;
-                        }
-                        if (ok) {
-                            infos.append(tampon, l_cadr, line_number, current_i, i);
-                            i--;
-                            break;
-                        }
-                    }
-                }
-
-                lc = (lisp_code)delegation->check_atom(tampon);
-                
-                if (in_quote == 1 && lc != c_opening)
-                    in_quote = 0;
-
-                switch (lc) {
-                    case c_opening:
-                        nb_parentheses++;
-                        infos.append(c, c_opening, line_number, current_i, i);
-                        if (in_quote)
-                            in_quote++;
-                        break;
-                    case c_closing:
-                        nb_parentheses--;
-                        if (nb_parentheses <= 0) {
-                            if (culprit == -1)
-                                culprit = line_number;
-                        }
-                        infos.append(c, c_closing, line_number, current_i, i);
-                        if (in_quote)
-                            in_quote--;
-                        break;
-                    case c_opening_brace:
-                        nb_braces++;
-                        infos.append(c, c_opening_brace, line_number, current_i, i);
-                        break;
-                    case c_opening_data_brace:
-                        nb_braces++;
-                        infos.append(c, c_opening_data_brace, line_number, current_i, i);
-                        break;
-                    case c_closing_brace:
-                        nb_braces--;
-                        if (nb_braces < 0) {
-                            if (culprit == -1)
-                                culprit = line_number;
-                        }
-                        infos.append(c, c_closing_brace, line_number, current_i, i);
-                        break;
-                    case c_colon:
-                        infos.append(c, c_colon, line_number, current_i, i);
-                        break;
-                    case c_opening_bracket:
-                        nb_brackets++;
-                        infos.append('(', c_opening, line_number, current_i, i);
-                        break;
-                    case c_closing_bracket: {
-                        if (nb_brackets) {
-                            nb_brackets--;
-                            infos.append(')', c_closing, line_number, current_i, i);
-                        }
-                        else {
-                            nb_parentheses--;
-                            if (nb_parentheses <= 0) {
-                                if (culprit == -1)
-                                    culprit = line_number;
-                            }
-                            //We add any number of parentheses to close the gap
-                            for (long i = 0; i < nb_parentheses; i++)
-                            infos.append(c, c_closing, line_number, current_i, i);
-                            nb_parentheses = 1;
-                        }
-                        break;
-                    }
-                    default:
-                        if (lc >= l_plus && lc <= l_concatenate)
-                            infos.append(tampon, t_operator, line_number, current_i, i);
-                        else
-                            infos.append(tampon, t_atom, line_number, current_i, i);
-                        if (!in_quote && lc == l_quote)
-                            in_quote = 1;
-                }
-
-                if (i != current_i)
-                    i--;
-                break;
-            }
+        }
+        
+        buffer = code.substr(lg_value, code.size() - lg_value);
+        if (buffer != U"") {
+            s = "";
+            s_unicode_to_utf8(s, buffer);
+            add_to_listing(line_number, s);
         }
     }
+    
+    //We then tokenize our code
+    //r_parse.stack contains the substrings
+    //r_parse.stacktype contains their type
+    //r_parse.stackln contains their line number
+    long sz = delegation->main_tokenizer.tokenize<u_ustring>(code, r_parse);
+    
 
+#ifdef MACDEBUG
+    //for debugging
+    vector<u_ustring> codes;
+    r_parse.stack.to_vector(codes);
+    vector<int16_t> icodes;
+    r_parse.stacktype.to_vector(icodes);
+#endif
+        
+    line_number = 1;
+    culprit = -1;
+    long i;
+    long ipos = 0;
+    
+    for (i = 0; i < sz; i++) {
+        line_number = r_parse.stackln[i] + 1;
+        left = r_parse.positions[ipos++];
+        right = r_parse.positions[ipos++];
+        
+        buffer = r_parse.stack[i];
+        //Note that the code in lc are also characters
+        //that mimic the type of the element that was identified
+        //They do not always correspond to a specific character in the buffer
+        lc = r_parse.stacktype[i];
+        switch (lc) {
+            case '\n': //Carriage return
+                continue;
+            case '"': //a string
+                buffer = buffer.substr(1, buffer.size() - 2);
+                lg_value = buffer.find(U"\\");
+                if (lg_value != -1) {
+                    u_ustring intermediate = buffer.substr(0, lg_value);
+                    for (long j = lg_value; j < buffer.size(); j++) {
+                        if (buffer[j] == '\\') {
+                            switch (buffer[j + 1]) {
+                                case 'n':
+                                    intermediate += U"\n";
+                                    j++;
+                                    break;
+                                case 'r':
+                                    intermediate += U"\r";
+                                    j++;
+                                    break;
+                                case 't':
+                                    intermediate += U"\t";
+                                    j++;
+                                    break;
+                                default:
+                                    intermediate += buffer[j + 1];
+                                    j++;
+                            }
+                            continue;
+                        }
+                        intermediate += buffer[j];
+                    }
+                    buffer = intermediate;
+                }
+                if (buffer == U"")
+                    infos.append(buffer, t_emptystring, line_number, left, right);
+                else
+                    infos.append(buffer, t_string, line_number, left, right);
+                if (in_quote == 1) in_quote = 0;
+                break;
+            case '`': //a long string
+                buffer = buffer.substr(1, buffer.size() - 2);
+                if (buffer == U"")
+                    infos.append(buffer, t_emptystring, line_number, left, right);
+                else
+                    infos.append(buffer, t_string, line_number, left, right);
+                if (in_quote == 1) in_quote = 0;
+                break;
+            case '\'': //a quote
+                infos.append(buffer, l_quote, line_number, left, right);
+                if (!in_quote && !infos.asList)
+                    in_quote = 1;
+                break;
+            case ';': {//a quoted ;, we have a specific rule for this character to handle potential comments
+                u_ustring q = U"'";
+                infos.append(q, l_quote, line_number, left, left + 1);
+                buffer = buffer.substr(1, buffer.size());
+                infos.append(buffer, t_atom, line_number, left + 1, right);
+                break;
+            }
+            case '9': //a float: contains a '.'
+                lg_value = buffer.find(U",");
+                if (lg_value != -1) {
+                    //This is a complex number: ddd,ddi
+                    u_ustring real = buffer.substr(0, lg_value);
+                    u_ustring imaginary = buffer.substr(lg_value+1, buffer.size() - real.size() - 2);
+                    d = convertingfloathexa(real);
+                    infos.append(d, real, t_complex, line_number, left, right);
+                    if (imaginary == U"" || imaginary == U"+")
+                        d = 1;
+                    else
+                        if (imaginary == U"-")
+                            d = -1;
+                    else
+                        d = convertingfloathexa(imaginary);
+                    infos.append(d, imaginary, t_complex, line_number, left, right);
+                }
+                else {
+                    if (buffer.find(U".") == -1) {
+                        lg_value = convertinginteger(buffer);
+                        infos.append(lg_value, buffer, t_integer, line_number, left, right);
+                    }
+                    else {
+                        d = convertingfloathexa((u_uchar*)buffer.c_str(), lg_value);
+                        infos.append(d, buffer, t_number, line_number, left, right);
+                    }
+                }
+                if (in_quote == 1) in_quote = 0;
+                break;
+            case '?': //operators and comparators
+                lc = delegation->is_atom(buffer);
+                if (lc >= l_minus_plus && lc <= l_modequal)
+                    infos.append(buffer, t_operator, line_number, left, right);
+                else
+                    infos.append(buffer, t_atom, line_number, left, right);
+                if (in_quote) in_quote--;
+                break;
+            case 'A': // a simple token
+                if (checkcadr(buffer, buffer.size()))
+                    infos.append(buffer, l_cadr, line_number, left, right);
+                else
+                    infos.append(buffer, t_atom, line_number, left, right);
+                if (in_quote == 1) in_quote = 0;
+                break;
+            case '.':
+                if (in_quote == 1) {
+                    in_quote = 0;
+                    infos.append(buffer, t_atom, line_number, left, right);
+                }
+                else
+                    infos.append(buffer, c_point, line_number, left, right);
+                break;
+            case ':':
+                if (in_quote == 1) {
+                    in_quote = 0;
+                    infos.append(buffer, t_atom, line_number, left, right);
+                }
+                else {
+                    infos.append(buffer, c_colon, line_number, left, right);
+                }
+                break;
+            case '(': // (
+                nb_parentheses++;
+                infos.append(buffer, c_opening, line_number, left, right);
+                if (in_quote) in_quote++;
+                break;
+            case ')': // )
+                nb_parentheses--;
+                if (nb_parentheses <= 0) {
+                    if (culprit == -1)
+                        culprit = line_number;
+                }
+                infos.append(buffer, c_closing, line_number, left, right);
+                if (in_quote < 3)
+                    in_quote = 0;
+                else
+                    in_quote--;
+                break;
+            case '[': // [
+                nb_brackets++;
+                buffer = U'(';
+                infos.append(buffer, c_opening, line_number, left, right);
+                if (in_quote == 1) in_quote = 0;
+                break;
+            case ']': // ]
+                buffer = U')';
+                if (nb_brackets) {
+                    nb_brackets--;
+                    infos.append(buffer, c_closing, line_number, left, right);
+                }
+                else {
+                    nb_parentheses--;
+                    if (nb_parentheses <= 0) {
+                        if (culprit == -1)
+                            culprit = line_number;
+                    }
+                    //We add any number of parentheses to close the gap
+                    for (long e = 0; e < nb_parentheses; e++)
+                        infos.append(buffer, c_closing, line_number, left, right);
+                    nb_parentheses = 1;
+                }
+                if (in_quote < 3)
+                    in_quote = 0;
+                else
+                    in_quote--;
+                break;
+            case '{': // {
+                if (in_quote == 1) {
+                    in_quote = 0;
+                    infos.append(buffer, t_atom, line_number, left, right);
+                }
+                else {
+                    nb_braces++;
+                    infos.append(buffer, c_opening_brace, line_number, left, right);
+                }
+                break;
+            case '}': // }
+                if (in_quote == 1) {
+                    in_quote = 0;
+                    infos.append(buffer, t_atom, line_number, left, right);
+                }
+                else {
+                    nb_braces--;
+                    if (nb_braces < 0) {
+                        if (culprit == -1)
+                            culprit = line_number;
+                    }
+                    infos.append(buffer, c_closing_brace, line_number, left, right);
+                }
+                break;
+            default:
+                infos.append(buffer, t_atom, line_number, left, right);
+                if (in_quote == 1) in_quote = 0;
+        }
+    }
+    
     if (nb_brackets) {
         delegation->i_current_line = line_number;
         return e_error_bracket;
@@ -1453,15 +1384,73 @@ lisp_code LispE::segmenting(string& code, Tokenizer& infos) {
         return e_error_brace;
     }
 
-    if (add && current_line != "")
-        add_to_listing(line_number, current_line);
-
     return e_no_error;
 }
 
 
+lisp_code LispE::segmenting(string& s_code, Tokenizer& infos) {
+    u_ustring code;
+    s_utf8_to_unicode(code, s_code, s_code.size());
+    if (delegation->add_to_listing) {
+        //since we already have a string version of code
+        //no need to convert it back in segmenting(u_ustring&..) above.
+        size_t found = 0;
+        string localvalue;
+        string s;
+        long pos = 0;
+        long line_number = 0;
+
+        while (pos != string::npos) {
+            found = s_code.find("\n", pos);
+            if (found != string::npos) {
+                localvalue = s_code.substr(pos, found - pos);
+                if (localvalue != "") {
+                    add_to_listing(line_number, localvalue);
+                }
+                pos = found + 1;
+                line_number++;
+            }
+            else
+                break;
+        }
+        
+        localvalue = s_code.substr(pos, code.size() - pos);
+        if (localvalue != "") {
+            add_to_listing(line_number, localvalue);
+        }
+        //We temporary deactivate add_to_listing
+        delegation->add_to_listing = false;
+        //when calling segmenting again.
+        lisp_code lc = segmenting(code, infos);
+        delegation->add_to_listing = true;
+        return lc;
+    }
+    return segmenting(code, infos);
+}
+
+//We use the segmenter defined in LispE. Note that it records the last call flags
+//If they are different, then the system recompiles the rules to take these flags into account
+Element* LispE::tokenize(u_ustring& code, bool keepblanks, short decimalseparator) {
+    if (!segmenter.loaded) {
+        segmenter.setrules();
+        segmenter.compile();
+    }
+    
+    segmenter.keepblanks(keepblanks);
+    segmenter.setdecimalmode(decimalseparator);
+    
+    Strings* res = provideStrings();
+
+    tokenizer_result<u_ustring> tokres(&res->liste, false);
+    
+    segmenter.tokenize<u_ustring>(code, tokres);
+
+    return res;
+}
+
+
 Element* LispE::tokenize(wstring& code, bool keepblanks) {
-    List* res = provideList();
+    Strings* res = provideStrings();
     long idx;
     long sz = code.size();
     long i;
@@ -1476,7 +1465,7 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
             case ' ':
                 if (keepblanks) {
                     tampon = c;
-                    res->append(provideString(tampon));
+                    res->append(tampon);
                 }
                 break;
             case ';':
@@ -1503,19 +1492,19 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
             case '!':
             case '=':
                 tampon = c;
-                res->append(provideString(tampon));
+                res->append(tampon);
                 break;
             case '.':
                 if (code[i + 1] == ' ') {
                     tampon = c;
-                    res->append(provideString(tampon));
+                    res->append(tampon);
                     break;
                 }
             case '+':
             case '-':
                 if (!isdigit(code[i+1])) {
                     tampon = c;
-                    res->append(provideString(tampon));
+                    res->append(tampon);
                     break;
                 }
             case '0':
@@ -1530,7 +1519,7 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
             case '9': {
                 noconvertingfloathexa((wchar_t*)code.c_str() + i, idx);
                 tampon = code.substr(i, idx);
-                res->append(provideString(tampon));
+                res->append(tampon);
                 i += idx - 1;
                 break;
             }
@@ -1539,11 +1528,11 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
                 if (!handlingutf8->is_a_valid_letter(code, idx))  {
                     if (idx == i) {
                         tampon = c;
-                        res->append(provideString(tampon));
+                        res->append(tampon);
                     }
                     else {
                         tampon = code.substr(i, idx - i + 1);
-                        res->append(provideString(tampon));
+                        res->append(tampon);
                         i = idx;
                     }
                     break;
@@ -1552,7 +1541,7 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
                 while (idx < sz && handlingutf8->is_a_valid_letter(code, idx)) idx++;
                 tampon = code.substr(i, idx - i);
                 i = idx-1;
-                res->append(provideString(tampon));
+                res->append(tampon);
                 break;
             }
         }
@@ -1572,7 +1561,6 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
 
 Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, long& index, long quoting) {
     Element* e = NULL;
-    double value;
     char topfunction = false;
     int16_t lab = -1;
     Element* check_composition_depth = NULL;
@@ -1764,9 +1752,9 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                 Element* body = parse.defun_functions[lab];
                                 //This is a call to a function: t_atom, a1, a2...
                                 if (body->index(0)->label() == l_defun)
-                                    body = new List_function_call(this, (Listincode*)e, (List*)body);
+                                    body = new List_function_eval(this, (Listincode*)e, (List*)body);
                                 else
-                                    body = new List_pattern_call((Listincode*)e, (List*)body);
+                                    body = new List_pattern_eval((Listincode*)e, (List*)body);
                                 
                                 garbaging(body);
                                 removefromgarbage(e);
@@ -1776,7 +1764,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                 if (delegation->function_pool[current_space]->check(lab)) {
                                     Element* body = (*delegation->function_pool[current_space])[lab];
                                     if (body->index(0)->label() == l_deflib) {
-                                        body = new List_library_call((Listincode*)e, (List*)body);
+                                        body = new List_library_eval((Listincode*)e, (List*)body);
                                         garbaging(body);
                                         removefromgarbage(e);
                                         e = body;
@@ -1803,23 +1791,21 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     removefromgarbage(e);
                                     e = &delegation->_BREAKEVAL;
                                     break;
-                                case l_not:
-                                    lm = new List_not_eval((List*)e);
-                                    break;
-                                case l_setq:
-                                    lm = new List_setq_eval((List*)e);
-                                    break;
-                                case l_if:
-                                    lm = new List_if_eval((List*)e);
-                                    break;
-                                case l_ife:
-                                    lm = new List_ife_eval((List*)e);
+                                case l_return:
+                                    if (e->size() == 1)
+                                        lm = new Listreturn();
+                                    else
+                                        lm = new Listreturnelement((Listincode*)e);
                                     break;
                                 case l_power:
                                     if (nbarguments == 3 && e->index(2)->equalvalue((long)2))
                                         lm = new List_power2((List*)e);
                                     else
                                         lm = new List_execute((Listincode*)e, delegation->evals[lab]);
+                                    break;
+                                case l_switch:
+                                    lm = new List_switch_eval((Listincode*)e);
+                                    ((List_switch_eval*)lm)->build(this);
                                     break;
                                 case l_divide:
                                     if (nbarguments == 2)
@@ -1881,123 +1867,8 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     else
                                         lm = new List_multiplyequal_var((List*)e);
                                     break;
-                                case l_switch:
-                                    lm = new Listswitch((Listincode*)e);
-                                    ((Listswitch*)lm)->build(this);
-                                    break;
-                                case l_return:
-                                    if (e->size() == 1)
-                                        lm = new Listreturn();
-                                    else
-                                        lm = new Listreturnelement((Listincode*)e);
-                                    break;
-                                case l_key:
-                                    lm = new List_key_eval((Listincode*)e);
-                                    break;
-                                case l_keyi:
-                                    lm = new List_keyi_eval((Listincode*)e);
-                                    break;
-                                case l_keyn:
-                                    lm = new List_keyn_eval((Listincode*)e);
-                                    break;
-                                case l_at:
-                                    lm = new List_at_eval((Listincode*)e);
-                                    break;
-                                case l_block:
-                                    lm = new List_block_eval((Listincode*)e);
-                                    break;
-                                case l_set_at:
-                                    lm = new List_set_at_eval((Listincode*)e);
-                                    break;
-                                case l_car:
-                                    lm = new List_car_eval((Listincode*)e);
-                                    break;
-                                case l_cdr:
-                                    lm = new List_cdr_eval((Listincode*)e);
-                                    break;
-                                case l_cadr:
-                                    lm = new List_cadr_eval((Listincode*)e);
-                                    break;
-                                case l_push:
-                                    lm = new List_push_eval((Listincode*)e);
-                                    break;
-                                case l_pop:
-                                    lm = new List_pop_eval((Listincode*)e);
-                                    break;
-                                case l_atomp:
-                                    lm = new List_atomp_eval((Listincode*)e);
-                                    break;
-                                case l_numberp:
-                                    lm = new List_numberp_eval((Listincode*)e);
-                                    break;
-                                case l_consp:
-                                    lm = new List_consp_eval((Listincode*)e);
-                                    break;
-                                case l_emptyp:
-                                    lm = new List_emptyp_eval((Listincode*)e);
-                                    break;
-                                case l_zerop:
-                                    lm = new List_zerop_eval((Listincode*)e);
-                                    break;
-                                case l_nullp:
-                                    lm = new List_nullp_eval((Listincode*)e);
-                                    break;
-                                case l_stringp:
-                                    lm = new List_stringp_eval((Listincode*)e);
-                                    break;
-                                case l_in:
-                                    lm = new List_in_eval((Listincode*)e);
-                                    break;
-                                case l_and:
-                                    lm = new List_and_eval((Listincode*)e);
-                                    break;
-                                case l_or:
-                                    lm = new List_or_eval((Listincode*)e);
-                                    break;
-                                case l_loop:
-                                    lm = new List_loop_eval((Listincode*)e);
-                                    break;
-                                case l_loopcount:
-                                    lm = new List_loopcount_eval((Listincode*)e);
-                                    break;
-                                case l_while:
-                                    lm = new List_while_eval((Listincode*)e);
-                                    break;
-                                case l_check:
-                                    lm = new List_check_eval((Listincode*)e);
-                                    break;
-                                case l_ncheck:
-                                    lm = new List_ncheck_eval((Listincode*)e);
-                                    break;
-                                case l_cons:
-                                    lm = new List_cons_eval((Listincode*)e);
-                                    break;
-                                case l_list:
-                                    lm = new List_list_eval((Listincode*)e);
-                                    break;
-                                case l_cond:
-                                    lm = new List_cond_eval((Listincode*)e);
-                                    break;
-                                case l_integer:
-                                    lm = new List_integer_eval((Listincode*)e);
-                                    break;
-                                case l_number:
-                                    lm = new List_number_eval((Listincode*)e);
-                                    break;
-                                case l_string:
-                                    lm = new List_string_eval((Listincode*)e);
-                                    break;
-                                case l_integers:
-                                    lm = new List_integers_eval((Listincode*)e);
-                                    break;
-                                case l_numbers:
-                                    lm = new List_numbers_eval((Listincode*)e);
-                                    break;
-                                case l_strings:
-                                    lm = new List_strings_eval((Listincode*)e);
-                                    break;
                                 default:
-                                    lm = new List_execute((Listincode*)e, delegation->evals[lab]);
+                                    lm = cloning((Listincode*)e, lab);                                    
                             }
                             
                             if (lm != NULL) {
@@ -2075,15 +1946,29 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 current_program->append(e);
                 index++;
                 break;
-            case t_number:
-                value = parse.numbers[index];
-                if (parse.tokens[index].find(U".") == -1)
-                    e = provideConstinteger(value);
-                else
-                    e = provideConstnumber(value);                
+            case t_complex: {
+                //We need to extract it twice
+                double real = parse.numbers[index++];
+                double imag = parse.numbers[index++];
+                e = new Complex(real, imag);
+                garbaging(e);
+                current_program->append(e);
+                break;
+            }
+            case t_integer: {
+                long value = parse.integers[index];
+                e = provideConstinteger(value);
                 current_program->append(e);
                 index++;
                 break;
+            }
+            case t_number: {
+                double value = parse.numbers[index];
+                e = provideConstnumber(value);
+                current_program->append(e);
+                index++;
+                break;
+            }
             case t_operator:
                 e = provideOperator(encode(parse.tokens[index]));
                 current_program->append(e);
@@ -2102,7 +1987,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         throw new Error("Error: wrong key/value separator in a dictionary");
                 }
                 else {
-                    e = provideAtom(encode(parse.tokens[index]));
+                    e = provideAtom(c_colon);
                     index++;
                     current_program->append(e);
                 }
@@ -2122,7 +2007,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     }
                 }
                 else {
-                    e = provideAtom(encode(parse.tokens[index]));
+                    e = provideAtom(l_innerproduct);
                     index++;
                     current_program->append(e);
                 }
@@ -2163,7 +2048,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 }
                 break;
             case l_quote:
-                e = new Listincode(parse.lines[index], delegation->i_current_file);
+                e = new List_quote_eval(parse.lines[index], delegation->i_current_file);
                 index++;
                 garbaging(e);
                 e->append(provideAtom(l_quote));
@@ -2261,12 +2146,15 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                 courant->append(e);
                 index++;
                 break;
+            case t_integer:
+                value = parse.numbers[index];
+                e = provideConstinteger(value);
+                courant->append(e);
+                index++;
+                break;
             case t_number:
                 value = parse.numbers[index];
-                if (parse.tokens[index].find(U".") == -1)
-                    e = provideConstinteger(value);
-                else
-                    e = provideConstnumber(value);
+                e = provideConstnumber(value);
                 courant->append(e);
                 index++;
                 break;
@@ -2342,6 +2230,7 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                     throw new Error("Error: Wrong number of arguments for 'quote'");
                 break;
             default:
+                index++;
                 break;
         }
         if (quoting == 1)
@@ -2530,7 +2419,7 @@ Element* LispE::load(string pathname) {
     }
 }
 
-Element* LispE::compile_eval(string& code) {
+Element* LispE::compile_eval(u_ustring& code) {
     try {
         Element* tree = compile_lisp_code(code);
         depth_stack = 0;
@@ -2542,17 +2431,18 @@ Element* LispE::compile_eval(string& code) {
     }
 }
 
-Element* LispE::compile_lisp_code(string& code) {
+Element* LispE::compile_lisp_code(u_ustring& code) {
     clearStop();
     //A little trick to compile code sequences
-    code = "(__root__ " + code + ")";
+    code = U"(__root__ " + code + U")";
     Tokenizer parse;
     lisp_code retour = segmenting(code, parse);
+    
     List courant;
     long index;
     switch (retour) {
         case e_error_brace:
-            throw new Error("Error: Braces do not balance");
+            throw new Error("Error: braces do not balance");
         case e_error_bracket:
             throw new Error("Error: brackets do not balance");
         case e_error_parenthesis:
@@ -2595,6 +2485,11 @@ Element* LispE::compile_lisp_code(string& code) {
     return e;
 }
 
+Element* LispE::compile_lisp_code(string& code) {
+    u_ustring wcode;
+    s_utf8_to_unicode(wcode, code, code.size());
+    return compile_lisp_code(wcode);
+}
 
 //This method allows us to add new features in LispE in the form of
 //loading of external libraries. See system.cxx for an example.
@@ -2602,12 +2497,14 @@ Element* LispE::extension(string code, Element* etendre) {
     Listincode* current_list = NULL;
 
     Tokenizer parse;
-    lisp_code retour = segmenting(code, parse);
+    u_ustring wcode;
+    s_utf8_to_unicode(wcode, code, code.size());
+    lisp_code retour = segmenting(wcode, parse);
 
     switch (retour) {
         case e_error_brace:
             etendre->release();
-            throw new Error("Error: Braces do not balance");
+            throw new Error("Error: braces do not balance");
         case e_error_bracket:
             etendre->release();
             throw new Error("Error: brackets do not balance");
@@ -2849,33 +2746,74 @@ void LispE::arguments(std::vector<string>& args) {
 }
 
 void LispE::current_path() {
+	if (current_path_set)
+		return;
+
+    u_ustring nom = U"_current";
+    string spath;
+    Element* e;
+    
     if (delegation->allfiles.size() >= 2) {
-        u_ustring nom = U"_current";
-        string spath = delegation->allfiles_names[1];
+        spath = delegation->allfiles_names[1];
         char localpath[4096];
         localpath[0] = 0;
 
 #ifdef WIN32
-        _fullpath(localpath, ".", 4096);
+        _fullpath(localpath, STR(spath), 4096);
 #else
-        realpath(".", localpath);
+        realpath(STR(spath), localpath);
 #endif
 
 
-        long pos = spath.rfind("/");
-        if (pos == string::npos) {
-            spath = localpath;
-            if (localpath[spath.size() - 1] != '/')
-                spath += "/";
-        }
-        else
-            spath = spath.substr(0, pos + 1);
+#ifdef WIN32
+		string end_path = "\\";
+#else
+		string end_path = "/";
+#endif
+		long pos = spath.rfind(end_path);
+		if (pos == string::npos) {
+			spath = localpath;
+			if (spath.back() != end_path[0])
+                spath += end_path;
+		}
+		else
+			spath = spath.substr(0, pos + 1);
 
-        Element* e = provideString(spath);
+        e = provideString(spath);
         execution_stack.back()->storing_variable(e, encode(nom));
         e->release();
     }
+    
+    nom = U"_version";
+    spath = LispVersion();
+    e = provideString(spath);
+    execution_stack.back()->storing_variable(e, encode(nom));
+    e->release();
+	current_path_set = true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

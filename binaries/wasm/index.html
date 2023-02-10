@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>LispE</title>
+    <style>
+        .textAreaCode {
+            width: 100%;
+        }
+
+        .textAreaCode div {
+            width: 1500px;
+            height: 500px;
+        }
+
+        .textAreaCode div span {
+            display: block;
+            text-align: center;
+        }
+
+        .textAreaCode div textarea {
+            min-width: 1500px;
+            min-height: 450px;
+        }
+
+        .textAreaColumn {
+            width: 100%;
+        }
+
+        .textAreaColumn div {
+            float: left;
+            padding: 10px;
+            height: 400px;
+            width: 734px;
+        }
+
+        .textAreaColumn div span {
+            display: block;
+            text-align: center;
+        }
+
+        .textAreaColumn div textarea {
+            width: 100%;
+            min-height: 400px;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <input type="button" value="RESET/RUN" OnClick="reset_run_code()" id="button_reset_run" />
+        <input type="button" value="RESET" OnClick="reset_code()" id="button_reset" />
+        <input type="button" value="RUN" OnClick="run_code_from()" id="button_run" />
+        <input type="button" value="Indent" OnClick="indentation_code()" id="button_indent" />        
+        <input type="file" id="file-selector" accept=".lisp">
+    </div>
+    <div class="textAreaCode">
+        <div>
+            <span>Code</span>
+            <textarea type="text" name="code" id="get_code"></textarea>
+        </div>
+    </div>
+    <div>
+        <input type="button" value="Clear Texts" OnClick="clear_code()" id="button_clear" />
+        <input type="button" value="As a list of strings" OnClick="run_code_to_strings()" id="button_run_string" />
+        <input type="button" value="As a list of integers" OnClick="run_code_to_ints()" id="button_run_int" />
+        <input type="button" value="As a list of floats" OnClick="run_code_to_floats()" id="button_run_float" />
+    </div>
+    <div class="textAreaColumn">
+        <div>
+            <span>OUTPUT</span>
+            <textarea type="text" name="evaluated" id="display_evaluation"></textarea>
+        </div>
+        <div>
+            <span>DATA (Create a "DATA" variable with the content of the window below)</span>
+            <textarea type="text" name="data" id="set_data"></textarea>
+        </div>
+    </div>
+    <!-- We load our WASM library -->
+    <script type="text/javascript">
+        //The initialisation below makes it possible to catch the print and println in your LispE code
+        //It automatically stores in 'display_evaluation' textarea the values that printed
+        var Module = {
+            preRun: [],
+            postRun: [],
+            print: (function () {
+                var element = document.getElementById('display_evaluation');
+                if (element) element.value = '';
+                return function (text) {
+                    if (arguments.length > 1) 
+                        text = Array.prototype.slice.call(arguments).join(' ');
+                    if (element) {
+                        element.value += text + "\n";
+                        element.scrollTop = element.scrollHeight; // focus on bottom
+                    }
+                };
+            })(),
+            printErr: (function () {
+                var element = document.getElementById('display_evaluation');
+                if (element) element.value = '';
+                return function (text) {
+                    if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                    // These replacements are necessary if you render to raw HTML
+                    text = text.replace(/&/g, "&amp;");
+                    text = text.replace(/</g, "&lt;");
+                    text = text.replace(/>/g, "&gt;");
+                    text = text.replace('\n', '<br>', 'g');
+                    console.log(text);
+                    if (element) {
+                        element.value += text + "\n";
+                        element.scrollTop = element.scrollHeight; // focus on bottom
+                    }
+                };
+            })()
+        };</script>
+    <script async type="text/javascript" src="lispe.js"></script>
+    <script async type="text/javascript" src="lispe_functions.js"></script>
+
+    <script>
+        const fileSelector = document.getElementById('file-selector');
+        fileSelector.addEventListener('change', (event) => {
+            const fileList = event.target.files;
+            var selectedFile = fileList[0];
+            var content = document.getElementById('get_code');
+            var reader = new FileReader();
+            reader.onload = function (event) { content.innerHTML = reader.result; };
+            reader.readAsText(selectedFile);
+        });
+    </script>
+
+    <script type="text/javascript">
+
+        textFontSize = 14 + "px"
+        buttonHeight = 50 + "px";
+        buttonWidth = 130 + "px";
+        buttonFont = 12 + "px";
+
+        document.getElementById('get_code').style.fontSize = textFontSize;
+        document.getElementById('set_data').style.fontSize = textFontSize;
+        document.getElementById('display_evaluation').style.fontSize = textFontSize;
+
+        document.getElementById('button_run_string').style.height = buttonHeight;
+        document.getElementById('button_run_string').style.width = buttonWidth;
+        document.getElementById("button_run_string").style.fontWeight = "bolder";
+        document.getElementById('button_run_string').style.fontSize = buttonFont;
+
+        document.getElementById('button_run_int').style.height = buttonHeight;
+        document.getElementById('button_run_int').style.width = buttonWidth;
+        document.getElementById("button_run_int").style.fontWeight = "bolder";
+        document.getElementById('button_run_int').style.fontSize = buttonFont;
+
+        document.getElementById('button_run_float').style.height = buttonHeight;
+        document.getElementById('button_run_float').style.width = buttonWidth;
+        document.getElementById("button_run_float").style.fontWeight = "bolder";
+        document.getElementById('button_run_float').style.fontSize = buttonFont;
+
+        document.getElementById('button_run').style.height = buttonHeight;
+        document.getElementById('button_run').style.width = buttonWidth;
+        document.getElementById("button_run").style.fontWeight = "bolder";
+        document.getElementById('button_run').style.fontSize = buttonFont;
+
+        document.getElementById('button_reset_run').style.height = buttonHeight;
+        document.getElementById('button_reset_run').style.width = buttonWidth;
+        document.getElementById("button_reset_run").style.fontWeight = "bolder";
+        document.getElementById("button_reset_run").style.color = "red";
+        document.getElementById('button_reset_run').style.fontSize = buttonFont;
+
+        document.getElementById('button_indent').style.height = buttonHeight;
+        document.getElementById('button_indent').style.width = buttonWidth;
+        document.getElementById('button_indent').style.fontSize = buttonFont;
+
+        document.getElementById('button_reset').style.height = buttonHeight;
+        document.getElementById('button_reset').style.width = buttonWidth;
+        document.getElementById('button_reset').style.fontSize = buttonFont;
+
+        document.getElementById('button_clear').style.height = buttonHeight;
+        document.getElementById('button_clear').style.width = buttonWidth;
+        document.getElementById('button_clear').style.fontSize = buttonFont;
+
+        var lastposition = 0;
+        //The next two modules were found on: https://www.vishalon.net/blog/javascript-getting-and-setting-caret-position-in-textarea
+
+        function getCaretPosition(ctrl) {
+            // IE < 9 Support
+            if (document.selection) {
+                ctrl.focus();
+                var range = document.selection.createRange();
+                var rangelen = range.text.length;
+                range.moveStart('character', -ctrl.value.length);
+                var start = range.text.length - rangelen;
+                return {
+                    'start': start,
+                    'end': start + rangelen
+                };
+            } // IE >=9 and other browsers
+            else if (ctrl.selectionStart || ctrl.selectionStart == '0') {
+                return {
+                    'start': ctrl.selectionStart,
+                    'end': ctrl.selectionEnd
+                };
+            } else {
+                return {
+                    'start': 0,
+                    'end': 0
+                };
+            }
+        }
+
+        function setCaretPosition(ctrl, start, end) {
+            // IE >= 9 and other browsers
+            if (ctrl.setSelectionRange) {
+                ctrl.focus();
+                ctrl.setSelectionRange(start, end);
+            }
+            // IE < 9
+            else if (ctrl.createTextRange) {
+                var range = ctrl.createTextRange();
+                range.collapse(true);
+                range.moveEnd('character', end);
+                range.moveStart('character', start);
+                range.select();
+            }
+        }
+
+        //We create a DATA variable with the content of the set_data textarea
+        //This is equivalent to: (setq DATA ...)
+        //This method is systematically called before any execution to reset DATA with the right values
+        function set_data() {
+            var code_data = document.getElementById('set_data');
+            callSetqString("DATA", code_data.value);
+        }
+
+        //Execution of the code from the beginning of the window
+        function run_code() {
+            var code_text = document.getElementById('get_code');
+            var res;
+            (async () => {
+                await set_data();
+                try {
+                    res = await callEval(code_text.value);
+                }
+                catch (e) {
+                    res = e;
+                }
+                lastposition = code_text.value.length
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += res + "\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        function indentation_code() {
+            var code_text = document.getElementById('get_code');
+            (async () => {
+                var res = await callIndent(code_text.value);
+                code_text.value = res;
+            })();
+        }
+
+        //The code is executed from the cursor position
+        function run_code_from() {
+            //We execute our code
+
+            var txt = document.getElementById('get_code');
+
+            var carret = getCaretPosition(txt);
+            if (carret["start"] < lastposition)
+                lastposition = carret["start"];
+            setCaretPosition(txt, lastposition, txt.value.length);
+
+            var code = txt.value.substring(lastposition)
+            lastposition = txt.value.length;
+            var res;
+            (async () => {
+                await set_data();
+                try {
+                    res = await callEval(code);
+                }
+                catch (e) {
+                    res = e;
+                }
+
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += res + "\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        //How to initialize a variable with an array of ints
+        function setq_ints() {
+
+            var ints = new Int32Array(10);
+            for (var i = 0; i < 10; i++) {
+                ints[i] = i * 2;
+            }
+            //We store our floats into the variable "myfloats"
+            var res;
+            (async () => {
+                await set_data();
+                try {
+                    res = await callSetqInts("myInts", ints, 10);
+                }
+                catch (e) {
+                    res = e;
+                }
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += ints + "\nCreated 'myInts'\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        //How to initialize a variable with an array of floats
+        function setq_floats() {
+            var floats = new Float64Array(10);
+            for (var i = 0; i < 10; i++) {
+                floats[i] = i + 1.21;
+            }
+
+            //We store our floats into the variable "myfloats"
+            var res;
+            (async () => {
+                await set_data();
+                try {
+                    res = await callSetqFloats("myFloats", floats, 10);
+                }
+                catch (e) {
+                    res = e;
+                }
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += ints + "\nCreated 'myFloats'\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        function run_code_to_strings() {
+            //We execute our code
+            var txt = document.getElementById('get_code');
+
+            var carret = getCaretPosition(txt);
+            if (carret["start"] < lastposition)
+                lastposition = carret["start"];
+            setCaretPosition(txt, lastposition, txt.value.length);
+
+            var code = txt.value.substring(lastposition)
+            lastposition = txt.value.length;
+            (async () => {
+                await set_data();
+                var res = await callEvalToStrings(code);
+
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += res + "\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        function run_code_to_ints() {
+            //We execute our code
+            var txt = document.getElementById('get_code');
+
+            var carret = getCaretPosition(txt);
+            if (carret["start"] < lastposition)
+                lastposition = carret["start"];
+            setCaretPosition(txt, lastposition, txt.value.length);
+
+            var code = txt.value.substring(lastposition)
+            lastposition = txt.value.length
+            var res;
+            (async () => {
+                await set_data();
+                try {
+                    res = await callEvalToInts(code);
+                }
+                catch (e) {
+                    res = e;
+                }
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += res + "\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        function run_code_to_floats() {
+            //We execute our code
+            var txt = document.getElementById('get_code');
+
+            var carret = getCaretPosition(txt);
+            if (carret["start"] < lastposition)
+                lastposition = carret["start"];
+            setCaretPosition(txt, lastposition, txt.value.length);
+
+            var code = txt.value.substring(lastposition)
+            lastposition = txt.value.length
+            var res;
+            (async () => {
+                await set_data();
+                try {
+                    res = await callEvalToFloats(code);
+                }
+                catch (e) {
+                    res = e;
+                }
+
+                let eval_output = document.getElementById('display_evaluation')
+                eval_output.value += res + "\n";
+                eval_output.scrollTop = eval_output.scrollHeight;
+            })();
+        };
+
+        function reset_run_code() {
+            //We reset our code
+            (async () => {
+                await callResetLispE();
+                await run_code();
+            })();
+        };
+
+        function reset_code() {
+            //We reset our code
+
+            var res = callResetLispE();
+            document.getElementById('display_evaluation').value = ""
+            lastposition = 0
+        };
+
+        function clear_code() {
+            //We reset our code
+            document.getElementById('get_code').value = ""
+            document.getElementById('display_evaluation').value = ""
+            document.getElementById('set_data').value = ""
+            lastposition = 0
+        };</script>
+</body>
+
+</html>

@@ -64,7 +64,7 @@ If A12 < 0 Then
    println "Negative:", A12
    A12 = A12 * -1
    println "A12 is:", A12
-EndIf
+Endif
 
 If A12 > 0 Then
    println "Positive:", A12
@@ -142,10 +142,6 @@ println A
 ;lsp contains the transpiled code as a list
 ;(println (prettify lsp))
 (eval lsp)
-
-
-
-
 
 
 

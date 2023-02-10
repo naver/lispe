@@ -1076,7 +1076,7 @@ Element* LispE::compose(Element* fin) {
 }
 
 //------------------------------------------------------------
-void Listswitch::build(LispE* lisp) {
+void List_switch_eval::build(LispE* lisp) {
     u_ustring key;
     Element* e;
     Element* v;

@@ -69,6 +69,7 @@ using std::endl;
 bool ckjchar(wchar_t ucs);
 
 void s_unicode_to_utf16(wstring& w, u_ustring& u);
+void s_unicode_to_utf16(std::u16string& w, u_ustring& u);
 void s_utf16_to_unicode(u_ustring& u, wstring& w);
 Exporting void s_utf16_to_utf8(string& s, u_ustring& str);
 Exporting void s_utf16_to_utf8(string& s, int32_t* str, long sz);
@@ -82,7 +83,6 @@ Exporting string cs_unicode_to_utf8(UWCHAR code);
 UWCHAR getonechar(string& s, long& i);
 
 string NormalizePathname(string n);
-bool c_is_space(u_uchar code);
 long size_c(string& s);
 Exporting long size_raw_c(string& contenu, long sz);
 Exporting void SetBlankSize(long sz);
@@ -179,6 +179,7 @@ Exporting void s_utf8_to_unicode(wstring& s, string& str, long sz);
 Exporting void s_utf8_to_unicode(u_ustring& s, string& str, long sz);
 Exporting void s_utf8_to_unicode_clean(wstring& s, string& str, long sz);
 Exporting unsigned char c_utf8_to_unicode(string& utf, long i, UWCHAR& code);
+Exporting unsigned char c_utf8_to_unicode(string* utf, long i, UWCHAR& code);
 
 Exporting void s_utf8_to_unicode_u(wstring& w, unsigned char* str , long sz);
 Exporting unsigned char c_utf8_to_unicode(unsigned char* utf, UWCHAR& code);
@@ -218,6 +219,18 @@ Exporting void concat_to_wstring(wstring& res, UWCHAR code);
 #define concat_to_wstring(res, code) res += code
 #endif
 
+inline bool c_is_nbs_space(u_uchar code) {
+    return (code == 160 || code == 0x202F || code == 0x3000);
+}
+
+inline bool c_is_space(u_uchar code) {
+    return (code  == 9 || code == 32 || code == 160 || code == 0x202F || code == 0x3000);
+}
+
+inline bool c_is_space_or_cr(u_uchar code) {
+    return (code  == 9 || code == 10 || code == 13 || code == 32 || code == 160 || code == 0x202F || code == 0x3000);
+}
+
 //--------------------------------------------------------------------
 Exporting bool c_is_hexa(wchar_t code);
 //------------------------------------------------------------------------------------
@@ -226,6 +239,7 @@ public:
     binHash<u_uchar> utf8codemin;
     binHash<u_uchar> utf8codemaj;
     binSet punctuations;
+    vector<u_uchar> vpunctuations;
     binHash<u_uchar> wvowels;
     binHash<u_uchar> wconsonants;
     

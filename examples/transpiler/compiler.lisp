@@ -14,6 +14,7 @@
 
 ; We read our grammar file
 (setq grammaire (fread (+ _current grammar)))
+(setq grammaire (replace grammaire "\r" ""))
 
 ; We first split along cariage returns
 (setq grammar_rules (split grammaire "\n"))
@@ -43,6 +44,10 @@
    (cons (transpiling x idx) (disjunction remainder idx))
 )
 
+(defpat disjunction ( ['¶ n $ remainder] idx)
+   (cons (list 'setq 'err n) (transpiling remainder idx))
+)
+
 ; The list has been consumed
 (defpat disjunction ( () idx)
    ()
@@ -52,6 +57,46 @@
 ; we apply transpiling again
 (defpat disjunction (x idx)
    (transpiling x idx)
+)
+
+(defpat kleene (['? $ remainder] elements idx idx1)
+   (setq nom (atom (+ "O_" rule_name "_" (size functions))))
+   (push functions (list nom (list (variable idx1) (results idx1) (last elements))))
+   (pop elements)
+   (push elements (list nom 'tokens (variable idx1) (results idx1)))
+   (kleene remainder elements idx idx1)
+)
+
+(defpat kleene (['* $ remainder] elements idx idx1)
+   (setq nom (atom (+ "S_" rule_name "_" (size functions))))
+   (push functions (list nom (list (variable idx1) (results idx1) (last elements))))
+   (pop elements)
+   (push elements (list nom 'tokens (variable idx1) (results idx1)))
+   (kleene remainder elements idx idx1)
+)
+
+(defpat kleene (['+ $ remainder] elements idx idx1)
+   (setq nom (atom (+ "P_" rule_name "_" (size functions))))
+   (push functions (list nom (list (variable idx1) (results idx1) (last elements))))
+   (pop elements)
+   (push elements (list nom 'tokens (variable idx1) (results idx1)))
+   (kleene remainder elements idx idx1)
+)
+
+(defpat kleene (['¶ n $ remainder] elements idx idx1)
+   (push elements (list 'push 'error_id n))
+   (setq rst ())
+   (kleene remainder rst idx idx1)
+   (nconc elements (to_list (format "(if %1 (pop error_id) (setg do_not_stop false))" (cons 'and rst))))
+)
+
+(defpat kleene( [x $ remainder] elements idx idx1)
+   (push elements (transpiling x idx1))
+   (kleene remainder elements idx idx1)
+)
+
+(defpat kleene ( () elements idx idx1)
+   elements
 )
 
 ; If the disjunction operator is present
@@ -73,27 +118,9 @@
       )
    )
 
-   (setq elements ())
+   (setq elements (kleene (cons e remainder) () idx idx1))
    ; We loop among all the elements in the whole structure
    ; We re-build it for this purpose: (cons e remainder)
-   (loop x (cons e remainder)
-      ; We check if there is one of the Kleene operator: ? + *
-      (ncheck (in '(? + *) x)
-         ; If it is the case, we store the constraints (in elements)
-         ; in functions for later creation
-         ; The last element of elements is the one that is covered by the Kleene operator
-         ; It is replaced with a call to a function whose name reflects the Kleene operator
-         (push elements (transpiling x idx1))
-         (switch (string x)
-            ("?" (setq nom (atom (+ "O_" rule_name "_" (size functions)))))
-            ("*" (setq nom (atom (+ "S_" rule_name "_" (size functions)))))
-            ("+" (setq nom (atom (+ "P_" rule_name "_" (size functions)))))
-         )
-         (push functions (list nom (list (variable idx1) (results idx1) (last elements))))
-         (pop elements)
-         (push elements (list nom 'tokens (variable idx1) (results idx1)))
-      )
-   )
    ; We then implement the final stage where the results are pushed into the current result
    (nconc init elements)
    (nconc init  (list (list 'set@ (variable idx) 0 (list 'car (variable idx1)))))
@@ -258,13 +285,14 @@
 
 ; As we use to_list for a string, we replace the escape ()[] with their code.
 (defun protecting (r)
-   (map
+   (maplist
       (\(x)
          (switch x
             ("%(" "%40")
             ("%)" "%41")
             ("%[" "%91")
             ("%]" "%92")
+            (";" "¶")
             (true x)
          )
       )
@@ -277,94 +305,102 @@
 ; The ! in front of a rule means that any %x or $xxx will only be tested and will not appear in the final tree.
 ; The & in front of a rule means that the rule label will be inserted in the final tree if the number of elements is > 1
 ; The ^ in front of a rule means that the tree item will not contain the rule label 
+; (to_list "! function : = $Fonction ; 4 Word %40 ; 2 variables ? %41 expressions + $FinFonction")
 
+(setq errors {})
 (setq the_code (format the_code grammar (date)))
 (loop r grammar_rules
-
    (println r)
-
-   ; The most cryptic line of the whole code
-   ; We first tokenize then we replace %( %) etc... with their code
-   ; Then we join again then apply to_list to this string   
-   ; Hence, we are sure that every token will be distinctely separated from the others
-   ; In particular, the disjunction operator is isolated with this process
-   ; We then apply to_list, which transforms the [...] into sublists.
-
-   (setq a_rule (to_list (join  (protecting (tokenize_rules tok r)) " ")))
-   (ife (eq (car a_rule) '@)
-      (+= the_code (format `(link "%1" '%2)` (cadr a_rule) (caddddr a_rule) ) "\n")
-      (setq entrypoint false) ; for °
-      (setq build true) ; for ^
-      (setg keep true) ; for !
-      (setq dontskip true) ; for &
-
-      (check (eq (car a_rule) '°)
-         (setq entrypoint true)
-         (setq a_rule (cdr a_rule))
+   (if (eq (car r) ";")
+      (block
+         (setq cr (tokenize_rules tok r))
+         (set@ errors (cadr cr) (join (cddr cr) " ")) 
       )
+      (block
+         ; The most cryptic line of the whole code
+         ; We first tokenize then we replace %( %) etc... with their code
+         ; Then we join again then apply to_list to this string   
+         ; Hence, we are sure that every token will be distinctely separated from the others
+         ; In particular, the disjunction operator is isolated with this process
+         ; We then apply to_list, which transforms the [...] into sublists.
+         (setq a_rule (to_list (join  (protecting (tokenize tok r)) " ")))
+         (println 'RULE a_rule "\n")
+         (ife (eq (car a_rule) '@)
+            (+= the_code (format `(link "%1" '%2)` (cadr a_rule) (caddddr a_rule) ) "\n")
+            (setq entrypoint false) ; for °
+            (setq build true) ; for ^
+            (setg keep true) ; for !
+            (setq dontskip true) ; for &
 
-      (check (eq (car a_rule) '^)
-         (setq build false)
-         (setq a_rule (cdr a_rule))
-      )
+            (check (eq (car a_rule) '°)
+               (setq entrypoint true)
+               (setq a_rule (cdr a_rule))
+            )
 
-      (check (eq (car a_rule) '!)
-         (setg keep nil)
-         (setq a_rule (cdr a_rule))
-      )
+            (check (eq (car a_rule) '^)
+               (setq build false)
+               (setq a_rule (cdr a_rule))
+            )
 
-      (check (eq (car a_rule) '&)
-         (setq dontskip false)
-         (setq a_rule (cdr a_rule))
-      )
+            (check (eq (car a_rule) '!)
+               (setg keep nil)
+               (setq a_rule (cdr a_rule))
+            )
 
-      ; This rule_name, which the head of rule, will be used to create a LispE function with this as a name
-      (setq rule_name (car a_rule))
-      (setq corps (transpiling (cdddr a_rule) 0))
-      (setq corps
-         (list 'defun (atom (+ "C_" rule_name)) '(tokens i0 v)
-            (list 'check '(< (car i0) (size tokens))
-               (list 'setq 'v0 ())
-               (list 'if corps
-                  (if entrypoint
-                     (list 'cons (list 'quote rule_name) 'v0)
-                     (if build
-                        (ife dontskip
-                           (list 'push 'v (list 'cons (list 'quote rule_name) 'v0))
-                           (list 'if
-                              (list 'eq (list 'size 'v0) 1)
+            (check (eq (car a_rule) '&)
+               (setq dontskip false)
+               (setq a_rule (cdr a_rule))
+            )
+
+            ; This rule_name, which the head of rule, will be used to create a LispE function with this as a name
+            (setq rule_name (car a_rule))
+            (setq corps (transpiling (cdddr a_rule) 0))
+            (setq corps
+               (list 'defun (atom (+ "C_" rule_name)) '(tokens i0 v)
+                  (list 'check (list and 'do_not_stop '(< (car i0) (size tokens)))
+                     (list 'setq 'v0 ())
+                     (list 'if corps
+                        (if entrypoint
+                           (list 'cons (list 'quote rule_name) 'v0)
+                           (if build
+                              (ife dontskip
+                                 (list 'push 'v (list 'cons (list 'quote rule_name) 'v0))
+                                 (list 'if
+                                    (list 'eq (list 'size 'v0) 1)
+                                    (list 'nconc 'v 'v0)
+                                    (list 'push 'v (list 'cons (list 'quote rule_name) 'v0))
+                                 )
+                              )
                               (list 'nconc 'v 'v0)
-                              (list 'push 'v (list 'cons (list 'quote rule_name) 'v0))
                            )
                         )
-                        (list 'nconc 'v 'v0)
                      )
                   )
                )
             )
+            (if entrypoint
+               (+= the_code (+ ";" r " (entry point)\n"))
+               (+= the_code (+ ";" r "\n"))
+            )
+            (+= the_code (prettify corps 40) "\n")
+            ; If there are some functions created for ?+* then we create their body here
+            ; Using the above patterns.   
+            (check functions
+               (loop f functions
+                  (setq idx (caadr f))
+                  (setq val (cadadr f))
+                  (setq tst (caddadr f))
+                  (setq func "")
+                  (switch (@ (string (car f)) 0)
+                     ("O" (setq func (format opt_func (car f) tst val idx)))
+                     ("P" (setq func (format plus_func (car f) tst val idx)))
+                     ("S" (setq func (format star_func (car f) tst val idx)))
+                  )         
+                  (+= the_code (prettify (car (to_list func))) "\n")
+               )
+               (setq functions ())
+            )
          )
-      )
-      (if entrypoint
-         (+= the_code (+ ";" r " (entry point)\n"))
-         (+= the_code (+ ";" r "\n"))
-      )
-      (+= the_code (prettify corps 40) "\n")
-      ; If there are some functions created for ?+* then we create their body here
-      ; Using the above patterns.   
-      (check functions
-         (loop f functions
-            (setq idx (caadr f))
-            (setq val (cadadr f))
-            (setq tst (caddadr f))
-            (setq func "")
-            (switch (@ (string (car f)) 0)
-               ("O" (setq func (format opt_func (car f) tst val idx)))
-               ("P" (setq func (format plus_func (car f) tst val idx)))
-               ("S" (setq func (format star_func (car f) tst val idx)))
-            )         
-            (+= the_code (prettify (car (to_list func))) "\n")
-         )
-         (setq functions ())
       )
    )
 )
@@ -377,43 +413,42 @@
 )
 
 (+= the_code (format nokeyword (unique keywords)))
+(+= the_code (string (list 'setq 'error_messages errors)))
 
 (setq func   `
 (setq parser_tok (tokenizer_rules))
 
-(defun remove_rule (rg base)
-    (loop i (range 0 (size rg) 1)
-       (setq x (@ rg i))
-       (check (in x base)
-          (pop rg i)
-          (break)
-      )
-   )
+(setq rg «1:{%d #A-F #a-f}
+#9=#
+#10=#
+#32=#
+"{[\-"] ~%r}*"=34
+0x%1+(.%1+({p P}({%- %+})%d+))=57
+%d+(.%d+({eE}({%- %+})%d+))=57
+%o=63
+%p=32
+%h{%h %d}*=65
+%a{%a %d}*=65
+»
 )
 
-(setq rg (get_tokenizer_rules parser_tok))
-
-(set@ rg 0 " +=#")
-(set@ rg 1 "\t+=#")
-(set@ rg 2 "\n+=#")
-
-; Our tokenizer for Basic instructions prevents <> == <= and >= to be one token
-; We remove the rules
-(remove_rule rg "===0")
-(remove_rule rg "<==0")
-(remove_rule rg ">==0")
-(remove_rule rg "<>=0")
+(setq rg (replace rg "\r" ""))
+(setq rg (split rg "\n"))
 
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
+   (setq code (replace code "\r" ""))
+   (setg error_id '(0))
+   (setg do_not_stop true)
+   (key error_messages 0 "Syntax Error")
    ; The magic of LIsp. A one-liner to get rid of lines that starts with REM
    (setq code (join (filterlist (\(x) (neq (lower (@@ (trim x) 0 4)) "rem ")) (split code "\n")) "\n"))
-   (setq tokens (tokenize_rules parser_tok code))
+   (setq tokens (tokenize_rules parser_tok (+ code "\n")))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))
    (if (< (car i) (size tokens))
-      (cons "Error from: " (@@ tokens (car i) (+ 20 (car i))))
+	(list (join (maplist (\(x) (@ error_messages x)) error_id) ", ") "in \"" (join (@@ tokens (car i) (+ 20 (car i))) " ") "\"")
       res
    )
 )
@@ -424,11 +459,10 @@
 ; This line creates an entry point  for our grammar transpiling
 ; In our case, it will implement the function: basic_abstract_tree
 (+= the_code func)
-(fwrite (+ _current (+ grammar ".lisp")) (prettify the_code))
+(fwrite (+ _current grammar ".lisp") (prettify the_code))
 
 ; We check if the code is well-formed LispE program.
-(eval the_code)
-
+;(eval the_code)
 
 
 

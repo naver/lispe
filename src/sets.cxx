@@ -1870,7 +1870,7 @@ void Set::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             append(value->copying(false));
             value->release();
         }
@@ -1908,7 +1908,7 @@ void Set_s::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             ensemble.insert(value->asUString(lisp));
             value->release();
         }
@@ -1946,7 +1946,7 @@ void Set_i::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             ensemble.insert(value->asInteger());
             value->release();
         }
@@ -1984,7 +1984,7 @@ void Set_n::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             ensemble.insert(value->asNumber());
             value->release();
         }
@@ -2760,7 +2760,7 @@ void Heap::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             insert(lisp, value->copying(false));
             value->release();
         }

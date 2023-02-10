@@ -1,4 +1,4 @@
-;Date: 2022/09/09 12:01:12
+;Date: 2023/02/03 15:14:46
 ;Description: Parser for basic description
 ;Generated with compiler.lisp
 
@@ -32,7 +32,7 @@
       (setq w (@ tokens (car i)))
       (check 
          (and
-            (rgx "%a{%a%d_}*" w)
+            (rgx "{%a%h}{%a%h%d_}*" w)
             (nokeywords w)
          )
          (+= i 1)
@@ -70,7 +70,10 @@
 
 ;°analyse := [function^expressions]+ (entry point)
 (defun C_analyse (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -108,7 +111,10 @@
 
 ;operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
 (defun C_operator (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (and
@@ -159,7 +165,10 @@
 
 ;orand := $or^$and^$xor
 (defun C_orand (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (compare tokens "or" i0 v0 true)
@@ -173,7 +182,10 @@
 
 ;comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$in
 (defun C_comparator (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (and
@@ -219,7 +231,10 @@
 
 ;comparison := computing comparator computing [orand comparison]*
 (defun C_comparison (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -255,7 +270,10 @@
 
 ;!minus := %- anumber
 (defun C_minus (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -272,7 +290,10 @@
 
 ;!indexes := computing [%, computing]*
 (defun C_indexes (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -304,17 +325,26 @@
    )
    true)
 
-;!setdimvariable :=  Word %[ indexes %]
+;!setdimvariable :=  Word %[ ;1 indexes %]
 (defun C_setdimvariable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
-            (C_indexes tokens i1 v1)
-            (compare tokens "]" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_indexes tokens i1 v1)
+                  (compare tokens "]" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -323,9 +353,12 @@
    )
 )
 
-;!setdimvariablestring :=  Word %$ %[ indexes %]
+;!setdimvariablestring :=  Word %$ %[ ;1 indexes %]
 (defun C_setdimvariablestring (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -333,8 +366,14 @@
             (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
-            (C_indexes tokens i1 v1)
-            (compare tokens "]" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_indexes tokens i1 v1)
+                  (compare tokens "]" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -346,17 +385,26 @@
    )
 )
 
-;!dimvariable := Word %[ indexes %]
+;!dimvariable := Word %[ ;1 indexes %]
 (defun C_dimvariable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
-            (C_indexes tokens i1 v1)
-            (compare tokens "]" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_indexes tokens i1 v1)
+                  (compare tokens "]" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -365,9 +413,12 @@
    )
 )
 
-;!dimvariablestring := Word %$ %[ indexes %]
+;!dimvariablestring := Word %$ %[ ;1 indexes %]
 (defun C_dimvariablestring (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -375,8 +426,14 @@
             (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
-            (C_indexes tokens i1 v1)
-            (compare tokens "]" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_indexes tokens i1 v1)
+                  (compare tokens "]" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -387,7 +444,10 @@
 
 ;!stringvariable := Word %$
 (defun C_stringvariable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -404,7 +464,10 @@
 
 ;variable := Word
 (defun C_variable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -420,7 +483,10 @@
 
 ;!variables := [stringvariable^variable] [%, [stringvariable^variable]]*
 (defun C_variables (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -458,9 +524,12 @@
    )
    true)
 
-;!call := [lambda^Word] %( [computing [%, computing]*]? %)
+;!call := [lambda^Word] %( ;2  [computing [%, computing]*]? %)
 (defun C_call (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -470,8 +539,14 @@
                (C_Word tokens i1 v1)
             )
             (compare tokens "(" i1 v1 nil)
-            (O_call_1 tokens i1 v1)
-            (compare tokens ")" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (O_call_1 tokens i1 v1)
+                  (compare tokens ")" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -511,9 +586,12 @@
    )
    true)
 
-;!method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
+;!method := [dimvariablestring^dimvariable^stringvariable^variable] %. ;9 Word %( ;2 [computing [%, computing]*]? %)
 (defun C_method (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -525,10 +603,22 @@
                (C_variable tokens i1 v1)
             )
             (compare tokens "." i1 v1 nil)
-            (C_Word tokens i1 v1)
-            (compare tokens "(" i1 v1 nil)
-            (O_method_1 tokens i1 v1)
-            (compare tokens ")" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_Word tokens i1 v1)
+                  (compare tokens "(" i1 v1 nil)
+                  (push error_id 0)
+                  (if (and
+                        (O_method_1 tokens i1 v1)
+                        (compare tokens ")" i1 v1 nil)
+                     )
+                     (pop error_id)
+                     (setg do_not_stop nil)
+                  )
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -570,7 +660,10 @@
 
 ;!assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 (defun C_assignment (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -591,9 +684,12 @@
    )
 )
 
-;!dim :=  $DIM Word %[ indexes %]
+;!dim :=  $DIM Word %[ ;1 indexes %]
 (defun C_dim (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -601,8 +697,14 @@
             (compare tokens "DIM" i1 v1 nil)
             (C_Word tokens i1 v1)
             (compare tokens "[" i1 v1 nil)
-            (C_indexes tokens i1 v1)
-            (compare tokens "]" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_indexes tokens i1 v1)
+                  (compare tokens "]" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -611,9 +713,12 @@
    )
 )
 
-;!dimstring :=  $DIM Word %$ %[ indexes %]
+;!dimstring :=  $DIM Word %$ %[ ;1 indexes %]
 (defun C_dimstring (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -622,8 +727,14 @@
             (C_Word tokens i1 v1)
             (compare tokens "$" i1 v1 nil)
             (compare tokens "[" i1 v1 nil)
-            (C_indexes tokens i1 v1)
-            (compare tokens "]" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_indexes tokens i1 v1)
+                  (compare tokens "]" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -632,16 +743,25 @@
    )
 )
 
-;!parenthetic := %( computing %)
+;!parenthetic := %( ;2 computing %)
 (defun C_parenthetic (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (compare tokens "(" i1 v1 nil)
-            (C_computing tokens i1 v1)
-            (compare tokens ")" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_computing tokens i1 v1)
+                  (compare tokens ")" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -650,17 +770,26 @@
    )
 )
 
-;!data := $data computing [%, computing]* $enddata
+;!data := $data ;3 computing [%, computing]* $enddata
 (defun C_data (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (compare tokens "data" i1 v1 nil)
-            (C_computing tokens i1 v1)
-            (S_data_0 tokens i1 v1)
-            (compare tokens "enddata" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_computing tokens i1 v1)
+                  (S_data_0 tokens i1 v1)
+                  (compare tokens "enddata" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -688,7 +817,10 @@
 
 ;^callitem := method^call^lambda^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 (defun C_callitem (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (C_method tokens i0 v0)
@@ -711,7 +843,10 @@
 
 ;&computing := callitem  [operator callitem]*
 (defun C_computing (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -748,7 +883,10 @@
 
 ;!multiop := Word computing [%, computing]*
 (defun C_multiop (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -783,7 +921,10 @@
 
 ;body := expressions+
 (defun C_body (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -815,7 +956,10 @@
 
 ;!arguments := computing [%, computing]*
 (defun C_arguments (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -849,7 +993,10 @@
 
 ;^expressions := method^call^lambda^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 (defun C_expressions (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (C_method tokens i0 v0)
@@ -872,7 +1019,10 @@
 
 ;!then := $Then expressions+
 (defun C_then (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -905,7 +1055,10 @@
 
 ;!else := $Else expressions+
 (defun C_else (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -936,9 +1089,12 @@
    )
 )
 
-;!function := $Function Word %( variables? %) expressions+ $EndFunction
+;!function := $Function Word %( ;4 variables? %) expressions+ $EndFunction
 (defun C_function (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -946,16 +1102,22 @@
             (compare tokens "Function" i1 v1 nil)
             (C_Word tokens i1 v1)
             (compare tokens "(" i1 v1 nil)
-            (O_function_0 tokens i1 v1)
-            (compare tokens ")" i1 v1 nil)
-            (P_function_1 tokens i1 v1)
-            (
-               compare
-               tokens
-               "EndFunction"
-               i1
-               v1
-               nil
+            (push error_id 0)
+            (if (and
+                  (O_function_0 tokens i1 v1)
+                  (compare tokens ")" i1 v1 nil)
+                  (P_function_1 tokens i1 v1)
+                  (
+                     compare
+                     tokens
+                     "EndFunction"
+                     i1
+                     v1
+                     nil
+                  )
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
             )
             (set@ i0 0 (car i1))
             (setq v0 v1)
@@ -988,19 +1150,34 @@
    )
 )
 
-;!lambda := %[ %( variables? %) body %]
+;!lambda := %[ ;1 %( ;2 variables? %) body %]
 (defun C_λ (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (compare tokens "[" i1 v1 nil)
-            (compare tokens "(" i1 v1 nil)
-            (O_λ_0 tokens i1 v1)
-            (compare tokens ")" i1 v1 nil)
-            (C_body tokens i1 v1)
-            (compare tokens "]" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (compare tokens "(" i1 v1 nil)
+                  (push error_id 0)
+                  (if (and
+                        (O_λ_0 tokens i1 v1)
+                        (compare tokens ")" i1 v1 nil)
+                        (C_body tokens i1 v1)
+                        (compare tokens "]" i1 v1 nil)
+                     )
+                     (pop error_id)
+                     (setg do_not_stop nil)
+                  )
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -1016,18 +1193,27 @@
    )
    true)
 
-;!if := $If comparison then else? $EndIf
+;!if := $If ;5 comparison then else? $EndIf
 (defun C_if (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (compare tokens "If" i1 v1 nil)
-            (C_comparison tokens i1 v1)
-            (C_then tokens i1 v1)
-            (O_if_0 tokens i1 v1)
-            (compare tokens "EndIf" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_comparison tokens i1 v1)
+                  (C_then tokens i1 v1)
+                  (O_if_0 tokens i1 v1)
+                  (compare tokens "EndIf" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -1043,17 +1229,26 @@
    )
    true)
 
-;!while := $While comparison expressions+ $EndWhile
+;!while := $While ;6 comparison expressions+ $EndWhile
 (defun C_while (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (compare tokens "While" i1 v1 nil)
-            (C_comparison tokens i1 v1)
-            (P_while_0 tokens i1 v1)
-            (compare tokens "EndWhile" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_comparison tokens i1 v1)
+                  (P_while_0 tokens i1 v1)
+                  (compare tokens "EndWhile" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -1078,9 +1273,12 @@
    )
 )
 
-;!forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
+;!forin := $For [stringvariable^variable] $in ;7 callitem expressions+ $EndFor
 (defun C_forin (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -1091,9 +1289,15 @@
                (C_variable tokens i1 v1)
             )
             (compare tokens "in" i1 v1 nil)
-            (C_callitem tokens i1 v1)
-            (P_forin_0 tokens i1 v1)
-            (compare tokens "EndFor" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_callitem tokens i1 v1)
+                  (P_forin_0 tokens i1 v1)
+                  (compare tokens "EndFor" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -1118,21 +1322,30 @@
    )
 )
 
-;!for := $For assignment %, comparison %, assignment expressions+ $EndFor
+;!for := $For ;8 assignment %, comparison %, assignment expressions+ $EndFor
 (defun C_for (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
             (setq v1 ())
             (compare tokens "For" i1 v1 nil)
-            (C_assignment tokens i1 v1)
-            (compare tokens "," i1 v1 nil)
-            (C_comparison tokens i1 v1)
-            (compare tokens "," i1 v1 nil)
-            (C_assignment tokens i1 v1)
-            (P_for_0 tokens i1 v1)
-            (compare tokens "EndFor" i1 v1 nil)
+            (push error_id 0)
+            (if (and
+                  (C_assignment tokens i1 v1)
+                  (compare tokens "," i1 v1 nil)
+                  (C_comparison tokens i1 v1)
+                  (compare tokens "," i1 v1 nil)
+                  (C_assignment tokens i1 v1)
+                  (P_for_0 tokens i1 v1)
+                  (compare tokens "EndFor" i1 v1 nil)
+               )
+               (pop error_id)
+               (setg do_not_stop nil)
+            )
             (set@ i0 0 (car i1))
             (setq v0 v1)
          )
@@ -1161,42 +1374,40 @@
 (defun nokeywords(w)
       (not (in  '("or" "and" "xor" "in" "dim" "data" "enddata" "then" "else" "function" "endfunction" "if" "endif" "while" "endwhile" "for" "endfor") (lower w)))
 )
-   
+   (setq error_messages {"1":"expecting a closing \"]\"" "2":"expecting a closing \")\"" "3":"expecting a closing tag for \"data\"" "4":"expecting a closing tag for \"function\"" "5":"expecting a closing tag for \"if\"" "6":"expecting a closing tag for \"while\"" "7":"expecting a closing tag for \"forin\"" "8":"expecting a closing tag for \"for\"" "9":"error when analysing a method"})
 (setq parser_tok (tokenizer_rules))
 
-(defun remove_rule (rg base)
-    (loop i (range 0 (size rg) 1)
-       (setq x (@ rg i))
-       (check (in x base)
-          (pop rg i)
-          (break)
-      )
-   )
+(setq rg «1:{%d #A-F #a-f}
+#9=#
+#10=#
+#32=#
+"{[\-"] ~%r}*"=34
+0x%1+(.%1+({p P}({%- %+})%d+))=57
+%d+(.%d+({eE}({%- %+})%d+))=57
+%o=63
+%p=32
+%h{%h %d}*=65
+%a{%a %d}*=65
+»
 )
 
-(setq rg (get_tokenizer_rules parser_tok))
-
-(set@ rg 0 " +=#")
-(set@ rg 1 "\t+=#")
-(set@ rg 2 "\n+=#")
-
-; Our tokenizer for Basic instructions prevents <> == <= and >= to be one token
-; We remove the rules
-(remove_rule rg "===0")
-(remove_rule rg "<==0")
-(remove_rule rg ">==0")
-(remove_rule rg "<>=0")
+(setq rg (replace rg "\r" ""))
+(setq rg (split rg "\n"))
 
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
+   (setq code (replace code "\r" ""))
+   (setg error_id '(0))
+   (setg do_not_stop true)
+   (key error_messages 0 "Syntax Error")
    ; The magic of LIsp. A one-liner to get rid of lines that starts with REM
    (setq code (join (filterlist (\(x) (neq (lower (@@ (trim x) 0 4)) "rem ")) (split code "\n")) "\n"))
-   (setq tokens (tokenize_rules parser_tok code))
+   (setq tokens (tokenize_rules parser_tok (+ code "\n")))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))
    (if (< (car i) (size tokens))
-      (cons "Error from: " (@@ tokens (car i) (+ 20 (car i))))
+	(list (join (maplist (\(x) (@ error_messages x)) error_id) ", ") "in \"" (join (@@ tokens (car i) (+ 20 (car i))) " ") "\"")
       res
    )
 )

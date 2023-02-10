@@ -19,6 +19,7 @@
 #include "stack.h"
 #include "delegation.h"
 #include <stack>
+#include "tokens.h"
 
 //------------------------------------------------------------
 #define debug_none 0
@@ -44,8 +45,11 @@ class LispE {
     long max_stack_size;
 
 public:
-    Element* _BOOLEANS[2];
+    Element* _BOOLEANS[2][2];
+    tokenizer_result<u_ustring> r_parse;
     
+    bool select_bool_as_one;
+
 
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
@@ -85,6 +89,8 @@ public:
     
     unordered_map<short, char> depths;
     
+    segmenter_automaton segmenter;
+
     long depth_stack;
     
     //Delegation is a class that records any data
@@ -116,8 +122,10 @@ public:
     bool preparingthread;
     bool clean_utf8;
     bool check_thread_stack;
+	bool current_path_set;
     
-    LispE(UTF8_Handler* hnd = NULL) {
+    LispE(UTF8_Handler* hnd = NULL) : segmenter(hnd) {
+		current_path_set = false;
         depth_stack = 0;
         check_thread_stack = false;
         current_space = 0;
@@ -136,12 +144,14 @@ public:
         current_body = NULL;
         if (hnd == NULL) {
             handlingutf8 = new UTF8_Handler;
+            segmenter.access = handlingutf8;
             clean_utf8 = true;
         }
         else {
             handlingutf8 = hnd;
             clean_utf8 = false;
         }
+        
         delegation->initialisation(this);
         n_null = delegation->_NULL;
         n_emptylist = delegation->_EMPTYLIST;
@@ -174,14 +184,22 @@ public:
     
     //------------------------------------------
 
-    void set_true_as_true() {
-        _BOOLEANS[0] = n_null;
-        _BOOLEANS[1] = n_true;
+    void reset_to_true(bool s) {
+        select_bool_as_one = s;
     }
 
-    void set_true_as_one() {
-        _BOOLEANS[0] = n_zero;
-        _BOOLEANS[1] = n_one;
+    bool set_true_as_one() {
+        bool s = select_bool_as_one;
+        select_bool_as_one = true;
+        return s;
+    }
+    
+    inline Element* True() {
+        return _BOOLEANS[select_bool_as_one][1];
+    }
+    
+    inline Element* False() {
+        return _BOOLEANS[select_bool_as_one][0];
     }
 
     inline void push(Element* fonction) {
@@ -413,13 +431,18 @@ public:
     
     Element* load_library(string name);
     Element* extension(string, Element* e = NULL);
-    Element* eval(string);
+    Element* eval(u_ustring);
     Element* eval(wstring& w) {
-        string s;
-        s_unicode_to_utf8(s, w);
+        u_ustring s = _w_to_u(w);
         return eval(s);
     }
     
+    Element* eval(string w) {
+        u_ustring s;
+        s_utf8_to_unicode(s, w, w.size());
+        return eval(s);
+    }
+
     Element* atomise(u_ustring a);
     void cleaning();
     
@@ -427,11 +450,14 @@ public:
     Element* execute(string code, string path_name);
     
     Element* compile_lisp_code(string& code);
-    Element* compile_eval(string& code);
+    Element* compile_lisp_code(u_ustring& code);
+    Element* compile_eval(u_ustring& code);
 
     Element* load(string chemin);
     lisp_code segmenting(string& code, Tokenizer& s);
+    lisp_code segmenting(u_ustring& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
+    Element* tokenize(u_ustring& code, bool keepblanks, short decimalpoint);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
     Element* syntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
     void arguments(std::vector<string>& args);
@@ -499,24 +525,62 @@ public:
     inline bool sendError() {
         throw delegation->_THEEND;
     }
-    
+
+    inline void sendEnd() {
+        throw delegation->_THEEND;
+    }
+
     inline bool sendError(u_ustring msg) {
         throw new Error(msg);
     }
 
-    inline bool sendStackError() {
+    inline void sendStackError() {
         depth_stack++;
         throw new Error(U"Stack overflow");
     }
 
-    inline void checkStack() {
-         depth_stack == max_stack_size?sendStackError():depth_stack++;
+    inline void checkTrace(Listincode* l) {
+        depth_stack++;
+        trace_and_context(l);
+    }
+        
+    inline void setStack() {
+        depth_stack++;
+    }
+    
+    inline void checkState(Listincode* l) {
+        (!delegation->stop_execution && !trace && depth_stack != max_stack_size)?setStack():
+            delegation->stop_execution?
+                sendEnd():
+                depth_stack == max_stack_size?
+                    sendStackError():
+                    trace?
+                        checkTrace(l):
+                        setStack();
+                    
     }
 
     inline void resetStack() {
         depth_stack--;
     }
     
+    List* cloning(int16_t lab) {
+        return delegation->straight_eval[lab]->cloning();
+    }
+
+    List* cloning(Listincode* e, int16_t lab) {
+        return delegation->straight_eval[lab]->cloning(e,delegation->evals[lab]);
+    }
+
+    
+    inline bool arity_check(int16_t lb, unsigned long sz) {
+        return (delegation->arity_check(lb, sz))?true:sendError(U"Error: wrong number of arguments");
+    }
+
+    inline bool check_arity(int16_t lb, long sz) {
+        return (delegation->checkArity(lb, sz))?true:sendError(U"Error: wrong number of arguments");
+    }
+
     //2
     inline int16_t check_arity(List* l, long sz) {
         int16_t lb = l->liste.get0();
@@ -524,8 +588,7 @@ public:
     }
 
     inline int16_t checkState(List* l, long sz) {
-        checkStack();
-        delegation->checkExecution();
+        delegation->stop_execution?sendEnd():depth_stack == max_stack_size?sendStackError():setStack();
         return (!sz)?l_emptylist:(!check_arity_on_fly)?l->liste.get0():check_arity(l, sz);
     }
     
@@ -541,12 +604,13 @@ public:
     }
 
     inline void checkPureState(Listincode* l) {
-        checkStack();
-        delegation->checkExecution();
+        checkState(l);
         if (trace) {
             trace_and_context(l);
         }
     }
+    
+    Element* check_error(List* l,Error* err, long idx, long fileidx);
     
     inline void trace_and_context(Listincode* e) {
         //in the case of a goto, we only take into account breakpoints
@@ -862,6 +926,17 @@ public:
         execution_stack[0]->storing_variable(e->duplicate_constant(this), label);
     }
 
+    inline Element* recording_global(Element* e, int16_t label) {
+        return execution_stack[0]->recording_variable(e->duplicate_constant(this), label);
+    }
+
+    inline Element* recording_back(Element* e, int16_t label) {
+        bool g = execution_stack.back()->variables.check(label)?false:execution_stack.vecteur[0]->variables.check(label);
+        if (g)
+            return execution_stack[0]->recording_variable(e->duplicate_constant(this), label);
+        return execution_stack.back()->recording_variable(e->duplicate_constant(this), label);
+    }
+
     inline void storing_global(wstring label, Element* e) {
         execution_stack[0]->storing_variable(e->duplicate_constant(this), delegation->encode(label));
     }
@@ -1126,8 +1201,13 @@ public:
     }
 
     inline List* provideCall(Element* op, long nb) {
-        List* call = list_pool.last?list_pool.backpop(): new Listpool(this);
-        call->append(op);
+        List* call;
+        if (op->is_straight_eval())
+            call = (List*)op;
+        else {
+            call = list_pool.last?list_pool.backpop(): new Listpool(this);
+            call->append(op);
+        }
         while (nb) {
             call->append(quoted());
             nb--;

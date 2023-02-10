@@ -1,4 +1,4 @@
-;Date: 2022/10/06 16:01:16
+;Date: 2023/02/03 15:15:00
 ;Description: Parser for hellenica description
 ;Generated with compiler.lisp
 
@@ -70,7 +70,10 @@
 
 ;°analyse := [function^expressions]+ (entry point)
 (defun C_analyse (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -130,7 +133,10 @@
 (link "ήή" 'xor)
 ;operator := [%< %<]^[%> %>]^[%^ %^]^[%* %*]^%&^%|^%+^%-^%*^%/^%%^%^
 (defun C_operator (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (and
@@ -181,7 +187,10 @@
 
 ;orand := $ή^$και^$ήή
 (defun C_orand (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (compare tokens "ή" i0 v0 true)
@@ -195,7 +204,10 @@
 
 ;comparator := [%< %>]^[%< %=]^[%= %=]^[%> %=]^%<^%>^$μέσα
 (defun C_comparator (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (and
@@ -241,7 +253,10 @@
 
 ;comparison := computing comparator computing [orand comparison]*
 (defun C_comparison (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -277,7 +292,10 @@
 
 ;!minus := %- anumber
 (defun C_minus (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -294,7 +312,10 @@
 
 ;!indexes := computing [%, computing]*
 (defun C_indexes (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -328,7 +349,10 @@
 
 ;!setdimvariable :=  Word %[ indexes %]
 (defun C_setdimvariable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -347,7 +371,10 @@
 
 ;!setdimvariablestring :=  Word %$ %[ indexes %]
 (defun C_setdimvariablestring (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -370,7 +397,10 @@
 
 ;!dimvariable := Word %[ indexes %]
 (defun C_dimvariable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -389,7 +419,10 @@
 
 ;!dimvariablestring := Word %$ %[ indexes %]
 (defun C_dimvariablestring (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -409,7 +442,10 @@
 
 ;!stringvariable := Word %$
 (defun C_stringvariable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -426,7 +462,10 @@
 
 ;variable := Word
 (defun C_variable (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -442,7 +481,10 @@
 
 ;!variables := [stringvariable^variable] [%, [stringvariable^variable]]*
 (defun C_variables (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -482,7 +524,10 @@
 
 ;!call := [lambda^Word] %( [computing [%, computing]*]? %)
 (defun C_call (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -535,7 +580,10 @@
 
 ;!method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
 (defun C_method (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -592,7 +640,10 @@
 
 ;!assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 (defun C_assignment (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -615,7 +666,10 @@
 
 ;!dim :=  $διάσταση Word %[ indexes %]
 (defun C_dim (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -642,7 +696,10 @@
 
 ;!dimstring :=  $διάσταση Word %$ %[ indexes %]
 (defun C_dimstring (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -670,7 +727,10 @@
 
 ;!parenthetic := %( computing %)
 (defun C_parenthetic (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -688,7 +748,10 @@
 
 ;!data := $δεδομένα computing [%, computing]* $τέλοςδεδομένα
 (defun C_data (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -738,7 +801,10 @@
 
 ;^callitem := method^call^lambda^parenthetic^data^astring^minus^anumber^dimvariablestring^dimvariable^stringvariable^variable
 (defun C_callitem (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (C_method tokens i0 v0)
@@ -761,7 +827,10 @@
 
 ;&computing := callitem  [operator callitem]*
 (defun C_computing (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -798,7 +867,10 @@
 
 ;body := expressions+
 (defun C_body (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -830,7 +902,10 @@
 
 ;!arguments := computing [%, computing]*
 (defun C_arguments (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -864,7 +939,10 @@
 
 ;!multiop := Word computing [%, computing]*
 (defun C_multiop (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -899,7 +977,10 @@
 
 ;^expressions := method^call^lambda^dimstring^dim^assignment^forin^for^if^while^multiop^computing
 (defun C_expressions (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (or
             (C_method tokens i0 v0)
@@ -922,7 +1003,10 @@
 
 ;!then := $τότε expressions+
 (defun C_then (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -955,7 +1039,10 @@
 
 ;!else := $αλλιώς expressions+
 (defun C_else (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -995,7 +1082,10 @@
 
 ;!function := $συνάρτηση Word %( variables? %) expressions+ $τέλοςσυνάρτησης
 (defun C_function (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -1054,7 +1144,10 @@
 
 ;!lambda := %[ %( variables? %) body %]
 (defun C_λ (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -1082,7 +1175,10 @@
 
 ;!if := $αν comparison then else? $τέλοςαν
 (defun C_if (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -1116,7 +1212,10 @@
 
 ;!while := $ενώ comparison expressions+ $τέλοςενώ
 (defun C_while (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -1158,7 +1257,10 @@
 
 ;!forin := $για [stringvariable^variable] $μέσα callitem expressions+ $τέλοςγια
 (defun C_forin (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -1205,7 +1307,10 @@
 
 ;!for := $για assignment %, comparison %, assignment expressions+ $τέλοςγια
 (defun C_for (tokens i0 v)
-   (check (< (car i0) (size tokens))
+   (check (and
+         do_not_stop
+         (< (car i0) (size tokens))
+      )
       (setq v0 ())
       (if (and
             (setq i1 (clone i0))
@@ -1253,42 +1358,40 @@
 (defun nokeywords(w)
       (not (in  '("ή" "και" "ήή" "μέσα" "διάσταση" "δεδομένα" "τέλοςδεδομένα" "τότε" "αλλιώς" "συνάρτηση" "τέλοςσυνάρτησης" "αν" "τέλοςαν" "ενώ" "τέλοςενώ" "για" "τέλοςγια") (lower w)))
 )
-   
+   (setq error_messages {})
 (setq parser_tok (tokenizer_rules))
 
-(defun remove_rule (rg base)
-    (loop i (range 0 (size rg) 1)
-       (setq x (@ rg i))
-       (check (in x base)
-          (pop rg i)
-          (break)
-      )
-   )
+(setq rg «1:{%d #A-F #a-f}
+#9=#
+#10=#
+#32=#
+"{[\-"] ~%r}*"=34
+0x%1+(.%1+({p P}({%- %+})%d+))=57
+%d+(.%d+({eE}({%- %+})%d+))=57
+%o=63
+%p=32
+%h{%h %d}*=65
+%a{%a %d}*=65
+»
 )
 
-(setq rg (get_tokenizer_rules parser_tok))
-
-(set@ rg 0 " +=#")
-(set@ rg 1 "\t+=#")
-(set@ rg 2 "\n+=#")
-
-; Our tokenizer for Basic instructions prevents <> == <= and >= to be one token
-; We remove the rules
-(remove_rule rg "===0")
-(remove_rule rg "<==0")
-(remove_rule rg ">==0")
-(remove_rule rg "<>=0")
+(setq rg (replace rg "\r" ""))
+(setq rg (split rg "\n"))
 
 (set_tokenizer_rules parser_tok rg)
 
 (defun abstract_tree (code)
+   (setq code (replace code "\r" ""))
+   (setg error_id '(0))
+   (setg do_not_stop true)
+   (key error_messages 0 "Syntax Error")
    ; The magic of LIsp. A one-liner to get rid of lines that starts with REM
    (setq code (join (filterlist (\(x) (neq (lower (@@ (trim x) 0 4)) "rem ")) (split code "\n")) "\n"))
-   (setq tokens (tokenize_rules parser_tok code))
+   (setq tokens (tokenize_rules parser_tok (+ code "\n")))
    (setq i '(0))
    (setq res (C_analyse tokens i ()))
    (if (< (car i) (size tokens))
-      (cons "Error from: " (@@ tokens (car i) (+ 20 (car i))))
+	(list (join (maplist (\(x) (@ error_messages x)) error_id) ", ") "in \"" (join (@@ tokens (car i) (+ 20 (car i))) " ") "\"")
       res
    )
 )

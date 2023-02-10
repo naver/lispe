@@ -4,7 +4,7 @@
  * Copyright 2020-present NAVER Corp.
  * The 3-Clause BSD License
  */
-//  elements.cxx
+//  eval.cxx
 //
 //
 
@@ -35,43 +35,6 @@ void List::evalAsInteger(long i, LispE* lisp, long& d) {
     d = e->asInteger();
     e->release();
 }
-
-//------------------------------------------------------------------------------------------
-Element* eval_body_as_argument_min(LispE* lisp, Element* function) {
-    if (function->isInstruction())
-        return function;
-    
-    if (function->isAtom())
-        function = function->eval(lisp);
-    
-    if (function->isList()) {
-        switch(function->function_label()) {
-            case l_defpat:
-                function = new Atomefonction(function, t_pattern);
-                break;
-            case l_deflib:
-                function = new Atomefonction(function, t_library_function);
-                break;
-            case l_defun:
-                function = new Atomefonction(function, t_function);
-                break;
-            case l_lambda:
-                function = new Atomefonction(function, t_lambda);
-                break;
-            default:
-                throw new Error("Error: wrong function call");
-        }
-        
-    }
-
-    return function;
-}
-
-//We evaluation function beforehand
-Element* eval_body_as_argument(LispE* lisp, Element* function) {
-    return eval_body_as_argument_min(lisp, function->eval(lisp));
-}
-
 //------------------------------------------------------------------------------------------
 char List::check_match(LispE* lisp, Element* value) {
     if (!value->isList() || liste.size() != value->size())
@@ -1245,146 +1208,7 @@ bool Strings::isequal(LispE* lisp, Element* value) {
     }
     return true;
 }
-//------------------------------------------------------------------------------------------
-Element* List_pattern_call::eval(LispE* lisp) {
-    List* arguments = lisp->provideList();
-    Element* element;
-    Element* body;
-    
-    long i;
-    //We calculate our values in advance, in the case of a recursive call, we must
-    //use current values on the stack
-    long nbarguments = liste.size()-1;
-    int16_t ilabel = -1;
-    int16_t sublabel = -1;
-    char match;
-    char depth = lisp->depths[function_label] - 1;
 
-    try {
-        lisp->checkStack();
-        for (i = 1; i <= nbarguments; i++) {
-            element = liste[i]->eval(lisp);
-            
-            ilabel = lisp->extractdynamiclabel(element, depth);
-            if (ilabel > l_final && element->type != t_data) {
-                match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
-                if (match != check_ok) {
-                    arguments->clear();
-                    if (match == check_mismatch)
-                        throw new Error(L"Error: Size mismatch between argument list and data structure definition");
-                    else {
-                        std::wstringstream message;
-                        message << L"Error: Mismatch on argument: " << match;
-                        message << " (" << lisp->asString(lisp->getDataStructure(ilabel)->index(match)->label()) << " required)";
-                        throw new Error(message.str());
-                    }
-                }
-            }
-            //We keep the track of the first element as it used as an index to gather pattern methods
-            if (i == 1)
-                sublabel = ilabel;
-            arguments->append(element->duplicate_constant(lisp));
-        }
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        arguments->release();
-        throw err;
-    }
-
-    body = NULL;
-    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
-    auto subfunction = functions.find(sublabel);
-    if (subfunction == functions.end()) {
-        sublabel = v_null;
-        //We check, if we have a rollback function
-        subfunction = functions.find(sublabel);
-        if (subfunction == functions.end()) {
-            arguments->release();
-            wstring message = L"Error: Could not find a match for function: '";
-            message += lisp->asString(function_label);
-            message += L"'";
-            lisp->resetStack();
-            throw new Error(message);
-        }
-    }
-
-    body = subfunction->second[0];
-
-    ilabel = 1;
-    match = 0;
-    long sz = subfunction->second.size();
-    lisp->push(body);
-
-    while (body != NULL) {
-        lisp->setstackfunction(body);
-        element = body->index(2);
-        if (element->size() == nbarguments) {
-            match = true;
-            for (i = 0; i < nbarguments && match; i++) {
-                match = element->index(i)->unify(lisp, arguments->liste[i], true);
-            }
-            if (match)
-                break;
-            
-            lisp->clear_top_stack();
-        }
-        body = NULL;
-        if (ilabel < sz)
-            body = subfunction->second[ilabel++];
-        else {
-            if (sublabel != v_null) {
-                sublabel = v_null;
-                ilabel = 1;
-                //We check, if we have a rollback function
-                subfunction = functions.find(sublabel);
-                if (subfunction != functions.end()) {
-                    body = subfunction->second[0];
-                    sz = subfunction->second.size();
-                }
-            }
-        }
-    }
-
-    if (!match) {
-        lisp->pop();
-        arguments->release();
-        wstring message = L"Error: Could not find a match for function: '";
-        message += lisp->asString(function_label);
-        message += L"'";
-        lisp->resetStack();
-        throw new Error(message);
-    }
-    
-    element = null_;
-    try {
-        nbarguments = body->size();
-        for (i = 3; i < nbarguments && element->type != l_return; i++) {
-            element->release();
-            element = body->index(i)->eval(lisp);
-        }
-        
-        if (element->type == l_return) {
-            body = element->eval(lisp);
-            element->release();
-            //This version protects 'e' from being destroyed in the stack.
-            arguments->release(body);
-            lisp->resetStack();
-            return lisp->pop(body);
-        }
-    }
-    catch(Error* err) {
-        arguments->release();
-        lisp->pop();
-        lisp->resetStack();
-        throw err;
-    }
-
-    arguments->release(element);
-    lisp->resetStack();
-    //This version protects 'e' from being destroyed in the stack.
-    return lisp->pop(element);
-}
 
 Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     List* arguments = lisp->provideList();
@@ -1401,7 +1225,7 @@ Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
     char depth = lisp->depths[function_label] - 1;
 
     try {
-        lisp->checkStack();
+        lisp->setStack();
         for (i = 1; i <= nbarguments; i++) {
             element = liste[i]->eval(lisp);
             
@@ -1899,63 +1723,6 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
     }
 }
 
-Element* List_function_call::eval(LispE* lisp) {
-    //terminal helps detects terminal recursion...
-    //A terminal recursion can be processed in a quasi iterative way.
-    //When a if or cond is processed, their last element is automatically set to terminal
-    //When it corresponds to a function call, then it is processed here
-    //We do not create any new stack element and we store our arguments back into the stack
-    //with their new values in case of terminal recursion.
-    if (terminal && lisp->called() == body) {
-        if (defaultarguments == parameters->size())
-            sameSizeTerminalArguments(lisp, (List*)parameters);
-        else
-            differentSizeTerminalArguments(lisp, (List*)parameters, nbarguments, defaultarguments);
-        return terminal_;
-    }
-    
-
-    if (defaultarguments == parameters->size())
-        sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
-    else
-        differentSizeNoTerminalArguments(lisp, body, (List*)parameters, nbarguments, defaultarguments);
-        
-    //This is a very specific case, we do not want to go into recursion
-    //but handle the call properly as an iteration
-    //We do not try to execute the code again, we simply returns back to the original loop.
-
-    long i;
-    long nb_instructions = body->size();
-    Element* element;
-    try {
-        lisp->checkStack();
-        do  {
-            element = null_;
-            for (i = 3; i < nb_instructions && element != terminal_ && element->type != l_return; i++) {
-                element->release();
-                element = body->liste[i]->eval(lisp);
-            }
-            if (element->type == l_return) {
-                Element* current_value = element->eval(lisp);
-                element->release();
-                //This version protects 'e' from being destroyed in the stack.
-                lisp->resetStack();
-                return lisp->pop(current_value);
-            }
-        }
-        while (element == terminal_);
-    }
-    catch (Error* err) {
-        lisp->resetStack();
-        lisp->pop();
-        throw err;
-    }
-    
-    lisp->resetStack();
-    //This version protects 'e' from being destroyed in the stack.
-    return lisp->pop(element);
-}
-
 Element* List::eval_function(LispE* lisp, List* body) {
     // It is either a lambda or a function
     //otherwise it's an error
@@ -2008,7 +1775,7 @@ Element* List::eval_function(LispE* lisp, List* body) {
     long i;
     nbarguments = body->size();
     try {
-        lisp->checkStack();
+        lisp->setStack();
         do  {
             element = null_;
             for (i = 3; i < nbarguments && element != terminal_ && element->type != l_return; i++) {
@@ -2036,28 +1803,6 @@ Element* List::eval_function(LispE* lisp, List* body) {
     return lisp->pop(element);
 }
     
-Element* List_library_call::eval(LispE* lisp) {
-    if (defaultarguments == parameters->size())
-        sameSizeNoTerminalArguments(lisp, body, (List*)parameters);
-    else
-        differentSizeNoTerminalArguments(lisp, body, (List*)parameters, nbarguments, defaultarguments);
-        
-    Element* element;
-    try {
-        lisp->checkStack();
-        element = body->liste[3]->eval(lisp);
-    }
-    catch (Error* err) {
-        lisp->resetStack();
-        lisp->pop();
-        throw err;
-    }
-    
-    lisp->resetStack();
-    //This version protects 'e' from being destroyed in the stack.
-    return lisp->pop(element);
-}
-
 Element* List::eval_library_function(LispE* lisp, List* body) {
     // It is either a lambda or a function
     //otherwise it's an error
@@ -2079,7 +1824,7 @@ Element* List::eval_library_function(LispE* lisp, List* body) {
     //but handle the call properly as an iteration
     //We do not try to execute the code again, we simply returns back to the original loop.
     try {
-        lisp->checkStack();
+        lisp->setStack();
         element = body->liste[3]->eval(lisp);
     }
     catch (Error* err) {
@@ -2132,7 +1877,7 @@ Element* List::eval_thread(LispE* lisp, List* body) {
         delete thread_lisp;
         throw new Error("Error: Too many threads created. Cannot execute it...");
     }
-    return true_;
+    return True_;
 }
 
 //Execution of a function as well as the shift of parameters with arguments
@@ -2213,6 +1958,7 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
     vecte<int16_t> labels(nbarguments);
     
     try {
+        lisp->setStack();
         //We then push a new stack element...
         //We cannot push it before, or the system will not be able to resolve
         //the argument variables...
@@ -2242,7 +1988,6 @@ Element* List::eval_lambda(LispE* lisp, List* body) {
     nbarguments = body->size();
     Element* stackfunction = lisp->exchangestackfunction(body);
     try {
-        lisp->checkStack();
         do  {
             element = null_;
             for (i = 2; i < nbarguments && element != terminal_ && element->type != l_return; i++) {
@@ -2353,7 +2098,7 @@ Element* Instruction::eval(LispE* lisp) {
 // This function is called when the 'eval' instruction is executed on a string
 // We need to clean the garbage after the compiling
 //------------------------------------------------------------------------------
-Element* LispE::eval(string code) {
+Element* LispE::eval(u_ustring code) {
     long garbage_size = garbages.size();
     bool add = delegation->add_to_listing;
     delegation->add_to_listing = false;
@@ -2428,10 +2173,6 @@ Element* List::evall_void(LispE* lisp) {
 }
 
 
-Element* List_emptylist_eval::eval(LispE* lisp) {
-    return emptylist_;
-}
-
 Element* List::evall_emptylist(LispE* lisp) {
     return emptylist_;
 }
@@ -2454,22 +2195,28 @@ Element* List::eval(LispE* lisp) {
         return e;
     }
     catch (Error* err) {
-        lisp->resetStack();
-        if (err != lisp->delegation->_THEEND)
-            throw err;
-        
-        if (lisp->checkLispState()) {
-            if (lisp->isthreadError()) {
-                if (!lisp->isThread)
-                    lisp->delegation->throwError();
-                return null_;
-            }
-            if (lisp->hasStopped())
-                throw lisp->delegation->_THEEND;
-            return null_;
-        }
-        return eval_error(lisp);
+        return lisp->check_error(this, err, -1, 0);
     }
+}
+
+Element* LispE::check_error(List* l, Error* err, long line, long fileidx) {
+    delegation->set_error_context(line, fileidx);
+    if (err != delegation->_THEEND) {
+        resetStack();
+        throw err;
+    }
+
+    if (checkLispState()) {
+        if (isthreadError()) {
+            if (!isThread)
+                delegation->throwError();
+            return n_null;
+        }
+        if (hasStopped())
+            throw delegation->_THEEND;
+        return n_null;
+    }
+    return l->eval_error(this);
 }
 
 Element* Listincode::eval(LispE* lisp) {
@@ -2479,22 +2226,7 @@ Element* Listincode::eval(LispE* lisp) {
         return e;
     }
     catch (Error* err) {
-        lisp->resetStack();
-        lisp->delegation->set_error_context(line, fileidx);
-        if (err != lisp->delegation->_THEEND)
-            throw err;
-
-        if (lisp->checkLispState()) {
-            if (lisp->isthreadError()) {
-                if (!lisp->isThread)
-                    lisp->delegation->throwError();
-                return null_;
-            }
-            if (lisp->hasStopped())
-                throw lisp->delegation->_THEEND;
-            return null_;
-        }
-        return eval_error(lisp);
+        return lisp->check_error(this, err, line, fileidx);
     }
 }
 
@@ -2506,22 +2238,7 @@ Element* List_execute::eval(LispE* lisp) {
         return e;
     }
     catch(Error* err) {
-        lisp->resetStack();
-        lisp->delegation->set_error_context(line, fileidx);
-        if (err != lisp->delegation->_THEEND)
-            throw err;
-
-        if (lisp->checkLispState()) {
-            if (lisp->isthreadError()) {
-                if (!lisp->isThread)
-                    lisp->delegation->throwError();
-                return null_;
-            }
-            if (lisp->hasStopped())
-                throw lisp->delegation->_THEEND;
-            return null_;
-        }
-        return eval_error(lisp);
+        return lisp->check_error(this, err, line, fileidx);
     }
 }
 //--------------------------------------------------------------------------------
@@ -2529,7 +2246,6 @@ Element* List_execute::eval(LispE* lisp) {
 Element* List::evall_break(LispE* lisp) {
     return break_;
 }
-
 
 Element* List::eval_error(LispE* lisp) {
     if (liste.is_not_empty()) {
@@ -2562,108 +2278,22 @@ Element* List::evall_return(LispE* lisp) {
     return lisp->provideReturn(liste[1]->eval(lisp));
 }
 
-Element* List_and_eval::eval(LispE* lisp) {
-    Element* second_element = null_;
-    bool test = true;
-        
-    for (long i = 1; i < listsize && test; i++) {
-        second_element->release();
-        second_element = liste[i]->eval(lisp);
-        test = second_element->Boolean();
-    }
-    second_element->release();
-    return booleans_[test];
-}
-
-
 Element* List::evall_and(LispE* lisp) {
-    long listsize = liste.size();
-    Element* second_element = null_;
-    bool test = true;
-        
-    for (long i = 1; i < listsize && test; i++) {
-        second_element->release();
-        second_element = liste[i]->eval(lisp);
-        test = second_element->Boolean();
-    }
-    second_element->release();
-    return booleans_[test];
+    List_and_eval m(this);
+    return m.eval(lisp);
 }
+
 
 Element* List::evall_andvalue(LispE* lisp) {
-    long listsize = liste.size();
-    Element* second_element = null_;
-    bool test = true;
-        
-    for (long i = 1; i < listsize && test; i++) {
-        second_element->release();
-        second_element = liste[i]->eval(lisp);
-        test = (second_element == true_);
-    }
-    return second_element;
+     List_andvalue_eval m(this);
+     return m.eval(lisp);
 }
+
 
 
 Element* List::evall_apply(LispE* lisp) {
-    Element* function = liste[1]->eval(lisp);
-    Element* arguments = NULL;
-    List* call = NULL;
-    Element* result = NULL;
-    
-    bool ev = lisp->check_arity_on_fly;
-
-    try {
-        //(apply func l)
-        arguments = liste[2]->eval(lisp);
-        if (arguments->type == t_list) {
-            if (arguments->status) {
-                call = lisp->provideList();
-                call->append(function);
-                call->extend((List*)arguments);
-                arguments = call;
-                call = NULL;
-            }
-            else
-                arguments->insertion(function, 0);
-            
-            lisp->check_arity_on_fly = true;
-            result = arguments->eval(lisp);
-            lisp->check_arity_on_fly = ev;
-
-            arguments->release();
-            return result;
-        }
-        
-        if (!arguments->isList())
-            throw new Error("Error: arguments to 'apply' should be given as a list");
-
-        call = lisp->provideList();
-        call->append(function);
-        call = (List*)arguments->asList(lisp, call);
-        
-        lisp->check_arity_on_fly = true;
-        result = call->eval(lisp);
-        lisp->check_arity_on_fly = ev;
-        
-        call->release();
-        arguments->release();
-    }
-    catch (Error* err) {
-        lisp->check_arity_on_fly = ev;
-        if (call != NULL) {
-            call->release();
-            arguments->release();
-        }
-        else {
-            if (arguments == NULL)
-                function->release();
-            else
-                arguments->release();
-        }
-        throw err;
-    }
-
-    return result;
+     List_apply_eval m(this);
+     return m.eval(lisp);
 }
 
 
@@ -2674,22 +2304,13 @@ Element* List::evall_atomise(LispE* lisp) {
     return theatoms;
 }
 
-Element* List_atomp_eval::eval(LispE* lisp) {
-    Element* atome = liste[1]->eval(lisp);
-    if (atome == emptylist_ || atome->isAtom())
-        return true_;
-    atome->release();
-    return false_;
-}
-
 Element* List::evall_atomp(LispE* lisp) {
     Element* atome = liste[1]->eval(lisp);
     if (atome == emptylist_ || atome->isAtom())
-        return true_;
+        return True_;
     atome->release();
-    return false_;
+    return False_;
 }
-
 
 Element* List::evall_atoms(LispE* lisp) {
     return lisp->atomes();
@@ -2750,32 +2371,6 @@ Element* List::evall_root(LispE* lisp) {
     return element;
 }
 
-Element* List_block_eval::eval(LispE* lisp) {
-    //We might need to mark the last element as being terminal
-    //the block might belong to an if
-    long listsize = liste.size();
-    liste.back()->setterminal(terminal);
-
-    try {
-        lisp->checkStack();
-        if (listsize == 2)
-            return liste[1]->eval(lisp);
-        
-        Element* element = null_;
-        
-        for (long i = 1; i < listsize && element->type != l_return; i++) {
-            element->release();
-            element = liste[i]->eval(lisp);
-        }
-        lisp->resetStack();
-        return element;
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        throw err;
-    }
-}
-
 Element* List::evall_block(LispE* lisp) {
     long listsize = liste.size();
     
@@ -2797,40 +2392,10 @@ Element* List::evall_block(LispE* lisp) {
 }
 
 
+
 Element* List::evall_elapse(LispE* lisp) {
-    long listsize = liste.size();
-    Element* second_element = null_;
-    double diff = 0;
-    
-    try {
-        std::chrono::high_resolution_clock::time_point chrono_beg = std::chrono::high_resolution_clock::now();
-        second_element = null_;
-        for (long i = 1; i < listsize && second_element->type != l_return; i++) {
-            _releasing(second_element);
-            second_element = liste[i]->eval(lisp);
-        }
-        std::chrono::high_resolution_clock::time_point chrono_end = std::chrono::high_resolution_clock::now();
-        
-        if (second_element->type == l_return) {
-            Element* body = second_element->eval(lisp);
-            body->release();
-        }
-        second_element->release();
-        diff = std::chrono::duration_cast<std::chrono::milliseconds>( chrono_end - chrono_beg).count();
-    }
-    catch (Error* err) {
-        second_element->release();
-        throw err;
-    }
-
-    return lisp->provideNumber(diff);
-}
-
-Element* List_emptyp_eval::eval(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    bool b = element->isEmpty();
-    element->release();
-    return booleans_[b];
+     List_elapse_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_emptyp(LispE* lisp) {
@@ -2840,927 +2405,56 @@ Element* List::evall_emptyp(LispE* lisp) {
     return booleans_[b];
 }
 
-Element* List_cadr_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* cdr_result;
-
-    try {
-        cdr_result = liste[0]->cadr(lisp, container);
-        if (container->element_container()) {
-            cdr_result->increment();
-            container->release();
-            cdr_result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-
-    return cdr_result;
-}
-
 
 Element* List::evall_cadr(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* cdr_result;
-
-    try {
-        cdr_result = liste[0]->cadr(lisp, container);
-        if (container->element_container()) {
-            cdr_result->increment();
-            container->release();
-            cdr_result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-
-    return cdr_result;
-}
-
-Element* List_car_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* car_result;
-    
-    try {
-        car_result = container->car(lisp);
-        if (container->element_container()) {
-            car_result->increment();
-            container->release();
-            car_result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return car_result;
+    List_cadr_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_car(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* car_result;
-    
-    try {
-        car_result = container->car(lisp);
-        if (container->element_container()) {
-            car_result->increment();
-            container->release();
-            car_result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return car_result;
+    List_car_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_maplist(LispE* lisp) {
-    long listsz = liste.size();
-    //Operation is: (// operation l1)
-    
-    Element* element = null_;
-    Element* op = null_;
-    Element* container = NULL;
-    
-    lisp->set_true_as_one();
-    int16_t label = -1;
-    void* iter = NULL;
-    Element* save_variable = this;
-    List* call = NULL;
-    bool choice = (liste[0]->label() == l_maplist);
-    
-    try {
-        
-        if (listsz == 4) {
-            element = liste[3]->eval(lisp);
-            choice = element->Boolean();
-            element->release();
-        }
-        
-        element = liste[2]->eval(lisp);
-        op = liste[1];
-        listsz = element->size();
-        if (!listsz) {
-            element->release();
-            lisp->set_true_as_true();
-            return emptylist_;
-        }
-        
-        Element* e;
-        if (op->isLambda()) {
-            if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
-            label = op->index(1)->index(0)->label();
-            if (label < l_final)
-                throw new Error("Error: Wrong argument");
-            
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            
-            e = ((List*)op)->eval_lambda_min(lisp);
-            if (e->type == l_return)
-                container = emptylist_;
-            else {
-                if (choice) {
-                    switch (e->type) {
-                        case t_string:
-                            container = lisp->provideStrings();
-                            break;
-                        case t_integer:
-                            container = lisp->provideIntegers();
-                            break;
-                        case t_float:
-                            container = lisp->provideFloats();
-                            break;
-                        case t_number:
-                            container = lisp->provideNumbers();
-                            break;
-                        default:
-                            container = lisp->provideList();
-                    }
-                }
-                else
-                    container = lisp->provideList();
-                
-                e = e->copying(false);
-                container->append(e);
-                e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    lisp->replacingvalue(nxt, label);
-                    e = ((List*)op)->eval_lambda_min(lisp);
-                    if (e->type == l_return)
-                        break;
-                    e = e->copying(false);
-                    container->append(e);
-                    e->release();
-                    nxt = element->next_iter_exchange(lisp, iter);
-                }
-            }
-            element->clean_iter(iter);
-            lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            call = lisp->provideList();
-
-            op = eval_body_as_argument(lisp, op);
-            
-            
-            call->append(op);
-            call->append(lisp->quoted());
-            
-            methodEval met = lisp->delegation->evals[op->type];
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-            call->in_quote(1, nxt);
-            e = (call->*met)(lisp);
-            if (choice) {
-                switch (e->type) {
-                    case t_string:
-                        container = lisp->provideStrings();
-                        break;
-                    case t_integer:
-                        container = lisp->provideIntegers();
-                        break;
-                    case t_float:
-                        container = lisp->provideFloats();
-                        break;
-                    case t_number:
-                        container = lisp->provideNumbers();
-                        break;
-                    default:
-                        container = lisp->provideList();
-                }
-            }
-            else
-                container = lisp->provideList();
-            
-            e = e->copying(false);
-            container->append(e);
-            e->release();
-            nxt = element->next_iter_exchange(lisp, iter);
-            while (nxt != emptyatom_) {
-                call->in_quote(1, nxt);
-                e = (call->*met)(lisp)->copying(false);
-                container->append(e);
-                e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
-            }
-            call->release();
-            element->clean_iter(iter);
-        }
-        element->release();
-        lisp->set_true_as_true();
-        return container;
-    }
-    catch (Error* err) {
-        if (op->isLambda()) {
-            if (save_variable != this)
-                lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            if (call != NULL)
-                call->release();
-        }
-        
-        if (iter != NULL)
-            element->clean_iter(iter);
-        lisp->set_true_as_true();
-        element->release();
-        if (container != NULL)
-            container->release();
-        throw err;
-    }
-
-    return emptylist_;
+    List_maplist_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_filterlist(LispE* lisp) {
-    long listsz = liste.size();
-    //Operation is: (// operation l1)
-    
-    Element* element = null_;
-    Element* op = null_;
-    Element* result = null_;
-    
-    lisp->set_true_as_one();
-    int16_t ps = 1;
-    List* call = NULL;
-    Element* save_variable = this;
-    int16_t label = -1;
-    void* iter =  NULL;
-    
-    try {
-        element = liste[2]->eval(lisp);
-        
-        switch (element->type) {
-            case t_floats:
-                result = lisp->provideFloats();
-                break;
-            case t_numbers:
-                result = lisp->provideNumbers();
-                break;
-            case t_shorts:
-                result = new Shorts();
-                break;
-            case t_integers:
-                result = lisp->provideIntegers();
-                break;
-            case t_strings:
-                result = lisp->provideStrings();
-                break;
-            case t_string:
-                result = lisp->provideString();
-                break;
-            case t_llist:
-                result = new LList(&lisp->delegation->mark);
-                break;
-            default:
-                result = lisp->provideList();
-        }
-
-        listsz = element->size();
-        if (!listsz) {
-            element->release();
-            lisp->set_true_as_true();
-            return result;
-        }
-        
-        op = liste[1];
-        Element* e;
-
-        if (op->isLambda()) {
-            if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
-            label = op->index(1)->index(0)->label();
-            if (label < l_final)
-                throw new Error("Error: Wrong argument");
-
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            
-            e = ((List*)op)->eval_lambda_min(lisp);
-            if (e->type != l_return) {
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    result->append(e);
-                }
-                e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    lisp->replacingvalue(nxt, label);
-                    e = ((List*)op)->eval_lambda_min(lisp);
-                    if (e->type == l_return)
-                        break;
-                    if (e->Boolean()) {
-                        e->release();
-                        e = nxt->copying(false);
-                        result->append(e);
-                    }
-                    e->release();
-                    nxt = element->next_iter_exchange(lisp, iter);
-                }
-            }
-            element->clean_iter(iter);
-            lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            call = lisp->provideList();
-            if (op->isList() && op->size()) {
-                for (ps = 0; ps < op->size(); ps++) {
-                    call->append(op->index(ps));
-                }
-            }
-            else {
-                op = eval_body_as_argument(lisp, op);
-                call->append(op);
-                ps = 1;
-            }
-            call->append(lisp->quoted());
-            methodEval met = lisp->delegation->evals[op->type];
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-            while (nxt != emptyatom_) {
-                call->in_quote(ps, nxt);
-                e = (call->*met)(lisp);
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    result->append(e);
-                }
-                e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
-            }
-            element->clean_iter(iter);
-            call->release();
-        }
-        element->release();
-        lisp->set_true_as_true();
-        return result;
-    }
-    catch (Error* err) {
-        if (op->isLambda()) {
-            if (save_variable != this)
-                lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            if (call != NULL)
-                call->release();
-        }
-
-        lisp->set_true_as_true();
-        if (iter != NULL)
-            element->clean_iter(iter);
-        element->release();
-        result->release();
-        throw err;
-    }
-
-    return emptylist_;
+    List_filterlist_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_takelist(LispE* lisp) {
-    long listsz = liste.size();
-    //Operation is: (// operation l1)
-    
-    Element* element = null_;
-    Element* op = null_;
-    Element* result = null_;
-    
-    lisp->set_true_as_one();
-    int16_t ps = 1;
-    List* call = NULL;
-    Element* save_variable = this;
-    int16_t label = -1;
-    void* iter = NULL;
-    
-    try {
-        element = liste[2]->eval(lisp);
-        
-        switch (element->type) {
-            case t_floats:
-                result = lisp->provideFloats();
-                break;
-            case t_numbers:
-                result = lisp->provideNumbers();
-                break;
-            case t_shorts:
-                result = new Shorts();
-                break;
-            case t_integers:
-                result = lisp->provideIntegers();
-                break;
-            case t_strings:
-                result = lisp->provideStrings();
-                break;
-            case t_string:
-                result = lisp->provideString();
-                break;
-            case t_llist:
-                result = new LList(&lisp->delegation->mark);
-                break;
-            default:
-                result = lisp->provideList();
-        }
-
-        listsz = element->size();
-        if (!listsz) {
-            element->release();
-            lisp->set_true_as_true();
-            return result;
-        }
-        
-        op = liste[1];
-        Element* e;
-
-        if (op->isLambda()) {
-            if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
-            label = op->index(1)->index(0)->label();
-            if (label < l_final)
-                throw new Error("Error: Wrong argument");
-
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            
-            e = ((List*)op)->eval_lambda_min(lisp);
-            if (e->type != l_return) {
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    result->append(e);
-                }
-                else
-                    listsz = 0; //we force to stop now...
-                
-                e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    lisp->replacingvalue(nxt, label);
-                    e = ((List*)op)->eval_lambda_min(lisp);
-                    if (e->type == l_return)
-                        break;
-                    if (e->Boolean()) {
-                        e->release();
-                        e = nxt->copying(false);
-                        result->append(e);
-                    }
-                    else {
-                        e->release();
-                        break;
-                    }
-                    e->release();
-                    nxt = element->next_iter_exchange(lisp, iter);
-                }
-            }
-            element->clean_iter(iter);
-            lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            call = lisp->provideList();
-            
-            if (op->isList() && op->size()) {
-                for (ps = 0; ps < op->size(); ps++) {
-                    call->append(op->index(ps));
-                }
-            }
-            else {
-                op = eval_body_as_argument(lisp, op);
-                call->append(op);
-                ps = 1;
-            }
-            call->append(lisp->quoted());
-            
-            methodEval met = lisp->delegation->evals[op->type];
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-
-            while (nxt != emptyatom_) {
-                call->in_quote(ps, nxt);
-                e = (call->*met)(lisp);
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    result->append(e);
-                    e->release();
-                }
-                else {
-                    e->release();
-                    break;
-                }
-                nxt = element->next_iter_exchange(lisp, iter);
-            }
-            element->clean_iter(iter);
-            call->release();
-        }
-        element->release();
-        lisp->set_true_as_true();
-        return result;
-    }
-    catch (Error* err) {
-        if (op->isLambda()) {
-            if (save_variable != this)
-                lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            if (call != NULL)
-                call->release();
-        }
-
-        if (iter != NULL)
-            element->clean_iter(iter);
-        lisp->set_true_as_true();
-        element->release();
-        result->release();
-        throw err;
-    }
-
-    return emptylist_;
+    List_takelist_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_droplist(LispE* lisp) {
-    long listsz = liste.size();
-    //Operation is: (// operation l1)
-    
-    Element* element = null_;
-    Element* op = null_;
-    Element* result = null_;
-    
-    lisp->set_true_as_one();
-    int16_t ps = 1;
-    List* call = NULL;
-    Element* save_variable = this;
-    int16_t label = -1;
-    void* iter = NULL;
-    
-    try {
-        element = liste[2]->eval(lisp);
-        
-        switch (element->type) {
-            case t_floats:
-                result = lisp->provideFloats();
-                break;
-            case t_numbers:
-                result = lisp->provideNumbers();
-                break;
-            case t_shorts:
-                result = new Shorts();
-                break;
-            case t_integers:
-                result = lisp->provideIntegers();
-                break;
-            case t_strings:
-                result = lisp->provideStrings();
-                break;
-            case t_string:
-                result = lisp->provideString();
-                break;
-            case t_llist:
-                result = new LList(&lisp->delegation->mark);
-                break;
-            default:
-                result = lisp->provideList();
-        }
+    List_droplist_eval m(this);
+    return m.eval(lisp);
+}
 
-        listsz = element->size();
-        if (!listsz) {
-            element->release();
-            lisp->set_true_as_true();
-            return result;
-        }
-        
-        op = liste[1];
-        
-        Element* e;
-        bool add = false;
 
-        if (op->isLambda()) {
-            if (!op->index(1)->size())
-                throw new Error("Error: Wrong number of arguments");
-            label = op->index(1)->index(0)->label();
-            if (label < l_final)
-                throw new Error("Error: Wrong argument");
-
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            save_variable = lisp->record_or_replace(nxt, label);
-            
-            e = ((List*)op)->eval_lambda_min(lisp);
-            if (e->type != l_return) {
-                if (e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    result->append(e);
-                    add = true;
-                }
-                e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
-                
-                while (nxt != emptyatom_) {
-                    lisp->replacingvalue(nxt, label);
-                    e = ((List*)op)->eval_lambda_min(lisp);
-                    if (e->type == l_return)
-                        break;
-                    if (add || e->Boolean()) {
-                        e->release();
-                        e = nxt->copying(false);
-                        result->append(e);
-                        add = true;
-                    }
-                    e->release();
-                    nxt = element->next_iter_exchange(lisp, iter);
-                }
-            }
-            element->clean_iter(iter);
-            lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            call = lisp->provideList();
-            if (op->isList() && op->size()) {
-                for (ps = 0; ps < op->size(); ps++) {
-                    call->append(op->index(ps));
-                }
-            }
-            else {
-                op = eval_body_as_argument(lisp, op);
-                call->append(op);
-                ps = 1;
-            }
-            call->append(lisp->quoted());
-            
-            methodEval met = lisp->delegation->evals[op->type];
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
-
-            while (nxt != emptyatom_) {
-                call->in_quote(ps, nxt);
-                e = (call->*met)(lisp);
-                if (add || e->Boolean()) {
-                    e->release();
-                    e = nxt->copying(false);
-                    result->append(e);
-                    add = true;
-                }
-                e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
-            }
-            element->clean_iter(iter);
-            call->release();
-        }
-        element->release();
-        lisp->set_true_as_true();
-        return result;
-    }
-    catch (Error* err) {
-        if (op->isLambda()) {
-            if (save_variable != this)
-                lisp->reset_in_stack(save_variable, label);
-        }
-        else {
-            if (call != NULL)
-                call->release();
-        }
-
-        if (iter != NULL)
-            element->clean_iter(iter);
-        lisp->set_true_as_true();
-        element->release();
-        result->release();
-        throw err;
-    }
-
-    return emptylist_;
+Element* List::evall_factorial(LispE* lisp) {
+     List_factorial_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_stringf(LispE* lisp) {
-    char* buffer = NULL;
-    Element* e = liste[2]->eval(lisp);
-    string format = e->toString(lisp);
-    e->release();
-    
-    long sz = 0;
-    
-    e = liste[1]->eval(lisp);
-    sz = format.size() + 100;
-    buffer = new char[sz];
-    switch (e->type) {
-        case t_float:
-            sprintf_s(buffer, sz, format.c_str(), e->asFloat());
-            break;
-        case t_number:
-            sprintf_s(buffer, sz, format.c_str(), e->asNumber());
-            break;
-        case t_integer:
-            sprintf_s(buffer, sz, format.c_str(), e->asInteger());
-            break;
-        default:
-            e->release();
-            throw new Error("Error: the first argument should be a number");
-    }
-    
-    e->release();
-    format = buffer;
-    delete[] buffer;
-    return lisp->provideString(format);
-}
-
-Element* List::evall_factorial(LispE* lisp) {
-    static uint64_t factorials[] = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880L, 3628800L, 39916800L, 479001600L, 6227020800L, 87178291200L, 1307674368000L, 20922789888000L, 355687428096000L, 6402373705728000L, 121645100408832000L, 2432902008176640000L};
-    
-    Element* e = liste[1]->eval(lisp);
-    
-    Element* r = null_;
-    long value = 0;
-    unsigned long res = 1;
-
-    try {
-        if (e->isList()) {
-            long listsize = e->size();
-            r = lisp->provideNumbers();
-            for (long j = 0; j < listsize; j++) {
-                res = 1;
-                value = e->index(j)->asInteger();
-                if (value < 0)
-                    throw new Error("Error: factorial of a negative number does not exists");
-                if (value <= 20)
-                    ((Numbers*)r)->liste.push_back(factorials[value]);
-                else {
-                    res = (long)factorials[20];
-                    for (long i = 21; i <= value; i++) {
-                        res *= i;
-                    }
-                    ((Numbers*)r)->liste.push_back(factorials[value]);
-                }
-            }
-            e->release();
-            return r;
-        }
-        
-        value = e->asInteger();
-        if (value < 0)
-            throw new Error("Error: factorial of a negative number does not exists");
-        e->release();
-        if (value <= 20)
-            return lisp->provideInteger((long)factorials[value]);
-        
-        res = (long)factorials[20];
-        for (long i = 21; i <= value; i++)
-            res *= i;
-    }
-    catch (Error* err) {
-        e->release();
-        r->release();
-        throw err;
-    }
-    
-    return lisp->provideInteger(res);
+    List_stringf_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_iota(LispE* lisp) {
-    long sz = size();
-    Element* res = null_;
-    Element* e = null_;
-    Element* sub;
-    try {
-        if (sz == 2) {
-            e = liste[1]->eval(lisp);
-            if (e->type == t_integer) {
-                res = lisp->provideIntegers();
-                for (long j = 1; j <= e->asInteger(); j++) {
-                    ((Integers*)res)->liste.push_back(j);
-                }
-            }
-            else {
-                res = lisp->provideNumbers();
-                double v = e->asNumber();
-                long u = v;
-                
-                for (double j = 1 + (v-u); j <= v; j++) {
-                    ((Numbers*)res)->liste.push_back(j);
-                }
-            }
-            e->release();
-            return res;
-        }
-        
-        res = lisp->provideList();
-        for (long i = 1; i < sz; i++) {
-            e = liste[i]->eval(lisp);
-            if (e->type == t_integer) {
-                sub = lisp->provideIntegers();
-                res->append(sub);
-                for (long j = 1; j <= e->asInteger(); j++) {
-                    ((Integers*)sub)->liste.push_back(j);
-                }
-            }
-            else {
-                sub = lisp->provideNumbers();
-                res->append(sub);
-                double v = e->asNumber();
-                long u = v;
-                for (double j = 1 + (v-u); j <= v; j++) {
-                    ((Numbers*)sub)->liste.push_back(j);
-                }
-            }
-            e->release();
-        }
-    }
-    catch (Error* err) {
-        e->release();
-        res->release();
-        throw err;
-    }
-    
-    return res;
+    List_iota_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_iota0(LispE* lisp) {
-    long sz = size();
-    Element* res = null_;
-    Element* e = null_;
-    Element* sub;
-    try {
-        if (sz == 2) {
-            e = liste[1]->eval(lisp);
-            if (e->type == t_integer) {
-                res = lisp->provideIntegers();
-                for (long j = 0; j < e->asInteger(); j++) {
-                    ((Integers*)res)->liste.push_back(j);
-                }
-            }
-            else {
-                res = lisp->provideNumbers();
-                double v = e->asNumber();
-                long u = v;
-                
-                for (double j = (v-u); j < v; j++) {
-                    ((Numbers*)res)->liste.push_back(j);
-                }
-            }
-            e->release();
-            return res;
-        }
-        
-        res = lisp->provideList();
-        for (long i = 1; i < sz; i++) {
-            e = liste[i]->eval(lisp);
-            if (e->type == t_integer) {
-                sub = lisp->provideIntegers();
-                res->append(sub);
-                for (long j = 0; j < e->asInteger(); j++) {
-                    ((Integers*)sub)->liste.push_back(j);
-                }
-            }
-            else {
-                sub = lisp->provideNumbers();
-                res->append(sub);
-                double v = e->asNumber();
-                long u = v;
-                
-                for (double j = (v-u); j < v; j++) {
-                    ((Numbers*)sub)->liste.push_back(j);
-                }
-            }
-            e->release();
-        }
-    }
-    catch (Error* err) {
-        res->release();
-        throw err;
-    }
-    
-    return res;
+    List_iota0_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Element* l2) {
@@ -3876,309 +2570,29 @@ Element* List::evall_transpose(LispE* lisp) {
 //(setq m1 (rho 3 2 '(1 2 5 4 3 0)))
 //(setq m2 (rho 2 4 '(6 2 3 4 7 0 1 8)))
 Element* List::evall_innerproduct(LispE* lisp) {
-    Element* l1 = liste[1]->eval(lisp);
-    
-    Element* l2 = null_;
-    Element* op1 = null_;
-    Element* op2 = null_;
-    Element* e = null_;
-    lisp->set_true_as_one();
-
-    try {
-        l2 = liste[4]->eval(lisp);
-        
-        long sx_1, sy_1;
-        char t1 = l1->isPureList(sx_1, sy_1);
-
-        long sx_2, sy_2;
-        char t2 = l2->isPureList(sx_2, sy_2);
-
-        if (!t1 || !t2 || t1 != t2)
-            throw new Error("Error: arguments for '.' must be compatible lists or matrices");
-        
-        op1 = liste[2]->eval(lisp);
-        if (op1->type == l_equal)
-            op1 = lisp->provideAtom(l_equalonezero);
-        op2 = liste[3]->eval(lisp);
-        if (op2->type == l_equal)
-            op2 = lisp->provideAtom(l_equalonezero);
-
-        if (t1 == 2) {
-            if (sx_1 != sx_2)
-                throw new Error("Error: lists should have the same size for '.'");
-                                
-            l1->increment();
-            l2->increment();
-            e = apply_op1_op2(lisp, op1, op2, l1, l2);
-            l1->decrement();
-            l2->decrement();
-            op1->release();
-            op2->release();
-            lisp->set_true_as_true();
-            return e;
-        }
-
-        if (t1 == 3) {
-            if (sx_1 != sx_2)
-                throw new Error("Error: lists should have the same size for '.'");
-                                
-            if (l1 == l2) {
-                if (l2->type == t_numbers) {
-                    l2 = lisp->provideNumbers();
-                    ((Numbers*)l2)->liste = ((Numbers*)l1)->liste;
-                }
-                else {
-                    l2 = lisp->provideIntegers();
-                    ((Integers*)l2)->liste = ((Integers*)l1)->liste;
-                }
-            }
-            
-            l1->increment();
-            l2->increment();
-            e = apply_op1_op2(lisp, op1, op2, l1, l2);
-            l1->decrement();
-            l2->decrement();
-            op1->release();
-            op2->release();
-            lisp->set_true_as_true();
-            return e;
-        }
-
-        if (sy_1 != sx_2)
-            throw new Error("Error: incompatible matrices");
-
-        Element* l2_transposed;
-        long i, j = 0;
-        
-        l2_transposed = l2->transposed(lisp);
-        
-        Element* row;
-        Matrice* res = new Matrice(lisp, sx_1, sy_2, 0.0);
-        //We are dealing with matrices...
-        for (i = 0; i < sx_1; i++) {
-            row = l1->index(i);
-            for (j = 0; j < sy_2; j++) {
-                e = apply_op1_op2(lisp, op1, op2, row, l2_transposed->index(j));
-                res->index(i)->replacing(j, e);
-                e->release();
-            }
-        }
-        l1->release();
-        l2->release();
-        op1->release();
-        op2->release();
-        l2_transposed->release();
-        lisp->set_true_as_true();
-        return res;
-    }
-    catch (Error* err) {
-        lisp->set_true_as_true();
-        l1->release();
-        l2->release();
-        op1->release();
-        op2->release();
-        throw err;
-    }
-
-    return null_;
+    List_innerproduct_eval m(this);
+    return m.eval(lisp);
 }
 
 // (° '(2 3 4) '* '(1 2 3 4))
 // (° (rho 2 3 '(4 5 6 9)) '* (rho 3 3 (iota 10)))
 Element* List::evall_outerproduct(LispE* lisp) {
-    //Operation is: (° operation l1 l2)    
-    Element* l1 = liste[1]->eval(lisp);
-    
-    Element* l2 = null_;
-    Element* op = null_;
-    Element* res = null_;
-    List* call = NULL;
-    lisp->set_true_as_one();
-
-    try {
-        l2 = liste[3]->eval(lisp);
-        
-        if (!l1->isList() || !l2->isList())
-            throw new Error("Error: arguments for '°' are lists");
-        
-        if (l1 == l2) {
-            switch (l2->type) {
-                case t_floats:
-                    l2 = lisp->provideFloats();
-                    ((Floats*)l2)->liste = ((Floats*)l1)->liste;
-                    break;
-                case t_numbers:
-                    l2 = lisp->provideNumbers();
-                    ((Numbers*)l2)->liste = ((Numbers*)l1)->liste;
-                    break;
-                case t_shorts:
-                    l2 = new Shorts();
-                    ((Shorts*)l2)->liste = ((Shorts*)l1)->liste;
-                    break;
-                case t_integers:
-                    l2 = lisp->provideIntegers();
-                    ((Integers*)l2)->liste = ((Integers*)l1)->liste;
-                    break;
-                case t_strings:
-                    l2 = lisp->provideStrings();
-                    ((Strings*)l2)->liste = ((Strings*)l1)->liste;
-                    break;
-            }
-        }
-
-        op = eval_body_as_argument(lisp, liste[2]);
-        if (op->type == l_equal)
-            op = lisp->provideAtom(l_equalonezero);
-        
-        call = lisp->provideCall(op, 2);
-        
-        vecte<long> size;
-        l1->getShape(size);
-        l2->getShape(size);
-        if (lisp->delegation->isNumberType(l1->type) && lisp->delegation->isNumberType(l2->type)) {
-            if (size.size() == 2) {
-                if ((l1->type == t_floats && l2->type == t_floats) ||
-                    (l1->type == t_shorts && l2->type == t_shorts)) {
-                    res = new Matrice_float(lisp, size[0], size[1], 0.0);
-                    ((Matrice_float*)res)->combine(lisp, l1, l2, call);
-                }
-                else {
-                    res = new Matrice(lisp, size[0], size[1], 0.0);
-                    ((Matrice*)res)->combine(lisp, l1, l2, call);
-                }
-            }
-            else {
-                if ((l1->type == t_floats && l2->type == t_floats) ||
-                    (l1->type == t_shorts && l2->type == t_shorts)) {
-                    res = new Tenseur_float(lisp, size, zero_);
-                    ((Tenseur_float*)res)->combine(lisp, l1, l2, call);
-                }
-                else {
-                    res = new Tenseur(lisp, size, zero_);
-                    ((Tenseur*)res)->combine(lisp, l1, l2, call);
-                }
-            }
-        }
-        else {
-            res = lisp->provideList();
-            vecte<long> shape;
-            l1->getShape(shape);
-            l2->getShape(shape);
-            long idx = 0;
-            ((List*)res)->build(lisp, shape, 0, res, l1, idx);
-            ((List*)res)->combine(lisp, l1, l2, call);
-        }
-        
-        call->release();
-        l1->release();
-        l2->release();
-        lisp->set_true_as_true();
-        return res;
-    }
-    catch (Error* err) {
-        if (call != NULL)
-            call->release();
-        lisp->set_true_as_true();
-        l1->release();
-        l2->release();
-        res->release();
-        throw err;
-    }
-
-    return null_;
+    List_outerproduct_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_rank(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    
-    long listsz = liste.size();
-
-    Element* e = null_;
-    Element* lst = null_;
-    vecte<long> positions;
-    long i, v;
-    
-    try {
-        for (i = 2; i < listsz; i++) {
-            e = liste[i]->eval(lisp);
-            if (e->isNumber()) {
-                v = e->asInteger();
-                positions.push_back(v);
-            }
-            else
-                positions.push_back(-1);
-            _releasing(e);
-        }
-        
-        while (positions.size() > 1 && positions.back() < 0)
-            positions.pop_back();
-
-        lst = element->rank(lisp, positions);
-        element->release();
-        if (lst == NULL)
-            return emptylist_;
-    }
-    catch (Error* err) {
-        lst->release();
-        element->release();
-        e->release();
-        throw err;
-    }
-    return lst;
+    List_rank_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_irank(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-
-    long listsz = liste.size();
-    
-    Element* e = null_;
-    Element* lst = null_;
-    Rankloop* r = NULL;
-    long i, v;
-    
-    try {
-        r = new Rankloop(lisp, (List*)element);
-        
-        for (i = 2; i < listsz; i++) {
-            e = liste[i]->eval(lisp);
-            if (e->isNumber()) {
-                v = e->asInteger();
-                r->positions.push_back(v);
-            }
-            else
-                r->positions.push_back(-1);
-            _releasing(e);
-        }
-        vecte<long> shape;
-        element->getShape(shape);
-        
-        if (shape.size() < r->positions.size())
-            throw new Error("Error: cannot loop with 'irank' with these indexes");
-        
-        while (r->positions.size() > 1 && r->positions.back() < 0)
-            r->positions.pop_back();
-
-        if (shape.size() == r->positions.size()) {
-            r->max_iterator = 1;
-            r->last = true;
-        }
-        else
-            r->max_iterator = shape[r->positions.size()];
-    }
-    catch (Error* err) {
-        if (r != NULL)
-            r->release();
-        lst->release();
-        element->release();
-        e->release();
-        throw err;
-    }
-    return r;
+    List_irank_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
 
     try {
         long j = 0;
@@ -4202,7 +2616,7 @@ Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) 
                     }
                     j++;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4225,7 +2639,7 @@ Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) 
                     }
                     j++;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4248,7 +2662,7 @@ Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) 
                     }
                     j++;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4271,7 +2685,7 @@ Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) 
                     }
                     j++;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4294,7 +2708,7 @@ Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) 
                     }
                     j++;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4318,7 +2732,7 @@ Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) 
                     }
                     j++;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4326,7 +2740,7 @@ Element* List::reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) 
         }
     }
     catch (Error* err) {
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         throw err;
     }
 }
@@ -4336,7 +2750,7 @@ Element* List::reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
     if (op->index(1)->size() != 2)
         throw new Error("Error: Wrong number of arguments");
     
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
     int16_t arg1 = 0;
     int16_t arg2 = 0;
     Element* rarg1 = this;
@@ -4366,7 +2780,7 @@ Element* List::reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
         lisp->reset_in_stack(rarg2, arg2);
         lisp->reset_in_stack(rarg1, arg1);
         l1->release();
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         element->decrementkeep();
         return element;
     }
@@ -4375,7 +2789,7 @@ Element* List::reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
             lisp->reset_in_stack(rarg2, arg2);
         if (rarg1 != this)
             lisp->reset_in_stack(rarg1, arg1);
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         throw err;
     }
     
@@ -4383,116 +2797,16 @@ Element* List::reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
 }
 
 Element* List::evall_reduce(LispE* lisp) {
-    long listsz = liste.size();
-    //Operation is: (// operation l1)
-    
-    Element* l1 = null_;
-    Element* op = null_;
-    long sz = 0;
-    
-    
-    try {
-        if (listsz == 2) {
-            //This is a copy
-            l1 = liste[1]->eval(lisp);
-            op = l1->fullcopy();
-            if (op != l1)
-                l1->release();
-            return op;
-        }
-        
-        l1 = liste[2]->eval(lisp);
-        
-        if (!l1->isList())
-            throw new Error("Error: argument for 'reduce' should be a list");
-        
-        op = liste[1]->eval(lisp);
-
-        sz = l1->size();
-        if (!sz)
-            return null_;
-         
-        if (op->isLambda())
-            return reduce_lambda(lisp, l1, op, sz);
-
-        if (op->isList() && op->size())
-            return reduce_with_list(lisp, l1, op, sz);
-        
-        if (sz == 1)
-            return l1->value_on_index(lisp, (long)0);
-    }
-    catch (Error* err) {
-        l1->release();
-        op->release();
-        throw err;
-    }
-    
-    lisp->set_true_as_one();
-    List* call = NULL;
-    try {
-        op = eval_body_as_argument_min(lisp, op);
-        if (op->type == l_equal)
-            op = lisp->provideAtom(l_equalonezero);
-        
-        if (op->isOperator()) {
-            call = lisp->provideCall(op, 1);
-            call->in_quote(1, l1);
-            
-            methodEval met = lisp->delegation->evals[op->type];
-            
-            try {
-                l1 = (call->*met)(lisp);
-            }
-            catch(Error* err) {
-                lisp->set_true_as_true();
-                call->release();
-                throw err;
-            }
-            
-            lisp->set_true_as_true();
-            call->release();
-            return l1;
-        }
-        
-        call = lisp->provideCall(op, 2);
-        
-        call->in_quote(1, l1->value_on_index(lisp, (long)0));
-        call->in_quote(2, l1->index(1));
-        Element* e = null_;
-        
-        methodEval met = lisp->delegation->evals[op->type];
-        e = (call->*met)(lisp);
-        
-        call->in_quote(1, e);
-        for (long i = 2; i < l1->size(); i++) {
-            call->in_quote(2, l1->index(i));
-            e = (call->*met)(lisp);
-            call->in_quote(1, e);
-        }
-        e->increment();
-        call->release();
-        e->decrementkeep();
-        l1->release();
-        lisp->set_true_as_true();
-        return e->release_but_last();
-    }
-    catch(Error* err) {
-        if (call != NULL)
-            call->release();
-        l1->release();
-        lisp->set_true_as_true();
-        throw err;
-    }
-    return null_;
+    List_reduce_eval m(this);
+    return m.eval(lisp);
 }
-
 
 inline long mmin(long x, long y) {
     return (x <= y?x:y);
 }
 
 Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
     try {
         //this is a filter, the first list
         long j = sz - 1;
@@ -4516,7 +2830,7 @@ Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long 
                     }
                     j--;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4539,7 +2853,7 @@ Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long 
                     }
                     j--;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4562,7 +2876,7 @@ Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long 
                     }
                     j--;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4585,7 +2899,7 @@ Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long 
                     }
                     j--;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4608,7 +2922,7 @@ Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long 
                     }
                     j--;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4631,7 +2945,7 @@ Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long 
                     }
                     j--;
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 op->release();
                 l1->release();
                 return res;
@@ -4639,7 +2953,7 @@ Element* List::backreduce_with_list(LispE* lisp, Element* l1, Element* op, long 
         }
     }
     catch (Error* err) {
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         throw err;
     }
 }
@@ -4648,7 +2962,7 @@ Element* List::backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz)
     if (op->index(1)->size() != 2)
         throw new Error("Error: Wrong number of arguments");
     
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
     int16_t arg1 = 0;
     int16_t arg2 = 0;
     Element* rarg1 = this;
@@ -4684,7 +2998,7 @@ Element* List::backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz)
         lisp->reset_in_stack(rarg2, arg2);
         lisp->reset_in_stack(rarg1, arg1);
         l1->release();
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         element->decrementkeep();
         return element;
     }
@@ -4694,121 +3008,17 @@ Element* List::backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz)
         if (rarg1 != this)
             lisp->reset_in_stack(rarg1, arg1);
 
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         throw err;
     }
     return null_;
 }
 
 Element* List::evall_backreduce(LispE* lisp) {
-    long listsz = liste.size();
-    //Operation is: (-// operation l1)
-    
-    Element* l1 = null_;
-    Element* op = null_;
-    long sz = 0;
-        
-    try {
-        if (listsz == 2) {
-            //This is a copy
-            l1 = liste[1]->eval(lisp);
-            op = l1->reverse(lisp);
-            if (op != l1)
-                l1->release();
-            return op;
-        }
-        
-        l1 = liste[2]->eval(lisp);
-        
-        if (!l1->isList())
-            throw new Error("Error: argument for 'backreduce' should be a list");
-        
-        op = liste[1]->eval(lisp);
-
-        sz = l1->size();
-        if (!sz)
-            return null_;
-    
-
-        if (op->isLambda())
-            return backreduce_lambda(lisp, l1, op, sz);
-
-        if (op->isList() && op->size())
-            return backreduce_with_list(lisp, l1, op, sz);
-        
-        if (sz == 1)
-            return l1->value_on_index(lisp, (long)0);
-    }
-    catch (Error* err) {
-        l1->release();
-        op->release();
-        throw err;
-    }
-
-    List* call = NULL;
-    lisp->set_true_as_one();
-    try {
-        op = eval_body_as_argument_min(lisp, op);
-        if (op->type == l_equal)
-            op = lisp->provideAtom(l_equalonezero);
-        
-        if (op->isOperator()) {
-            call = lisp->provideCall(op, 1);
-            call->in_quote(1, l1->reverse(lisp));
-            
-            methodEval met = lisp->delegation->evals[op->type];
-            Element* e;
-            try {
-                e = (call->*met)(lisp);
-            }
-            catch(Error* err) {
-                lisp->set_true_as_true();
-                call->release();
-                op->release();
-                throw err;
-            }
-            
-            lisp->set_true_as_true();
-            call->release();
-            l1->release();
-            return e;
-        }
-        
-        Element* e = l1->reverse(lisp);
-        l1->release();
-        l1 = e;
-        
-        call = lisp->provideCall(op, 2);
-        
-        call->in_quote(1, l1->value_on_index(lisp, (long)0));
-        call->in_quote(2, l1->index(1));
-        
-        methodEval met = lisp->delegation->evals[op->type];
-        
-        e = null_;
-        e = (call->*met)(lisp);
-        call->in_quote(1, e);
-        for (long i = 2; i < l1->size(); i++) {
-            call->in_quote(2, l1->index(i));
-            e = (call->*met)(lisp);
-            call->in_quote(1, e);
-        }
-        e->increment();
-        call->release();
-        e->decrementkeep();
-        l1->release();
-        lisp->set_true_as_true();
-        return e->release_but_last();
-    }
-    catch(Error* err) {
-        if (call != NULL)
-            call->release();
-        l1->release();
-        lisp->set_true_as_true();
-        throw err;
-    }
-    return null_;
+    List_backreduce_eval m(this);
+    return m.eval(lisp);
 }
+
 
 // (, (rho 2 3 '(4 5 6 9)) (rho 2 3 (iota 10)))
 // (, (rho 3 3 3 (iota 90)) -1)
@@ -4816,628 +3026,27 @@ Element* List::evall_backreduce(LispE* lisp) {
 // (, (rho 3 3 3 (iota 90)) (* (rho 3 3 (iota 10)) -1))
 
 Element* List::evall_concatenate(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    Element* second_element = null_;
-    Element* res = null_;
-    lisp->set_true_as_one();
-
-    long listsize = size();
-
-    try {
-        if (listsize == 2) {
-            lisp->set_true_as_true();
-            
-            if (first_element->isValueList()) {
-                lisp->set_true_as_true();
-                return first_element;
-            }
-            switch (first_element->type) {
-                case t_matrix:
-                case t_tensor: {
-                    Numbers* l = lisp->provideNumbers();
-                    first_element->flatten(lisp, l);
-                    first_element->release();
-                    lisp->set_true_as_true();
-                    return l;
-                }
-                case t_matrix_float:
-                case t_tensor_float: {
-                    Floats* l = lisp->provideFloats();
-                    first_element->flatten(lisp, l);
-                    first_element->release();
-                    lisp->set_true_as_true();
-                    return l;
-                }
-                default: {
-                    res = lisp->provideList();
-                    first_element->flatten(lisp,(List*)res);
-                    first_element->release();
-                    lisp->set_true_as_true();
-                    return res;
-                }
-            }
-        }
-
-        if (!first_element->isList()) {
-            switch (first_element->type) {
-                case t_integer:
-                    second_element = lisp->provideIntegers();
-                    break;
-                case t_float:
-                    second_element = lisp->provideFloats();
-                    break;
-                case t_number:
-                    second_element = lisp->provideNumbers();
-                    break;
-                case t_string:
-                    second_element = lisp->provideStrings();
-                    break;
-                default:
-                    second_element = lisp->provideList();
-            }
-            second_element->append(first_element);
-            first_element->release();
-            first_element = second_element;
-        }
-        
-        second_element = liste[2]->eval(lisp);
-        
-        vecte<long> sz1;
-        vecte<long> sz2;
-        switch (first_element->type) {
-            case t_matrix: {
-                first_element->getShape(sz1);
-                second_element->getShape(sz2);
-                if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
-                res = new Matrice(lisp, sz1[0], sz1[1], 0.0);
-                ((Matrice*)res)->setvalue((Matrice*)first_element);
-                res->concatenate(lisp,second_element);
-                if (sz2.size() == 2)
-                    sz1.vecteur[1] += sz2[1];
-                else
-                    sz1.vecteur[1] += 1;
-                ((Matrice*)res)->size_y = sz1[1];
-                first_element->release();
-                break;
-            }
-            case t_matrix_float: {
-                first_element->getShape(sz1);
-                second_element->getShape(sz2);
-                if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
-                res = new Matrice_float(lisp, sz1[0], sz1[1], 0.0);
-                ((Matrice_float*)res)->setvalue((Matrice_float*)first_element);
-                res->concatenate(lisp,second_element);
-                if (sz2.size() == 2)
-                    sz1.vecteur[1] += sz2[1];
-                else
-                    sz1.vecteur[1] += 1;
-                ((Matrice_float*)res)->size_y = sz1[1];
-                first_element->release();
-                break;
-            }
-            case t_tensor: {
-                first_element->getShape(sz1);
-                second_element->getShape(sz2);
-                if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
-                res = new Tenseur(lisp, sz1, zero_);
-                ((Tenseur*)res)->setvalue((Tenseur*)first_element);
-                res->concatenate(lisp, second_element);
-                long i = 0;
-                while (i < sz2.size() && sz1[i] == sz2[i]) i++;
-                if (i == sz2.size())
-                    ((Tenseur*)res)->shape.vecteur[i] += 1;
-                else
-                    ((Tenseur*)res)->shape.vecteur[i] += sz2[i];
-                first_element->release();
-                break;
-            }
-            case t_tensor_float: {
-                first_element->getShape(sz1);
-                second_element->getShape(sz2);
-                if (sz1.size() < sz2.size())
-                    throw new Error("Error: Dimension error");
-                res = new Tenseur_float(lisp, sz1, zero_);
-                ((Tenseur_float*)res)->setvalue((Tenseur_float*)first_element);
-                res->concatenate(lisp, second_element);
-                long i = 0;
-                while (i < sz2.size() && sz1[i] == sz2[i]) i++;
-                if (i == sz2.size())
-                    ((Tenseur_float*)res)->shape.vecteur[i] += 1;
-                else
-                    ((Tenseur_float*)res)->shape.vecteur[i] += sz2[i];
-                first_element->release();
-                break;
-            }
-            default:
-                res = first_element->duplicate();
-                res->concatenate(lisp, second_element);
-                if (res != first_element)
-                    first_element->release();
-        }
-
-        lisp->set_true_as_true();
-        second_element->release();
-    }
-    catch (Error* err) {
-        lisp->set_true_as_true();
-        res->release();
-        second_element->release();
-        first_element->release();
-        throw err;
-    }
-    
-    return res;
+    List_concatenate_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_member(LispE* lisp) {
-    Element* element = liste[1];
-    Element* the_set = liste[1];
-    Element* result = liste[1];
-    lisp->set_true_as_one();
-    
-    try {
-        element = element->eval(lisp);
-        if (!element->isList())
-            throw new Error("Error: expecting a list as first element");
-        the_set = liste[2]->eval(lisp);
-        if (!the_set->isList())
-            throw new Error("Error: expecting a list as first element");
-        result = element->check_member(lisp, the_set);
-        the_set->release();
-        element->release();
-        lisp->set_true_as_true();
-    }
-    catch (Error* err) {
-        lisp->set_true_as_true();
-        element->release();
-        the_set->release();
-        throw err;
-    }
-    return result;
+    List_member_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_rho(LispE* lisp) {
-    long listsize =  size();
-    
-    Element* e =  null_;
-    Element* res = null_;
-    lisp->set_true_as_one();
-
-    try {
-        if (listsize == 2) {
-            //In this case we return the shape of our list
-            e = liste[1]->eval(lisp);
-            switch (e->type) {
-                case t_matrix: {
-                    res = lisp->provideIntegers();
-                    ((Integers*)res)->liste.push_back(((Matrice*)e)->size_x);
-                    ((Integers*)res)->liste.push_back(((Matrice*)e)->size_y);
-                    e->release();
-                    lisp->set_true_as_true();
-                    return res;
-                }
-                case t_matrix_float: {
-                    res = lisp->provideIntegers();
-                    ((Integers*)res)->liste.push_back(((Matrice_float*)e)->size_x);
-                    ((Integers*)res)->liste.push_back(((Matrice_float*)e)->size_y);
-                    e->release();
-                    lisp->set_true_as_true();
-                    return res;
-                }
-                case t_tensor: {
-                    res = lisp->provideIntegers();
-                    ((Integers*)res)->liste = ((Tenseur*)e)->shape;
-                    e->release();
-                    lisp->set_true_as_true();
-                    return res;
-                }
-                case t_tensor_float: {
-                    res = lisp->provideIntegers();
-                    ((Integers*)res)->liste = ((Tenseur_float*)e)->shape;
-                    e->release();
-                    lisp->set_true_as_true();
-                    return res;
-                }
-                case t_strings:
-                case t_floats:
-                case t_numbers:
-                case t_shorts:
-                case t_integers:
-                    listsize = e->size();
-                    e->release();
-                    lisp->set_true_as_true();
-                    return lisp->provideInteger(listsize);
-                case t_list:
-                case t_llist: {
-                    vecte<long> sizes;
-                    e->getShape(sizes);
-                    if (sizes.size() == 1) {
-                        lisp->set_true_as_true();
-                        return lisp->provideInteger(sizes[0]);
-                    }
-                    if (e->checkShape(0, sizes)) {
-                        res = lisp->provideIntegers();
-                        for (long i = 0; i < sizes.size(); i++) {
-                            ((Integers*)res)->liste.push_back(sizes[i]);
-                        }
-                        lisp->set_true_as_true();
-                        return res;
-                    }
-                    break;
-                }
-                default:
-                    listsize = e->size();
-                    e->release();
-                    lisp->set_true_as_true();
-                    return lisp->provideInteger(listsize);
-            }
-        }
-        long ei = 0;
-        long sz1;
-
-        if (listsize == 3) {
-            e = liste[2]->eval(lisp);
-            if (!e->isList())
-                throw new Error("Error: Second argument should be a list");
-            evalAsInteger(1, lisp, sz1);
-            switch (e->type) {
-                case t_floats: {
-                    listsize = e->size();
-                    res = lisp->provideFloats();
-                    res->reserve(sz1);
-                    if (listsize <= 1) {
-                        float v = 0;
-                        if (listsize == 1)
-                            v = e->index(0)->asFloat();
-                        for (long i = 0; i < sz1; i++) {
-                            ((Floats*)res)->liste.push_back(v);
-                        }
-                        break;
-                    }
-                    
-                    for (long i = 0; i < sz1; i++) {
-                        if (ei == listsize)
-                            ei = 0;
-                        ((Floats*)res)->liste.push_back(e->index(ei++)->asFloat());
-                    }
-                    break;
-                }
-                case t_numbers: {
-                    listsize = e->size();
-                    res = lisp->provideNumbers();
-                    res->reserve(sz1);
-                    if (listsize <= 1) {
-                        double v = 0;
-                        if (listsize == 1)
-                            v = e->index(0)->asNumber();
-                        for (long i = 0; i < sz1; i++) {
-                            ((Numbers*)res)->liste.push_back(v);
-                        }
-                        break;
-                    }
-                    
-                    for (long i = 0; i < sz1; i++) {
-                        if (ei == listsize)
-                            ei = 0;
-                        ((Numbers*)res)->liste.push_back(e->index(ei++)->asNumber());
-                    }
-                    break;
-                }
-                case t_shorts: {
-                    listsize = e->size();
-                    res = new Shorts();
-                    res->reserve(sz1);
-                    if (listsize <= 1) {
-                        int16_t v = 0;
-                        if (listsize == 1)
-                            v = e->index(0)->asShort();
-                        for (long i = 0; i < sz1; i++) {
-                            ((Shorts*)res)->liste.push_back(v);
-                        }
-                        break;
-                    }
-                    
-                    for (long i = 0; i < sz1; i++) {
-                        if (ei == listsize)
-                            ei = 0;
-                        ((Shorts*)res)->liste.push_back(e->index(ei++)->asShort());
-                    }
-                    break;
-                }
-                case t_integers: {
-                    listsize = e->size();
-                    res = lisp->provideIntegers();
-                    res->reserve(sz1);
-                    if (listsize <= 1) {
-                        long v = 0;
-                        if (listsize == 1)
-                            v = e->index(0)->asInteger();
-                        for (long i = 0; i < sz1; i++) {
-                            ((Integers*)res)->liste.push_back(v);
-                        }
-                        break;
-                    }
-                    
-                    for (long i = 0; i < sz1; i++) {
-                        if (ei == listsize)
-                            ei = 0;
-                        ((Integers*)res)->liste.push_back(e->index(ei++)->asInteger());
-                    }
-                    break;
-                }
-                case t_strings: {
-                    listsize = e->size();
-                    res = lisp->provideStrings();
-                    res->reserve(sz1);
-                    if (listsize <= 1) {
-                        u_ustring v;
-                        if (listsize == 1)
-                            v = e->index(0)->asUString(lisp);
-                        for (long i = 0; i < sz1; i++) {
-                            ((Strings*)res)->liste.push_back(v);
-                        }
-                        break;
-                    }
-                    
-                    for (long i = 0; i < sz1; i++) {
-                        if (ei == listsize)
-                            ei = 0;
-                        ((Strings*)res)->liste.push_back(e->index(ei++)->asUString(lisp));
-                    }
-                    break;
-                }
-                case t_list: {
-                    listsize = e->size();
-                    res = lisp->provideList();
-                    res->reserve(sz1);
-                    if (listsize <= 1) {
-                        Element* v = zero_;
-                        if (listsize == 1)
-                            v = e->index(0);
-                        for (long i = 0; i < sz1; i++)
-                            res->append(v);
-                        break;
-                    }
-                    
-                    for (long i = 0; i < sz1; i++) {
-                        if (ei == listsize)
-                            ei = 0;
-                        res->append(e->index(ei++));
-                    }
-                    break;
-                }
-                case t_llist: {
-                    res = new LList(&lisp->delegation->mark);
-                    u_link* u = ((LList*)e)->liste.begin();
-                    if (u == NULL) {
-                        Element* v = zero_;
-                        for (long i = 0; i < sz1; i++)
-                            ((LList*)res)->push_front(v);
-                        break;
-                    }
-                    else {
-                        if (u->_next == NULL) {
-                            Element* v = u->value->copying(false);
-                            for (long i = 0; i < sz1; i++)
-                                ((LList*)res)->push_front(v);
-                        }
-                        else {
-                            for (long i = 0; i < sz1; i++) {
-                                if (u == NULL)
-                                    u = ((LList*)e)->liste.begin();
-                                ((LList*)res)->push_front(u->value->copying(false));
-                                u = u->next();
-                            }
-                        }
-                    }
-                }
-            }
-            e->release();
-            lisp->set_true_as_true();
-            return res;
-        }
-        
-        if (listsize == 4) {
-            long sz2;
-            e = liste[3]->eval(lisp);
-            if (!e->isList())
-                throw new Error("Error: third argument should be a list");
-            
-            evalAsInteger(1, lisp, sz1);
-            evalAsInteger(2, lisp, sz2);
-            switch (e->type) {
-                case t_shorts:
-                case t_floats:
-                    if (e->isEmpty()) {
-                        e->release();
-                        e = lisp->provideFloats(1, 0);
-                    }
-                    res = new Matrice_float(lisp, e, sz1, sz2);
-                    break;
-                case t_numbers:
-                case t_integers:
-                    if (e->isEmpty()) {
-                        e->release();
-                        e = lisp->provideIntegers(1, 0);
-                    }
-                    res = new Matrice(lisp, e, sz1, sz2);
-                    break;
-                case t_strings: {
-                    if (e->isEmpty()) {
-                        e->release();
-                        e = lisp->provideStrings();
-                        e->append(emptystring_);
-                    }
-                    vecte<long> shape;
-                    shape.push_back(sz1);
-                    shape.push_back(sz2);
-                    res = new List;
-                    sz1 = 0;
-                    ((List*)res)->build(lisp,shape, 0,res, e, sz1);
-                    break;
-                }
-                case t_list: {
-                    if (e->isEmpty()) {
-                        e->release();
-                        e = lisp->provideIntegers(1, 0);
-                        res = new Matrice(lisp, e, sz1, sz2);
-                        break;
-                    }
-                    else {
-                        vecte<long> shape;
-                        shape.push_back(sz1);
-                        shape.push_back(sz2);
-                        res = new List;
-                        sz1 = 0;
-                        ((List*)res)->build(lisp,shape, 0,res, e, sz1);
-                    }
-                    break;
-                }
-                case t_llist: {
-                    vecte<long> shape;
-                    shape.push_back(sz1);
-                    shape.push_back(sz2);
-                    res = new LList(&lisp->delegation->mark);
-                    u_link* u = ((LList*)e)->liste.begin();
-                    if (u == NULL) {
-                        e->release();
-                        e = new LList(&lisp->delegation->mark);
-                        e->append(zero_);
-                        u = ((LList*)e)->liste.begin();
-                    }
-                    ((LList*)res)->build(lisp,shape, 0, (LList*)res, (LList*)e, &u);
-                    break;
-                }
-            }
-            
-            e->release();
-            lisp->set_true_as_true();
-            return res;
-        }
-
-        vecte<long> shape;
-        long idx;
-        listsize--;
-        for (long i = 1; i < listsize; i++) {
-            evalAsInteger(i, lisp, idx);
-            shape.push_back(idx);
-        }
-        e = liste[listsize]->eval(lisp);
-        if (!e->isList())
-            throw new Error("Error: last argument should be a list");
-
-        switch (e->type) {
-            case t_shorts:
-            case t_floats:
-                if (e->isEmpty()) {
-                    e->release();
-                    e = lisp->provideFloats(1, 0);
-                }
-                res = new Tenseur_float(lisp, e, shape);
-                break;
-            case t_numbers:
-            case t_integers:
-                if (e->isEmpty()) {
-                    e->release();
-                    e = lisp->provideIntegers(1, 0);
-                }
-                res = new Tenseur(lisp, e, shape);
-                break;
-            case t_strings:
-                if (e->isEmpty()) {
-                    e->release();
-                    e = lisp->provideStrings();
-                    e->append(emptystring_);
-                }
-                else {
-                    res = new List;
-                    idx = 0;
-                    ((List*)res)->build(lisp,shape, 0,res, e, idx);
-                }
-                break;
-            case t_list: {
-                if (e->isEmpty()) {
-                    e->release();
-                    e = lisp->provideIntegers(1, 0);
-                    res = new Tenseur(lisp, e, shape);
-                }
-                else {
-                    res = new List;
-                    idx = 0;
-                    ((List*)res)->build(lisp,shape, 0,res, e, idx);
-                }
-                break;
-            }
-            case t_llist: {
-                res = new LList(&lisp->delegation->mark);
-                u_link* u = ((LList*)e)->liste.begin();
-                if (u == NULL) {
-                    e->release();
-                    e = new LList(&lisp->delegation->mark);
-                    e->append(zero_);
-                    u = ((LList*)e)->liste.begin();
-                }
-                ((LList*)res)->build(lisp,shape, 0, (LList*)res, (LList*)e, &u);
-                break;
-            }
-        }
-
-        e->release();
-        lisp->set_true_as_true();
-    }
-    catch (Error* err) {
-        e->release();
-        res->release();
-        lisp->set_true_as_true();
-        throw err;
-    }
-    return res;
+    List_rho_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_equalonezero(LispE* lisp) {
-    Element* l1 = liste[1]->eval(lisp);
-    
-    Element* l2 = null_;
-    Integers* res = NULL;
-    
-    try {
-        l2 = liste[2]->eval(lisp);
-        
-        if (!l1->isList() || !l2->isList()) {
-            bool test = l1->isequal(lisp, l2);
-            l1->release();
-            l2->release();
-            return numbools_[test];
-        }
-        
-        res = lisp->provideIntegers();
-        for (long i = 0; i < l1->size() && i < l2->size(); i++) {
-            if (l1->index(i)->isequal(lisp, l2->index(i)))
-                res->liste.push_back(1);
-            else
-                res->liste.push_back(0);
-        }
-        
-        l1->release();
-        l2->release();
-    }
-    catch (Error* err) {
-        l1->release();
-        l2->release();
-        if (res != NULL)
-            res->release();
-        throw err;
-    }
-    
-    return res;
+    List_equalonezero_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
     try {
         //this is a filter, the first list
         long j = 0;
@@ -5462,7 +3071,7 @@ Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
                         j++;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != sz) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5490,7 +3099,7 @@ Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
                         j++;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != sz) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5518,7 +3127,7 @@ Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
                         j++;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != sz) {
                     delete res;
                     throw new Error("Error: List size mismatch");
@@ -5546,7 +3155,7 @@ Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
                         j++;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != sz) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5574,7 +3183,7 @@ Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
                         j++;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != sz) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5601,7 +3210,7 @@ Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
                         j++;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != sz) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5613,7 +3222,7 @@ Element* List::scan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
         }
     }
     catch (Error* err) {
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         throw err;
     }
 }
@@ -5623,7 +3232,7 @@ Element* List::scan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
         throw new Error("Error: Wrong number of arguments");
     
     List* res = lisp->provideList();
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
     Element* rarg1 = this;
     Element* rarg2 = this;
     
@@ -5650,14 +3259,14 @@ Element* List::scan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
         lisp->reset_in_stack(rarg2, arg2);
         lisp->reset_in_stack(rarg1, arg1);
         l1->release();
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
     }
     catch (Error* err) {
         if (rarg2 != this)
             lisp->reset_in_stack(rarg2, arg2);
         if (rarg1 != this)
             lisp->reset_in_stack(rarg1, arg1);
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         res->release();
         throw err;
     }
@@ -5665,88 +3274,12 @@ Element* List::scan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
 }
 
 Element* List::evall_scan(LispE* lisp) {
-    //Operation is: (\\ operation l1 l2)
-    
-    Element* l1 = liste[2]->eval(lisp);
-    
-    if (!l1->isList()) {
-        l1->release();
-        throw new Error("Error: argument for 'scan' should be a list");
-    }
-
-    Element* op = null_;
-    long sz = 0;
-
-    try {
-        op = liste[1]->eval(lisp);
-        sz = l1->size();
-        if (!sz)
-            return emptylist_;
-                
-        if (op->isLambda())
-            return scan_lambda(lisp, l1, op, sz);
-
-        if (op->isList() && op->size()) {
-            return scan_with_list(lisp, l1, op, sz);
-        }
-    }
-    catch (Error* err) {
-        l1->release();
-        op->release();
-        throw err;
-    }
-
-    List* res = lisp->provideList();
-    List* call = NULL;
-    lisp->set_true_as_one();
-        
-    try {
-        op = eval_body_as_argument_min(lisp, op);
-        if (op->type == l_equal)
-            op = lisp->provideAtom(l_equalonezero);
-        
-        bool monadic = op->check_arity(lisp, P_TWO);
-        
-        call = lisp->provideCall(op, 1);
-        Element* e = l1->index(0)->copying(false);
-        res->append(e);
-        call->in_quote(1, e);
-        methodEval met = lisp->delegation->evals[op->type];
-        if (!monadic) {
-            call->append(lisp->quoted());
-            for (long i = 1; i < sz; i++) {
-                call->in_quote(2, l1->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-                call->in_quote(1, e);
-            }
-        }
-        else {
-            for (long i = 1; i < sz; i++) {
-                call->in_quote(1, l1->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-            }
-        }
-        
-        call->release();
-        l1->release();
-        lisp->set_true_as_true();
-    }
-    catch (Error* err) {
-        call->release();
-        lisp->set_true_as_true();
-        res->release();
-        l1->release();
-        throw err;
-    }
-    
-    return res;
+    List_scan_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz) {
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
     try {
         //this is a filter, the first list
         long j = sz - 1;
@@ -5771,7 +3304,7 @@ Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz
                         j--;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != -1) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5799,7 +3332,7 @@ Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz
                         j--;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != -1) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5827,7 +3360,7 @@ Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz
                         j--;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != -1) {
                     delete res;
                     throw new Error("Error: List size mismatch");
@@ -5855,7 +3388,7 @@ Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz
                         j--;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != -1) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5883,7 +3416,7 @@ Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz
                         j--;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != -1) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5910,7 +3443,7 @@ Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz
                         j--;
                     }
                 }
-                lisp->set_true_as_true();
+                lisp->reset_to_true(sb);
                 if (j != -1) {
                     res->release();
                     throw new Error("Error: List size mismatch");
@@ -5922,7 +3455,7 @@ Element* List::backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz
         }
     }
     catch (Error* err) {
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         throw err;
     }
 }
@@ -5932,7 +3465,7 @@ Element* List::backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
         throw new Error("Error: Wrong number of arguments");
     
     List* res = lisp->provideList();
-    lisp->set_true_as_one();
+    bool sb = lisp->set_true_as_one();
 
     Element* rarg1 = this;
     Element* rarg2 = this;
@@ -5964,7 +3497,7 @@ Element* List::backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
         lisp->reset_in_stack(rarg2, arg2);
         lisp->reset_in_stack(rarg1, arg1);
         l1->release();
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
     }
     catch (Error* err) {
         if (rarg2 != this)
@@ -5972,7 +3505,7 @@ Element* List::backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
         if (rarg1 != this)
             lisp->reset_in_stack(rarg1, arg1);
 
-        lisp->set_true_as_true();
+        lisp->reset_to_true(sb);
         res->release();
         throw err;
     }
@@ -5980,131 +3513,15 @@ Element* List::backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz) {
 }
 
 Element* List::evall_backscan(LispE* lisp) {
-    //Operation is: (-\\ operation l1 l2)
-    
-    Element* l1 = liste[2]->eval(lisp);
-    if (!l1->isList()) {
-        l1->release();
-        throw new Error("Error: argument for 'backscan' should be a list");
-    }
-    
-
-    Element* op = null_;
-    long sz = 0;
-    
-    try {
-        op = liste[1]->eval(lisp);
-        sz = l1->size();
-        if (!sz) {
-            lisp->set_true_as_true();
-            return null_;
-        }
-                
-        if (op->isLambda())
-            return backscan_lambda(lisp, l1, op, sz);
-
-        if (op->isList() && op->size())
-            return backscan_with_list(lisp, l1, op, sz);
- 
-    }
-    catch (Error* err) {
-        l1->release();
-        op->release();
-        throw err;
-    }
-
-    List* call = NULL;
-    List* res = lisp->provideList();
-    lisp->set_true_as_one();
-    
-    try {
-        op = eval_body_as_argument_min(lisp, op);
-        if (op->type == l_equal)
-            op = lisp->provideAtom(l_equalonezero);
-        
-
-        bool monadic = op->check_arity(lisp, P_TWO);
-
-        call = lisp->provideCall(op, 1);
-
-        sz--;
-        Element* e = l1->value_on_index(lisp, sz);
-        res->append(e);
-        call->in_quote(1, e);
-        methodEval met = lisp->delegation->evals[op->type];
-        if (!monadic) {
-            call->append(lisp->quoted());
-            for (long i = sz-1; i >= 0; i--) {
-                call->in_quote(2, l1->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-                call->in_quote(1, e);
-            }
-        }
-        else {
-            for (long i = sz-1; i >= 0; i--) {
-                call->in_quote(1, l1->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-            }
-        }
-        
-        call->release();
-        l1->release();
-        lisp->set_true_as_true();
-    }
-    catch (Error* err) {
-        if (call != NULL)
-            call->release();
-        res->release();
-        lisp->set_true_as_true();
-        l1->release();
-        throw err;
-    }
-    return res;
+    List_backscan_eval m(this);
+    return m.eval(lisp);
 }
+
 
 Element* List::evall_catch(LispE* lisp) {
-    long listsize = liste.size();
-    Element* element = null_;
-
-    
-    try {
-        for (int16_t i = 1; i < listsize; i++) {
-            element->release();
-            element = liste[i]->eval(lisp);
-        }
-    }
-    catch (Error* err) {
-        //This error is converted into a non-blocking error message .
-        element = new Maybe(lisp, err);
-        lisp->delegation->reset_context();
-        err->release();
-    }
-    return element;
+     List_catch_eval m(this);
+     return m.eval(lisp);
 }
-
-Element* List_cdr_eval::eval(LispE* lisp) {
-    Element* lst = liste[1]->eval(lisp);
-    Element* c;
-    
-    try {
-        c = lst->cdr(lisp);
-        if (lst->element_container()) {
-            c->increment();
-            lst->release();
-            c->decrementkeep();
-        }
-        else
-            lst->release();
-    }
-    catch (Error* err) {
-        lst->release();
-        throw err;
-    }
-    return c;
-}
-
 
 Element* List::evall_cdr(LispE* lisp) {
     Element* lst = liste[1]->eval(lisp);
@@ -6124,135 +3541,19 @@ Element* List::evall_cdr(LispE* lisp) {
         lst->release();
         throw err;
     }
+    
     return c;
 }
 
-Element* List_check_eval::eval(LispE* lisp) {
-    try {
-        lisp->checkStack();
-        Element* element = liste[1]->eval(lisp);
-        
-        if (!element->Boolean()) {
-            lisp->resetStack();
-            element->release();
-            return null_;
-        }
-        
-        long listsize = liste.size();
-        _releasing(element);
-        liste.back()->setterminal(terminal);
-        for (long i = 2; i < listsize && element->type != l_return; i++) {
-            element->release();
-            element = liste[i]->eval(lisp);
-        }
-        lisp->resetStack();
-        return element;
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        throw err;
-    }
-}
-
-Element* List_cond_eval::eval(LispE* lisp) {
-    Element* first_element = liste[0];
-    Element* second_element = null_;
-    Element* third_element = null_;
-
-
-    try {
-        long szv;
-        for (long i = 1; i < listsize; i++) {
-            second_element = liste[i];
-            szv = second_element->size();
-
-            if (!second_element->isList() || szv <= 1)
-                throw new Error(L"Error: in a 'cond' the first element must be a list");
-
-            List* code = (List*)second_element;
-            third_element = code->liste[0]->eval(lisp);
-            if (third_element->Boolean()) {
-                _releasing(third_element);
-                first_element = null_;
-                code->liste.back()->setterminal(terminal);
-                for (long int j = 1; j < szv; j++) {
-                    _releasing(first_element);
-                    first_element = code->liste[j]->eval(lisp);
-                }
-                return first_element;
-            }
-            _releasing(third_element);
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        third_element->release();
-        throw err;
-    }
-
-    return null_;
+Element* List::evall_cond(LispE* lisp) {
+    List_cond_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_check(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    
-    if (!element->Boolean()) {
-        element->release();
-        return null_;
-    }
-    
-    long listsize = liste.size();
-    _releasing(element);
-    liste.back()->setterminal(terminal);
-    for (long i = 2; i < listsize && element->type != l_return; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
-    }
-    return element;
+    List_check_eval m(this);
+    return m.eval(lisp);
 }
-
-Element* List::evall_cond(LispE* lisp) {
-    long listsize = liste.size();
-    Element* first_element = liste[0];
-    Element* second_element = null_;
-    Element* third_element = null_;
-
-
-    try {
-        long szv;
-        for (long i = 1; i < listsize; i++) {
-            second_element = liste[i];
-            szv = second_element->size();
-
-            if (!second_element->isList() || szv <= 1)
-                throw new Error(L"Error: in a 'cond' the first element must be a list");
-
-            List* code = (List*)second_element;
-            third_element = code->liste[0]->eval(lisp);
-            if (third_element->Boolean()) {
-                _releasing(third_element);
-                first_element = null_;
-                code->liste.back()->setterminal(terminal);
-                for (long int j = 1; j < szv; j++) {
-                    _releasing(first_element);
-                    first_element = code->liste[j]->eval(lisp);
-                }
-                return first_element;
-            }
-            _releasing(third_element);
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        third_element->release();
-        throw err;
-    }
-
-    return null_;
-}
-
 
 Element* List::evall_conspoint(LispE* lisp) {
     LList* lst = new LList(&lisp->delegation->mark);
@@ -6265,157 +3566,15 @@ Element* List::evall_conspoint(LispE* lisp) {
     
 }
 
-Element* List_cons_eval::eval(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    if (first_element == emptylist_)
-        first_element = null_;
-    
-    Element* second_element = null_;
-
-
-    try {
-        //merging an element into the next list
-        second_element = liste[2]->eval(lisp);
-        
-        switch (second_element->type) {
-            case t_llist:
-                return second_element->insert(lisp, first_element, 0);
-            case t_list: {
-                second_element = second_element->duplicate_constant(lisp);
-                if (second_element->status) {
-                    second_element->insert(lisp, first_element, 0);
-                    Listpool* third_element = new Listpool(lisp, (List*)second_element, 0);
-                    ((List*)second_element)->liste.home++;
-                    return third_element;
-                }
-                return second_element->insert(lisp, first_element, 0);
-            default:
-                if (second_element == null_ || second_element == emptylist_) {
-                    List* third_element = lisp->provideList();
-                    third_element->append(first_element);
-                    return third_element;
-                }
-
-                LList* third_element = new LList(&lisp->delegation->mark);
-                third_element->append(first_element);
-                third_element->append_as_last(second_element);
-                return third_element;
-            }
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-    return null_;
-}
 Element* List::evall_cons(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    if (first_element == emptylist_)
-        first_element = null_;
-    
-    Element* second_element = null_;
-
-
-    try {
-        //merging an element into the next list
-        second_element = liste[2]->eval(lisp);
-        
-        switch (second_element->type) {
-            case t_llist:
-                return second_element->insert(lisp, first_element, 0);
-            case t_list: {
-                second_element = second_element->duplicate_constant(lisp);
-                if (second_element->status) {
-                    second_element->insert(lisp, first_element, 0);
-                    Listpool* third_element = new Listpool(lisp, (List*)second_element, 0);
-                    ((List*)second_element)->liste.home++;
-                    return third_element;
-                }
-                return second_element->insert(lisp, first_element, 0);
-            default:
-                if (second_element == null_ || second_element == emptylist_) {
-                    List* third_element = lisp->provideList();
-                    third_element->append(first_element);
-                    return third_element;
-                }
-
-                LList* third_element = new LList(&lisp->delegation->mark);
-                third_element->append(first_element);
-                third_element->append_as_last(second_element);
-                return third_element;
-            }
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-    return null_;
+    List_cons_eval m(this);
+    return m.eval(lisp);
 }
+
 
 Element* List::evall_consb(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    if (first_element == emptylist_)
-        first_element = null_;
-    
-    Element* second_element = null_;
-    Element* result;
-
-
-    try {
-        //merging an element into the next list
-        second_element = liste[2]->eval(lisp);
-        if (first_element == null_ || first_element == emptylist_) {
-            result = lisp->provideList();
-            result->append(second_element);
-            return result;
-        }
-
-        if (!first_element->isList()) {
-            switch (second_element->type) {
-                case t_llist:
-                    return second_element->insert(lisp, first_element, 0);
-                case t_list: {
-                    second_element = second_element->duplicate_constant(lisp);
-                    if (second_element->status) {
-                        second_element->insert(lisp, first_element, 0);
-                        Element* third_element = new Listpool(lisp, (List*)second_element, 0);
-                        ((List*)second_element)->liste.home++;
-                        return third_element;
-                    }
-                    return second_element->insert(lisp, first_element, 0);
-                }
-                default:
-                    result = new LList(&lisp->delegation->mark);
-                    result->append(first_element);
-                    ((LList*)result)->append_as_last(second_element);
-                    return result;
-            }
-        }
-        else {
-            result = first_element->copyatom(lisp, 1);
-            result->append(second_element);
-        }
-
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-
-    return result;
-}
-
-Element* List_consp_eval::eval(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    bool b = element->isList();
-    element->release();
-    return booleans_[b];
+    List_consb_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_consp(LispE* lisp) {
@@ -6440,23 +3599,10 @@ Element* List::evall_clone(LispE* lisp) {
     return copie;
 }
 
+
 Element* List::evall_converttoatom(LispE* lisp) {
-
-    u_ustring tampon;
-    evalAsUString(1,lisp,tampon);
-    long sz = tampon.size();
-    if (tampon[0] == 'c' && tampon.back() == 'r' && sz > 3) {
-        // we check if we don't have a variation on car/cdr/cadr/caar etc...
-        sz-=2;
-        while (sz != 1) {
-            if (tampon[sz] != 'a' && tampon[sz] != 'd')
-                return lisp->provideAtomProtected(tampon);
-            sz--;
-        }
-        return  lisp->provideCADR(tampon);
-    }
-
-    return lisp->provideAtomProtected(tampon);
+     List_converttoatom_eval m(this);
+     return m.eval(lisp);
 }
 
 
@@ -6467,26 +3613,29 @@ Element* List::evall_converttoshort(LispE* lisp) {
     return element;
 }
 
-Element* List_integer_eval::eval(LispE* lisp) {
-    Element* value = liste[1]->eval(lisp);
-    Element* element = lisp->provideInteger(value->asInteger());
-    value->release();
-    return element;
+Element* List::evall_complex(LispE* lisp) {
+    double d;
+    evalAsNumber(1, lisp, d);
+    double i;
+    evalAsNumber(2, lisp, i);
+    return new Complex(d, i);
 }
 
-Element* List_number_eval::eval(LispE* lisp) {
-    Element* value = liste[1]->eval(lisp);
-    Element* element = lisp->provideNumber(value->asNumber());
-    value->release();
-    return element;
+Element* List::evall_real(LispE* lisp) {
+    Element* e = liste[1]->eval(lisp);
+    double d = e->asNumber();
+    e->release();
+    return lisp->provideNumber(d);
 }
 
-Element* List_string_eval::eval(LispE* lisp) {
-    Element* value = liste[1]->eval(lisp);
-    u_ustring strvalue = value->asUString(lisp);
-    Element* element = lisp->provideString(strvalue);
-    value->release();
-    return element;
+Element* List::evall_imaginary(LispE* lisp) {
+    Element* e = liste[1]->eval(lisp);
+    if (e->type == t_complex) {
+        double d = ((Complex*)e)->content.imag();
+        e->release();
+        return lisp->provideNumber(d);
+    }
+    throw new Error("Error: expecting a complex value");
 }
 
 Element* List::evall_converttointeger(LispE* lisp) {
@@ -6556,7 +3705,7 @@ Element* List::evall_data(LispE* lisp) {
         throw err;
     }
 
-    return true_;
+    return True_;
 }
 
 
@@ -6631,31 +3780,10 @@ Element* List::evall_defpat(LispE* lisp) {
     return lisp->recordingMethod(this, label);
 }
 
+
 Element* List::evall_space(LispE* lisp) {
-    short label = liste[1]->label();
-    if (label == l_thread)
-        return evalthreadspace(lisp, liste.size(), 2);
-    
-    if (!lisp->delegation->namespaces.check(label)) {
-        Element* e = liste[1]->eval(lisp);
-        label = e->label();
-        e->release();
-        if (!lisp->delegation->namespaces.check(label)) {
-            u_ustring w = U"Error: Unknown space: ";
-            w += lisp->asUString(label);
-            throw new Error(w);
-        }
-    }
-    
-    uint16_t current = lisp->current_space;
-    lisp->current_space = lisp->delegation->namespaces[label];
-    Element* r = null_;
-    for (long i = 2; i < liste.size(); i++) {
-        r->release();
-        r = liste[i]->eval(lisp);
-    }
-    lisp->current_space = current;
-    return r;
+     List_space_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_defspace(LispE* lisp) {
@@ -6664,7 +3792,7 @@ Element* List::evall_defspace(LispE* lisp) {
         throw new Error("Error: 'thread' is a reserved space name");
     
     lisp->create_name_space(label);
-    return true_;
+    return True_;
 }
 
 Element* List::evall_defun(LispE* lisp) {
@@ -6697,472 +3825,91 @@ Element* List::evall_defun(LispE* lisp) {
     return lisp->recordingunique(this, label);
 }
 
+
 Element* List::evall_bodies(LispE* lisp) {
-    Element* function = liste[1]->eval(lisp);
-    if (function->protected_index(lisp, (long)0)->type == l_defpat) {
-        List* functions =  lisp->provideList();
-        int16_t label = function->protected_index(lisp, (long)1)->label();
-        try {
-            for (const auto& a: lisp->delegation->method_pool[lisp->current_space]->at(label)) {
-                for (const auto& b : a.second) {
-                    functions->append(b);
-                }
-            }
-            return functions;
-        }
-        catch (...) {
-            return function;
-        }
-    }
-    return function;
+     List_bodies_eval m(this);
+     return m.eval(lisp);
 }
 
 
 Element* List::evall_different(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    char test;
-
-    try {
-        Element* second_element = liste[2]->eval(lisp);
-        test = first_element->isequal(lisp, second_element);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return booleans_[!test];
+    List_different_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_eq(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    long listsize = liste.size();
+    List_eq_eval m(this);
+    return m.eval(lisp);
 
-    Element* second_element;
-    bool test;
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        test = ( (first_element == second_element) || first_element->egal(second_element));
-        second_element->release();
-        
-        for (long i = 3; i < listsize && test; i++) {
-            second_element = liste[i]->eval(lisp);
-            test = ( (first_element == second_element) || first_element->egal(second_element));
-            second_element->release();
-        }
-        first_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return booleans_[test];
 }
 
 
 Element* List::evall_equal(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-    char test = true;
-
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        test = first_element->isequal(lisp, second_element);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return booleans_[test];
+    List_equal_eval m(this);
+    return m.eval(lisp);
 }
 
 
+
 Element* List::evall_eval(LispE* lisp) {
-    Element* code = liste[1]->eval(lisp);
-
-    Element* result;
-
-    try {
-        //This is a specific case, when the element is a string
-        //we need then to call the a meta-eval, the one that
-        //comes with Lisp itself
-        if (code->isString()) {
-            result = lisp->eval(code->toString(lisp));
-            if (result->isError()) {
-                u_ustring msg = result->asUString(lisp);
-                delete result;
-                throw new Error(msg);
-            }
-            code->release();
-            return result;
-        }
-        
-        if (!code->size())
-            return code;
-        
-        //We just need to evaluate this element...
-        lisp->check_arity_on_fly = true;
-        result = code->eval(lisp);
-        lisp->check_arity_on_fly = false;
-
-        if (result != code) {
-            if (code->element_container()) {
-                result->increment();
-                code->release();
-                result->decrementkeep();
-            }
-            else
-                code->release();
-        }
-    }
-    catch (Error* err) {
-        code->release();
-        lisp->check_arity_on_fly = false;
-        throw err;
-    }
-
-    return result;
+     List_eval_eval m(this);
+     return m.eval(lisp);
 }
 
 
 Element* List::evall_extract(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    Element* value;
-
-
-    try {
-        value = element->extraction(lisp, this);
-    }
-    catch (Error* err) {
-        element->release();
-        throw err;
-    }
-
-    element->release();
-    return value;
+    List_extract_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_set_range(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-
-    int16_t label = liste[1]->label();
-    Element* value;
-
-    try {
-        value = element->replace_in(lisp, this);
-    }
-    catch (Error* err) {
-        element->release();
-        throw err;
-    }
-
-    element->release();
-    if (label > l_final)
-        return lisp->recording_variable(value, label);
-    return value;
+    List_range_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_flatten(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    if (element->isValueList())
-        return element;
-    
-    if (element->type == t_matrix || element->type == t_tensor) {
-        Numbers* l = lisp->provideNumbers();
-        element->flatten(lisp, l);
-        element->release();
-        return l;
-    }
-    
-    if (element->type == t_matrix_float || element->type == t_tensor_float) {
-        Floats* l = lisp->provideFloats();
-        element->flatten(lisp, l);
-        element->release();
-        return l;
-    }
-    
-    List* l = lisp->provideList();
-    element->flatten(lisp,l);
-    element->release();
-    return l;
+    List_flatten_eval m(this);
+    return m.eval(lisp);
 }
 
+
 Element* List::evall_fappend(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    string chemin = element->toString(lisp);
-    element->release();
-    std::ofstream o(chemin.c_str(), std::ios::binary|std::ios::app);
-    if (o.fail()) {
-        string erreur = "Error: Cannot write in file: ";
-        erreur += chemin;
-        throw new Error(erreur);
-    }
-    
-    element = liste[2]->eval(lisp);
-    
-    //We put ourselves in append mode
-    chemin = element->toString(lisp);
-    o << chemin;
-    element->release();
-    return true_;
+     List_fappend_eval m(this);
+     return m.eval(lisp);
 }
 
 
 Element* List::evall_flip(LispE* lisp) {
-    Element* first_element = liste[0];
-    Element* second_element = liste[1];
-    bool reflip = false;
-    
-    try {
-        if (second_element->isList() && second_element->size() >= 3) {
-            second_element->swap(1,2);
-            reflip = true;
-            first_element =  second_element->eval(lisp);
-            second_element->swap(1,2);
-            return first_element;
-        }
-        first_element = second_element->eval(lisp);
-        switch (first_element->type) {
-            case t_floats:
-            case t_numbers:
-            case t_shorts:
-            case t_integers:
-            case t_strings:
-            case t_list:
-                if (first_element->size() < 2)
-                    return first_element;
-                second_element = first_element->copyatom(lisp, 1);
-                second_element->swap(0, 1);
-                return second_element;
-            case t_llist: {
-                LList* elements = (LList*)first_element;
-                if (!elements->atleast2())
-                    return first_element;
-                LList* l = (LList*)elements->copyatom(lisp, 1);
-                second_element = l->liste.first->value;
-                l->liste.first->value = l->liste.first->_next->value;
-                l->liste.first->_next->value = second_element;
-                return l;
-            }
-            default:
-                throw new Error("Error: cannot flip this element");
-        }
-    }
-    catch (Error* err) {
-        if (reflip)
-            second_element->swap(1,2);
-        else {
-            if (first_element != second_element)
-                first_element->release();
-            second_element->release();
-        }
-        throw err;
-    }
-
-    return null_;
+    List_flip_eval m(this);
+    return m.eval(lisp);
 }
-
-
-Element* List::evall_folding(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-
-    List* call = NULL;
-    try {
-        //abus de langage: I agree
-        //We detect the type of the instruction on the fly
-        if (liste[1]->isList()) {
-            //This is a quoted expression, we can safely replace it
-            liste[0] = first_element;
-            liste[1] = liste[2];
-            liste[2] = liste[3];
-            liste.pop_back();
-            return eval(lisp);
-        }
-        //This is a variable that was evaluated on the fly
-        call = lisp->provideList();
-        call->liste.push_element(first_element);
-        call->liste.push_element(liste[2]);
-        call->liste.push_element(liste[3]);
-        second_element = call->eval(lisp);
-        call->rawrelease();
-        first_element->release();
-    }
-    catch (Error* err) {
-        if (call != NULL) {
-            call->rawrelease();
-        }
-        first_element->release();
-        throw err;
-    }
-
-    return second_element;
-}
-
 
 Element* List::evall_fread(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    string filename = element->toString(lisp);
-    element->release();
-
-    element = lisp->provideString();
-    try {
-        return element->charge(lisp, filename);
-    }
-    catch (Error * err) {
-        element->release();
-        throw err;
-    }
+     List_fread_eval m(this);
+     return m.eval(lisp);
 }
-
 
 Element* List::evall_fwrite(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    string filename = element->toString(lisp);
-    element->release();
-    
-    std::ofstream o(filename.c_str(), std::ios::binary);
-    if (o.fail()) {
-        string erreur = "Error: Cannot write in file: ";
-        erreur += filename;
-        throw new Error(erreur);
-    }
-    
-    element = liste[2]->eval(lisp);
-    
-    filename = element->toString(lisp);
-    o << filename;
-    element->release();
-    return true_;
+     List_fwrite_eval m(this);
+     return m.eval(lisp);
 }
-
 
 Element* List::evall_getchar(LispE* lisp) {
     string code = get_char(lisp->delegation->input_handler);
     return lisp->provideString(code);
 }
 
-
 Element* List::evall_greater(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    long listsize = liste.size();
-    Integers* res = NULL;
-    Element* test;
-
-    Element* second_element;
-
-
-    try {
-        if (listsize == 3) {
-            second_element = liste[2]->eval(lisp);
-            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
-                res = lisp->provideIntegers();
-                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
-                    res->liste.push_back((first_element->index(i)->more(lisp, second_element->index(i))->Boolean()));
-                }
-                first_element->release();
-                second_element->release();
-                return res;
-            }
-            test = first_element->more(lisp, second_element);
-            first_element->release();
-            second_element->release();
-            return test;
-        }
-
-        test = true_;
-        for (long i = 2; i < listsize && test == true_ ; i++) {
-            second_element = liste[i]->eval(lisp);
-            test = first_element->more(lisp, second_element);
-            first_element->release();
-            first_element = second_element;
-        }
-        first_element->release();
-    }
-    catch (Error* err) {
-        if (res != NULL)
-            res->release();
-        first_element->release();
-        throw err;
-    }
-
-    return test;
+    List_greater_eval m(this);
+    return m.eval(lisp);
 }
-
 
 Element* List::evall_greaterorequal(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    long listsize = liste.size();
-    Element* second_element;
-    Integers* res = NULL;
-    Element* test;
-
-
-    try {
-        if (listsize == 3) {
-            second_element = liste[2]->eval(lisp);
-            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
-                res = lisp->provideIntegers();
-                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
-                    res->liste.push_back((first_element->index(i)->moreorequal(lisp, second_element->index(i))->Boolean()));
-                }
-                first_element->release();
-                second_element->release();
-                return res;
-            }
-            test = first_element->moreorequal(lisp, second_element);
-            first_element->release();
-            second_element->release();
-            return test;
-        }
-
-        test = true_;
-        for (long i = 2; i < listsize && test == true_; i++) {
-            second_element = liste[i]->eval(lisp);
-            test = first_element->moreorequal(lisp, second_element);
-            first_element->release();
-            first_element = second_element;
-        }
-        first_element->release();
-    }
-    catch (Error* err) {
-        if (res != NULL)
-            res->release();
-        first_element->release();
-        throw err;
-    }
-
-    return test;
+    List_greaterorequal_eval m(this);
+    return m.eval(lisp);
 }
 
-
-Element* List_if_eval::eval(LispE* lisp) {
-    try {
-        lisp->checkStack();
-        Element* condition = liste[1]->eval(lisp);
-        char test = 3 - condition->Boolean();
-        condition->release();
-        liste[test]->setterminal(terminal);
-        condition = liste[test]->eval(lisp);
-        lisp->resetStack();
-        return condition;
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        throw err;
-    }
-}
 
 Element* List::evall_if(LispE* lisp) {
     Element* condition = liste[1]->eval(lisp);
@@ -7174,35 +3921,6 @@ Element* List::evall_if(LispE* lisp) {
     liste[test]->setterminal(terminal);
     return liste[test]->eval(lisp);
 }
-
-Element* List_ife_eval::eval(LispE* lisp) {
-    try {
-        lisp->checkStack();
-        Element* element = liste[1]->eval(lisp);
-        
-        if (element->Boolean()) {
-            element->release();
-            liste[2]->setterminal(terminal);
-            return liste[2]->eval(lisp);
-        }
-        
-        long listsize = liste.size();
-        liste.back()->setterminal(terminal);
-        _releasing(element);
-        
-        for (long i = 3; i < listsize && element->type != l_return; i++) {
-            element->release();
-            element = liste[i]->eval(lisp);
-        }
-        lisp->resetStack();
-        return element;
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        throw err;
-    }
-}
-
 
 Element* List::evall_ife(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -7224,111 +3942,15 @@ Element* List::evall_ife(LispE* lisp) {
     return element;
 }
 
-Element* List_in_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* search_value;
-    bool res = false;
-    
-    try {
-        search_value = liste[2]->eval(lisp);
-        res = container->check_element(lisp, search_value);
-        container->release();
-        search_value->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-
-    return booleans_[res];
-}
-
 
 Element* List::evall_in(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* search_value;
-    bool res = false;
-    
-    try {
-        search_value = liste[2]->eval(lisp);
-        res = container->check_element(lisp, search_value);
-        container->release();
-        search_value->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-
-    return booleans_[res];
-}
-
-Element* List_at_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* result = container;
-
-    Element* value = null_;
-    
-    try {
-        //The user might have provided a list of indexes
-        //which we use to traverse a complex hierarchical structure...
-        for (long i = 2; i < listsize; i++) {
-            value = liste[i]->eval(lisp);
-            result = result->protected_index(lisp, value);
-            _releasing(value);
-        }
-        if (container->element_container()) {
-            result->increment();
-            container->release();
-            result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-        value->release();
-        container->release();
-        if (container != result)
-            result->release();
-        throw err;
-    }
-
-    return result;
+    List_in_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_at(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* result = container;
-
-
-    long listsize = liste.size();
-    Element* value = null_;
-    
-    try {
-        //The user might have provided a list of indexes
-        //which we use to traverse a complex hierarchical structure...
-        for (long i = 2; i < listsize; i++) {
-            value = liste[i]->eval(lisp);
-            result = result->protected_index(lisp, value);
-            _releasing(value);
-        }
-        if (container->element_container()) {
-            result->increment();
-            container->release();
-            result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-        value->release();
-        container->release();
-        if (container != result)
-            result->release();
-        throw err;
-    }
-
-    return result;
+    List_at_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_index_zero(LispE* lisp) {
@@ -7379,448 +4001,24 @@ Element* List::evall_index_zero(LispE* lisp) {
 }
 
 Element* List::evall_at_shape(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* result = liste[0];
-
-    long instruction_size = liste.size();
-    Integers* shapes = NULL;
-    Element* shape = liste[0];
-
-    try {
-        //The second element is the shape...
-        shape = liste[2]->eval(lisp);
-        long shape_size = shape->size();
-
-        if (!shape->isList() || !shape_size || shape_size < instruction_size - 3)
-            throw new Error("Error: Expecting a list with enough values to match the indexes as second argument");
-        
-        long i, begin;
-
-        if (shape->type == t_integers)
-            shapes = (Integers*)shape;
-        else {
-            shapes = lisp->provideIntegers();
-            for (i = 0; i < shape_size; i++)
-                shapes->liste.push_back(shape->index(i)->asInteger());
-        }
-
-        //The user might have provided a list of indexes
-        //which we use to traverse a complex hierarchical structure...
-        long index = 0;
-        long idx = 0;
-        long cumul = 1;
-        
-        for (i = instruction_size - 1; i >= 3; i--) {
-            evalAsInteger(i, lisp, index);
-            if (index < 0) {
-                i -= 3;
-                break;
-            }
-            else {
-                begin = shapes->liste[i - 3];
-                if (index >= begin)
-                    throw new Error("Error: index mismatch with shape");
-            }
-            idx += index*cumul;
-            cumul *= begin;
-        }
-
-        instruction_size -= 3;
-
-        if (index < 0) {
-            bool choice = (index == -1);
-            result = container->newInstance();
-            //First we need to detect if -1 is in the middle of a structure...
-            cumul = 1;
-            long value_size;
-            begin = 0;
-            for (index = 0; index < i; index++) {
-                evalAsInteger(index + 3, lisp, value_size);
-                if (value_size < 0)
-                    break;
-                begin += value_size * cumul;
-                cumul *= shapes->liste[index];
-            }
-
-            if (index) {
-                //We have found a restriction
-                cumul = 1;
-                for (; index < shape_size; index++) {
-                    cumul *= shapes->liste[index];
-                }
-                begin *= cumul;
-                value_size = begin + cumul;
-                cumul = 1;
-            }
-            else
-                value_size = container->size();
-            
-            //First we need to find the new bloc size
-            long block_size = 1;
-            for (index = i + 1; index < shape_size; index++) {
-                block_size *= shapes->liste[index];
-                cumul *= (index >= instruction_size)?shapes->liste[index]:1;
-            }
-            if (choice) {
-                if (cumul == 1) {
-                    for (i = begin; i < value_size; i += block_size)
-                        result->set_from(container, i + idx);
-                }
-                else {
-                    idx *= cumul;
-                    for (i = begin; i < value_size; i += block_size) {
-                        result->set_from(container, i + idx, i + idx + cumul);
-                    }
-                }
-            }
-            else {
-                shape_size = shapes->liste[i];
-                if (cumul == 1) {
-                    cumul = block_size;
-                    block_size *= shape_size;
-                    for (index = 0; index < shape_size; index++) {
-                        instruction_size = idx + index*cumul;
-                        for (i = begin; i < value_size; i += block_size)
-                            result->set_from(container, i + instruction_size);
-                    }
-                }
-                else {
-                    idx *= cumul;
-                    block_size *= shape_size;
-                    for (index = 0; index < shape_size; index++) {
-                        instruction_size = idx + (index*cumul);
-                        for (i = begin; i < value_size; i += block_size) {
-                            result->set_from(container, instruction_size + i, instruction_size + i + cumul);
-                        }
-                    }
-                }
-            }
-        }
-        else {
-            if (shape_size == instruction_size) {
-                if (idx >= container->size())
-                    throw new Error("Error: Index out of bound");
-                result = container->index(idx)->duplicate_constant(lisp);
-            }
-            else {
-                result = container->newInstance();
-                cumul = 1;
-                for (i = instruction_size; i < shape_size; i++) {
-                    index = shape->index(i)->asInteger();
-                    cumul *= index;
-                    idx *= index;
-                }
-                result->set_from(container, idx, idx + cumul);
-            }
-        }
-        shapes->release();
-        container->release();
-        if (shapes != shape)
-            shape->release();
-    }
-    catch (Error* err) {
-        if (shapes != NULL)
-            shapes->release();
-        if (shape != shapes)
-            shape->release();
-        container->release();
-        result->release();
-        throw err;
-    }
-
-    return result;
+    List_at_shape_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_set_shape(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-
-    int16_t instruction_size = liste.size();
-    Element* value = null_;
-    Element* shape = null_;
-    
-    try {
-        //The second element is the shape...
-        shape = liste[2]->eval(lisp);
-        long shape_size = shape->size();
-        if (!shape->isList() || !shape_size || shape_size < instruction_size - 4)
-            throw new Error("Error: Expecting a list with enough values to match the indexes as second argument");
-
-        value = liste[instruction_size - 1]->eval(lisp);
-
-        //The user might have provided a list of indexes
-        //which we use to traverse a complex hierarchical structure...
-        long i, sh;
-        long index = 0;
-        long idx = 0;
-        long cumul = 1;
-
-        for (i = instruction_size - 2; i >= 3; i--) {
-            evalAsInteger(i, lisp, index);
-            if (index < 0)
-                throw new Error("Error: cannot modify this value");
-            sh = shape->index(i - 3)->asInteger();
-            if (index >= sh)
-                throw new Error("Error: index mismatch with shape");
-            
-            idx += index*cumul;
-            cumul *= sh;
-        }
-            
-        instruction_size -= 4;
-
-        if (shape_size == instruction_size) {
-            if (idx >= container->size())
-                throw new Error("Error: Index out of bound");
-            container->set_in(lisp, value, idx);
-        }
-        else {
-            cumul = 1;
-            for (i = instruction_size; i < shape_size; i++) {
-                index = shape->index(i)->asInteger();
-                cumul *= index;
-                idx *= index;
-            }
-
-            if (cumul > value->size())
-                throw new Error("Error: cannot store this value in this container");
-            cumul += idx;
-            for (i = idx; i < cumul; i++) {
-                container->set_in(lisp, value->index(i - idx), i);
-            }
-        }
-        value->release();
-        shape->release();
-    }
-    catch (Error* err) {
-        shape->release();
-        value->release();
-        container->release();
-        throw err;
-    }
-
-    return container;
-}
-
-Element* List_set_at_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* result = container;
-
-    Element* value = null_;
-    Element* ix;
-
-
-    try {
-        value = liste[listsize - 1]->eval(lisp)->copying(false);
-        for (long i = 2; i < listsize - 2; i++) {
-            ix = liste[i]->eval(lisp);
-            result = result->protected_index(lisp, ix);
-            ix->release();
-        }
-        ix = liste[listsize-2]->eval(lisp);
-        result->replace(lisp, ix, value);
-        value->release();
-        ix->release();
-        if (container->element_container()) {
-            result->increment();
-            container->release();
-            result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-        value->release();
-        container->release();
-        if (container != result)
-            result->release();
-        throw err;
-    }
-
-    return result;
+    List_set_shape_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_set_at(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* result = container;
-
-    long listsize = liste.size();
-	Element* value = null_;
-	Element* ix;
-
-
-    try {
-		value = liste[listsize - 1]->eval(lisp)->copying(false);
-		for (long i = 2; i < listsize - 2; i++) {
-            ix = liste[i]->eval(lisp);
-            result = result->protected_index(lisp, ix);
-			ix->release();
-        }
-        ix = liste[listsize-2]->eval(lisp);
-        result->replace(lisp, ix, value);
-        value->release();
-        ix->release();
-        if (container->element_container()) {
-            result->increment();
-            container->release();
-            result->decrementkeep();
-        }
-        else
-            container->release();
-    }
-    catch (Error* err) {
-		value->release();
-        container->release();
-        if (container != result)
-            result->release();
-        throw err;
-    }
-
-    return result;
+    List_set_at_eval m(this);
+    return m.eval(lisp);
 }
 
 //Infix Expressions: x op y op z op u
 Element* List::evall_infix(LispE* lisp) {
-    Element* expression = liste[1]->eval(lisp);
-    long listsize = expression->size();
-
-    if (expression->type != t_list || !listsize)
-        return expression;
-    
-    expression = expression->duplicate_constant(lisp);
-    //We need first to detect the atom LIST structure
-    long ival;
-    Element* e = null_;
-    Element* eprec;
-    List* inter = lisp->provideList();
-    //We use sub to execute infix on sub-list within the current list
-    List* sub = lisp->provideList();
-    sub->append(lisp->provideAtom(l_infix));
-    List* root;
-    
-    if (listsize == 2 && expression->index(0)->isNonOperatorAtom() && expression->index(1)->type == t_list) {
-        //this is a function call: test(i j k) --> (test i j k l)
-        e = expression->index(1);
-        sub->append(e->quoting());
-        e = sub->evall_infix(lisp);
-        inter->append(expression->index(0));
-        if (e->index(0)->label() == l_concatenate) {
-            for (ival = 1; ival < e->size(); ival++)
-                inter->append(e->index(ival));
-            e->release();
-        }
-        else {
-            if (e->size() == 1) {
-                inter->append(e->index(0));
-                e->release();
-            }
-            else
-                inter->append(e);
-        }
-        sub->release();
-        expression->release();
-        return inter;
-    }
-    
-    bool modified = false;
-    for (ival = 0; ival < listsize; ival++) {
-        eprec = e;
-        e = expression->index(ival);
-        if (e->type == t_list) {
-            sub->append(e->quoting());
-            e = sub->evall_infix(lisp);
-            if (eprec->isPureAtom() && ival) {
-                root = lisp->provideList();
-                root->append(eprec);
-                root->append(e);
-                e = root;
-                inter->pop();
-            }
-            inter->append(e);
-            sub->pop();
-            modified = true;
-        }
-        else
-            inter->append(e);
-    }
-    
-    if (modified) {
-        expression->release();
-        expression = inter;
-        listsize = expression->size();
-    }
-    else
-        inter->release();
-    
-    if (listsize <= 1 || !(listsize & 1)) {
-        sub->release();
-        return expression;
-    }
-    
-    List* operations = lisp->provideList();
-    root = operations;
-
-    //First we gather all our ops, there should one be every two elements
-    Element* op = expression->index(1);
-    operations->append(op);
-    
-    long iop = 3;
-    ival = 0;
-
-    try {
-        while (ival < listsize) {
-            
-            //We check the sequence of operators of the same kind
-            for (; iop < listsize - 1; iop++) {
-                if (expression->index(iop)->isAtom() && op != expression->index(iop)) {
-                    op = expression->index(iop);
-                    break;
-                }
-            }
-            
-            //we then push all the values up to the operator that is different
-            for (;ival < iop; ival += 2)
-                operations->append(expression->index(ival));
-            
-            if (iop < listsize -1) {
-                //On this case, the current operator becomes the new head
-                char comp = lisp->delegation->checkComparator(op->type, root->index(0)->type);
-                if (comp == -1) {
-                    operations = root;
-                    iop += 2;
-                    continue;
-                }
-                
-                if (comp) {
-                    inter = lisp->provideList();
-                    inter->append(op);
-                    inter->append(root);
-                    root = inter;
-                    operations = root;
-                }
-                else {
-                    //We create one level down.
-                    //We feed this new List with the last element of the current list
-                    inter = lisp->provideList();
-                    inter->append(op);
-                    Element* last = operations->liste.back();
-                    inter->append(last);
-                    operations->pop();
-                    operations->append(inter);
-                    operations = inter;
-                }
-            }
-            iop += 2;
-        }
-    }
-    catch(Error* err) {
-        expression->release();
-        root->release();
-        sub->rawrelease();
-        throw err;
-    }
-    expression->release();
-    sub->rawrelease();
-    return root;
+    List_infix_eval m(this);
+    return m.eval(lisp);
 }
 
 //Infix Expressions: x op y op z op u
@@ -7911,644 +4109,62 @@ Element* List::evall_input(LispE* lisp) {
     
     lisp->delegation->reading_string_function(code, lisp->delegation->reading_string_function_object);
 #ifdef WIN32
-	cout << std::endl;
+    cout << std::endl;
 #endif
     return lisp->provideString(code);
 }
 
 
 Element* List::evall_insert(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-
-    int16_t lstsize = liste.size();
-    Element* second_element = null_;
-    Element* third_element = NULL;
-    List* comparison = NULL;
-
-    try {
-        //We insert a value in a list
-        second_element = liste[2]->eval(lisp);
-        long ix = 0;
-        if (lstsize == 3) {
-            ix = container->default_insertion();
-        }
-        else {
-            third_element = liste[3]->eval(lisp);
-            if (third_element->isNumber())
-                ix = third_element->asInteger();
-            else {
-                third_element = eval_body_as_argument_min(lisp, third_element);
-                
-                comparison = lisp->provideCall(third_element, 2);
-                comparison->in_quote(1, second_element);
-                
-                Element* result = container->insert_with_compare(lisp, second_element, *comparison);
-                container->release();
-                comparison->release();
-                return result;
-            }
-        }
-        
-        third_element = container->insert(lisp, second_element, ix);
-        second_element->release();
-        if (third_element != container) {
-            container->release();
-            return third_element;
-        }
-    }
-    catch (Error* err) {
-        container->release();
-        if (comparison != NULL)
-            comparison->release();
-        else {
-            second_element->release();
-            if (third_element != NULL)
-                third_element->release();
-        }
-        throw err;
-    }
-
-    return container;
+    List_insert_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_join(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* second_element;
+    List_join_eval m(this);
+    return m.eval(lisp);
 
-
-    try {
-        u_ustring sep;
-        if (liste.size() == 3)
-            evalAsUString(2,lisp,sep);
-        second_element = container->join_in_list(lisp, sep);
-        container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-
-    return second_element;
-}
-
-Element* List_key_eval::eval(LispE* lisp) {
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary();
-    }
-
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-
-
-    try {
-        if (listsize == 3 && first_element->isDictionary()) {
-            //The second element is an a_key
-            switch (first_element->type) {
-                case t_dictionary: {
-                    u_ustring a_key;
-                    evalAsUString(2, lisp, a_key);
-                    second_element = first_element->protected_index(lisp, a_key);
-                    first_element->release();
-                    return second_element;
-                }
-                case t_dictionaryi: {
-                    long a_key;
-                    evalAsInteger(2, lisp, a_key);
-                    second_element = first_element->protected_index(lisp, a_key);
-                    first_element->release();
-                    return second_element;
-                }
-                case t_dictionaryn: {
-                    double a_key;
-                    evalAsNumber(2, lisp, a_key);
-                    second_element = first_element->protected_index(lisp, a_key);
-                    first_element->release();
-                    return second_element;
-                }
-            }
-        }
-
-        long first = 2;
-        if (first_element->isDictionary()) {
-            if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'key'");
-            // It is out of question to manipulate a dictionary declared in the code
-            first_element = first_element->duplicate_constant(lisp);
-        }
-        else {
-            if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'key'");
-            first = 3;
-            u_ustring a_key = first_element->asUString(lisp);
-            first_element->release();
-            first_element = lisp->provideDictionary();
-            second_element = liste[2]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-
-        //We store values
-        switch (first_element->type) {
-            case t_dictionary: {
-                u_ustring a_key;
-                for (long i = first; i < listsize; i+=2) {
-                    evalAsUString(i, lisp, a_key);
-                    second_element = liste[i+1]->eval(lisp);
-                    first_element->recording(a_key, second_element->copying(false));
-                }
-                break;
-            }
-            case t_dictionaryi: {
-                long a_key;
-                for (long i = 2; i < listsize; i+=2) {
-                    evalAsInteger(i, lisp, a_key);
-                    second_element = liste[i+1]->eval(lisp);
-                    first_element->recording(a_key, second_element->copying(false));
-                }
-                break;
-            }
-            case t_dictionaryn: {
-                double a_key;
-                for (long i = 2; i < listsize; i+=2) {
-                    evalAsNumber(i, lisp, a_key);
-                    second_element = liste[i+1]->eval(lisp);
-                    first_element->recording(a_key, second_element->copying(false));
-                }
-                break;
-            }
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
-}
-
-Element* List_keyi_eval::eval(LispE* lisp) {
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary_i();
-    }
-    
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-
-
-    try {
-
-        long a_key;
-        if (listsize == 3 && first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryi)
-                throw new Error("Error: wrong dictionary type for 'keyi'");
-
-            evalAsInteger(2, lisp, a_key);
-            second_element = first_element->protected_index(lisp, a_key);
-            first_element->release();
-            return second_element;
-        }
-
-        long first;
-        if (first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryi)
-                throw new Error("Error: wrong dictionary type for 'keyi'");
-
-            if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyi'");
-            first = 2;
-            // It is out of question to manipulate a dictionary declared in the code
-            first_element = first_element->duplicate_constant(lisp);
-        }
-        else {
-            if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyi'");
-            first = 3;
-            a_key = first_element->asInteger();
-            first_element->release();
-            first_element = lisp->provideDictionary_i();
-            second_element = liste[2]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-
-        //We store the values
-        for (long i = first; i < listsize; i+=2) {
-            evalAsInteger(i, lisp, a_key);
-            second_element = liste[i+1]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
-}
-
-Element* List_keyn_eval::eval(LispE* lisp) {
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary_n();
-    }
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-
-
-    try {
-        double a_key;
-        if (listsize == 3 && first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryn)
-                throw new Error("Error: wrong dictionary type for 'keyn'");
-
-            evalAsNumber(2, lisp, a_key);
-            second_element = first_element->protected_index(lisp, a_key);
-            first_element->release();
-            return second_element;
-        }
-
-        long first;
-        if (first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryn)
-                throw new Error("Error: wrong dictionary type for 'keyn'");
-
-            if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyn'");
-            first = 2;
-            // It is out of question to manipulate a dictionary declared in the code
-            first_element = first_element->duplicate_constant(lisp);
-        }
-        else {
-            if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyn'");
-            first = 3;
-            a_key = first_element->asNumber();
-            first_element->release();
-            first_element = lisp->provideDictionary_n();
-            second_element = liste[2]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-
-        //We store the values
-        for (long i = first; i < listsize; i+=2) {
-            evalAsNumber(i, lisp, a_key);
-            second_element = liste[i+1]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
 }
 
 Element* List::evall_key(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary();
-    }
-
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-
-
-    try {
-        if (listsize == 3 && first_element->isDictionary()) {
-            //The second element is an a_key
-            switch (first_element->type) {
-                case t_dictionary: {
-                    u_ustring a_key;
-                    evalAsUString(2, lisp, a_key);
-                    second_element = first_element->protected_index(lisp, a_key);
-                    first_element->release();
-                    return second_element;
-                }
-                case t_dictionaryi: {
-                    long a_key;
-                    evalAsInteger(2, lisp, a_key);
-                    second_element = first_element->protected_index(lisp, a_key);
-                    first_element->release();
-                    return second_element;
-                }
-                case t_dictionaryn: {
-                    double a_key;
-                    evalAsNumber(2, lisp, a_key);
-                    second_element = first_element->protected_index(lisp, a_key);
-                    first_element->release();
-                    return second_element;
-                }
-            }
-        }
-
-        long first = 2;
-        if (first_element->isDictionary()) {
-            if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'key'");
-            // It is out of question to manipulate a dictionary declared in the code
-            first_element = first_element->duplicate_constant(lisp);
-        }
-        else {
-            if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'key'");
-            first = 3;
-            u_ustring a_key = first_element->asUString(lisp);
-            first_element->release();
-            first_element = lisp->provideDictionary();
-            second_element = liste[2]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-
-        //We store values
-        switch (first_element->type) {
-            case t_dictionary: {
-                u_ustring a_key;
-                for (long i = first; i < listsize; i+=2) {
-                    evalAsUString(i, lisp, a_key);
-                    second_element = liste[i+1]->eval(lisp);
-                    first_element->recording(a_key, second_element->copying(false));
-                }
-                break;
-            }
-            case t_dictionaryi: {
-                long a_key;
-                for (long i = 2; i < listsize; i+=2) {
-                    evalAsInteger(i, lisp, a_key);
-                    second_element = liste[i+1]->eval(lisp);
-                    first_element->recording(a_key, second_element->copying(false));
-                }
-                break;
-            }
-            case t_dictionaryn: {
-                double a_key;
-                for (long i = 2; i < listsize; i+=2) {
-                    evalAsNumber(i, lisp, a_key);
-                    second_element = liste[i+1]->eval(lisp);
-                    first_element->recording(a_key, second_element->copying(false));
-                }
-                break;
-            }
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_key_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_keyi(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary_i();
-    }
-    
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-
-
-    try {
-
-        long a_key;
-        if (listsize == 3 && first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryi)
-                throw new Error("Error: wrong dictionary type for 'keyi'");
-
-            evalAsInteger(2, lisp, a_key);
-            second_element = first_element->protected_index(lisp, a_key);
-            first_element->release();
-            return second_element;
-        }
-
-        long first;
-        if (first_element->isDictionary()) {
-			if (first_element->type != t_dictionaryi)
-				throw new Error("Error: wrong dictionary type for 'keyi'");
-
-            if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyi'");
-            first = 2;
-            // It is out of question to manipulate a dictionary declared in the code
-            first_element = first_element->duplicate_constant(lisp);
-        }
-        else {
-            if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyi'");
-            first = 3;
-            a_key = first_element->asInteger();
-            first_element->release();
-            first_element = lisp->provideDictionary_i();
-            second_element = liste[2]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-
-        //We store the values
-        for (long i = first; i < listsize; i+=2) {
-            evalAsInteger(i, lisp, a_key);
-            second_element = liste[i+1]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_keyi_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_keyn(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary_n();
-    }
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-
-
-    try {
-        double a_key;
-        if (listsize == 3 && first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryn)
-                throw new Error("Error: wrong dictionary type for 'keyn'");
-
-            evalAsNumber(2, lisp, a_key);
-            second_element = first_element->protected_index(lisp, a_key);
-            first_element->release();
-            return second_element;
-        }
-
-        long first;
-		if (first_element->isDictionary()) {
-			if (first_element->type != t_dictionaryn)
-				throw new Error("Error: wrong dictionary type for 'keyn'");
-
-			if ((listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyn'");
-            first = 2;
-            // It is out of question to manipulate a dictionary declared in the code
-            first_element = first_element->duplicate_constant(lisp);
-        }
-        else {
-            if (!(listsize % 2 ))
-                throw new Error("Error: wrong number of arguments for 'keyn'");
-            first = 3;
-            a_key = first_element->asNumber();
-            first_element->release();
-            first_element = lisp->provideDictionary_n();
-            second_element = liste[2]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-
-        //We store the values
-        for (long i = first; i < listsize; i+=2) {
-            evalAsNumber(i, lisp, a_key);
-            second_element = liste[i+1]->eval(lisp);
-            first_element->recording(a_key, second_element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_keyn_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_dictionary(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary();
-    }
-
-    if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'dictionary'");
-
-    Dictionary* dico = lisp->provideDictionary();
-    Element* element;
-
-    
-    try {
-        u_ustring a_key;
-        //We store values
-        for (long i = 1; i < listsize; i+=2) {
-            element = liste[i]->eval(lisp);
-            a_key = element->asUString(lisp);
-            element->release();
-            element = liste[i+1]->eval(lisp);
-            dico->recording(a_key, element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        dico->release();
-        throw err;
-    }
-    
-    return dico;
+    List_dictionary_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::evall_dictionaryi(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary_i();
-    }
-    
-    if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'dictionary'");
-
-    Dictionary_i* dico = lisp->provideDictionary_i();
-    Element* element;
-
-    
-    try {
-        long a_key;
-        //We store values
-        for (long i = 1; i < listsize; i+=2) {
-            element = liste[i]->eval(lisp);
-            a_key = element->asInteger();
-            element->release();
-            element = liste[i+1]->eval(lisp);
-            dico->recording(a_key, element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        dico->release();
-        throw err;
-    }
-    
-    return dico;
+    List_dictionaryi_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_dictionaryn(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1) {
-        //We create an empty dictionary
-        return lisp->provideDictionary_n();
-    }
-    
-    if (!(listsize % 2 ))
-        throw new Error("Error: wrong number of arguments for 'dictionary'");
-
-    Dictionary_n* dico = lisp->provideDictionary_n();
-    Element* element;
-
-    
-    try {
-        double a_key;
-        //We store values
-        for (long i = 1; i < listsize; i+=2) {
-            element = liste[i]->eval(lisp);
-            a_key = element->asNumber();
-            element->release();
-            element = liste[i+1]->eval(lisp);
-            dico->recording(a_key, element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        dico->release();
-        throw err;
-    }
-    
-    return dico;
+    List_dictionaryn_eval m(this);
+    return m.eval(lisp);
 }
-
 
 Element* List::evall_keys(LispE* lisp) {
-    Element* dictionary = liste[1]->eval(lisp);
-    if (!dictionary->isDictionary()) {
-        dictionary->release();
-        throw new Error(L"Error: the first argument must be a dictionary");
-    }
-    
-    Element* keys = dictionary->thekeys(lisp);
-    dictionary->release();
-    return keys;
+    List_keys_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::evall_label(LispE* lisp) {
-    int16_t label = liste[1]->label();
-    if (label == v_null)
-        throw new Error(L"Error: Missing label for 'label'");
-
-    Element* value = liste[2]->eval(lisp);
-
-    try {
-        return lisp->recordingunique(value, label);
-    }
-    catch (Error* err) {
-        value->release();
-        throw err;
-    }
+    List_label_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_lambda(LispE* lisp) {
@@ -8568,259 +4184,41 @@ Element* List::evall_last(LispE* lisp) {
     return value;
 }
 
-Element* List_list_eval::eval(LispE* lisp) {
-    if (listsize == 1)
-        return emptylist_;
-
-    Element* a_list = lisp->provideList();
-    Element* value;
-
-    try {
-        for (long i = 1; i < listsize; i++) {
-            value = liste[i]->eval(lisp);
-            a_list->append(value->copying(false));
-        }
-    }
-    catch (Error* err) {
-        a_list->release();
-        throw err;
-    }
-
-    return a_list;
-}
-
 Element* List::evall_list(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1)
-        return emptylist_;
-
-    Element* a_list = lisp->provideList();
-    Element* value;
-
-    try {
-        for (long i = 1; i < listsize; i++) {
-            value = liste[i]->eval(lisp);
-            a_list->append(value->copying(false));
-        }
-    }
-    catch (Error* err) {
-        a_list->release();
-        throw err;
-    }
-
-    return a_list;
+    List_list_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_heap(LispE* lisp) {
-    long listsize = liste.size();
-    Element* oper = null_;
-    List* compare = NULL;
-    Heap* tas = NULL;
-    Element* second_element;
-
-
-    try {
-        if (listsize != 1)
-            oper = liste[1]->eval(lisp);
-        
-        if (oper == null_ || oper->size() == 0)
-            oper = lisp->provideAtom(l_compare);
-        
-        if (oper->isLambda())
-            tas =  new Heaplambda((List*)oper);
-        else
-            tas =  new Heap(lisp->provideCall(oper, 2));
-                
-        for (long i = 2; i < listsize; i++) {
-            second_element = liste[i]->eval(lisp);
-            tas->insert(lisp, second_element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        if (compare != NULL)
-            compare->release();
-        if (tas != NULL)
-            tas->release();
-        throw err;
-    }
-
-    return tas;
+     List_heap_eval m(this);
+     return m.eval(lisp);
 }
 
-
 Element* List::evall_llist(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1)
-        return new LList(&lisp->delegation->mark);
-
-    LList* first_element = new LList(&lisp->delegation->mark);
-    Element* second_element;
-
-    try {
-        for (long i = listsize - 1; i > 0; i--) {
-            second_element = liste[i]->eval(lisp);
-            first_element->push_front(second_element->copying(false));
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+     List_llist_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_to_list(LispE* lisp) {
-    Element* values = liste[1]->eval(lisp);
-    if (size() == 2) {
-        if (values->type == t_list)
-            return values;
-        Element* results = values->asList(lisp, lisp->provideList());
-        values->release();
-        return results;
-    }
-    long counter = 0;
-    evalAsInteger(2, lisp, counter);
-    List* l = lisp->provideList();
-    while (counter > 0) {
-        l->append(values->copying());
-        counter--;
-    }
-    values->release();
-    return l;
+     List_to_list_eval m(this);
+     return m.eval(lisp);
 }
 
+
 Element* List::evall_to_llist(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    
-    if (container->type == l_llist)
-        return container;
-
-    if (container->type == t_heap) {
-        Element* a_llist = (LList*)((Heap*)container)->asLList(lisp);
-        container->release();
-        return a_llist;
-    }
-
-    LList* a_llist = a_llist = new LList(&lisp->delegation->mark);
-
-    try {
-        if (container->isSet()) {
-            void* iter = container->begin_iter();
-            Element* next_value = container->next_iter(lisp, iter);
-            while (next_value != emptyatom_) {
-                if (container->check_element(lisp, next_value))
-                    a_llist->push_front(next_value);
-                next_value = container->next_iter(lisp, iter);
-            }
-            container->clean_iter(iter);
-        }
-        else {
-            if (container->isList()) {
-                for (long i = container->size() - 1; i >= 0; i--) {
-                    a_llist->push_front(container->index(i)->copying(false));
-                }
-            }
-            else {
-                a_llist->push_front(container->copying(false));
-            }
-        }
-        container->release();
-    }
-    catch (Error* err) {
-        a_llist->release();
-        container->release();
-        throw err;
-    }
-
-    return a_llist;
+     List_to_llist_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_nconc(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1)
-        return emptylist_;
-
-    Element* result = null_;
-    Element* element = null_;
-    Element* e;
-
-    long i, l;
-
-    try {
-        element = liste[1]->eval(lisp);
-        if (element->isList())
-            result = element->duplicate_constant(lisp);
-        else
-            throw new Error("Error: first element is not a list");
-
-        element = emptylist_;
-        for (i = 2; i < listsize; i++) {
-            element = liste[i]->eval(lisp);
-            if (element->isList()) {
-                for (l = 0; l < element->size(); l++) {
-                    e = element->value_on_index(lisp, l);
-                    result->append(e);
-                    e->release();
-                }
-            }
-            else
-                result->append(element);
-            
-            _releasing(element);
-        }
-    }
-    catch (Error* err) {
-        result->release();
-        element->release();
-        throw err;
-    }
-
-    return result;
+    List_nconc_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_nconcn(LispE* lisp) {
-    long listsize = liste.size();
-    if (listsize == 1)
-        return emptylist_;
-
-    Element* result = null_;
-    Element* element = null_;
-    Element* e;
-
-    long i, l;
-
-    try {
-        element = liste[1]->eval(lisp);
-        if (element->isList())
-            result = element->copyatom(lisp, 1);
-        else
-            throw new Error("Error: first element is not a list");
-
-        element = emptylist_;
-        for (i = 2; i < listsize; i++) {
-            element = liste[i]->eval(lisp);
-            if (element->isList()) {
-                for (l = 0; l < element->size(); l++) {
-                    e = element->value_on_index(lisp, l);
-                    result->append(e);
-                    e->release();
-                }
-            }
-            else
-                result->append(element);
-            _releasing(element);
-        }
-    }
-    catch (Error* err) {
-        result->release();
-        element->release();
-        throw err;
-    }
-
-    return result;
+    List_nconcn_eval m(this);
+    return m.eval(lisp);
 }
-
 
 Element* List::evall_load(LispE* lisp) {
     Element* filename = liste[1]->eval(lisp);
@@ -8839,480 +4237,68 @@ Element* List::evall_load(LispE* lisp) {
 
 Element* List::evall_compile(LispE* lisp) {
     Element* the_code = liste[1]->eval(lisp);
-    string code = the_code->toString(lisp);
+    u_ustring code = the_code->asUString(lisp);
     the_code->release();
     return lisp->compile_eval(code);
 }
 
+
 Element* List::evall_lock(LispE* lisp) {
-    u_ustring key;
-    evalAsUString(1, lisp, key);
-
-    ThreadLock* _lock = lisp->delegation->getlock(key);
-
-    long listsize = liste.size();
-    bool test = lisp->threaded();
-    _lock->locking(test);
-
-    Element* value = null_;
-    try {
-        for (long i = 2; i < listsize && value->type != l_return; i++) {
-            value->release();
-            value = liste[i]->eval(lisp);
-        }
-    }
-    catch (Error* err) {
-        _lock->unlocking(test);
-        throw err;
-    }
-
-    _lock->unlocking(test);
-    return value;
-}
-
-Element* List_loop_eval::eval(LispE* lisp) {
-    int16_t label = liste[1]->label();
-    if (label == v_null)
-        throw new Error(L"Error: Missing label for 'loop'");
-
-    Element* container = liste[2]->eval(lisp);
-    Element* result;
-
-    try {
-        lisp->checkStack();
-        //We loop in a list
-        result = container->loop(lisp, label, this);
-    }
-    catch (Error* err) {
-        lisp->resetStack();
-        container->release();
-        throw err;
-    }
-
-    lisp->resetStack();
-    container->release();
-    return result;
-}
-
-
-Element* List_loopcount_eval::eval(LispE* lisp) {
-    long counter;
-    evalAsInteger(1, lisp, counter);
-    
-    Element* result = null_;
-    try {
-        lisp->checkStack();
-        while (counter > 0) {
-            for (long i = 2; i < listsize && result->type != l_return; i++) {
-                result->release();
-                result = liste[i]->eval(lisp);
-            }
-            //If a 'return' or a 'break' has been placed in the code
-            if (result->type == l_return) {
-                if (result->isBreak())
-                    return null_;
-                //this is a return, it goes back to the function call
-                return result;
-            }
-            counter--;
-        }
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        throw err;
-    }
-    lisp->resetStack();
-    return result;
+     List_lock_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_loop(LispE* lisp) {
-    int16_t label = liste[1]->label();
-    if (label == v_null)
-        throw new Error(L"Error: Missing label for 'loop'");
-
-    Element* container = liste[2]->eval(lisp);
-    Element* result;
-
-    try {
-        //We loop in a list
-        result = container->loop(lisp, label, this);
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-
-    container->release();
-    return result;
+    List_loop_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::evall_loopcount(LispE* lisp) {
-    long counter;
-    evalAsInteger(1, lisp, counter);
-    
-    long listsize = liste.size();
-    
-    
-    Element* result = null_;
-    while (counter > 0) {
-        for (long i = 2; i < listsize && result->type != l_return; i++) {
-            result->release();
-            result = liste[i]->eval(lisp);
-        }
-        //If a 'return' or a 'break' has been placed in the code
-        if (result->type == l_return) {
-            if (result->isBreak())
-                return null_;
-            //this is a return, it goes back to the function call
-            return result;
-        }
-        counter--;
-    }
-    return result;
+    List_loopcount_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_compare(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element;
-    Element* test;
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        test = first_element->compare(lisp, second_element);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return test;
+    List_compare_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_lower(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    long listsize = liste.size();
-    Element* second_element;
-    Integers* res = NULL;
-    Element* test;
-
-
-    try {
-        if (listsize == 3) {
-            second_element = liste[2]->eval(lisp);
-            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
-                res = lisp->provideIntegers();
-                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
-                    res->liste.push_back((first_element->index(i)->less(lisp, second_element->index(i))->Boolean()));
-                }
-                first_element->release();
-                second_element->release();
-                return res;
-            }
-            test = first_element->less(lisp, second_element);
-            first_element->release();
-            second_element->release();
-            return test;
-        }
-
-        test = true_;
-        for (long i = 2; i < listsize && test == true_; i++) {
-            second_element = liste[i]->eval(lisp);
-            test = first_element->less(lisp, second_element);
-            first_element->release();
-            first_element = second_element;
-        }
-        first_element->release();
-    }
-    catch (Error* err) {
-        if (res != NULL)
-            res->release();
-        first_element->release();
-        throw err;
-    }
-
-    return test;
+    List_lower_eval m(this);
+    return m.eval(lisp);
 }
-
 
 Element* List::evall_lowerorequal(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    long listsize = liste.size();
-    Element* second_element;
-    Integers* res = NULL;
-    Element* test;
-
-
-    try {
-        if (listsize == 3) {
-            second_element = liste[2]->eval(lisp);
-            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
-                res = lisp->provideIntegers();
-                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
-                    res->liste.push_back((first_element->index(i)->lessorequal(lisp, second_element->index(i))->Boolean()));
-                }
-                first_element->release();
-                second_element->release();
-                return res;
-            }
-            test = first_element->lessorequal(lisp, second_element);
-            first_element->release();
-            second_element->release();
-            return test;
-        }
-
-        test = true_;
-        for (long i = 2; i < listsize && test == true_ ; i++) {
-            second_element = liste[i]->eval(lisp);
-            test = first_element->lessorequal(lisp, second_element);
-            first_element->release();
-            first_element = second_element;
-        }
-        first_element->release();
-    }
-    catch (Error* err) {
-        if (res != NULL)
-            res->release();
-        first_element->release();
-        throw err;
-    }
-
-    return test;
+    List_lowerorequal_eval m(this);
+    return m.eval(lisp);
 }
-
-
-Element* List::evall_mapping(LispE* lisp) {
-    Element* operation = liste[1]->eval(lisp);
-    Element* value;
-    
-    List* call = lisp->provideList();
-    //abus de langage: I agree
-    //We detect the type of the instruction on the fly
-    //This is a variable that was evaluated on the fly
-    call->liste.push_element(operation);
-    call->liste.push_element(liste[2]);
-    if (lisp->is_math_operator(operation->type)) {
-        //Then we must duplicate the second element:
-        call->liste.push_element(liste[2]);
-    }
-
-    try {
-        value = call->eval(lisp);
-    }
-    catch (Error* err) {
-        call->rawrelease();
-        operation->release();
-        throw err;
-    }
-
-    call->rawrelease();
-    operation->release();
-    return value;
-}
-
 
 Element* List::evall_minmax(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    long listsize = liste.size();
-
-    Element* max_element = first_element;
-    Element* min_element = first_element;
-    Element* res;
-
-    try {
-        if (listsize == 2) {
-            //In this case, the argument must be a list
-            res = first_element->minmax(lisp);
-            first_element->release();
-            return res;
-        }
-
-        for (long i = 2; i < listsize; i++) {
-            first_element = liste[i]->eval(lisp);
-            if (first_element->less(lisp, min_element)->Boolean()) {
-                if (max_element != min_element)
-                    min_element->release();
-                min_element = first_element;
-            }
-            else {
-                if (first_element->more(lisp, max_element)->Boolean()) {
-                    if (max_element != min_element)
-                        max_element->release();
-                    max_element = first_element;
-                }
-                else {
-                    first_element->release();
-                }
-            }
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        if (first_element != max_element)
-            max_element->release();
-        if (first_element != min_element)
-            min_element->release();
-        throw err;
-    }
-    
-    res = lisp->provideList();
-    res->append(min_element);
-    res->append(max_element);
-    min_element->release();
-    if (min_element != max_element)
-        max_element->release();
-    return res;
+    List_minmax_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_max(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    long listsize = liste.size();
-    Element* second_element;
-
-    try {
-        if (listsize == 2) {
-            //In this case, the argument must be a list
-            second_element = first_element->maximum(lisp);
-            first_element->release();
-            return second_element;
-        }
-
-        for (long i = 2; i < listsize; i++) {
-            second_element = liste[i]->eval(lisp);
-            if (first_element->less(lisp, second_element)->Boolean()) {
-                first_element->release();
-                first_element = second_element;
-            }
-            else {
-                second_element->release();
-            }
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_max_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_maybe(LispE* lisp) {
-    long listsize = liste.size();
-    Element* first_element;
-
-    
-
-    //Otherwise, we test each value for error and then we send the last one back
-    try {
-        if (listsize == 2) {
-            first_element = liste[1]->eval(lisp);
-            bool val = (first_element->label() == t_maybe);
-            first_element->release();
-            return booleans_[val];
-        }
-        
-        first_element = null_;
-        for (long i = 1; i < listsize - 1; i++) {
-            first_element->release();
-            first_element = liste[i]->eval(lisp);
-        }
-    }
-    catch(Error* err) {
-        err->release();
-        lisp->delegation->reset_context();
-        return liste.back()->eval(lisp);
-    }
-    return first_element;
+    List_maybe_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_min(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    long listsize = liste.size();
-    Element* second_element;
-
-    try {
-        if (listsize == 2) {
-            //In this case, the argument must be a list
-            second_element = first_element->minimum(lisp);
-            first_element->release();
-            return second_element;
-        }
-
-        for (long i = 2; i < listsize; i++) {
-            second_element = liste[i]->eval(lisp);
-            if (first_element->more(lisp, second_element)->Boolean()) {
-                first_element->release();
-                first_element=second_element;
-            }
-            else {
-                second_element->release();
-            }
-        }
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_min_eval m(this);
+    return m.eval(lisp);
 }
 
-Element* List_ncheck_eval::eval(LispE* lisp) {
-    try {
-        lisp->checkStack();
-        Element* element = liste[1]->eval(lisp);
-        
-        if (!element->Boolean()) {
-            element->release();
-            liste[2]->setterminal(terminal);
-            lisp->resetStack();
-            return liste[2]->eval(lisp);
-        }
-        
-        
-        _releasing(element);
-
-        long listsize = liste.size();
-        liste.back()->setterminal(terminal);
-        for (long i = 3; i < listsize && element->type != l_return; i++) {
-            element->release();
-            element = liste[i]->eval(lisp);
-        }
-        lisp->resetStack();
-        return element;
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        throw err;
-    }
-}
 
 Element* List::evall_ncheck(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    
-    if (!element->Boolean()) {
-        element->release();
-        liste[2]->setterminal(terminal);
-        return liste[2]->eval(lisp);
-    }
-    
-    
-    long listsize = liste.size();
-    _releasing(element);
-    
-    liste.back()->setterminal(terminal);
-    for (long i = 3; i < listsize && element->type != l_return; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
-    }
-    return element;
+    List_ncheck_eval m(this);
+    return m.eval(lisp);
 }
 
 
@@ -9324,25 +4310,11 @@ Element* List::evall_next(LispE* lisp) {
     return liste[1]->eval(lisp)->next_element();
 }
 
-Element* List_not_eval::eval(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    bool test = first_element->Boolean();
-    first_element->release();
-    return booleans_[!test];
-}
-
 Element* List::evall_not(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     bool test = first_element->Boolean();
     first_element->release();
     return booleans_[!test];
-}
-
-Element* List_nullp_eval::eval(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    bool test = element->isNULL();
-    element->release();
-    return booleans_[test];
 }
 
 Element* List::evall_nullp(LispE* lisp) {
@@ -9352,13 +4324,6 @@ Element* List::evall_nullp(LispE* lisp) {
     return booleans_[test];
 }
 
-Element* List_numberp_eval::eval(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    bool b = element->isNumber();
-    element->release();
-    return booleans_[b];
-}
-
 Element* List::evall_numberp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     bool b = element->isNumber();
@@ -9366,1249 +4331,206 @@ Element* List::evall_numberp(LispE* lisp) {
     return booleans_[b];
 }
 
+
 Element* List::evall_tensor(LispE* lisp) {
-    long sz = size();
-    Element* e = zero_;
-
-
-    vecte<long> shape;
-    long s;
-    try {
-        if (sz == 2) {
-            e = liste[1]->eval(lisp);
-            if (e->type == t_tensor) {
-                Tenseur* ts = new Tenseur(lisp, (List*)e);
-                e->release();
-                return ts;
-            }
-
-            if (!e->isList())
-                throw new Error("Error: The first element should be a list");
-                        
-            if (e->type == t_tensor_float)
-                ((Tenseur_float*)e)->getShape(shape);
-            else {
-                Element* c = e;
-                while (c->isList()) {
-                    shape.push_back(c->size());
-                    c = c->index(0);
-                }
-                if (!c->isNumber())
-                    throw new Error("Error: this list should contain numbers");
-            }
-            
-            Numbers l;
-            e->flatten(lisp,&l);
-            Tenseur* ts = new Tenseur(lisp, &l, shape);
-            e->release();
-            return ts;
-        }
-        
-        for (long i = 1; i < sz; i++) {
-            evalAsInteger(i, lisp, s);
-            shape.push_back(s);
-        }
-    }
-    catch (Error* err) {
-        e->release();
-        throw err;
-    }
-
-    return new Tenseur(lisp, shape, zero_);
+     List_tensor_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_tensor_float(LispE* lisp) {
-    long sz = size();
-    Element* e = zero_;
-
-
-    vecte<long> shape;
-    long s;
-    try {
-        if (sz == 2) {
-            e = liste[1]->eval(lisp);
-            if (e->type == t_tensor_float) {
-                Tenseur_float* ts = new Tenseur_float(lisp, (Tenseur_float*)e);
-                e->release();
-                return ts;
-            }
-
-            if (!e->isList())
-                throw new Error("Error: The first element should be a list");
-
-            if (e->type == t_tensor)
-                ((Tenseur*)e)->getShape(shape);
-            else {
-                Element* c = e;
-                while (c->isList()) {
-                    shape.push_back(c->size());
-                    c = c->index(0);
-                }
-                if (!c->isNumber())
-                    throw new Error("Error: this list should contain numbers");
-            }
-
-            Floats l;
-            e->flatten(lisp,&l);
-            Tenseur_float* ts = new Tenseur_float(lisp, &l, shape);
-            e->release();
-            return ts;
-        }
-        
-        for (long i = 1; i < sz; i++) {
-            evalAsInteger(i, lisp, s);
-            shape.push_back(s);
-        }
-    }
-    catch (Error* err) {
-        e->release();
-        throw err;
-    }
-
-    return new Tenseur_float(lisp, shape, zero_);
+     List_tensor_float_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_matrix(LispE* lisp) {
-    long sz = size();
-    Element* e = zero_;
-
-    long sx, sy;
-    try {
-        if (sz == 2) {
-            //then this is a list of lists
-            e = liste[1]->eval(lisp);
-            if (e->type == t_matrix) {
-                Matrice* m = new Matrice(lisp, (Matrice*)e);
-                e->release();
-                return m;
-            }
-
-            if (e->type == t_matrix_float) {
-                Matrice* m = new Matrice(lisp, (Matrice_float*)e);
-                e->release();
-                return m;
-            }
-
-            if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
-            
-            long size_x = e->size();
-            long size_y = e->index(0)->size();
-            Numbers l;
-            e->flatten(lisp, &l);
-            Matrice* m = new Matrice(lisp, &l, size_x, size_y);
-            e->release();
-            return m;
-        }
-        
-        evalAsInteger(1, lisp, sx);
-        evalAsInteger(2, lisp, sy);
-        if (sz == 4)
-            e = liste[3]->eval(lisp);
-        
-    }
-    catch (Error* err) {
-        e->release();
-        throw err;
-    }
-
-    return new Matrice(sx, sy, e);
+     List_matrix_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_matrix_float(LispE* lisp) {
-    long sz = size();
-    Element* e = zero_;
-
-
-    long sx, sy;
-    try {
-        if (sz == 2) {
-            //then this is a list of lists
-            e = liste[1]->eval(lisp);
-            if (e->type == t_matrix_float) {
-                Matrice_float* m = new Matrice_float(lisp, (Matrice_float*)e);
-                e->release();
-                return m;
-            }
-
-            if (e->type == t_matrix) {
-                Matrice_float* m = new Matrice_float(lisp, (Matrice*)e);
-                e->release();
-                return m;
-            }
-
-            if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
-                throw new Error("Error: Cannot initialize a matrix with this value");
-            
-            long size_x = e->size();
-            long size_y = e->index(0)->size();
-            Floats l;
-            e->flatten(lisp, &l);
-            Matrice_float* m = new Matrice_float(lisp, &l, size_x, size_y);
-            e->release();
-            return m;
-        }
-        
-        evalAsInteger(1, lisp, sx);
-        evalAsInteger(2, lisp, sy);
-        if (sz == 4)
-            e = liste[3]->eval(lisp);
-        
-    }
-    catch (Error* err) {
-        e->release();
-        throw err;
-    }
-
-    return new Matrice_float(sx, sy, e);
+     List_matrix_float_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_floats(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideFloats();
-
-    Floats* n = lisp->provideFloats();
-    Element* values;
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asFloat());
-                }
-            }
-            else
-                n->liste.push_back(values->asFloat());
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+     List_floats_eval m(this);
+     return m.eval(lisp);
 }
 
-Element* List_numbers_eval::eval(LispE* lisp) {
-    if (listsz == 1)
-        return lisp->provideNumbers();
-
-    Numbers* n = lisp->provideNumbers();
-    Element* values;
-
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asNumber());
-                }
-            }
-            else
-                n->liste.push_back(values->asNumber());
-            values->release();
-        }
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
-}
 
 Element* List::evall_numbers(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideNumbers();
-
-    Numbers* n = lisp->provideNumbers();
-    Element* values;
-
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asNumber());
-                }
-            }
-            else
-                n->liste.push_back(values->asNumber());
-            values->release();
-        }
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+    List_numbers_eval m(this);
+    return m.eval(lisp);
 }
+
 
 Element* List::evall_shorts(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return new Shorts();
-
-    Shorts* n = new Shorts();
-    Element* values;
-
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asShort());
-                }
-            }
-            else
-                n->liste.push_back(values->asShort());
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        delete n;
-        throw err;
-    }
-
-    return n;
-}
-
-Element* List_integers_eval::eval(LispE* lisp) {
-    if (listsz == 1)
-        return lisp->provideIntegers();
-
-    Integers* n = lisp->provideIntegers();
-    Element* values;
-
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asInteger());
-                }
-            }
-            else
-                n->liste.push_back(values->asInteger());
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+     List_shorts_eval m(this);
+     return m.eval(lisp);
 }
 
 
 Element* List::evall_integers(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideIntegers();
-
-    Integers* n = lisp->provideIntegers();
-    Element* values;
-
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asInteger());
-                }
-            }
-            else
-                n->liste.push_back(values->asInteger());
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+    List_integers_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_set(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideSet();
-
-    Set* n = lisp->provideSet();
-    Element* values;
-
-
-    try {
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            n->add(lisp, values);
-            values->release();
-        }
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+    List_set_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_sets(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideSet_s();
-
-    Element* values = liste[1]->eval(lisp);
-
-    Set_s* n = lisp->provideSet_s();
-
-    try {
-        if (values->isSet()) {
-            if (values->type == t_sets)
-                n->ensemble = ((Set_s*)values)->ensemble;
-            else {
-                void* iter = values->begin_iter();
-                Element* nxt = values->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    n->ensemble.insert(nxt->asUString(lisp));
-                    nxt = values->next_iter_exchange(lisp, iter);
-                }
-                values->clean_iter(iter);
-            }
-        }
-        else {
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->add(values->index(i)->asUString(lisp));
-                }
-            }
-            else
-                n->add(values->asUString(lisp));
-        }
-        values->release();
-
-        for (long e = 2; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isSet()) {
-                void* iter = values->begin_iter();
-                Element* nxt = values->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    n->ensemble.insert(nxt->asUString(lisp));
-                    nxt = values->next_iter_exchange(lisp, iter);
-                }
-                values->clean_iter(iter);
-            }
-            else {
-                if (values->isList()) {
-                    for (long i = 0; i < values->size(); i++) {
-                        n->add(values->index(i)->asUString(lisp));
-                    }
-                }
-                else
-                    n->add(values->asUString(lisp));
-            }
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+    List_sets_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_seti(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideSet_i();
-
-    Element* values = liste[1]->eval(lisp);
-
-    Set_i* n = lisp->provideSet_i();
-
-    try {
-        if (values->isSet()) {
-            if (values->type == t_seti)
-                n->ensemble = ((Set_i*)values)->ensemble;
-            else {
-                void* iter = values->begin_iter();
-                Element* nxt = values->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    n->ensemble.insert(nxt->asInteger());
-                    nxt = values->next_iter_exchange(lisp, iter);
-                }
-                values->clean_iter(iter);
-            }
-        }
-        else {
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->add(values->index(i)->asInteger());
-                }
-            }
-            else
-                n->add(values->asNumber());
-        }
-        
-        values->release();
-
-        for (long e = 2; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isSet()) {
-                void* iter = values->begin_iter();
-                Element* nxt = values->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    n->ensemble.insert(nxt->asInteger());
-                    nxt = values->next_iter_exchange(lisp, iter);
-                }
-                values->clean_iter(iter);
-            }
-            else {
-                if (values->isList()) {
-                    for (long i = 0; i < values->size(); i++) {
-                        n->add(values->index(i)->asInteger());
-                    }
-                }
-                else
-                    n->add(values->asInteger());
-            }
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+    List_seti_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_setn(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideSet_n();
-
-    Element* values = liste[1]->eval(lisp);
-
-    Set_n* n = lisp->provideSet_n();
-
-    try {
-        if (values->isSet()) {
-            if (values->type == t_setn)
-                n->ensemble = ((Set_n*)values)->ensemble;
-            else {
-                void* iter = values->begin_iter();
-                Element* nxt = values->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    n->ensemble.insert(nxt->asNumber());
-                    nxt = values->next_iter_exchange(lisp, iter);
-                }
-                values->clean_iter(iter);
-            }
-        }
-        else {
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->add(values->index(i)->asNumber());
-                }
-            }
-            else
-                n->add(values->asNumber());
-        }
-        values->release();
-
-        for (long e = 2; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isSet()) {
-                void* iter = values->begin_iter();
-                Element* nxt = values->next_iter_exchange(lisp, iter);
-                while (nxt != emptyatom_) {
-                    n->ensemble.insert(nxt->asNumber());
-                    nxt = values->next_iter_exchange(lisp, iter);
-                }
-                values->clean_iter(iter);
-            }
-            else {
-                if (values->isList()) {
-                    for (long i = 0; i < values->size(); i++) {
-                        n->add(values->index(i)->asNumber());
-                    }
-                }
-                else
-                    n->add(values->asNumber());
-            }
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
-}
-
-Element* List_strings_eval::eval(LispE* lisp) {
-    if (listsz == 1)
-        return lisp->provideStrings();
-
-    Strings* n = lisp->provideStrings();
-    Element* values;
-
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asUString(lisp));
-                }
-            }
-            else
-                n->liste.push_back(values->asUString(lisp));
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+    List_setn_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_strings(LispE* lisp) {
-    long listsz = size();
-    if (listsz == 1)
-        return lisp->provideStrings();
-
-    Strings* n = lisp->provideStrings();
-    Element* values;
-
-
-    try {
-        n->liste.reserve(listsz<<1);
-        for (long e = 1; e < listsz; e++) {
-            values = liste[e]->eval(lisp);
-            if (values->isList()) {
-                for (long i = 0; i < values->size(); i++) {
-                    n->liste.push_back(values->index(i)->asUString(lisp));
-                }
-            }
-            else
-                n->liste.push_back(values->asUString(lisp));
-            values->release();
-        }
-        
-    }
-    catch (Error* err) {
-        n->release();
-        throw err;
-    }
-
-    return n;
+    List_strings_eval m(this);
+    return m.eval(lisp);
 }
-
-Element* List_or_eval::eval(LispE* lisp) {
-    Element* element = null_;
-    bool test = false;
-    
-    for (long i = 1; i < listsize && !test; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
-        test = element->Boolean();
-    }
-    
-    element->release();
-    return booleans_[test];
-}
-
 
 Element* List::evall_or(LispE* lisp) {
-    long listsize = liste.size();
-    Element* element = null_;
-    bool test = false;
-    
-    for (long i = 1; i < listsize && !test; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
-        test = element->Boolean();
-    }
-    
-    element->release();
-    return booleans_[test];
+    List_or_eval m(this);
+    return m.eval(lisp);
 }
+
 
 
 Element* List::evall_pipe(LispE* lisp) {
-
-    //pipe returns a line read on std::cin
-    //It returns nil, if the stream is closed...
-    string code;
-    getline(std::cin, code);
-    if (std::cin.eof())
-        return null_;
-    return lisp->provideString(code);
+     List_pipe_eval m(this);
+     return m.eval(lisp);
 }
 
-Element* List_pop_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    if (container->isString()) {
-        long keyvalue;
-        u_ustring strvalue = container->asUString(lisp);
-        if (liste.size() == 3)
-            evalAsInteger(2, lisp, keyvalue);
-        else {
-            if (!strvalue.size())
-                return emptystring_;
-            strvalue.pop_back();
-            return lisp->provideString(strvalue);
-        }
-
-        if (keyvalue < 0 || keyvalue >= strvalue.size())
-            return emptystring_;
-        strvalue.erase(strvalue.begin()+keyvalue);
-        container->release();
-        return lisp->provideString(strvalue);
-    }
-
-    if (liste.size() != 3) {
-        if (container->type == t_llist) {
-            if (container->removefirst())
-                return container;
-        }
-        else {
-            if (container->removelast())
-                return container;
-        }
-        container->release();
-        return null_;
-    }
-    
-    try {
-        Element* key = liste[2]->eval(lisp);
-        if (container->remove(lisp, key)) {
-            key->release();
-            return container;
-        }
-        key->release();
-        container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return null_;
-}
 Element* List::evall_pop(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    if (container->isString()) {
-        long keyvalue;
-        u_ustring strvalue = container->asUString(lisp);
-        if (liste.size() == 3)
-            evalAsInteger(2, lisp, keyvalue);
-        else {
-            if (!strvalue.size())
-                return emptystring_;
-            strvalue.pop_back();
-            return lisp->provideString(strvalue);
-        }
-
-        if (keyvalue < 0 || keyvalue >= strvalue.size())
-            return emptystring_;
-        strvalue.erase(strvalue.begin()+keyvalue);
-        container->release();
-        return lisp->provideString(strvalue);
-    }
-
-    if (liste.size() != 3) {
-        if (container->type == t_llist) {
-            if (container->removefirst())
-                return container;
-        }
-        else {
-            if (container->removelast())
-                return container;
-        }
-        container->release();
-        return null_;
-    }
-    
-    try {
-        Element* key = liste[2]->eval(lisp);
-        if (container->remove(lisp, key)) {
-            key->release();
-            return container;
-        }
-        key->release();
-        container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return null_;
+    List_pop_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_popfirst(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    if (first_element->isString()) {
-        u_ustring strvalue = first_element->asUString(lisp);
-        if (!strvalue.size())
-            return emptystring_;
-        strvalue = strvalue.substr(1, strvalue.size());
-        return lisp->provideString(strvalue);
-    }
-    
-    
-    if (first_element->removefirst())
-        return first_element;
-    first_element->release();
-    return null_;
+    List_popfirst_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_poplast(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    if (first_element->isString()) {
-        u_ustring strvalue = first_element->asUString(lisp);
-        if (!strvalue.size())
-            return emptystring_;
-        strvalue.pop_back();
-        return lisp->provideString(strvalue);
-    }
-    if (first_element->removelast())
-        return first_element;
-    first_element->release();
-    return null_;
+    List_poplast_eval m(this);
+    return m.eval(lisp);
 }
 
+
 Element* List::evall_prettify(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    long mx = 50;
-    if (liste.size() == 3)
-        evalAsInteger(2, lisp, mx);
-    string s = first_element->prettify(lisp, mx);
-    first_element->release();
-    return lisp->provideString(s);
+     List_prettify_eval m(this);
+     return m.eval(lisp);
 }
 
 
 Element* List::evall_print(LispE* lisp) {
-    long listsize = liste.size();
-    Element* element = null_;
-    
-    string val;
-    for (long i = 1; i < listsize; i++) {
-        element = liste[i]->eval(lisp);
-        val += element->toString(lisp);
-        element->release();
-    }
-    
-    lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-    if (lisp->isThread)
-        std::cout.flush();
-    return emptyatom_;
+    List_print_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_printerr(LispE* lisp) {
-    long listsize = liste.size();
-    Element* element;
-    
-    
-    for (long i = 1; i < listsize; i++) {
-        element = liste[i]->eval(lisp);
-        std::cerr << element->toString(lisp);
-        element->release();
-    }
-    
-    if (lisp->isThread)
-        std::cerr.flush();
-    
-    return emptyatom_;
+    List_printerr_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_printerrln(LispE* lisp) {
-    long listsize = liste.size();
-    Element* element;
-    
-    
-    for (long i = 1; i < listsize; i++) {
-        element = liste[i]->eval(lisp);
-        if (i != 1)
-            std::cerr << " ";
-        std::cerr << element->toString(lisp);
-        element->release();
-    }
-    
-    std::cerr << std::endl;
-    if (lisp->isThread)
-        std::cerr.flush();
-    return emptyatom_;
+    List_printerrln_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_println(LispE* lisp) {
-    long listsize = liste.size();
-    Element* element;
-    string val;
-    
-    for (long i = 1; i < listsize; i++) {
-        element = liste[i]->eval(lisp);
-        if (i != 1)
-            val += " ";
-        val += element->toString(lisp);
-        element->release();
-    }
-    
-#ifdef WIN32
-    val += "\r\n";
-#else
-    val += "\n";
-#endif
-    
-    lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-    if (lisp->isThread)
-        std::cout.flush();
-    return emptyatom_;
+    List_println_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_extend(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    if (!container->isList()) {
-        container->release();
-        throw new Error(L"Error: missing list in 'extend'");
-    }
-    
-    container = container->duplicate_constant(lisp);
-    
-    Element* value = null_;
-    Element* e;
-    
-    
-    try {
-        //We store a value in a list
-        value = liste[2]->eval(lisp);
-        if (value->isList()) {
-            if (container->type == t_llist) {
-                container->concatenate(lisp, value);
-            }
-            else {
-                for (long i = 0; i < value->size(); i++) {
-                    e = value->index(i)->copying(false);
-                    container->append(e);
-                    e->release();
-                }
-            }
-        }
-        else {
-            value = value->copying(false);
-            container->append(value);
-        }
-        value->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return container;
-}
-
-Element* List::evall_pushtrue(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    container = container->duplicate_constant(lisp);
-    
-    
-    try {
-        container->push_element_true(lisp, this);
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return container;
-}
-
-Element* List_push_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    container = container->duplicate_constant(lisp);
-    
-    
-    try {
-        container->push_element(lisp, this);
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return container;
+    List_extend_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_push(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    container = container->duplicate_constant(lisp);
-    
-    
-    try {
-        container->push_element(lisp, this);
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return container;
+    List_push_eval m(this);
+    return m.eval(lisp);
 }
 
-Element* List::evall_pushfirst(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    container = container->duplicate_constant(lisp);
-    
-    try {
-        container->push_element_front(lisp, this);
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
+Element* List::evall_pushtrue(LispE* lisp) {
+    List_pushtrue_eval m(this);
+    return m.eval(lisp);
+}
 
-    return container;
+
+Element* List::evall_pushfirst(LispE* lisp) {
+    List_pushfirst_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_pushlast(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    container = container->duplicate_constant(lisp);
-
-    try {
-        container->push_element_back(lisp, this);
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-
-    return container;
+    List_pushlast_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_replicate(LispE* lisp) {
-    /*
-     (replicate nb list)
-     */
-    long nb;
-    evalAsInteger(1, lisp, nb);
-    List* l = lisp->provideList();
-    Element* element = liste[2]->eval(lisp);
-    
-    while (nb) {
-        l->append(element->copying());
-        nb--;
-    }
-    element->release();
-    return l;
+    List_replicate_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_reverse(LispE* lisp) {
-    Element* matrix = liste[1]->eval(lisp);
-    Element* result = null_;
-
-    bool duplicate = true;
-    
-    try {
-        if (liste.size() == 3) {
-            result = liste[2]->eval(lisp);
-            if (result != true_) {
-                long axis = result->asInteger();
-                if (axis < 0 || axis >= matrix->shapesize())
-                    throw new Error("Error: cannot reverse along this axis");
-                result = matrix->rotate(lisp, axis);
-                matrix->release();
-                return result;
-            }
-            duplicate = false;
-        }
-        
-        result = matrix->reverse(lisp, duplicate);
-        if (matrix != result)
-            matrix->release();
-    }
-    catch (Error* err) {
-        result->release();
-        matrix->release();
-        throw err;
-    }
-
-    return result;
+    List_reverse_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::evall_revertsearch(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = null_;
-    Element* third_element;
-
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        long ix = 0;
-        if (liste.size() == 4) {
-            evalAsInteger(3,lisp, ix);
-        }
-        third_element = first_element->search_reverse(lisp, second_element, ix);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-
-    return third_element;
+    List_revertsearch_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_search(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = null_;
-    Element* third_element;
-
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        long ix = 0;
-        if (liste.size() == 4)
-            evalAsInteger(3,lisp, ix);
-        third_element = first_element->search_element(lisp, second_element, ix);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-
-    return third_element;
+    List_search_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::evall_count(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = null_;
-    Element* third_element;
+    List_count_eval m(this);
+    return m.eval(lisp);
+}
 
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        long ix = 0;
-        if (liste.size() == 4) {
-            evalAsInteger(3,lisp, ix);
-        }
-        third_element = first_element->count_all_elements(lisp, second_element, ix);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-
-    return third_element;
+Element* List::evall_cutlist(LispE* lisp) {
+    List_cutlist_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_searchall(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = null_;
-    Element* third_element;
-
-
-    try {
-        second_element = liste[2]->eval(lisp);
-        long ix = 0;
-        if (liste.size() == 4) {
-            evalAsInteger(3,lisp, ix);
-        }
-        third_element = first_element->search_all_elements(lisp, second_element, ix);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-
-    return third_element;
+    List_searchall_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_replaceall(LispE* lisp) {
-    Element* object = liste[1]->eval(lisp);
-    Element* search = null_;
-    Element* replace = null_;
-    Element* e;
-    
-    try {
-        search = liste[2]->eval(lisp);
-        replace = liste[3]->eval(lisp);
-        e = object->replace_all_elements(lisp, search, replace);
-        object->release();
-        search->release();
-        replace->release();
-    }
-    catch (Error* err) {
-        object->release();
-        search->release();
-        replace->release();
-        throw err;
-    }
-
-    return e;
+    List_replaceall_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::evall_select(LispE* lisp) {
-    long listsize = liste.size();
-    Element* second_element = null_;
-    for (long i = 1; i < listsize && second_element == null_; i++) {
-        liste[i]->setterminal(terminal);
-        second_element = liste[i]->eval(lisp);
-    }
-    return second_element;
+    List_select_eval m(this);
+    return m.eval(lisp);
 }
 
 #ifdef MAX_STACK_SIZE_ENABLED
@@ -10619,7 +4541,7 @@ Element* List::evall_set_max_stack_size(LispE* lisp) {
         return lisp->provideInteger(lisp->stack_size_max());
     evalAsInteger(1, lisp, m);
     lisp->set_stack_max_size(m);
-    return true_;
+    return True_;
 }
 #endif
 
@@ -10631,7 +4553,7 @@ Element* List::evall_set_const(LispE* lisp) {
     lisp->storing_global(element, label);
     if (element->status != s_constant)
         lisp->garbaging(element);
-    return true_;
+    return True_;
 }
 
 Element* List::evall_setg(LispE* lisp) {
@@ -10639,45 +4561,34 @@ Element* List::evall_setg(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     if (!lisp->delegation->replaceFunction(element, label, lisp->current_space))
         lisp->storing_global(element, label);
-    return true_;
+    return True_;
 }
 
 Element* List::evall_let(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     lisp->storing_variable(element, liste[1]->label());
-    return true_;
-}
-
-Element* List_setq_eval::eval(LispE* lisp) {
-    Element* element = liste[2]->eval(lisp);
-    lisp->storing_variable(element, liste[1]->label());
-    return true_;
+    return True_;
 }
 
 Element* List::evall_setq(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     lisp->storing_variable(element, liste[1]->label());
-    return true_;
+    return True_;
 }
 
 Element* List::evall_seth(LispE* lisp) {
     if (lisp->check_thread_stack) {
         Element* element = liste[2]->eval(lisp);
         lisp->delegation->thread_stack.storing_variable(element->duplicate_constant(lisp), liste[1]->label());
-        return true_;
+        return True_;
     }
     throw new Error("Error: this instruction can only be used in a 'threadspace' block");
 }
 
-Element* List::evall_signp(LispE* lisp) {
-    double v = 0;
 
-    evalAsNumber(1, lisp, v);
-    if (v == 0)
-        return zero_;
-    if (v < 0)
-        return minusone_;
-    return one_;
+Element* List::evall_signp(LispE* lisp) {
+     List_signp_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_sign(LispE* lisp) {
@@ -10696,178 +4607,13 @@ Element* List::evall_sleep(LispE* lisp) {
     long tm;
     evalAsInteger(1, lisp, tm);
     std::this_thread::sleep_for(std::chrono::milliseconds(tm));
-    return true_;
+    return True_;
 }
 
 
 Element* List::evall_sort(LispE* lisp) {
-    Element* comparator = liste[1]->eval(lisp);
-    Element* container = null_;
-
-
-    comparator = eval_body_as_argument_min(lisp, comparator);
-
-    try {
-        //First element is the comparison function OR an operator
-        container = liste[2]->eval(lisp);
-        if (!container->isList())
-            throw new Error(L"Error: the second argument should be a list for 'sort'");
-    }
-    catch (Error* err) {
-        comparator->release();
-        container->release();
-        throw err;
-    }
-
-    
-    switch (container->type) {
-        case t_floats: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
-            try {
-                ((Floats*)container)->sorting(lisp, &complist);
-                comparator->decrement();
-                return container;
-            }
-            catch (Error* err) {
-                comparator->decrement();
-                container->release();
-                throw err;
-            }
-        }
-        case t_numbers: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
-            try {
-                ((Numbers*)container)->sorting(lisp, &complist);
-                comparator->decrement();
-                return container;
-            }
-            catch (Error* err) {
-                comparator->decrement();
-                container->release();
-                throw err;
-            }
-        }
-        case t_shorts: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
-            try {
-                ((Shorts*)container)->sorting(lisp, &complist);
-                comparator->decrement();
-                return container;
-            }
-            catch (Error* err) {
-                comparator->decrement();
-                container->release();
-                throw err;
-            }
-        }
-        case t_integers: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
-            try {
-                ((Integers*)container)->sorting(lisp, &complist);
-                comparator->decrement();
-                return container;
-            }
-            catch (Error* err) {
-                comparator->decrement();
-                container->release();
-                throw err;
-            }
-        }
-        case t_strings: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
-            try {
-                ((Strings*)container)->sorting(lisp, &complist);
-                comparator->decrement();
-                return container;
-            }
-            catch (Error* err) {
-                comparator->decrement();
-                container->release();
-                throw err;
-            }
-        }
-        case t_llist: {
-            List* l = (List*)container->asList(lisp, lisp->provideList());
-            if (l->size() <= 1) {
-                l->release();
-                comparator->release();
-                return container;
-            }
-            
-            List* complist = lisp->provideCall(comparator, 2);
-
-            complist->in_quote(1, l->index(0));
-            complist->in_quote(2, l->index(0));
-            try {
-                if (complist->eval(lisp)->Boolean()) {
-                    throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
-                }
-            }
-            catch(Error* err) {
-                container->release();
-                complist->release();
-                throw err;
-            }
-
-            l->liste.sorting(lisp, complist);
-            u_link* it = ((LList*)container)->liste.begin();
-            for (long i = 0; i < l->size(); i++) {
-                it->value = l->index(i);
-                it = it->next();
-            }
-            
-            l->release();
-            complist->release();
-            return container;
-        }
-        default: {
-            List* l = (List*)container;
-            if (l->size() <= 1) {
-                comparator->release();
-                return container;
-            }
-            
-            List* complist = lisp->provideCall(comparator, 2);
-
-            complist->in_quote(1, l->index(0));
-            complist->in_quote(2, l->index(0));
-            try {
-                if (complist->eval(lisp)->Boolean()) {
-                    throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
-                }
-            }
-            catch(Error* err) {
-                container->release();
-                complist->release();
-                throw err;
-            }
-            l->liste.sorting(lisp, complist);
-            complist->release();
-            return container;
-        }
-    }
-}
-
-Element* List_stringp_eval::eval(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    bool test = element->isString();
-    element->release();
-    return booleans_[test];
+    List_sort_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_stringp(LispE* lisp) {
@@ -10924,43 +4670,11 @@ Element* List::evall_switch(LispE* lisp) {
     return e;
 }
     
-Element* Listswitch::eval(LispE* lisp) {
-    lisp->checkPureState(this);
-    
-    List* code = NULL;
-    
-    Element* e = liste[1]->eval(lisp);
-    u_ustring key = e->asUString(lisp);
-    _releasing(e);
-    
-    try {
-        code = cases.at(key);
-    }
-    catch(...) {
-        code = default_value;
-    }
-    
-    if (code == NULL) {
-        u_ustring msg = U"Error: Unknown 'switch' key: '";
-        msg += key;
-        msg += U"'";
-        throw new Error(msg);
-    }
-    
-    
-    long sz = code->liste.size();
-    for (long i = 1; i < sz; i++) {
-        _releasing(e);
-        e = code->liste[i]->eval(lisp);
-    }
-    return e;
-}
-
 Element* List::evall_threadclear(LispE* lisp) {
 
     if (liste.size() == 1) {
         lisp->delegation->thread_clear_all();
-        return true_;
+        return True_;
     }
     
     u_ustring key;
@@ -10999,7 +4713,7 @@ Element* List::evall_threadstore(LispE* lisp) {
 
     value->release();
 
-    return true_;
+    return True_;
 }
 
 Element* List::evall_threadspace(LispE* lisp) {
@@ -11017,8 +4731,8 @@ Element* List::evall_throw(LispE* lisp) {
 Element* List::evall_trace(LispE* lisp) {
     if (liste.size() == 1) {
         if (lisp->trace)
-            return true_;
-        return false_;
+            return True_;
+        return False_;
     }
     
     Element* activate = liste[1]->eval(lisp);
@@ -11044,19 +4758,8 @@ Element* List::evall_type(LispE* lisp) {
 }
 
 Element* List::evall_rotate(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* value;
-    
-    bool left = false;
-    
-    if (liste.size() == 3) {
-        value = liste[2]->eval(lisp);
-        left = value->Boolean();
-        value->release();
-    }
-    value = container->rotate(left);
-    container->release();
-    return value;
+    List_rotate_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_unique(LispE* lisp) {
@@ -11093,7 +4796,7 @@ Element* List::evall_values(LispE* lisp) {
 Element* List::evall_wait(LispE* lisp) {
     //We wait for all threads to be finished
     while (lisp->nbjoined) {}
-    return true_;
+    return True_;
 }
 
 
@@ -11101,138 +4804,31 @@ Element* List::evall_waiton(LispE* lisp) {
     u_ustring key;
     evalAsUString(1, lisp, key);
     lisp->delegation->waiton(key);
-    return true_;
-}
-
-Element* List_while_eval::eval(LispE* lisp) {
-    Element* condition = liste[1]->eval(lisp);
-    bool test = condition->Boolean();
-    condition->release();
-        
-    Element* result = null_;
-    
-    try {
-        lisp->checkStack();
-        while (test) {
-            for (long i = 2; i < listsize && result->type != l_return; i++) {
-                _releasing(result);
-                result = liste[i]->eval(lisp);
-            }
-            
-            //if a 'return' has been placed in the code
-            if (result->type == l_return) {
-                lisp->stop_at_next_line(lisp->trace);
-                if (result->isBreak())
-                    return null_;
-                //this is a return, it goes back to the function call
-                return result;
-            }
-            
-            condition = liste[1]->eval(lisp);
-            test = condition->Boolean();
-            condition->release();
-        }
-    }
-    catch(Error* err) {
-        lisp->resetStack();
-        result->release();
-        throw err;
-    }
-    lisp->resetStack();
-    return result;
+    return True_;
 }
 
 Element* List::evall_while(LispE* lisp) {
-    Element* condition = liste[1]->eval(lisp);
-    bool test = condition->Boolean();
-    condition->release();
-    
-    long listsize = liste.size();
-    Element* result = null_;
-    
-    try {
-        while (test) {
-            for (long i = 2; i < listsize && result->type != l_return; i++) {
-                _releasing(result);
-                result = liste[i]->eval(lisp);
-            }
-            
-            //if a 'return' has been placed in the code
-            if (result->type == l_return) {
-                lisp->stop_at_next_line(lisp->trace);
-                if (result->isBreak())
-                    return null_;
-                //this is a return, it goes back to the function call
-                return result;
-            }
-            
-            condition = liste[1]->eval(lisp);
-            test = condition->Boolean();
-            condition->release();
-        }
-    }
-    catch(Error* err) {
-        result->release();
-        throw err;
-    }
-    return result;
+    List_while_eval m(this);
+    return m.eval(lisp);
 }
 
 
 Element* List::evall_xor(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    char check = (char)element->Boolean();
-    
-    long listsize = liste.size();
-    char test = true;
-    
-    
-    for (long i = 2; i < listsize && test; i++) {
-        element->release();
-        element = liste[i]->eval(lisp);
-        test = check;
-        check = (char)element->Boolean();
-        test ^= check;
-    }
-    element->release();
-    return booleans_[test];
+    List_xor_eval m(this);
+    return m.eval(lisp);
 }
 
+
 Element* List::evall_mark(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    
-    bool test;
-    
-    if (liste.size() == 2) {
-        test = container->usermark();
-        container->release();
-        return booleans_[test];
-    }
-    
-    try{
-        test = liste[2]->eval(lisp)->Boolean();
-        container->setusermark(test);
-        container->release();
-    }
-    catch (Error* err) {
-        container->release();
-        throw err;
-    }
-    
-    return true_;
+     List_mark_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_resetmark(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     container->resetusermark();
     container->release();
-    return true_;
-}
-
-Element* List_zerop_eval::eval(LispE* lisp) {
-    long n;
-    evalAsInteger(1, lisp, n);
-    return booleans_[!n];
+    return True_;
 }
 
 Element* List::evall_zerop(LispE* lisp) {
@@ -11256,261 +4852,17 @@ Element* List::evall_link(LispE* lisp) {
 
     //The first atom is replaced with the second atom code...
     lisp->replaceAtom(identifier, atome->label());
-    return true_;
+    return True_;
 }
 
 Element* List::evall_zip(LispE* lisp) {
-    long listsize = liste.size();
-    List* lists = lisp->provideList();
-    Element* container = null_;
-    Element* result = null_;
-    long szl = -1;
-    long i;
-    long j = 0;
-    int16_t thetype = 0;
-
-    try {
-        //We combine different lists together...
-        for (i = 1; i < listsize; i++) {
-            container = liste[i]->eval(lisp);
-            if (!container->isList())
-                throw new Error(L"Error: 'zip' only accepts lists as arguments");
-            if (i == 1)
-                szl = container->size();
-            else {
-                if (szl != container->size())
-                    throw new Error(L"Error: Lists should all have the same size in 'zip'");
-            }
-            if (container->type == t_llist)
-                lists->append(new Iter_llist((LList*)container, szl));
-            else
-                lists->append(container);
-            if (!thetype)
-                thetype = container->type;
-            else {
-                if (thetype != container->type) {
-                    if (thetype == t_integers && container->type == t_numbers)
-                        thetype = t_numbers;
-                    else
-                        thetype = t_list;
-                }
-            }
-            container = null_;
-        }
-        
-        result = lisp->provideList();
-        Element* sub;
-        Element* e;
-        switch (thetype) {
-            case t_strings:
-                sub = lisp->provideStrings();
-                break;
-            case t_shorts:
-                sub = new Shorts();
-                break;
-            case t_integers:
-                sub = lisp->provideIntegers();
-                break;
-            case t_floats:
-                sub = lisp->provideFloats();
-                break;
-            case t_numbers:
-                sub = lisp->provideNumbers();
-                break;
-            default:
-                sub = lisp->provideList();
-        }
-        for (j = 0; j < szl; j++) {
-            if (j)
-                sub = sub->newInstance();
-            result->append(sub);
-            for (i = 0; i <lists->size(); i++) {
-                e = lists->liste[i]->value_on_index(lisp, j);
-                sub->append(e);
-                e->release();
-            }
-        }
-        lists->release();
-    }
-    catch (Error* err) {
-        container->release();
-        result->release();
-        lists->release();
-        throw err;
-    }
-
-    return result;
+    List_zip_eval m(this);
+    return m.eval(lisp);
 }
 
-
 Element* List::evall_zipwith(LispE* lisp) {
-    Element* container = liste[2]->eval(lisp);
-    if (!container->isList()) {
-        container->release();
-        throw new Error(L"Error: 'zipwith' only accepts lists as arguments");
-    }
-
-    List* lists = lisp->provideList();
-    List* call = lisp->provideList();
-
-    long szl = container->size();
-    if (container->type == t_llist)
-        lists->append(new Iter_llist((LList*)container, szl));
-    else
-        lists->append(container);
-    
-    long lsz;
-    long i, j = 0;
-    long listsize = liste.size();
-    Element* function = liste[1];
-    
-    Element* value = null_;
-    List* params = NULL;
-    bool choice = true;
-    
-    if (liste.back() == null_) {
-        listsize--;
-        choice = liste.back()->Boolean();
-    }
-    
-    try {
-        //We combine different lists together with an operator
-        //First element is the operation
-        for (i = 3; i < listsize; i++) {
-            container = liste[i]->eval(lisp);
-            if (container->isList() && szl == container->size()) {
-                if (container->type == t_llist)
-                    lists->append(new Iter_llist((LList*)container, szl));
-                else
-                    lists->append(container);
-                container = null_;
-            }
-            else
-                throw new Error(L"Error: 'zipwith' only accepts lists of same size as arguments");
-        }
-
-        if (!szl) {
-            lists->release();
-            call->release();
-            return emptylist_;
-        }
-
-        lsz = lists->size();
-
-        //First element is the operation, second element the list
-        if (function->isLambda()) {
-            params = (List*)function->index(1);
-            if (params->size() < lsz)
-                throw new Error("Error: Wrong number of arguments");
-            
-            //if there is already a variable with this name on the stack
-            //we record it to restore it later...
-            for (i = 0; i < lsz; i++) {
-                value = lisp->record_or_replace(lists->liste[i]->index(0), params->liste[i]->label());
-                call->liste.push_raw(value);
-            }
-            
-            value = ((List*)function)->eval_lambda_min(lisp);
-            if (value->type == l_return)
-                container = emptylist_;
-            else {
-                if (choice) {
-                    switch (value->type) {
-                        case t_string:
-                            container = lisp->provideStrings();
-                            break;
-                        case t_integer:
-                            container = lisp->provideIntegers();
-                            break;
-                        case t_float:
-                            container = lisp->provideFloats();
-                            break;
-                        case t_number:
-                            container = lisp->provideNumbers();
-                            break;
-                        default:
-                            container = lisp->provideList();
-                    }
-                }
-                else
-                    container = lisp->provideList();
-                container->append(value);
-                value->release();
-                
-                for (j = 1; j < szl; j++) {
-                    for (i = 0; i < lsz; i++)
-                        lisp->replacingvalue(lists->liste[i]->index(j), params->liste[i]->label());
-                    value = ((List*)function)->eval_lambda_min(lisp);
-                    if (value->type == l_return)
-                        break;
-                    container->append(value);
-                    value->release();
-                }
-            }
-            for (i = lsz - 1; i >= 0; i--)
-                lisp->reset_in_stack(call->index(i), params->liste[i]->label());
-            call->rawrelease();
-        }
-        else {
-            function = eval_body_as_argument(lisp, function);
-            call->append(function);
-            for (j = 0; j < lsz; j++)
-                call->append(lisp->quoted());
-
-            methodEval met = lisp->delegation->evals[function->type];
-            for (i = 0; i < lsz; i++)
-                call->in_quote(i + 1, lists->liste[i]->index(0));
-            value = (call->*met)(lisp);
-            if (choice) {
-                switch (value->type) {
-                    case t_string:
-                        container = lisp->provideStrings();
-                        break;
-                    case t_integer:
-                        container = lisp->provideIntegers();
-                        break;
-                    case t_float:
-                        container = lisp->provideFloats();
-                        break;
-                    case t_number:
-                        container = lisp->provideNumbers();
-                        break;
-                    default:
-                        container = lisp->provideList();
-                }
-            }
-            else
-                container = lisp->provideList();
-            container->append(value);
-            value->release();
-            for (j = 1; j < szl; j++) {
-                for (i = 0; i < lsz; i++)
-                    call->in_quote(i + 1, lists->liste[i]->index(j));
-                value = (call->*met)(lisp);
-                container->append(value);
-                value->release();
-            }
-            
-            call->release();
-        }
-        
-        lists->release();
-    }
-    catch (Error* err) {
-        container->increment();
-        if (params != NULL) {
-            for (i = call->size() - 1; i >= 0; i--)
-                lisp->reset_in_stack(call->index(i), params->liste[i]->label());
-            call->rawrelease();
-        }
-        else
-            call->release();
-        lists->release();
-        container->decrement();
-        throw err;
-    }
-
-    return container;
+    List_zipwith_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::eval_call_function(LispE* lisp) {
@@ -11577,15 +4929,15 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     int16_t label = body->function_label();
     switch(label) {
         case l_defpat:
-            liste[0] = new List_pattern_call(this, (List*)body);
+            liste[0] = new List_pattern_eval(this, (List*)body);
             lisp->garbaging(liste[0]);
             return liste[0]->eval(lisp);
         case l_defun:
-            liste[0] = new List_function_call(lisp, this, (List*)body);
+            liste[0] = new List_function_eval(lisp, this, (List*)body);
             lisp->garbaging(liste[0]);
             return liste[0]->eval(lisp);
         case l_deflib:
-            liste[0] = new List_library_call(this, (List*)body);
+            liste[0] = new List_library_eval(this, (List*)body);
             lisp->garbaging(liste[0]);
             return liste[0]->eval(lisp);
         case l_dethread:
@@ -11668,5 +5020,6 @@ Element* List::evall_debug_function(LispE* lisp) {
     return evall_nconc(lisp);
 }
 #endif
+
 
 

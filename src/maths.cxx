@@ -96,62 +96,28 @@ Element* range(LispE* lisp, double init, double limit, double inc) {
     throw new Error("Error: Exceeding range");
 }
 
-Element* List::evall_range(LispE* lisp) {
 
-    double init, limit, inc;
-    evalAsNumber(1, lisp, init);
-    evalAsNumber(2, lisp, limit);
-    evalAsNumber(3, lisp, inc);
-    return range(lisp, init, limit, inc);
+Element* List::evall_range(LispE* lisp) {
+     List_range_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_rangein(LispE* lisp) {
-
-    double init, limit, inc;
-    evalAsNumber(1, lisp, init);
-    evalAsNumber(2, lisp, limit);
-    evalAsNumber(3, lisp, inc);
-    return range(lisp, init, limit + inc, inc);
+     List_rangein_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_irange(LispE* lisp) {
-    long sz  = liste.size();
-    
-    double init, inc;
-    evalAsNumber(1, lisp, init);
-    if (sz == 4) {
-        double bound;
-        evalAsNumber(2, lisp, bound);
-        evalAsNumber(3, lisp, inc);
-        if (init == (long)init && inc == (long)inc)
-            return new InfiniterangeInteger(init, inc, bound);
-        return new InfiniterangeNumber(init, inc, bound);
-    }
-    
-    evalAsNumber(2, lisp, inc);
-    if (init == (long)init && inc == (long)inc)
-        return new InfiniterangeInteger(init, inc);
-    return new InfiniterangeNumber(init, inc);
+     List_irange_eval m(this);
+     return m.eval(lisp);
 }
 
+
 Element* List::evall_irangein(LispE* lisp) {
-    long sz  = liste.size();
-    
-    double init, inc;
-    evalAsNumber(1, lisp, init);
-    if (sz == 4) {
-        double bound;
-        evalAsNumber(2, lisp, bound);
-        evalAsNumber(3, lisp, inc);
-        if (init == (long)init && inc == (long)inc)
-            return new InfiniterangeInteger(init, inc, bound + inc);
-        return new InfiniterangeNumber(init, inc, bound + inc);
-    }
-    
-    evalAsNumber(2, lisp, inc);
-    if (init == (long)init && inc == (long)inc)
-        return new InfiniterangeInteger(init, inc);
-    return new InfiniterangeNumber(init, inc);
+     List_irangein_eval m(this);
+     return m.eval(lisp);
 }
 
 
@@ -1065,6 +1031,12 @@ Element* Float::plus_direct(LispE* lisp, Element* e) {
         case t_integer:
             content += ((Integer*)e)->content;
             return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content += content;
+            release();
+            return c;
+        }
         default:
             return plus(lisp, e);
     }
@@ -1084,6 +1056,13 @@ Element* Float::minus_direct(LispE* lisp, Element* e) {
         case t_short:
             content -= ((Short*)e)->content;
             return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v - c->content;
+            release();
+            return c;
+        }
         default:
             return minus(lisp, e);
     }
@@ -1103,40 +1082,48 @@ Element* Float::multiply_direct(LispE* lisp, Element* e) {
         case t_short:
             content *= ((Short*)e)->content;
             return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content *= content;
+            release();
+            return c;
+        }
         default:
             return multiply(lisp, e);
     }
 }
 
 Element* Float::divide_direct(LispE* lisp, Element* e) {
+    if (e->isEmpty())
+        throw new Error("Error: division by zero");
+
     switch (e->type) {
         case t_float: {
             double v = ((Float*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
         }
         case t_number: {
             double v = ((Number*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
         }
         case t_integer: {
             double v = ((Integer*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
         }
         case t_short: {
             double v = ((Short*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
+        }
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v / c->content;
+            release();
+            return c;
         }
         default:
             return divide(lisp, e);
@@ -1357,6 +1344,12 @@ Element* Number::plus_direct(LispE* lisp, Element* e) {
         case t_short:
             content += ((Short*)e)->content;
             return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content += content;
+            release();
+            return c;
+        }
         default:
             return plus(lisp, e);
     }
@@ -1376,6 +1369,13 @@ Element* Number::minus_direct(LispE* lisp, Element* e) {
         case t_short:
             content -= ((Short*)e)->content;
             return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v - c->content;
+            release();
+            return c;
+        }
         default:
             return minus(lisp, e);
     }
@@ -1395,40 +1395,48 @@ Element* Number::multiply_direct(LispE* lisp, Element* e) {
         case t_short:
             content *= ((Short*)e)->content;
             return this;
-        default:
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content *= content;
+            release();
+            return c;
+        }
+       default:
             return multiply(lisp, e);
     }
 }
 
 Element* Number::divide_direct(LispE* lisp, Element* e) {
+    if (e->isEmpty())
+        throw new Error("Error: division by zero");
+
     switch (e->type) {
         case t_float: {
             double v = ((Float*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
         }
         case t_number: {
             double v = ((Number*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
         }
         case t_integer: {
             double v = ((Integer*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
         }
         case t_short: {
             double v = ((Short*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
             content /= v;
             return this;
+        }
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v / c->content;
+            release();
+            return c;
         }
         default:
             return divide(lisp, e);
@@ -1635,24 +1643,127 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
     return lisp->provideNumber(d.v);
 }
 
+Element* Integer::plus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content += ((Float*)e)->content;
+            return this;
+        case t_number:
+            content += ((Number*)e)->content;
+            return this;
+        case t_short:
+            content += ((Short*)e)->content;
+            return this;
+        case t_integer:
+            content += ((Integer*)e)->content;
+            return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content += content;
+            release();
+            return c;
+        }
+        default:
+            return plus(lisp, e);
+    }
+}
+
+Element* Integer::minus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content -= ((Float*)e)->content;
+            return this;
+        case t_number:
+            content -= ((Number*)e)->content;
+            return this;
+        case t_integer:
+            content -= ((Integer*)e)->content;
+            return this;
+        case t_short:
+            content -= ((Short*)e)->content;
+            return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v - c->content;
+            release();
+            return c;
+        }
+        default:
+            return minus(lisp, e);
+    }
+}
+
+Element* Integer::multiply_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content *= ((Float*)e)->content;
+            return this;
+        case t_number:
+            content *= ((Number*)e)->content;
+            return this;
+        case t_integer:
+            content *= ((Integer*)e)->content;
+            return this;
+        case t_short:
+            content *= ((Short*)e)->content;
+            return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content *= content;
+            release();
+            return c;
+        }
+        default:
+            return multiply(lisp, e);
+    }
+}
+
+Element* Integer::divide_direct(LispE* lisp, Element* e) {
+    if (e->isEmpty())
+        throw new Error("Error: division by zero");
+
+    switch (e->type) {
+        case t_float: {
+            float d = content;
+            d /= ((Float*)e)->content;
+            release();
+            return new Float(d);
+        }
+        case t_number: {
+            double d = content;
+            d /= ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(d);
+        }
+        case t_integer: {
+            double d = content / ((Integer*)e)->content;
+            release();
+            return lisp->provideNumber(d);
+        }
+        case t_short: {
+            double d = content / ((Short*)e)->content;
+            release();
+            return lisp->provideNumber(d);
+        }
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v / c->content;
+            release();
+            return c;
+        }
+        default:
+            return divide(lisp, e);
+    }
+}
+
 Element* Integer::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->copyatom(lisp, 1);
         n = n->plus(lisp, this);
         release();
         return n;
-    }
-
-    if (e->type == t_float) {
-        float v = (float)content + e->checkFloat(lisp);
-        release();
-        return lisp->provideFloat(v);
-    }
-
-    if (e->type == t_number) {
-        double v = (double)content + e->checkNumber(lisp);
-        release();
-        return lisp->provideNumber(v);
     }
     if (status != s_constant) {
         content += e->checkInteger(lisp);
@@ -1668,17 +1779,6 @@ Element* Integer::minus(LispE* lisp, Element* e) {
         release();
         return n->minus(lisp, e);
     }
-    if (e->type == t_float) {
-        float v = (float)content - e->checkFloat(lisp);
-        release();
-        return lisp->provideFloat(v);
-    }
-
-    if (e->type == t_number) {
-        double v = (double)content - e->checkNumber(lisp);
-        release();
-        return lisp->provideNumber(v);
-    }
     if (status != s_constant) {
         content -= e->checkInteger(lisp);
         return this;
@@ -1693,57 +1793,11 @@ Element* Integer::multiply(LispE* lisp, Element* e) {
         release();
         return n;
     }
-    if (e->type == t_float) {
-        float v = (float)content * e->checkFloat(lisp);
-        release();
-        return lisp->provideFloat(v);
-    }
-
-    if (e->type == t_number) {
-        double v = (double)content * e->checkNumber(lisp);
-        release();
-        return lisp->provideNumber(v);
-    }
     if (status != s_constant) {
         content *= e->asInteger();
         return this;
     }
     return lisp->provideInteger(content*e->asInteger());
-}
-
-Element* Integer::divide_direct(LispE* lisp, Element* e) {
-    switch (e->type) {
-        case t_float: {
-            float v =  ((Float*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            release();
-            return lisp->provideFloat(((float)content)/v);
-        }
-        case t_number: {
-            double v =  ((Number*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            release();
-            return lisp->provideNumber(((double)content)/v);
-        }
-        case t_integer: {
-            double v =  ((Integer*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            release();
-            return lisp->provideNumber(((double)content)/v);
-        }
-        case t_short: {
-            double v =  ((Short*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            release();
-            return lisp->provideNumber(((double)content)/v);
-        }
-        default:
-            return divide(lisp, e);
-    }
 }
 
 Element* Integer::divide(LispE* lisp, Element* e) {
@@ -1880,24 +1934,127 @@ Element* Integer::rightshift(LispE* lisp, Element* e)  {
     return lisp->provideInteger(content>>e->checkInteger(lisp));
 }
 
+Element* Short::plus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content += ((Float*)e)->content;
+            return this;
+        case t_number:
+            content += ((Number*)e)->content;
+            return this;
+        case t_short:
+            content += ((Short*)e)->content;
+            return this;
+        case t_integer:
+            content += ((Integer*)e)->content;
+            return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content += content;
+            release();
+            return c;
+        }
+        default:
+            return plus(lisp, e);
+    }
+}
+
+Element* Short::minus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content -= ((Float*)e)->content;
+            return this;
+        case t_number:
+            content -= ((Number*)e)->content;
+            return this;
+        case t_integer:
+            content -= ((Integer*)e)->content;
+            return this;
+        case t_short:
+            content -= ((Short*)e)->content;
+            return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v - c->content;
+            release();
+            return c;
+        }
+        default:
+            return minus(lisp, e);
+    }
+}
+
+Element* Short::multiply_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content *= ((Float*)e)->content;
+            return this;
+        case t_number:
+            content *= ((Number*)e)->content;
+            return this;
+        case t_integer:
+            content *= ((Integer*)e)->content;
+            return this;
+        case t_short:
+            content *= ((Short*)e)->content;
+            return this;
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            c->content *= content;
+            release();
+            return c;
+        }
+        default:
+            return multiply(lisp, e);
+    }
+}
+
+Element* Short::divide_direct(LispE* lisp, Element* e) {
+    if (e->isEmpty())
+        throw new Error("Error: division by zero");
+
+    switch (e->type) {
+        case t_float: {
+            float d = content;
+            d /= ((Float*)e)->content;
+            release();
+            return new Float(d);
+        }
+        case t_number: {
+            double d = content;
+            d /= ((Number*)e)->content;
+            release();
+            return lisp->provideNumber(d);
+        }
+        case t_integer: {
+            double d = content / ((Integer*)e)->content;
+            release();
+            return lisp->provideNumber(d);
+        }
+        case t_short: {
+            double d = content / ((Short*)e)->content;
+            release();
+            return lisp->provideNumber(d);
+        }
+        case t_complex: {
+            Complex* c = new Complex(((Complex*)e)->content);
+            std::complex<double> v(content,0);
+            c->content = v / c->content;
+            release();
+            return c;
+        }
+        default:
+            return divide(lisp, e);
+    }
+}
+
 Element* Short::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->copyatom(lisp, 1);
         n = n->plus(lisp, this);
         release();
         return n;
-    }
-
-    if (e->type == t_float) {
-        float v = (float)content + e->checkFloat(lisp);
-        release();
-        return lisp->provideFloat(v);
-    }
-
-    if (e->type == t_number) {
-        double v = (double)content + e->checkNumber(lisp);
-        release();
-        return lisp->provideNumber(v);
     }
     if (status != s_constant) {
         content += e->checkShort(lisp);
@@ -1913,17 +2070,6 @@ Element* Short::minus(LispE* lisp, Element* e) {
         release();
         return n->minus(lisp, e);
     }
-    if (e->type == t_float) {
-        float v = (float)content - e->checkFloat(lisp);
-        release();
-        return lisp->provideFloat(v);
-    }
-
-    if (e->type == t_number) {
-        double v = (double)content - e->checkNumber(lisp);
-        release();
-        return lisp->provideNumber(v);
-    }
     if (status != s_constant) {
         content -= e->checkShort(lisp);
         return this;
@@ -1938,17 +2084,6 @@ Element* Short::multiply(LispE* lisp, Element* e) {
         release();
         return n;
     }
-    if (e->type == t_float) {
-        float v = (float)content * e->checkFloat(lisp);
-        release();
-        return lisp->provideFloat(v);
-    }
-
-    if (e->type == t_number) {
-        double v = (double)content * e->checkNumber(lisp);
-        release();
-        return lisp->provideNumber(v);
-    }
     if (status != s_constant) {
         content *= e->asInteger();
         return this;
@@ -1956,44 +2091,6 @@ Element* Short::multiply(LispE* lisp, Element* e) {
     return new Short(content*e->asInteger());
 }
 
-Element* Short::divide_direct(LispE* lisp, Element* e) {
-    switch (e->type) {
-        case t_float: {
-            float v =  ((Float*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            float vv = (float)content;
-            release();
-            return lisp->provideFloat(vv/v);
-        }
-        case t_number: {
-            double v =  ((Number*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            double vv = (double)content;
-            release();
-            return lisp->provideNumber(vv/v);
-        }
-        case t_integer: {
-            double v =  ((Integer*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            double vv = (double)content;
-            release();
-            return lisp->provideNumber(vv/v);
-        }
-        case t_short: {
-            double v =  ((Short*)e)->content;
-            if (!v)
-                throw new Error("Error: division by zero");
-            float vv = (float)content;
-            release();
-            return lisp->provideFloat(vv/v);
-        }
-        default:
-            return divide(lisp, e);
-    }
-}
 
 Element* Short::divide(LispE* lisp, Element* e) {
     if (e->isList()) {
@@ -2128,6 +2225,286 @@ Element* Short::rightshift(LispE* lisp, Element* e)  {
         return this;
     }
     return new Short(content>>e->checkShort(lisp));
+}
+
+Element* Complex::plus(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->copyatom(lisp, 1);
+        n = n->plus(lisp, this);
+        release();
+        return n;
+    }
+
+    if (e->type == t_complex) {
+        std::complex<double>& v = ((Complex*)e)->content;
+        if (status != s_constant) {
+            content += v;
+            return this;
+        }
+        std::complex<double> c(content);
+        c += v;
+        return new Complex(c);
+    }
+    
+    std::complex<double> v(e->asNumber(), 0);
+    if (status != s_constant) {
+        content += v;
+        return this;
+    }
+    v += content;
+    return new Complex(v);
+}
+
+Element* Complex::minus(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->minus(lisp, e);
+    }
+    if (e->type == t_complex) {
+        std::complex<double>& v = ((Complex*)e)->content;
+        if (status != s_constant) {
+            content -= v;
+            return this;
+        }
+        std::complex<double> c(content);
+        c -= v;
+        return new Complex(c);
+    }
+    
+    std::complex<double> v(e->asNumber(), 0);
+    if (status != s_constant) {
+        content -= v;
+        return this;
+    }
+    v = content - v;
+    return new Complex(v);
+}
+
+Element* Complex::multiply(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->copyatom(lisp, 1);
+        n = n->multiply(lisp, this);
+        release();
+        return n;
+    }
+    if (e->type == t_complex) {
+        std::complex<double>& v = ((Complex*)e)->content;
+        if (status != s_constant) {
+            content *= v;
+            return this;
+        }
+        std::complex<double> c(content);
+        c *= v;
+        return new Complex(c);
+    }
+    
+    std::complex<double> v(e->asNumber(), 0);
+    if (status != s_constant) {
+        content *= v;
+        return this;
+    }
+    v *= content;
+    return new Complex(v);
+}
+
+Element* Complex::plus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content += ((Float*)e)->content;
+            return this;
+        case t_number:
+            content += ((Number*)e)->content;
+            return this;
+        case t_short:
+            content += ((Short*)e)->content;
+            return this;
+        case t_integer:
+            content += ((Integer*)e)->content;
+            return this;
+        case t_complex: {
+            content += ((Complex*)e)->content;
+            return this;
+        }
+        default:
+            return plus(lisp, e);
+    }
+}
+
+Element* Complex::minus_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content -= ((Float*)e)->content;
+            return this;
+        case t_number:
+            content -= ((Number*)e)->content;
+            return this;
+        case t_integer:
+            content -= ((Integer*)e)->content;
+            return this;
+        case t_short:
+            content -= ((Short*)e)->content;
+            return this;
+        case t_complex: {
+            content -= ((Complex*)e)->content;
+            return this;
+        }
+        default:
+            return minus(lisp, e);
+    }
+}
+
+Element* Complex::multiply_direct(LispE* lisp, Element* e) {
+    switch (e->type) {
+        case t_float:
+            content *= ((Float*)e)->content;
+            return this;
+        case t_number:
+            content *= ((Number*)e)->content;
+            return this;
+        case t_integer:
+            content *= ((Integer*)e)->content;
+            return this;
+        case t_short:
+            content *= ((Short*)e)->content;
+            return this;
+        case t_complex: {
+            content *= ((Complex*)e)->content;
+            return this;
+        }
+        default:
+            return multiply(lisp, e);
+    }
+}
+
+Element* Complex::divide_direct(LispE* lisp, Element* e) {
+    if (e->isEmpty())
+        throw new Error("Error: division by zero");
+
+    switch (e->type) {
+        case t_float: {
+            double v = ((Float*)e)->content;
+            content /= v;
+            return this;
+        }
+        case t_number: {
+            double v = ((Number*)e)->content;
+            content /= v;
+            return this;
+        }
+        case t_integer: {
+            double v = ((Integer*)e)->content;
+            content /= v;
+            return this;
+        }
+        case t_short: {
+            double v = ((Short*)e)->content;
+            content /= v;
+            return this;
+        }
+        case t_complex: {
+            content /= ((Complex*)e)->content;
+            return this;
+        }
+        default:
+            return divide(lisp, e);
+    }
+}
+
+Element* Complex::divide(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->divide(lisp, e);
+    }
+
+    if (e->isEmpty())
+        throw new Error("Error: division by zero");
+
+    if (e->type == t_complex) {
+        std::complex<double>& v = ((Complex*)e)->content;
+        if (status != s_constant) {
+            content += v;
+            return this;
+        }
+        std::complex<double> c(content);
+        c += v;
+        return new Complex(c);
+    }
+    
+    std::complex<double> v(e->asNumber(), 0);
+    
+    if (status != s_constant) {
+        content /= v;
+        return this;
+    }
+    v = content/v;
+    return new Complex(v);
+}
+
+Element* Complex::mod(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->mod(lisp, e);
+    }
+
+    if (e->isEmpty())
+        throw new Error("Error: division by zero");
+    
+    Complex* c = new Complex(content);
+    
+    if (e->type == t_complex) {
+        std::complex<double>& v = ((Complex*)e)->content;
+        c->content /= v;
+        c->content *= v;
+        if (status != s_constant) {
+            content -= c->content;
+            c->release();
+            return this;
+        }
+        c->content = content - c->content;
+        return c;
+    }
+    
+    std::complex<double> v(e->asNumber(), 0);
+    c->content /= v;
+    c->content *= v;
+    if (status != s_constant) {
+        content -= c->content;
+        c->release();
+        return this;
+    }
+    c->content = content - c->content;
+    return c;
+}
+
+Element* Complex::power(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        return n->power(lisp, e);
+    }
+    
+    
+    if (e->type == t_complex) {
+        std::complex<double>& v = ((Complex*)e)->content;
+        if (status != s_constant) {
+            content = pow(content, v);
+            return this;
+        }
+            
+        Complex* c = new Complex(0,1);
+        c->content = pow(content, v);
+        return c;
+    }
+    
+    std::complex<double> v(e->asNumber(), 0);
+    if (status != s_constant) {
+        content = pow(content, v);
+        return this;
+    }
+    v = pow(content, v);
+    return new Complex(v);
 }
 
 Element* LList::bit_not(LispE* l) {
@@ -7544,7 +7921,7 @@ Element* List_dividen::eval(LispE* lisp) {
 Element* List_divide2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '/' to one elemeent");
+        throw new Error("Error: cannot apply '/' to one element");
     
     Element* lst = first_element;
         
@@ -7737,7 +8114,7 @@ Element* List_minusn::eval(LispE* lisp) {
 Element* List_minus2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '-' to one elemeent");
+        throw new Error("Error: cannot apply '-' to one element");
 
     Element* lst = first_element;
     
@@ -7817,88 +8194,8 @@ Element* List_minus3::eval(LispE* lisp) {
 }
 
 Element* List::evall_mod(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    int16_t listsize = liste.size();
-    Element* lst = this;
-    Element* second_element = null_;
-    long i;
-        
-    try {
-        if (listsize == 3) {
-            first_element = first_element->copyatom(lisp, 1);
-            second_element = liste[2]->eval(lisp);
-            first_element = first_element->mod(lisp, second_element);
-            if (first_element != second_element)
-                second_element->release();
-            return first_element;
-        }
-
-        if (listsize == 2) {
-            if (!first_element->isList())
-                throw new Error("Error: cannot apply '%' to one element");
-            lst = first_element;
-            switch (lst->type) {
-                case t_strings:
-                    throw new Error("Error: cannot apply '%' to a string");
-                case t_floats:
-                case t_shorts:
-                case t_integers:
-                case t_numbers:
-                    if (!lst->size()) {
-                        first_element->release();
-                        return zero_;
-                    }
-                    lst = lst->mod(lisp, NULL);
-                    first_element->release();
-                    return lst;
-                case t_llist: {
-                    first_element = zero_;
-                    u_link* u = ((LList*)lst)->liste.begin();
-                    if (u != NULL) {
-                        first_element = u->value->copyatom(lisp, 1);
-                        u = u->next();
-                        while (u != NULL) {
-                            first_element = first_element->mod(lisp, u->value);
-                            u = u->next();
-                        }
-                    }
-                    break;
-                }
-                case t_list: {
-                    first_element = zero_;
-                    listsize = lst->size();
-                    if (listsize) {
-                        first_element = lst->index(0)->copyatom(lisp, 1);
-                        for (i = 1; i < listsize; i++) {
-                            first_element = first_element->mod(lisp, lst->index(i));
-                        }
-                    }
-                    break;
-                }
-            }
-            lst->release();
-        }
-        else {
-            first_element = first_element->copyatom(lisp, 1);
-            for (i = 2; i < listsize; i++) {
-                second_element = liste[i]->eval(lisp);
-                first_element = first_element->mod(lisp, second_element);
-                if (first_element != second_element)
-                    _releasing(second_element);
-            }
-        }
-    }
-    catch (Error* err) {
-        if (lst != this)
-            lst->release();
-        if (first_element != second_element)
-            second_element->release();
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_mod_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_multiply(LispE* lisp) {
@@ -8024,7 +8321,7 @@ Element* List_multiplyn::eval(LispE* lisp) {
 Element* List_multiply2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '*' to one elemeent");
+        throw new Error("Error: cannot apply '*' to one element");
 
     Element* lst = first_element;
         
@@ -8111,64 +8408,22 @@ Element* List_multiply3::eval(LispE* lisp) {
     return first_element;
 }
 
-
 Element* List::evall_listand(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = liste[2];
-    Element* result;
-    
-    try {
-        second_element = second_element->eval(lisp);
-        result = first_element->list_and(lisp, second_element);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-    return result;
+     List_listand_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_listor(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = liste[2];
-    Element* result;
-    
-    try {
-        second_element = second_element->eval(lisp);
-        result = first_element->list_or(lisp, second_element);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-    return result;
+     List_listor_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_listxor(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    Element* second_element = liste[2];
-    Element* result;
-    
-    try {
-        second_element = second_element->eval(lisp);
-        result = first_element->list_xor(lisp, second_element);
-        first_element->release();
-        second_element->release();
-    }
-    catch (Error* err) {
-        first_element->release();
-        second_element->release();
-        throw err;
-    }
-    return result;
+     List_listxor_eval m(this);
+     return m.eval(lisp);
 }
-
 
 Element* List::evall_plus(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
@@ -8295,7 +8550,7 @@ Element* List_plusn::eval(LispE* lisp) {
 Element* List_plus2::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     if (!first_element->isList())
-        throw new Error("Error: cannot apply '+' to one elemeent");
+        throw new Error("Error: cannot apply '+' to one element");
 
     Element* lst = first_element;
     
@@ -8389,173 +8644,13 @@ Element* List_plus3::eval(LispE* lisp) {
 
 
 Element* List::evall_leftshift(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    int16_t listsize = liste.size();
-    Element* lst = this;
-    Element* second_element = null_;
-    long i;
-        
-    try {
-        if (listsize == 3) {
-            first_element = first_element->copyatom(lisp, 1);
-            second_element = liste[2]->eval(lisp);
-            first_element = first_element->leftshift(lisp, second_element);
-            if (first_element != second_element)
-                second_element->release();
-            return first_element;
-        }
-
-        if (listsize == 2) {
-            if (!first_element->isList())
-                throw new Error("Error: cannot apply '<<' to one element");
-            lst = first_element;
-            switch (lst->type) {
-                case t_strings:
-                    throw new Error("Error: cannot apply '<<' to a string");
-                case t_floats:
-                case t_shorts:
-                case t_integers:
-                case t_numbers:
-                    if (!lst->size()) {
-                        first_element->release();
-                        return zero_;
-                    }
-                    lst = lst->leftshift(lisp, NULL);
-                    first_element->release();
-                    return lst;
-                case t_llist: {
-                    first_element = zero_;
-                    u_link* u = ((LList*)lst)->liste.begin();
-                    if (u != NULL) {
-                        first_element = u->value->copyatom(lisp, 1);
-                        u = u->next();
-                        while (u != NULL) {
-                            first_element = first_element->leftshift(lisp, u->value);
-                            u = u->next();
-                        }
-                    }
-                    break;
-                }
-                case t_list: {
-                    first_element = zero_;
-                    listsize = lst->size();
-                    if (listsize) {
-                        first_element = lst->index(0)->copyatom(lisp, 1);
-                        for (i = 1; i < listsize; i++) {
-                            first_element = first_element->leftshift(lisp, lst->index(i));
-                        }
-                    }
-                    break;
-                }
-            }
-            lst->release();
-        }
-        else {
-            first_element = first_element->copyatom(lisp, 1);
-            for (i = 2; i < listsize; i++) {
-                second_element = liste[i]->eval(lisp);
-                first_element = first_element->leftshift(lisp, second_element);
-                if (first_element != second_element)
-                    _releasing(second_element);
-            }
-        }
-    }
-    catch (Error* err) {
-        if (lst != this)
-            lst->release();
-        if (first_element != second_element)
-            second_element->release();
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_leftshift_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_rightshift(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-
-    int16_t listsize = liste.size();
-    Element* lst = this;
-    Element* second_element = null_;
-    long i;
-        
-    try {
-        if (listsize == 3) {
-            first_element = first_element->copyatom(lisp, 1);
-            second_element = liste[2]->eval(lisp);
-            first_element = first_element->rightshift(lisp, second_element);
-            if (first_element != second_element)
-                second_element->release();
-            return first_element;
-        }
-
-        if (listsize == 2) {
-            if (!first_element->isList())
-                throw new Error("Error: cannot apply '>>' to one element");
-            lst = first_element;
-            switch (lst->type) {
-                case t_strings:
-                    throw new Error("Error: cannot apply '>>' to a string");
-                case t_floats:
-                case t_shorts:
-                case t_integers:
-                case t_numbers:
-                    if (!lst->size()) {
-                        first_element->release();
-                        return zero_;
-                    }
-                    lst = lst->rightshift(lisp, NULL);
-                    first_element->release();
-                    return lst;
-                case t_llist: {
-                    first_element = zero_;
-                    u_link* u = ((LList*)lst)->liste.begin();
-                    if (u != NULL) {
-                        first_element = u->value->copyatom(lisp, 1);
-                        u = u->next();
-                        while (u != NULL) {
-                            first_element = first_element->rightshift(lisp, u->value);
-                            u = u->next();
-                        }
-                    }
-                    break;
-                }
-                case t_list: {
-                    first_element = zero_;
-                    listsize = lst->size();
-                    if (listsize) {
-                        first_element = lst->index(0)->copyatom(lisp, 1);
-                        for (i = 1; i < listsize; i++) {
-                            first_element = first_element->rightshift(lisp, lst->index(i));
-                        }
-                    }
-                    break;
-                }
-            }
-            lst->release();
-        }
-        else {
-            first_element = first_element->copyatom(lisp, 1);
-            for (i = 2; i < listsize; i++) {
-                second_element = liste[i]->eval(lisp);
-                first_element = first_element->rightshift(lisp, second_element);
-                if (first_element != second_element)
-                    _releasing(second_element);
-            }
-        }
-    }
-    catch (Error* err) {
-        if (lst != this)
-            lst->release();
-        if (first_element != second_element)
-            second_element->release();
-        first_element->release();
-        throw err;
-    }
-
-    return first_element;
+    List_rightshift_eval m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_power(LispE* lisp) {
@@ -8783,7 +8878,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_bitandnotequal(LispE* lisp) {
@@ -8902,7 +8997,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_bitorequal(LispE* lisp) {
@@ -9021,7 +9116,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 
@@ -9142,7 +9237,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_divideequal(LispE* lisp) {
@@ -9261,7 +9356,7 @@ Element* List::evall_divideequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List_divideequal_list::eval(LispE* lisp) {
@@ -9443,7 +9538,7 @@ Element* List_divideequal_var::eval(LispE* lisp) {
         throw err;
     }
 
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_leftshiftequal(LispE* lisp) {
@@ -9562,7 +9657,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_minusequal(LispE* lisp) {
@@ -9681,7 +9776,7 @@ Element* List::evall_minusequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List_minusequal_list::eval(LispE* lisp) {
@@ -9864,7 +9959,7 @@ Element* List_minusequal_var::eval(LispE* lisp) {
         throw err;
     }
 
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_modequal(LispE* lisp) {
@@ -9983,7 +10078,7 @@ Element* List::evall_modequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 
@@ -10103,7 +10198,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List_multiplyequal_list::eval(LispE* lisp) {
@@ -10285,7 +10380,7 @@ Element* List_multiplyequal_var::eval(LispE* lisp) {
         throw err;
     }
 
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 
@@ -10411,7 +10506,7 @@ Element* List::evall_plusequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List_plusequal_list::eval(LispE* lisp) {
@@ -10606,7 +10701,7 @@ Element* List_plusequal_var::eval(LispE* lisp) {
         throw err;
     }
 
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_rightshiftequal(LispE* lisp) {
@@ -10725,7 +10820,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_powerequal(LispE* lisp) {
@@ -10844,7 +10939,7 @@ Element* List::evall_powerequal(LispE* lisp) {
         first_element->decrementkeep();
         return first_element;
     }
-    return lisp->recording_variable(first_element, label);
+    return lisp->recording_back(first_element, label);
 }
 
 Element* List::evall_powerequal2(LispE* lisp) {
@@ -10856,7 +10951,7 @@ Element* List::evall_powerequal2(LispE* lisp) {
         first_element = first_element->multiply_direct(lisp, first_element);
         label = liste[1]->label();
         if (label > l_final)
-            return lisp->recording_variable(first_element, label);
+            return lisp->recording_back(first_element, label);
     }
     catch (Error* err) {
         first_element->release();
@@ -10868,252 +10963,48 @@ Element* List::evall_powerequal2(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 
+
 Element* List::evall_sum(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    
-    switch (first_element->type) {
-        case t_floats: {
-            float v = ((Floats*)first_element)->liste.sum();
-            first_element->release();
-            return v?lisp->provideFloat(v):zero_;
-        }
-        case t_numbers: {
-            double v = ((Numbers*)first_element)->liste.sum();
-            first_element->release();
-            return v?lisp->provideNumber(v):zero_;
-        }
-        case t_shorts: {
-            int16_t v = ((Shorts*)first_element)->liste.sum();
-            first_element->release();
-            return v?new Short(v):zero_;
-        }
-        case t_integers: {
-            long v = ((Integers*)first_element)->liste.sum();
-            first_element->release();
-            return v?lisp->provideInteger(v):zero_;
-        }
-        case t_strings: {
-            u_ustring v = ((Strings*)first_element)->liste.sum();
-            first_element->release();
-            return (v == U"")?emptystring_:lisp->provideString(v);
-        }
-        case t_list: {
-            double v = 0;
-            List* lst = (List*)first_element;
-            long listsize = lst->size();
-            for (long i = 0; i < listsize; i++) {
-                v += lst->liste[i]->checkNumber(lisp);
-            }
-            first_element->release();
-            return lisp->provideNumber(v);
-        }
-        case t_llist: {
-            double v = 0;
-            LList* lst = (LList*)first_element;
-            for (u_link* a = lst->liste.begin(); a != NULL; a = a->next())
-                v += a->value->checkNumber(lisp);
-            first_element->release();
-            return lisp->provideNumber(v);
-        }
-        case t_seti: {
-            long v = 0;
-            Set_i* lst = (Set_i*)first_element;
-            for (const auto& a: lst->ensemble)
-                v += a;
-            first_element->release();
-            return lisp->provideInteger(v);
-        }
-        case t_setn: {
-            double v = 0;
-            Set_n* lst = (Set_n*)first_element;
-            for (const auto& a: lst->ensemble)
-                v += a;
-            first_element->release();
-            return lisp->provideNumber(v);
-        }
-        default:
-            first_element->release();
-            throw new Error("Error: expecting a container as argument");
-    }
+     List_sum_eval m(this);
+     return m.eval(lisp);
 }
 
+
 Element* List::evall_product(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    switch (first_element->type) {
-        case t_floats: {
-            float v = ((Floats*)first_element)->liste.product();
-            first_element->release();
-            return v?lisp->provideFloat(v):zero_;
-        }
-        case t_numbers: {
-            double v = ((Numbers*)first_element)->liste.product();
-            first_element->release();
-            return v?lisp->provideNumber(v):zero_;
-        }
-        case t_shorts: {
-            int16_t v = ((Shorts*)first_element)->liste.product();
-            first_element->release();
-            return v?new Short(v):zero_;
-        }
-        case t_integers: {
-            long v = ((Integers*)first_element)->liste.product();
-            first_element->release();
-            return v?lisp->provideInteger(v):zero_;
-        }
-        case t_list: {
-            double v = 1;
-            List* lst = (List*)first_element;
-            long listsize = lst->size();
-            for (long i = 0; i < listsize && v; i++)
-                v *= lst->liste[i]->checkNumber(lisp);
-            first_element->release();
-            return lisp->provideNumber(v);
-        }
-        case t_llist: {
-            double v = 1;
-            LList* lst = (LList*)first_element;
-            for (u_link* a = lst->liste.begin(); a != NULL && v; a = a->next())
-                v *= a->value->checkNumber(lisp);
-            first_element->release();
-            return lisp->provideNumber(v);
-        }
-        case t_seti: {
-            long v = 1;
-            Set_i* lst = (Set_i*)first_element;
-            for (const auto& a: lst->ensemble)
-                v *= a;
-            first_element->release();
-            return lisp->provideInteger(v);
-        }
-        case t_setn: {
-            double v = 1;
-            Set_n* lst = (Set_n*)first_element;
-            for (const auto& a: lst->ensemble)
-                v *= a;
-            first_element->release();
-            return lisp->provideNumber(v);
-        }
-        default:
-            first_element->release();
-            throw new Error("Error: expecting a container as argument");
-    }
+     List_product_eval m(this);
+     return m.eval(lisp);
 }
 
 //------------------------------------------------------------------------------------------
 
 Element* List::evall_invert(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    if (element->type != t_matrix) {
-        element->release();
-        throw new Error("Error: 'invert' can only be applied to matrices");
-    }
-    
-    Element* Y;
-    Element* res;
-    
-    try {
-        if (liste.size() == 3) {
-            Y = liste[2]->eval(lisp);
-            if (Y->type != t_matrix)
-                throw new Error("Error: 'solve' can only be applied to matrices");
-            res = ((Matrice*)element)->solve(lisp, (Matrice*)Y);
-            Y->release();
-        }
-        else
-            res = ((Matrice*)element)->inversion(lisp);
-        
-        element->release();
-    }
-    catch (Error* err) {
-        element->release();
-        throw err;
-    }
-    return res;
+    List_invert_eval m(this);
+    return m.eval(lisp);
 }
+
 
 Element* List::evall_solve(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    Element* Y;
-    Element* res;
-
-    try {
-        Y = liste[2]->eval(lisp);
-        if (element->type != t_matrix || Y->type != t_matrix)
-            throw new Error("Error: solve can only be applied to matrices");
-        res = ((Matrice*)element)->solve(lisp, (Matrice*)Y);
-        Y->release();
-        element->release();
-    }
-    catch (Error* err) {
-        element->release();
-        throw err;
-    }
-    return res;
+     List_solve_eval m(this);
+     return m.eval(lisp);
 }
+
 
 
 Element* List::evall_determinant(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    if (element->type != t_matrix) {
-        element->release();
-        throw new Error("Error: We can only compute the determinant of a matrix");
-    }
-
-    double det = 0;
-    
-    try {
-        det = ((Matrice*)element)->determinant();
-    }
-    catch (Error* err) {
-        element->release();
-        throw err;
-    }
-    
-    element->release();
-    return lisp->provideNumber(det);
+     List_determinant_eval m(this);
+     return m.eval(lisp);
 }
+
 
 Element* List::evall_ludcmp(LispE* lisp) {
-    Element* element = liste[1]->eval(lisp);
-    if (element->type != t_matrix) {
-        element->release();
-        throw new Error("Error: the first element should be a matrix");
-    }
-    Element* res = ((Matrice*)element)->ludcmp(lisp);
-    element->release();
-    return res;
+     List_ludcmp_eval m(this);
+     return m.eval(lisp);
 }
 
+
 Element* List::evall_lubksb(LispE* lisp) {
-    Element* element = null_;
-    Element* idxs = null_;
-    Element* Y = NULL;
-    
-    try {
-        element = liste[1]->eval(lisp);
-        if (element->type != t_matrix)
-            throw new Error("Error: the first element should be a matrix");
-        idxs = liste[2]->eval(lisp);
-        if (idxs->type != t_integers)
-            throw new Error("Error: the second element should be an integers_ (a list of integers)");
-        if (liste.size() == 4) {
-            Y = liste[3]->eval(lisp);
-            if (Y->type != t_matrix)
-                throw new Error("Error: the last element should be a matrix");
-        }
-        Y = ((Matrice*)element)->lubksb(lisp, (Integers*)idxs, (Matrice*)Y);
-        element->release();
-        idxs->release();
-    }
-    catch (Error* err) {
-        element->release();
-        idxs->release();
-        if (Y != NULL) {
-            Y->release();
-        }
-        throw err;
-    }
-    return Y;
+     List_lubksb_eval m(this);
+     return m.eval(lisp);
 }
 
 //------------------------------------------------------------------------------------------
@@ -11529,3 +11420,4 @@ void moduleMaths(LispE* lisp) {
     lisp->recordingunique(value, lisp->encode(nom));
 
 }
+

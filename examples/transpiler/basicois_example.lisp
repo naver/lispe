@@ -2,8 +2,8 @@
 ;Author: Claude Roux
 ;Description: Example of Basicois code
 
-(load (+ _current "basicois.lisp")) 
 (load (+ _current "transpiler.lisp"))
+(load (+ _current "basicois.lisp")) 
 
 (setq code 
    `
@@ -146,9 +146,4 @@ afficheln A
 ;lsp contains the transpiled code as a list
 ;(println (prettify lsp))
 (eval lsp)
-
-
-
-
-
 

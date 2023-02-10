@@ -40,253 +40,6 @@ void Initlispelibspath();
 void displaydebug(const char* locals, const char* globals, const char* sstack, const char* filename, long currentline);
 }
 //------------------------------------------------------------------------------------------------RUN AND COMPILE
-class Segmentingtype {
-public:
-    long drift;
-    vector<short> types;
-    vector<long> positions;
-    
-    Segmentingtype() {
-        drift = 0;
-    }
-    
-    void clear() {
-        drift = 0;
-        types.clear();
-        positions.clear();
-    }
-    
-    void append(short t, long posbeg, long posend) {
-        if (types.size()) {
-            if (types.back() == l_wait) {
-                types.pop_back();
-                types.push_back(l_quote);
-                t = l_quote;
-            }
-            else {
-                if (types.back() == t) {
-                    positions.pop_back();
-                    positions.push_back(posend+drift);
-                    return;
-                }
-            }
-        }
-        
-        types.push_back(t);
-        positions.push_back(posbeg+drift);
-        positions.push_back(posend+drift);
-    }
-};
-
-void tokenize_line(const uint16_t* code, Segmentingtype& infos, long sz) {
-    static uchar stops[172];
-    static bool init = false;
-    long idx;
-    if (!init) {
-        init = true;
-        memset(stops, 0, 172);
-        for (idx = 0; idx <= 32; idx++) {
-            stops[idx] = true;
-        }
-        
-        stops['!'] = true;
-        stops['('] = true;
-        stops[')'] = true;
-        stops[':'] = true;
-        stops['"'] = true;
-        stops['['] = true;
-        stops[']'] = true;
-        stops['{'] = true;
-        stops['}'] = true;
-        stops['0'] = true;
-        stops['1'] = true;
-        stops['2'] = true;
-        stops['3'] = true;
-        stops['4'] = true;
-        stops['5'] = true;
-        stops['6'] = true;
-        stops['7'] = true;
-        stops['8'] = true;
-        stops['9'] = true;
-        stops['/'] = true;
-        stops['*'] = true;
-        stops['+'] = true;
-        stops['-'] = true;
-        stops['%'] = true;
-        stops['<'] = true;
-        stops['>'] = true;
-        stops['='] = true;
-    }
-    
-    wstring tampon;
-    
-    long i, current_i;
-    //The first line of the code is 1
-    long line_number = 1;
-    UWCHAR c, nxt;
-    bool point = false;
-    
-    for (i = 0; i < sz; i++) {
-        current_i = i;
-        c = code[i];
-        infos.drift += c_utf16(c);
-        switch (c) {
-            case '\'':
-                infos.append(l_wait, i, i + 1);
-                point = false;
-                break;
-            case '.':
-                point = true;
-                break;
-            case ';':
-            case '#':
-                point = false;
-                idx = i;
-                if (code[i+1] == ';') {
-                    idx += 2;
-                    while (idx < sz-1 && (code[idx] != ';' || code[idx+1] != ';')) {
-                        if (code[idx] == '\n') {
-                            line_number++;
-                            infos.append(t_comment, i, idx);
-                            i = idx + 1;
-                        }
-                        idx++;
-                        infos.drift += c_utf16(code[idx]);
-                    }
-                    idx++;
-                }
-                else {
-                    while (idx < sz && code[idx] != '\n') {
-                        idx++;
-                        infos.drift += c_utf16(code[idx]);
-                    }
-                    infos.append(t_comment, i, idx);
-                    line_number++;
-                }
-                i = idx;
-                break;
-            case '\n':
-                point = false;
-                line_number++;
-                infos.append(v_null, i, i + 1);
-                break;
-            case '\r':
-            case '\t':
-            case ' ':
-                point = false;
-                continue;
-            case '"': {
-                point = false;
-                idx = i + 1;
-                while (idx < sz && code[idx] != '"' && code[idx] != '\n') {
-                    c = code[idx];
-                    infos.drift += c_utf16(c);
-                    if (c == '\\')
-                        idx++;
-                    idx++;
-                }
-                
-                infos.append(t_string, i, idx + 1);
-                i = idx;
-                break;
-            }
-            case 171:
-                point = false;
-                idx = i + 1;
-                while (idx < sz && code[idx] != 187) {
-                    c = code[idx];
-                    if (c == '\n')
-                        line_number++;
-                    
-                    infos.drift += c_utf16(c);
-                    if (c == '\\') {
-                        idx++;
-                    }
-                    idx++;
-                }
-                
-                infos.append(t_string, i, idx + 1);
-                i = idx;
-                break;
-            case '`': {
-                point = false;
-                idx = i + 1;
-                while (idx < sz && code[idx] != '`') {
-                    c = code[idx];
-                    if (c == '\n')
-                        line_number++;
-                    
-                    infos.drift += c_utf16(c);
-                    if (c == '\\') {
-                        idx++;
-                    }
-                    idx++;
-                }
-                
-                infos.append(t_string, i, idx + 1);
-                i = idx;
-                break;
-            }
-            default: {
-                //If the character is a multi-byte character, we need
-                //to position on the beginning of the character again
-                if (special_characters.c_is_punctuation(c) || stops[c]) {
-                    infos.append(v_null, i, i + 1);
-                    point = false;
-                    break;
-                }
-                
-                idx = i + 1;
-                nxt = c;
-                tampon = L"";
-                while (idx <= sz && nxt > 32 && !special_characters.c_is_punctuation(nxt) && !isspace(nxt)) {
-                    tampon += nxt;
-                    i = idx;
-                    nxt = code[idx];
-                    infos.drift = c_utf16(nxt);
-                    idx++;
-                }
-                
-                if (tampon == L"")
-                    tampon = c;
-                
-                if (point)
-                    infos.append(l_defun, current_i, i);
-                else {
-                    if (lispe != NULL && lispe->delegation->is_basic_atom(tampon) != -1)
-                        infos.append(t_atom, current_i, i);
-                    else {
-                        bool ok = false;
-                        if (tampon[0] == 'c' && tampon.back() == 'r') {
-                            ok = true;
-                            for (long ii = 1; ii < tampon.size() - 1; ii++) {
-                                if (tampon[ii] != 'a' && tampon[ii] != 'd') {
-                                    ok = false;
-                                    break;
-                                }
-                            }
-                        }
-                        if (ok)
-                            infos.append(t_atom, current_i, i);
-                        else {
-                            if (current_i > 0 && code[current_i-1] == '(')
-                                infos.append(l_defpat, current_i, i);
-                            else
-                                infos.append(v_null, current_i, i);
-                        }
-                    }
-                }
-                
-                if (i != current_i)
-                    i--;
-                point = false;
-                break;
-            }
-        }
-    }
-}
-
-
 //In the case of a mac GUI, we need to call a specific version of kget, which is based on alert...
 //This function is only called if we are not implementing a FLTK GUI, in that case we use ProcEditor
 void ProcMacEditor(string& code, void* o) {
@@ -501,7 +254,7 @@ void setlispepath(const char* homepath, const char* v) {
     
     setenv("LISPEPATH",start,1);
     char path[4096];
-    sprintf(path,"%s/.lispe",homepath);
+    sprintf_s(path,4096,"%s/.lispe",homepath);
     std::ofstream savepath(path);
     savepath.write(start,strlen(start));
     savepath.write("\n",1);
@@ -510,7 +263,7 @@ void setlispepath(const char* homepath, const char* v) {
 
 void initlispepath(const char* homepath) {
     char path[4096];
-    sprintf(path,"%s/.lispe",homepath);
+    sprintf_s(path,4096, "%s/.lispe",homepath);
     std::ifstream getpath(path);
     if (getpath.fail()) {
         getpath.close();
@@ -592,7 +345,7 @@ char Run(short idcode) {
     }
     bool eval_code = false;
     if (current_code.find("(") == -1 && current_code.find(")") == -1) {
-        current_code = "(print "+ current_code + ")";
+        current_code = "(print "+ s_trim(current_code) + ")";
         eval_code = true;
     }
     
@@ -679,13 +432,46 @@ const char* lindentation(char* basecode, int blancs) {
     return codeindente.c_str();
 }
 
+class coloring_automaton : public tokenizer_automaton {
+public:
+    
+    coloring_automaton(UTF8_Handler* a) : tokenizer_automaton(a) {}
+    
+    void setrules() {
+        rules.push_back(U"%S+=#");                                  //we skip all spaces
+        
+        rules.push_back(U"';+=#");
+        rules.push_back(U"'=39");
+
+        rules.push_back(U";;?*;;=67");
+        rules.push_back(U";?*%r=67");
+        
+        //Strings
+        rules.push_back(U"\"\"\"?*\"\"\"=34");
+        rules.push_back(U"\"{[\\-\"] ~%r}*\"=34");     //string "" does not contain CR and can escape characters
+        rules.push_back(U"`?*`=34");                   //long strings Unix way
+        rules.push_back(U"«?*»=34");                   //long strings French way
+        rules.push_back(U"“?*”=34");                   //long strings English
+        rules.push_back(U"‘?*’=34");                   //long strings with single quotes (English)
+        rules.push_back(U"„?*”=34");                //long strings German/Polish
+        rules.push_back(U"❝?*❞=34");                   //long strings
+        
+        rules.push_back(U"%a+=65");       //Regular strings
+        rules.push_back(U"{%a %h %H}{%a %d %h %H %o}+=#");       //All other types of strings
+        rules.push_back(U"%d+=#");
+        rules.push_back(U"%p=#");
+        rules.push_back(U"%o=#");
+    }
+    
+};
+
 
 long* colorparser(const uint16_t* txt, long from, long sz) {
     static vector<long> limits;
-    static Segmentingtype infos;
+    static tokenizer_result<u16string> tokres;
+    static coloring_automaton lsp_tok(&special_characters);
     
     limits.clear();
-    infos.clear();
     
     if (lispe == NULL) {
         lispe = new LispE(&special_characters);
@@ -694,55 +480,64 @@ long* colorparser(const uint16_t* txt, long from, long sz) {
         windowmode = false;
     }
     
-    tokenize_line(txt, infos, sz);
-    
+    u16string w((char16_t*)txt);
+    lsp_tok.tokenize<u16string>(w, tokres);
+
+#ifdef MACDEBUG
+    //for debugging
+    vector<u16string> codes;
+    tokres.stack.to_vector(codes);
+    vector<int16_t> icodes;
+    tokres.stacktype.to_vector(icodes);
+#endif
+
     long left = 0, right = 0;
     wstring sub;
     short type;
-    for (long isegment = 0; isegment < infos.types.size(); isegment++) {
-        left =  infos.positions[isegment<<1];
+    char quote = 8;
+    for (long isegment = 0; isegment < tokres.size(); isegment++) {
+        left =  tokres.positions[isegment<<1];
         if (left < from)
             continue;
-        type = infos.types[isegment];
-        right = infos.positions[1+(isegment<<1)] - left;
+        type = tokres.stacktype[isegment];
+        right = tokres.positions[1+(isegment<<1)] - left;
         
         //sub = line.substr(left, right);
         //left += drift;
         switch (type) {
-            case t_string:
+            case '"':
                 limits.push_back(1);
                 limits.push_back(left);
                 limits.push_back(right);
+                quote = 8;
                 break;
-            case l_quote:
+            case '\'':
                 limits.push_back(2);
                 limits.push_back(left);
                 limits.push_back(right);
+                quote = 2;
                 break;
-            case l_defun:
-                limits.push_back(4);
+            case 'A':
+                if (lispe != NULL && lispe->delegation->is_basic_atom(tokres.stack[isegment]) != -1 && quote == 8)
+                    limits.push_back(5);
+                else {
+                    limits.push_back(quote);
+                    quote = 8;
+                }
                 limits.push_back(left);
                 limits.push_back(right);
                 break;
-            case t_atom:
-                limits.push_back(5);
-                limits.push_back(left);
-                limits.push_back(right);
-                break;
-            case l_defpat:
-                limits.push_back(6);
-                limits.push_back(left);
-                limits.push_back(right);
-                break;
-            case t_comment:
+            case 'C': //comments
                 limits.push_back(7);
                 limits.push_back(left);
                 limits.push_back(right);
+                quote = 8;
                 break;
             default:
-                limits.push_back(8);
+                limits.push_back(quote);
                 limits.push_back(left);
                 limits.push_back(right);
+                quote = 8;
                 break;
         }
     }

@@ -156,36 +156,60 @@ public:
                 continue;
             }
 
-            pos = lines[i].find(L"«");
-            if (pos != -1) {
-                if (lines[i].find(L"»") == -1) {
-                    l_strings = 1;
-                    checkspace(pos, i, l_strings);
+            /*
+            rules.push_back(U"«?*»=96");                   //long strings French way
+            rules.push_back(U"“?*”=96");                   //long strings English
+            rules.push_back(U"‘?*’=96");                   //long strings with single quotes (English)
+            rules.push_back(U"„?*”=96");                //long strings German/Polish
+            rules.push_back(U"❝?*❞=96");                   //long strings
+
+            rules.push_back(U"#171?*#187=96");                   //long strings French way
+            rules.push_back(U"#8220?*#8221=96");                   //long strings English
+            rules.push_back(U"#8216?*#8217=96");                   //long strings with single quotes (English)
+            rules.push_back(U"#8222?*#8221=96");                //long strings German/Polish
+            rules.push_back(U"#10077?*#10078=96");                   //long strings
+             */
+            
+            wstring closing_value;
+            pos = lines[i].find(171);
+            closing_value = 187;
+            if (pos == -1) {
+                pos = lines[i].find(8220);
+                closing_value = 8221;
+                if (pos == -1) {
+                    pos = lines[i].find(8216);
+                    closing_value = 8217;
+                    if (pos == -1) {
+                        pos = lines[i].find(8222);
+                        closing_value = 8221;
+                        if (pos == -1) {
+                            pos = lines[i].find(10077);
+                            closing_value = 10078;
+                            if (pos == -1) {
+                                closing_value = L"`";
+                                pos = lines[i].find(closing_value);
+                                if (pos == -1) {
+                                    closing_value = L"\"\"\"";
+                                    pos = lines[i].find(closing_value);
+                                }
+                            }
+                        }
+                    }
                 }
-                else
-                    longlines.push_back(0);
             }
-            else {
-                if (lines[i].find(L"»") != -1) {
-                    longlines.push_back(l_strings);
+            
+            if (pos != -1 && lines[i].find(closing_value, pos + 1) == -1) {
+                if (l_strings) {
+                    longlines.push_back(1);
                     l_strings = 0;
                 }
                 else {
-                    pos = lines[i].find(L"`");
-                    if (pos != -1 && lines[i].find(L"`", pos + 1) == -1) {
-                        if (l_strings) {
-                            longlines.push_back(1);
-                            l_strings = 0;
-                        }
-                        else {
-                            l_strings = 1;
-                            checkspace(pos, i, l_strings);
-                        }
-                    }
-                    else
-                        longlines.push_back(l_strings);
+                    l_strings = 1;
+                    checkspace(pos, i, l_strings);
                 }
             }
+            else
+                longlines.push_back(l_strings);
         }
     }
 

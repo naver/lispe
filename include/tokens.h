@@ -4,7 +4,7 @@
  * Copyright 2020-present NAVER Corp.
  * The 3-Clause BSD License
  */
-//  nodes.h
+//  tokens.h (see tools.cxx for implementation)
 //
 //
 
@@ -18,127 +18,370 @@
 #include "tools.h"
 #include "vecte.h"
 
+using std::u16string;
+#define u_uchar char32_t
 #define u_ustring std::u32string
 
 using std::vector;
 using std::unordered_map;
+typedef enum {flag_none = 0, flag_negation = 1, flag_skip = 2, flag_fail = 4, flag_start_fail = 8, flag_blocking_gate = 16, flag_action = 31,
+    flag_vectorized = 32, flag_added = 64, flag_postpone = 128, flag_seen = 256, flag_visited = 512} tokenizer_flag;
 
-#define xr_char 1
-#define xr_meta 2
-#define xr_metachar 3
-#define xr_chardisjunction 4
-#define xr_metadisjunction 8
-#define xr_negation 16
-#define xr_plus 32
-#define xr_skip 64
-#define xr_neednext 128
-#define xr_singlebody 256
-#define xr_optional 512
-#define xr_endoptional 1024
-#define xr_optionality 1536
-#define xr_skiprule 2048
 
-#define verif(a,b) ((a&b)==b)
+typedef enum {act_none, act_char , act_uppercase, act_ckj, act_space_and_carriage, act_alphabetical,
+    act_lowercase, act_digit, act_greek, act_non_breaking_space, act_operator, act_punctuation, act_emoji, act_emojicomp,
+    act_carriage, act_space, act_meta, act_interval, act_any, act_epsilon, act_end} tokenizer_action;
+
+#define check_flag(a,b) ((a&b)==b)
+#define remove_flag(a,b) a &= ~b
+#define add_flag(a,b) a |= b
+
 bool ckjchar(wchar_t ucs);
 
-class x_tokens {
+const int16_t table_character_size = 1611;
+//---------------------------------------------------
+//---------------------------------------------------
+// Automaton based method
+//---------------------------------------------------
+//---------------------------------------------------
+
+template <typename STRNG> class tokenizer_result {
 public:
-    vecte_n<u_ustring> rules;
-    vecte_n<u_ustring> stack;
-    vector<vector<u_ustring> > disjunctions;
-
-    unordered_map<u_ustring, bool> operators;
-    vector<vector<u_ustring> > tokenizer;
-
-    vector<vector<int16_t> > ruleelements;
-    vector<int16_t*> closing;
-    vector<int16_t> action;
-
+    vecte<int16_t> stacktype;
     vector<long> stackln;
-    vecte<long> stacktype;
-    //vector<long> cpos;
+    vector<long> positions;
+    
+    u_uchar currentchr;
+    
+    long line;
+    long start;
+    long position;
+    long buffer_size;
+
+    char sz_read;
+    bool store_all;
+    
+    bool end() {
+        return (position >= buffer_size && !currentchr);
+    }
+
+    vecte_n<STRNG> stack;
+    
+    STRNG* buffer;
+    vecte_n<STRNG>* stack_ptr;
+    
+    tokenizer_result<STRNG>(vecte_n<STRNG>* s, bool p_all = true) {
+        stack_ptr = s;
+        store_all = p_all;
+    }
+    
+    tokenizer_result<STRNG>() {
+        stack_ptr = &stack;
+        store_all = true;
+    }
+        
+    void store(u_ustring& token, int32_t label);
+    void store_currentchr();
+    
+    void clear(STRNG& u) {
+        buffer = &u;
+        buffer_size = u.size();
+        
+        currentchr = 0;
+        line = 0;
+        start = 0;
+        position = 0;
+        sz_read = 0;
+        stack_ptr->clear();
+        stacktype.clear();
+        stackln.clear();
+        positions.clear();
+    }
+
+    void clear(STRNG* u, long sz) {
+        buffer = u;
+        buffer_size = sz;
+        
+        currentchr = 0;
+        line = 0;
+        start = 0;
+        position = 0;
+        sz_read = 0;
+        stack_ptr->clear();
+        stacktype.clear();
+        stackln.clear();
+        positions.clear();
+    }
+
+    long size() {
+        return stack.size();
+    }
+    
+    void getnext();
+    
+};
+
+class tokenizer_automaton;
+//A node in the automaton
+class tokenizer_node {
+public:
+    vector<tokenizer_node*> arcs;
+    
+    int16_t idpos;
+    int16_t flags;
+    
+    u_uchar label;
+	u_uchar endlabel;
+    
+    tokenizer_action action;
+    
+    
+    tokenizer_node(tokenizer_action a, u_uchar c, u_uchar e) {
+        idpos = -1;
+        flags = flag_none;
+        action = a;
+        label = c;
+        endlabel = e;
+    }
+    
+    inline bool pure_arc() {
+        return (action > act_none && action < act_meta && !check_flags());
+    }
+    
+    inline bool is_epsilon() {
+        return (action == act_epsilon && !check_flags());
+    }
+    
+    inline long size() {
+        return arcs.size();
+    }
+    
+    inline bool check_flags() {
+        return ((flags & flag_action) != 0);
+    }
+    
+    inline bool check_negation() {
+        return check_flag(flags, flag_negation);
+    }
+    
+    inline bool check_fail() {
+        return check_flag(flags, flag_fail);
+    }
+    
+    inline bool check_start_fail() {
+        return check_flag(flags, flag_start_fail);
+    }
+    
+    inline bool check_skip() {
+        return check_flag(flags, flag_skip);
+    }
+    
+    inline bool check_vectorized() {
+        return check_flag(flags, flag_vectorized);
+    }
+    
+    inline bool check_visited() {
+        return check_flag(flags, flag_visited);
+    }
+    
+    inline bool check_postpone() {
+        return check_flag(flags, flag_postpone);
+    }
+    
+    inline bool check_seen() {
+        return check_flag(flags, flag_seen);
+    }
+    
+    inline bool check_added() {
+        return check_flag(flags, flag_added);
+    }
+
+    inline bool check_blocking_gate() {
+        return check_flag(flags, flag_blocking_gate);
+    }
+
+    void processing_postponed_nodes(std::set<long>& visited, vector<tokenizer_node*>& nodes, long idpos);
+    void remove_epsilon_nodes(std::unordered_map<long, std::set<long> >& visited, std::set<long>& up, vector<tokenizer_node*>& nodes, bool epsilon);
+    void merge(bool top);
+
+    //We remove the epsilon nodes
+    void trim_epsilon(vector<tokenizer_node*>& nodes) {
+        std::set<long> up;
+        std::unordered_map<long, std::set<long> > visited;
+        remove_epsilon_nodes(visited, up, nodes, is_epsilon());
+    }
+
+    //We mark all nodes that belong to the same automaton for cleaning purposes
+    //The nodes that won't have been marked will be deleted.
+    void mark_nodes() {
+        if (check_visited())
+            return;
+        add_flag(flags, flag_visited);
+        for (long i = 0; i < arcs.size(); i++) {
+            arcs[i]->mark_nodes();
+        }
+    }
+
+    inline void fail_arcs() {
+        tokenizer_node* node;
+        //We mark the final arcs, to take into account sequences
+        //In a sequence, only the last element is marked with fail.
+        for (long i = 0; i < arcs.size(); i++) {
+            node = arcs[i];
+            //The first node is marked with flag_start_fail
+            add_flag(node->flags, flag_start_fail);
+            while (node->arcs.size()) node = node->arcs.back();
+            //if it a sequence, we have the beginning and the end of the sequence that is marked
+            //otherwise the node has both flags on.
+                     add_flag(node->flags, flag_fail);
+        }
+    }
+    
+    inline void clone(tokenizer_node* a) {
+        arcs = a->arcs;
+        action = a->action;
+        flags = a->flags;
+        label = a->label;
+        endlabel = a->endlabel;
+    }
+    
+    inline bool empty() {
+        return !arcs.size();
+    }
+    
+    inline void append_final(tokenizer_node* a) {
+        tokenizer_node* node = this;
+        while (node->arcs.size()) node = node->arcs.back();
+        if (!node->check_fail())
+            node->arcs.push_back(a);
+    }
+    
+    //We addd a and b on the final nodes for each arc
+    //This is a way to handle {..}+
+    inline void append_final(tokenizer_node* a, tokenizer_node* b) {
+        tokenizer_node* node = this;
+        while (node->arcs.size()) node = node->arcs.back();
+        if (!node->check_fail()) {
+            node->arcs.push_back(a);
+            node->arcs.push_back(b);
+        }
+    }
+    
+    inline void append(tokenizer_node* a) {
+        arcs.push_back(a);
+    }
+    
+    bool check(u_uchar chr, UTF8_Handler* access, std::set<u_uchar>& operators, bool not_neg);
+    
+    inline void getnext(u_ustring& w, u_uchar& res, long& pos, long& l) {
+        if (pos>=w.size()) {
+            res =  0;
+            return;
+        }
+        
+        if (w[pos]==L'\n')
+            l++;
+        res = w[pos++];
+    }
+    
+};
+
+//---------------------------------------------------------------
+//The automaton itself
+//---------------------------------------------------------------
+
+class tokenizer_automaton {
+public:
+    tokenizer_node* vectorization_table[table_character_size];
+    hmap<int32_t,vector<tokenizer_node*> > indexed_on_label;
+
+    vector<tokenizer_node*> compiled_rules;
+    vector<tokenizer_node*> nodes;
+    
+    vecte_n<u_ustring> rules;
+    
+    std::set<u_uchar> operators;
     
     UTF8_Handler* access;
-
-    int16_t table[255];
-
-
-    long firstrule;
+    tokenizer_node* initial;
+    
+    tokenizer_flag negation;
+    bool disjunction;
     bool loaded;
-    bool juststack;
-    bool lookforquotes;
-    bool lispmode;
-    unsigned char escape;
-
-    ~x_tokens() {
-        for (long i = 0; i < closing.size(); i++) {
-            if (closing[i] != NULL)
-                delete[] closing[i];
+    bool displayautomata;
+    
+    tokenizer_automaton(UTF8_Handler* a) {
+        disjunction =  false;
+        displayautomata = false;
+        negation = flag_none;
+        initial = NULL;
+        access = a;
+        for (int16_t i = 1; i < table_character_size; i++) {
+            vectorization_table[i] = NULL;
+        }
+        vectorization_table[0] = node(act_epsilon, 0);
+        loaded = false;
+        setoperators();
+    }
+    
+    ~tokenizer_automaton() {
+        for (long i = 0; i < nodes.size(); i++) {
+            delete nodes[i];
         }
     }
 
-    x_tokens() {
-        access = NULL;
-        firstrule=-1;
-        juststack=false;
-        loaded=false;
-        lookforquotes = false;
-        lispmode = false;
-
-        for (int16_t i=0; i< 255; i++) {
-            table[i]=255;
-        }
-        
-        //the escape character: by default it is \x
-        escape='\\';
-        operators[U"≠"]=true;
-        operators[U"∨"]=true;
-        operators[U"∧"]=true;
-        operators[U"÷"]=true;
-        operators[U"×"]=true;
-        operators[U"²"]=true;
-        operators[U"³"]=true;
-        operators[U"¬"]=true;
-    }
+    void compile();
 
     void reset() {
-        for (int16_t i=0; i< 255; i++) {
-            table[i]=255;
+        for (long i = 0; i < nodes.size(); i++) {
+            delete nodes[i];
         }
-        
-        //the escape character: by default it is \x
-        escape='\\';
-        firstrule=-1;
-        juststack=false;
-        loaded=false;
-        
-        action.clear();
-        rules.clear();
-        ruleelements.clear();
-        for (long i = 0; i < closing.size(); i++) {
-            if (closing[i] != NULL)
-                delete[] closing[i];
+        nodes.clear();
+        compiled_rules.clear();
+        for (int16_t i = 1; i < table_character_size; i++) {
+            vectorization_table[i] = NULL;
         }
-        closing.clear();
-
-        tokenizer.clear();
-        disjunctions.clear();
-        
-        operators.clear();
-        operators[U"≠"]=true;
-        operators[U"∨"]=true;
-        operators[U"∧"]=true;
-        operators[U"÷"]=true;
-        operators[U"×"]=true;
-        operators[U"²"]=true;
-        operators[U"³"]=true;
-        operators[U"¬"]=true;
+        vectorization_table[0] = node(act_epsilon, 0);
+        indexed_on_label.clear();
+        setoperators();
+        loaded = false;
     }
-
+    
+    
+    void setoperators() {
+        operators.clear();
+        std::set<u_ustring> ops;
+        ops.insert(U"¬");
+        ops.insert(U"§");
+        ops.insert(U"•");
+        ops.insert(U"°");
+        ops.insert(U"%");
+        ops.insert(U"@");
+        ops.insert(U"=");
+        ops.insert(U"!");
+        ops.insert(U"+");
+        ops.insert(U"-");
+        ops.insert(U"*");
+        ops.insert(U"/");
+        ops.insert(U"^");
+        ops.insert(U"<");
+        ops.insert(U">");
+        ops.insert(U"~");
+        ops.insert(U",");
+        ops.insert(U"&");
+        ops.insert(U"|");
+        ops.insert(U"#");
+        ops.insert(U"?");
+        ops.insert(U"\\");
+        ops.insert(U"$");
+        for (auto& u: ops)
+            operators.insert(u[0]);
+    }
+    
     void replacemetas(map<u_ustring, u_ustring>& metalines, u_ustring& line) {
         if (line.find(U"%") == -1 || line.size()==1)
             return;
-
+        
         u_ustring rep;
         u_ustring fd;
         for (const auto& k : metalines) {
@@ -150,715 +393,369 @@ public:
         }
     }
     
-    void setrules(vecte_n<u_ustring>& r) {
-        reset();
-        rules=r;
-        parserules();
-        loaded = true;
+    void initialize() {
+        setrules();
+        compile();
     }
     
-    void getrules(vecte_n<u_ustring>& r) {
+    void set_rules(vecte_n<u_ustring>& r) {
+        reset();
+        rules = r;
+        compile();
+    }
+    
+    void get_rules(vecte_n<u_ustring>& r) {
         if (!rules.size()) {
             setrules();
             r=rules;
             rules.clear();
             return;
         }
-
+        
         r=rules;
     }
     
-    virtual void setrules() {
-        lookforquotes = true;
-        
-        /*
-         a) A metarule is composed of two parts: c:expression, where c is the metacharacter that be accessed through %c and expression is a single body rule.
-         
-         for instance, we could have encoded %o as:
-                    rules.push_back(U"o:[≠ ∨ ∧ ÷ × ² ³ ¬]");
-        
-         (see conversion.cxx: x_tokenize for examples of these rules)
-         
-         IMPORTANT: These rules should be declared with one single operation.
-                    Their body will replace the call to a %c in other rules  (see the test on metas in the parse section)
-         
-         If you use a character that is already a meta-character (such as "a" or "d"), then the meta-character will be replaced with
-         this new description... However, its content might still use the standard declaration:
-         
-                rules.push_back(U"a:{%a %d %p}"); "%1 is now a combination of alphabetical characters, digits and punctuations
-
-         
-        b) A rule is composed of two parts: body = action
-         
-         action is either an integer or a #, which is evaluated later in codeparse with the following encoding:
-         
-         1 is a regular string enclosed in ""
-         2 is a string enclosed in ''
-         3 is a number
-         4 is a token
-         5 is a string enclosed in @" "@
-         6 is a unicode string enclosed in u""
-         7 is a unicode string enclosed in u''
-         8 is a unicode string enclosed in u@""@
-         # means that the extracted string will not be stored for parsing (spaces, cr and comments mainly)
-         
-         IMPORTANT: each of the code from 1 to 8 is ASSOCIATED with the parser with a specific method. More exactly, in the BNF grammar
-         specific rules such as word, anumber are associated with a code that will match one of these numbers...
-         For instance, here is the implementation of word:
-         
-         char bnf_tamgu::m_word(string& lreturn,x_node** tree) {
-         ....
-         if (fx->stacktype[currentpos]==4) { //the type (populated by apply check the value 4, which is a token...
-         
-         In the BNF grammar word is declared as:
-         
-         ^4 word := .  the ^4 indicates that it should be interpreted as a token, which leads the implement the test with 4
-         ^1 astringdouble := . the ^1 indicates that this a double quote string, which leads to a test with 1
-         
-         etc.
-         
-         body uses the following instructions:
-         
-         x   is a character that should be recognized
-
-         #x     comparison with character x...
-         #x-y   comparison between x and y. x and y should be ascii characters...
-         
-         %x  is a meta-character with the following possibilities:
-         
-         %.  is any character
-         %a  is any alphabetical character (including unicode ones such as éè)
-         %C  is any uppercase character
-         %c  is any lowercase character
-         %d  is any digits
-         %h  is a Greek letter
-         %H  is any hangul character
-         %n  is a non-breaking space
-         %o  is any operators
-         %p  is any punctuations
-         %r  is a carriage return both \n and \r
-         %s  is a space (32) or a tab (09)
-         %S  is both a carriage return or a space (%s or %r)
-         %?  is any character with the possibility of escaping characters with a '\' such as: \r \t \n or \"
-
-         %nn  you can create new metarules associated with any OTHER characters...
-
-         
-         (..) is a sequence of optional instructions
-         [..] is a disjunction of possible characters
-         {..} is a disjunction of meta-characters
-         x+   means that the instruction can be repeated at least once
-         x-   means that the character should be recognized but not stored in the parsing string
-         %.~..  means that all character will be recognizd except for those in the list after the tilda.
-         
-         IMPORTANT: do not add any spaces as they would be considered as a character to test...
-         
-         */
-        
-        //Spaces, skipped in the parsing string
-        rules.push_back(U" +=20");                         //0     space (not kept)
-        rules.push_back(U"\t+=21");                        //1     tab (not kept)
-        rules.push_back(U"\n+=22");                        //2     cr (not kept)
-        rules.push_back(U"\r=#");                        //3     cr (not kept)
-        
-        rules.push_back(U"1:{%d #A-F #a-f}");            //2     metarule on 1, for hexadecimal digits
-
-        //Fast tracks for recurrent punctations
-        rules.push_back(U";=0");                         //4     ;
-        rules.push_back(U",=0");                         //5     ,
-        rules.push_back(U"~=0");                         //7     ~
-        rules.push_back(U"!=0");                         //8     !
-        rules.push_back(U"(=0");                         //9     (
-        rules.push_back(U")=0");                         //10    )
-        rules.push_back(U"[=0");                         //11    [
-        rules.push_back(U"]=0");                         //12    ]
-        rules.push_back(U"{=0");                         //13    {
-        rules.push_back(U"}=0");                         //14    }
-        rules.push_back(U"..=0");                        //15    ..
-        rules.push_back(U".=0");                         //16    .
-        rules.push_back(U":=0");                         //26    :
-        rules.push_back(U"$=0");                         //27    $
-        rules.push_back(U"#=0");                         //28    #
-        rules.push_back(U"?=0");                         //29    ?
-        rules.push_back(U"\\=0");                        //29    ?
-
-        //operation + "="
-        rules.push_back(U"===0");                         //6     ==
-        rules.push_back(U"==0");                         //6     =
-        rules.push_back(U"^^==0");                         //17    ^^=
-        rules.push_back(U"^^=0");                         //17    ^^
-        rules.push_back(U"^=0");                         //17    ^
-        rules.push_back(U"**==0");                         //20    **=
-        rules.push_back(U"**=0");                         //20    **
-        rules.push_back(U"*==0");                         //20    *=
-        rules.push_back(U"*=0");                         //20    *
-        rules.push_back(U"+==0");                         //18    +=
-        rules.push_back(U"+=0");                         //18    +
-        rules.push_back(U"-==0");                         //19    -=
-        rules.push_back(U"-=0");                         //19    -
-        rules.push_back(U"%==0");                         //21    %=
-        rules.push_back(U"%=0");                         //21    %
-        rules.push_back(U"|==0");                         //24    |=
-        rules.push_back(U"|=0");                         //24    |
-        rules.push_back(U"&==0");                         //25    &=
-        rules.push_back(U"&=0");                         //25    &
-
-        //comparators <= >=
-        rules.push_back(U"<==0");                        //22    <=
-        rules.push_back(U"<=0");                         //22    <
-        rules.push_back(U">==0");                        //23    >=
-        rules.push_back(U">=0");                         //23    >
-
-        //Comments
-        rules.push_back(U"//%.~%r+=#");                  //30    comments starting with // with no carriage return (CR) inside (not kept)
-        rules.push_back(U"//=#");                        //31    empty comment starting with // with no carriage return (CR) inside (not kept)
-        rules.push_back(U"/=0");                         //34    /
-        
-        //Strings
-        //Double quote
-        rules.push_back(U"\"\"=1");                      //35    empty string ""
-        rules.push_back(U"\"\"\"%?+\"\"\"=8");             //45    empty string u@""@
-        rules.push_back(U"\"%?~%r+\"=1");                //36    string "" does not contain CR and can escape characters (%?)
-        
-        //Single quote
-        rules.push_back(U"''=2");                        //37    empty string ''
-        rules.push_back(U"'%?~%r+'=2");                  //38    string '' does not contain CR and does not process escape characters
-        
-        
-        //tamgu regular expression strings
-        rules.push_back(U"r-\"%?~%r+\"=9");              //42    string r"" tamgu regular expression (we do not keep the r in the parse)
-        rules.push_back(U"r-'%?~%r+'=10");               //42    string r"" tamgu regular expression (we do not keep the r in the parse)
-
-        //Unicode double quote strings
-        rules.push_back(U"u-\"\"=6");                    //41    empty string u""
-        rules.push_back(U"u-\"%?~%r+\"=6");              //42    string u"" unicode string (we do not keep the u in the parse)
-        
-        //Unicode single quote strings
-        rules.push_back(U"u-''=7");                      //43    empty string u''
-        rules.push_back(U"u-'%?~%r+'=7");                //44    string u'' unicode string
-        
-        rules.push_back(U"0x%1+(.%1+)([p P]([- +])%d+)=3");  //47 hexadecimal: can handle 0x1.16bca4f9165dep-3
-        rules.push_back(U"%d+(.%d+)([e E]([- +])%d+)=3");    //48    exponential digits
-        
-        // Rules start here
-        //This character should be interpreted as one
-        rules.push_back(U"{%a %d %h %H}+=4");               //49    label a combination of alpha, digits and Greek characters
-        rules.push_back(U"%n=#");                        //1     non-breaking space (not kept)
-        rules.push_back(U"%o=40");                        //51    operators
-        rules.push_back(U"%p=30");                        //50    punctuation
-        rules.push_back(U"%.~{%S %p %o}+=4");            //52    An unknown UTF8 token separated with spaces, punctuation or operators...
-    }
-    void parserules() {
-        
-        /*
-         
-         The rules are parsed and the results is stored both in tokenizer and in ruleelements.
-         
-         ruleelements uses the following binary encoding to define an instruction
-         
-         xr_char (1)             -> regular character
-         xr_meta (2)             -> meta-character (%x)
-         xr_chardisjunction (4)  -> disjunction of characters ([..])
-         xr_metadisjunction (8)  -> disjunction of metacharacters ({%...})
-         xr_negation (16)        -> negation (~)
-         xr_plus (32)            -> Kleene operator (+)
-         xr_skip (64)            -> Character not stored (-)
-         xr_neednext (128)       -> the metacharacter is a . or a ?
-         xr_singlebody (256)     -> Single body rule (only one character)
-         xr_optional (512)       -> Optional section
-         xr_endoptional (1024)   -> End optional section
-         
-         -> IMPORTANT: rules that start with a regular character are also indexed with their first character in "table".
-         rules that start with %d are also indexed on all possibile 10 digits.
-         
-         -> IMPORTANT: rules should be ordered with rules starting with a character first,
-         THEN rules starting with a meta character (%x) or a disjunction after.
-         
-         -> VERY IMPORTANT: rules starting with a character should always next to the rules sharing the same first character...
-         
-         The variable firstrule records the position of the first rule starting with a meta-character...
-         
-         -> IMPORTANT: we keep tracks of rules that are reduced to one single character check in order to process them immediatly
-         
-         BEWARE: This parser DOES not check if RULES are VALID...
-         
-         */
-        
-        char x_actions[]="?aCcdHnopSsr.";
-        
-        u_ustring line;
-        u_ustring sub;
-        u_ustring equal(U"=");
-        u_ustring res;
-
-        long k;
-        long i, pos;
-
-        u_uchar brk=L']', metakey;
-        u_uchar cc;
-        
-        int16_t opening;
-        int16_t mx = 0;
-        
-        char typebrk=xr_chardisjunction;
-        bool aplus;
-        bool neg=false;
-        bool addfirstrule;
-        map<u_ustring, u_ustring> metalines;
-        bool initmetakey=false;
-        vector<int16_t> e;
-        vector<int16_t> stackopen;
-        vector<int16_t> stackpar;
-        vector<u_ustring> rule;
-
-
-        for (i=0;i<rules.size();i++) {
-            line = rules[i];
-            
-            ruleelements.push_back(e);
-            closing.push_back(NULL);
-
-            rule.clear();
-            stackopen.clear();
-            stackpar.clear();
-
-            if (line[1]==':') { //we detect a meta-rule...
-                metakey=line[0];
-                line=line.c_str()+2;
-                u_ustring key=U"%";
-                key+=metakey;
-                if (initmetakey)
-                    replacemetas(metalines,line);
-                metalines[key] = line;
-                initmetakey=true;
-                action.push_back(xr_skiprule);
-                tokenizer.push_back(rule);
-                continue;
+    virtual void setrules();
+    
+    void display(tokenizer_node*, int nbblanks, bool);
+    void asString(std::set<int16_t>& shared, std::wstringstream& str, tokenizer_node*, int nbblanks, bool);
+    
+    tokenizer_node* node(tokenizer_action a, u_uchar c, u_uchar e = 0) {
+        if (a == act_meta) {
+            switch (c) {
+                case 'C':
+                    a =  act_uppercase;
+                    break;
+                case 'H':
+                    a =  act_ckj;
+                    break;
+                case 'S':
+                    a =  act_space_and_carriage;
+                    break;
+                case 'E':
+                    a =  act_emojicomp;
+                    break;
+                case 'a':
+                    a =  act_alphabetical;
+                    break;
+                case 'c':
+                    a =  act_lowercase;
+                    break;
+                case 'd':
+                    a =  act_digit;
+                    break;
+                case 'e':
+                    a =  act_emoji;
+                    break;
+                case 'h':
+                    a =  act_greek;
+                    break;
+                case 'n':
+                    a =  act_non_breaking_space;
+                    break;
+                case 'o':
+                    a =  act_operator;
+                    break;
+                case 'p':
+                    a =  act_punctuation;
+                    break;
+                case 'r':
+                    a =  act_carriage;
+                    break;
+                case 's':
+                    a =  act_space;
+                    break;
             }
-            
-            
-            neg=false;
-            aplus=false;
-            opening=0;
-            metakey=0;
+        }
+        
+        tokenizer_node* n = new tokenizer_node(a,c,e);
+        add_flag(n->flags, negation);
+        negation = flag_none;
+        n->idpos = nodes.size();
+        nodes.push_back(n);
+        return n;
+    }
+    /*
+     There are different ways to access rules when evaluating the first character of a token.
+     a) Either it is in the vectorization table
+     b) Or it is in the tokenizer_rules vector
+     
+     The vectorization table makes it possible to index rules on their first character.
+     It is composed of 1611 slots (table_character_size), where each slot corresponds to
+     the Unicode code of a character. For instance, 'A' has the code 65. At the position 65 we have rules that deals with
+     alphabetical characters or with rules that starts with 'A'. A slot can contain more than 1 rule, which means that the order in
+     which these rules are stored depends on the order in which they have been declared.
+     
+     The tokenizer_rules contains the rule, which could not be indexed on their first characters.
+     Basically when parsing a code, we first try the rules which are indexed on this character if we can,
+     otherwise we roll backs on tokenizer_rules.
+     */
 
-            int16_t r=-1;
+    void vectorization(tokenizer_node* a, u_uchar c) {
+        if (!c || c >= table_character_size) {
+            if (a->check_added())
+                return;
+            add_flag(a->flags, flag_added);
+            c = 0;
+        }
+        else {
+            if (vectorization_table[c] == NULL)
+                vectorization_table[c] = node(act_epsilon, 0);
+        }
+        
+        vectorization_table[c]->append(a);
+        add_flag(a->flags, flag_vectorized);
+        if (initial == NULL)
+            initial = a;
+    }
+    
+    tokenizer_node* append(tokenizer_node* root, tokenizer_node* n) {
+        if (initial == NULL)
+            initial = n;
+        
+        if (root != NULL) {
+            if (disjunction) {
+                root->append(n);
+                return root;
+            }
+            //If it is a disjunction, then root action is epsilon
+            //the new arc needs to be added to each sub-arc.
+            root->append(n);
+        }
+        else {
+            //The position 0 in vectorization_table is used to store no indexable rules
+            if (!n->check_vectorized())
+                vectorization(n, 0);
+        }
+        
+        return n;
+    }
+        
+    //Since, the code is slightly different according to the type of string we are handling, we create a template function to handle all these cases in one code.
+    template <typename STRNG> bool traverse(tokenizer_result<STRNG>& rst, u_ustring token, tokenizer_node* rule, bool alreadychecked, bool top) {
+        if (rule->action == act_end) {
+            rst.store(token, rule->label);
+            return true;
+        }
+        if (rst.end())
+            return false;
+        
+        if (top)
+            rst.start = rst.position - rst.sz_read;
+        
+        u_uchar chr = rst.currentchr;
+        long l = rst.line;
+        long p = rst.position;
 
-            //first we look for the = sign at the end of the string...
-            
-            pos=line.rfind(equal,line.size()-1);
-            
-            res=line.c_str()+pos+1;
-            
-            if (res!=U"#")
-                r=convertinginteger(res);
-            
-            action.push_back(r);
-            line=line.substr(0,pos);
+        long sz = rule->arcs.size();
 
-            if (initmetakey)
-                replacemetas(metalines,line);
-
-            for (long j=0;j<line.size();j++) {
-
-                switch(line[j]) {
-                    case L'%':
-                        addfirstrule=false;
-                        //We record the first rule not starting with a character
-                        if (!j) {
-                            if (line.size()==1) {
-                                //The % operator as a single character... %=0
-                                if (!metakey && table['%']==255)
-                                    table['%']=i;
-                                
-                                sub = U"%";
-                                rule.push_back(sub);
-                                ruleelements[i].push_back(xr_char);
-                                break;
-                            }
-                            
-                            addfirstrule=true;
-
-                            if (line[1]=='s' || line[1]=='S' || line[1]=='r') {
-                                if (!metakey) {
-                                    addfirstrule=false;
-                                    if (line[1]!='r') {
-                                        if (table[32]==255)
-                                            table[32]=i;
-                                        if (table[9]==255)
-                                            table[9]=i;
-                                    }
-                                    if (line[1]!='s') {
-                                        if (table[10]==255)
-                                            table[10]=i;
-                                        if (table[13]==255)
-                                            table[13]=i;
-                                    }
-                                }
-                            }
-                            else
-                            //specific case: %d, since we know all possible digits, we can index on them all
-                            if (line[1]=='d') {
-                                if (!metakey) {
-                                    addfirstrule=false;
-                                    for (k=48;k<58;k++) {
-                                        if (table[(char)k]==255)
-                                            table[(char)k]=i;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        cc=line[j+1];
-
-                        if (!neg && cc < 128 && strchr(x_actions,cc)==NULL) {
-                            //this is a direct comparison
-                            if (!j && table[cc]==255)
-                                table[cc]=i;
-                            sub=cc;
-                            rule.push_back(sub);
-                            ruleelements[i].push_back(xr_char);
-                            //A rule that starts with a %
-                            if (cc != '%')
-                                j++;
-                            break;
-                        }
-                        
-                        if (addfirstrule && firstrule==-1 && !metakey)
-                            firstrule=i;
-
-                        sub = U"%";
-                        sub+=cc;
-                        if (neg) {
-                            rule.back()+=sub;
-                            ruleelements[i].back() |= xr_meta;
-                            neg=false;
-                        }
-                        else {
-                            rule.push_back(sub);
-                            ruleelements[i].push_back(xr_meta);
-                        }
-                        
-                        if (sub[1] == '.' || sub[1] == '?')
-                            ruleelements[i].back() |= xr_neednext;
-                        j++;
-                        break;
-                    case L'{':
-                        brk='}';
-                        typebrk=xr_metadisjunction;
-                    case L'[':
-                        k=j+1;
-                        while (k<line.size() && line[k]!=brk) k++;
-                        if (k==line.size()) {
-                            //then it is not a disjunction but a simple character recognition
-                            neg=false;
-                            sub=line[j];
-                            if (!j && sub[0]<256) {
-                                if (!metakey && table[sub[0]] == 255)
-                                    table[sub[0]]=i;
-                            }
-                            rule.push_back(sub);
-                            ruleelements[i].push_back(xr_char);
-                            brk=']';
-                            typebrk=xr_chardisjunction;
-                            break;
-                        }
-                        //We record the first rule not starting with a character
-                        if (!j && firstrule==-1 && !metakey)
-                            firstrule=i;
-                        
-                        sub=line.substr(j+1,k-j-1);
-
-                        if (typebrk==xr_chardisjunction)
-                            sub+=U" ";
-                        else {
-                            vector<u_ustring> vsub;
-                            //we split at the " "
-                            long d=0,e;
-                            u_ustring sx;
-                            for (e=0;e<sub.size();e++) {
-                                if (sub[e]==' ') {
-                                    sx=sub.substr(d,e-d);
-                                    vsub.push_back(sx);
-                                    d=e+1;
-                                }
-                            }
-                            sx=sub.substr(d,e-d);
-                            vsub.push_back(sx);
-                            sub = convertToUString((long)disjunctions.size());
-                            disjunctions.push_back(vsub);
-                        }
-                        
-                        if (neg) {
-                            rule.back()+=sub;
-                            ruleelements[i].back() |= typebrk;
-                            neg=false;
-                        }
-                        else {
-                            rule.push_back(sub);
-                            ruleelements[i].push_back(typebrk);
-                        }
-                        j=k;
-                        brk=']';
-                        typebrk=xr_chardisjunction;
-                        break;
-                    case L'+':
-                        if (j) { //only if it is not the first character
-                            aplus=true;
-                            ruleelements[i].back() |= xr_plus;
-                            break;
-                        }
-                    case L'-':
-                        if (j) { //only if it is not the first character
-                            ruleelements[i].back() |= xr_skip;
-                            break;
-                        }
-                    case L'~': //only if it is not the first character
-                        if (j) { //otherwise, it is a character as the others...
-                            neg=true;
-                            rule.back()+=line[j];
-                            ruleelements[i].back() |= xr_negation;
-                            break;
-                        }
-                    case L'(':
-                        if (j) {
-                            bool found=false;
-                            int16_t nb=1;
-                            k=j+1;
-                            while (k<line.size()) {
-                                if (line[k]=='(')
-                                    nb++;
-                                else
-                                    if (line[k]==')') {
-                                        nb--;
-                                        if (!nb) {
-                                            found=true;
-                                            break;
-                                        }
-                                    }
-                                k++;
-                            }
-                            if (found) {
-                                sub = U"(";
-                                rule.push_back(sub);
-                                mx = ruleelements[i].size();
-                                stackopen.push_back(mx);
-                                ruleelements[i].push_back(xr_optional);
-                                opening++;
-                                break;
-                            }
-                        }
-                    case L')':
-                        if (j) {
-                            if (opening) {
-                                sub = U")";
-                                rule.push_back(sub);
-                                stackpar.push_back(stackopen.back());
-                                stackpar.push_back(ruleelements[i].size());
-                                ruleelements[i].push_back(xr_endoptional);
-                                stackopen.pop_back();
-                                opening--;
-                                break;
-                            }
-                        }
-                    default:
-                        neg=false;
-                        sub=line[j];
-                        if (!j && sub[0]<256) {
-                            if (!metakey && table[sub[0]] == 255)
-                                table[sub[0]]=i;
-                        }
-                        rule.push_back(sub);
-                        ruleelements[i].push_back(xr_char);
+        while (sz == 1 && !rst.end()) {
+            if (alreadychecked || rule->check(rst.currentchr, access, operators, !rule->check_negation())) {
+                //In this case we fail a sequence of nodes that should not go up to here
+                // For instance, we want the system to fail if abc is detected with rule: ~{[abc]...}
+                if (rule->check_fail())
+                    return true;
+                
+                if (!check_flag(rule->action, act_epsilon)) {
+                    if (!rule->check_skip())
+                        token += rst.currentchr;
+                    rst.getnext();
                 }
-            }
-            
-            //one character rules are identified for fast processing (binary code 128)...
-            if (rule.size()==1 && !aplus)
-                ruleelements[i][0] |= xr_singlebody;
-            tokenizer.push_back(rule);
-            if (stackpar.size()) {
-                int16_t* clos = new int16_t[mx+1];
-                for (k = 0; k < stackpar.size(); k+=2)
-                    clos[stackpar[k]] = stackpar[k+1];
-                closing[closing.size()-1] = clos;
-            }
-        }
-        rules.clear();
-    }
-
-    char check(u_ustring& label, int16_t type, u_uchar* chr) {
-        if (!chr[0])
-            return false;
-        
-        if (verif(type,xr_char)) {
-            if (label == chr)
-                return true;
-            return false;
-        }
-        
-        if (verif(type,xr_negation)) { //negation
-            u_ustring sb;
-            if (verif(type,xr_metadisjunction)) {
-                type=8;
-                sb=label.c_str()+3;
+                rule = rule->arcs[0];
+                if (rule->action == act_end) {
+                    rst.store(token, rule->label);
+                    return true;
+                }
+                alreadychecked = false;
+                sz = rule->arcs.size();
             }
             else {
-                if (verif(type,xr_metadisjunction)) {
-                    type=4;
-                    sb=label.c_str()+3;
+                rst.currentchr = chr;
+                rst.line = l;
+                rst.position = p;
+                return false;
+            }
+        }
+        
+        
+        if (alreadychecked || rule->check(rst.currentchr, access, operators, !rule->check_negation())) {
+            if (rule->check_fail())
+                return true;
+
+            //If it is not an epsilon, there was an actual character comparison
+            alreadychecked = false;
+            if (!check_flag(rule->action, act_epsilon)) {
+                if (!rule->check_skip())
+                    token += rst.currentchr;
+                alreadychecked = true;
+                rst.getnext();
+            }
+            
+            tokenizer_node* r;
+            for (long i = 0; i < sz; i++) {
+                r = rule->arcs[i];
+                if (r->action == act_end) {
+                    rst.store(token, r->label);
+                    return true;
                 }
-                else {
-                    if (label[3]=='%') {
-                        type=2;
-                        sb=label.c_str()+3;
+                if (r->check(rst.currentchr, access, operators, !r->check_negation())) {
+                    //Tail recursion detected, we simply iterate...
+                    //alreadycheck is true is this arc is not an epsilon
+                    if (alreadychecked && r == rule) {
+                        i = -1;
+                        if (!r->check_skip())
+                            token += rst.currentchr;
+                        rst.getnext();
                     }
                     else {
-                        type=1;
-                        sb=label.c_str()+2;
+                        /*
+                        else we go into recursion
+                        Note the check_fail and check_start_fail to take into account: ~{...}
+                        If one element of the disjunction is true, the whole disjunction must fail
+                        The only case when fail and start_fail are different is when a sequence is negated
+                        in the disjunction. In that case, start_fail occurs on the beginning of the sequence
+                        and fail on the last element of the disjunction. Hence, if the sequence succeeds deep in recursion
+                        we will fail it by returning !start_fail.
+                        */
+                        if ((r->check_fail() || traverse<STRNG>(rst, token, r, true, false)))
+                            return (!r->check_start_fail());
                     }
                 }
             }
-            if (check(sb,type,chr))
-                return false;
-            type=2;
         }
-        
-        if (verif(type,xr_metadisjunction)) { // {} brackets
-            long j=convertinginteger(label);
-            for (long i=0;i<disjunctions[j].size();i++) {
-                if (check(disjunctions[j][i],2,chr))
-                    return true;
-            }
-            return false;
-        }
-
-        if (verif(type,xr_chardisjunction)) { // [] brackets
-            u_ustring sb=chr;
-            sb += U" ";
-            if (label.find(sb)!= string::npos)
-                return true;
-            return false;
-        }
-        
-        if (verif(type,xr_meta)) {
-            u_uchar lb=label[1];
-            u_uchar car=chr[0];
-            
-            if (label[0]==L'#') {
-                if (label[2]=='-') {
-                    if (car>=lb && car <= label[3])
-                        return true;
-                    return false;
-                }
-                if (car == lb)
-                    return true;
-                return false;
-            }
-            
-            switch (lb) {
-                case '?':
-                    if (car==escape)
-                        return 2;
-                    return true;
-                case '.':
-                    return true;
-                case 'C':
-                    return (access->c_is_upper(car));
-                case 'a':
-                    return (car=='_' || car == '#' || access->c_is_alpha(car));
-                case 'c':
-                    return (access->c_is_lower(car));
-                case 'd':
-                    return (c_is_digit(car));
-                case 'h': //Greek characters
-                    return (car >= 913 && car <= 987);
-                case 'H':
-                    return ckjchar(car);
-                case 'n': //non-breaking space
-                    return (car == 160);
-                case 'p':
-                    return (access->c_is_punctuation(car));
-                        return true;
-                    return false;
-                case 'o':
-                    return (operators.find(chr) != operators.end());
-                case 'S':
-                    return (car <= 32);
-                case 's':
-                    return (car == 9 || car == 32);
-                case 'r':
-                    return (car == 10 || car == 13);
-                default:
-                    return (lb == (uchar)car);
-            }
-            return false;
-        }
-        
+        rst.currentchr = chr;
+        rst.line = l;
+        rst.position = p;
         return false;
     }
     
-    void apply(u_ustring& toparse, vecte_n<u_ustring>* vstack);
-    char loop(u_ustring& toparse, int16_t i, u_uchar* token, u_uchar* chr, long& itoken, int16_t& r, long& line, long& posc);
+    template <typename STRNG> inline bool execute_rule(u_uchar c, tokenizer_result<STRNG>& rst) {
+        return (c < table_character_size) && vectorization_table[c]?traverse<STRNG>(rst, U"", vectorization_table[c], false, true):false;
+    }
+    
+    template <typename STRNG> inline bool execute_rule(tokenizer_result<STRNG>& rst) {
+        return traverse<STRNG>(rst, U"", vectorization_table[0], false, true);
+    }
 
-    u_ustring next(u_ustring& w, long& pos, long& l) {
-        if (pos>=w.size())
-            return U"";
-        
-        if (w[pos]==L'\n')
-            l++;
-        u_ustring res;
-        res=w[pos++];
-#ifdef WSTRING_IS_UTF16
-        if (checklargeutf16(res[0]))
-            res += w[pos++];
-#endif
-        return res;
-    }
-    
-    void getnext(u_ustring& w, u_uchar* res, long& pos, long& l) {
-        if (pos>=w.size()) {
-            res[0] =  0;
-            return;
+    template <typename STRNG> void apply(tokenizer_result<STRNG>& rst) {
+        rst.getnext();
+        while (!rst.end()) {
+            //The first step consists of finding the first rule to apply
+            //If the current character is in table, then we start from here
+            if (!execute_rule<STRNG>(rst.currentchr, rst) && !execute_rule<STRNG>(rst)) {
+                rst.store_currentchr();
+                rst.getnext();
+            }
         }
-        
-        if (w[pos]==L'\n')
-            l++;
-        res[0] = w[pos++];
-#ifdef WSTRING_IS_UTF16
-        if (checklargeutf16(res[0]))
-            res[1] = w[pos++];
-        else
-            res[1] = 0;
-#endif
     }
-    
-    void getnext(u_ustring& w, u_uchar* res, long& pos) {
-        if (pos>=w.size()) {
-            res[0] =  0;
-            return;
+  
+    template <typename STRNG> long tokenize(STRNG& thestr, tokenizer_result<STRNG>& r) {
+        if (!loaded) {
+            setrules();
+            compile();
         }
-        
-        res[0] = w[pos++];
-#ifdef WSTRING_IS_UTF16
-        if (checklargeutf16(res[0]))
-            res[1] = w[pos++];
-        else
-            res[1] = 0;
-#endif
-    }
-    
-
-    void tokenize(u_ustring& thestr, vecte_n<u_ustring>* vstack) {
         //only stack is necessary
-        if (vstack==NULL)
-            stack.clear();
-        if (!juststack) {
-            stackln.clear();
-        }
-        apply(thestr, vstack);
-    }
+        r.clear(thestr);
+        apply<STRNG>(r);
+        return r.size();
+    }    
+};
 
+//---------------------------------------------------------------
+//LispE tokenizer
+//---------------------------------------------------------------
+class lispe_tokenizer : public tokenizer_automaton {
+public:
+    
+    lispe_tokenizer(UTF8_Handler* a) : tokenizer_automaton(a) {}
+    
+    void setrules() {
+        tokenizer_automaton::setrules();
+        rules[0] = U"%s+=#";
+        long i;
+        for (i = 0; i < rules.size(); i++) {
+            if (rules[i] == U";;?+;;=67")
+                break;
+        }
+        //Comments are no longer recorded...
+        if (i != rules.size()) {
+            rules[i] = U";;?+;;=#";
+            rules[i+1] = U";?+#10=#";
+        }
+    }
+    
+};
+//---------------------------------------------------------------
+//Segmenter
+//---------------------------------------------------------------
+class segmenter_automaton : public tokenizer_automaton {
+public:
+    char decimal_separator;
+    bool blanks;
+    
+    segmenter_automaton(UTF8_Handler* a) : tokenizer_automaton(a) {
+        decimal_separator = 0;
+        blanks = false;
+    }
+    
+    void setrules();
+    
+    bool check_rule(int32_t label) {
+        return (indexed_on_label.find(label) != indexed_on_label.end() && indexed_on_label[label].size());
+    }
+    
+    //Rules do not skip blanks anymore
+    void keepblanks(bool kp) {
+        if (check_rule(99) && blanks != kp) {
+            blanks = kp;
+            if (kp)
+                remove_flag(indexed_on_label[99][0]->flags, flag_blocking_gate);
+            else
+                add_flag(indexed_on_label[99][0]->flags, flag_blocking_gate);
+        }
+    }
+    
+    void setdecimalmode(char sep) {
+        if (check_rule(22) && check_rule(66)  && check_rule(88) && decimal_separator != sep) {
+            long i;
+            decimal_separator = sep;
+            switch (decimal_separator) {
+                case 0:
+                    for (i = 0; i < indexed_on_label[22].size(); i++) {
+                        remove_flag(indexed_on_label[22][i]->flags, flag_blocking_gate);
+                    }
+                    for (i = 0; i < indexed_on_label[66].size(); i++) {
+                        add_flag(indexed_on_label[66][i]->flags, flag_blocking_gate);
+                    }
+                    for (i = 0; i < indexed_on_label[88].size(); i++) {
+                        add_flag(indexed_on_label[88][i]->flags, flag_blocking_gate);
+                    }
+                    break;
+                case 1:
+                    for (i = 0; i < indexed_on_label[22].size(); i++) {
+                        add_flag(indexed_on_label[22][i]->flags, flag_blocking_gate);
+                    }
+                    for (i = 0; i < indexed_on_label[66].size(); i++) {
+                        remove_flag(indexed_on_label[66][i]->flags, flag_blocking_gate);
+                    }
+                    for (i = 0; i < indexed_on_label[88].size(); i++) {
+                        add_flag(indexed_on_label[88][i]->flags, flag_blocking_gate);
+                    }
+                    break;
+                case 2:
+                    for (i = 0; i < indexed_on_label[22].size(); i++) {
+                        add_flag(indexed_on_label[22][i]->flags, flag_blocking_gate);
+                    }
+                    for (i = 0; i < indexed_on_label[66].size(); i++) {
+                        add_flag(indexed_on_label[66][i]->flags, flag_blocking_gate);
+                    }
+                    for (i = 0; i < indexed_on_label[88].size(); i++) {
+                        remove_flag(indexed_on_label[88][i]->flags, flag_blocking_gate);
+                    }
+                    break;
+            }
+        }
+    }
 };
 
 #endif

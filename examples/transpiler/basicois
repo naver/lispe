@@ -31,6 +31,16 @@
 # + : P_
 ######################################
 
+;1 Attend une terminaison "]"
+;2 Attend une terminaison ")"
+;3 Attend une balise de fermeture pour "données".
+;4 Attend une balise de fermeture pour "fonction".
+;5 Attend une balise de fermeture pour "si".
+;6 Attend une balise de fermeture pour "tantque" ;
+;7 Attend une balise de fermeture pour "pour...dans".
+;8 Attend une balise fermante pour "pour" ;
+;9 Erreur lors de l'analyse d'une méthode
+
 # The ° indicates the entry point of the grammar (the top rule)
 °analyse := [function^expressions]+
 
@@ -76,28 +86,28 @@ comparison := computing comparator computing [orand comparison]*
 
 !indexes := computing [%, computing]*
 
-!setdimvariable :=  Word %[ indexes %]
-!setdimvariablestring :=  Word %$ %[ indexes %]
+!setdimvariable :=  Word %[ ;1 indexes %]
+!setdimvariablestring :=  Word %$ %[ ;1 indexes %]
 
-!dimvariable := Word %[ indexes %]
-!dimvariablestring := Word %$ %[ indexes %]
+!dimvariable := Word %[ ;1 indexes %]
+!dimvariablestring := Word %$ %[ ;1 indexes %]
 !stringvariable := Word %$
 variable := Word
 
 !variables := [stringvariable^variable] [%, [stringvariable^variable]]*
 
-!call := [lambda^Word] %( [computing [%, computing]*]? %)
+!call := [lambda^Word] %( ;2 [computing [%, computing]*]? %)
 
-!method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
+!method := [dimvariablestring^dimvariable^stringvariable^variable] %. ;9 Word %( ;2 [computing [%, computing]*]? %)
 
 !assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 
-!dim :=  $DIM Word %[ indexes %]
-!dimstring :=  $DIM Word %$ %[ indexes %]
+!dim :=  $DIM Word %[ ;1 indexes %]
+!dimstring :=  $DIM Word %$ %[ ;1 indexes %]
 
-!parenthetic := %( computing %)
+!parenthetic := %( ;2 computing %)
 
-!data := $données computing [%, computing]* $findonnées
+!data := $données ;3 computing [%, computing]* $findonnées
 
 # We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
 # It keeps the final tree flatter
@@ -119,14 +129,17 @@ body := expressions+
 !then := $Alors expressions+
 !else := $Sinon expressions+
 
-!function := $Fonction Word %( variables? %) expressions+ $FinFonction
+!function := $Fonction ;4 Word %( ;2 variables? %) expressions+ $FinFonction
 
-!lambda := %[ %( variables? %) body %]
+!lambda := %[ ;1 %( ;2 variables? %) body %]
 
-!if := $Si comparison then else? $FinSi
-!while := [$tantque^[$tant $que]] comparison expressions+ $FinTantQue
-!forin := $Pour [stringvariable^variable] $dans callitem expressions+ $FinPour
-!for := $Pour assignment %, comparison %, assignment expressions+ $FinPour
+!if := $Si ;5 comparison then else? $FinSi
+!while := [$tantque^[$tant $que]] ;6 comparison expressions+ $FinTantQue
+!forin := $Pour [stringvariable^variable] $dans ;7 callitem expressions+ $FinPour
+!for := $Pour ;8 assignment %, comparison %, assignment expressions+ $FinPour
+
+
+
 
 
 

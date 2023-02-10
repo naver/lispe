@@ -25,7 +25,7 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 
 Element* Lispe_%1::eval(LispE* lisp) {
     //The name defined in the extension is not insignificant, it is used to retrieve our arguments.
-    Element* argument = lisp->get_variable((L"cmd");
+    Element* argument = lisp->get_variable(L"cmd");
     return argument;
 }
 
@@ -42,7 +42,7 @@ u_ustring Lispe_%1::asUString(LispE* lisp) {
 float Lispe_%1::asFloat() {
     return 0;
 }
-                                           
+
 double Lispe_%1::asNumber() {
     return 0;
 }

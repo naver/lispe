@@ -29,6 +29,16 @@
 # + : P_
 ######################################
 
+;1 expecting a closing "]"
+;2 expecting a closing ")"
+;3 expecting a closing tag for "data"
+;4 expecting a closing tag for "function"
+;5 expecting a closing tag for "if"
+;6 expecting a closing tag for "while"
+;7 expecting a closing tag for "forin"
+;8 expecting a closing tag for "for"
+;9 error when analysing a method
+
 # The ° indicates the entry point of the grammar (the top rule)
 °analyse := [function^expressions]+
 
@@ -46,28 +56,28 @@ comparison := computing comparator computing [orand comparison]*
 
 !indexes := computing [%, computing]*
 
-!setdimvariable :=  Word %[ indexes %]
-!setdimvariablestring :=  Word %$ %[ indexes %]
+!setdimvariable :=  Word %[ ;1 indexes %]
+!setdimvariablestring :=  Word %$ %[ ;1 indexes %]
 
-!dimvariable := Word %[ indexes %]
-!dimvariablestring := Word %$ %[ indexes %]
+!dimvariable := Word %[ ;1 indexes %]
+!dimvariablestring := Word %$ %[ ;1 indexes %]
 !stringvariable := Word %$
 variable := Word
 
 !variables := [stringvariable^variable] [%, [stringvariable^variable]]*
 
-!call := [lambda^Word] %( [computing [%, computing]*]? %)
+!call := [lambda^Word] %( ;2  [computing [%, computing]*]? %)
 
-!method := [dimvariablestring^dimvariable^stringvariable^variable] %. Word %( [computing [%, computing]*]? %)
+!method := [dimvariablestring^dimvariable^stringvariable^variable] %. ;9 Word %( ;2 [computing [%, computing]*]? %)
 
 !assignment := [setdimvariablestring^setdimvariable^stringvariable^variable] %= computing
 
-!dim :=  $DIM Word %[ indexes %]
-!dimstring :=  $DIM Word %$ %[ indexes %]
+!dim :=  $DIM Word %[ ;1 indexes %]
+!dimstring :=  $DIM Word %$ %[ ;1 indexes %]
 
-!parenthetic := %( computing %)
+!parenthetic := %( ;2 computing %)
 
-!data := $data computing [%, computing]* $enddata
+!data := $data ;3 computing [%, computing]* $enddata
 
 # We put a ^ to avoid building a sub-list (callitem ...) for each element, we simply return the result as such
 # It keeps the final tree flatter
@@ -89,23 +99,14 @@ body := expressions+
 !then := $Then expressions+
 !else := $Else expressions+
 
-!function := $Function Word %( variables? %) expressions+ $EndFunction
+!function := $Function Word %( ;4 variables? %) expressions+ $EndFunction
 
-!lambda := %[ %( variables? %) body %]
+!lambda := %[ ;1 %( ;2 variables? %) body %]
 
-!if := $If comparison then else? $EndIf
-!while := $While comparison expressions+ $EndWhile
-!forin := $For [stringvariable^variable] $in callitem expressions+ $EndFor
-!for := $For assignment %, comparison %, assignment expressions+ $EndFor
-
-
-
-
-
-
-
-
-
+!if := $If ;5 comparison then else? $EndIf
+!while := $While ;6 comparison expressions+ $EndWhile
+!forin := $For [stringvariable^variable] $in ;7 callitem expressions+ $EndFor
+!for := $For ;8 assignment %, comparison %, assignment expressions+ $EndFor
 
 
 

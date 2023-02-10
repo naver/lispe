@@ -1,12 +1,14 @@
-;Date: 11/08/2022
-;Author: Claude Roux
-;Description: Εxample of Βasicois code
+;;
+Date: 11/08/2022
+Author: Claude Roux
+Description: Εxample of Greek code
+;;
 
-(load (+ _current "hellenica.lisp")) 
+(load (+ _current "hellenica.lisp"))
 (load (+ _current "transpiler.lisp"))
 
-(setq code 
-   ` 
+(setq code
+ """
 συνάρτηση κλήση(Α, Β)
    Γ = 20
    αν Α == Β τότε
@@ -95,7 +97,7 @@
 τέλοςενώ
 
 εμφάνισεγρ()
-για Α = 0, Α < 10 , Α = Α + 1 
+για Α = 0, Α < 10 , Α = Α + 1
    εμφάνισε "Α=", Α, " -> "
    για Β = 0, Β <= 10, Β = Β + 2
        εμφάνισεγρ "Α + Β=", Α, Β, (Α + Β), " "
@@ -132,8 +134,9 @@ REM Μια συνάρτηση λάμδα
 Α = [(x,y) αν x > y τότε x+y αλλιώς x*y τέλοςαν](10,20)
 εμφάνισεγρ Α
 
-`
+"""
 )
+
 
 ;(setq tree (abstract_tree code))
 
@@ -143,7 +146,9 @@ REM Μια συνάρτηση λάμδα
    )
 )
 
-;lsp contains the transpiled code as a list
-;(println (prettify lsp))
+
+; lsp contains the transpiled code as a list
+; (println (prettify lsp))
+
 (eval lsp)
 

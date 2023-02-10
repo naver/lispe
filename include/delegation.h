@@ -14,6 +14,7 @@
 #include <atomic>
 #include <condition_variable>
 #include "mapbin.h"
+#include "tokens.h"
 
 //------------------------------------------------------------
 class LispE;
@@ -101,6 +102,7 @@ public:
 
     binHashe<u_ustring> code_to_string;
     binHashe<string> instructions;
+    binHash<Listincode*> straight_eval;
     
     binHash<int16_t> data_ancestor;
     vecte<binHash<Element*>* > function_pool;
@@ -126,6 +128,7 @@ public:
     binSet number_types;
     
     Stackelement thread_stack;
+    lispe_tokenizer main_tokenizer;
     
     //------------------------------------------
     binHash<uint16_t> namespaces;
@@ -453,6 +456,21 @@ public:
         return -1;
     }
 
+    int16_t is_basic_atom(u16string& e) {
+        u_ustring w;
+        for (long i = 0; i < e.size(); i++)
+            w += (u_uchar)e[i];
+        
+        try {
+            int16_t code = string_to_code.at(w);
+            if (atom_basic_pool.check(code))
+                return code;
+        }
+        catch (...) {
+        }
+        return -1;
+    }
+
 
     bool is_instruction(int16_t c) {
         return instructions.check(c);
@@ -514,7 +532,11 @@ public:
         }
         return false;
     }
-    
+
+    bool arity_check(int16_t instruction_code, unsigned long sz) {
+        return (arities.check(instruction_code))?(arities.at(instruction_code)&sz):false;
+    }
+
     bool checkArity(int16_t instruction_code, unsigned long sz) {
         if (arities.check(instruction_code)) {
             sz = 1 << ((sz < 16)?sz:15);
@@ -523,7 +545,8 @@ public:
         return true;
     }
 
-    inline void set_instruction(int16_t instruction_code, string name,  unsigned long arity, methodEval m) {
+    inline void set_instruction(lisp_code instruction_code, string name,  unsigned long arity, methodEval m) {
+        straight_eval[instruction_code] = new Listincode();
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         evals[instruction_code] = m;
@@ -532,7 +555,21 @@ public:
         code_to_string[instruction_code] = n;
     }
 
-    inline void set_pure_instruction(int16_t instruction_code, string name,  unsigned long arity) {
+    inline void set_instruction(lisp_code instruction_code,
+                                string name,
+                                unsigned long arity,
+                                methodEval m,
+                                Listincode* cln) {
+        straight_eval[instruction_code] = cln;
+        instructions[instruction_code] = name;
+        arities[instruction_code] = arity;
+        evals[instruction_code] = m;
+        u_ustring n;
+        s_utf8_to_unicode(n, name, name.size());
+        code_to_string[instruction_code] = n;
+    }
+
+    inline void set_pure_instruction(lisp_code instruction_code, string name,  unsigned long arity) {
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         u_ustring n;

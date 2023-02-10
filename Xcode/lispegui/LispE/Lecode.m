@@ -306,11 +306,17 @@ BOOL dark = false;
     NSString* letexte = [self string];
 
     NSRange suivant = {0, longueur};
-    unichar* txt = (unichar*)malloc(sizeof(unichar)*longueur);
+    unichar* txt = (unichar*)malloc(1 + sizeof(unichar)*longueur);
     [letexte getCharacters:txt range:suivant];
+    txt[longueur] = 0;
     
     NSRange trouve;
     
+    NSColor* defaultcolor = [NSColor blackColor];
+    if (dark) {
+        defaultcolor = [NSColor whiteColor];
+    }
+
     if (currentrange.length != 0) {
         suivant = currentrange;
         limite = suivant.location + suivant.length;
@@ -327,15 +333,13 @@ BOOL dark = false;
             }
         }
     }
+
+    [self setTextColor: defaultcolor range:suivant];
         
     long* tobecolored = colorparser(txt, suivant.location, limite);
     
     free(txt);
 
-    NSColor* defaultcolor = [NSColor blackColor];
-    if (dark) {
-        defaultcolor = [NSColor whiteColor];
-    }
     
     for (long i = 0; tobecolored[i]!=-1; i+=3) {
         trouve.location=tobecolored[i+1];

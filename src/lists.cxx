@@ -16,6 +16,10 @@
 #include <algorithm>
 
 //--------------------------------------------------------------------------------
+List* Listincode::cloning(Listincode* e, methodEval m) {
+    return new List_execute(e, m);
+}
+//--------------------------------------------------------------------------------
 
 void u_links::push_front(Element* v, bool is_final) {
     u_link* e;
@@ -809,120 +813,16 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
+
 Element* List::mloop(LispE* lisp) {
-    List* values = lisp->provideList();
-    List* indexes = lisp->provideList();
-    Element* e = null_;
-    Element* ix;
-    long sz = size();
-    long var;
-    long indexe = 0;
-    long nbvars = liste[1]->size();
-    
-    int16_t label;
-    
-    try {
-        for (var = 0; var < nbvars; var++) {
-            label = liste[1]->index(var)->label();
-            lisp->recording(null_, label);
-            e = liste[var+2]->eval(lisp);
-            values->append(e);
-            indexes->append(e->thekeys(lisp));
-        }
-        
-        long nb = values->liste[0]->size();
-        e = null_;
-        while (indexe < nb) {
-            _releasing(e);
-            for (var = 0; var < nbvars; var++) {
-                ix = indexes->liste[var]->index(indexe);
-                e = values->liste[var]->value_on_index(lisp, ix);
-                label = liste[1]->index(var)->label();
-                lisp->replacingvalue(e, label);
-            }
-            //We then execute our instructions
-            e = null_;
-            for (var = nbvars + 2; var < sz && e->type != l_return; var++) {
-                e->release();
-                e = liste[var]->eval(lisp);
-            }
-            if (e->type == l_return) {
-                indexes->release();
-                if (e->isBreak()) {
-                    values->release();
-                    return null_;
-                }
-                values->release(e->eval(lisp));
-                return e;
-            }
-            indexe++;
-        }
-    }
-    catch(Error* err) {
-        values->release();
-        indexes->release();
-        throw err;
-    }
-    
-    values->release(e);
-    indexes->release();
-    return e;
+     List_mloop_eval m(this);
+     return m.eval(lisp);
 }
 
+
 Element* List::lloop(LispE* lisp) {
-    List* values = lisp->provideList();
-    Element* e = null_;
-    unsigned long sz;
-    long var;
-    long indexe = 0;
-    long nbvars = liste[1]->size();
-    unsigned long nb = -1;
-    
-    int16_t label;
-    
-    try {
-        for (var = 0; var < nbvars; var++) {
-            label = liste[1]->index(var)->label();
-            lisp->recording(null_, label);
-            e = liste[var + 2]->eval(lisp);
-            sz = e->size();
-            nb = nb<sz?nb:sz;
-            values->append(e);
-        }
-        
-        sz = size();
-        
-        while (indexe < nb) {
-            _releasing(e);
-            for (var = 0; var < nbvars; var++) {
-                e = values->liste[var]->index(indexe);
-                label = liste[1]->index(var)->label();
-                lisp->replacingvalue(e, label);
-            }
-            e = null_;
-            //We then execute our instructions
-            for (var = nbvars + 2; var < sz && e->type != l_return; var++) {
-                e->release();
-                e = liste[var]->eval(lisp);
-            }
-            if (e->type == l_return) {
-                if (e->isBreak()) {
-                    values->release();
-                    return null_;
-                }
-                values->release(e->eval(lisp));
-                return e;
-            }
-            indexe++;
-        }
-    }
-    catch(Error* err) {
-        values->release();
-        throw err;
-    }
-    
-    values->release(e);
-    return e;
+     List_lloop_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::insert(LispE* lisp, Element* e, long ix) {
@@ -1015,42 +915,26 @@ Element* List::unique(LispE* lisp) {
         return this;
     
     List* list = lisp->provideList();
-    long i, j;
-    bool found;
-    list->append(liste[0]->copying(false));
-    for (i = 1; i < liste.size(); i++) {
-        found = false;
-        for (j = 0; j < list->liste.size(); j++) {
-            if (liste[i]->unify(lisp, list->liste[j], false)) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+    long i;
+    std::set<u_ustring> values;
+    for (i = 0; i < liste.size(); i++) {
+        if (values.insert(liste[i]->asUString(lisp)).second)
             list->append(liste[i]->copying(false));
     }
     return list;
 }
 
+
 Element* LList::unique(LispE* lisp) {
     if (liste.empty())
         return this;
     
-    List* list = lisp->provideList();
-    bool found;
-    list->append(liste.front()->copying(false));
+    LList* list = new LList(liste.mark);
     u_link* it = liste.begin();
-    it = it->next();
+    std::set<u_ustring> values;
     for (;it != NULL; it = it->next()) {
-        found = false;
-        for (long j = 0; j < list->liste.size(); j++) {
-            if (it->value->unify(lisp, list->liste[j], false)) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-            list->append(it->value->copying(false));
+        if (values.insert(it->value->asUString(lisp)).second)
+            list->push_front(it->value->copying(false));
     }
     return list;
 }
@@ -3081,18 +2965,10 @@ Element* Numbers::unique(LispE* lisp) {
         return this;
     
     Numbers* nb = lisp->provideNumbers();
-    long i, j;
-    bool found;
-    nb->liste.push_back(liste[0]);
-    for (i = 1; i < liste.size(); i++) {
-        found = false;
-        for (j = 0; j < nb->liste.size(); j++) {
-            if (liste[i] == nb->liste[j]) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+    long i;
+    std::set<double> values;
+    for (i = 0; i < liste.size(); i++) {
+        if (values.insert(liste[i]).second)
             nb->liste.push_back(liste[i]);
     }
     return nb;
@@ -3673,18 +3549,10 @@ Element* Integers::unique(LispE* lisp) {
         return this;
     
     Integers* nb = lisp->provideIntegers();
-    long i, j;
-    bool found;
-    nb->liste.push_back(liste[0]);
-    for (i = 1; i < liste.size(); i++) {
-        found = false;
-        for (j = 0; j < nb->liste.size(); j++) {
-            if (liste[i] == nb->liste[j]) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+    long i;
+    std::set<long> values;
+    for (i = 0; i < liste.size(); i++) {
+        if (values.insert(liste[i]).second)
             nb->liste.push_back(liste[i]);
     }
     return nb;
@@ -4260,18 +4128,10 @@ Element* Strings::unique(LispE* lisp) {
         return this;
     
     Strings* nb = lisp->provideStrings();
-    long i, j;
-    bool found;
-    nb->liste.push_back(liste[0]);
-    for (i = 1; i < liste.size(); i++) {
-        found = false;
-        for (j = 0; j < nb->liste.size(); j++) {
-            if (liste[i] == nb->liste[j]) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+    long i;
+    std::set<u_ustring> values;
+    for (i = 0; i < liste.size(); i++) {
+        if (values.insert(liste[i]).second)
             nb->liste.push_back(liste[i]);
     }
     return nb;
@@ -5194,18 +5054,10 @@ Element* Shorts::unique(LispE* lisp) {
         return this;
     
     Shorts* nb = new Shorts();
-    long i, j;
-    bool found;
-    nb->liste.push_back(liste[0]);
-    for (i = 1; i < liste.size(); i++) {
-        found = false;
-        for (j = 0; j < nb->liste.size(); j++) {
-            if (liste[i] == nb->liste[j]) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+    long i;
+    std::set<int16_t> values;
+    for (i = 0; i < liste.size(); i++) {
+        if (values.insert(liste[i]).second)
             nb->liste.push_back(liste[i]);
     }
     return nb;
@@ -5805,18 +5657,10 @@ Element* Floats::unique(LispE* lisp) {
         return this;
     
     Floats* nb = lisp->provideFloats();
-    long i, j;
-    bool found;
-    nb->liste.push_back(liste[0]);
-    for (i = 1; i < liste.size(); i++) {
-        found = false;
-        for (j = 0; j < nb->liste.size(); j++) {
-            if (liste[i] == nb->liste[j]) {
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+    long i;
+    std::set<float> values;
+    for (i = 0; i < liste.size(); i++) {
+        if (values.insert(liste[i]).second)
             nb->liste.push_back(liste[i]);
     }
     return nb;
@@ -6920,7 +6764,7 @@ void List::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             append(value->copying(false));
             value->release();
         }
@@ -6958,7 +6802,7 @@ void LList::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             push_front(value->copying(false));
             value->release();
         }
@@ -7015,7 +6859,7 @@ void Integers::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             liste.push_back(value->asInteger());
             value->release();
         }
@@ -7053,7 +6897,7 @@ void Numbers::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             liste.push_back(value->asNumber());
             value->release();
         }
@@ -7091,7 +6935,7 @@ void Floats::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             liste.push_back(value->asFloat());
             value->release();
         }
@@ -7129,7 +6973,7 @@ void Shorts::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             liste.push_back(value->asShort());
             value->release();
         }
@@ -7167,7 +7011,7 @@ void Strings::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             liste.push_back(value->asUString(lisp));
             value->release();
         }
@@ -7641,4 +7485,5 @@ Element* LList::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
         
     return this;
 }
+
 

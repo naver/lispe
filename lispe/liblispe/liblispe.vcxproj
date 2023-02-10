@@ -179,6 +179,7 @@
     <ClCompile Include="..\..\src\rgx.cxx" />
     <ClCompile Include="..\..\src\sets.cxx" />
     <ClCompile Include="..\..\src\sockets.cxx" />
+    <ClCompile Include="..\..\src\straight_eval.cxx" />
     <ClCompile Include="..\..\src\strings.cxx" />
     <ClCompile Include="..\..\src\systems.cxx" />
     <ClCompile Include="..\..\src\tools.cxx" />

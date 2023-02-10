@@ -51,6 +51,30 @@ int16_t Element::function_label() {
     throw new Error("Error: Not a function or a data structure");
 }
 //------------------------------------------------------------------------------------------
+Element* Float::duplicate_constant(LispE* lisp) {
+    return !status?this:lisp->provideFloat(content);
+}
+
+Element* Number::duplicate_constant(LispE* lisp) {
+    return !status?this:lisp->provideNumber(content);
+}
+
+Element* Short::duplicate_constant(LispE* lisp) {
+    return !status?this:new Short(content);
+}
+
+Element* Complex::duplicate_constant(LispE* lisp) {
+    return !status?this:new Complex(content);
+}
+
+Element* Integer::duplicate_constant(LispE* lisp) {
+    return !status?this:lisp->provideInteger(content);
+}
+Element* String::duplicate_constant(LispE* lisp) {
+    return !status?this:lisp->provideString(content);
+}
+//------------------------------------------------------------------------------------------
+
 Element* Float::copyatom(LispE* lisp, uint16_t s) {
     return (status < s)?this:lisp->provideFloat(content);
 }
@@ -799,6 +823,16 @@ Element* Short::invert_sign(LispE* lisp) {
     return new Short(content * -1);
 }
 
+Element* Complex::invert_sign(LispE* lisp) {
+    if (!status) {
+        content *= -1;
+        return this;
+    }
+    std::complex<double> c(content);
+    c *= -1;
+    return new Complex(c);
+}
+
 Element* Integer::invert_sign(LispE* lisp) {
     if (!status) {
         content *= -1;
@@ -1231,7 +1265,7 @@ void String::push_element_true(LispE* lisp, List* l) {
     Element* value;
     for (long i = 2; i < l->size(); i++) {
         value = l->liste[i]->eval(lisp);
-        if (value != null_ && value != emptylist_) {
+        if (value->label() > 1) {
             content += value->asUString(lisp);
             value->release();
         }
@@ -1545,6 +1579,12 @@ Element* Short::reverse(LispE* lisp, bool duplicate) {
     return new Short(content*-1);
 }
 
+Element* Complex::reverse(LispE* lisp, bool duplicate) {
+    std::complex<double> c(content);
+    c *= -1;
+    return new Complex(c);
+}
+
 Element* Integer::reverse(LispE* lisp, bool duplicate) {
     return lisp->provideInteger(content*-1);
 }
@@ -1790,6 +1830,10 @@ Element* Short::equal(LispE* lisp, Element* e) {
     return booleans_[(e->isNumber() && content == e->asShort())];
 }
 
+Element* Complex::equal(LispE* lisp, Element* e) {
+    return booleans_[(e->type == t_complex && content == ((Complex*)e)->content)];
+}
+
 Element* Integer::equal(LispE* lisp, Element* e) {
     return booleans_[(e->isNumber() && content == e->asInteger())];
 }
@@ -1822,13 +1866,18 @@ bool Short::egal(Element* e) {
     return (e->isNumber() && content == e->asShort());
 }
 
+bool Complex::egal(Element* e) {
+   return (e->type == t_complex && content == ((Complex*)e)->content);
+}
+
+                      
 bool Integer::egal(Element* e) {
     return (e->isNumber() && content == e->asInteger());
 }
 
 //------------------------------------------------------------------------------------------
 Element* Element::less(LispE* lisp, Element* e) {
-    return false_;
+    return False_;
 }
 
 Element* Element::compare(LispE* lisp, Element* e) {
@@ -1836,15 +1885,15 @@ Element* Element::compare(LispE* lisp, Element* e) {
 }
 
 Element* Element::lessorequal(LispE* lisp, Element* e){
-    return false_;
+    return False_;
 }
 
 Element* Element::more(LispE* lisp, Element* e) {
-    return false_;
+    return False_;
 }
 
 Element* Element::moreorequal(LispE* lisp, Element* e) {
-    return false_;
+    return False_;
 }
 
 Element* String::less(LispE* lisp, Element* e) {
@@ -1927,14 +1976,46 @@ Element* Short::less(LispE* lisp, Element* e) {
     return booleans_[content < e->asShort()];
 }
 
+char compare_complex(std::complex<double>& c, std::complex<double>& v, char cmp) {
+    switch (cmp) {
+        case 0:
+            return (c.real() < v.real() && c.imag() < v.imag());
+        case 1:
+            return (c.real() <= v.real() && c.imag() <= v.imag());
+        case 2:
+            return (c.real() > v.real() && c.imag() > v.imag());
+        case 3:
+            return (c.real() >= v.real() && c.imag() >= v.imag());
+        default:
+            return ((c == v) + 2*(c.real() < v.real() && c.imag() < v.imag()));
+    }
+}
+
+Element* Complex::less(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 0) == -1];
+}
+
 Element* Short::compare(LispE* lisp, Element* e) {
     int16_t v = e->asShort();
     int16_t test = (content == v) + (content < v) * 2;
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
+Element* Complex::compare(LispE* lisp, Element* e) {
+    if (e->type == t_complex) {
+        int16_t test = compare_complex(content, ((Complex*)e)->content, 4);
+        return lisp->delegation->_COMPARE_BOOLEANS[test];
+    }
+    else
+        throw new Error("Error: cannot compare these values");
+}
+
 Element* Short::lessorequal(LispE* lisp, Element* e) {
     return booleans_[content <= e->asShort()];
+}
+
+Element* Complex::lessorequal(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 1) == -1];
 }
 
 Element* Integer::lessorequal(LispE* lisp, Element* e){
@@ -1953,8 +2034,16 @@ Element* Short::more(LispE* lisp, Element* e) {
     return booleans_[content > e->asShort()];
 }
 
+Element* Complex::more(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 2) == -1];
+}
+
 Element* Short::moreorequal(LispE* lisp, Element* e) {
     return booleans_[content >= e->asShort()];
+}
+
+Element* Complex::moreorequal(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 3) == -1];
 }
 
 //------------------------------------------------------------------------------------------
@@ -2464,17 +2553,16 @@ Element* Element::asList(LispE* lisp, List* l) {
 
 Element* String::asList(LispE* lisp, List* courant) {
     Tokenizer parse;
-    string code = toString(lisp);
     
     parse.asList = true;
-    lisp_code retour = lisp->segmenting(code, parse);
+    lisp_code retour = lisp->segmenting(content, parse);
     if (!parse.tokens.size())
         return emptylist_;
     
     long index = 0;
     switch (retour) {
         case e_error_brace:
-            throw new Error("Error: Braces do not balance");
+            throw new Error("Error: braces do not balance");
         case e_error_bracket:
             throw new Error("Error: brackets do not balance");
         case e_error_parenthesis:

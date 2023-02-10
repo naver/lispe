@@ -357,7 +357,7 @@ public:
             buff += MAXSIZEINPUT;
             sz -= MAXSIZEINPUT;
         }
-        return true_;
+        return True_;
     }
 
     void Close() {
@@ -383,13 +383,13 @@ public:
             closesock(socketclient);
             if (socketclients.find(socketclient) != socketclients.end())
                 socketclients.erase(socketclient);
-            return true_;
+            return True_;
         }
         //otherwise we clean the current socket
         if (hp != NULL && sock != SOCKET_ERROR)
             closesock(sock);
         hp = NULL;
-        return true_;
+        return True_;
     }
     
     Element* methodBlocking(LispE* lisp, bool blocking) {
@@ -408,7 +408,7 @@ public:
             flags &= ~O_NONBLOCK;
         fcntl(sock, F_SETFL, flags);
 #endif
-        return true_;
+        return True_;
     }
     
     Element* methodTimeout(LispE* lisp, int v_timeout) {
@@ -416,7 +416,7 @@ public:
         //In our example, we have only two parameters
         if (v_timeout == -1) {
             timeout = false;
-            return true_;
+            return True_;
         }
         //We create our timeout
         tv.tv_sec = v_timeout;
@@ -424,7 +424,7 @@ public:
         timeout = true;
         FD_ZERO(&readfds);
         FD_ZERO(&writefds);
-        return true_;
+        return True_;
     }
     
     Element* methodGethostname(LispE* lisp) {
@@ -490,7 +490,7 @@ public:
         len = sizeof(servAddr);
         
         
-        return true_;
+        return True_;
     }
     
     bool testTimeOutRead(SOCKET currentsock) {
@@ -600,7 +600,7 @@ public:
                     throw new Error(errmessage);
                 }
         }
-        return true_;
+        return True_;
     }
 };
 #ifdef WIN32

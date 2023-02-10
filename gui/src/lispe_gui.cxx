@@ -119,34 +119,8 @@ static void timeout_callback(void *data) {
     if (doublewnd == NULL || !wnd->check())
         return;
 
-    LispE* lisp = doublewnd->lisp;
-
-    List* call = lisp->provideCall(wnd->function, 2);
-
-    call->in_quote(1, wnd);
-    call->in_quote(2, wnd->object);
-
-    Element* res = null_;
-    try {
-        res = call->eval(lisp);
-    }
-    catch (Error* err) {
-        string val = err->toString(lisp);
-        val += " (time_out)\n";
-        lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-        err->release();
-        call->release();
-        return;
-    }
-
-
-    call->release();
-    double i = res->asNumber();
-    res->release();
-    if (i <= 0 || stopall)
-        return;
     doublewnd->redraw();
-    Fl::repeat_timeout(i, timeout_callback, data);
+    Fl::repeat_timeout(wnd->time_value, timeout_callback, data);
 }
 
 static void fltk_callback(Fl_Widget *w, void *data) {
@@ -858,16 +832,22 @@ Element* Fltk_widget::plot(LispE* lisp) {
         Element* a;
         for (i = 0; i < sz; i++) {
             a = points->index(i);
-            if (!a->isList() || a->size() != 2) {
+            if (!a->isList() || (a->size() != 2 && a->size() != 3)) {
                 fv->release();
                 throw new Error(L"WND(871): The vector should contain vectors of two elements.");
             }
 
             x = a->index(0)->asNumber();
             y = a->index(1)->asNumber();
+                
 
             fv->liste.push_back(x);
             fv->liste.push_back(y);
+            if (a->size() == 3)
+                fv->liste.push_back(a->index(2)->asNumber());
+            else
+                fv->liste.push_back(-1);
+            
             if (!action) {
                 if (!i) {
                     maxX = x;
@@ -932,13 +912,18 @@ Element* Fltk_widget::plot(LispE* lisp) {
         incx = (maxx - minx) / (maxX - minX);
         incy = (maxy - miny) / (maxY - minY);
     }
-
-    for (i = 0; i < sz; i += 2) {
+    
+    int point_color;
+    
+    for (i = 0; i < sz; i += 3) {
         x = table->index(i)->asNumber();
         y = table->index(i + 1)->asNumber();
-
+        point_color = table->index(i + 2)->asInt();
         x = minx + incx*x - incx*minX;
         y = miny + maxy - incy*y + incy*minY;
+        if (point_color != -1)
+            fl_color((unsigned int)point_color);
+        
         if (!thickness) {
             if (i) {
                 locking(lisp);
@@ -1530,8 +1515,8 @@ void Doublewindow::draw() {
         call->in_quote(1, fltk_window);
         call->in_quote(2, fltk_window->object);
         Element* res = null_;
-        try {
             res = call->eval(lisp);
+        try {
         }
         catch (Error* err) {
             string val = err->toString(lisp);
@@ -1977,117 +1962,117 @@ Exporting bool InitialisationModule(LispE* lisp) {
     nom = U"fltk_gif_image_";
     fltk_type_gif = lisp->encode(nom);
 
-    lisp->storing_global(U"FL_FOREGROUND_COLOR", lisp->provideInteger(FL_FOREGROUND_COLOR));
-    lisp->storing_global(U"FL_BACKGROUND2_COLOR", lisp->provideInteger(FL_BACKGROUND2_COLOR));
-    lisp->storing_global(U"FL_BACKGROUND_COLOR", lisp->provideInteger(FL_BACKGROUND_COLOR));
-    lisp->storing_global(U"FL_INACTIVE_COLOR", lisp->provideInteger(FL_INACTIVE_COLOR));
-    lisp->storing_global(U"FL_SELECTION_COLOR", lisp->provideInteger(FL_SELECTION_COLOR));
-    lisp->storing_global(U"FL_GRAY0", lisp->provideInteger(FL_GRAY0));
-    lisp->storing_global(U"FL_DARK3", lisp->provideInteger(FL_DARK3));
-    lisp->storing_global(U"FL_DARK2", lisp->provideInteger(FL_DARK2));
-    lisp->storing_global(U"FL_DARK1", lisp->provideInteger(FL_DARK1));
-    lisp->storing_global(U"FL_LIGHT1", lisp->provideInteger(FL_LIGHT1));
-    lisp->storing_global(U"FL_LIGHT2", lisp->provideInteger(FL_LIGHT2));
-    lisp->storing_global(U"FL_LIGHT3", lisp->provideInteger(FL_LIGHT3));
-    lisp->storing_global(U"FL_BLACK", lisp->provideInteger(FL_BLACK));
-    lisp->storing_global(U"FL_RED", lisp->provideInteger(FL_RED));
-    lisp->storing_global(U"FL_GREEN", lisp->provideInteger(FL_GREEN));
-    lisp->storing_global(U"FL_YELLOW", lisp->provideInteger(FL_YELLOW));
-    lisp->storing_global(U"FL_BLUE", lisp->provideInteger(FL_BLUE));
-    lisp->storing_global(U"FL_MAGENTA", lisp->provideInteger(FL_MAGENTA));
-    lisp->storing_global(U"FL_CYAN", lisp->provideInteger(FL_CYAN));
-    lisp->storing_global(U"FL_DARK_RED", lisp->provideInteger(FL_DARK_RED));
-    lisp->storing_global(U"FL_DARK_GREEN", lisp->provideInteger(FL_DARK_GREEN));
-    lisp->storing_global(U"FL_DARK_YELLOW", lisp->provideInteger(FL_DARK_YELLOW));
-    lisp->storing_global(U"FL_DARK_BLUE", lisp->provideInteger(FL_DARK_BLUE));
-    lisp->storing_global(U"FL_DARK_MAGENTA", lisp->provideInteger(FL_DARK_MAGENTA));
-    lisp->storing_global(U"FL_DARK_CYAN", lisp->provideInteger(FL_DARK_CYAN));
-    lisp->storing_global(U"FL_WHITE", lisp->provideInteger(FL_WHITE));
+    lisp->storing_global(U"FL_FOREGROUND_COLOR", lisp->provideConstinteger(FL_FOREGROUND_COLOR));
+    lisp->storing_global(U"FL_BACKGROUND2_COLOR", lisp->provideConstinteger(FL_BACKGROUND2_COLOR));
+    lisp->storing_global(U"FL_BACKGROUND_COLOR", lisp->provideConstinteger(FL_BACKGROUND_COLOR));
+    lisp->storing_global(U"FL_INACTIVE_COLOR", lisp->provideConstinteger(FL_INACTIVE_COLOR));
+    lisp->storing_global(U"FL_SELECTION_COLOR", lisp->provideConstinteger(FL_SELECTION_COLOR));
+    lisp->storing_global(U"FL_GRAY0", lisp->provideConstinteger(FL_GRAY0));
+    lisp->storing_global(U"FL_DARK3", lisp->provideConstinteger(FL_DARK3));
+    lisp->storing_global(U"FL_DARK2", lisp->provideConstinteger(FL_DARK2));
+    lisp->storing_global(U"FL_DARK1", lisp->provideConstinteger(FL_DARK1));
+    lisp->storing_global(U"FL_LIGHT1", lisp->provideConstinteger(FL_LIGHT1));
+    lisp->storing_global(U"FL_LIGHT2", lisp->provideConstinteger(FL_LIGHT2));
+    lisp->storing_global(U"FL_LIGHT3", lisp->provideConstinteger(FL_LIGHT3));
+    lisp->storing_global(U"FL_BLACK", lisp->provideConstinteger(FL_BLACK));
+    lisp->storing_global(U"FL_RED", lisp->provideConstinteger(FL_RED));
+    lisp->storing_global(U"FL_GREEN", lisp->provideConstinteger(FL_GREEN));
+    lisp->storing_global(U"FL_YELLOW", lisp->provideConstinteger(FL_YELLOW));
+    lisp->storing_global(U"FL_BLUE", lisp->provideConstinteger(FL_BLUE));
+    lisp->storing_global(U"FL_MAGENTA", lisp->provideConstinteger(FL_MAGENTA));
+    lisp->storing_global(U"FL_CYAN", lisp->provideConstinteger(FL_CYAN));
+    lisp->storing_global(U"FL_DARK_RED", lisp->provideConstinteger(FL_DARK_RED));
+    lisp->storing_global(U"FL_DARK_GREEN", lisp->provideConstinteger(FL_DARK_GREEN));
+    lisp->storing_global(U"FL_DARK_YELLOW", lisp->provideConstinteger(FL_DARK_YELLOW));
+    lisp->storing_global(U"FL_DARK_BLUE", lisp->provideConstinteger(FL_DARK_BLUE));
+    lisp->storing_global(U"FL_DARK_MAGENTA", lisp->provideConstinteger(FL_DARK_MAGENTA));
+    lisp->storing_global(U"FL_DARK_CYAN", lisp->provideConstinteger(FL_DARK_CYAN));
+    lisp->storing_global(U"FL_WHITE", lisp->provideConstinteger(FL_WHITE));
 
-    lisp->storing_global(U"FL_SOLID",lisp->provideInteger(FL_SOLID));
-    lisp->storing_global(U"FL_DASH",lisp->provideInteger(FL_DASH));
-    lisp->storing_global(U"FL_DOT",lisp->provideInteger(FL_DOT));
-    lisp->storing_global(U"FL_DASHDOT",lisp->provideInteger(FL_DASHDOT));
-    lisp->storing_global(U"FL_DASHDOTDOT",lisp->provideInteger(FL_DASHDOTDOT));
-    lisp->storing_global(U"FL_CAP_FLAT",lisp->provideInteger(FL_CAP_FLAT));
-    lisp->storing_global(U"FL_CAP_ROUND",lisp->provideInteger(FL_CAP_ROUND));
-    lisp->storing_global(U"FL_CAP_SQUARE",lisp->provideInteger(FL_CAP_SQUARE));
-    lisp->storing_global(U"FL_JOIN_MITER",lisp->provideInteger(FL_JOIN_MITER));
-    lisp->storing_global(U"FL_JOIN_ROUND",lisp->provideInteger(FL_JOIN_ROUND));
-    lisp->storing_global(U"FL_JOIN_BEVEL",lisp->provideInteger(FL_JOIN_BEVEL));
+    lisp->storing_global(U"FL_SOLID",lisp->provideConstinteger(FL_SOLID));
+    lisp->storing_global(U"FL_DASH",lisp->provideConstinteger(FL_DASH));
+    lisp->storing_global(U"FL_DOT",lisp->provideConstinteger(FL_DOT));
+    lisp->storing_global(U"FL_DASHDOT",lisp->provideConstinteger(FL_DASHDOT));
+    lisp->storing_global(U"FL_DASHDOTDOT",lisp->provideConstinteger(FL_DASHDOTDOT));
+    lisp->storing_global(U"FL_CAP_FLAT",lisp->provideConstinteger(FL_CAP_FLAT));
+    lisp->storing_global(U"FL_CAP_ROUND",lisp->provideConstinteger(FL_CAP_ROUND));
+    lisp->storing_global(U"FL_CAP_SQUARE",lisp->provideConstinteger(FL_CAP_SQUARE));
+    lisp->storing_global(U"FL_JOIN_MITER",lisp->provideConstinteger(FL_JOIN_MITER));
+    lisp->storing_global(U"FL_JOIN_ROUND",lisp->provideConstinteger(FL_JOIN_ROUND));
+    lisp->storing_global(U"FL_JOIN_BEVEL",lisp->provideConstinteger(FL_JOIN_BEVEL));
 
-    lisp->storing_global(U"FL_VERT_SLIDER", lisp->provideInteger(FL_VERT_SLIDER));
-    lisp->storing_global(U"FL_HOR_SLIDER", lisp->provideInteger(FL_HOR_SLIDER));
-    lisp->storing_global(U"FL_VERT_FILL_SLIDER", lisp->provideInteger(FL_VERT_FILL_SLIDER));
-    lisp->storing_global(U"FL_HOR_FILL_SLIDER", lisp->provideInteger(FL_HOR_FILL_SLIDER));
-    lisp->storing_global(U"FL_VERT_NICE_SLIDER", lisp->provideInteger(FL_VERT_NICE_SLIDER));
-    lisp->storing_global(U"FL_HOR_NICE_SLIDER", lisp->provideInteger(FL_HOR_NICE_SLIDER));
+    lisp->storing_global(U"FL_VERT_SLIDER", lisp->provideConstinteger(FL_VERT_SLIDER));
+    lisp->storing_global(U"FL_HOR_SLIDER", lisp->provideConstinteger(FL_HOR_SLIDER));
+    lisp->storing_global(U"FL_VERT_FILL_SLIDER", lisp->provideConstinteger(FL_VERT_FILL_SLIDER));
+    lisp->storing_global(U"FL_HOR_FILL_SLIDER", lisp->provideConstinteger(FL_HOR_FILL_SLIDER));
+    lisp->storing_global(U"FL_VERT_NICE_SLIDER", lisp->provideConstinteger(FL_VERT_NICE_SLIDER));
+    lisp->storing_global(U"FL_HOR_NICE_SLIDER", lisp->provideConstinteger(FL_HOR_NICE_SLIDER));
 
-    lisp->storing_global(U"FL_HELVETICA", lisp->provideInteger(0));
-    lisp->storing_global(U"FL_HELVETICA_BOLD", lisp->provideInteger(1));
-    lisp->storing_global(U"FL_HELVETICA_ITALIC", lisp->provideInteger(2));
-    lisp->storing_global(U"FL_HELVETICA_BOLD_ITALIC", lisp->provideInteger(3));
-    lisp->storing_global(U"FL_COURIER", lisp->provideInteger(4));
-    lisp->storing_global(U"FL_COURIER_BOLD", lisp->provideInteger(5));
-    lisp->storing_global(U"FL_COURIER_ITALIC", lisp->provideInteger(6));
-    lisp->storing_global(U"FL_COURIER_BOLD_ITALIC", lisp->provideInteger(7));
-    lisp->storing_global(U"FL_TIMES", lisp->provideInteger(8));
-    lisp->storing_global(U"FL_TIMES_BOLD", lisp->provideInteger(9));
-    lisp->storing_global(U"FL_TIMES_ITALIC", lisp->provideInteger(10));
-    lisp->storing_global(U"FL_TIMES_BOLD_ITALIC", lisp->provideInteger(11));
-    lisp->storing_global(U"FL_SYMBOL", lisp->provideInteger(12));
-    lisp->storing_global(U"FL_SCREEN", lisp->provideInteger(13));
-    lisp->storing_global(U"FL_SCREEN_BOLD", lisp->provideInteger(14));
-    lisp->storing_global(U"FL_ZAPF_DINGBATS", lisp->provideInteger(15));
-    lisp->storing_global(U"FL_FREE_FONT", lisp->provideInteger(16));
-    lisp->storing_global(U"FL_BOLD", lisp->provideInteger(1));
-    lisp->storing_global(U"FL_ITALIC", lisp->provideInteger(2));
-    lisp->storing_global(U"FL_BOLD_ITALIC", lisp->provideInteger(3));
+    lisp->storing_global(U"FL_HELVETICA", lisp->provideConstinteger(0));
+    lisp->storing_global(U"FL_HELVETICA_BOLD", lisp->provideConstinteger(1));
+    lisp->storing_global(U"FL_HELVETICA_ITALIC", lisp->provideConstinteger(2));
+    lisp->storing_global(U"FL_HELVETICA_BOLD_ITALIC", lisp->provideConstinteger(3));
+    lisp->storing_global(U"FL_COURIER", lisp->provideConstinteger(4));
+    lisp->storing_global(U"FL_COURIER_BOLD", lisp->provideConstinteger(5));
+    lisp->storing_global(U"FL_COURIER_ITALIC", lisp->provideConstinteger(6));
+    lisp->storing_global(U"FL_COURIER_BOLD_ITALIC", lisp->provideConstinteger(7));
+    lisp->storing_global(U"FL_TIMES", lisp->provideConstinteger(8));
+    lisp->storing_global(U"FL_TIMES_BOLD", lisp->provideConstinteger(9));
+    lisp->storing_global(U"FL_TIMES_ITALIC", lisp->provideConstinteger(10));
+    lisp->storing_global(U"FL_TIMES_BOLD_ITALIC", lisp->provideConstinteger(11));
+    lisp->storing_global(U"FL_SYMBOL", lisp->provideConstinteger(12));
+    lisp->storing_global(U"FL_SCREEN", lisp->provideConstinteger(13));
+    lisp->storing_global(U"FL_SCREEN_BOLD", lisp->provideConstinteger(14));
+    lisp->storing_global(U"FL_ZAPF_DINGBATS", lisp->provideConstinteger(15));
+    lisp->storing_global(U"FL_FREE_FONT", lisp->provideConstinteger(16));
+    lisp->storing_global(U"FL_BOLD", lisp->provideConstinteger(1));
+    lisp->storing_global(U"FL_ITALIC", lisp->provideConstinteger(2));
+    lisp->storing_global(U"FL_BOLD_ITALIC", lisp->provideConstinteger(3));
 
-    lisp->storing_global(U"FL_REGULAR_BUTTON_TYPE", lisp->provideInteger(0));
-    lisp->storing_global(U"FL_CHECK_BUTTON_TYPE", lisp->provideInteger(1));
-    lisp->storing_global(U"FL_LIGHT_BUTTON_TYPE", lisp->provideInteger(2));
-    lisp->storing_global(U"FL_REPEAT_BUTTON_TYPE", lisp->provideInteger(3));
-    lisp->storing_global(U"FL_RETURN_BUTTON_TYPE", lisp->provideInteger(4));
-    lisp->storing_global(U"FL_ROUND_BUTTON_TYPE", lisp->provideInteger(5));
-    lisp->storing_global(U"FL_IMAGE_BUTTON_TYPE", lisp->provideInteger(6));
+    lisp->storing_global(U"FL_REGULAR_BUTTON_TYPE", lisp->provideConstinteger(0));
+    lisp->storing_global(U"FL_CHECK_BUTTON_TYPE", lisp->provideConstinteger(1));
+    lisp->storing_global(U"FL_LIGHT_BUTTON_TYPE", lisp->provideConstinteger(2));
+    lisp->storing_global(U"FL_REPEAT_BUTTON_TYPE", lisp->provideConstinteger(3));
+    lisp->storing_global(U"FL_RETURN_BUTTON_TYPE", lisp->provideConstinteger(4));
+    lisp->storing_global(U"FL_ROUND_BUTTON_TYPE", lisp->provideConstinteger(5));
+    lisp->storing_global(U"FL_IMAGE_BUTTON_TYPE", lisp->provideConstinteger(6));
 
-    lisp->storing_global(U"FL_NORMAL_BUTTON_SHAPE", lisp->provideInteger(FL_NORMAL_BUTTON));
-    lisp->storing_global(U"FL_TOGGLE_BUTTON_SHAPE", lisp->provideInteger(FL_TOGGLE_BUTTON));
-    lisp->storing_global(U"FL_RADIO_BUTTON_SHAPE", lisp->provideInteger(FL_RADIO_BUTTON));
-    lisp->storing_global(U"FL_HIDDEN_BUTTON_SHAPE", lisp->provideInteger(FL_HIDDEN_BUTTON));
+    lisp->storing_global(U"FL_NORMAL_BUTTON_SHAPE", lisp->provideConstinteger(FL_NORMAL_BUTTON));
+    lisp->storing_global(U"FL_TOGGLE_BUTTON_SHAPE", lisp->provideConstinteger(FL_TOGGLE_BUTTON));
+    lisp->storing_global(U"FL_RADIO_BUTTON_SHAPE", lisp->provideConstinteger(FL_RADIO_BUTTON));
+    lisp->storing_global(U"FL_HIDDEN_BUTTON_SHAPE", lisp->provideConstinteger(FL_HIDDEN_BUTTON));
 
-    lisp->storing_global(U"FL_WHEN_NEVER", lisp->provideInteger(FL_WHEN_NEVER));
-    lisp->storing_global(U"FL_WHEN_CHANGED", lisp->provideInteger(FL_WHEN_CHANGED));
-    lisp->storing_global(U"FL_WHEN_RELEASE", lisp->provideInteger(FL_WHEN_RELEASE));
-    lisp->storing_global(U"FL_WHEN_RELEASE_ALWAYS", lisp->provideInteger(FL_WHEN_RELEASE_ALWAYS));
-    lisp->storing_global(U"FL_WHEN_ENTER_KEY", lisp->provideInteger(FL_WHEN_ENTER_KEY));
-    lisp->storing_global(U"FL_WHEN_ENTER_KEY_ALWAYS", lisp->provideInteger(FL_WHEN_ENTER_KEY_ALWAYS));
+    lisp->storing_global(U"FL_WHEN_NEVER", lisp->provideConstinteger(FL_WHEN_NEVER));
+    lisp->storing_global(U"FL_WHEN_CHANGED", lisp->provideConstinteger(FL_WHEN_CHANGED));
+    lisp->storing_global(U"FL_WHEN_RELEASE", lisp->provideConstinteger(FL_WHEN_RELEASE));
+    lisp->storing_global(U"FL_WHEN_RELEASE_ALWAYS", lisp->provideConstinteger(FL_WHEN_RELEASE_ALWAYS));
+    lisp->storing_global(U"FL_WHEN_ENTER_KEY", lisp->provideConstinteger(FL_WHEN_ENTER_KEY));
+    lisp->storing_global(U"FL_WHEN_ENTER_KEY_ALWAYS", lisp->provideConstinteger(FL_WHEN_ENTER_KEY_ALWAYS));
 
-    lisp->storing_global(U"FL_ALIGN_CENTER", lisp->provideInteger(FL_ALIGN_CENTER));
-    lisp->storing_global(U"FL_ALIGN_TOP", lisp->provideInteger(FL_ALIGN_TOP));
-    lisp->storing_global(U"FL_ALIGN_BOTTOM", lisp->provideInteger(FL_ALIGN_BOTTOM));
-    lisp->storing_global(U"FL_ALIGN_LEFT", lisp->provideInteger(FL_ALIGN_LEFT));
-    lisp->storing_global(U"FL_ALIGN_RIGHT", lisp->provideInteger(FL_ALIGN_RIGHT));
-    lisp->storing_global(U"FL_ALIGN_INSIDE", lisp->provideInteger(FL_ALIGN_INSIDE));
-    lisp->storing_global(U"FL_ALIGN_TEXT_OVER_IMAGE", lisp->provideInteger(FL_ALIGN_TEXT_OVER_IMAGE));
-    lisp->storing_global(U"FL_ALIGN_IMAGE_OVER_TEXT", lisp->provideInteger(FL_ALIGN_IMAGE_OVER_TEXT));
-    lisp->storing_global(U"FL_ALIGN_CLIP", lisp->provideInteger(FL_ALIGN_CLIP));
-    lisp->storing_global(U"FL_ALIGN_WRAP", lisp->provideInteger(FL_ALIGN_WRAP));
-    lisp->storing_global(U"FL_ALIGN_IMAGE_NEXT_TO_TEXT", lisp->provideInteger(FL_ALIGN_IMAGE_NEXT_TO_TEXT));
-    lisp->storing_global(U"FL_ALIGN_TEXT_NEXT_TO_IMAGE", lisp->provideInteger(FL_ALIGN_TEXT_NEXT_TO_IMAGE));
-    lisp->storing_global(U"FL_ALIGN_IMAGE_BACKDROP", lisp->provideInteger(FL_ALIGN_IMAGE_BACKDROP));
-    lisp->storing_global(U"FL_ALIGN_TOP_LEFT", lisp->provideInteger(FL_ALIGN_TOP_LEFT));
-    lisp->storing_global(U"FL_ALIGN_TOP_RIGHT", lisp->provideInteger(FL_ALIGN_TOP_RIGHT));
-    lisp->storing_global(U"FL_ALIGN_BOTTOM_LEFT", lisp->provideInteger(FL_ALIGN_BOTTOM_LEFT));
-    lisp->storing_global(U"FL_ALIGN_BOTTOM_RIGHT", lisp->provideInteger(FL_ALIGN_BOTTOM_RIGHT));
-    lisp->storing_global(U"FL_ALIGN_LEFT_TOP", lisp->provideInteger(FL_ALIGN_LEFT_TOP));
-    lisp->storing_global(U"FL_ALIGN_RIGHT_TOP", lisp->provideInteger(FL_ALIGN_RIGHT_TOP));
-    lisp->storing_global(U"FL_ALIGN_LEFT_BOTTOM", lisp->provideInteger(FL_ALIGN_LEFT_BOTTOM));
-    lisp->storing_global(U"FL_ALIGN_RIGHT_BOTTOM", lisp->provideInteger(FL_ALIGN_RIGHT_BOTTOM));
-    lisp->storing_global(U"FL_ALIGN_NOWRAP", lisp->provideInteger(FL_ALIGN_NOWRAP));
-    lisp->storing_global(U"FL_ALIGN_POSITION_MASK", lisp->provideInteger(FL_ALIGN_POSITION_MASK));
-    lisp->storing_global(U"FL_ALIGN_IMAGE_MASK", lisp->provideInteger(FL_ALIGN_IMAGE_MASK));
+    lisp->storing_global(U"FL_ALIGN_CENTER", lisp->provideConstinteger(FL_ALIGN_CENTER));
+    lisp->storing_global(U"FL_ALIGN_TOP", lisp->provideConstinteger(FL_ALIGN_TOP));
+    lisp->storing_global(U"FL_ALIGN_BOTTOM", lisp->provideConstinteger(FL_ALIGN_BOTTOM));
+    lisp->storing_global(U"FL_ALIGN_LEFT", lisp->provideConstinteger(FL_ALIGN_LEFT));
+    lisp->storing_global(U"FL_ALIGN_RIGHT", lisp->provideConstinteger(FL_ALIGN_RIGHT));
+    lisp->storing_global(U"FL_ALIGN_INSIDE", lisp->provideConstinteger(FL_ALIGN_INSIDE));
+    lisp->storing_global(U"FL_ALIGN_TEXT_OVER_IMAGE", lisp->provideConstinteger(FL_ALIGN_TEXT_OVER_IMAGE));
+    lisp->storing_global(U"FL_ALIGN_IMAGE_OVER_TEXT", lisp->provideConstinteger(FL_ALIGN_IMAGE_OVER_TEXT));
+    lisp->storing_global(U"FL_ALIGN_CLIP", lisp->provideConstinteger(FL_ALIGN_CLIP));
+    lisp->storing_global(U"FL_ALIGN_WRAP", lisp->provideConstinteger(FL_ALIGN_WRAP));
+    lisp->storing_global(U"FL_ALIGN_IMAGE_NEXT_TO_TEXT", lisp->provideConstinteger(FL_ALIGN_IMAGE_NEXT_TO_TEXT));
+    lisp->storing_global(U"FL_ALIGN_TEXT_NEXT_TO_IMAGE", lisp->provideConstinteger(FL_ALIGN_TEXT_NEXT_TO_IMAGE));
+    lisp->storing_global(U"FL_ALIGN_IMAGE_BACKDROP", lisp->provideConstinteger(FL_ALIGN_IMAGE_BACKDROP));
+    lisp->storing_global(U"FL_ALIGN_TOP_LEFT", lisp->provideConstinteger(FL_ALIGN_TOP_LEFT));
+    lisp->storing_global(U"FL_ALIGN_TOP_RIGHT", lisp->provideConstinteger(FL_ALIGN_TOP_RIGHT));
+    lisp->storing_global(U"FL_ALIGN_BOTTOM_LEFT", lisp->provideConstinteger(FL_ALIGN_BOTTOM_LEFT));
+    lisp->storing_global(U"FL_ALIGN_BOTTOM_RIGHT", lisp->provideConstinteger(FL_ALIGN_BOTTOM_RIGHT));
+    lisp->storing_global(U"FL_ALIGN_LEFT_TOP", lisp->provideConstinteger(FL_ALIGN_LEFT_TOP));
+    lisp->storing_global(U"FL_ALIGN_RIGHT_TOP", lisp->provideConstinteger(FL_ALIGN_RIGHT_TOP));
+    lisp->storing_global(U"FL_ALIGN_LEFT_BOTTOM", lisp->provideConstinteger(FL_ALIGN_LEFT_BOTTOM));
+    lisp->storing_global(U"FL_ALIGN_RIGHT_BOTTOM", lisp->provideConstinteger(FL_ALIGN_RIGHT_BOTTOM));
+    lisp->storing_global(U"FL_ALIGN_NOWRAP", lisp->provideConstinteger(FL_ALIGN_NOWRAP));
+    lisp->storing_global(U"FL_ALIGN_POSITION_MASK", lisp->provideConstinteger(FL_ALIGN_POSITION_MASK));
+    lisp->storing_global(U"FL_ALIGN_IMAGE_MASK", lisp->provideConstinteger(FL_ALIGN_IMAGE_MASK));
 
     lisp->extension("deflib fltk_create (x y w h label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create));
     lisp->extension("deflib fltk_create_resizable (x y label (function) (object))", new Lispe_gui(lisp, fltk_gui, fltk_widget, fltk_create_resizable));

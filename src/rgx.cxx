@@ -1026,8 +1026,8 @@ public:
 
     Element* match(LispE* lisp, u_ustring& w) {
         if (au.match(w))
-            return true_;
-        return false_;
+            return True_;
+        return False_;
     }
 
     Element* replace(LispE* lisp, u_ustring& w, u_ustring& rep) {
@@ -1196,8 +1196,8 @@ public:
     
     Element* match(LispE* lisp, wstring& w) {
         if (regex_match(w,*au) == true)
-            return true_;
-        return false_;
+            return True_;
+        return False_;
     }
     
     Element* replace(LispE* lisp, wstring& w, wstring& rep) {

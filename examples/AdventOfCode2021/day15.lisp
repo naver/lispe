@@ -1,4 +1,3 @@
-
 ;Date: 21/01/2022
 ;Author: Claude Roux
 ;Description: Jour15 bis
@@ -138,7 +137,14 @@
 (setq dmx (- (@ dm 0) 1))
 (setq dmy (- (@ dm 1) 1))
 
-(println 'part2 (elapse (calcul_risque carte)))
+(println 'part2 (calcul_risque carte))
+
+
+
+
+
+
+
 
 
 

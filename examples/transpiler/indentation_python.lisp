@@ -1,6 +1,6 @@
 ;Date: 06/08/2022
 ;Author: Claude Roux
-;Description: We add a end# when an indented structure ends
+;Description: We add a end# where an indented structure ends
 
 
 (defmacro espace(x) (size (takelist (\(c) (eq c " ")) x)))
@@ -79,4 +79,5 @@
 (loop r v
    (println r)
 )
+
 

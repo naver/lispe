@@ -18,244 +18,19 @@
 #include "tools.h"
 #include "rgx.h"
 #include "tokens.h"
-//#include "basicn.h"
 
-//This extension is done in two steps
-
-#ifdef WIN32
-#define wset(x, y) x[0] = y[0]; x[1] = y[1];
-#define waddtoken(tok, c, itok) tok[itok++] = c[0]; if (c[1]) tok[itok++] =  c[1]; tok[itok] = 0
-#else
-#define wset(x, y) x[0] = y[0]
-#define waddtoken(tok, c, itok) tok[itok++] = c[0]; tok[itok] = 0
-#endif
-
-char x_tokens::loop(u_ustring& toparse, int16_t i, u_uchar* token, u_uchar* chr, long& itoken, int16_t& r, long& l, long& posc) {
-    long sz;
-    int16_t type;
-    
-    vector<int16_t>& element = ruleelements[i];
-    int16_t* closed = closing[i];
-    vector<u_ustring>& rule = tokenizer[i];
-
-    sz = rule.size();
-    
-    for (;r<sz;r++) {
-        type=element[r];
-        if (r && (type & xr_optionality)) {
-            if (verif(type,xr_endoptional))
-                return true;
-            
-            if (verif(type,xr_optional)) {
-                long ps = posc;
-                long itok =  itoken;
-                int16_t rr = r + 1;
-                if (loop(toparse, i, token, chr, itok, rr, l, ps)) {
-                    if (verif(element[rr],xr_plus))//if we can loop, we try...
-                        r--;
-                    else
-                        r = rr;
-                    itoken = itok;
-                    posc = ps;
-                    continue;
-                }
-                
-                token[itoken] = 0;
-         
-                //we need to find the closing parenthesis
-                r = closed[r];
-                continue;
-            }
-        }
-        
-        u_ustring& label = rule[r];
-        
-        switch(check(label,type, chr)) {
-            case 0:
-                if (!r && verif(type,xr_char))
-                    return 2;
-                return false;
-            case 2:
-                waddtoken(token,chr,itoken);
-                getnext(toparse,chr,posc,l);
-        }
-
-        if (!verif(type,xr_skip)) //do not store this character
-            waddtoken(token,chr,itoken);
-        
-        getnext(toparse,chr,posc,l);
-
-        if (verif(type,xr_singlebody)) //this is a single body rule, we can stop here...
-            return true;
-
-        if (verif(type,xr_plus)) {
-            int16_t nxt = 0;
-            int16_t ni = 0;
-            //We then try to find the first actual character to stop at when traversing the RGX
-            if (verif(type,xr_neednext)) {
-                ni=r+1;
-                while (ni<sz) {
-                    if (!(element[ni] & xr_metachar))
-                        break;
-                    nxt++;
-                    ni++;
-                }
-            }
-
-            int16_t esc_char = check(label,type,chr);
-            
-            while (esc_char) {
-                if (esc_char==2) {
-                    waddtoken(token,chr,itoken);
-                    getnext(toparse,chr,posc,l); //the next character should be copied without further analysis
-                }
-                else {
-                    if (nxt) {
-                        if (check(rule[r + 1], element[r + 1], chr)) {
-                            if (nxt==1)
-                                break;
-                            
-                            long cp = posc;
-                            u_uchar cc[] = {0,0,0};
-                            getnext(toparse, cc, cp);
-                            bool found = true;
-                            for (int16_t k = r+2; k < ni; k++) {
-                                if (!check(rule[k],element[k],cc)) {
-                                    found = false;
-                                    break;
-                                }
-                                getnext(toparse, cc, cp);
-                            }
-                            
-                            if (found)
-                                break;
-                        }
-                    }
-                }
-                
-                waddtoken(token,chr,itoken);
-                getnext(toparse,chr,posc,l);
-                esc_char = check(label,type,chr);
-            }
-        }
-    }
-    return true;
-}
-
-void x_tokens::apply(u_ustring& toparse, vecte_n<u_ustring>* vstack) {
-    u_uchar chr[] = {0,0,0};
-    u_uchar currentchr[] = {0,0,0};
-
-    long wsz=toparse.size();
-
-    u_uchar* token =  new u_uchar[wsz+1];
-
-    long itoken = 0;
-    long line=0,i, l;
-    int16_t r;
-    long pos=0, posc;
-    long sztokenizer;
-    
-    int16_t ty;
-    
-    bool getit=false;
-    char found=true;
-
-    if (!loaded) {
-        setrules();
-        parserules();
-        loaded=true;
-    }
-    
-    if (firstrule == -1)
-        return;
-    
-    stacktype.clear();
-    
-    if (vstack==NULL)
-        vstack=&stack;
-    
-    sztokenizer = tokenizer.size();
-
-    getnext(toparse,currentchr, pos,line);
-    while (pos < wsz || currentchr[0]) {
-        getit=false;
-        posc=pos;
-        if (currentchr[0]>=256)
-            i=firstrule;
-        else {
-            i=table[(uchar)currentchr[0]];
-            if (i==255) //this is not a character, which a rule is indexed for, we jump to the first non character rules...
-                i=firstrule;
-            else {
-                if (verif(ruleelements[i][0],xr_singlebody)) {
-                    //if the rule only checks one character, and it is a direct check, we can stop there
-                    ty = action[i];
-                    if (ty != -1) {
-                        vstack->push_back(currentchr);
-                        stacktype.push_back(ty);
-                        if (!juststack) {
-                            stackln.push_back(line);
-                        }
-                    }
-                    getnext(toparse,currentchr, pos,line);
-                    continue;
-                }
-            }
-        }
-        bool breaking = false;
-        for (;i<sztokenizer;i++) {
-            if (action[i]==xr_skiprule)
-                continue;
-                        
-            token[0] = 0;
-            l = line;
-            wset(chr, currentchr);
-            r = 0;
-            itoken = 0;
-            posc = pos;
-            found = loop(toparse, i, token, chr, itoken, r, l, posc);
-            if (found != true) {
-                if (found == 2) {
-                    if (breaking) //already done...
-                        break;
-                    i = firstrule - 1;
-                    breaking = true;
-                }
-                
-                continue;
-            }
-
-            ty=action[i];
-            if (ty != -1) {
-                vstack->push_back(token);
-                stacktype.push_back(ty);
-                if (!juststack) {
-                    stackln.push_back(line);
-                }
-            }
-            getit=true;
-            wset(currentchr,chr);
-            line=l;
-            pos=posc;
-            break;
-        }
-        
-        if (!getit) { //Character not taken into account by a rule, we suppose it is a simple UTF8 character...
-            vstack->push_back(currentchr);
-            stacktype.push_back(0);
-            stackln.push_back(line);
-            getnext(toparse,currentchr, pos,l);
-        }
-    }
-    delete[] token;
-}
+//------------------------------------------------------------
+//String method implementation
+//------------------------------------------------------------
 
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
     str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
     str_format, str_padding, str_fill, str_getstruct,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
-    str_tokenizer_rules,str_tokenize_rules, str_getrules, str_setrules} string_method;
+    str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
+    str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter,
+    
+} string_method;
 
 /*
  First of all we create a new Element derivation
@@ -265,15 +40,215 @@ typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_
 
 class Rulemethod : public Element {
 public:
-  x_tokens tok;
+    LispE* lisp;
     
-    Rulemethod(LispE* lisp, int16_t l_rule_tokenize) : Element(l_rule_tokenize) {
-        tok.access = lisp->handlingutf8;
+    Rulemethod(LispE* l, int16_t l_rule_tokenize) : Element(l_rule_tokenize) {
+        lisp = l;
+    }
+    
+    virtual long size() {
+        return 0;
+    }
+    
+    virtual void rulestring(std::wstringstream& str, tokenizer_node* a) {}
+    
+    virtual u_ustring rule(long pos) {
+        return U"";
+    }
+
+    virtual tokenizer_node* compiled_rule(long pos) {
+        return NULL;
+    }
+    
+    virtual Element* tokenize(u_ustring& u, bool types) {
+        return null_;
+    }
+    
+    virtual Strings* getrules() {
+        return NULL;
+    }
+    
+    virtual void setrules(vecte_n<u_ustring>& v) {}
+    
+    virtual Element* getoperators() {
+        return NULL;
+    }
+    
+    virtual Element* setoperators(Set_s* lst) {
+        return null_;
+    }
+};
+
+class Tokenizermethod : public Rulemethod {
+public:
+    tokenizer_automaton* tok;
+    bool main;
+    
+    Tokenizermethod(LispE* lisp, int16_t l_rule_tokenize) : Rulemethod(lisp, l_rule_tokenize) {
+        tok = new tokenizer_automaton(lisp->handlingutf8);
+        tok->setrules();
+        tok->compile();
+        main = false;
+    }
+
+    Tokenizermethod(int16_t l_rule_tokenize, LispE* lisp) : Rulemethod(lisp, l_rule_tokenize) {
+        tok = &lisp->delegation->main_tokenizer;
+        main = true;
+    }
+
+    ~Tokenizermethod() {
+        if (!main)
+            delete tok;
     }
     
     wstring asString(LispE* lisp) {
         return L"rules";
     }
+    
+    void rulestring(std::wstringstream& str, tokenizer_node* a) {
+        std::set<int16_t> shared;
+        tok->asString(shared, str, a, 0, true);
+    }
+    
+    long size() {
+        return tok->compiled_rules.size();
+    }
+    
+    u_ustring rule(long pos) {
+        return tok->rules[pos];
+    }
+    
+    virtual tokenizer_node* compiled_rule(long pos) {
+        return tok->compiled_rules[pos];
+    }
+
+    Element* tokenize(u_ustring& u, bool types) {
+        Strings* res = lisp->provideStrings();
+        tokenizer_result<u_ustring> tokres(&res->liste, types);
+        tok->tokenize(u, tokres);
+        if (!types)
+            return res;
+        List* l = lisp->provideList();
+        l->append(res);
+        Shorts* ty = new Shorts();
+        ty->liste = tokres.stacktype;
+        l->append(ty);
+        return l;
+    }
+
+    Strings* getrules() {
+        Strings* vstr = lisp->provideStrings();
+        tok->get_rules(vstr->liste);
+        return vstr;
+    }
+    
+    void setrules(vecte_n<u_ustring>& v) {
+        if (main && lisp->id_thread)
+            throw new Error("You cannot modify the main tokenizer rules in a thread");
+        
+        tok->set_rules(v);
+    }
+    
+    Element* getoperators() {
+        Set_s* s_str = lisp->provideSet_s();
+        u_ustring u;
+        for (const auto& a : tok->operators) {
+            u = a;
+            s_str->add(u);
+        }
+        return s_str;
+
+    }
+    
+    Element* setoperators(Set_s* lst) {
+        if (main && lisp->id_thread)
+            throw new Error("You cannot modify the main tokenizer oeprators in a thread");
+        
+        tok->operators.clear();
+        for (const auto& u: lst->ensemble) {
+            if (u.size())
+                tok->operators.insert(u[0]);
+        }
+        return True_;
+    }
+};
+
+class Segmentmethod : public Rulemethod {
+public:
+    segmenter_automaton tok;
+    
+    Segmentmethod(LispE* l, int16_t l_rule_tokenize, bool keepblanks, char decimalpoint) : Rulemethod(l, l_rule_tokenize), tok(l->handlingutf8) {
+        tok.setrules();
+        tok.compile();
+        tok.keepblanks(keepblanks);
+        tok.setdecimalmode(decimalpoint);
+    }
+    
+    Element* tokenize(u_ustring& u, bool types) {
+        Strings* res = lisp->provideStrings();
+        tokenizer_result<u_ustring> tokres(&res->liste, false);
+        tok.tokenize<u_ustring>(u, tokres);
+        if (!types)
+            return res;
+        List* l = lisp->provideList();
+        l->append(res);
+        Shorts* ty = new Shorts();
+        ty->liste = tokres.stacktype;
+        l->append(ty);
+        return l;
+    }
+
+    wstring asString(LispE* lisp) {
+        return L"segmenter";
+    }
+    
+    long size() {
+        return tok.compiled_rules.size();
+    }
+
+    u_ustring rule(long pos) {
+        return tok.rules[pos];
+    }
+    
+    virtual tokenizer_node* compiled_rule(long pos) {
+        return tok.compiled_rules[pos];
+    }
+
+    void rulestring(std::wstringstream& str, tokenizer_node* a) {
+        std::set<int16_t> shared;
+        tok.asString(shared, str, a, 0, true);
+    }
+
+    Strings* getrules() {
+        Strings* vstr = lisp->provideStrings();
+        tok.get_rules(vstr->liste);
+        return vstr;
+    }
+
+    void setrules(vecte_n<u_ustring>& v) {
+        tok.set_rules(v);
+    }
+
+    Element* getoperators() {
+        Set_s* s_str = lisp->provideSet_s();
+        u_ustring u;
+        for (const auto& a : tok.operators) {
+            u = a;
+            s_str->add(u);
+        }
+        return s_str;
+
+    }
+
+    Element* setoperators(Set_s* lst) {
+        tok.operators.clear();
+        for (const auto& u: lst->ensemble) {
+            if (u.size())
+                tok.operators.insert(u[0]);
+        }
+        return True_;
+    }
+
 };
 
 class Stringmethod : public Element {
@@ -285,6 +260,7 @@ public:
     int16_t v_nb;
     int16_t v_pos;
     int16_t v_tokenize;
+    int16_t v_segment;
     
     Stringmethod(LispE* lisp, string_method s) : met(s), Element(l_lib) {
         //We know the names of variables in advance, so we might as well take advantage of it to retrieve their codes.
@@ -300,6 +276,8 @@ public:
         v_pos = lisp->encode(nom);
         nom = U"tokenize_rule";
         v_tokenize = lisp->encode(nom);
+        nom = U"segment_rule";
+        v_segment = lisp->encode(nom);
     }
     
     Element* parse_json(LispE* lisp, u_ustring& w) {
@@ -474,7 +452,7 @@ public:
             caracs.push_back(w);
             w = U"";
             if (!b)
-                return true_;
+                return True_;
         }
         
         if (b > caracs.size()) {
@@ -661,14 +639,6 @@ public:
                 strvalue = u_trimright(strvalue);
                 return lisp->provideString(strvalue);
             }
-            case str_segment_lispe: {
-                wstring strvalue =  lisp->get_variable(v_str)->asString(lisp);
-                return lisp->tokenize(strvalue, false);
-            }
-            case str_segment_empty: {
-                wstring strvalue =  lisp->get_variable(v_str)->asString(lisp);
-                return lisp->tokenize(strvalue, true);
-            }
             case str_split_empty: {
                 u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 Element* u_find = lisp->get_variable(v_fnd);
@@ -832,8 +802,45 @@ public:
                 s = lisp->handlingutf8->s_deaccentuate(s);
                 return lisp->provideString(s);
             }
+            case str_segment_lispe: {
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                short point = lisp->get_variable("point")->asShort();
+                return lisp->tokenize(strvalue, false, point);
+            }
+            case str_segment_empty: {
+                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                short point = lisp->get_variable("point")->asShort();
+                return lisp->tokenize(strvalue, true, point);
+            }
+            case str_tokenizer_main: {
+                return new Tokenizermethod(v_tokenize, lisp);
+            }
             case str_tokenizer_rules: {
-                return new Rulemethod(lisp, v_tokenize);
+                return new Tokenizermethod(lisp, v_tokenize);
+            }
+            case str_segmenter: {
+                bool keep = lisp->get_variable("keepblanks")->Boolean();
+                short point = lisp->get_variable("point")->asShort();
+                return new Segmentmethod(lisp, v_tokenize, keep, point);
+            }
+            case str_tokenizer_display_rules: {
+                Element* rtok = lisp->get_variable(U"rules");
+                if (rtok->type != v_tokenize)
+                    throw new Error("Error: the first element should be a string_rule object");
+                Rulemethod* tok = (Rulemethod*)rtok;
+                std::wstringstream str;
+                tokenizer_node* a;
+                u_ustring r;
+                for (long i = 0; i < tok->size(); i++) {
+                    a = tok->compiled_rule(i);
+                    if (a != NULL) {
+                        r = tok->rule(i);
+                        str << _u_to_w(r) << endl;
+                        tok->rulestring(str, a);
+                    }
+                }
+                wstring w = str.str();
+                return lisp->provideString(w);
             }
             case str_tokenize_rules: {
                 Element* tok = lisp->get_variable(U"rules");
@@ -841,27 +848,16 @@ public:
                     throw new Error("Error: the first element should be a string_rule object");
                 Element* types = lisp->get_variable(U"types");
                 u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
-                Strings* vstr = lisp->provideStrings();
-                ((Rulemethod*)tok)->tok.tokenize(s, &vstr->liste);
-                if (types != null_) {
-                    List* l = lisp->provideList();
-                    l->append(vstr);
-                    Integers* t_ypes = lisp->provideIntegers();
-                    t_ypes->liste = ((Rulemethod*)tok)->tok.stacktype;
-                    l->append(t_ypes);
-                    return l;
-                }
+                Element* vstr = ((Rulemethod*)tok)->tokenize(s, types->Boolean());
                 return vstr;
             }
-            case str_getrules: {
+            case str_get_rules: {
                 Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != v_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
-                Strings* vstr = lisp->provideStrings();
-                ((Rulemethod*)tok)->tok.getrules(vstr->liste);
-                return vstr;
+                return ((Rulemethod*)tok)->getrules();
             }
-            case str_setrules: {
+            case str_set_rules: {
                 Element* tok = lisp->get_variable(U"rules");
                 if (tok->type != v_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
@@ -872,8 +868,23 @@ public:
                 for (long i = 0; i < lst->size(); i++) {
                     wlst.push_back(lst->index(i)->asUString(lisp));
                 }
-                ((Rulemethod*)tok)->tok.setrules(wlst);
-                return true_;
+                ((Rulemethod*)tok)->setrules(wlst);
+                return True_;
+            }
+            case str_get_operators: {
+                Element* tok = lisp->get_variable(U"rules");
+                if (tok->type != v_tokenize)
+                    throw new Error("Error: the first element should be a string_rule object");
+                return ((Rulemethod*)tok)->getoperators();
+            }
+            case str_set_operators: {
+                Element* rtok = lisp->get_variable(U"rules");
+                if (rtok->type != v_tokenize)
+                    throw new Error("Error: the first element should be a string_rule object");
+                Element* lst = lisp->get_variable(U"a_set");
+                if (lst->type != t_sets)
+                    throw new Error("Error: This function expects a set of strings (sets)");
+                return ((Rulemethod*)rtok)->setoperators((Set_s*)lst);
             }
             case str_format: {
                 return methodFormat(lisp);
@@ -975,14 +986,18 @@ public:
                 return L"Tokenize a string into a list of tokens with LispE tokenizer";
             case str_segment_empty:
                 return L"Tokenize a string into a list of tokens with LispE tokenize. Keep also the blanks";
+            case str_tokenizer_display_rules:
+                return L"Display the underlying automata, into which rules were compiled";
             case str_tokenize_rules:
                 return L"Tokenize a string into a list of tokens with internal rules";
-            case str_getrules:
+            case str_get_rules:
                 return L"Return the internal tokenization rules";
-            case str_setrules:
+            case str_set_rules:
                 return L"Set the internal tokenization rules";
             case str_tokenizer_rules:
                 return L"Return a rule object";
+            case str_tokenizer_main:
+                return L"Return LispE internal tokenizer";
             case str_format:
                 return L"Takes as input a format and a list of variables. Variables in the format of the form: %n, where 1<=n<=9 are replaced with their corresponding arguments";
             case str_padding:
@@ -995,6 +1010,12 @@ public:
                 return L"(convert_in_base str b (convert_from): convert str into b or from base b according to convert_from";
             case str_getstruct:
                 return L"(getstruct str open close (pos)): extracts a sub-string from an 'open' chararacter to a 'close' character starting at 'pos'";
+            case str_get_operators:
+                return L"Returns the list of operators, which are used with metacharacter: %o";
+            case str_set_operators:
+                return L"Sets the list of operators, which are used with metacharacter: %o";
+            case str_segmenter:
+                return L"Returns the segmenter object: (segmenter keepblanks point). point == 0 is regular decimal point. point == 1 uses comma as decimal point. point == 2 enables both point and comma.";
         }
 		return L"";
     }
@@ -1024,8 +1045,6 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib right (str nb)", new Stringmethod(lisp, str_right));
     lisp->extension("deflib middle (str pos nb)", new Stringmethod(lisp, str_middle));
     lisp->extension("deflib getstruct (str open close (pos 0))", new Stringmethod(lisp, str_getstruct));
-    lisp->extension("deflib segment (str)", new Stringmethod(lisp, str_segment_lispe));
-    lisp->extension("deflib segment_e (str)", new Stringmethod(lisp, str_segment_empty));
     lisp->extension("deflib split (str (fnd))", new Stringmethod(lisp, str_split));
     lisp->extension("deflib splite (str (fnd))", new Stringmethod(lisp, str_split_empty));
     lisp->extension("deflib ord (str)", new Stringmethod(lisp, str_ord));
@@ -1036,13 +1055,22 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib vowelp (str)", new Stringmethod(lisp, str_is_vowel));
     lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
+    
+    //Tokenization methods
+    lisp->extension("deflib segment (str (point 0))", new Stringmethod(lisp, str_segment_lispe));
+    lisp->extension("deflib segment_e (str (point 0))", new Stringmethod(lisp, str_segment_empty));
+    lisp->extension("deflib tokenizer_main ()", new Stringmethod(lisp, str_tokenizer_main));
+    lisp->extension("deflib segmenter (keepblanks point)", new Stringmethod(lisp, str_segmenter));
     lisp->extension("deflib tokenizer_rules ()", new Stringmethod(lisp, str_tokenizer_rules));
     lisp->extension("deflib tokenize_rules (rules str (types))", new Stringmethod(lisp, str_tokenize_rules));
     lisp->extension("deflib tokenizer ()", new Stringmethod(lisp, str_tokenizer_rules));
+    lisp->extension("deflib tokenizer_display (rules)", new Stringmethod(lisp, str_tokenizer_display_rules));
     lisp->extension("deflib tokenize (rules str (types))", new Stringmethod(lisp, str_tokenize_rules));
-    lisp->extension("deflib get_tokenizer_rules (rules)", new Stringmethod(lisp, str_getrules));
-    lisp->extension("deflib set_tokenizer_rules (rules lst)", new Stringmethod(lisp, str_setrules));
-
+    lisp->extension("deflib get_tokenizer_rules (rules)", new Stringmethod(lisp, str_get_rules));
+    lisp->extension("deflib set_tokenizer_rules (rules lst)", new Stringmethod(lisp, str_set_rules));
+    lisp->extension("deflib get_tokenizer_operators (rules)", new Stringmethod(lisp, str_get_operators));
+    lisp->extension("deflib set_tokenizer_operators (rules a_set)", new Stringmethod(lisp, str_set_operators));
+    
     lisp->extension("deflib json_read (filename)", new Stringmethod(lisp, str_read_json));
     lisp->extension("deflib json_parse (str)", new Stringmethod(lisp, str_parse_json));
     lisp->extension("deflib json (element)", new Stringmethod(lisp, str_string_json));

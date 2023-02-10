@@ -171,7 +171,7 @@ static wchar_t ponctuations[] = {
     0x45, 0x43, 0x49, 0x54, 0x41, 0x4E,0x4E, 0x4F, 0x4D, 0x4D, 0x58, 0x58
 };
 
-static wchar_t codingtable[] = { 65,97,2,66,98,2,67,99,2,68,100,2,69,101,2,70,102,2,71,103,2,72,104,2,73,105,2,74,106,2,75,107,2,76,
+static int32_t codingtable[] = { 65,97,2,66,98,2,67,99,2,68,100,2,69,101,2,70,102,2,71,103,2,72,104,2,73,105,2,74,106,2,75,107,2,76,
     108,2,77,109,2,78,110,2,79,111,2,80,112,2,81,113,2,82,114,2,83,115,2,84,116,2,85,117,2,86,118,2,87,119,
     2,88,120,2,89,121,2,90,122,2,97,65,1,98,66,1,99,67,1,100,68,1,101,69,1,102,70,1,103,71,1,104,72,1,
     105,73,1,106,74,1,107,75,1,108,76,1,109,77,1,110,78,1,111,79,1,112,80,1,113,81,1,114,82,1,115,83,1,116,
@@ -280,7 +280,7 @@ static wchar_t codingtable[] = { 65,97,2,66,98,2,67,99,2,68,100,2,69,101,2,70,10
     65228,1,65229,65229,1,65230,65230,1,65231,65231,1,65232,65232,1,65233,65233,1,65234,65234,1,65235,65235,1,65236,65236,1,65237,65237,1,65238,65238,1,65239,65239,
     1,65240,65240,1,65241,65241,1,65242,65242,1,65243,65243,1,65244,65244,1,65245,65245,1,65246,65246,1,65247,65247,1,65248,65248,1,65249,65249,1,65250,65250,1,
     65251,65251,1,65252,65252,1,65253,65253,1,65254,65254,1,65255,65255,1,65256,65256,1,65257,65257,1,65258,65258,1,65259,65259,1,65260,65260,1,65261,65261,1,65262,
-    65262,1,65263,65263,1,65264,65264,1,65265,65265,1,65266,65266,1,65267,65267,1,65268,65268,1,0};
+    65262,1,65263,65263,1,65264,65264,1,65265,65265,1,65266,65266,1,65267,65267,1,65268,65268,1,-1};
 
 //------------------------------------------------------------------------
 Exporting void s_utf8_to_unicode_clean(wstring& w, string& str , long sz) {
@@ -299,7 +299,7 @@ Exporting void s_utf8_to_unicode(wstring& w, string& str , long sz) {
     UWCHAR c;
     uchar nb;
     long i = 0;
-    
+
 #ifdef WIN32
     UWCHAR c16;
     while (sz--) {
@@ -331,7 +331,7 @@ Exporting void s_utf8_to_unicode(wstring& w, string& str , long sz) {
         neo[ineo++] = (wchar_t)str[i++];
     }
 #endif
-    
+
     neo[ineo] = 0;
     w += neo;
     delete[] neo;
@@ -761,7 +761,7 @@ UTF8_Handler::UTF8_Handler() {
     bulongchar xse;
     long i;
     int maxtable;
-    for (maxtable = 0; codingtable[maxtable] != 0; maxtable++);
+    for (maxtable = 0; codingtable[maxtable] != -1; maxtable++);
 
     emojis_characters = new Emojis();
 
@@ -1076,7 +1076,7 @@ Exporting unsigned char c_utf8_to_unicode(string& utf, long i, UWCHAR& code) {
     code = utf[i];
 
     unsigned char check = utf[i] & 0xF0;
-    
+
     switch (check) {
         case 0xC0:
             if ((utf[i + 1] & 0x80)== 0x80) {
@@ -1359,21 +1359,13 @@ wstring UTF8_Handler::s_to_upper(wstring& s) {
     return res;
 }
 
-bool c_is_space(u_uchar code) {
-    static unsigned char spaces[] = { 9, 10, 13, 32, 160 };
-    if ((code <= 160 && strchr((char*)spaces, (char)code)) || code == 0x202F || code == 0x3000)
-        return true;
-    return false;
-}
-
 bool UTF8_Handler::s_is_space(string& str) {
-    static unsigned char spaces[] = { 9, 10, 13, 32, 160 };
     long lg = str.size();
     uchar* contenu = USTR(str);
     UWCHAR code;
     for (long i = 0; i < lg; i++) {
         i += c_utf8_to_unicode(contenu + i, code);
-        if ((code <= 160 && !strchr((char*)spaces, (char)code)) && code != 0x202F && code != 0x3000)
+        if (!c_is_space(code))
             return false;
     }
     return true;
@@ -1381,21 +1373,9 @@ bool UTF8_Handler::s_is_space(string& str) {
 
 bool UTF8_Handler::s_is_space(wstring& str) {
     long lg = str.size();
-    wchar_t code;
     for (long i = 0; i < lg; i++) {
-        code = str[i];
-        switch (code) {
-            case 9:
-            case 10:
-            case 13:
-            case 32:
-            case 160:
-            case 0x202F:
-            case 0x3000:
-                continue;
-            default:
-                return false;
-        }
+        if (!c_is_space(str[i]))
+            return false;
     }
     return true;
 }

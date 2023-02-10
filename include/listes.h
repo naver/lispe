@@ -10,6 +10,7 @@
 
 //This is the implementation of the List object
 
+
 #ifndef listes_h
 #define listes_h
 
@@ -28,7 +29,7 @@ public:
     Atomefonction(Element* b, int16_t a) : body(b), Element(a) {
         function_label = b->index(1)->label();
     }
-
+    
     u_ustring asUString(LispE* lisp);
     
     Element* eval(LispE* lisp) {
@@ -46,7 +47,7 @@ public:
     uint64_t last;
     uint64_t sz;
     uint64_t status;
-
+    
     ITEM(long t) {
         status = 0; //this is the reference counter
         last = 0; //this is the last element
@@ -81,7 +82,7 @@ public:
         buffer[left] = buffer[right];
         buffer[right] = buffer[sz];
     }
-
+    
     inline bool reverse(long left, long right) {
         if (left >= right)
             return false;
@@ -93,13 +94,13 @@ public:
     
     inline void erase(long i) {
         if (i >= 0 && i < last) {
-            buffer[i]->decrement();            
+            buffer[i]->decrement();
             last--;
             for (;i < last; i++)
                 buffer[i] = buffer[i+1];
         }
     }
-
+    
     inline void pop_back() {
         if (last) {
             last--;
@@ -109,20 +110,20 @@ public:
     
     inline void insert(long pos, Element* val) {
         resize(last);
-
+        
         val->increment();
         if (pos >= last) {
             buffer[last++] = val;
             return;
         }
-
+        
         //All elements are moved to the right.
         for (long i = last; i > pos; i--)
             buffer[i] = buffer[i - 1];
         buffer[pos] = val;
         last++;
     }
-
+    
     inline void extend(ITEM* val, long val_home, long home) {
         resize(last+val->last);
         Element* e;
@@ -132,14 +133,14 @@ public:
             buffer[last++] = e;
         }
     }
-
+    
     inline void push_back(Element* val, long home) {
         resize(last);
         //sinon on ajoute l'element en queue...
         buffer[last++] = val;
         val->incrementstatus(!val->equal_item(this, home));
     }
-
+    
     inline void push_raw(Element* val) {
         resize(last);
         //sinon on ajoute l'element en queue...
@@ -153,7 +154,7 @@ public:
             }
         }
     }
-
+    
     inline void increment(uint16_t nb) {
         if (!status) {
             for (long i = 0; i < last; i++) {
@@ -161,7 +162,7 @@ public:
             }
         }
     }
-
+    
     inline void decrement() {
         if (!status) {
             for (long i = 0; i < last; i++) {
@@ -169,7 +170,7 @@ public:
             }
         }
     }
-
+    
     inline void decrement(uint16_t nb) {
         if (!status) {
             for (long i = 0; i < last; i++) {
@@ -177,7 +178,7 @@ public:
             }
         }
     }
-
+    
     inline void decrement(Element* e) {
         if (!status) {
             for (long i = 0; i < last; i++) {
@@ -188,12 +189,12 @@ public:
             }
         }
     }
-
+    
     inline void setAndQuote(long i, Element* v) {
         ((Quoted*)buffer[i])->requoting(v);
     }
-
-
+    
+    
     ~ITEM() {
         free(buffer);
     }
@@ -202,7 +203,7 @@ public:
 
 class LIST {
 public:
-
+    
     //It is always the same
     ITEM* item;
     Element* object;
@@ -227,18 +228,18 @@ public:
         home = 0;
         item = new ITEM(t);
     }
-
+    
     ~LIST() {
         if (!item->status)
             delete item;
         else
             item->status--;
     }
-
+    
     inline bool equal(LIST& l) {
         return ((item->last == 0 && l.item->last == 0) || (l.item == item && home == l.home));
     }
-
+    
     inline void reserve(long sz) {
         item->reserve(sz);
     }
@@ -250,19 +251,19 @@ public:
     inline void put(long pos, Element* val) {
         item->buffer[pos + home] = val;
     }
-
+    
     inline Element* exchange(long pos, Element* val) {
         Element* e = item->buffer[pos + home];
         item->buffer[pos + home] = val;
         return e;
     }
-
+    
     inline Element* exchangelast(Element* val) {
         Element* e = item->buffer[item->last - 1];
         item->buffer[item->last - 1] = val;
         return e;
     }
-
+    
     //if this a list, which is not duplicated through CDR calls
     bool nocdr() {
         return !item->status;
@@ -287,15 +288,15 @@ public:
     inline bool usermark() {
         return usermarking;
     }
-        
+    
     long _size() {
         return item == NULL?0:item->last - home;
     }
-
+    
     long size() {
         return item->last - home;
     }
-
+    
     void clear() {
         home = 0;
         if (item->status) {
@@ -308,7 +309,7 @@ public:
         else
             item->last = 0;
     }
-
+    
     void clean() {
         item->decrement();
         item->last = home;
@@ -317,27 +318,27 @@ public:
     inline void pop_back() {
         item->pop_back();
     }
-
+    
     inline void insert(long pos, Element* val) {
         item->insert(pos + home, val);
     }
-
+    
     inline Element* back() {
         return item->buffer[item->last - 1];
     }
-
+    
     inline Element* popback() {
         return item->buffer[--item->last];
     }
-
+    
     inline void push_element(Element* val) {
         item->push_back(val, home);
     }
-
+    
     inline void extend(LIST* val) {
         item->extend(val->item, val->home, home);
     }
-
+    
     inline void push_raw(Element* val) {
         item->push_raw(val);
     }
@@ -349,18 +350,18 @@ public:
     inline int16_t get0() {
         return item->buffer[home]->type;
     }
-
+    
     void erase(long pos) {
         item->erase(pos +home);
     }
-
+    
     void reverse() {
         long sz = item->last - 1;
         for (long i = home; i < sz && item->reverse(i,sz); i++) {
             sz--;
         }
     }
-        
+    
     void display(LispE* lisp, long rmin, long rmax) {
         cout << "(";
         for (long i = rmin; i <= rmax; i++) {
@@ -384,7 +385,7 @@ public:
         for (long i = 0; i < z.size(); i++)
             push_element(z[i]);
     }
-
+    
     inline void increment() {
         if (!marking) {
             marking = true;
@@ -392,7 +393,7 @@ public:
             marking = false;
         }
     }
-
+    
     inline void decrement() {
         if (!marking) {
             marking = true;
@@ -400,7 +401,7 @@ public:
             marking = false;
         }
     }
-
+    
     inline void increment(uint16_t nb) {
         if (!marking) {
             marking = true;
@@ -408,7 +409,7 @@ public:
             marking = false;
         }
     }
-
+    
     inline void decrement(uint16_t nb) {
         if (!marking) {
             marking = true;
@@ -416,7 +417,7 @@ public:
             marking = false;
         }
     }
-
+    
     inline void decrement(Element* e) {
         if (!marking) {
             marking = true;
@@ -424,7 +425,7 @@ public:
             marking = false;
         }
     }
-
+    
     inline void decrement_and_clear() {
         //If there is some kind of sharing
         //we re-create a new item, and release the grip
@@ -443,7 +444,7 @@ public:
             item->last = home;
         }
     }
-
+    
     inline void decrement_and_clear(Element* e) {
         //If there is some kind of sharing
         //we re-create a new item, and release the grip
@@ -462,7 +463,7 @@ public:
             item->last = home;
         }
     }
-
+    
     inline Element* at(long i) {
         i += home;
         if (i < 0 || i >= item->last)
@@ -473,11 +474,11 @@ public:
     inline bool is_not_empty() {
         return (home != item->last);
     }
-
+    
     inline bool empty() {
         return (home == item->last);
     }
-
+    
     inline bool checkType() {
         return (home != item->last && item->buffer[0]->type < l_final);
     }
@@ -491,19 +492,19 @@ public:
         item->last = home;
         for (long i = 0; i < v.size(); i++) {
             item->buffer[item->last++] = v[i];
-        }            
+        }
     }
-
+    
     inline void to_vector(std::vector<Element*>& v) {
         for (long i = home; i < item->last; i++)
             v.push_back(item->buffer[i]);
     }
-
+    
 };
 
 class List : public Element {
 public:
-
+    
     LIST liste;
     char terminal;
     
@@ -517,7 +518,7 @@ public:
     //When a CDR is called, it will share this list's item, but with a different "home" value.
     //The "home value" in a LIST object defines where it starts in the internal buffer of ITEM
     List(List* l, long p) : terminal(0), liste(l->liste, p), Element(t_list) {}
-
+    
     bool isContainer() {
         return true;
     }
@@ -539,6 +540,10 @@ public:
         liste.reserve(sz);
     }
     
+    bool is_quote() {
+        return (!liste.empty() && liste[0]->type == l_quote);
+        
+    }
     bool equal_item(ITEM* i, long home) {
         return (liste.home == home && liste.item == i);
     }
@@ -556,7 +561,7 @@ public:
             append(e->index(i++));
         }
     }
-
+    
     void set_in(LispE* lisp, Element* e, long i) {
         liste[i]->decrement();
         liste[i] = e;
@@ -574,13 +579,13 @@ public:
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
     Element* list_or(LispE*, Element* value);
-
+    
     virtual Element* last_element(LispE* lisp);
     
     Element* last() {
         return liste.back();
     }
-
+    
     void swap(long i, long j) {
         liste.swap(i, j);
     }
@@ -600,21 +605,21 @@ public:
         else
             liste.insert(sz-1, e);
     }
-
+    
     void buildList(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx, long axis);
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& shape, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
-
+    
     int16_t label(long i) {
         return ((Atome*)liste.item->buffer[i])->atome;
     }
     
     Element* thekeys(LispE* lisp);
-
+    
     bool isFunction() {
         return (liste.size() > 1 && liste[0]->label() >= l_lambda && liste[0]->label() <= l_defpat);
     }
-
+    
     void* begin_iter() {
         long* n = new long[1];
         n[0] = 0;
@@ -623,11 +628,11 @@ public:
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
-
+    
     virtual void clean_iter(void* it) {
         delete (long*)it;
     }
-
+    
     bool check_arity(LispE* lisp, unsigned long arity) {
         if (isFunction()) {
             unsigned long arity_function;
@@ -640,7 +645,7 @@ public:
         }
         return false;
     }
-
+    
     void build(LispE* lisp, vecte<long>& shape, long isz, Element* res, Element* lst, long& idx);
     
     bool isExecutable(LispE*);
@@ -649,7 +654,7 @@ public:
     
     bool unify(LispE* lisp, Element* value, bool record);
     bool isequal(LispE* lisp, Element* value);
-
+    
     virtual Element* fullcopy() {
         if (liste.marking)
             return liste.object;
@@ -663,7 +668,7 @@ public:
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
-
+    
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && liste.nocdr() && !duplicate)
@@ -676,7 +681,7 @@ public:
         return l;
     }
     
-
+    
     Element* release_but_last() {
         Element* e = liste.back();
         liste.item->last--;
@@ -687,7 +692,7 @@ public:
     
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
-
+    
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
@@ -703,7 +708,7 @@ public:
     bool element_container() {
         return true;
     }
-
+    
     bool isLambda() {
         return (liste.size() && liste.item->buffer[0]->type == l_lambda);
     }
@@ -715,7 +720,7 @@ public:
     bool isEmpty() {
         return liste.empty();
     }
-
+    
     bool isNotEmptyList() {
         return (!liste.empty());
     }
@@ -728,7 +733,7 @@ public:
         }
     }
     
-
+    
     virtual void decrementstatus(uint16_t nb) {
         status -= nb * not_protected();
         if (!status) {
@@ -746,6 +751,8 @@ public:
         return liste[i];
     }
     
+    //The element in position i is in a quote
+    //We replace it with the new element v
     inline void in_quote(long i, Element* v) {
         liste.setAndQuote(i, v);
     }
@@ -753,7 +760,7 @@ public:
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
-
+    
     Element* protected_index(LispE*,long i);
     
     Element* value_from_index(LispE*, long i);
@@ -762,16 +769,16 @@ public:
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
     
-    virtual void combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action);    
+    virtual void combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action);
     virtual void combine(LispE* lisp, Element* l1, Element* l2, List* action);
-
+    
     virtual void release() {
         if (!status) {
             liste.decrement();
             delete this;
         }
     }
-
+    
     virtual void rawrelease() {
         if (!status) {
             liste.clear();
@@ -787,7 +794,7 @@ public:
             delete this;
         }
     }
-
+    
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
     
@@ -798,7 +805,7 @@ public:
     virtual long shapesize() {
         return liste.size();
     }
-
+    
     //This function is only used to compare the number of
     //parameters of a function and its arguments
     long argumentsize(long sz);
@@ -829,7 +836,7 @@ public:
     bool mark() {
         return liste.mark();
     }
-
+    
     void setusermark(bool v) {
         liste.setusermark(v);
     }
@@ -837,7 +844,7 @@ public:
     bool usermark() {
         return  liste.usermark();
     }
-
+    
     void resetusermark() {
         if (!liste.marking) {
             liste.marking = true;
@@ -848,17 +855,17 @@ public:
             liste.marking = false;
         }
     }
-
+    
     wstring jsonString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
             return L"[]";
-
+        
         if (liste.mark())
             return L"#inf";
         
         liste.setmark(true);
-
+        
         sz -= 1;
         
         wstring buffer(L"[");
@@ -888,7 +895,7 @@ public:
             return L"...";
         
         liste.setmark(true);
-
+        
         sz -= 1;
         
         wstring buffer(L"(");
@@ -902,7 +909,7 @@ public:
         liste.setmark(false);
         return buffer;
     }
-
+    
     virtual u_ustring asUString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
@@ -918,7 +925,7 @@ public:
             return U"...";
         
         liste.setmark(true);
-
+        
         sz -= 1;
         
         u_ustring buffer(U"(");
@@ -937,15 +944,15 @@ public:
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
-
+    
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
-
+    
     void append(Element* e) {
         liste.push_element(e);
     }
-
+    
     void extend(List* l) {
         liste.extend(&l->liste);
     }
@@ -957,17 +964,17 @@ public:
         }
         return false;
     }
-
+    
     void appendraw(Element* e) {
         liste.push_raw(e);
     }
-
+    
     void change(long i, Element* e) {
         liste[i]->decrement();
         liste[i] = e;
         e->increment();
     }
-
+    
     void changelast(Element* e) {
         liste.back()->decrement();
         liste[liste.size()-1] = e;
@@ -1001,13 +1008,13 @@ public:
     
     virtual Element* eval(LispE*);
     Element* eval_no_fail(LispE*);
-        
+    
     bool Boolean() {
         return (liste.size());
     }
     
     Element* eval_pattern(LispE* lisp, int16_t function_name);
-
+    
     void evalthread(LispE*, List* body);
     Element* evalfunction(LispE*, Element* body);
     Element* eval_function(LispE*, List* body);
@@ -1026,7 +1033,7 @@ public:
     virtual int16_t label() {
         return (liste.is_not_empty()?t_list:v_null);
     }
-
+    
     int16_t function_label() {
         return liste[0]->label();
     }
@@ -1047,7 +1054,7 @@ public:
         liste.erase(0);
         return true;
     }
-
+    
     bool removelast() {
         if (!liste.size())
             return false;
@@ -1055,12 +1062,12 @@ public:
         return true;
     }
     
-
+    
     bool remove(LispE*, Element* e) {
         long d =  e->asInteger();
         return remove(d);
     }
-
+    
     bool remove(long d) {
         if (!liste.size())
             return false;
@@ -1082,7 +1089,7 @@ public:
         }
         return 2;
     }
-
+    
     virtual char isPureList(long& x, long& y) {
         x = liste.size();
         if (x) {
@@ -1115,7 +1122,7 @@ public:
     
     virtual Element* transposed(LispE* lisp);
     virtual Element* rotate(LispE* lisp, long axis);
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         if (size() != sz[depth])
             return false;
@@ -1147,7 +1154,7 @@ public:
             l = l->index(0);
         }
     }
-
+    
     virtual Element* check_member(LispE*, Element* the_set);
     
     Element* insert(LispE* lisp, Element* e, long idx);
@@ -1155,13 +1162,13 @@ public:
     
     void sameSizeNoTerminalArguments(LispE* lisp, Element* body, List* parameters);
     void differentSizeNoTerminalArguments(LispE* lisp, Element* body, List* parameters, long nbarguments, long defaultarguments);
-
+    
     void sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, Element* body, List* parameters);
     void differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, Element* body, List* parameters, long nbarguments, long defaultarguments);
-
+    
     void differentSizeTerminalArguments(LispE* lisp, List* parameters, long nbarguments,  long defaultarguments);
     void sameSizeTerminalArguments(LispE* lisp, List* parameters);
-
+    
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
     //list...
@@ -1169,12 +1176,12 @@ public:
         if (!is_protected())
             liste.decrement_and_clear();
     }
-
+    
     void clear(Element* e) {
         if (!is_protected())
             liste.decrement_and_clear(e);
     }
-
+    
     void clean() {
         liste.clean();
     }
@@ -1184,19 +1191,19 @@ public:
 #ifdef MAX_STACK_SIZE_ENABLED
     Element* evall_set_max_stack_size(LispE* lisp);
 #endif
-
+    
     Element* reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz);
     Element* backreduce_with_list(LispE* lisp, Element* l1, Element* op, long sz);
-
+    
     Element* scan_with_list(LispE* lisp, Element* l1, Element* op, long sz);
     Element* backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz);
-
+    
     Element* reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz);
     Element* backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz);
-
+    
     Element* scan_lambda(LispE* lisp, Element* l1, Element* op, long sz);
     Element* backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz);
-
+    
     virtual Element* eval_call_function(LispE* lisp);
     
     virtual Element* eval_call_self(LispE* lisp);
@@ -1238,6 +1245,9 @@ public:
     Element* evall_conspoint(LispE* lisp);
     Element* evall_consb(LispE* lisp);
     Element* evall_consp(LispE* lisp);
+    Element* evall_complex(LispE* lisp);
+    Element* evall_real(LispE* lisp);
+    Element* evall_imaginary(LispE* lisp);
     Element* evall_converttoatom(LispE* lisp);
     Element* evall_converttointeger(LispE* lisp);
     Element* evall_converttoshort(LispE* lisp);
@@ -1245,6 +1255,7 @@ public:
     Element* evall_converttofloat(LispE* lisp);
     Element* evall_converttostring(LispE* lisp);
     Element* evall_count(LispE* lisp);
+    Element* evall_cutlist(LispE* lisp);
     Element* evall_cyclicp(LispE* lisp);
     Element* evall_data(LispE* lisp);
     Element* evall_deflib(LispE* lisp);
@@ -1278,7 +1289,6 @@ public:
     Element* evall_flatten(LispE* lisp);
     Element* evall_flip(LispE* lisp);
     Element* evall_stringf(LispE* lisp);
-    Element* evall_folding(LispE* lisp);
     Element* evall_fread(LispE* lisp);
     Element* evall_fwrite(LispE* lisp);
     Element* evall_getchar(LispE* lisp);
@@ -1331,7 +1341,6 @@ public:
     Element* evall_lubksb(LispE* lisp);
     Element* evall_ludcmp(LispE* lisp);
     Element* evall_maplist(LispE* lisp);
-    Element* evall_mapping(LispE* lisp);
     Element* evall_mark(LispE* lisp);
     Element* evall_matrix(LispE* lisp);
     Element* evall_matrix_float(LispE* lisp);
@@ -1450,7 +1459,7 @@ public:
     Element* evalt_call(LispE* lisp) {
         return liste[0]->eval(lisp);
     }
-    
+
     Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
     Element* bit_and_not(LispE* l, Element* e);
@@ -1464,8 +1473,8 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
-
-
+    
+    
     //Composable functions
     Element* evall_map_cps(LispE*);
     Element* evall_filter_cps(LispE*);
@@ -1484,44 +1493,44 @@ public:
     Element* evall_scanl1_cps(LispE*);
     Element* evall_foldr1_cps(LispE*);
     Element* evall_scanr1_cps(LispE*);
-
+    
 #ifdef MACDEBUG
     Element* evall_debug_function(LispE* lisp);
 #endif
     
     bool eval_Boolean(LispE* lisp, int16_t instruction);
-
+    
     inline Element* evalt_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
         return eval_function(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
-
+    
     inline Element* evalt_library_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
         return eval_library_function(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
-
+    
     inline Element* evalt_pattern(LispE* lisp) {
         //In this case, it must be a pattern function call (t_pattern)
         return eval_pattern(lisp, ((Atomefonction*)liste[0])->function_label);
     }
-
+    
     inline Element* evalt_lambda(LispE* lisp) {
         //In this case, it must be a self call (t_self)
         return eval_lambda(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
-
+    
     inline Element* evalt_thread(LispE* lisp) {
         //In this case, it must be a self call (t_self)
         return eval_thread(lisp, (List*)((Atomefonction*)liste[0])->body);
     }
-
+    
     inline Element* evalt_data(LispE* lisp) {
         //In this case, it must be a self call (t_self)
         return eval_data(lisp, ((Atomefonction*)liste[0])->body);
     }
     
-
+    
     virtual Element* newInstance() {
         return new List;
     }
@@ -1530,7 +1539,7 @@ public:
     virtual bool incode() {
         return false;
     }
-
+    
 };
 
 class Listpool : public List {
@@ -1539,7 +1548,7 @@ public:
     
     Listpool(LispE* l) : lisp(l) {}
     Listpool(LispE* lsp, List* l, long p) : lisp(lsp), List(l, p) {}
-
+    
     void decrementstatus(uint16_t nb);
     void decrement();
     
@@ -1550,7 +1559,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-
+    
 };
 
 class Listargumentquote : public List {
@@ -1558,7 +1567,7 @@ public:
     Listargumentquote(List* l) : List(l, 0) {
         terminal = l->terminal;
     }
-
+    
     int16_t label() {
         return liste[1]->label();
     }
@@ -1570,7 +1579,7 @@ public:
     bool isList() {
         return false;
     }
-
+    
     bool unify(LispE* lisp, Element* value, bool record);
 };
 
@@ -1653,7 +1662,7 @@ public:
     bool isList() {
         return false;
     }
-
+    
     int16_t label() {
         return ilabel;
     }
@@ -1688,19 +1697,26 @@ public:
         fileidx = l->fileidx;
     }
     
+    Listincode(List* l) : List(l, 0) {
+        terminal = l->terminal;
+        status = s_constant;
+        line = -1;
+        fileidx = 0;
+    }
+    
     Listincode(long l, long f) : List(s_constant) {
-		line = l;
-		fileidx = f;
-	}
+        line = l;
+        fileidx = f;
+    }
     Listincode(uint16_t s) : List(s) {
-		line = 0;
-		fileidx = 0;
-	}
+        line = 0;
+        fileidx = 0;
+    }
     
     Listincode() : List(s_constant) {
-		line = 0;
-		fileidx = 0;
-	}
+        line = 0;
+        fileidx = 0;
+    }
     
     Element* eval(LispE*);
     Element* eval_infix(LispE* lisp);
@@ -1711,23 +1727,34 @@ public:
     void decrementstatus(uint16_t nb) {}
     void increment() {}
     void decrement() {}
-
+    
     void release() {}
-
+    
+    void force_release() {
+        liste.decrement();
+        delete this;
+    }
+    
     void protecting(bool protection, LispE* lisp);
-
+    
     bool incode() {
         return true;
     }
+    virtual List* cloning(Listincode* e, methodEval m);
+    virtual List* cloning() {
+        return new Listincode();
+    }
 };
 
-class Listswitch : public Listincode {
+class List_switch_eval : public Listincode {
 public:
     std::unordered_map<u_ustring, List*> cases;
     List* default_value;
-    Listswitch(Listincode* l) : Listincode(l) {
+    List_switch_eval(Listincode* l) : Listincode(l) {
         default_value = NULL;
     }
+    
+    List_switch_eval() {}
     
     //We traverse the structure, which should be of the form:
     //(switch action
@@ -1735,6 +1762,18 @@ public:
     //(true code)
     void build(LispE* lisp);
     Element* eval(LispE*);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_switch_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_switch_eval();
+    }
 };
 
 
@@ -1742,7 +1781,7 @@ class Listbreak : public Element {
 public:
     
     Listbreak() : Element(l_return, s_constant) {}
-  
+    
     bool isBreak() {
         return true;
     }
@@ -1761,7 +1800,7 @@ class Listreturn : public Element {
 public:
     
     Listreturn() : Element(l_return, s_constant) {}
-  
+    
     long size() {
         return 1;
     }
@@ -1779,11 +1818,11 @@ public:
         terminal = l->terminal;
         action = l->liste[1];
     }
-  
+    
     void setterminal(char v = 1) {
         terminal |= v;
     }
-
+    
     long size() {
         return 2;
     }
@@ -1793,7 +1832,7 @@ public:
 
 class Listlambda : public List {
 public:
-
+    
     Listlambda() : List() {}
     
     Element* eval(LispE* lisp) {
@@ -1823,13 +1862,369 @@ public:
 
 class List_at_eval : public Listincode {
 public:
-    long listsize;
     
-    List_at_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
-    }
+    List_at_eval(Listincode* l) : Listincode(l) {}
+    List_at_eval(List* l) : Listincode(l) {}
+    List_at_eval() {}
     
     Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_at_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_at_eval();
+    }
+};
+
+class List_join_eval : public Listincode {
+public:
+    
+    List_join_eval(Listincode* l) : Listincode(l) {}
+    List_join_eval(List* l) : Listincode(l) {}
+    
+    List_join_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_join_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_join_eval();
+    }
+};
+
+class List_insert_eval : public Listincode {
+public:
+    
+    List_insert_eval(Listincode* l) : Listincode(l) {}
+    List_insert_eval(List* l) : Listincode(l) {}
+    List_insert_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_insert_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_insert_eval();
+    }
+};
+
+class List_keys_eval : public Listincode {
+public:
+    
+    List_keys_eval(Listincode* l) : Listincode(l) {}
+    List_keys_eval(List* l) : Listincode(l) {}
+    List_keys_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_keys_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_keys_eval();
+    }
+    
+};
+
+class List_zip_eval : public Listincode {
+public:
+    
+    List_zip_eval(Listincode* l) : Listincode(l) {}
+    List_zip_eval(List* l) : Listincode(l) {}
+    List_zip_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_zip_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_zip_eval();
+    }
+    
+};
+
+class List_zipwith_eval : public Listincode {
+public:
+    
+    List_zipwith_eval(Listincode* l) : Listincode(l) {}
+    List_zipwith_eval(List* l) : Listincode(l) {}
+    List_zipwith_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_zipwith_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_zipwith_eval();
+    }
+    
+};
+
+class List_label_eval : public Listincode {
+public:
+    
+    List_label_eval(Listincode* l) : Listincode(l) {}
+    List_label_eval(List* l) : Listincode(l) {}
+    List_label_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_label_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_label_eval();
+    }
+    
+};
+
+
+
+class List_infix_eval : public Listincode {
+public:
+    
+    List_infix_eval(Listincode* l) : Listincode(l) {}
+    List_infix_eval(List* l) : Listincode(l) {}
+    List_infix_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_infix_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_infix_eval();
+    }
+    
+};
+
+class List_extract_eval : public Listincode {
+public:
+    
+    List_extract_eval(Listincode* l) : Listincode(l) {}
+    List_extract_eval(List* l) : Listincode(l) {}
+    List_extract_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_extract_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_extract_eval();
+    }
+    
+};
+
+class List_set_shape_eval : public Listincode {
+public:
+    
+    List_set_shape_eval(Listincode* l) : Listincode(l) {}
+    List_set_shape_eval(List* l) : Listincode(l) {}
+    List_set_shape_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_set_shape_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_set_shape_eval();
+    }
+    
+};
+
+class List_at_shape_eval : public Listincode {
+public:
+    
+    List_at_shape_eval(Listincode* l) : Listincode(l) {}
+    List_at_shape_eval(List* l) : Listincode(l) {}
+    List_at_shape_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_at_shape_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_at_shape_eval();
+    }
+    
+};
+
+class List_set_range_eval : public Listincode {
+public:
+    
+    List_set_range_eval(Listincode* l) : Listincode(l) {}
+    List_set_range_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_set_range_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_set_range_eval();
+    }
+    
+};
+
+class List_flatten_eval : public Listincode {
+public:
+    
+    List_flatten_eval(Listincode* l) : Listincode(l) {}
+    List_flatten_eval(List* l) : Listincode(l) {}
+    List_flatten_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_flatten_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_flatten_eval();
+    }
+    
+};
+
+class List_different_eval : public Listincode {
+public:
+    
+    List_different_eval(Listincode* l) : Listincode(l) {}
+    List_different_eval(List* l) : Listincode(l) {}
+    List_different_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_different_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_different_eval();
+    }
+    
+};
+
+class List_equal_eval : public Listincode {
+public:
+    
+    List_equal_eval(Listincode* l) : Listincode(l) {}
+    List_equal_eval(List* l) : Listincode(l) {}
+    List_equal_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_equal_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_equal_eval();
+    }
+    
+};
+
+class List_flip_eval : public Listincode {
+public:
+    
+    List_flip_eval(Listincode* l) : Listincode(l) {}
+    List_flip_eval(List* l) : Listincode(l) {}
+    List_flip_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_flip_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_flip_eval();
+    }
+    
 };
 
 class List_block_eval : public Listincode {
@@ -1838,17 +2233,40 @@ public:
     }
     
     List_block_eval() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_block_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_block_eval();
+    }
     
     Element* eval(LispE* lisp);
 };
 
 class List_set_at_eval : public Listincode {
 public:
-    long listsize;
     
-    List_set_at_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    List_set_at_eval(Listincode* l) : Listincode(l) {}
+    List_set_at_eval(List* l) : Listincode(l) {}
+    
+    List_set_at_eval() {}
+    bool is_straight_eval() {
+        return true;
     }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_set_at_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_set_at_eval();
+    }
+    
     
     Element* eval(LispE* lisp);
 };
@@ -1857,7 +2275,20 @@ class List_car_eval : public Listincode {
 public:
     
     List_car_eval(Listincode* l) : Listincode(l) {}
+    List_car_eval(List* l) : Listincode(l) {}
     List_car_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_car_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_car_eval();
+    }
     
     Element* eval(LispE* lisp);
 };
@@ -1866,7 +2297,20 @@ class List_cdr_eval : public Listincode {
 public:
     
     List_cdr_eval(Listincode* l) : Listincode(l) {}
+    List_cdr_eval(List* l) : Listincode(l) {}
     List_cdr_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_cdr_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_cdr_eval();
+    }
     
     Element* eval(LispE* lisp);
 };
@@ -1875,6 +2319,20 @@ class List_cadr_eval : public Listincode {
 public:
     
     List_cadr_eval(Listincode* l) : Listincode(l) {}
+    List_cadr_eval(List* l) : Listincode(l) {}
+    List_cadr_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_cadr_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_cadr_eval();
+    }
     
     Element* eval(LispE* lisp);
 };
@@ -1882,49 +2340,140 @@ public:
 class List_atomp_eval : public Listincode {
 public:
     List_atomp_eval(Listincode* l) : Listincode(l) {}
-
+    List_atomp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_atomp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_atomp_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
 class List_numberp_eval : public Listincode {
 public:
     List_numberp_eval(Listincode* l) : Listincode(l) {}
-
+    List_numberp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_numberp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_numberp_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
 class List_consp_eval : public Listincode {
 public:
     List_consp_eval(Listincode* l) : Listincode(l) {}
-
+    List_consp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_consp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_consp_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
 class List_emptyp_eval : public Listincode {
 public:
     List_emptyp_eval(Listincode* l) : Listincode(l) {}
-
+    List_emptyp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_emptyp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_emptyp_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
 class List_zerop_eval : public Listincode {
 public:
     List_zerop_eval(Listincode* l) : Listincode(l) {}
-
+    List_zerop_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_zerop_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_zerop_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
 class List_nullp_eval : public Listincode {
 public:
     List_nullp_eval(Listincode* l) : Listincode(l) {}
-
+    List_nullp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_nullp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_nullp_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
 class List_stringp_eval : public Listincode {
 public:
     List_stringp_eval(Listincode* l) : Listincode(l) {}
-
+    List_stringp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_stringp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_stringp_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
@@ -1932,24 +2481,284 @@ class List_push_eval : public Listincode {
 public:
     
     List_push_eval(Listincode* l) : Listincode(l) {}
+    List_push_eval(List* l) : Listincode(l) {}
     List_push_eval() {}
     
-    Element* eval(LispE* lisp);
-};
-
-class List_pop_eval : public Listincode {
-public:
+    bool is_straight_eval() {
+        return true;
+    }
     
-    List_pop_eval(Listincode* l) : Listincode(l) {
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_push_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_push_eval();
     }
     
     Element* eval(LispE* lisp);
 };
 
+class List_pushtrue_eval : public Listincode {
+public:
+    
+    List_pushtrue_eval(Listincode* l) : Listincode(l) {}
+    List_pushtrue_eval(List* l) : Listincode(l) {}
+    List_pushtrue_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_pushtrue_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_pushtrue_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_pushfirst_eval : public Listincode {
+public:
+    
+    List_pushfirst_eval(Listincode* l) : Listincode(l) {}
+    List_pushfirst_eval(List* l) : Listincode(l) {}
+    List_pushfirst_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_pushfirst_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_pushfirst_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_pushlast_eval : public Listincode {
+public:
+    
+    List_pushlast_eval(Listincode* l) : Listincode(l) {}
+    List_pushlast_eval(List* l) : Listincode(l) {}
+    List_pushlast_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_pushlast_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_pushlast_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_print_eval : public Listincode {
+public:
+    
+    List_print_eval(Listincode* l) : Listincode(l) {}
+    List_print_eval(List* l) : Listincode(l) {}
+    List_print_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_print_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_print_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_printerr_eval : public Listincode {
+public:
+    
+    List_printerr_eval(Listincode* l) : Listincode(l) {}
+    List_printerr_eval(List* l) : Listincode(l) {}
+    List_printerr_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_printerr_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_printerr_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_println_eval : public Listincode {
+public:
+    
+    List_println_eval(Listincode* l) : Listincode(l) {}
+    List_println_eval(List* l) : Listincode(l) {}
+    List_println_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_println_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_println_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_printerrln_eval : public Listincode {
+public:
+    
+    List_printerrln_eval(Listincode* l) : Listincode(l) {}
+    List_printerrln_eval(List* l) : Listincode(l) {}
+    List_printerrln_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_printerrln_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_printerrln_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_pop_eval : public Listincode {
+public:
+    
+    List_pop_eval(Listincode* l) : Listincode(l) {}
+    List_pop_eval(List* l) : Listincode(l) {}
+    List_pop_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_pop_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_pop_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_popfirst_eval : public Listincode {
+public:
+    
+    List_popfirst_eval(Listincode* l) : Listincode(l) {}
+    List_popfirst_eval(List* l) : Listincode(l) {}
+    List_popfirst_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_popfirst_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_popfirst_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_poplast_eval : public Listincode {
+public:
+    
+    List_poplast_eval(Listincode* l) : Listincode(l) {}
+    List_poplast_eval(List* l) : Listincode(l) {}
+    List_poplast_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_poplast_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_poplast_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_last_eval : public Listincode {
+public:
+    
+    List_last_eval(Listincode* l) : Listincode(l) {}
+    List_last_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_last_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_last_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
 class List_in_eval : public Listincode {
 public:
     
-    List_in_eval(Listincode* l) : Listincode(l) {
+    List_in_eval(Listincode* l) : Listincode(l) {}
+    List_in_eval(List* l) : Listincode(l) {}
+    List_in_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_in_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_in_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -1957,10 +2766,21 @@ public:
 
 class List_and_eval : public Listincode {
 public:
-    long listsize;
     
-    List_and_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    List_and_eval(Listincode* l) : Listincode(l) {}
+    List_and_eval(List* l) : Listincode(l) {}
+    List_and_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_and_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_and_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -1968,21 +2788,133 @@ public:
 
 class List_or_eval : public Listincode {
 public:
-    long listsize;
     
-    List_or_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    List_or_eval(Listincode* l) : Listincode(l) {}
+    List_or_eval(List* l) : Listincode(l) {}
+    List_or_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_or_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_or_eval();
     }
     
     Element* eval(LispE* lisp);
 };
 
+class List_set_eval : public Listincode {
+public:
+    
+    List_set_eval(Listincode* l) : Listincode(l) {}
+    List_set_eval(List* l) : Listincode(l) {}
+    List_set_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_set_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_set_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_sets_eval : public Listincode {
+public:
+    
+    List_sets_eval(Listincode* l) : Listincode(l) {}
+    List_sets_eval(List* l) : Listincode(l) {}
+    List_sets_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_sets_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_sets_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_seti_eval : public Listincode {
+public:
+    
+    List_seti_eval(Listincode* l) : Listincode(l) {}
+    List_seti_eval(List* l) : Listincode(l) {}
+    List_seti_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_seti_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_seti_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_setn_eval : public Listincode {
+public:
+    
+    List_setn_eval(Listincode* l) : Listincode(l) {}
+    List_setn_eval(List* l) : Listincode(l) {}
+    List_setn_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_setn_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_setn_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
 class List_check_eval : public Listincode {
 public:
     
     List_check_eval(Listincode* l) : Listincode(l) {}
-    
+    List_check_eval(List* l) : Listincode(l) {}
     List_check_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_check_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_check_eval();
+    }
     
     Element* eval(LispE* lisp);
 };
@@ -1991,8 +2923,20 @@ class List_ncheck_eval : public Listincode {
 public:
     
     List_ncheck_eval(Listincode* l) : Listincode(l) {}
-    
+    List_ncheck_eval(List* l) : Listincode(l) {}
     List_ncheck_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_ncheck_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_ncheck_eval();
+    }
     
     Element* eval(LispE* lisp);
 };
@@ -2000,7 +2944,63 @@ public:
 class List_cons_eval : public Listincode {
 public:
     
-    List_cons_eval(Listincode* l) : Listincode(l) {
+    List_cons_eval(Listincode* l) : Listincode(l) {}
+    List_cons_eval(List* l) : Listincode(l) {}
+    List_cons_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_cons_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_cons_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_consb_eval : public Listincode {
+public:
+    
+    List_consb_eval(Listincode* l) : Listincode(l) {}
+    List_consb_eval(List* l) : Listincode(l) {}
+    List_consb_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_consb_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_consb_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_clone_eval : public Listincode {
+public:
+    
+    List_clone_eval(Listincode* l) : Listincode(l) {}
+    List_clone_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_clone_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_clone_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2008,10 +3008,21 @@ public:
 
 class List_list_eval : public Listincode {
 public:
-    long listsize;
     
-    List_list_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    List_list_eval(Listincode* l) : Listincode(l) {}
+    List_list_eval(List* l) : Listincode(l) {}
+    List_list_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_list_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_list_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2019,10 +3030,20 @@ public:
 
 class List_cond_eval : public Listincode {
 public:
-    long listsize;
+    List_cond_eval(Listincode* l) : Listincode(l) {}
+    List_cond_eval(List* l) : Listincode(l) {}
+    List_cond_eval() {}
     
-    List_cond_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_cond_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_cond_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2031,7 +3052,82 @@ public:
 class List_integer_eval : public Listincode {
 public:
     
-    List_integer_eval(Listincode* l) : Listincode(l) {
+    List_integer_eval(Listincode* l) : Listincode(l) {}
+    List_integer_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_integer_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_integer_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_complex_eval : public Listincode {
+public:
+    
+    List_complex_eval(Listincode* l) : Listincode(l) {}
+    List_complex_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_complex_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_complex_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_real_eval : public Listincode {
+public:
+    
+    List_real_eval(Listincode* l) : Listincode(l) {}
+    List_real_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_real_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_real_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_imaginary_eval : public Listincode {
+public:
+    
+    List_imaginary_eval(Listincode* l) : Listincode(l) {}
+    List_imaginary_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_imaginary_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_imaginary_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2040,7 +3136,19 @@ public:
 class List_number_eval : public Listincode {
 public:
     
-    List_number_eval(Listincode* l) : Listincode(l) {
+    List_number_eval(Listincode* l) : Listincode(l) {}
+    List_number_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_number_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_number_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2049,18 +3157,173 @@ public:
 class List_string_eval : public Listincode {
 public:
     
-    List_string_eval(Listincode* l) : Listincode(l) {
+    List_string_eval(Listincode* l) : Listincode(l) {}
+    List_string_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_string_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_string_eval();
     }
     
     Element* eval(LispE* lisp);
 };
 
+class List_nconc_eval : public Listincode {
+public:
+    
+    List_nconc_eval(Listincode* l) : Listincode(l) {}
+    List_nconc_eval(List* l) : Listincode(l) {}
+    List_nconc_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_nconc_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_nconc_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_nconcn_eval : public Listincode {
+public:
+    
+    List_nconcn_eval(Listincode* l) : Listincode(l) {}
+    List_nconcn_eval(List* l) : Listincode(l) {}
+    List_nconcn_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_nconcn_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_nconcn_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_min_eval : public Listincode {
+public:
+    
+    List_min_eval(Listincode* l) : Listincode(l) {}
+    List_min_eval(List* l) : Listincode(l) {}
+    List_min_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_min_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_min_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_minmax_eval : public Listincode {
+public:
+    
+    List_minmax_eval(Listincode* l) : Listincode(l) {}
+    List_minmax_eval(List* l) : Listincode(l) {}
+    List_minmax_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_minmax_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_minmax_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_max_eval : public Listincode {
+public:
+    
+    List_max_eval(Listincode* l) : Listincode(l) {}
+    List_max_eval(List* l) : Listincode(l) {}
+    List_max_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_max_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_max_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_maybe_eval : public Listincode {
+public:
+    
+    List_maybe_eval(Listincode* l) : Listincode(l) {}
+    List_maybe_eval(List* l) : Listincode(l) {}
+    List_maybe_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_maybe_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_maybe_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
 class List_integers_eval : public Listincode {
 public:
-    long listsz;
+    List_integers_eval(Listincode* l) : Listincode(l) {}
+    List_integers_eval(List* l) : Listincode(l) {}
+    List_integers_eval() {}
     
-    List_integers_eval(Listincode* l) : Listincode(l) {
-        listsz = l->size();
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_integers_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_integers_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2068,10 +3331,21 @@ public:
 
 class List_numbers_eval : public Listincode {
 public:
-    long listsz;
     
-    List_numbers_eval(Listincode* l) : Listincode(l) {
-        listsz = l->size();
+    List_numbers_eval(Listincode* l) : Listincode(l) {}
+    List_numbers_eval(List* l) : Listincode(l) {}
+    List_numbers_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_numbers_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_numbers_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2079,10 +3353,21 @@ public:
 
 class List_strings_eval : public Listincode {
 public:
-    long listsz;
     
-    List_strings_eval(Listincode* l) : Listincode(l) {
-        listsz = l->size();
+    List_strings_eval(Listincode* l) : Listincode(l) {}
+    List_strings_eval(List* l) : Listincode(l) {}
+    List_strings_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_strings_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_strings_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2090,10 +3375,21 @@ public:
 
 class List_key_eval : public Listincode {
 public:
-    long listsize;
     
-    List_key_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    List_key_eval(Listincode* l) : Listincode(l) {}
+    List_key_eval(List* l) : Listincode(l) {}
+    List_key_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_key_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_key_eval();
     }
     
     Element* eval(LispE* lisp);
@@ -2101,33 +3397,238 @@ public:
 
 class List_keyi_eval : public Listincode {
 public:
-    long listsize;
     
-    List_keyi_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    List_keyi_eval(Listincode* l) : Listincode(l) {}
+    List_keyi_eval(List* l) : Listincode(l) {}
+    List_keyi_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_keyi_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_keyi_eval();
     }
     
     Element* eval(LispE* lisp);
 };
+
 
 class List_keyn_eval : public Listincode {
 public:
-    long listsize;
     
-    List_keyn_eval(Listincode* l) : Listincode(l) {
-        listsize = l->size();
+    List_keyn_eval(Listincode* l) : Listincode(l) {}
+    List_keyn_eval(List* l) : Listincode(l) {}
+    List_keyn_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_keyn_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_keyn_eval();
     }
     
     Element* eval(LispE* lisp);
 };
 
-class List_function_call : public List {
+class List_compare_eval : public Listincode {
+public:
+    
+    List_compare_eval(Listincode* l) : Listincode(l) {}
+    List_compare_eval(List* l) : Listincode(l) {}
+    List_compare_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_compare_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_compare_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_sort_eval : public Listincode {
+public:
+    
+    List_sort_eval(Listincode* l) : Listincode(l) {}
+    List_sort_eval(List* l) : Listincode(l) {}
+    List_sort_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_sort_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_sort_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_xor_eval : public Listincode {
+public:
+    
+    List_xor_eval(Listincode* l) : Listincode(l) {}
+    List_xor_eval(List* l) : Listincode(l) {}
+    List_xor_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_xor_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_xor_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_type_eval : public Listincode {
+public:
+    
+    List_type_eval(Listincode* l) : Listincode(l) {}
+    List_type_eval(List* l) : Listincode(l) {}
+    List_type_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_type_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_type_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_rotate_eval : public Listincode {
+public:
+    
+    List_rotate_eval(Listincode* l) : Listincode(l) {}
+    List_rotate_eval(List* l) : Listincode(l) {}
+    List_rotate_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_rotate_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_rotate_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_unique_eval : public Listincode {
+public:
+    
+    List_unique_eval(Listincode* l) : Listincode(l) {}
+    List_unique_eval(List* l) : Listincode(l) {}
+    List_unique_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_unique_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_unique_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_values_eval : public Listincode {
+public:
+    
+    List_values_eval(Listincode* l) : Listincode(l) {}
+    List_values_eval(List* l) : Listincode(l) {}
+    List_values_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_values_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_values_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+
+class List_extend_eval : public Listincode {
+public:
+    
+    List_extend_eval(Listincode* l) : Listincode(l) {}
+    List_extend_eval(List* l) : Listincode(l) {}
+    List_extend_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_extend_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_extend_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_function_eval : public Listincode {
 public:
     List* body;
     Element* parameters;
     long nbarguments, defaultarguments;
     
-    List_function_call(LispE* lisp, List* l, List* b) : body(b), List(l, 0) {
+    List_function_eval(LispE* lisp, Listincode* l, List* b) : body(b), Listincode(l) {
         type = t_call;
         status = s_constant;
         nbarguments = liste.size() - 1;
@@ -2145,35 +3646,68 @@ public:
         }
     }
     
+    List_function_eval(LispE* lisp, List* b) : body(b) {
+        liste.push_element(b);
+        type = t_eval;
+        status = s_constant;
+        nbarguments = 1;
+        //the third element is the argument list .
+        //we need our body to be the same number
+        parameters = body->liste[2];
+        defaultarguments = parameters->argumentsize(nbarguments);
+        if (defaultarguments == -1) {
+            wstring message = L"Error: Wrong number of arguments in call to: '(";
+            message += body->liste[1]->asString(lisp);
+            message += L" ";
+            message += body->liste[2]->asString(lisp);
+            message += L"...)'";
+            throw new Error(message);
+        }
+    }
+    
     Element* eval(LispE* lisp);
     
+    bool is_straight_eval() {
+        return true;
+    }
+
     int16_t label() {
         return t_call;
     }
     
 };
 
-class List_pattern_call : public List {
+class List_pattern_eval : public Listincode {
 public:
     List* body;
     int16_t function_label;
-
-    List_pattern_call(List* l, List* b) : body(b), List(l, 0) {
+    
+    List_pattern_eval(Listincode* l, List* b) : body(b), Listincode(l) {
         type = t_call;
         status = s_constant;
         function_label = body->liste[1]->label();
     }
-
+    
+    List_pattern_eval(List* b) : body(b) {
+        liste.push_element(b);
+        type = t_eval;
+        status = s_constant;
+        function_label = body->liste[1]->label();
+    }
+    
     Element* eval(LispE* lisp);
     
-    
+    bool is_straight_eval() {
+        return true;
+    }
+
     int16_t label() {
         return t_call;
     }
-
+    
 };
 
-class List_library_call : public List {
+class List_library_eval : public Listincode {
 public:
     List* body;
     Element* parameters;
@@ -2182,7 +3716,7 @@ public:
     
     //the third element is the argument list .
     //we need our body to be the same number
-    List_library_call(List* l, List* b) : body(b), List(l, 0) {
+    List_library_eval(Listincode* l, List* b) : body(b), Listincode(l) {
         type = t_call;
         status = s_constant;
         nbarguments = liste.size() - 1;
@@ -2190,97 +3724,2263 @@ public:
         defaultarguments = parameters->argumentsize(nbarguments);
     }
     
+    List_library_eval(List* b) : body(b), Listincode() {
+        liste.push_element(b);
+        type = t_eval;
+        status = s_constant;
+        nbarguments = 1;
+        parameters = body->liste[2];
+        defaultarguments = parameters->argumentsize(nbarguments);
+    }
+    
     Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
 
     int16_t label() {
         return t_call;
     }
-
+    
 };
 
-class List_not_eval : public List {
+class List_not_eval : public Listincode {
 public:
     
-    List_not_eval(List* l) : List(l, 0) {
-        terminal = l->terminal;
-    }
-    
+    List_not_eval(Listincode* l) : Listincode(l) {}
     List_not_eval() {}
     
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_not_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_not_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
-class List_setq_eval : public List {
+class List_setq_eval : public Listincode {
 public:
     
-    List_setq_eval(List* l) : List(l, 0) {
-        terminal = l->terminal;
-    }
-    
+    List_setq_eval(Listincode* l) : Listincode(l) {}
     List_setq_eval() {}
     
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_setq_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_setq_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_setg_eval : public Listincode {
+public:
+    
+    List_setg_eval(Listincode* l) : Listincode(l) {}
+    List_setg_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_setg_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_setg_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_seth_eval : public Listincode {
+public:
+    
+    List_seth_eval(Listincode* l) : Listincode(l) {}
+    List_seth_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_seth_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_seth_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_set_const_eval : public Listincode {
+public:
+    
+    List_set_const_eval(Listincode* l) : Listincode(l) {}
+    List_set_const_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_set_const_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_set_const_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_let_eval : public Listincode {
+public:
+    
+    List_let_eval(Listincode* l) : Listincode(l) {}
+    List_let_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_let_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_let_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_select_eval : public Listincode {
+public:
+    
+    List_select_eval(Listincode* l) : Listincode(l) {}
+    List_select_eval(List* l) : Listincode(l) {}
+    List_select_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_select_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_select_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
 
-class List_if_eval : public List {
+class List_replicate_eval : public Listincode {
 public:
     
-    List_if_eval(List* l) : List(l, 0) {
-        terminal = l->terminal;
+    List_replicate_eval(Listincode* l) : Listincode(l) {}
+    List_replicate_eval(List* l) : Listincode(l) {}
+    List_replicate_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
     }
     
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_replicate_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_replicate_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_reverse_eval : public Listincode {
+public:
+    
+    List_reverse_eval(Listincode* l) : Listincode(l) {}
+    List_reverse_eval(List* l) : Listincode(l) {}
+    List_reverse_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_reverse_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_reverse_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_revertsearch_eval : public Listincode {
+public:
+    
+    List_revertsearch_eval(Listincode* l) : Listincode(l) {}
+    List_revertsearch_eval(List* l) : Listincode(l) {}
+    List_revertsearch_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_revertsearch_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_revertsearch_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+
+class List_search_eval : public Listincode {
+public:
+    
+    List_search_eval(Listincode* l) : Listincode(l) {}
+    List_search_eval(List* l) : Listincode(l) {}
+    List_search_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_search_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_search_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_count_eval : public Listincode {
+public:
+    
+    List_count_eval(Listincode* l) : Listincode(l) {}
+    List_count_eval(List* l) : Listincode(l) {}
+    List_count_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_count_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_count_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_searchall_eval : public Listincode {
+public:
+    
+    List_searchall_eval(Listincode* l) : Listincode(l) {}
+    List_searchall_eval(List* l) : Listincode(l) {}
+    List_searchall_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_searchall_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_searchall_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_replaceall_eval : public Listincode {
+public:
+    
+    List_replaceall_eval(Listincode* l) : Listincode(l) {}
+    List_replaceall_eval(List* l) : Listincode(l) {}
+    List_replaceall_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_replaceall_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_replaceall_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_if_eval : public Listincode {
+public:
+    
+    List_if_eval(Listincode* l) : Listincode(l) {}
     List_if_eval() {}
     
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_if_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_if_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
-class List_ife_eval : public List {
+class List_ife_eval : public Listincode {
 public:
     
-    List_ife_eval(List* l) : List(l, 0) {
-        terminal = l->terminal;
-    }
-    
+    List_ife_eval(List* l) : Listincode(l) {}
     List_ife_eval() {}
     
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_ife_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_ife_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
-
-class List_loop_eval : public List {
+class List_dictionary_eval : public Listincode {
 public:
-
-    List_loop_eval(List* l) : List(l, 0) {
-        terminal = l->terminal;
+    
+    List_dictionary_eval(Listincode* l) : Listincode(l) {}
+    List_dictionary_eval(List* l) : Listincode(l) {}
+    List_dictionary_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
     }
     
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_dictionary_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_dictionary_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_dictionaryi_eval : public Listincode {
+public:
+    
+    List_dictionaryi_eval(Listincode* l) : Listincode(l) {}
+    List_dictionaryi_eval(List* l) : Listincode(l) {}
+    List_dictionaryi_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_dictionaryi_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_dictionaryi_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_dictionaryn_eval : public Listincode {
+public:
+    
+    List_dictionaryn_eval(Listincode* l) : Listincode(l) {}
+    List_dictionaryn_eval(List* l) : Listincode(l) {}
+    List_dictionaryn_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_dictionaryn_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_dictionaryn_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_loop_eval : public Listincode {
+public:
+    
+    List_loop_eval(Listincode* l) : Listincode(l) {}
+    List_loop_eval(List* l) : Listincode(l) {}
     List_loop_eval() {}
     
-    Element* eval(LispE* lisp);
-};
-
-class List_while_eval : public List {
-public:
-    long listsize;
+    bool is_straight_eval() {
+        return true;
+    }
     
-    List_while_eval(List* l) : List(l, 0) {
-        terminal = l->terminal;
-        listsize = liste.size();
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_loop_eval(e);
     }
+    
+    List* cloning() {
+        return new List_loop_eval();
+    }
+    
     Element* eval(LispE* lisp);
 };
 
-class List_loopcount_eval : public List {
+class List_quote_eval : public Listincode {
 public:
-    long listsize;
+    
+    List_quote_eval(long l, long f) : Listincode(l, f) {}
+    
+    Element* eval(LispE* lisp);
+};
 
-    List_loopcount_eval(List* l) : List(l, 0) {
-        terminal = l->terminal;
-        listsize = liste.size();
+class List_maplist_eval : public Listincode {
+public:
+    List_maplist_eval(Listincode* l) : Listincode(l) {}
+    
+    List_maplist_eval(List* l) : Listincode(l) {}
+    List_maplist_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_maplist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_maplist_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_droplist_eval : public Listincode {
+public:
+    
+    List_droplist_eval(Listincode* l) : Listincode(l) {}
+    List_droplist_eval(List* l) : Listincode(l) {}
+    List_droplist_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_droplist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_droplist_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
+class List_filterlist_eval : public Listincode {
+public:
+    
+    List_filterlist_eval(Listincode* l) : Listincode(l) {}
+    List_filterlist_eval(List* l) : Listincode(l) {}
+    List_filterlist_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_filterlist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_filterlist_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_takelist_eval : public Listincode {
+public:
+    
+    List_takelist_eval(Listincode* l) : Listincode(l) {}
+    List_takelist_eval(List* l) : Listincode(l) {}
+    List_takelist_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_takelist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_takelist_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_greater_eval : public Listincode {
+public:
+    
+    List_greater_eval(List* l) : Listincode(l) {}
+    List_greater_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_greater_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_greater_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_greaterorequal_eval : public Listincode {
+public:
+    
+    List_greaterorequal_eval(List* l): Listincode(l) {}
+    List_greaterorequal_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_greaterorequal_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_greaterorequal_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_lower_eval : public Listincode {
+public:
+    
+    List_lower_eval(List* l) : Listincode(l) {}
+    List_lower_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_lower_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_lower_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_lowerorequal_eval : public Listincode {
+public:
+    
+    List_lowerorequal_eval(List* l): Listincode(l) {}
+    List_lowerorequal_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_lowerorequal_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_lowerorequal_eval();
     }
     Element* eval(LispE* lisp);
 };
+
+class List_eq_eval : public Listincode {
+public:
+    
+    List_eq_eval(List* l): Listincode(l) {}
+    List_eq_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_eq_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_eq_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_neq_eval : public Listincode {
+public:
+    
+    List_neq_eval(List* l) : Listincode(l) {}
+    List_neq_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_neq_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_neq_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_while_eval : public Listincode {
+public:
+    
+    List_while_eval(Listincode* l) : Listincode(l) {}
+    List_while_eval(List* l) : Listincode(l) {}
+    List_while_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_while_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_while_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_loopcount_eval : public Listincode {
+public:
+    
+    List_loopcount_eval(Listincode* l) : Listincode(l) {}
+    List_loopcount_eval(List* l) : Listincode(l) {}
+    List_loopcount_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_loopcount_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_loopcount_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_equalonezero_eval : public Listincode {
+public:
+    List_equalonezero_eval(Listincode* l) : Listincode(l) {}
+    List_equalonezero_eval(List* l) : Listincode(l) {}
+    List_equalonezero_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_equalonezero_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_equalonezero_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_scan_eval : public Listincode {
+public:
+    List_scan_eval(Listincode* l) : Listincode(l) {}
+    List_scan_eval(List* l) : Listincode(l) {}
+    List_scan_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_scan_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_scan_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_backscan_eval : public Listincode {
+public:
+    List_backscan_eval(Listincode* l) : Listincode(l) {}
+    List_backscan_eval(List* l) : Listincode(l) {}
+    List_backscan_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_backscan_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_backscan_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_rho_eval : public Listincode {
+public:
+    List_rho_eval(Listincode* l) : Listincode(l) {}
+    List_rho_eval(List* l) : Listincode(l) {}
+    List_rho_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_rho_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_rho_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_member_eval : public Listincode {
+public:
+    List_member_eval(Listincode* l) : Listincode(l) {}
+    List_member_eval(List* l) : Listincode(l) {}
+    List_member_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_member_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_member_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_backreduce_eval : public Listincode {
+public:
+    List_backreduce_eval(Listincode* l) : Listincode(l) {}
+    List_backreduce_eval(List* l) : Listincode(l) {}
+    List_backreduce_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_backreduce_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_backreduce_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_concatenate_eval : public Listincode {
+public:
+    List_concatenate_eval(Listincode* l) : Listincode(l) {}
+    List_concatenate_eval(List* l) : Listincode(l) {}
+    List_concatenate_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_concatenate_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_concatenate_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_reduce_eval : public Listincode {
+public:
+    List_reduce_eval(Listincode* l) : Listincode(l) {}
+    List_reduce_eval(List* l) : Listincode(l) {}
+    
+    List_reduce_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_reduce_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_reduce_eval();
+    }
+    Element* eval(LispE*);
+};
+
+
+class List_rank_eval : public Listincode {
+public:
+    List_rank_eval(Listincode* l) : Listincode(l) {}
+    List_rank_eval(List* l) : Listincode(l) {}
+    List_rank_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_rank_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_rank_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_irank_eval : public Listincode {
+public:
+    List_irank_eval(Listincode* l) : Listincode(l) {}
+    List_irank_eval(List* l) : Listincode(l) {}
+    List_irank_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_irank_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_irank_eval();
+    }
+    Element* eval(LispE*);
+};
+
+
+class List_innerproduct_eval : public Listincode {
+public:
+    List_innerproduct_eval(Listincode* l) : Listincode(l) {}
+    List_innerproduct_eval(List* l) : Listincode(l) {}
+    List_innerproduct_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_innerproduct_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_innerproduct_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_outerproduct_eval : public Listincode {
+public:
+    List_outerproduct_eval(Listincode* l) : Listincode(l) {}
+    List_outerproduct_eval(List* l) : Listincode(l) {}
+    List_outerproduct_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_outerproduct_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_outerproduct_eval();
+    }
+    Element* eval(LispE*);
+};
+
+
+class List_stringf_eval : public Listincode {
+public:
+    List_stringf_eval(Listincode* l) : Listincode(l) {}
+    List_stringf_eval(List* l) : Listincode(l) {}
+    List_stringf_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_stringf_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_stringf_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_iota_eval : public Listincode {
+public:
+    List_iota_eval(Listincode* l) : Listincode(l) {}
+    List_iota_eval(List* l) : Listincode(l) {}
+    List_iota_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_iota_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_iota_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_iota0_eval : public Listincode {
+public:
+    List_iota0_eval(Listincode* l) : Listincode(l) {}
+    List_iota0_eval(List* l) : Listincode(l) {}
+    List_iota0_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_iota0_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_iota0_eval();
+    }
+    Element* eval(LispE*);
+};
+
+class List_andvalue_eval : public Listincode {
+public:
+    
+    List_andvalue_eval(Listincode* l) : Listincode(l) {}
+    List_andvalue_eval(List* l) : Listincode(l) {}
+    List_andvalue_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_andvalue_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_andvalue_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_apply_eval : public Listincode {
+public:
+    
+    List_apply_eval(Listincode* l) : Listincode(l) {}
+    List_apply_eval(List* l) : Listincode(l) {}
+    List_apply_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_apply_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_apply_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_atomise_eval : public Listincode {
+public:
+    
+    List_atomise_eval(Listincode* l) : Listincode(l) {}
+    List_atomise_eval(List* l) : Listincode(l) {}
+    List_atomise_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_atomise_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_atomise_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_converttoatom_eval : public Listincode {
+public:
+    
+    List_converttoatom_eval(Listincode* l) : Listincode(l) {}
+    List_converttoatom_eval(List* l) : Listincode(l) {}
+    List_converttoatom_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_converttoatom_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_converttoatom_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_bodies_eval : public Listincode {
+public:
+    
+    List_bodies_eval(Listincode* l) : Listincode(l) {}
+    List_bodies_eval(List* l) : Listincode(l) {}
+    List_bodies_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_bodies_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_bodies_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_catch_eval : public Listincode {
+public:
+    
+    List_catch_eval(Listincode* l) : Listincode(l) {}
+    List_catch_eval(List* l) : Listincode(l) {}
+    List_catch_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_catch_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_catch_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_cyclicp_eval : public Listincode {
+public:
+    
+    List_cyclicp_eval(Listincode* l) : Listincode(l) {}
+    List_cyclicp_eval(List* l) : Listincode(l) {}
+    List_cyclicp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_cyclicp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_cyclicp_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_converttoshort_eval : public Listincode {
+public:
+    
+    List_converttoshort_eval(Listincode* l) : Listincode(l) {}
+    List_converttoshort_eval(List* l) : Listincode(l) {}
+    List_converttoshort_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_converttoshort_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_converttoshort_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_converttofloat_eval : public Listincode {
+public:
+    
+    List_converttofloat_eval(Listincode* l) : Listincode(l) {}
+    List_converttofloat_eval(List* l) : Listincode(l) {}
+    List_converttofloat_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_converttofloat_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_converttofloat_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_elapse_eval : public Listincode {
+public:
+    
+    List_elapse_eval(Listincode* l) : Listincode(l) {}
+    List_elapse_eval(List* l) : Listincode(l) {}
+    List_elapse_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_elapse_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_elapse_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_eval_eval : public Listincode {
+public:
+    
+    List_eval_eval(Listincode* l) : Listincode(l) {}
+    List_eval_eval(List* l) : Listincode(l) {}
+    List_eval_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_eval_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_eval_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_cutlist_eval : public Listincode {
+public:
+    
+    List_cutlist_eval(Listincode* l) : Listincode(l) {}
+    List_cutlist_eval(List* l) : Listincode(l) {}
+    List_cutlist_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_cutlist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_cutlist_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_factorial_eval : public Listincode {
+public:
+    
+    List_factorial_eval(Listincode* l) : Listincode(l) {}
+    List_factorial_eval(List* l) : Listincode(l) {}
+    List_factorial_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_factorial_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_factorial_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_fappend_eval : public Listincode {
+public:
+    
+    List_fappend_eval(Listincode* l) : Listincode(l) {}
+    List_fappend_eval(List* l) : Listincode(l) {}
+    List_fappend_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fappend_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fappend_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_fread_eval : public Listincode {
+public:
+    
+    List_fread_eval(Listincode* l) : Listincode(l) {}
+    List_fread_eval(List* l) : Listincode(l) {}
+    List_fread_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fread_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fread_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_fwrite_eval : public Listincode {
+public:
+    
+    List_fwrite_eval(Listincode* l) : Listincode(l) {}
+    List_fwrite_eval(List* l) : Listincode(l) {}
+    List_fwrite_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fwrite_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fwrite_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_shorts_eval : public Listincode {
+public:
+    
+    List_shorts_eval(Listincode* l) : Listincode(l) {}
+    List_shorts_eval(List* l) : Listincode(l) {}
+    List_shorts_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_shorts_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_shorts_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_irange_eval : public Listincode {
+public:
+    
+    List_irange_eval(Listincode* l) : Listincode(l) {}
+    List_irange_eval(List* l) : Listincode(l) {}
+    List_irange_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_irange_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_irange_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_irangein_eval : public Listincode {
+public:
+    
+    List_irangein_eval(Listincode* l) : Listincode(l) {}
+    List_irangein_eval(List* l) : Listincode(l) {}
+    List_irangein_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_irangein_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_irangein_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_llist_eval : public Listincode {
+public:
+    
+    List_llist_eval(Listincode* l) : Listincode(l) {}
+    List_llist_eval(List* l) : Listincode(l) {}
+    List_llist_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_llist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_llist_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_to_list_eval : public Listincode {
+public:
+    
+    List_to_list_eval(Listincode* l) : Listincode(l) {}
+    List_to_list_eval(List* l) : Listincode(l) {}
+    List_to_list_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_to_list_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_to_list_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_to_llist_eval : public Listincode {
+public:
+    
+    List_to_llist_eval(Listincode* l) : Listincode(l) {}
+    List_to_llist_eval(List* l) : Listincode(l) {}
+    List_to_llist_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_to_llist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_to_llist_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_lock_eval : public Listincode {
+public:
+    
+    List_lock_eval(Listincode* l) : Listincode(l) {}
+    List_lock_eval(List* l) : Listincode(l) {}
+    List_lock_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_lock_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_lock_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_mloop_eval : public Listincode {
+public:
+    
+    List_mloop_eval(Listincode* l) : Listincode(l) {}
+    List_mloop_eval(List* l) : Listincode(l) {}
+    List_mloop_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_mloop_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_mloop_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_lloop_eval : public Listincode {
+public:
+    
+    List_lloop_eval(Listincode* l) : Listincode(l) {}
+    List_lloop_eval(List* l) : Listincode(l) {}
+    List_lloop_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_lloop_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_lloop_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_mark_eval : public Listincode {
+public:
+    
+    List_mark_eval(Listincode* l) : Listincode(l) {}
+    List_mark_eval(List* l) : Listincode(l) {}
+    List_mark_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_mark_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_mark_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_resetmark_eval : public Listincode {
+public:
+    
+    List_resetmark_eval(Listincode* l) : Listincode(l) {}
+    List_resetmark_eval(List* l) : Listincode(l) {}
+    List_resetmark_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_resetmark_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_resetmark_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_tensor_eval : public Listincode {
+public:
+    
+    List_tensor_eval(Listincode* l) : Listincode(l) {}
+    List_tensor_eval(List* l) : Listincode(l) {}
+    List_tensor_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_tensor_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_tensor_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_tensor_float_eval : public Listincode {
+public:
+    
+    List_tensor_float_eval(Listincode* l) : Listincode(l) {}
+    List_tensor_float_eval(List* l) : Listincode(l) {}
+    List_tensor_float_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_tensor_float_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_tensor_float_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_matrix_eval : public Listincode {
+public:
+    
+    List_matrix_eval(Listincode* l) : Listincode(l) {}
+    List_matrix_eval(List* l) : Listincode(l) {}
+    List_matrix_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_matrix_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_matrix_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_matrix_float_eval : public Listincode {
+public:
+    
+    List_matrix_float_eval(Listincode* l) : Listincode(l) {}
+    List_matrix_float_eval(List* l) : Listincode(l) {}
+    List_matrix_float_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_matrix_float_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_matrix_float_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_floats_eval : public Listincode {
+public:
+    
+    List_floats_eval(Listincode* l) : Listincode(l) {}
+    List_floats_eval(List* l) : Listincode(l) {}
+    List_floats_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_floats_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_floats_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_pipe_eval : public Listincode {
+public:
+    
+    List_pipe_eval(Listincode* l) : Listincode(l) {}
+    List_pipe_eval(List* l) : Listincode(l) {}
+    List_pipe_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_pipe_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_pipe_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_prettify_eval : public Listincode {
+public:
+    
+    List_prettify_eval(Listincode* l) : Listincode(l) {}
+    List_prettify_eval(List* l) : Listincode(l) {}
+    List_prettify_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_prettify_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_prettify_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_range_eval : public Listincode {
+public:
+    
+    List_range_eval(Listincode* l) : Listincode(l) {}
+    List_range_eval(List* l) : Listincode(l) {}
+    List_range_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_range_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_range_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_rangein_eval : public Listincode {
+public:
+    
+    List_rangein_eval(Listincode* l) : Listincode(l) {}
+    List_rangein_eval(List* l) : Listincode(l) {}
+    List_rangein_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_rangein_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_rangein_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_sign_eval : public Listincode {
+public:
+    
+    List_sign_eval(Listincode* l) : Listincode(l) {}
+    List_sign_eval(List* l) : Listincode(l) {}
+    List_sign_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_sign_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_sign_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_size_eval : public Listincode {
+public:
+    
+    List_size_eval(Listincode* l) : Listincode(l) {}
+    List_size_eval(List* l) : Listincode(l) {}
+    List_size_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_size_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_size_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_signp_eval : public Listincode {
+public:
+    
+    List_signp_eval(Listincode* l) : Listincode(l) {}
+    List_signp_eval(List* l) : Listincode(l) {}
+    List_signp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_signp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_signp_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_sleep_eval : public Listincode {
+public:
+    
+    List_sleep_eval(Listincode* l) : Listincode(l) {}
+    List_sleep_eval(List* l) : Listincode(l) {}
+    List_sleep_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_sleep_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_sleep_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_space_eval : public Listincode {
+public:
+    
+    List_space_eval(Listincode* l) : Listincode(l) {}
+    List_space_eval(List* l) : Listincode(l) {}
+    List_space_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_space_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_space_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_sum_eval : public Listincode {
+public:
+    
+    List_sum_eval(Listincode* l) : Listincode(l) {}
+    List_sum_eval(List* l) : Listincode(l) {}
+    List_sum_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_sum_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_sum_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_product_eval : public Listincode {
+public:
+    
+    List_product_eval(Listincode* l) : Listincode(l) {}
+    List_product_eval(List* l) : Listincode(l) {}
+    List_product_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_product_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_product_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_transpose_eval : public Listincode {
+public:
+    
+    List_transpose_eval(Listincode* l) : Listincode(l) {}
+    List_transpose_eval(List* l) : Listincode(l) {}
+    List_transpose_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_transpose_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_transpose_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_heap_eval : public Listincode {
+public:
+    
+    List_heap_eval(Listincode* l) : Listincode(l) {}
+    List_heap_eval(List* l) : Listincode(l) {}
+    List_heap_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_heap_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_heap_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_trigger_eval : public Listincode {
+public:
+    
+    List_trigger_eval(Listincode* l) : Listincode(l) {}
+    List_trigger_eval(List* l) : Listincode(l) {}
+    List_trigger_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_trigger_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_trigger_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_wait_eval : public Listincode {
+public:
+    
+    List_wait_eval(Listincode* l) : Listincode(l) {}
+    List_wait_eval(List* l) : Listincode(l) {}
+    List_wait_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_wait_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_wait_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_waiton_eval : public Listincode {
+public:
+    
+    List_waiton_eval(Listincode* l) : Listincode(l) {}
+    List_waiton_eval(List* l) : Listincode(l) {}
+    List_waiton_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_waiton_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_waiton_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_solve_eval : public Listincode {
+public:
+    
+    List_solve_eval(Listincode* l) : Listincode(l) {}
+    List_solve_eval(List* l) : Listincode(l) {}
+    List_solve_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_solve_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_solve_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_determinant_eval : public Listincode {
+public:
+    
+    List_determinant_eval(Listincode* l) : Listincode(l) {}
+    List_determinant_eval(List* l) : Listincode(l) {}
+    List_determinant_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_determinant_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_determinant_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_ludcmp_eval : public Listincode {
+public:
+    
+    List_ludcmp_eval(Listincode* l) : Listincode(l) {}
+    List_ludcmp_eval(List* l) : Listincode(l) {}
+    List_ludcmp_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_ludcmp_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_ludcmp_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_lubksb_eval : public Listincode {
+public:
+    
+    List_lubksb_eval(Listincode* l) : Listincode(l) {}
+    List_lubksb_eval(List* l) : Listincode(l) {}
+    List_lubksb_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_lubksb_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_lubksb_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_invert_eval : public Listincode {
+public:
+    
+    List_invert_eval(Listincode* l) : Listincode(l) {}
+    List_invert_eval(List* l) : Listincode(l) {}
+    List_invert_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_invert_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_invert_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_listand_eval : public Listincode {
+public:
+    
+    List_listand_eval(Listincode* l) : Listincode(l) {}
+    List_listand_eval(List* l) : Listincode(l) {}
+    List_listand_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_listand_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_listand_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_listor_eval : public Listincode {
+public:
+    
+    List_listor_eval(Listincode* l) : Listincode(l) {}
+    List_listor_eval(List* l) : Listincode(l) {}
+    List_listor_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_listor_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_listor_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_listxor_eval : public Listincode {
+public:
+    
+    List_listxor_eval(Listincode* l) : Listincode(l) {}
+    List_listxor_eval(List* l) : Listincode(l) {}
+    List_listxor_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_listxor_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_listxor_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
 
 class List_divide2 : public List {
 public:
@@ -2346,36 +6046,154 @@ public:
     Element* eval(LispE*);
 };
 
-class List_dividen : public List {
+class List_dividen : public Listincode {
 public:
-    List_dividen(List* l) : List(l, 0) {
+    List_dividen(Listincode* l) : Listincode(l) {}
+    List_dividen(List* l) : Listincode(l) {
         terminal = l->terminal;
+    }
+    List_dividen() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_dividen(e);
+    }
+    
+    List* cloning() {
+        return new List_dividen();
+    }
+    
+    Element* eval(LispE*);
+};
+
+class List_plusn : public Listincode {
+public:
+    List_plusn(Listincode* l) : Listincode(l) {}
+    List_plusn(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_plusn() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_plusn(e);
+    }
+    
+    List* cloning() {
+        return new List_plusn();
     }
     Element* eval(LispE*);
 };
 
-class List_plusn : public List {
+class List_minusn : public Listincode {
 public:
-    List_plusn(List* l) : List(l, 0) {
+    List_minusn(Listincode* l) : Listincode(l) {}
+    List_minusn(List* l) : Listincode(l) {
         terminal = l->terminal;
+    }
+    List_minusn() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_minusn(e);
+    }
+    
+    List* cloning() {
+        return new List_minusn();
     }
     Element* eval(LispE*);
 };
 
-class List_minusn : public List {
+class List_multiplyn : public Listincode {
 public:
-    List_minusn(List* l) : List(l, 0) {
+    List_multiplyn(Listincode* l) : Listincode(l) {}
+    List_multiplyn(List* l) : Listincode(l) {
         terminal = l->terminal;
+    }
+    List_multiplyn() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_multiplyn(e);
+    }
+    
+    List* cloning() {
+        return new List_multiplyn();
     }
     Element* eval(LispE*);
 };
 
-class List_multiplyn : public List {
+class List_mod_eval : public Listincode {
 public:
-    List_multiplyn(List* l) : List(l, 0) {
-        terminal = l->terminal;
+    
+    List_mod_eval(Listincode* l) : Listincode(l) {}
+    List_mod_eval(List* l) : Listincode(l) {}
+    List_mod_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
     }
-    Element* eval(LispE*);
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_mod_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_mod_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_leftshift_eval : public Listincode {
+public:
+    
+    List_leftshift_eval(Listincode* l) : Listincode(l) {}
+    List_leftshift_eval(List* l) : Listincode(l) {}
+    List_leftshift_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_leftshift_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_leftshift_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+
+class List_rightshift_eval : public Listincode {
+public:
+    
+    List_rightshift_eval(Listincode* l) : Listincode(l) {}
+    List_rightshift_eval(List* l) : Listincode(l) {}
+    List_rightshift_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_rightshift_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_rightshift_eval();
+    }
+    Element* eval(LispE* lisp);
 };
 
 
@@ -2464,11 +6282,11 @@ public:
     Floats(uint16_t s) : Element(t_floats, s), exchange_value(0) {}
     Floats(long nb, float v) : liste(nb, v), Element(t_floats), exchange_value(0) {}
     Floats(Floats* f, long pos) : liste(f->liste, pos), Element(t_floats), exchange_value(0) {}
-
+    
     virtual Element* newInstance() {
         return new Floats;
     }
-
+    
     Element* asList(LispE* lisp, List* l);
     
     void reserve(long sz) {
@@ -2488,7 +6306,7 @@ public:
             }
         }
     }
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -2502,7 +6320,7 @@ public:
             liste.push_back(((Floats*)c)->liste[i++]);
         }
     }
-
+    
     void set_in(LispE* lisp, Element* c, long i) {
         liste[i] = c->asFloat();
     }
@@ -2514,7 +6332,7 @@ public:
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
-
+    
     void* begin_iter() {
         long* n = new long[1];
         n[0] = 0;
@@ -2523,20 +6341,20 @@ public:
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
-
+    
     void clean_iter(void* it) {
         delete (long*)it;
     }
-
+    
     Element* rotate(LispE* lisp, long axis) {
         Floats* n = new Floats;
         for (long i = liste.size()-1; i >= 0; i--)
             n->liste.push_back(liste[i]);
         return n;
     }
-
+    
     Element* check_member(LispE* lisp, Element* the_set);
-
+    
     bool isContainer() {
         return true;
     }
@@ -2544,7 +6362,7 @@ public:
     bool isValueList() {
         return true;
     }
-
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -2557,13 +6375,13 @@ public:
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
     Element* list_or(LispE*, Element* value);
-
+    
     Element* last_element(LispE* lisp);
     
     void swap(long i, long j) {
         liste.swap(i,j);
     }
-
+    
     void insertion(Element* e, long idx) {
         liste.insert(idx, e->asFloat());
     }
@@ -2575,34 +6393,34 @@ public:
     void beforelast(Element* e) {
         liste.beforelast(e->asFloat());
     }
-
+    
     Element* thekeys(LispE* lisp);
-
+    
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
     bool isequal(LispE* lisp, Element* value);
-
+    
     virtual Element* fullcopy() {
         Floats* e = new Floats;
         e->liste = liste;
         return e;
     }
-
+    
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && !duplicate)
             return this;
-
+        
         return new Floats(this);
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
-
-
+    
+    
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
-
+    
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
@@ -2615,12 +6433,12 @@ public:
     bool isEmpty() {
         return liste.empty();
     }
-
-
+    
+    
     bool isNotEmptyList() {
         return !liste.empty();
     }
-        
+    
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -2635,7 +6453,7 @@ public:
         exchange_value.content = liste.back();
         return &exchange_value;
     }
-
+    
     void flatten(LispE*, List* l);
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Numbers* l);
@@ -2653,7 +6471,7 @@ public:
             delete this;
         }
     }
-
+    
     
     long size() {
         return liste.size();
@@ -2678,7 +6496,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"[]";
-
+        
         sz -= 1;
         
         wstring buffer(L"[");
@@ -2696,7 +6514,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"()";
-
+        
         sz -= 1;
         
         wstring buffer(L"(");
@@ -2709,12 +6527,12 @@ public:
         buffer += L")";
         return buffer;
     }
-
+    
     u_ustring asUString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
             return U"()";
-
+        
         sz -= 1;
         
         u_ustring buffer(U"(");
@@ -2728,17 +6546,17 @@ public:
         return buffer;
     }
     
-
+    
     void push_element(LispE* lisp, List* l);
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
-
+    
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, float v);
     void append(LispE* lisp, long v);
-
+    
     void append(Element* e) {
         liste.push_back(e->asFloat());
     }
@@ -2746,11 +6564,11 @@ public:
     void appendraw(Element* e) {
         liste.push_back(e->asFloat());
     }
-
+    
     void change(long i, Element* e) {
         liste.at(i, e->asFloat());
     }
-
+    
     void changelast(Element* e) {
         liste.atlast(e->asFloat());
     }
@@ -2777,13 +6595,13 @@ public:
     bool Boolean() {
         return (liste.size());
     }
-        
+    
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
         return (liste.empty()?t_floats:v_null);
     }
-
+    
     Element* reverse(LispE*, bool duplique = true);
     
     void storevalue(LispE*, double v);
@@ -2797,7 +6615,7 @@ public:
         liste.erase(0);
         return true;
     }
-
+    
     bool removelast() {
         if (!liste.size())
             return false;
@@ -2809,7 +6627,7 @@ public:
         long d =  e->asInteger();
         return remove(d);
     }
-
+    
     bool remove(long d) {
         if (!liste.size())
             return false;
@@ -2837,10 +6655,10 @@ public:
         y = 1;
         return 3;
     }
-
+    
     Element* insert(LispE* lisp, Element* e, long idx);
     Element* insert_with_compare(LispE*, Element* e, List& comparison);
-
+    
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
     //list...
@@ -2862,13 +6680,13 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
-
+    
     Element* plus_direct(LispE* lisp, Element* e);
     Element* minus_direct(LispE* lisp, Element* e);
     Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
-
-
+    
+    
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -2880,17 +6698,17 @@ public:
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Floatspool(LispE* l, long nb, float v) : lisp(l), Floats(nb, v) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Floatspool(LispE* l, Floats* n) : lisp(l), Floats(n) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Floatspool(LispE* l, Floats* f, long pos) : lisp(l), Floats(f, pos) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
@@ -2902,7 +6720,7 @@ public:
             liste.push_back(nb->liste[i]);
         return this;
     }
-
+    
     inline Floatspool* set(long nb, float v) {
         liste.clear();
         while (nb != 0) {
@@ -2911,16 +6729,16 @@ public:
         }
         return this;
     }
-
+    
     inline Floatspool* set(Floats* n) {
         liste = n->liste;
         return this;
     }
-
-
+    
+    
     Element* newInstance();
     Element* newInstance(Element* v);
-
+    
     
     void decrementstatus(uint16_t nb);
     void decrement();
@@ -2942,11 +6760,11 @@ public:
     Numbers(Numbers* n, long pos) : liste(n->liste, pos), Element(t_numbers), exchange_value(0) {}
     Numbers(uint16_t s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
-
+    
     virtual Element* newInstance() {
         return new Numbers;
     }
-
+    
     void reserve(long sz) {
         liste.reserve(sz);
     }
@@ -2954,7 +6772,7 @@ public:
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
-
+    
     void set_from(Element* c, long i) {
         liste.push_back(((Numbers*)c)->liste[i]);
     }
@@ -2964,7 +6782,7 @@ public:
             liste.push_back(((Numbers*)c)->liste[i++]);
         }
     }
-
+    
     void set_in(LispE* lisp, Element* c, long i) {
         liste[i] = c->asNumber();
     }
@@ -2984,7 +6802,7 @@ public:
             }
         }
     }
-
+    
     Element* invert_sign(LispE* lisp);
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
@@ -2992,7 +6810,7 @@ public:
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
-
+    
     void* begin_iter() {
         long* n = new long[1];
         n[0] = 0;
@@ -3001,20 +6819,20 @@ public:
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
-
+    
     void clean_iter(void* it) {
         delete (long*)it;
     }
-
+    
     Element* rotate(LispE* lisp, long axis) {
         Numbers* n = new Numbers;
         for (long i = liste.size()-1; i >= 0; i--)
             n->liste.push_back(liste[i]);
         return n;
     }
-
+    
     Element* check_member(LispE* lisp, Element* the_set);
-
+    
     bool isContainer() {
         return true;
     }
@@ -3022,7 +6840,7 @@ public:
     bool isValueList() {
         return true;
     }
-
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -3035,13 +6853,13 @@ public:
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
     Element* list_or(LispE*, Element* value);
-
+    
     Element* last_element(LispE* lisp);
     
     void swap(long i, long j) {
         liste.swap(i,j);
     }
-
+    
     void insertion(Element* e, long idx) {
         liste.insert(idx, e->asNumber());
     }
@@ -3053,35 +6871,35 @@ public:
     void beforelast(Element* e) {
         liste.beforelast(e->asNumber());
     }
-
+    
     Element* thekeys(LispE* lisp);
-
+    
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
     bool isequal(LispE* lisp, Element* value);
-
+    
     
     virtual Element* fullcopy() {
         Numbers* e = new Numbers;
         e->liste = liste;
         return e;
     }
-
+    
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && !duplicate)
             return this;
-
+        
         return new Numbers(this);
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
-
-
+    
+    
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
-
+    
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
@@ -3094,12 +6912,12 @@ public:
     bool isEmpty() {
         return liste.empty();
     }
-
-
+    
+    
     bool isNotEmptyList() {
         return !liste.empty();
     }
-
+    
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -3114,7 +6932,7 @@ public:
         exchange_value.content = liste.back();
         return &exchange_value;
     }
-
+    
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
@@ -3132,7 +6950,7 @@ public:
             delete this;
         }
     }
-
+    
     
     long size() {
         return liste.size();
@@ -3157,7 +6975,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"[]";
-
+        
         sz -= 1;
         
         wstring buffer(L"[");
@@ -3175,7 +6993,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"()";
-
+        
         sz -= 1;
         
         wstring buffer(L"(");
@@ -3188,12 +7006,12 @@ public:
         buffer += L")";
         return buffer;
     }
-
+    
     u_ustring asUString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
             return U"()";
-
+        
         sz -= 1;
         
         u_ustring buffer(U"(");
@@ -3211,22 +7029,22 @@ public:
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
-
+    
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
-
+    
     void append(Element* e) {
         liste.push_back(e->asNumber());
     }
     void appendraw(Element* e) {
         liste.push_back(e->asNumber());
     }
-
+    
     void change(long i, Element* e) {
         liste.at(i, e->asNumber());
     }
-
+    
     void changelast(Element* e) {
         liste.atlast(e->asNumber());
     }
@@ -3253,13 +7071,13 @@ public:
     bool Boolean() {
         return (liste.size());
     }
-        
+    
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
         return (liste.empty()?t_numbers:v_null);
     }
-
+    
     Element* reverse(LispE*, bool duplique = true);
     
     void storevalue(LispE*, double v);
@@ -3272,7 +7090,7 @@ public:
         liste.erase(0);
         return true;
     }
-
+    
     bool removelast() {
         if (!liste.size())
             return false;
@@ -3284,7 +7102,7 @@ public:
         long d =  e->asInteger();
         return remove(d);
     }
-
+    
     bool remove(long d) {
         if (!liste.size())
             return false;
@@ -3312,10 +7130,10 @@ public:
         y = 1;
         return 3;
     }
-
+    
     Element* insert(LispE* lisp, Element* e, long idx);
     Element* insert_with_compare(LispE*, Element* e, List& comparison);
-
+    
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
     //list...
@@ -3337,13 +7155,13 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
-
+    
     Element* plus_direct(LispE* lisp, Element* e);
     Element* minus_direct(LispE* lisp, Element* e);
     Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
-
-
+    
+    
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -3354,30 +7172,30 @@ public:
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Numberspool(LispE* l, long nb, double v) : lisp(l), Numbers(nb, v) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Numberspool(LispE* l, Numbers* n) : lisp(l), Numbers(n) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Numberspool(LispE* l, Numbers* f, long pos) : lisp(l), Numbers(f, pos) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
     
-
+    
     inline Numberspool* set(Numbers* nb, long pos) {
         liste.clear();
         for (long i = pos; i < nb->liste.size(); i++)
             liste.push_back(nb->liste[i]);
         return this;
     }
-
+    
     inline Numberspool* set(long nb, double v) {
         liste.clear();
         while (nb != 0) {
@@ -3386,16 +7204,16 @@ public:
         }
         return this;
     }
-
+    
     inline Numberspool* set(Numbers* n) {
         liste = n->liste;
         return this;
     }
-
-
+    
+    
     Element* newInstance();
     Element* newInstance(Element* v);
-
+    
     
     void decrementstatus(uint16_t nb);
     void decrement();
@@ -3404,7 +7222,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-
+    
 };
 
 class Shorts : public Element {
@@ -3418,11 +7236,11 @@ public:
     Shorts(long nb, long v) : liste(nb, v), Element(t_shorts), exchange_value(0) {}
     Shorts(Shorts* i) : liste(i->liste), Element(t_shorts), exchange_value(0) {}
     Shorts(Shorts* i, long pos) : liste(i->liste, pos), Element(t_shorts), exchange_value(0) {}
-
+    
     virtual Element* newInstance() {
         return new Shorts;
     }
-
+    
     void reserve(long sz) {
         liste.reserve(sz);
     }
@@ -3430,13 +7248,13 @@ public:
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
-
+    
     Element* asList(LispE* lisp, List* l);
     Element* invert_sign(LispE* lisp);
     Element* newInstance(Element* v) {
         return new Shorts(liste.size(), v->asInteger());
     }
-
+    
     void set_from(Element* c, long i) {
         liste.push_back(((Shorts*)c)->liste[i]);
     }
@@ -3446,7 +7264,7 @@ public:
             liste.push_back(((Shorts*)c)->liste[i++]);
         }
     }
-
+    
     void set_in(LispE* lisp, Element* c, long i) {
         liste[i] = c->asShort();
     }
@@ -3460,7 +7278,7 @@ public:
             }
         }
     }
-
+    
     void* begin_iter() {
         long* n = new long[1];
         n[0] = 0;
@@ -3469,11 +7287,11 @@ public:
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
-
+    
     void clean_iter(void* it) {
         delete (long*)it;
     }
-
+    
     Element* check_member(LispE* lisp, Element* the_set);
     
     bool isContainer() {
@@ -3483,7 +7301,7 @@ public:
     bool isValueList() {
         return true;
     }
-
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -3496,7 +7314,7 @@ public:
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
     Element* list_or(LispE*, Element* value);
-
+    
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
@@ -3514,14 +7332,14 @@ public:
     void beforelast(Element* e) {
         liste.beforelast(e->asInteger());
     }
-
+    
     Element* thekeys(LispE* lisp);
-
+    
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
     bool isequal(LispE* lisp, Element* value);
-
+    
     
     virtual Element* fullcopy() {
         Shorts* e = new Shorts;
@@ -3531,13 +7349,13 @@ public:
     
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
-
+    
     
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && !duplicate)
             return this;
-
+        
         Shorts* e = new Shorts;
         e->liste = liste;
         return e;
@@ -3554,12 +7372,12 @@ public:
     bool isEmpty() {
         return liste.empty();
     }
-
-
+    
+    
     bool isNotEmptyList() {
         return !liste.empty();
     }
-
+    
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -3574,13 +7392,13 @@ public:
         exchange_value.content = liste.back();
         return &exchange_value;
     }
-
+    
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
-
+    
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
@@ -3598,7 +7416,7 @@ public:
             delete this;
         }
     }
-
+    
     
     long size() {
         return liste.size();
@@ -3623,7 +7441,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"[]";
-
+        
         sz -= 1;
         
         wstring buffer(L"[");
@@ -3641,7 +7459,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"()";
-
+        
         sz -= 1;
         
         wstring buffer(L"(");
@@ -3659,7 +7477,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return U"()";
-
+        
         sz -= 1;
         
         u_ustring buffer(U"(");
@@ -3672,27 +7490,27 @@ public:
         buffer += U")";
         return buffer;
     }
-
+    
     void push_element(LispE* lisp, List* l);
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
-
+    
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
-
+    
     void append(Element* e) {
         liste.push_back(e->asInteger());
     }
     void appendraw(Element* e) {
         liste.push_back(e->asInteger());
     }
-
+    
     void change(long i, Element* e) {
         liste.at(i, e->asInteger());
     }
-
+    
     void changelast(Element* e) {
         liste.atlast( e->asInteger());
     }
@@ -3719,13 +7537,13 @@ public:
     bool Boolean() {
         return (liste.size());
     }
-        
+    
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
         return (liste.empty()?t_integers:v_null);
     }
-
+    
     Element* reverse(LispE*, bool duplique = true);
     
     Element* rotate(LispE* lisp, long axis) {
@@ -3734,7 +7552,7 @@ public:
             n->liste.push_back(liste[i]);
         return n;
     }
-
+    
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
@@ -3746,7 +7564,7 @@ public:
         liste.erase(0);
         return true;
     }
-
+    
     bool removelast() {
         if (!liste.size())
             return false;
@@ -3758,7 +7576,7 @@ public:
         long d =  e->asInteger();
         return remove(d);
     }
-
+    
     bool remove(long d) {
         if (!liste.size())
             return false;
@@ -3786,7 +7604,7 @@ public:
         y = 1;
         return 3;
     }
-
+    
     Element* insert(LispE* lisp, Element* e, long idx);
     Element* insert_with_compare(LispE*, Element* e, List& comparison);
     
@@ -3801,12 +7619,12 @@ public:
     virtual Element* copyatom(LispE* lisp, uint16_t s) {
         if (liste.shared(status) < s)
             return this;
-
+        
         Shorts* i = new Shorts(this);
         release();
         return i;
     }
-
+    
     Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
     Element* bit_and_not(LispE* l, Element* e);
@@ -3820,13 +7638,13 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
-
+    
     
     Element* plus_direct(LispE* lisp, Element* e);
     Element* minus_direct(LispE* lisp, Element* e);
     Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
-
+    
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -3841,11 +7659,11 @@ public:
     Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i) : liste(i->liste), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i, long pos) : liste(i->liste, pos), Element(t_integers), exchange_value(0) {}
-
+    
     virtual Element* newInstance() {
         return new Integers;
     }
-
+    
     void reserve(long sz) {
         liste.reserve(sz);
     }
@@ -3853,7 +7671,7 @@ public:
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
-
+    
     void set_from(Element* c, long i) {
         liste.push_back(((Integers*)c)->liste[i]);
     }
@@ -3863,7 +7681,7 @@ public:
             liste.push_back(((Integers*)c)->liste[i++]);
         }
     }
-
+    
     void set_in(LispE* lisp, Element* c, long i) {
         liste[i] = c->asInteger();
     }
@@ -3873,7 +7691,7 @@ public:
     Element* newInstance(Element* v) {
         return new Integers(liste.size(), v->asInteger());
     }
-
+    
     void concatenate(LispE* lisp, Element* e) {
         if (!e->isList())
             liste.push_back(e->asInteger());
@@ -3883,7 +7701,7 @@ public:
             }
         }
     }
-
+    
     void* begin_iter() {
         long* n = new long[1];
         n[0] = 0;
@@ -3892,11 +7710,11 @@ public:
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
-
+    
     void clean_iter(void* it) {
         delete (long*)it;
     }
-
+    
     Element* check_member(LispE* lisp, Element* the_set);
     
     bool isContainer() {
@@ -3906,7 +7724,7 @@ public:
     bool isValueList() {
         return true;
     }
-
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -3919,7 +7737,7 @@ public:
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
     Element* list_or(LispE*, Element* value);
-
+    
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
@@ -3937,14 +7755,14 @@ public:
     void beforelast(Element* e) {
         liste.beforelast(e->asInteger());
     }
-
+    
     Element* thekeys(LispE* lisp);
-
+    
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
     bool isequal(LispE* lisp, Element* value);
-
+    
     
     virtual Element* fullcopy() {
         Integers* e = new Integers;
@@ -3954,13 +7772,13 @@ public:
     
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
-
+    
     
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && !duplicate)
             return this;
-
+        
         Integers* e = new Integers;
         e->liste = liste;
         return e;
@@ -3977,12 +7795,12 @@ public:
     bool isEmpty() {
         return liste.empty();
     }
-
-
+    
+    
     bool isNotEmptyList() {
         return !liste.empty();
     }
-
+    
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -3997,13 +7815,13 @@ public:
         exchange_value.content = liste.back();
         return &exchange_value;
     }
-
+    
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
-
+    
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
@@ -4021,7 +7839,7 @@ public:
             delete this;
         }
     }
-
+    
     
     long size() {
         return liste.size();
@@ -4046,7 +7864,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"[]";
-
+        
         sz -= 1;
         
         wstring buffer(L"[");
@@ -4064,7 +7882,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"()";
-
+        
         sz -= 1;
         
         wstring buffer(L"(");
@@ -4082,7 +7900,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return U"()";
-
+        
         sz -= 1;
         
         u_ustring buffer(U"(");
@@ -4095,27 +7913,27 @@ public:
         buffer += U")";
         return buffer;
     }
-
+    
     void push_element(LispE* lisp, List* l);
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
-
+    
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
-
+    
     void append(Element* e) {
         liste.push_back(e->asInteger());
     }
     void appendraw(Element* e) {
         liste.push_back(e->asInteger());
     }
-
+    
     void change(long i, Element* e) {
         liste.at(i, e->asInteger());
     }
-
+    
     void changelast(Element* e) {
         liste.atlast( e->asInteger());
     }
@@ -4142,13 +7960,13 @@ public:
     bool Boolean() {
         return (liste.size());
     }
-        
+    
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
         return (liste.empty()?t_integers:v_null);
     }
-
+    
     Element* reverse(LispE*, bool duplique = true);
     
     Element* rotate(LispE* lisp, long axis) {
@@ -4157,7 +7975,7 @@ public:
             n->liste.push_back(liste[i]);
         return n;
     }
-
+    
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
@@ -4169,7 +7987,7 @@ public:
         liste.erase(0);
         return true;
     }
-
+    
     bool removelast() {
         if (!liste.size())
             return false;
@@ -4181,7 +7999,7 @@ public:
         long d =  e->asInteger();
         return remove(d);
     }
-
+    
     bool remove(long d) {
         if (!liste.size())
             return false;
@@ -4209,7 +8027,7 @@ public:
         y = 1;
         return 3;
     }
-
+    
     Element* insert(LispE* lisp, Element* e, long idx);
     Element* insert_with_compare(LispE*, Element* e, List& comparison);
     
@@ -4236,13 +8054,13 @@ public:
     Element* power(LispE* l, Element* e);
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
-
+    
     
     Element* plus_direct(LispE* lisp, Element* e);
     Element* minus_direct(LispE* lisp, Element* e);
     Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
-
+    
     void sorting(LispE* lisp, List* comparison);
 };
 
@@ -4253,17 +8071,17 @@ public:
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Integerspool(LispE* l, long sz, long v) : lisp(l), Integers(sz, v) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Integerspool(LispE* l, Integers* n) : lisp(l), Integers(n) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Integerspool(LispE* l, Integers* f, long pos) : lisp(l), Integers(f, pos) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
@@ -4275,7 +8093,7 @@ public:
             liste.push_back(nb->liste[i]);
         return this;
     }
-
+    
     inline Integerspool* set(long nb, long v) {
         liste.clear();
         while (nb != 0) {
@@ -4284,13 +8102,13 @@ public:
         }
         return this;
     }
-
+    
     inline Integerspool* set(Integers* i) {
         liste = i->liste;
         return this;
     }
-
-
+    
+    
     Element* newInstance();
     Element* newInstance(Element* v);
     void decrementstatus(uint16_t nb);
@@ -4300,14 +8118,14 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-
+    
 };
 
 
 class Matrice_float : public List {
 public:
     long size_x, size_y;
-
+    
     Matrice_float() {
         type = t_matrix_float;
     }
@@ -4323,41 +8141,41 @@ public:
             append(l);
         }
     }
-
+    
     Matrice_float(LispE* lisp, Element* lst, long x, long y) {
         type = t_matrix_float;
         size_x = x;
         size_y = y;
         build(lisp, lst);
     }
-
+    
     Matrice_float(long x, long y, float n) {
         type = t_matrix_float;
         size_x = x;
         size_y = y;
         Floats* l;
-
+        
         for (long i = 0; i < size_x; i++) {
             l = new Floats(size_y, n);
             append(l);
         }
     }
-
+    
     Matrice_float(LispE* lisp, long x, long y, float n);
     Matrice_float(LispE* lisp, Matrice_float* m);
     Matrice_float(LispE* lisp, Matrice* m);
-
+    
     //We steal the ITEM structure of this list
     Matrice_float(List* l) : List(l,0) {
         type = t_matrix_float;
         size_x = l->size();
         size_y = l->index(0)->size();
     }
-
+    
     long shapesize() {
         return 2;
     }
-
+    
     Element* check_member(LispE*, Element* the_set);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
@@ -4365,7 +8183,7 @@ public:
     inline float val(long i, long j) {
         return ((Floats*)liste[i])->liste[j];
     }
-
+    
     inline Element* indexe(long i, long j) {
         return liste[i]->index(j);
     }
@@ -4377,13 +8195,13 @@ public:
     inline void mult(long i, long j, float v) {
         ((Floats*)liste[i])->liste[j] *= v;
     }
-
+    
     char isPureList(long& x, long& y) {
         x = size_x;
         y = size_y;
         return 1;
     }
-
+    
     char isPureList() {
         return 4;
     }
@@ -4403,19 +8221,19 @@ public:
             return new Matrice_float(this);
         return this;
     }
-
+    
     Element* fullcopy() {
         return new Matrice_float(this);
     }
-
+    
     Element* inversion(LispE* lisp);
     Element* solve(LispE* lisp, Matrice_float* Y);
     float determinant();
     Element* ludcmp(LispE* lisp);
     Element* lubksb(LispE* lisp, Integers* indexes, Matrice_float* Y = NULL);
-
+    
     void build(LispE* lisp, Element* lst);
-
+    
     void combine(LispE* lisp, long isz1, long isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             action->in_quote(1, l1);
@@ -4455,7 +8273,7 @@ public:
     Element* reverse(LispE* lisp, bool duplique = true) {
         return rotate(lisp, 1);
     }
-
+    
     void concatenate(LispE* lisp, Element* e) {
         if (e->isList()) {
             if (e->size() != size_x)
@@ -4480,13 +8298,13 @@ public:
     Element* newInstance() {
         return new Matrice_float(size_x, size_y, 0.0);
     }
-
+    
 };
 
 class Matrice : public List {
 public:
     long size_x, size_y;
-
+    
     Matrice() {
         type = t_matrix;
     }
@@ -4502,41 +8320,41 @@ public:
             append(l);
         }
     }
-
+    
     Matrice(LispE* lisp, Element* lst, long x, long y) {
         type = t_matrix;
         size_x = x;
         size_y = y;
         build(lisp, lst);
     }
-
+    
     Matrice(long x, long y, double n) {
         type = t_matrix;
         size_x = x;
         size_y = y;
         Numbers* l;
-
+        
         for (long i = 0; i < size_x; i++) {
             l = new Numbers(size_y, n);
             append(l);
         }
     }
-
+    
     Matrice(LispE* lisp, long x, long y, double n);
     Matrice(LispE* lisp, Matrice* m);
     Matrice(LispE* lisp, Matrice_float* m);
-
+    
     //We steal the ITEM structure of this list
     Matrice(List* l) : List(l,0) {
         type = t_matrix;
         size_x = l->size();
         size_y = l->index(0)->size();
     }
-
+    
     long shapesize() {
         return 2;
     }
-
+    
     Element* check_member(LispE*, Element* the_set);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
@@ -4544,7 +8362,7 @@ public:
     inline double val(long i, long j) {
         return ((Numbers*)liste[i])->liste[j];
     }
-
+    
     inline Element* indexe(long i, long j) {
         return liste[i]->index(j);
     }
@@ -4556,13 +8374,13 @@ public:
     inline void mult(long i, long j, double v) {
         ((Numbers*)liste[i])->liste[j] *= v;
     }
-
+    
     char isPureList(long& x, long& y) {
         x = size_x;
         y = size_y;
         return 1;
     }
-
+    
     char isPureList() {
         return 4;
     }
@@ -4582,19 +8400,19 @@ public:
             return new Matrice(this);
         return this;
     }
-
+    
     Element* fullcopy() {
         return new Matrice(this);
     }
-
+    
     Element* inversion(LispE* lisp);
     Element* solve(LispE* lisp, Matrice* Y);
     double determinant();
     Element* ludcmp(LispE* lisp);
     Element* lubksb(LispE* lisp, Integers* indexes, Matrice* Y = NULL);
-
+    
     void build(LispE* lisp, Element* lst);
-
+    
     void combine(LispE* lisp, long isz1, long isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             action->in_quote(1, l1);
@@ -4634,7 +8452,7 @@ public:
     Element* reverse(LispE* lisp, bool duplique = true) {
         return rotate(lisp, 1);
     }
-
+    
     void concatenate(LispE* lisp, Element* e) {
         if (e->isList()) {
             if (e->size() != size_x)
@@ -4659,13 +8477,13 @@ public:
     Element* newInstance() {
         return new Matrice(size_x, size_y, 0.0);
     }
-
+    
 };
 
 class Tenseur_float : public List {
 public:
     vecte<long> shape;
-
+    
     Tenseur_float() {
         type = t_tensor_float;
     }
@@ -4683,7 +8501,7 @@ public:
         if (shape.size())
             build(0,this, n);
     }
-
+    
     Tenseur_float(LispE* lisp, vecte<long>& sz, Element* n) {
         type = t_tensor_float;
         shape = sz;
@@ -4699,13 +8517,13 @@ public:
             build(lisp, 0,this, lst, idx);
         }
     }
-
+    
     Tenseur_float(Tenseur_float* tensor) {
         type = t_tensor_float;
         shape = tensor->shape;
         tensor->build(0, this);
     }
-
+    
     //We steal the ITEM structure of this list
     Tenseur_float(LispE* lisp, List* l) : List(l, 0) {
         type = t_tensor_float;
@@ -4719,7 +8537,7 @@ public:
     long shapesize() {
         return shape.size();
     }
-
+    
     Element* check_member(LispE*, Element* the_set);
     
     long nbelements() {
@@ -4741,14 +8559,14 @@ public:
     Element* fullcopy() {
         return new Tenseur_float(this);
     }
-
+    
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
     void build(LispE* lisp, long isz, Element* res, float n);
     void build(LispE* lisp, long isz, Element* res, Element* lst, long& idx);
     void build(LispE* lisp, long isz, Element* res);
-
+    
     
     void build(long isz, Element* res, float n) {
         if (isz == shape.size()-2) {
@@ -4767,7 +8585,7 @@ public:
             }
         }
     }
-
+    
     void build(long isz, Element* res, Element* lst, long& idx) {
         if (isz == shape.size()-2) {
             Floats* l;
@@ -4791,7 +8609,7 @@ public:
             }
         }
     }
-
+    
     void build(long isz, Element* res) {
         if (isz == shape.size()-2) {
             Floats* l;
@@ -4810,7 +8628,7 @@ public:
             }
         }
     }
-
+    
     void combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             if (isz1.size() && isz2.size()) {
@@ -4858,7 +8676,7 @@ public:
         y = shape[1];
         return 1;
     }
-
+    
     void getShape(vecte<long>& sz) {
         sz = shape;
     }
@@ -4874,7 +8692,7 @@ public:
         
         return new Tenseur_float(this);
     }
-
+    
     Element* transposed(LispE* lisp);
     Element* rotate(LispE* lisp, long axis);
     Element* reversion(LispE* lisp, Element* value, long pos, long axis, bool init);
@@ -4908,7 +8726,7 @@ public:
         
         concatenate(lisp, 0, this, e);
     }
-
+    
     
     void setvalue(Element* res, Element* lst) {
         if (lst->type == t_numbers) {
@@ -4920,17 +8738,17 @@ public:
             for (long i = 0; i < lst->size(); i++) {
                 setvalue(res->index(i), lst->index(i));
             }
-        }            
+        }
     }
     
     void setvalue(Tenseur_float* lst) {
         setvalue(this, lst);
     }
-
+    
     Element* newInstance() {
         return new Tenseur_float(shape, 0.0);
     }
-
+    
     Element* newInstance(Element* e) {
         return new Tenseur_float(shape, e);
     }
@@ -4939,7 +8757,7 @@ public:
 class Tenseur : public List {
 public:
     vecte<long> shape;
-
+    
     Tenseur() {
         type = t_tensor;
     }
@@ -4957,7 +8775,7 @@ public:
         if (shape.size())
             build(0,this, n);
     }
-
+    
     Tenseur(LispE* lisp, vecte<long>& sz, Element* n) {
         type = t_tensor;
         shape = sz;
@@ -4973,13 +8791,13 @@ public:
             build(lisp, 0,this, lst, idx);
         }
     }
-
+    
     Tenseur(Tenseur* tensor) {
         type = t_tensor;
         shape = tensor->shape;
         tensor->build(0, this);
     }
-
+    
     //We steal the ITEM structure of this list
     Tenseur(LispE* lisp, List* l) : List(l, 0) {
         type = t_tensor;
@@ -4989,11 +8807,11 @@ public:
             e = e->index(0);
         }
     }
-
+    
     long shapesize() {
         return shape.size();
     }
-
+    
     Element* check_member(LispE*, Element* the_set);
     
     long nbelements() {
@@ -5015,14 +8833,14 @@ public:
     Element* fullcopy() {
         return new Tenseur(this);
     }
-
+    
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
     void build(LispE* lisp, long isz, Element* res, double n);
     void build(LispE* lisp, long isz, Element* res, Element* lst, long& idx);
     void build(LispE* lisp, long isz, Element* res);
-
+    
     
     void build(long isz, Element* res, double n) {
         if (isz == shape.size()-2) {
@@ -5041,7 +8859,7 @@ public:
             }
         }
     }
-
+    
     void build(long isz, Element* res, Element* lst, long& idx) {
         if (isz == shape.size()-2) {
             Numbers* l;
@@ -5065,7 +8883,7 @@ public:
             }
         }
     }
-
+    
     void build(long isz, Element* res) {
         if (isz == shape.size()-2) {
             Numbers* l;
@@ -5084,7 +8902,7 @@ public:
             }
         }
     }
-
+    
     void combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
         if (!l1->isList() && !l2->isList()) {
             if (isz1.size() && isz2.size()) {
@@ -5132,7 +8950,7 @@ public:
         y = shape[1];
         return 1;
     }
-
+    
     void getShape(vecte<long>& sz) {
         sz = shape;
     }
@@ -5148,7 +8966,7 @@ public:
         
         return new Tenseur(this);
     }
-
+    
     Element* transposed(LispE* lisp);
     Element* rotate(LispE* lisp, long axis);
     Element* reversion(LispE* lisp, Element* value, long pos, long axis, bool init);
@@ -5182,7 +9000,7 @@ public:
         
         concatenate(lisp, 0, this, e);
     }
-
+    
     
     void setvalue(Element* res, Element* lst) {
         if (lst->type == t_numbers) {
@@ -5200,11 +9018,11 @@ public:
     void setvalue(Tenseur* lst) {
         setvalue(this, lst);
     }
-
+    
     Element* newInstance() {
         return new Tenseur(shape, 0.0);
     }
-
+    
     Element* newInstance(Element* e) {
         return new Tenseur(shape, e);
     }
@@ -5230,11 +9048,11 @@ public:
     virtual Element* newInstance() {
         return new Strings;
     }
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
-
+    
     void set_from(Element* c, long i) {
         liste.push_back(((Strings*)c)->liste[i]);
     }
@@ -5244,15 +9062,15 @@ public:
             liste.push_back(((Strings*)c)->liste[i++]);
         }
     }
-
+    
     void set_in(LispE* lisp, Element* c, long i) {
         liste[i] = c->asUString(lisp);
     }
-
+    
     Element* newInstance(Element* v) {
         return new Strings(liste.size(), v->asString(NULL));
     }
-
+    
     void reserve(long sz) {
         liste.reserve(sz);
     }
@@ -5267,11 +9085,11 @@ public:
     
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
-
+    
     void clean_iter(void* it) {
         delete (long*)it;
     }
-
+    
     void concatenate(LispE* lisp, Element* e) {
         if (!e->isList())
             liste.push_back(e->asUString(lisp));
@@ -5281,7 +9099,7 @@ public:
             }
         }
     }
-
+    
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
     
@@ -5292,7 +9110,7 @@ public:
     bool isValueList() {
         return true;
     }
-
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -5305,7 +9123,7 @@ public:
     Element* list_and(LispE*, Element* value);
     Element* list_xor(LispE*, Element* value);
     Element* list_or(LispE*, Element* value);
-
+    
     Element* last_element(LispE* lisp);
     
     void insertion(Element* e, long idx) {
@@ -5323,14 +9141,14 @@ public:
     void beforelast(Element* e) {
         liste.beforelast(e->asUString(NULL));
     }
-
+    
     Element* thekeys(LispE* lisp);
-
+    
     char check_match(LispE* lisp, Element* value);
     
     bool unify(LispE* lisp, Element* value, bool record);
     bool isequal(LispE* lisp, Element* value);
-
+    
     virtual Element* fullcopy() {
         Strings* e = new Strings();
         e->liste = liste;
@@ -5339,13 +9157,13 @@ public:
     
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
-
+    
     
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && !duplicate)
             return this;
-
+        
         Strings* e = new Strings();
         e->liste = liste;
         return e;
@@ -5362,12 +9180,12 @@ public:
     bool isEmpty() {
         return liste.empty();
     }
-
-
+    
+    
     bool isNotEmptyList() {
         return !liste.empty();
     }
-
+    
     Element* join_in_list(LispE* lisp, u_ustring& sep);
     
     Element* extraction(LispE* lisp, List*);
@@ -5377,16 +9195,16 @@ public:
         exchange_value.content = liste[i];
         return &exchange_value;
     }
-
+    
     Element* last() {
         exchange_value.content = liste.back();
         return &exchange_value;
     }
-
+    
     Element* minimum(LispE*);
     Element* maximum(LispE*);
     Element* minmax(LispE*);
-
+    
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
@@ -5404,7 +9222,7 @@ public:
             delete this;
         }
     }
-
+    
     
     long size() {
         return liste.size();
@@ -5429,7 +9247,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"[]";
-
+        
         sz -= 1;
         
         wstring buffer(L"[");
@@ -5447,7 +9265,7 @@ public:
         long sz = liste.size();
         if (!sz)
             return L"()";
-
+        
         sz -= 1;
         
         wstring buffer(L"(");
@@ -5460,12 +9278,12 @@ public:
         buffer += L")";
         return buffer;
     }
-
+    
     u_ustring asUString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
             return U"()";
-
+        
         sz -= 1;
         
         u_ustring buffer(U"(");
@@ -5479,7 +9297,7 @@ public:
         return buffer;
     }
     
-
+    
     void append(wstring& w) {
         u_pstring k = _w_to_u(w);
         liste.push_back(k);
@@ -5499,22 +9317,22 @@ public:
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
     void push_element_back(LispE* lisp, List* l);
-
+    
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
-
+    
     void append(Element* e) {
         liste.push_back(e->asUString(NULL));
     }
     void appendraw(Element* e) {
         liste.push_back(e->asUString(NULL));
     }
-
+    
     void change(long i, Element* e) {
         liste[i] = e->asUString(NULL);
     }
-
+    
     void changelast(Element* e) {
         liste[liste.size()-1] = e->asUString(NULL);
     }
@@ -5541,13 +9359,13 @@ public:
     bool Boolean() {
         return (liste.size());
     }
-        
+    
     //The label of _EMPTYLIST is v_null
     //We can then compare with () as if it was nil
     int16_t label() {
         return (liste.empty()?t_strings:v_null);
     }
-
+    
     Element* reverse(LispE*, bool duplique = true);
     Element* rotate(LispE* lisp, long axis) {
         Strings* n = new Strings;
@@ -5555,7 +9373,7 @@ public:
             n->liste.push_back(liste[i]);
         return n;
     }
-
+    
     
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
@@ -5567,7 +9385,7 @@ public:
         liste.erase(0);
         return true;
     }
-
+    
     bool removelast() {
         if (!liste.size())
             return false;
@@ -5579,7 +9397,7 @@ public:
         long d =  e->asInteger();
         return remove(d);
     }
-
+    
     bool remove(long d) {
         if (!liste.size())
             return false;
@@ -5607,10 +9425,10 @@ public:
         y = 1;
         return 3;
     }
-
+    
     Element* insert(LispE* lisp, Element* e, long idx);
     Element* insert_with_compare(LispE*, Element* e, List& comparison);
-
+    
     //There is a big difference between clean and clear
     //clear assumes that elements have been appended to the
     //list...
@@ -5620,11 +9438,11 @@ public:
     }
     
     virtual Element* copyatom(LispE* lisp, uint16_t s);
-
+    
     Element* plus(LispE* l, Element* e);
-
+    
     void sorting(LispE* lisp, List* comparison);
-
+    
 };
 
 class Stringspool : public Strings {
@@ -5634,24 +9452,24 @@ public:
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Stringspool(LispE* l, Strings* s) : lisp(l), Strings(s) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Stringspool(LispE* l, Strings* s, long pos) : lisp(l), Strings(s, pos) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     inline Stringspool* set(Strings* i) {
         liste = i->liste;
         return this;
     }
-
+    
     Element* newInstance();
-
+    
     void decrementstatus(uint16_t nb);
     void decrement();
     
@@ -5659,7 +9477,7 @@ public:
     Element* fullcopy();
     Element* copyatom(LispE* lisp, uint16_t s);
     Element* copying(bool duplicate = true);
-
+    
 };
 
 
@@ -5686,7 +9504,7 @@ public:
     bool isList() {
         return true;
     }
-
+    
     long size() {
         return max_iterator;
     }
@@ -5695,7 +9513,7 @@ public:
     void clean_iter(void* it) {}
     Element* next_iter(LispE* lisp, void* iter);
     Element* next_iter_exchange(LispE* lisp, void* iter);
-
+    
     Element* index(long i) {
         index_value->decrement();
         if (last)
@@ -5708,7 +9526,7 @@ public:
         index_value->increment();
         return index_value;
     }
-
+    
     Element* protected_index(LispE* lisp,long i) {
         Element* r;
         if (last)
@@ -5768,7 +9586,7 @@ public:
         }
         return r;
     }
-
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
 };
 

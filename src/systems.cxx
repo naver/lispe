@@ -135,7 +135,7 @@ public:
                 myfile.seekg(nb, std::ios_base::cur);
             else
                 myfile.seekg(nb, std::ios_base::end);
-        return true_;
+        return True_;
     }
 
     Element* tell(LispE* lisp) {
@@ -367,7 +367,7 @@ public:
         myfile << ch;
         if (myfile.fail())
             throw new Error("Error: 'write' operation did fail");
-        return true_;
+        return True_;
     }
     
     Element* writeln(LispE* lisp, Element* line) {
@@ -378,26 +378,26 @@ public:
         myfile << ch << std::endl;
         if (myfile.fail())
             throw new Error("Error: 'writeln' operation did fail");
-        return true_;
+        return True_;
     }
     
     Element* close(LispE* lisp) {
         if (!open || mode == file_open)
-            return false_;
+            return False_;
         open = false;
         myfile.close();
         mode = file_open;
-        return true_;
+        return True_;
     }
     
     Element* eof(LispE* lisp) {
         if (!open || mode == file_read) {
             if (myfile.eof()) {
                 mode = file_open;
-                return true_;
+                return True_;
             }
         }
-        return false_;
+        return False_;
     }
 
     wstring asString(LispE* lisp) {
@@ -1059,12 +1059,12 @@ public:
         if (ftyp == INVALID_FILE_ATTRIBUTES)
             return null_;  //something is wrong with your path!
         if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
-            return true_;   // this is a directory!
+            return True_;   // this is a directory!
     #else
         struct stat st;
         if (stat(STR(dirName_in), &st) == 0)
             if ((st.st_mode & S_IFMT) == S_IFDIR)
-                return true_;
+                return True_;
     #endif
         return null_;    // this is not a directory!
     }
@@ -1151,7 +1151,7 @@ public:
 #else
                 setenv(nom.c_str(), valeur.c_str(), 1);
 #endif
-                return true_;
+                return True_;
             }
             case sys_getenv: {
                 Element* lisp_nom = lisp->get_variable(v_name);

@@ -74,7 +74,7 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
         }
     }
     
-    lisp.eval("(setq accu1 0) (setq accu2 0) (setq accu3 0) (setq accu4 0) (setq accu5 0) (setq accu6 0) (setq accu7 0) (setq accu8 0) (setq accu9 0)");
+    lisp.eval(U"(setq accu1 0) (setq accu2 0) (setq accu3 0) (setq accu4 0) (setq accu5 0) (setq accu6 0) (setq accu7 0) (setq accu8 0) (setq accu9 0)");
     
     if (with_file) {
         e = lisp.load(code);

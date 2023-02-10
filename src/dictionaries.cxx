@@ -431,10 +431,10 @@ Element* Dictionary::minmax(LispE* lisp) {
             v_max = a.second;
         }
         else {
-            if (v_max->less(lisp, a.second) == true_)
+            if (v_max->less(lisp, a.second)->Boolean())
                 v_max = a.second;
             else
-                if (v_min->more(lisp, a.second) == true_)
+                if (v_min->more(lisp, a.second)->Boolean())
                     v_min = a.second;
         }
     }
@@ -526,7 +526,7 @@ Element* Dictionary::thevalues(LispE* lisp) {
 
 Element* Dictionary::search_element(LispE* lisp, Element* valeur, long ix) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             u_ustring keyvalue = a.first;
             return lisp->provideString(keyvalue);
         }
@@ -536,7 +536,7 @@ Element* Dictionary::search_element(LispE* lisp, Element* valeur, long ix) {
 
 bool Dictionary::check_element(LispE* lisp, Element* valeur) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             u_ustring keyvalue = a.first;
             return true;
         }
@@ -556,7 +556,7 @@ Element* Dictionary::replace_all_elements(LispE* lisp, Element* valeur, Element*
     long nb = 0;
     Element* novel = remp->copying(false);
     for (auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             a.second->decrement();
             a.second = novel;
             novel->increment();
@@ -572,7 +572,7 @@ Element* Dictionary::search_all_elements(LispE* lisp, Element* valeur, long ix) 
     Strings* l = lisp->provideStrings();
     u_ustring keyvalue;
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             keyvalue = a.first;
             l->append(keyvalue);
         }
@@ -588,7 +588,7 @@ Element* Dictionary::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
     u_ustring keyvalue;
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             keyvalue = a.first;
             nb++;
         }
@@ -598,7 +598,7 @@ Element* Dictionary::count_all_elements(LispE* lisp, Element* valeur, long ix) {
 
 Element* Dictionary::search_reverse(LispE* lisp, Element* valeur, long ix) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             u_ustring keyvalue = a.first;
             return lisp->provideString(keyvalue);
         }
@@ -767,10 +767,10 @@ Element* Dictionary_i::minmax(LispE* lisp) {
             v_max = a.second;
         }
         else {
-            if (v_max->less(lisp, a.second) == true_)
+            if (v_max->less(lisp, a.second)->Boolean())
                 v_max = a.second;
             else
-                if (v_min->more(lisp, a.second) == true_)
+                if (v_min->more(lisp, a.second)->Boolean())
                     v_min = a.second;
         }
     }
@@ -859,7 +859,7 @@ Element* Dictionary_i::thevalues(LispE* lisp) {
 
 Element* Dictionary_i::search_element(LispE* lisp, Element* valeur, long ix) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             return lisp->provideNumber(a.first);
     }
     return null_;
@@ -867,7 +867,7 @@ Element* Dictionary_i::search_element(LispE* lisp, Element* valeur, long ix) {
 
 bool Dictionary_i::check_element(LispE* lisp, Element* valeur) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             return true;
     }
     return false;
@@ -885,7 +885,7 @@ Element* Dictionary_i::replace_all_elements(LispE* lisp, Element* valeur, Elemen
     long nb = 0;
     Element* novel = remp->copying(false);
     for (auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             a.second->decrement();
             a.second = novel;
             novel->increment();
@@ -900,7 +900,7 @@ Element* Dictionary_i::replace_all_elements(LispE* lisp, Element* valeur, Elemen
 Element* Dictionary_i::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Integers* l = lisp->provideIntegers();
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             l->liste.push_back(a.first);
     }
     if (l->liste.size() == 0) {
@@ -913,7 +913,7 @@ Element* Dictionary_i::search_all_elements(LispE* lisp, Element* valeur, long ix
 Element* Dictionary_i::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             nb++;
     }
     return lisp->provideInteger(nb);
@@ -921,7 +921,7 @@ Element* Dictionary_i::count_all_elements(LispE* lisp, Element* valeur, long ix)
 
 Element* Dictionary_i::search_reverse(LispE* lisp, Element* valeur, long ix) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             return lisp->provideNumber(a.first);
     }
     return null_;
@@ -1038,10 +1038,10 @@ Element* Dictionary_n::minmax(LispE* lisp) {
             v_max = a.second;
         }
         else {
-            if (v_max->less(lisp, a.second) == true_)
+            if (v_max->less(lisp, a.second)->Boolean())
                 v_max = a.second;
             else
-                if (v_min->more(lisp, a.second) == true_)
+                if (v_min->more(lisp, a.second)->Boolean())
                     v_min = a.second;
         }
     }
@@ -1130,7 +1130,7 @@ Element* Dictionary_n::thevalues(LispE* lisp) {
 
 Element* Dictionary_n::search_element(LispE* lisp, Element* valeur, long ix) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             return lisp->provideNumber(a.first);
     }
     return null_;
@@ -1138,7 +1138,7 @@ Element* Dictionary_n::search_element(LispE* lisp, Element* valeur, long ix) {
 
 bool Dictionary_n::check_element(LispE* lisp, Element* valeur) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             return true;
     }
     return false;
@@ -1156,7 +1156,7 @@ Element* Dictionary_n::replace_all_elements(LispE* lisp, Element* valeur, Elemen
     long nb = 0;
     Element* novel = remp->copying(false);
     for (auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_) {
+        if (a.second->equal(lisp, valeur)->Boolean()) {
             a.second->decrement();
             a.second = novel;
             novel->increment();
@@ -1171,7 +1171,7 @@ Element* Dictionary_n::replace_all_elements(LispE* lisp, Element* valeur, Elemen
 Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     Numbers* l = lisp->provideNumbers();
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             l->liste.push_back(a.first);
     }
     if (l->liste.size() == 0) {
@@ -1184,7 +1184,7 @@ Element* Dictionary_n::search_all_elements(LispE* lisp, Element* valeur, long ix
 Element* Dictionary_n::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     long nb = 0;
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             nb++;
     }
     return lisp->provideInteger(nb);
@@ -1192,7 +1192,7 @@ Element* Dictionary_n::count_all_elements(LispE* lisp, Element* valeur, long ix)
 
 Element* Dictionary_n::search_reverse(LispE* lisp, Element* valeur, long ix) {
     for (const auto& a : dictionary) {
-        if (a.second->equal(lisp, valeur) == true_)
+        if (a.second->equal(lisp, valeur)->Boolean())
             return lisp->provideNumber(a.first);
     }
     return null_;

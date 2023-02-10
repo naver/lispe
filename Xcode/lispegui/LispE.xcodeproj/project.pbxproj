@@ -25,6 +25,7 @@
 		0B55A5181FC316B4005339A9 /* CodeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B55A5171FC316B4005339A9 /* CodeViewController.m */; };
 		0B6B3CBF260DE7460062212D /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0B6B3CBE260DE7460062212D /* AppIcon.icns */; };
 		0B9A3AA3265D2A0F00F1D1DD /* ontology.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */; };
+		0BA876BD298030510072CB1B /* straight_eval.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BA876BC298030510072CB1B /* straight_eval.cxx */; };
 		0BAF45C827970101004BDD50 /* dictionaries.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C527970101004BDD50 /* dictionaries.cxx */; };
 		0BAF45C927970101004BDD50 /* lists.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C627970101004BDD50 /* lists.cxx */; };
 		0BAF45CA27970101004BDD50 /* sets.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C727970101004BDD50 /* sets.cxx */; };
@@ -102,6 +103,7 @@
 		0B78F07427BFC9F700C0706E /* mapbin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = mapbin.h; path = ../../../include/mapbin.h; sourceTree = "<group>"; };
 		0B7C15FA265E38BE00EC82A5 /* ontology.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = ontology.h; path = ../../../include/ontology.h; sourceTree = "<group>"; };
 		0B9A3AA2265D2A0F00F1D1DD /* ontology.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ontology.cxx; path = ../../../src/ontology.cxx; sourceTree = "<group>"; };
+		0BA876BC298030510072CB1B /* straight_eval.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = straight_eval.cxx; path = ../../../src/straight_eval.cxx; sourceTree = "<group>"; };
 		0BAF45C527970101004BDD50 /* dictionaries.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dictionaries.cxx; path = ../../../src/dictionaries.cxx; sourceTree = "<group>"; };
 		0BAF45C627970101004BDD50 /* lists.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lists.cxx; path = ../../../src/lists.cxx; sourceTree = "<group>"; };
 		0BAF45C727970101004BDD50 /* sets.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sets.cxx; path = ../../../src/sets.cxx; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 				0B4E1A9C260B85D700BBAE21 /* rgx.cxx */,
 				0BAF45C727970101004BDD50 /* sets.cxx */,
 				0B4E1A96260B85D700BBAE21 /* sockets.cxx */,
+				0BA876BC298030510072CB1B /* straight_eval.cxx */,
 				0B4E1A94260B85D700BBAE21 /* strings.cxx */,
 				0B4E1A99260B85D700BBAE21 /* systems.cxx */,
 				0B4E1A9A260B85D700BBAE21 /* tools.cxx */,
@@ -442,6 +445,7 @@
 				0B4E1AB1260B85D800BBAE21 /* maths.cxx in Sources */,
 				0B4E1AAE260B85D800BBAE21 /* rgx.cxx in Sources */,
 				0B4E1AAB260B85D800BBAE21 /* systems.cxx in Sources */,
+				0BA876BD298030510072CB1B /* straight_eval.cxx in Sources */,
 				0BF4E3F51FC2D12D004C0821 /* main.m in Sources */,
 				0B4E1AAF260B85D800BBAE21 /* jagget.cxx in Sources */,
 				0BF4E3EA1FC2D12D004C0821 /* AppDelegate.m in Sources */,

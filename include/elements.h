@@ -14,6 +14,8 @@
 #include "tools.h"
 #include "vecte.h"
 #include <set>
+#include <complex>
+#include <cmath>
 
 #ifdef MACDEBUG
 extern vector<Element*> __indexes;
@@ -39,27 +41,27 @@ typedef enum {
     v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, 
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number,
+    t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number, t_complex,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
-    t_call,
+    t_call, t_eval,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, l_next,
     
     //Default Lisp instructions
-    l_number, l_float, l_string, l_short, l_integer, l_atom,
+    l_number, l_float, l_string, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary,
         
     //threads
     l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear, l_threadspace, l_thread,
     
     //Recording in the stack or in memory
-    l_sleep, l_wait,
-    l_lambda, l_defun, l_infix, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
+    l_sleep, l_wait, l_infix,
+    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
     l_set_const, l_setq, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
     l_block, l_root, l_elapse, l_code,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,
@@ -109,13 +111,14 @@ typedef enum {
     l_while, l_loop, l_loopcount, l_range, l_rangein, l_irange, l_irangein, l_mloop, l_lloop,
     l_atoms, l_atomise, l_join, l_sort,
     l_compile, l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
-    l_apply, l_maplist, l_mapcar, l_filterlist, l_droplist, l_takelist, l_mapping, l_checking, l_folding,
-    l_data, l_replicate,
+    l_apply, l_cutlist, l_maplist, l_filterlist, l_droplist, l_takelist,
+    l_mapcar, l_filtercar, l_dropcar, l_takecar,
+    l_checking, l_data, l_replicate,
     
     l_map, l_filter, l_take, l_repeat, l_cycle, l_drop, l_takewhile, l_dropwhile,
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
     
-    l_zip, l_zipwith,
+    l_zip, l_zipwith, l_version,
     c_opening, c_closing, c_opening_bracket, c_closing_bracket, c_opening_data_brace, c_opening_brace, c_closing_brace, c_colon, c_point,
     e_error_brace, e_error_bracket, e_error_parenthesis, e_error_string, e_no_error,
     t_comment, l_final
@@ -162,6 +165,9 @@ const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 #define true_ lisp->n_true
 #define null_ lisp->n_null
 
+#define True_ lisp->True()
+#define False_ lisp->False()
+
 #define quote_ lisp->delegation->_QUOTE
 
 #define emptyatom_ lisp->delegation->_EMPTYATOM
@@ -174,7 +180,7 @@ const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 #define one_ lisp->n_one
 #define two_ lisp->delegation->_TWO
 
-#define booleans_ lisp->_BOOLEANS
+#define booleans_ lisp->_BOOLEANS[lisp->select_bool_as_one]
 #define numbools_ lisp->delegation->_NUMERICAL_BOOLEANS
 
 #define terminal_ lisp->delegation->_TERMINAL
@@ -309,6 +315,14 @@ public:
     
     virtual Element* rotate(LispE* lisp, long axis) {
         return reverse(lisp, true);
+    }
+
+    virtual bool is_quote() {
+        return false;
+    }
+
+    virtual bool is_straight_eval() {
+        return false;
     }
 
     virtual Element* asList(LispE* lisp, List* l);
@@ -529,7 +543,8 @@ public:
     virtual int16_t asShort() {
         return 0;
     }
-    
+
+
     virtual long asInteger() {
         return 0;
     }
@@ -709,11 +724,16 @@ public:
         }
     }
     
+    
     virtual void release() {
         if (!status)
             delete this;
     }
-    
+
+    virtual void force_release() {
+        release();
+    }
+
     virtual bool equalvalue(long n) {
         return false;
     }
@@ -944,6 +964,10 @@ public:
         
     Element* eval(LispE*) {
         return value;
+    }
+    
+    bool is_quote() {
+        return true;
     }
     
     void requoting(Element* v) {
@@ -1398,6 +1422,9 @@ public:
     bool equalvalue(float v) {
         return (v == content);
     }
+    
+    Element* duplicate_constant(LispE* lisp);
+
 
     Element* invert_sign(LispE* lisp);
     Element* reverse(LispE*, bool duplique = true);
@@ -1413,6 +1440,10 @@ public:
     Element* replace(LispE* lisp, Element* i, Element* e) {
         content = e->asFloat();
         return this;
+    }
+    
+    bool isEmpty() {
+        return (content == 0);
     }
     
     void setvalue(float v) {content = v;}
@@ -1549,10 +1580,16 @@ public:
         return (v == content);
     }
 
+    bool isEmpty() {
+        return (content == 0);
+    }
+
     Element* replace(LispE* lisp, Element* i, Element* e) {
         content = e->asNumber();
         return this;
     }
+
+    Element* duplicate_constant(LispE* lisp);
 
     Element* invert_sign(LispE* lisp);
     Element* reverse(LispE*, bool duplique = true);
@@ -1755,6 +1792,12 @@ public:
     bool equalvalue(int16_t n) {
         return (content == n);
     }
+
+    bool isEmpty() {
+        return (content == 0);
+    }
+
+    Element* duplicate_constant(LispE* lisp);
     
     Element* replace(LispE* lisp, Element* i, Element* e) {
         content = e->asShort();
@@ -1876,30 +1919,175 @@ public:
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
 
-    Element* plus_direct(LispE* lisp, Element* e) {
-        if (e->type == t_short) {
-            content += ((Short*)e)->content;
-            return this;
-        }
-        return plus(lisp, e);
+    Element* plus_direct(LispE* lisp, Element* e);
+    Element* minus_direct(LispE* lisp, Element* e);
+    Element* multiply_direct(LispE* lisp, Element* e);
+    Element* divide_direct(LispE* lisp, Element* e);
+
+};
+
+class Complex : public Element {
+public:
+ 
+    std::complex<double> content;
+    
+    Complex(std::complex<double>& cmp) : Element(t_complex), content(cmp) {}
+    Complex(double d, double imaginary) : Element(t_complex), content(d, imaginary) {}
+    Complex(double d, double imaginary, uint16_t s) : content(d, imaginary), Element(t_short, s) {}
+
+    Element* duplicate_constant(LispE* lisp);
+    
+    Element* invert_sign(LispE* lisp);
+    bool egal(Element* e);
+    Element* equal(LispE* lisp, Element* e);
+    Element* less(LispE* lisp, Element* e);
+    Element* compare(LispE* lisp, Element* e);
+    Element* lessorequal(LispE* lisp, Element* e);
+    Element* more(LispE* lisp, Element* e);
+    Element* moreorequal(LispE* lisp, Element* e);
+    
+    void setvalue(int16_t v) { content = v;}
+
+    
+    char check_match(LispE* lisp, Element* value) {
+        return check_ok*(value->type == t_complex && content == ((Complex*)value)->content);
     }
     
-    Element* minus_direct(LispE* lisp, Element* e) {
-        if (e->type == t_short) {
-            content -= ((Short*)e)->content;
-            return this;
+    bool unify(LispE* lisp, Element* value, bool record) {
+        return (value == this || (value->type == t_complex && content == ((Complex*)value)->content));
+    }
+
+    bool isequal(LispE* lisp, Element* value) {
+        return (value == this || (value->type == t_complex && content == ((Complex*)value)->content));
+    }
+
+    Element* reverse(LispE*, bool duplique = true);
+    
+    bool isEmpty() {
+        return (content.imag() == 0 && content.real() == 0);
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        u_ustring reel = convertToUString((double)content.real());
+        reel += U",";
+        double i = content.imag();
+        if (i == 1)
+            reel += U"";
+        else {
+            if (i == -1)
+                reel += U"-";
+            else
+                reel += convertToUString((double)content.imag());
         }
-        return minus(lisp, e);
+        reel += U"i";
+        return reel;
+    }
+
+    wstring asString(LispE* lisp) {
+        wstring reel = convertToWString((double)content.real());
+        reel += L",";
+        double i = content.imag();
+        if (i == 1)
+            reel += L"";
+        else {
+            if (i == -1)
+                reel += L"-";
+            else
+                reel += convertToWString((double)content.imag());
+        }
+        reel += L"i";
+        return reel;
+    }
+
+    string toString(LispE* lisp) {
+        string reel = convertToString((double)content.real());
+        reel += ",";
+        double i = content.imag();
+        if (i == 1)
+            reel += "";
+        else {
+            if (i == -1)
+                reel += "-";
+            else
+                reel += convertToString((double)content.imag());
+        }
+        reel += "i";
+        return reel;
+    }
+
+    bool isInteger() {
+        return true;
+    }
+
+    bool isNumber() {
+        return true;
     }
     
-    Element* multiply_direct(LispE* lisp, Element* e) {
-        if (e->type == t_short) {
-            content *= ((Short*)e)->content;
-            return this;
-        }
-        return multiply(lisp, e);
+    double checkNumber(LispE* lisp) {
+        return content.real();
     }
     
+    long checkInteger(LispE* lisp) {
+        return content.real();
+    }
+    
+    int16_t checkShort(LispE* lisp) {
+        return content.real();
+    }
+
+    double asNumber() {
+        return content.real();
+    }
+    
+    float asFloat() {
+        return content.real();
+    }
+
+    int16_t asShort() {
+        return content.real();
+    }
+
+    long asInteger() {
+        return content.real();
+    }
+    
+    int asInt() {
+        return (int)content.real();
+    }
+
+    bool Boolean() {
+        return (content.real() || content.imag());
+    }
+    
+    Element* fullcopy() {
+        return new Complex(content);
+    }
+
+    Element* copyatom(LispE* lisp, uint16_t s) {
+        if (status < s)
+            return this;
+        return new Complex(content);
+    }
+
+    // There is a difference between the two copies
+    //The first one makes a final copy
+    Element* copying(bool duplicate = true) {
+        if (!status)
+            return this;
+        
+        return new Complex(content);
+    }
+    
+    Element* plus(LispE* l, Element* e);
+    Element* minus(LispE* l, Element* e);
+    Element* multiply(LispE* l, Element* e);
+    Element* divide(LispE* l, Element* e);
+    Element* power(LispE* l, Element* e);
+    Element* mod(LispE* l, Element* e);
+
+    Element* plus_direct(LispE* lisp, Element* e);
+    Element* minus_direct(LispE* lisp, Element* e);
+    Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
 
 };
@@ -1918,6 +2106,12 @@ public:
         return (content == n);
     }
     
+    bool isEmpty() {
+        return (content == 0);
+    }
+
+    Element* duplicate_constant(LispE* lisp);
+
     Element* invert_sign(LispE* lisp);
     bool egal(Element* e);
     Element* equal(LispE* lisp, Element* e);
@@ -2033,30 +2227,9 @@ public:
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
 
-    Element* plus_direct(LispE* lisp, Element* e) {
-        if (e->type == t_integer) {
-            content += ((Integer*)e)->content;
-            return this;
-        }
-        return plus(lisp, e);
-    }
-    
-    Element* minus_direct(LispE* lisp, Element* e) {
-        if (e->type == t_integer) {
-            content -= ((Integer*)e)->content;
-            return this;
-        }
-        return minus(lisp, e);
-    }
-    
-    Element* multiply_direct(LispE* lisp, Element* e) {
-        if (e->type == t_integer) {
-            content *= ((Integer*)e)->content;
-            return this;
-        }
-        return multiply(lisp, e);
-    }
-    
+    Element* plus_direct(LispE* lisp, Element* e);
+    Element* minus_direct(LispE* lisp, Element* e);
+    Element* multiply_direct(LispE* lisp, Element* e);
     Element* divide_direct(LispE* lisp, Element* e);
 
 };
@@ -2162,6 +2335,8 @@ public:
     String(u_ustring c, uint16_t s) : Element(t_string, s) {
         content = c;
     }
+
+    Element* duplicate_constant(LispE* lisp);
 
     Element* replace(LispE* lisp, Element* i, Element* e) {
         content = e->asUString(lisp);

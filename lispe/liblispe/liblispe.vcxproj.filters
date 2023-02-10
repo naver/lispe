@@ -95,5 +95,8 @@
     <ClCompile Include="..\..\src\sets.cxx">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\straight_eval.cxx">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
