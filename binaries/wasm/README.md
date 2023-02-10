@@ -1,31 +1,52 @@
 # LispE WebAssembly
 
-This directory contains the code to execute LispE as a WASM library.
+This is the code to compile a WASM version of LispE.
 
-Here is a list of the necessary files to test it (only the last two are necessary to run LispE as a WASM library)
+### Some Documentations
+1. [C to WASM](https://developer.mozilla.org/en-US/docs/WebAssembly/C_to_wasm)
+1. See [Pragmatic compiling C++ to WASM](https://medium.com/@tdeniffel/pragmatic-compiling-from-c-to-webassembly-a-guide-a496cc5954b8) for some nice explanations on how to do it
+1. [Calling a method](https://wasmbyexample.dev/examples/strings/strings.c.en-us.html)
 
-### index.html
-This file contains the minimum code to execute a LispE instruction from within a browser.
-The loading and initialisation of the *LispE* interpreter are done in *lispe.js* and *lispe_functions.js*.
+### To install it
 
-### lispe.js
-This file contains the whole code to initialize the WASM library. It should be used in conjunction with *lispe_function.js*.
+Do `git clone https://github.com/juj/emsdk.git` to create a new version.
 
-### lispe_functions.js
-This is the encapsulation in JavaScript of the WASM libary loading.
-It exposes many functions that demonstrated in *index.html* such as:
-
-```JavaScript
-function callEval(code); //which executes the execution of a piece of Tamgu code, it returns a string
+```
+./emsdk install latest
+./emsdk activate latest
 ```
 
-### lispe.wasm
-This is the WASM library, which is loaded with *lispe.js*.
+### To compile
 
+The Makefile has been modified to be able to use: **emsdk**
 
-### To launch the demo server
-If you want to test it, you need to run a server in the directory containing the index.html file:
+`make all`
+
+### To launch the server
+
+Move to the directory where `lispe.wasm` is located:
+
+`emrun --port 8080 .`
+
+You can also use python:
 
 `python -m http.server --directory . 8080`
 
-Then type: `http://localhost:8080` in a browser.
+## Important Files
+
+### index.html
+This file contains the minimum code to execute a LispE instruction from within a browser.
+The loading and initialisation of the *LispE* interpreter is done in *lispe_run.js*
+
+### lispe_run.js
+This is the encapsulation in JavaScript of the WASM libary loading.
+It exposes:
+```JavaScript
+function setMaxSizeInput(v); //which set the maximum size of code sent to Tamgu 
+function callEval(code); //which executes the execution of a piece of Tamgu code, it returns a string
+function callResetLispE(); which resets the current Tamgu interpreter
+```
+
+### lispe.wasm
+This is the WASM library, which is loaded with tamgu_run.js.
+

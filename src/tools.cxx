@@ -6563,7 +6563,7 @@ void tokenizer_automaton::setrules() {
 //----------------------------------------------------------------------------------------
 
 void segmenter_automaton::setrules() {
-    rules.push_back(U"#10=!99");                                  //gated arcs to keep carriage or not
+    rules.push_back(U"%S=!99");                                  //gated arcs to keep carriage or not
     rules.push_back(U"%S+=#");                                  //we skip all spaces
     
     //regular numbers
