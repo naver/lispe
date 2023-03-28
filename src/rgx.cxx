@@ -1081,12 +1081,7 @@ public:
     wstring strvalue;
  
     LispEPosixRegularExpression(wstring str, int16_t l_rgx) : strvalue(str), Element(l_rgx) {
-        try {
-            au = new wregex(strvalue);
-        }
-        catch (...) {
-            au = NULL;
-        }
+        au = new wregex(strvalue);
     }
     
     ~LispEPosixRegularExpression() {

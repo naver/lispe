@@ -77,20 +77,20 @@ public:
     Concept(Ontology* h, Concept* c, u_ustring& s,long i);
     Concept(Ontology* h, u_ustring& s,long i);
 
-    Concept* concept_add(Concept* c) {
+    Element* concept_add(Concept* c) {
         if (c->ontologie != ontologie)
             throw new Error("Error: these concepts do not belong to the same ontology");
         concept.concept_add(c->concept);
         return this;
     }
 
-    Concept* concept_remove(Concept* c);
+    Element* concept_remove(Concept* c);
 
-    Concept* concept_or(Concept* c);
-    Concept* concept_xor(Concept* c);
-    Concept* concept_and(Concept* c);
-    Concept* concept_and_not(Concept* c);
-    Concept* concept_not(long mx);
+    Element* concept_or(Concept* c);
+    Element* concept_xor(Concept* c);
+    Element* concept_and(Concept* c);
+    Element* concept_and_not(Concept* c);
+    Element* concept_not(long mx);
 
     Element* intersect(LispE*, Concept* c);
     Element* contain(LispE*, Concept* c);
@@ -154,32 +154,30 @@ public:
     }
     
     Concept* create(u_ustring& w) {
-        try {
-            return indexes.at(w);
-        }
-        catch (...) {
+        const auto& a = indexes.find(w);
+        if (a == indexes.end()) {
             Concept* c = new Concept(this, w, concepts.size());
             c->status = 1;
             concepts.push_back(w);
             indexes[w] = c;
             return c;
         }
+        return a->second;
     }
-
+    
     Concept* create(u_ustring& w, Concept* conc) {
         if (conc == absurd)
             return conc;
         
-        try {
-            return indexes.at(w);
-        }
-        catch (...) {
+        const auto& a = indexes.find(w);
+        if (a == indexes.end()) {
             Concept* c = new Concept(this, conc, w, concepts.size());
             c->status = 1;
             concepts.push_back(w);
             indexes[w] = c;
             return c;
         }
+        return a->second;
     }
 
     Element* loop(LispE* lisp, int16_t label,  List* code);

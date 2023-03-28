@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.2.10.10.38";
+static std::string version = "1.2023.3.16.9.36";
 string LispVersion() {
     return version;
 }
@@ -32,6 +32,42 @@ extern "C" {
     }
 }
 
+#ifdef LISPE_WASM
+static LispE* global_lispe_interpreter = NULL;
+
+void clean_global_lispe() {
+    if (global_lispe_interpreter != NULL)
+        delete global_lispe_interpreter;
+    global_lispe_interpreter = NULL;
+}
+
+void reset_global_lispe() {
+    if (global_lispe_interpreter != NULL)
+        delete global_lispe_interpreter;
+    global_lispe_interpreter = new LispE();
+}
+
+void create_global_lispe() {
+    global_lispe_interpreter = new LispE();
+}
+
+LispE* global_lispe() {
+    return global_lispe_interpreter;
+}
+
+//In this case, errors are no longer treated as exceptions.
+Element* Element::EVAL(LispE* lisp) {
+    if (thrown_error)
+        return thrown_error;
+    return _eval(lisp)->check_if_error(lisp);
+}
+
+Element* Error::check_if_error(LispE* lisp) {
+    return lisp->delegation->set_error(this);
+}
+
+#endif
+
 //------------------------------------------------------------------------------------------
 #ifdef MACDEBUG
     vector<Element*> __indexes;
@@ -39,19 +75,19 @@ extern "C" {
 //------------------------------------------------------------
 wstring Stackelement::asString(LispE* lisp) {
     std::wstringstream message;
-    binHash<Element*>::iterator a;
-    for (a = variables.begin(); a != variables.end(); a++)
+    binHash<Element*>::iterator a(variables);
+    for (; !a.end(); a++)
         message << lisp->asString(a->first) << L": " << a->second->stringInList(lisp) << endl;
     return message.str();
 }
 
 List* Stackelement::atomes(LispE* lisp) {
     List* liste = lisp->provideList();
-    binHash<Element*>::iterator a;
-    for (a = variables.begin(); a != variables.end(); a++)
+    binHash<Element*>::iterator a(variables);
+    for (; !a.end(); a++)
         liste->append(lisp->provideAtom(a->first));
     for (long i = 0; i < lisp->delegation->function_pool.size(); i++) {
-        for (a = lisp->delegation->function_pool[i]->begin(); a != lisp->delegation->function_pool[i]->end(); a++)
+        for (a.set(lisp->delegation->function_pool[i]); !a.end(); a++)
             liste->append(lisp->provideAtom(a->first));
     }
     return liste;
@@ -76,6 +112,8 @@ static u_ustring U(string x) {
 
 Delegation::Delegation() : main_tokenizer(NULL) {
     mark = 0;
+    current_error = NULL;
+    
 #ifdef LISPE_WASM
     input_handler = NULL;
     reading_string_function = NULL;
@@ -90,7 +128,6 @@ Delegation::Delegation() : main_tokenizer(NULL) {
 
     id_pool = 1;
     
-    error_message = NULL;
     endtrace = false;
     trace_on = false;
     add_to_listing = false;
@@ -127,7 +164,7 @@ Delegation::~Delegation() {
 #ifndef LISPE_WASM
     clean_get_handler(input_handler);
 #endif
-    binHash<Element*>::iterator a;
+    reset_error();
     function_pool.cleaning();
     method_pool.cleaning();
     for (auto& a : thread_pool)
@@ -136,12 +173,13 @@ Delegation::~Delegation() {
     for (const auto& a: locks)
         delete a.second;
 
-    binHash<Listincode*>::iterator al;
-    for (al = straight_eval.begin(); al != straight_eval.end(); al++)
+    binHash<Listincode*>::iterator al(straight_eval);
+    for (; !al.end(); al++)
         delete al->second;
-    
-	for (a = atom_pool.begin(); a != atom_pool.end(); a++)
-        delete a->second;
+
+    binhash<Element*>::iterator h(atom_pool);
+	for (; !h.end(); h++)
+        delete h->second;
 
     for (const auto& a: waitons)
         delete a.second;
@@ -176,7 +214,7 @@ void Delegation::initialisation(LispE* lisp) {
     //We initialize all instructions with eval_error
     //Only those for which an instruction exists will be replaced with
     //the proper call...
-    //For the others we will throw an exception...
+    //For the others we will Throw an exception...
     for (long i = 0; i < l_final; i++) {
         evals[i] = &List::eval_error;
     }
@@ -315,7 +353,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE, &List::evall_keyn, new List_keyn_eval());
     set_instruction(l_keys, "keys@", P_TWO, &List::evall_keys, new List_keys_eval());
     set_instruction(l_label, "label", P_THREE, &List::evall_label, new List_label_eval());
-    set_instruction(l_lambda, "λ", P_ATLEASTTHREE, &List::evall_lambda);
+    set_instruction(l_lambda, "λ", P_ATLEASTTHREE, &List::evall_lambda, new List_lambda_eval());
     set_instruction(l_last, "last", P_TWO, &List::evall_last, new List_last_eval());
     set_instruction(l_leftshift, "<<", P_ATLEASTTWO, &List::evall_leftshift, new List_leftshift_eval());
     set_instruction(l_leftshiftequal, "<<=", P_ATLEASTTHREE, &List::evall_leftshiftequal);
@@ -486,6 +524,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate, new List_concatenate_eval());
 
 
+    //This line is necessary to apply a lambda as an argument (see apply)
+    straight_eval[t_call_lambda] = new List_call_lambda();
 
     //The void function
     lisp->void_function = new Listincode;
@@ -634,8 +674,8 @@ void Delegation::initialisation(LispE* lisp) {
 
     code_to_string[l_minus_plus] = U"-+";
 
-    binHashe<u_ustring>::iterator it;
-    for (it = code_to_string.begin(); it != code_to_string.end(); it++)
+    binHashe<u_ustring>::iterator it(code_to_string);
+    for (; !it.end(); it++)
         string_to_code[it->second] = it->first;
 
     //We are preparing a recording place for labels and functions .
@@ -889,8 +929,8 @@ void Delegation::initialisation(LispE* lisp) {
     atom_pool[l_cadr] = e;
 
     // We create all our atoms and keep them in the stack
-    binHashe<string>::iterator its;
-    for (its = instructions.begin(); its != instructions.end(); its++) {
+    binHashe<string>::iterator its(instructions);
+    for (; !its.end(); its++) {
         e = lisp->provideAtomOrInstruction(its->first);
         lisp->recordingunique(e, its->first);
     }
@@ -942,10 +982,15 @@ void LispE::cleaning() {
         delegation->thread_stack.clear();
         binHash<Element*>::iterator a;
         for (long i = 0; i < delegation->bodies.size(); i++) {
-            for (a = delegation->bodies[i]->begin(); a != delegation->bodies[i]->end(); a++) {
+            for (a.set(delegation->bodies[i]); !a.end(); a++) {
                 a->second->decrement();
             }
         }
+#ifdef LISPE_WASM
+        //In this case, errors are no longer treated as exceptions.
+        //We need to clean if an error still lurks around
+        delegation->reset_error();
+#endif
     }
 
     //Then if some of them are still running
@@ -963,6 +1008,9 @@ void LispE::cleaning() {
     float_pool.cleaning();
     number_pool.cleaning();
     integer_pool.cleaning();
+    complex_pool.cleaning();
+    rangenumber_pool.cleaning();
+    rangeinteger_pool.cleaning();
     numbers_pool.cleaning();
     floats_pool.cleaning();
     integers_pool.cleaning();
@@ -1015,12 +1063,15 @@ void LispE::cleaning() {
         }
         __indexes.clear();
         if (errors.size())
-            cerr << "%Errors: " << errors.size() << endl;
+            cerr << "Leaks: " << errors.size() << endl;
 #endif
     }
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) : segmenter(lisp->handlingutf8){
+    max_size = 25;
+    larger_max_size = 100;
+    initpoolsize();
 	current_path_set = true;
     depth_stack = 0;
     current_space = 0;
@@ -1560,8 +1611,7 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
  */
 
 Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, long& index, long quoting) {
-    Element* e = NULL;
-    char topfunction = false;
+    Element* element = NULL;
     int16_t lab = -1;
     Element* check_composition_depth = NULL;
         
@@ -1576,7 +1626,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 //Empty list
                 if (parse.types[index] == c_closing) {
                     index++;
-                    e = delegation->_EMPTYLIST;
+                    element = delegation->_EMPTYLIST;
                 }
                 else {
                     uint16_t currentspace = current_space;
@@ -1588,28 +1638,28 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         compose(current_program);
                     
                     check_composition_depth = NULL;
-                    e = new Listincode(parse.lines[index], delegation->i_current_file);
-                    garbaging(e);
-                    abstractSyntaxTree(e, parse, index, quoting);
+                    element = new Listincode(parse.lines[index], delegation->i_current_file);
+                    garbaging(element);
+                    abstractSyntaxTree(element, parse, index, quoting);
                     if (quoting) {
-                        if (e->size() && e->index(0)->label() == l_conspoint) {
-                            Element* a = e->eval(this);
+                        if (element->size() && element->index(0)->label() == l_conspoint) {
+                            Element* a = element->eval(this);
                             garbaging(a);
-                            removefromgarbage(e);
+                            removefromgarbage(element);
                             current_program->append(a);
                             quoting--;
                             continue;
                         }
                     }
                     else {
-                        if (e->size() >= 1) {
-                            lab = e->index(0)->label();
+                        if (element->size() >= 1) {
+                            lab = element->index(0)->label();
                             
                             //if it is a high level function, then we push it into composition_stack
                             //otherwise, we compose the expressions in composition_stack,
                             //beforehand.
                             if (composition_stack.size() && (lab < l_map || lab > l_scanr1))
-                                compose(e);
+                                compose(element);
                             
                             switch(lab) {
                                     //for defmacro and link, we evaluate these expressions on the fly
@@ -1618,16 +1668,24 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     continue;
                                 case l_set_const:
                                 case l_lambda:
-                                    e->eval(this);
+                                    element->eval(this);
                                     break;
+                                case t_call_lambda: {
+                                    //This is a lambda call with arguments
+                                    Element* lm = new List_call_lambda(this, (Listincode*)element);
+                                    removefromgarbage(element);
+                                    garbaging(lm);
+                                    element = lm;
+                                    break;
+                                }
                                 case l_defmacro:
                                 case l_data:
                                 case l_dethread:
                                 case l_defun:
-                                    e->eval(this);
+                                    element->eval(this);
                                     continue;
                                 case l_defpat: {
-                                    Element* arguments = e->index(2);
+                                    Element* arguments = element->index(2);
                                     Element* a;
                                     Element* idx;
                                     for (long i = 0; i < arguments->size(); i++) {
@@ -1636,7 +1694,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                         if (a != idx)
                                             ((List*)arguments)->liste.put(i, a);
                                     }
-                                    e->eval(this);
+                                    element->eval(this);
                                     continue;
                                 }
                                 case l_let:
@@ -1646,17 +1704,17 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                 case l_seth:
                                 case l_set_at:
                                 case l_setg:
-                                    if (e->size() > 1) {
-                                        if (e->index(1)->label() < l_final) {
+                                    if (element->size() > 1) {
+                                        if (element->index(1)->label() < l_final) {
                                             wstring msg = L"Error: Invalid variable name: '";
-                                            msg += e->index(1)->asString(this);
+                                            msg += element->index(1)->asString(this);
                                             msg += L"' (keyword)";
                                             throw new Error(msg);
                                         }
                                         else {
-                                            if (delegation->const_values.check(e->index(1)->label())) {
+                                            if (delegation->const_values.check(element->index(1)->label())) {
                                                 wstring msg = L"Error: '";
-                                                msg += e->index(1)->asString(this);
+                                                msg += element->index(1)->asString(this);
                                                 msg += L"' is a constant value";
                                                 throw new Error(msg);
                                             }
@@ -1675,8 +1733,8 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                 case l_bitxorequal:
                                 case l_divideequal:
                                 case l_modequal:
-                                    if (e->size() > 1) {
-                                        Element* nxt = e->index(1);
+                                    if (element->size() > 1) {
+                                        Element* nxt = element->index(1);
                                         if (nxt->label() < l_final) {
                                             if (nxt->isList()) {
                                                 if (nxt->size() < 2 || nxt->index(0)->label() != l_at) {
@@ -1687,15 +1745,15 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                             }
                                             else {
                                                 wstring msg = L"Error: Invalid variable name: '";
-                                                msg += e->index(1)->asString(this);
+                                                msg += element->index(1)->asString(this);
                                                 msg += L"' (keyword)";
                                                 throw new Error(msg);
                                             }
                                         }
                                         else {
-                                            if (delegation->const_values.check(e->index(1)->label())) {
+                                            if (delegation->const_values.check(element->index(1)->label())) {
                                                 wstring msg = L"Error: '";
-                                                msg += e->index(1)->asString(this);
+                                                msg += element->index(1)->asString(this);
                                                 msg += L"' is a constant value";
                                                 throw new Error(msg);
                                             }
@@ -1703,23 +1761,19 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     }
                                     break;
                                 case l_link:
-                                    e->eval(this);
-                                    removefromgarbage(e);
+                                    element->eval(this);
+                                    removefromgarbage(element);
                                     continue;
                                 case l_if:
-                                    if (e->size() == 3)
-                                        e->append(void_function);
-
-                                    //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
-                                    if (topfunction && topfunction <= current_program->size())
-                                        e->setterminal();
+                                    if (element->size() == 3)
+                                        element->append(void_function);
                                     break;
                                 case l_infix: {
-                                    Element* inter = ((Listincode*)e)->eval_infix(this);
-                                    if (inter != e) {
-                                        removefromgarbage(e);
-                                        e = inter;
-                                        lab = e->index(0)->label();
+                                    Element* inter = ((Listincode*)element)->eval_infix(this);
+                                    if (inter != element) {
+                                        removefromgarbage(element);
+                                        element = inter;
+                                        lab = element->index(0)->label();
                                     }
                                     else
                                         break;
@@ -1731,43 +1785,37 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                             compose(&lst);
                                             composition_stack.push_back(lst.liste[0]);
                                         }
-                                        e = e->eval(this);
+                                        element = element->eval(this);
                                         check_composition_depth = current_program;
                                         continue;
-                                    }
-                                    else {
-                                        if (topfunction && topfunction <= current_program->size()) {
-                                            //The 'terminal' flag helps define if a potential call can be treated as terminal recursion
-                                            e->setterminal();
-                                        }
                                     }
                                 }
                             }
                         }
                                                                         
-                        e = generate_macro(e);
+                        element = generate_macro(element);
                         
                         if (lab > l_final) {
                             if (parse.defun_functions.check(lab)) {
                                 Element* body = parse.defun_functions[lab];
                                 //This is a call to a function: t_atom, a1, a2...
                                 if (body->index(0)->label() == l_defun)
-                                    body = new List_function_eval(this, (Listincode*)e, (List*)body);
+                                    body = new List_function_eval(this, (Listincode*)element, (List*)body);
                                 else
-                                    body = new List_pattern_eval((Listincode*)e, (List*)body);
+                                    body = new List_pattern_eval((Listincode*)element, (List*)body);
                                 
                                 garbaging(body);
-                                removefromgarbage(e);
-                                e = body;
+                                removefromgarbage(element);
+                                element = body;
                             }
                             else {
                                 if (delegation->function_pool[current_space]->check(lab)) {
                                     Element* body = (*delegation->function_pool[current_space])[lab];
                                     if (body->index(0)->label() == l_deflib) {
-                                        body = new List_library_eval((Listincode*)e, (List*)body);
+                                        body = new List_library_eval((Listincode*)element, (List*)body);
                                         garbaging(body);
-                                        removefromgarbage(e);
-                                        e = body;
+                                        removefromgarbage(element);
+                                        element = body;
                                     }
                                 }
                             }
@@ -1783,92 +1831,104 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         */
                         if (delegation->instructions.check(lab)) {
                             Element* lm = NULL;
-                            long nbarguments = e->size();
+                            long nbarguments = element->size();
                             switch (lab) {
                                 case l_break:
                                     if (nbarguments != 1)
                                         throw new Error("Error: break does not take any arguments");
-                                    removefromgarbage(e);
-                                    e = &delegation->_BREAKEVAL;
+                                    removefromgarbage(element);
+                                    element = &delegation->_BREAKEVAL;
                                     break;
                                 case l_return:
-                                    if (e->size() == 1)
+                                    if (element->size() == 1)
                                         lm = new Listreturn();
                                     else
-                                        lm = new Listreturnelement((Listincode*)e);
-                                    break;
-                                case l_power:
-                                    if (nbarguments == 3 && e->index(2)->equalvalue((long)2))
-                                        lm = new List_power2((List*)e);
-                                    else
-                                        lm = new List_execute((Listincode*)e, delegation->evals[lab]);
+                                        lm = new Listreturnelement((Listincode*)element);
                                     break;
                                 case l_switch:
-                                    lm = new List_switch_eval((Listincode*)e);
+                                    lm = new List_switch_eval((Listincode*)element);
                                     ((List_switch_eval*)lm)->build(this);
+                                    break;
+                                case l_power:
+                                    if (nbarguments == 3 && element->index(2)->equalvalue((long)2))
+                                        lm = new List_power2((List*)element);
+                                    else
+                                        lm = new List_execute((Listincode*)element, delegation->evals[lab]);
                                     break;
                                 case l_divide:
                                     if (nbarguments == 2)
-                                        lm = new List_divide2((List*)e);
+                                        lm = new List_divide2((List*)element);
                                     else
                                         if (nbarguments == 3)
-                                            lm = new List_divide3((List*)e);
+                                            lm = new List_divide3((List*)element);
                                         else
-                                            lm = new List_dividen((List*)e);
+                                            lm = new List_dividen((List*)element);
                                     break;
                                 case l_plus:
                                     if (nbarguments == 2)
-                                        lm = new List_plus2((List*)e);
+                                        lm = new List_plus2((List*)element);
                                     else
                                         if (nbarguments == 3)
-                                            lm = new List_plus3((List*)e);
+                                            lm = new List_plus3((List*)element);
                                         else
-                                            lm = new List_plusn((List*)e);
+                                            lm = new List_plusn((List*)element);
                                     break;
                                 case l_minus:
                                     if (nbarguments == 2)
-                                        lm = new List_minus2((List*)e);
+                                        lm = new List_minus2((List*)element);
                                     else
                                         if (nbarguments == 3)
-                                            lm = new List_minus3((List*)e);
+                                            lm = new List_minus3((List*)element);
                                         else
-                                            lm = new List_minusn((List*)e);
+                                            lm = new List_minusn((List*)element);
                                     break;
                                 case l_multiply:
                                     if (nbarguments == 2)
-                                        lm = new List_multiply2((List*)e);
+                                        lm = new List_multiply2((List*)element);
                                     else
                                         if (nbarguments == 3)
-                                            lm = new List_multiply3((List*)e);
+                                            lm = new List_multiply3((List*)element);
                                         else
-                                            lm = new List_multiplyn((List*)e);
+                                            lm = new List_multiplyn((List*)element);
                                     break;
                                 case l_divideequal:
                                     if (equal_op_list)
-                                        lm = new List_divideequal_list((List*)e);
+                                        lm = new List_divideequal_list((List*)element);
                                     else
-                                        lm = new List_divideequal_var((List*)e);
+                                        lm = new List_divideequal_var((List*)element);
                                     break;
                                 case l_plusequal:
                                     if (equal_op_list)
-                                        lm = new List_plusequal_list((List*)e);
+                                        lm = new List_plusequal_list((List*)element);
                                     else
-                                        lm = new List_plusequal_var((List*)e);
+                                        lm = new List_plusequal_var((List*)element);
                                     break;
                                 case l_minusequal:
                                     if (equal_op_list)
-                                        lm = new List_minusequal_list((List*)e);
+                                        lm = new List_minusequal_list((List*)element);
                                     else
-                                        lm = new List_minusequal_var((List*)e);
+                                        lm = new List_minusequal_var((List*)element);
                                     break;
                                 case l_multiplyequal:
                                     if (equal_op_list)
-                                        lm = new List_multiplyequal_list((List*)e);
+                                        lm = new List_multiplyequal_list((List*)element);
                                     else
-                                        lm = new List_multiplyequal_var((List*)e);
+                                        lm = new List_multiplyequal_var((List*)element);
+                                    break;
+                                case l_maplist:
+                                    if (element->index(1)->isLambda())
+                                        lm = new List_maplist_lambda_eval((Listincode*)element);
+                                    else
+                                        lm = new List_maplist_eval((Listincode*)element);
+                                    break;
+                                case l_zipwith:
+                                    if (element->index(1)->isLambda())
+                                        lm = new List_zipwith_lambda_eval((Listincode*)element);
+                                    else
+                                        lm = new List_zipwith_eval((Listincode*)element);
                                     break;
                                 default:
-                                    lm = cloning((Listincode*)e, lab);                                    
+                                    lm = cloning((Listincode*)element, lab);                                    
                             }
                             
                             if (lm != NULL) {
@@ -1879,17 +1939,17 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                                     err += L"'";
                                     throw new Error(err);
                                 }
-                                removefromgarbage(e);
-                                e = lm;
+                                removefromgarbage(element);
+                                element = lm;
                             }
                         }
                     }
                 }
-                if (e->size() || e->isComposable())
-                    current_program->append(e);
+                if (element->size() || element->isComposable())
+                    current_program->append(element);
                 else {
                     current_program->append(delegation->_EMPTYLIST);
-                    removefromgarbage(e);
+                    removefromgarbage(element);
                 }
                 if (quoting)
                     quoting--;
@@ -1902,36 +1962,36 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 index++;
                 if (parse.types[index] == c_closing_brace) {
                     index++;
-                    e = delegation->_EMPTYDICTIONARY;
+                    element = delegation->_EMPTYDICTIONARY;
                 }
                 else {
                     Dictionary_as_list dico;
                     abstractSyntaxTree(&dico, parse, index, quoting);
-                    e = dico.dictionary(this);
-                    garbaging(e);
-                    if (e->isList()) {
+                    element = dico.dictionary(this);
+                    garbaging(element);
+                    if (element->isList()) {
                         //Then in that case, we need to provide a protection
                         //for each of its elements...
-                        for (long i = 0; i < e->size(); i++)
-                            control_garbaging(e->index(i));
+                        for (long i = 0; i < element->size(); i++)
+                            control_garbaging(element->index(i));
                     }
                 }
-                current_program->append(e);
+                current_program->append(element);
                 break;
             }
             case c_opening_data_brace: {
                 index++;
                 if (parse.types[index] == c_closing_brace) {
                     index++;
-                    e = delegation->_EMPTYDICTIONARY;
+                    element = delegation->_EMPTYDICTIONARY;
                 }
                 else {
                     Dictionary_as_buffer dico(this);
                     abstractSyntaxTree(&dico, parse, index, quoting);
-                    e = dico.dictionary(this);
-                    garbaging(e);
+                    element = dico.dictionary(this);
+                    garbaging(element);
                 }
-                current_program->append(e);
+                current_program->append(element);
                 break;
             }
             case c_closing_brace:
@@ -1942,41 +2002,41 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 index++;
                 break;
             case t_string:
-                e = provideConststring(parse.tokens[index]);
-                current_program->append(e);
+                element = provideConststring(parse.tokens[index]);
+                current_program->append(element);
                 index++;
                 break;
             case t_complex: {
                 //We need to extract it twice
                 double real = parse.numbers[index++];
                 double imag = parse.numbers[index++];
-                e = new Complex(real, imag);
-                garbaging(e);
-                current_program->append(e);
+                element = provideComplex(real, imag);
+                garbaging(element);
+                current_program->append(element);
                 break;
             }
             case t_integer: {
                 long value = parse.integers[index];
-                e = provideConstinteger(value);
-                current_program->append(e);
+                element = provideConstinteger(value);
+                current_program->append(element);
                 index++;
                 break;
             }
             case t_number: {
                 double value = parse.numbers[index];
-                e = provideConstnumber(value);
-                current_program->append(e);
+                element = provideConstnumber(value);
+                current_program->append(element);
                 index++;
                 break;
             }
             case t_operator:
-                e = provideOperator(encode(parse.tokens[index]));
-                current_program->append(e);
+                element = provideOperator(encode(parse.tokens[index]));
+                current_program->append(element);
                 index++;
                 break;
             case l_cadr:
-                e =  provideCADR(parse.tokens[index]);
-                current_program->append(e);
+                element =  provideCADR(parse.tokens[index]);
+                current_program->append(element);
                 index++;
                 break;
             case c_colon:
@@ -1987,9 +2047,9 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         throw new Error("Error: wrong key/value separator in a dictionary");
                 }
                 else {
-                    e = provideAtom(c_colon);
+                    element = provideAtom(c_colon);
                     index++;
-                    current_program->append(e);
+                    current_program->append(element);
                 }
                 break;
             case c_point:
@@ -2007,32 +2067,24 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     }
                 }
                 else {
-                    e = provideAtom(l_innerproduct);
+                    element = provideAtom(l_innerproduct);
                     index++;
-                    current_program->append(e);
+                    current_program->append(element);
                 }
                 break;
             case t_atom:
-                e = provideAtom(encode(parse.tokens[index]));
+                element = provideAtom(encode(parse.tokens[index]));
                 index++;
-                if (!quoting && e->label() == l_quote) {
-                    current_program->append(e);
+                if (!quoting && element->label() == l_quote) {
+                    current_program->append(element);
                     abstractSyntaxTree(current_program, parse, index, true);
                 }
                 else {
                     if (!quoting) {
-                        if (current_program->size() == 0) {
-                            if (e->type >= l_lambda && e->type <= l_defpat) {
-                                if (e->type == l_lambda)
-                                    topfunction = 2;
-                                else
-                                    topfunction = 3;
-                            }
-                        }
-                        else {
+                        if (current_program->size()) {
                             if (current_program->size() == 1 && current_program->index(0)->label() == l_defspace) {
                                 //We create a new name space in function_pool
-                                current_program->append(e);
+                                current_program->append(element);
                                 current_program->eval(this);
                                 break;
                             }
@@ -2042,19 +2094,19 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         (current_program->index(0)->label() == l_defun ||
                          current_program->index(0)->label() == l_defpat)) {
                         //We are defining a function, we can record it now...
-                        parse.defun_functions[e->label()] = current_program;
+                        parse.defun_functions[element->label()] = current_program;
                     }
-                    current_program->append(e);
+                    current_program->append(element);
                 }
                 break;
             case l_quote:
-                e = new List_quote_eval(parse.lines[index], delegation->i_current_file);
+                element = new List_quote_eval(parse.lines[index], delegation->i_current_file);
                 index++;
-                garbaging(e);
-                e->append(provideAtom(l_quote));
-                current_program->append(e);
-                abstractSyntaxTree(e, parse, index, true);
-                if (e->size() != 2)
+                garbaging(element);
+                element->append(provideAtom(l_quote));
+                current_program->append(element);
+                abstractSyntaxTree(element, parse, index, true);
+                if (element->size() != 2)
                     throw new Error("Error: Wrong number of arguments for 'quote'");
                 break;
             default:
@@ -2069,7 +2121,6 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
 Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long quoting) {
     Element* e = NULL;
     double value;
-    char topfunction = false;
     int16_t lab = -1;
         
     while (index < parse.types.size()) {
@@ -2208,17 +2259,8 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                     courant->append(e);
                     syntaxTree(courant, parse, index, true);
                 }
-                else {
-                    if (!quoting && courant->size() == 0) {
-                        if (e->type >= l_lambda && e->type <= l_defpat) {
-                            if (e->type == l_lambda)
-                                topfunction = 2;
-                            else
-                                topfunction = 3;
-                        }
-                    }
+                else
                     courant->append(e);
-                }
                 break;
             case l_quote:
                 e = provideList();
@@ -2245,14 +2287,7 @@ Element* LispE::atomise(u_ustring a) {
     return l;
 }
 
-List* LispE::create_instruction(int16_t label,
-                                Element* e1,
-                                Element* e2,
-                                Element* e3,
-                                Element* e4,
-                                Element* e5,
-                                Element* e6,
-                                Element* e7) {
+List* LispE::create_instruction(int16_t label,Element* e1,Element* e2,Element* e3) {
     List* l;
     
     switch (label) {
@@ -2301,25 +2336,10 @@ List* LispE::create_instruction(int16_t label,
         return l;
     if (!l->append_not_null(e3))
         return l;
-    if (!l->append_not_null(e4))
-        return l;
-    if (!l->append_not_null(e5))
-        return l;
-    if (!l->append_not_null(e6))
-        return l;
-    if (!l->append_not_null(e7))
-        return l;
     return l;
 }
 
-List* LispE::create_local_instruction(int16_t label,
-                                Element* e1,
-                                Element* e2,
-                                Element* e3,
-                                Element* e4,
-                                Element* e5,
-                                Element* e6,
-                                Element* e7) {
+List* LispE::create_local_instruction(int16_t label,Element* e1,Element* e2,Element* e3) {
     List* l;
     
     switch (label) {
@@ -2367,24 +2387,17 @@ List* LispE::create_local_instruction(int16_t label,
         return l;
     if (!l->append_not_null(e3))
         return l;
-    if (!l->append_not_null(e4))
-        return l;
-    if (!l->append_not_null(e5))
-        return l;
-    if (!l->append_not_null(e6))
-        return l;
-    if (!l->append_not_null(e7))
-        return l;
     return l;
 }
 
 Element* LispE::load(string pathname) {
     pathname = NormalizePathname(pathname);
-    try {
-        delegation->i_current_file = delegation->allfiles.at(pathname);
-        return delegation->entrypoints.at(delegation->i_current_file);
+    if (delegation->allfiles.count(pathname)) {
+        delegation->i_current_file = delegation->allfiles[pathname];
+        const auto& a = delegation->entrypoints.find(delegation->i_current_file);
+        if (a != delegation->entrypoints.end())
+            return a->second;
     }
-    catch (...) {}
 
     delegation->i_current_line = 0;
     std::ifstream f(pathname.c_str(),std::ios::in|std::ios::binary);
@@ -2413,7 +2426,7 @@ Element* LispE::load(string pathname) {
         depth_stack = 0;
         return tree->eval(this);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         delegation->forceClean();
         throw err;
     }
@@ -2425,7 +2438,7 @@ Element* LispE::compile_eval(u_ustring& code) {
         depth_stack = 0;
         return tree->eval(this);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         delegation->forceClean();
         throw err;
     }
@@ -2433,6 +2446,12 @@ Element* LispE::compile_eval(u_ustring& code) {
 
 Element* LispE::compile_lisp_code(u_ustring& code) {
     clearStop();
+    
+#ifdef LISPE_WASM
+    //In this case, errors are no longer treated as exceptions.
+    delegation->reset_error();
+#endif
+    
     //A little trick to compile code sequences
     code = U"(__root__ " + code + U")";
     Tokenizer parse;
@@ -2461,7 +2480,7 @@ Element* LispE::compile_lisp_code(u_ustring& code) {
     try {
         abstractSyntaxTree(&courant, parse, index, false);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         delegation->i_current_line = 1;
         if (parse.current != -1 && parse.current < parse.lines.size())
             delegation->i_current_line = parse.lines[parse.current];
@@ -2535,7 +2554,7 @@ Element* LispE::extension(string code, Element* etendre) {
         }
         return body;
     }
-    catch(Error* err) {
+    catch (Error* err) {
         etendre->release();
         delegation->forceClean();
         return err;
@@ -2549,7 +2568,7 @@ Element* LispE::execute(string code) {
     try {
         return compile_lisp_code(code)->eval(this);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         delegation->forceClean();
         return err;
     }
@@ -2572,7 +2591,7 @@ Element* LispE::execute(string code, string pathname) {
         depth_stack = 0;
         return tree->eval(this);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         delegation->forceClean();
         return err;
     }
@@ -2791,6 +2810,26 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

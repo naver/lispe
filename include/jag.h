@@ -111,9 +111,7 @@ public:
     }
 
     bool check(long p) {
-        if (checks.find(p) != checks.end())
-            return true;
-        return false;
+        return checks.count(p);
     }
 
     void setcode(wstring& code, bool clean);

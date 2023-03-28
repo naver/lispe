@@ -39,6 +39,7 @@ string LispVersion();
 
 class LispE {
     vector<Element*> garbages;
+    vector<Element*> temporary;
     vecte<Stackelement*> stack_pool;
 
     vecte<Stackelement*> execution_stack;
@@ -54,6 +55,9 @@ public:
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
     vecte<Integerpool*> integer_pool;
+    vecte<Complexpool*> complex_pool;
+    vecte<Infiniterangenumber*> rangenumber_pool;
+    vecte<Infiniterangeinteger*> rangeinteger_pool;
     vecte<Stringpool*> string_pool;
 
     vecte<Floatspool*> floats_pool;
@@ -113,6 +117,8 @@ public:
     std::atomic<int16_t> nbjoined;
 
     long id_thread;
+    uint16_t max_size;
+    uint16_t larger_max_size;
     uint16_t current_space;
     
     char trace;
@@ -125,10 +131,13 @@ public:
 	bool current_path_set;
     
     LispE(UTF8_Handler* hnd = NULL) : segmenter(hnd) {
+        max_size = 50;
+        larger_max_size = 200;
 		current_path_set = false;
         depth_stack = 0;
         check_thread_stack = false;
         current_space = 0;
+        initpoolsize();
         initpools();
         preparingthread = false;
         check_arity_on_fly = false;
@@ -160,16 +169,47 @@ public:
         n_one = delegation->_ONE;
     }
     
+    inline void initpoolsize() {
+        list_pool.setsize(1 + larger_max_size);
+        number_pool.setsize(1 + larger_max_size);
+        float_pool.setsize(1 + larger_max_size);
+        integer_pool.setsize(1 + larger_max_size);
+        string_pool.setsize(1 + larger_max_size);
+        
+
+        sets_pool.setsize(max_size + 1);
+        setn_pool.setsize(max_size + 1);
+        seti_pool.setsize(max_size + 1);
+        set_pool.setsize(max_size + 1);
+        dictionary_pool.setsize(max_size + 1);
+        dictionaryn_pool.setsize(max_size + 1);
+        dictionaryi_pool.setsize(max_size + 1);
+        quoted_pool.setsize(max_size + 1);
+        rangenumber_pool.setsize(max_size + 1);
+        rangeinteger_pool.setsize(max_size + 1);
+        complex_pool.setsize(max_size + 1);
+        strings_pool.setsize(max_size + 1);
+        numbers_pool.setsize(max_size + 1);
+        floats_pool.setsize(max_size + 1);
+        integers_pool.setsize(max_size + 1);
+    }
+    
     inline void initpools() {
-        for (long i = 0; i < 100; i++) {
-            quoted_pool.push_back(new Quotedpool(this));
-            list_pool.push_back(new Listpool(this));
-            number_pool.push_back(new Numberpool(this, 0));
-            integer_pool.push_back(new Integerpool(this, 0));
-            string_pool.push_back(new Stringpool(this));
-            strings_pool.push_back(new Stringspool(this));
-            numbers_pool.push_back(new Numberspool(this));
-            integers_pool.push_back(new Integerspool(this));
+        for (long i = 0; i < 25; i++) {
+            list_pool.push_max(larger_max_size, new Listpool(this));
+            number_pool.push_max(larger_max_size, new Numberpool(this, 0));
+            float_pool.push_max(larger_max_size, new Floatpool(this, 0));
+            integer_pool.push_max(larger_max_size, new Integerpool(this, 0));
+            string_pool.push_max(larger_max_size, new Stringpool(this));
+            
+            quoted_pool.push_max(max_size, new Quotedpool(this));
+            rangenumber_pool.push_max(max_size, new Infiniterangenumber(this, 0,0));
+            rangeinteger_pool.push_max(max_size, new Infiniterangeinteger(this, 0,0));
+            complex_pool.push_max(max_size, new Complexpool(this, 0, 0));
+            strings_pool.push_max(max_size, new Stringspool(this));
+            numbers_pool.push_max(max_size, new Numberspool(this));
+            floats_pool.push_max(max_size, new Floatspool(this));
+            integers_pool.push_max(max_size, new Integerspool(this));
         }
     }
     inline bool checkArity(List* l) {
@@ -284,20 +324,12 @@ public:
     List* create_instruction(int16_t label,
                              Element* e = NULL,
                              Element* ee = NULL,
-                             Element* eee = NULL,
-                             Element* eeee = NULL,
-                             Element* eeeee = NULL,
-                             Element* eeeeee = NULL,
-                             Element* eeeeeee = NULL);
+                             Element* eee = NULL);
 
     List* create_local_instruction(int16_t label,
                              Element* e = NULL,
                              Element* ee = NULL,
-                             Element* eee = NULL,
-                             Element* eeee = NULL,
-                             Element* eeeee = NULL,
-                             Element* eeeeee = NULL,
-                             Element* eeeeeee = NULL);
+                             Element* eee = NULL);
 
     //We have an internal pooling for elements that should be shared across
     //threads. We use it in the interpreter for regular expressions for instance
@@ -308,12 +340,7 @@ public:
     }
 
     inline Element* pool_out(wstring& key) {
-        try {
-            return pools.at(key);
-        }
-        catch (...) {
-            return n_null;
-        }
+        return !pools.count(key)?n_null:pools[key];
     }
     
     inline long vpool_slot() {
@@ -375,21 +402,17 @@ public:
     }
     
     inline string name_file(long i) {
-        try {
-            return delegation->allfiles_names.at(i);
-        }
-        catch (...) {
-            return "";
-        }
+        const auto& a  = delegation->allfiles_names.find(i);
+        if (a != delegation->allfiles_names.end())
+            return a->second;
+        return "";
     }
 
     inline string current_name_file() {
-        try {
-            return delegation->allfiles_names.at(delegation->i_current_file);
-        }
-        catch (...) {
-            return "";
-        }
+        const auto& a = delegation->allfiles_names.find(delegation->i_current_file);
+        if (a != delegation->allfiles_names.end())
+            return a->second;
+        return "";
     }
     
 
@@ -431,7 +454,21 @@ public:
     
     Element* load_library(string name);
     Element* extension(string, Element* e = NULL);
-    Element* eval(u_ustring);
+#ifdef LISPE_WASM
+    Element* EVAL(u_ustring&);
+    Element* EVAL(wstring& w) {
+        u_ustring s = _w_to_u(w);
+        return _eval(s);
+    }
+    
+    Element* EVAL(string& w) {
+        u_ustring s;
+        s_utf8_to_unicode(s, w, w.size());
+        return _eval(s);
+    }
+#endif
+    
+    Element* eval(u_ustring&);
     Element* eval(wstring& w) {
         u_ustring s = _w_to_u(w);
         return eval(s);
@@ -521,7 +558,90 @@ public:
         return (depth_stack >= max_stack_size?0x200:delegation->stop_execution);
     }
 
+#ifdef LISPE_WASM
+    inline bool sendError() {
+        delegation->set_end();
+        return false;
+    }
 
+    inline void sendEnd() {
+        delegation->set_end();
+    }
+
+    inline bool sendError(u_ustring msg) {
+        delegation->set_error(new Error(msg));
+        return false;
+    }
+
+    inline void sendStackError() {
+        depth_stack++;
+        delegation->set_error(new Error(U"Stack overflow"));
+    }
+
+    inline bool check_existing_error(Element** res) {
+        *res = delegation->current_error;
+        return delegation->current_error;
+    }
+    
+    inline bool unboundAtomError(int16_t label, Element** res) {
+        u_ustring err = U"Error: Unbound atom: '";
+        err += delegation->code_to_string[label];
+        err += U"'";
+        *res = delegation->set_error(new Error(err));
+        return false;
+    }
+
+    inline Element* getDataStructure(int16_t label) {
+        Element* res;
+        check_existing_error(&res) ||
+        delegation->data_pool.search(label, &res) ||
+        unboundAtomError(label, &res);
+        return res;
+    }
+
+    inline Element* get(u_ustring name) {
+        int16_t label = encode(name);
+        Element* res;
+        check_existing_error(&res) ||
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
+        unboundAtomError(label, &res);
+
+        return res;
+    }
+
+    inline Element* get(string name) {
+        int16_t label = encode(name);
+        Element* res;
+        check_existing_error(&res) ||
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
+        unboundAtomError(label, &res);
+
+        return res;
+    }
+
+
+    inline Element* get(int16_t label) {
+        Element* res;
+        check_existing_error(&res) ||
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
+        delegation->data_pool.search(label, &res) ||
+        unboundAtomError(label, &res);
+        
+        return res;
+    }
+#else
     inline bool sendError() {
         throw delegation->_THEEND;
     }
@@ -529,7 +649,7 @@ public:
     inline void sendEnd() {
         throw delegation->_THEEND;
     }
-
+    
     inline bool sendError(u_ustring msg) {
         throw new Error(msg);
     }
@@ -538,6 +658,62 @@ public:
         depth_stack++;
         throw new Error(U"Stack overflow");
     }
+
+    inline bool unboundAtomError(int16_t label) {
+        u_ustring err = U"Error: Unbound atom: '";
+        err += delegation->code_to_string[label];
+        err += U"'";
+        throw new Error(err);
+    }
+
+    inline Element* getDataStructure(int16_t label) {
+        Element* res;
+        delegation->data_pool.search(label, &res) ||
+        unboundAtomError(label);
+        return res;
+    }
+
+    inline Element* get(u_ustring name) {
+        int16_t label = encode(name);
+        Element* res;
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
+        unboundAtomError(label);
+
+        return res;
+    }
+
+    inline Element* get(string name) {
+        int16_t label = encode(name);
+        Element* res;
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
+        unboundAtomError(label);
+
+        return res;
+    }
+
+
+    inline Element* get(int16_t label) {
+        Element* res;
+        execution_stack.back()->variables.search(label, &res) ||
+        execution_stack.vecteur[0]->variables.search(label, &res) ||
+        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
+        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
+        delegation->function_pool[0]->search(label, &res) ||
+        delegation->data_pool.search(label, &res) ||
+        unboundAtomError(label);
+        
+        return res;
+    }
+    
+#endif
 
     inline void checkTrace(Listincode* l) {
         depth_stack++;
@@ -713,6 +889,10 @@ public:
 
     inline void pop() {
         removeStackElement();
+    }
+    
+    Stackelement* topstack() {
+        return execution_stack.back();
     }
     
     inline Element* pop(Element* e) {
@@ -966,6 +1146,16 @@ public:
     inline void setstackfunction(Element* f) {
         execution_stack.back()->function = f;
     }
+    
+    inline void remove_sub_stack(Stackelement* sta) {
+        //We simply remove the element under the top of the stack
+        //execution_stack[-2] = execution_stack[-1]
+        //sta is the previous value of execution_stack[-2]
+        execution_stack.remove_sub_back();
+        //We put sta back in the stack pool
+        stack_pool.push_back(sta);
+        sta->clear();
+    }
 
     inline void savelocal(Element* e, List* l) {
         execution_stack.back()->savelocal(e, l);
@@ -1009,21 +1199,6 @@ public:
         }
     }
     
-    inline bool unboundAtomError(int16_t label) {
-        u_ustring err = U"Error: Unbound atom: '";
-        err += delegation->code_to_string[label];
-        err += U"'";
-        throw new Error(err);
-    }
-    
-
-    inline Element* getDataStructure(int16_t label) {
-        Element* res;
-        delegation->data_pool.search(label, &res) ||
-        unboundAtomError(label);
-        return res;
-    }
-    
     inline Element* getvalue(int16_t label) {
         Element* res = n_null;
         execution_stack.back()->variables.search(label, &res) ||
@@ -1031,46 +1206,6 @@ public:
         return res;
     }
 
-    inline Element* get(u_ustring name) {
-        int16_t label = encode(name);
-        Element* res;
-        execution_stack.back()->variables.search(label, &res) ||
-        execution_stack.vecteur[0]->variables.search(label, &res) ||
-        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
-        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
-        delegation->function_pool[0]->search(label, &res) ||
-        unboundAtomError(label);
-
-        return res;
-    }
-
-    inline Element* get(string name) {
-        int16_t label = encode(name);
-        Element* res;
-        execution_stack.back()->variables.search(label, &res) ||
-        execution_stack.vecteur[0]->variables.search(label, &res) ||
-        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
-        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
-        delegation->function_pool[0]->search(label, &res) ||
-        unboundAtomError(label);
-
-        return res;
-    }
-
-
-    inline Element* get(int16_t label) {
-        Element* res;
-        execution_stack.back()->variables.search(label, &res) ||
-        execution_stack.vecteur[0]->variables.search(label, &res) ||
-        (check_thread_stack && delegation->thread_stack.variables.search(label, &res)) ||
-        (current_space && delegation->function_pool[current_space]->search(label, &res)) ||
-        delegation->function_pool[0]->search(label, &res) ||
-        delegation->data_pool.search(label, &res) ||
-        unboundAtomError(label);
-        
-        return res;
-    }
-    
     inline Element* checkLabel(int16_t label) {
         return execution_stack.back()->get(label);
     }
@@ -1152,44 +1287,35 @@ public:
         return delegation->provideAtomOrInstruction(identifier);
     }
     
-    Element* provideNonLabelAtom(int16_t identifier) {
-        return delegation->provideNonLabelAtom(identifier);
-    }
     Element* provideCADR(u_ustring& c) {
         return delegation->provideCADR(c);
     }
 
     inline String* provideConststring(u_ustring& u) {
-        try {
-            return const_string_pool.at(u);
-        }
-        catch(...) {
-            Conststring* c = new Conststring(u);
+        String* c = const_string_pool[u];
+        if (c == NULL) {
+            c = new Conststring(u);
             const_string_pool[u] = c;
-            return c;
         }
+        return c;
     }
 
     inline Integer* provideConstinteger(long u) {
-        try {
-            return const_integer_pool.at(u);
-        }
-        catch(...) {
-            Constinteger* c = new Constinteger(u);
+        Integer* c = const_integer_pool[u];
+        if (c == NULL) {
+            c = new Constinteger(u);
             const_integer_pool[u] = c;
-            return c;
         }
+        return c;
     }
 
     inline Number* provideConstnumber(double u) {
-        try {
-            return const_number_pool.at(u);
-        }
-        catch(...) {
-            Constnumber* c = new Constnumber(u);
+        Number* c = const_number_pool[u];
+        if (c == NULL) {
+            c = new Constnumber(u);
             const_number_pool[u] = c;
-            return c;
         }
+        return c;
     }
 
     inline Quoted* quoted() {
@@ -1339,6 +1465,31 @@ public:
         return integer_pool.last?integer_pool.backpop()->set(d):new Integerpool(this, d);
     }
 
+    inline Complex* provideComplex(double d, double imaginary) {
+        return complex_pool.last?complex_pool.backpop()->set(d, imaginary):new Complexpool(this, d, imaginary);
+    }
+
+    inline Complex* provideComplex(std::complex<double>& d) {
+        return complex_pool.last?complex_pool.backpop()->set(d):new Complexpool(this, d);
+    }
+
+    inline Infiniterangenumber* providerange_Number(double v, double i) {
+        return rangenumber_pool.last?rangenumber_pool.backpop()->set(v,i):new Infiniterangenumber(this, v, i);
+    }
+
+    inline Infiniterangenumber* providerange_Number(double v, double i, double b) {
+        return rangenumber_pool.last?rangenumber_pool.backpop()->set(v,i, b):new Infiniterangenumber(this, v, i, b);
+    }
+
+    inline Infiniterangeinteger* providerange_Integer(long v, long i) {
+        return rangeinteger_pool.last?rangeinteger_pool.backpop()->set(v,i):new Infiniterangeinteger(this, v, i);
+    }
+
+    inline Infiniterangeinteger* providerange_Integer(long v, long i, long b) {
+        return rangeinteger_pool.last?rangeinteger_pool.backpop()->set(v,i, b):new Infiniterangeinteger(this, v, i, b);
+    }
+
+
     inline String* provideString(u_ustring& c) {
         return string_pool.last?string_pool.backpop()->set(c):new Stringpool(this, c);
     }
@@ -1353,13 +1504,7 @@ public:
     Element* provideString(u_uchar c);
     
     bool checkencoding(u_ustring str) {
-        try {
-            delegation->string_to_code.at(str);
-            return true;
-        }
-        catch (...) {
-            return false;
-        }
+        return delegation->string_to_code.count(str);
     }
     
     int16_t encode(string& str) {

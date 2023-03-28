@@ -24,8 +24,14 @@ public:
     u_link* _previous;
     uint32_t mark;
     uint16_t status;
+#ifdef LISPE_WASM
+    bool error;
+#endif
 
     u_link(Element* v) {
+#ifdef LISPE_WASM
+        error = false;
+#endif
         status = 0;
         mark = 0;
         value = v;
@@ -101,7 +107,7 @@ public:
     }
 
     //we insert it after...
-    virtual void push(u_link* e) {
+    virtual void u_push(u_link* e) {
         e->_previous = this;
         _next = e;
         e->inc(status);
@@ -111,7 +117,7 @@ public:
         return false;
     }
     
-    virtual void connect(Element* v) {
+    virtual void u_connect(Element* v) {
         _next = new u_link(v);
         _next->_previous = this;
         _next->inc(status);
@@ -123,21 +129,33 @@ public:
 
 class u_link_last : public u_link {
 public:
-
     u_link_last(Element* v) : u_link(v) {}
 
-    void push(u_link* e) {
-        throw new Error("Error: Cannot add an element to this linked list");
+#ifdef LISPE_WASM
+    void u_push(u_link* e) {
+        error = true;
     }
 
-    void connect(Element* v) {
-        throw new Error("Error: Cannot add an element to this linked list");
+    void u_connect(Element* v) {
+        error = true;
     }
 
     void connect_as_last(Element* v) {
-        throw new Error("Error: Cannot add an element to this linked list");
+        error = true;
+    }
+#else
+    void u_push(u_link* e) {
+        throw new Error("Error: cannot add an element to this list");
     }
 
+    void u_connect(Element* v) {
+        throw new Error("Error: cannot add an element to this list");
+    }
+
+    void connect_as_last(Element* v) {
+        throw new Error("Error: cannot add an element to this list");
+    }
+#endif
     bool isFinal() {
         return true;
     }
@@ -285,10 +303,10 @@ public:
         e->insert(new u_link(v));
     }
     
-    void insert(long i, Element* v) {
+    bool insert(long i, Element* v) {
         if (!i) {
             push_front(v);
-            return;
+            return true;
         }
         
         u_link* c = begin();
@@ -300,8 +318,16 @@ public:
 
         if (c->_next)
             c->insert(new u_link(v));
-        else
-            c->connect(v);
+        else {
+            c->u_connect(v);
+#ifdef LISPE_WASM
+            if (c->error) {
+                c->error = false;
+                return false;
+            }
+#endif
+        }
+        return true;
     }
     
     void push_front(Element* v) {
@@ -315,6 +341,23 @@ public:
 
     void push_front(Element* v, bool is_final);
 
+#ifdef LISP_WASM
+    bool push_back(Element* v) {
+        u_link* e = last_raw();
+        if (e == NULL) {
+            first = new u_link(v);
+            first->inc(1);
+            return true;
+        }
+
+        e->u_connect(v);
+        if (e->error) {
+            e->error = false;
+            return false;
+        }
+        return true;
+    }
+#else
     void push_back(Element* v) {
         u_link* e = last_raw();
         if (e == NULL) {
@@ -323,20 +366,12 @@ public:
             return;
         }
 
-        e->connect(v);
+        e->u_connect(v);
     }
-
-    void push_back_as_last(Element* v) {
-        u_link* e = last_raw();
-        if (e == NULL) {
-            first = new u_link_last(v);
-            first->inc(1);
-            return;
-        }
-
-        e->connect_as_last(v);
-    }
-
+#endif
+    
+    void push_back_as_last(LispE* lisp, Element* v);
+    
     void pop_front() {
         u_link* u = first;
         first = first->_next;
@@ -457,71 +492,8 @@ public:
         return sz;
     }
 
-    void reverse() {
-        if (atleast2()) {
-            //First, if it in the middle of a longer list
-            //we cut it from it...
-            u_link* e = last();
-            if (e->isFinal())
-                throw new Error("Error: cannot reverse a linked list with a final '.' element");
-            
-            u_link* p = e->_next;
-            
-            //p != NULL => cycle
-            if (p == NULL) {
-                //no cycle, but "first"
-                //might be inside a list, with some elements before
-                //such as returned by a cdr...
-                p = first->_previous;
-                if (p != NULL) {
-                    p->_next = e;
-                    //we cut this element temporary from the list
-                    first->_previous = NULL;
-                }
-            }
-            
-            u_link* n;
-            while (first != e) {
-                n = first->_next;
-                first->_next = first->_previous;
-                first->_previous = n;
-                first = n;
-            }
-
-            first->_next = first->_previous;
-            first->_previous = p;
-        }
-    }
-
-    void connect(u_links& l) {
-        u_link* u;
-        if (first == NULL) {
-            first = l.first;
-            u = begin();
-            while (u != NULL) {
-                u->inc(1);
-                u =  u->next();
-            }
-        }
-        else {
-            u = last_raw();
-            if (u->isFinal())
-                throw new Error("Error: Cannot add an element to this linked list");
-            
-            u->_next = l.first;
-            l.first->_previous = u;
-            //if there is no cycle
-            //No element in the current list is in l
-            if (l.first->mark != u->mark) {
-                int16_t status = u->status;
-                u = l.begin();
-                while (u != NULL) {
-                    u->inc(status);
-                    u = u->next();
-                }
-            }
-        }
-    }
+    void reverse(LispE* lisp);
+    void connect(LispE* lisp, u_links& l);
     
     inline void to_vector(std::vector<Element*>& v) {
         u_link* u = begin();
@@ -581,9 +553,9 @@ public:
         return liste.at_e(idx);
     }
 
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         e->increment();
-        liste.insert(idx, e);
+        return liste.insert(idx, e);
     }
     
     void front(Element* e) {
@@ -964,8 +936,8 @@ public:
         e->increment();
     }
 
-    void append_as_last(Element* e) {
-        liste.push_back_as_last(e);
+    void append_as_last(LispE* lisp, Element* e) {
+        liste.push_back_as_last(lisp, e);
         e->increment();
     }
 
@@ -1072,7 +1044,7 @@ public:
     void concatenate(LispE* lisp, Element* e) {
         if (e->isList()) {
             if (e->type == t_llist) {
-                liste.connect(((LList*)e)->liste);
+                liste.connect(lisp, ((LList*)e)->liste);
             }
             else {
                 for (long i = 0; i < e->size(); i++) {

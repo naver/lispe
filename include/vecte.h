@@ -120,6 +120,12 @@ public:
         sz = last;
     }
     
+    inline void setsize(long sze) {
+        sz = sze;
+        vecteur = (Z*)realloc(vecteur, sizeof(Z)*sz);
+        memset(vecteur+last, NULL, sizeof(Z)*sz);
+    }
+    
     inline void resize(long i) {
         if (i >= sz) {
             sz = i << 1;
@@ -158,7 +164,12 @@ public:
         vecteur[i] = vecteur[j];
         vecteur[j] = e;
     }
-    
+
+    inline void remove_sub_back() {
+        last--;
+        vecteur[last - 1] = vecteur[last];
+    }
+
     inline Z backpop() {
         return vecteur[--last];
     }
@@ -194,6 +205,13 @@ public:
         return vecteur[last - 2];
     }
 
+    inline void push_max(int16_t mx, Z val) {
+        if (last == mx)
+            delete val;
+        else
+            vecteur[last++] = val;
+    }
+    
 	inline void push_back(Z val) {
         resize(last);
 		//sinon on ajoute l'element en queue...

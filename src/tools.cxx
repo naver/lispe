@@ -105,6 +105,7 @@ static inline double power10(long n)
     }
     return 1;
 }
+
 //------------------------------------------------------------------------
 #define isadigit(c) (c >= '0' && c <= '9')
 #define uchar unsigned char
@@ -4559,6 +4560,372 @@ void IndentCode(string& codestr, string& codeindente, long blancs, bool lisp, bo
     codeindente += "\n";
 }
 
+void IndentatingCode(string& str, string& codeindente) {
+    string token;
+
+    uchar* codestr = USTR(str);
+    char* blanks;
+    
+    vector<long> pos;
+    long szstr = str.size();
+    long r = 0;
+    long counterlisp = 0;
+    long sz, i, p = 0;
+    long iblank = 0;
+    long iparenthesis = 0;
+    long ligne = 0;
+        
+    short l;
+    short addspace = 0;
+    short checkspace = 0;
+    
+    bool consumeblanks = true;
+    bool beginning = true;
+    bool equalsign = false;
+    
+    uchar c;
+
+    split_container(str, szstr, pos, true);
+    sz = pos.size();
+
+    for (i = 0; i < sz; i++) {
+        c = codestr[pos[i]];
+        if (strchr("({[",c)) {
+            counterlisp++;
+            if (p < counterlisp)
+                p = counterlisp;
+        }
+        else
+            if (strchr(")]}",c))
+                counterlisp--;
+    }
+    
+    p += 10;
+    p *= blanksize;
+    string _blanks(p, ' ');
+    blanks = STR(_blanks);
+
+    counterlisp = 0;
+    i = 0;
+    
+    while (r < sz) {
+        c = codestr[i++];
+        
+        if (c <= 32) {
+            //here we have a CR, the next line should see its white characters being replaced with out indentation pack
+            if (c == '\n') {
+                codeindente += c;
+                consumeblanks = true;
+                r++;
+                ligne++;
+                continue;
+            }
+            //this is a line beginning, we need to remove the blanks first
+            if (consumeblanks)
+                continue;
+            codeindente += c;
+            continue;
+        }
+        
+        beginning = false;
+        if (consumeblanks) {
+            beginning = true;
+            if (!strchr(")]}>", c)) {
+                l = iblank;
+                switch (checkspace) {
+                    case 0:
+                        addspace = 0;
+                        break;
+                    case 1:
+                        if (addspace)
+                            addspace--;
+                        checkspace = 0;
+                        break;
+                    case 2:
+                        checkspace = 1;
+                        break;
+                    case 3:
+                        iblank+=blanksize;
+                        checkspace = 1;
+                        break;
+                    case 4:
+                        checkspace = 5;
+                        break;
+                    case 5:
+                    case 6:
+                        iblank -= blanksize;
+                        break;
+                }
+
+                //we need to insert our blanks before...
+                if (addspace)
+                    iblank += blanksize*addspace;
+                if (iblank) {
+                    blanks[iblank] = 0;
+                    codeindente += blanks;
+                    blanks[iblank] = 32;
+                }
+                iblank = l;
+                consumeblanks = false;
+            }
+        }
+
+        equalsign = (c == '<') ? equalsign : false;
+        
+        if (i != pos[r] + 1) {
+            if (c < 'A') {
+                codeindente += c;
+                continue;
+            }
+            
+            p = i;
+            while (codestr[p] > 32 && p < pos[r]) p++;
+            c = codestr[p];
+            codestr[p] = 0;
+            token = (char*)codestr+i-1;
+            codestr[p] = c;
+            if (token == "case") {
+                if (checkspace == 5) {
+                    //we need to remove an extra blank size;
+                    codeindente = codeindente.substr(0, codeindente.size()-blanksize);
+                    checkspace = 6;
+                }
+                else {
+                    if (checkspace < 5) {
+                        checkspace = 4;
+                        addspace++;
+                    }
+                }
+            }
+            else {
+                if (token == "else") {
+                    checkspace = 3;
+                }
+                else {
+                    if (token == "if" || token == "elif" || token == "for" || token == "while" || token == "default") {
+                        if (checkspace == 6) {
+                            //extra space missing
+                            string space(blanksize, ' ');
+                            codeindente += space;
+                        }
+                        
+                        checkspace = 2;
+                        addspace++;
+                    }
+                }
+            }
+            codeindente += token;
+            i = p;
+            continue;
+        }
+        
+        r++;
+        switch (c) {
+            case ';':
+                if (checkspace == 2) {
+                    addspace--;
+                    checkspace = 0;
+                }
+                else
+                    if (checkspace == 3)
+                        checkspace = 0;
+                codeindente += c;
+                break;
+            case '/':
+                switch (codestr[i]) {
+                    case '/':
+                        p = i + 1;
+                        //this is a comment, up to the last CR
+                        r++; //the next element in pos is also a '/'
+                        while (r < sz) {
+                            p = pos[r++];
+                            if (codestr[p] == '\n') {
+                                r--; //it will be consumed later
+                                break;
+                            }
+                        }
+                        c = codestr[p];
+                        codestr[p] = 0;
+                        codeindente += (char*)codestr+i-1;
+                        codestr[p] = c;
+                        i = p;
+                        break;
+                    case '@':
+                        p = i;
+                        //this is a long comment...
+                        while (r < sz) {
+                            p = pos[r++];
+                            if (codestr[p-1] == '@' && codestr[p] == '/')
+                                break;
+                        }
+                        p++;
+                        c = codestr[p];
+                        codestr[p] = 0;
+                        codeindente += (char*)codestr+i-1;
+                        codestr[p] = c;
+                        i = p;
+                        break;
+                    case '*': // /*C comments*/
+                        p = i;
+                        //this is a long comment...
+                        while (r < sz) {
+                            p = pos[r++];
+                            if (codestr[p-1] == '*' && codestr[p] == '/')
+                                break;
+                        }
+                        p++;
+                        c = codestr[p];
+                        codestr[p] = 0;
+                        codeindente += (char*)codestr+i-1;
+                        codestr[p] = c;
+                        i = p;
+                        break;
+                    default:
+                        codeindente += c;
+                }
+                break;
+            case '=':
+                equalsign = true;
+                codeindente += c;
+                break;
+            case '@':
+                if (codestr[i] == '"') {
+                    p = i;
+                    while (r < sz) {
+                        p = pos[r++];
+                        if (codestr[p-1] != '\\' && codestr[p] == '"' && codestr[p+1] == '@') {
+                            r++;
+                            break;
+                        }
+                    }
+                    p+=2;
+                    c = codestr[p];
+                    codestr[p] = 0;
+                    codeindente += (char*)codestr+i-1;
+                    codestr[p] = c;
+                    i = p;
+                }
+                else
+                    codeindente += c;
+                break;
+            case '"':
+                p = i;
+                while (r < sz) {
+                    p = pos[r++];
+                    if ((codestr[p-1] != '\\' && codestr[p] == '"') || codestr[p] == '\n')
+                        break;
+                }
+                p++;
+                c = codestr[p];
+                codestr[p] = 0;
+                codeindente += (char*)codestr+i-1;
+                codestr[p] = c;
+                i = p;
+                break;
+            case '\'':
+                p = i;
+                while (r < sz) {
+                    p = pos[r++];
+                    if (codestr[p] == '\'' || codestr[p] == '\n')
+                        break;
+                }
+                p++;
+                c = codestr[p];
+                codestr[p] = 0;
+                codeindente += (char*)codestr+i-1;
+                codestr[p] = c;
+                i = p;
+                break;
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                noconvertingfloathexa((const char*)codestr+i-1, l);
+                p =  i + l - 1;
+                while (pos[r] < p) r++;
+                c = codestr[p];
+                codestr[p] = 0;
+                codeindente += (char*)codestr+i-1;
+                codestr[p] = c;
+                i = p;
+                break;
+            case '{':
+                if (!iparenthesis) { //a little hack to handle {}
+                    checkspace = 0;
+                    addspace = 0;
+                    iblank += blanksize;
+                }
+                codeindente += c;
+                break;
+            case '(':
+                iparenthesis++;
+            case '[':
+                codeindente += c;
+                iblank += blanksize;
+                break;
+            case ')':
+                iparenthesis--;
+                iblank -= blanksize;
+                if (iblank < 0)
+                    iblank = 0;
+                if (consumeblanks) {
+                    l = iblank;
+                    //we need to insert our blanks before...
+                    if (addspace)
+                        iblank += blanksize*addspace;
+                    if (iblank) {
+                        blanks[iblank] = 0;
+                        codeindente += blanks;
+                        blanks[iblank] = 32;
+                    }
+                    addspace = 0;
+                    iblank = l;
+                    consumeblanks = false;
+                }
+                codeindente += c;
+                break;
+            case '}':
+                if (iparenthesis) {
+                    codeindente += c;
+                    break;
+                }
+                checkspace = 0;
+                addspace = 0;
+            case ']':
+                iblank -= blanksize;
+                if (iblank < 0)
+                    iblank = 0;
+                if (consumeblanks) {
+                    l = iblank;
+                    //we need to insert our blanks before...
+                    if (addspace)
+                        iblank += blanksize*addspace;
+                    if (iblank) {
+                        blanks[iblank] = 0;
+                        codeindente += blanks;
+                        blanks[iblank] = 32;
+                    }
+                    addspace = 0;
+                    iblank = l;
+                    consumeblanks = false;
+                }
+                codeindente += c;
+                break;
+            default:
+                codeindente += c;
+        }
+    }
+    
+    for (;i < szstr; i++)
+        codeindente += codestr[i];
+}
+   
 //---------------------------------------------------------------------------------------
 
 void NormalizeFileName(char* fileName, char* buffer, long buffersz) {
@@ -4621,12 +4988,9 @@ typedef bool (*LibraryEntryPoint)(LispE*);
 #ifdef WIN32
 Element* LispE::load_library(string nom_bib) {
 	string name = NormalizePathname(nom_bib);
+    if (delegation->libraries.count(name))
+        return delegation->_TRUE;
 
-	try {
-		delegation->libraries.at(name);
-		return delegation->_TRUE;
-	}
-	catch (...) {}
 
 	if (name == "")
 		return false;
@@ -4702,11 +5066,8 @@ Element* LispE::load_library(string nom_bib) {
 Element* LispE::load_library(string nom_bib) {
     string name = NormalizePathname(nom_bib);
     
-    try {
-        delegation->libraries.at(name);
+    if (delegation->libraries.count(name))
         return delegation->_TRUE;
-    }
-    catch (...) {}
     
     void* LoadMe;
     
@@ -5189,6 +5550,18 @@ void s_utf16_to_unicode(u_ustring& u, wstring& w) {
     }
 }
 
+void s_utf16_to_unicode(u_ustring& u, int32_t* w, long sz) {
+    u = U"";
+    
+    u_uchar c;
+    for (long i = 0; i < sz; i++) {
+        if (c_utf16_to_unicode(c, (u_uchar)w[i], false))
+            c_utf16_to_unicode(c, (u_uchar)w[++i], true);
+        u += c;
+    }
+}
+
+
 
 #ifdef WIN32
 Exporting wstring u_to_w(u_ustring u) {
@@ -5266,7 +5639,7 @@ void tokenizer_automaton::display(tokenizer_node* a, int nbblanks, bool top) {
     }
     //This node was already in our set
     bool ret = false;
-    if (found.find(a->idpos) != found.end())
+    if (found.count(a->idpos))
         ret = true;
     else
         found.insert(a->idpos);
@@ -5338,7 +5711,7 @@ void tokenizer_automaton::display(tokenizer_node* a, int nbblanks, bool top) {
 void tokenizer_automaton::asString(std::set<int16_t>& shared, std::wstringstream& str, tokenizer_node* a, int nbblanks, bool top) {
     //This node was already in our set
     bool ret = false;
-    if (shared.find(a->idpos) != shared.end())
+    if (shared.count(a->idpos))
         ret = true;
     else
         shared.insert(a->idpos);
@@ -5433,7 +5806,7 @@ bool tokenizer_node::check(u_uchar chr, UTF8_Handler* access, std::set<u_uchar>&
         case act_non_breaking_space: //non-breaking space
             return (not_neg == c_is_nbs_space(chr));
         case act_operator:
-            return (not_neg == (operators.find(chr) != operators.end()));
+            return (not_neg == operators.count(chr));
         case act_punctuation:
             return (not_neg == access->c_is_punctuation(chr));
         case act_carriage:
@@ -5484,14 +5857,14 @@ void tokenizer_node::processing_postponed_nodes(std::set<long>& visited, vector<
         for (long i = 0; i < arcs.size(); i++) {
             if (i == found) {
                 for (auto& e : visited) {
-                    if (v.find(e) != v.end())
+                    if (v.count(e))
                         continue;
                     local.push_back(nodes[e]);
                     v.insert(e);
                 }
             }
             else {
-                if (v.find(arcs[i]->idpos) == v.end()) {
+                if (!v.count(arcs[i]->idpos)) {
                     local.push_back(arcs[i]);
                     v.insert(arcs[i]->idpos);
                 }
@@ -5529,7 +5902,7 @@ void tokenizer_node::remove_epsilon_nodes(std::unordered_map<long,
             n = arcs[i];
             if (n->pure_arc()) {
                 key = n->action*256 + n->label;
-                if (commons.find(key) != commons.end()) {
+                if (commons.count(key)) {
                     tokenizer_node* nbase = commons[key];
                     for (key = 0; key < n->size(); key++)
                         nbase->arcs.push_back(n->arcs[key]);
@@ -5566,7 +5939,7 @@ void tokenizer_node::remove_epsilon_nodes(std::unordered_map<long,
             }
             else {
                 if (n->check_visited()) {
-                    if (visited.find(n->idpos) != visited.end()) {
+                    if (visited.count(n->idpos)) {
                         for (auto& e: visited[n->idpos])
                             vect->insert(e);
                     }
@@ -5578,7 +5951,7 @@ void tokenizer_node::remove_epsilon_nodes(std::unordered_map<long,
                 else {
                     n->remove_epsilon_nodes(visited, *vect, nodes, true);
                     visited[n->idpos] = *vect;
-                    if (n->check_postpone() && visited.find(n->idpos) != visited.end())
+                    if (n->check_postpone() && visited.count(n->idpos))
                         n->processing_postponed_nodes(visited[n->idpos], nodes, n->idpos);
                 }
             }
@@ -5605,7 +5978,7 @@ void tokenizer_node::remove_epsilon_nodes(std::unordered_map<long,
         
         for (auto& e : locals) {
             n = nodes[e];
-            if (n->check_postpone() && visited.find(n->idpos) != visited.end())
+            if (n->check_postpone() && visited.count(n->idpos))
                 processing_postponed_nodes(visited[n->idpos], nodes, n->idpos);
         }
     }
@@ -5749,7 +6122,7 @@ template<> void tokenizer_result<string>::store_currentchr() {
 }
 
 
-template<> void tokenizer_result<u_ustring>::store(u_ustring& token, int32_t label) {
+template<> void tokenizer_result<u_ustring>::store(int32_t label) {
     if (label != -1) {
         stack_ptr->push_back(token);
         if (store_all) {
@@ -5762,7 +6135,7 @@ template<> void tokenizer_result<u_ustring>::store(u_ustring& token, int32_t lab
 }
 
 #ifdef WIN32
-template<> void tokenizer_result<wstring>::store(u_ustring& token, int32_t label) {
+template<> void tokenizer_result<wstring>::store(int32_t label) {
     if (label != -1) {
         wstring w;
         s_unicode_to_utf16(w, token);
@@ -5776,7 +6149,7 @@ template<> void tokenizer_result<wstring>::store(u_ustring& token, int32_t label
     }
 }
 #else
-template<> void tokenizer_result<wstring>::store(u_ustring& token, int32_t label) {
+template<> void tokenizer_result<wstring>::store(int32_t label) {
     if (label != -1) {
         stack_ptr->push_back((wstring&)token);
         if (store_all) {
@@ -5789,7 +6162,7 @@ template<> void tokenizer_result<wstring>::store(u_ustring& token, int32_t label
 }
 #endif
 
-template<> void tokenizer_result<u16string>::store(u_ustring& token, int32_t label) {
+template<> void tokenizer_result<u16string>::store(int32_t label) {
     if (label != -1) {
         u16string w;
         s_unicode_to_utf16(w, token);
@@ -5803,7 +6176,7 @@ template<> void tokenizer_result<u16string>::store(u_ustring& token, int32_t lab
     }
 }
 
-template<> void tokenizer_result<string>::store(u_ustring& token, int32_t label) {
+template<> void tokenizer_result<string>::store(int32_t label) {
     if (label != -1) {
         string w;
         s_unicode_to_utf8(w, token);
@@ -5883,8 +6256,10 @@ void tokenizer_automaton::compile() {
     bool first;
     bool first_value;
     
+    bool tail = false;
     
     for (irule = 0; irule < rules.size() && !error; irule++) {
+        tail = false;
         line = rules[irule];
         begin_nodes = nodes.size();
         
@@ -5916,6 +6291,12 @@ void tokenizer_automaton::compile() {
         if (pos == -1)
             error = 1;
         else {
+            // =: forces tail recursion
+            if (line[pos + 1] == ':') {
+                tail = true;
+                pos++;
+            }
+
             action_id = line.c_str()+pos+1;
             
             switch (action_id[0]) {
@@ -5929,8 +6310,11 @@ void tokenizer_automaton::compile() {
                     final_action = (int32_t)convertinginteger(action_id);
             }
             
-            line=line.substr(0,pos);
-            
+            if (tail)
+                line = line.substr(0,pos - 1);
+            else
+                line = line.substr(0,pos);
+
             //We have some meta rules
             if (metarule_available)
                 replacemetas(metalines,line);
@@ -6376,6 +6760,13 @@ void tokenizer_automaton::compile() {
         if (final_action > 0)
             indexed_on_label[final_action].push_back(initial);
 
+        if (tail) {
+            anode = initial;
+            while (anode->arcs.size() == 1)
+                anode = anode->arcs[0];
+            add_flag(anode->flags, flag_tail);
+        }
+
         compiled_rules.push_back(initial);
         
         if (displayautomata) {
@@ -6480,8 +6871,10 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"#10+=10");                    //cr (kept)
     rules.push_back(U"#13=#");                      //lf (not kept)
 
-    //Single quote
+    //Quoted ;
     rules.push_back(U"';+=59");                       //quote ;
+
+    //Single quote
     rules.push_back(U"'=39");                       //quote
 
     rules.push_back(U"#27%[{%d;,}+m=#");           //Color definition in terminal
@@ -6500,27 +6893,28 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"%}=125");
     
     //Comments
-    rules.push_back(U";;?+;;=67");                      //comments starting with ;;..;;
+    rules.push_back(U";;?+;;=:67");                      //comments starting with ;;..;;
     rules.push_back(U";?+%r=67");                      //comments starting with ; up to the end of the line
+    rules.push_back(U"%#!?+%r=67");                      //specific to Linux, calling function integrated in file
 
     //Strings
-    rules.push_back(U"\"\"\"?*\"\"\"=96");                   //long strings Python way """.."""
-    rules.push_back(U"\"{[\\-\"] ~%r}*\"=34");     //string "" does not contain CR and can escape characters
-    rules.push_back(U"`?*`=96");                   //long strings Unix way
+    rules.push_back(U"\"\"\"?*\"\"\"=:96");                   //long strings Python way """.."""
+    rules.push_back(U"\"{[\\-\"] ~%r}*\"=:34");     //string "" does not contain CR and can escape characters
+    rules.push_back(U"`?*`=:96");                   //long strings Unix way
 #ifdef WIN32
     //In Windows, strings are always stored as UTF-8 strings...
     //For this reason, we need to handle them through their code...
-    rules.push_back(U"#171?*#187=96");                   //long strings French way
-    rules.push_back(U"#8220?*#8221=96");                   //long strings English
-    rules.push_back(U"#8216?*#8217=96");                   //long strings with single quotes (English)
-    rules.push_back(U"#8222?*#8221=96");                //long strings German/Polish
-    rules.push_back(U"#10077?*#10078=96");                   //long strings
+    rules.push_back(U"#171?*#187=:96");                   //long strings French way
+    rules.push_back(U"#8220?*#8221=:96");                   //long strings English
+    rules.push_back(U"#8216?*#8217=:96");                   //long strings with single quotes (English)
+    rules.push_back(U"#8222?*#8221=:96");                //long strings German/Polish
+    rules.push_back(U"#10077?*#10078=:96");                   //long strings
 #else
-    rules.push_back(U"«?*»=96");                   //long strings French way
-    rules.push_back(U"“?*”=96");                   //long strings English
-    rules.push_back(U"‘?*’=96");                   //long strings with single quotes (English)
-    rules.push_back(U"„?*”=96");                //long strings German/Polish
-    rules.push_back(U"❝?*❞=96");                   //long strings
+    rules.push_back(U"«?*»=:96");                   //long strings French way
+    rules.push_back(U"“?*”=:96");                   //long strings English
+    rules.push_back(U"‘?*’=:96");                   //long strings with single quotes (English)
+    rules.push_back(U"„?*”=:96");                //long strings German/Polish
+    rules.push_back(U"❝?*❞=:96");                   //long strings
 #endif
     
     //The definition of a rule is divided into metarules for better clarity
@@ -6619,3 +7013,4 @@ void segmenter_automaton::setrules() {
     rules.push_back(U"~{%S %o %p}+=1");           //Any combination of Unicode characters ending at a space or a punctuation
 }
 
+//------------------------------------------------------------------------

@@ -153,7 +153,7 @@ public:
 
     std::atomic<long> id_pool;
 
-    Error* error_message;
+    Error* current_error;
     
     reading_string reading_string_function;
     reading_string display_string_function;
@@ -200,7 +200,6 @@ public:
 
     long i_current_line;
     long i_current_file;
-    bool context_is_error;
     int16_t stop_execution;
 
     bool next_stop;
@@ -300,23 +299,19 @@ public:
     }
     
     void updatepathname(string& pathname) {
-        try {
-            i_current_file = allfiles.at(pathname);
-        }
-        catch (...) {
+        const auto& a = allfiles.find(pathname);
+        if (a == allfiles.end()) {
             i_current_file = allfiles.size();
             allfiles[pathname] = i_current_file;
             allfiles_names[i_current_file] = pathname;
         }
+        else
+            i_current_file = a->second;
     }
     
     void addtolisting(long l, string& e) {
-        try {
-            listing.at(i_current_file).at(l);
-        }
-        catch (...) {
+        if (!listing.count(i_current_file) || !listing[i_current_file].count(l))
             listing[i_current_file][l] = e;
-        }
     }
     
     bool isEndTrace() {
@@ -326,68 +321,63 @@ public:
     int16_t encode(string& str) {
         u_ustring s;
         s_utf8_to_unicode(s, str, str.size());
-        try {
-            return string_to_code.at(s);
-        }
-        catch (...) {
+        const auto& e = string_to_code.find(s);
+        if (e == string_to_code.end()) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
             return idx;
         }
+        return e->second;
     }
 
     int16_t encode(wstring& w) {
         u_pstring s = _w_to_u(w);
-        try {
-            return string_to_code.at(s);
-        }
-        catch (...) {
+        const auto& e = string_to_code.find(s);
+        if (e == string_to_code.end()) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
             return idx;
         }
+        return e->second;
     }
 
     int16_t encode(u_ustring& s) {
-        try {
-            return string_to_code.at(s);
-        }
-        catch (...) {
+        const auto& e = string_to_code.find(s);
+        if (e == string_to_code.end()) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
             return idx;
         }
+        return e->second;
     }
     
     int16_t encode(wchar_t c) {
         u_ustring s;
         s = (u_uchar)c;
-        try {
-            return string_to_code.at(s);
-        }
-        catch (...) {
+        const auto& e = string_to_code.find(s);
+        if (e == string_to_code.end()) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
             return idx;
         }
+        return e->second;
     }
 
     int16_t encode(u_uchar c) {
         u_ustring s;
         s = c;
-        try {
-            return string_to_code.at(s);
-        }
-        catch (...) {
+        const auto& e = string_to_code.find(s);
+        if (e == string_to_code.end()) {
             long idx = string_to_code.size() + l_final;
             code_to_string[idx] = s;
             string_to_code[s] = idx;
             return idx;
         }
+        return e->second;
     }
 
     void replaceAtom(u_ustring& name, int16_t code, bool tobelocked) {
@@ -396,64 +386,39 @@ public:
         lock.unlocking(tobelocked);
     }
 
+    inline int16_t get_code(u_ustring& s) {
+        const auto& a = string_to_code.find(s);
+        return a == string_to_code.end()?-1:a->second;
+    }
+
+    inline int16_t get_code(wstring& s) {
+        const auto& a = string_to_code.find(_w_to_u(s));
+        return a == string_to_code.end()?-1:a->second;
+    }
 
     lisp_code check_atom(string& w) {
         u_ustring s;
         s_utf8_to_unicode(s, w, w.size());
-        try {
-            int16_t code = string_to_code.at(s);
-            if (atom_pool.check(code))
-                return (lisp_code)code;
-        }
-        catch (...) {
-        }
-        return l_final;
+        int16_t code = atom_pool.checkvalue(get_code(s));
+        return code==-1?l_final:(lisp_code)code;
     }
 
     int16_t is_atom(string& w) {
         u_ustring s;
         s_utf8_to_unicode(s, w, w.size());
-        try {
-            int16_t code = string_to_code.at(s);
-            if (atom_pool.check(code))
-                return code;
-        }
-        catch (...) {
-        }
-        return -1;
+        return atom_pool.checkvalue(get_code(s));
     }
 
     int16_t is_atom(u_ustring& s) {
-        try {
-            int16_t code = string_to_code.at(s);
-            if (atom_pool.check(code))
-                return code;
-        }
-        catch (...) {
-        }
-        return -1;
+        return atom_pool.checkvalue(get_code(s));
     }
 
     int16_t is_atom(wstring& w) {
-        try {
-            int16_t code = string_to_code.at(_w_to_u(w));
-            if (atom_pool.check(code))
-                return code;
-        }
-        catch (...) {
-        }
-        return -1;
+        return atom_pool.checkvalue(get_code(w));
     }
 
     int16_t is_basic_atom(wstring& w) {
-        try {
-            int16_t code = string_to_code.at(_w_to_u(w));
-            if (atom_basic_pool.check(code))
-                return code;
-        }
-        catch (...) {
-        }
-        return -1;
+        return atom_basic_pool.checkvalue(get_code(w));
     }
 
     int16_t is_basic_atom(u16string& e) {
@@ -461,14 +426,7 @@ public:
         for (long i = 0; i < e.size(); i++)
             w += (u_uchar)e[i];
         
-        try {
-            int16_t code = string_to_code.at(w);
-            if (atom_basic_pool.check(code))
-                return code;
-        }
-        catch (...) {
-        }
-        return -1;
+        return atom_basic_pool.checkvalue(get_code(w));
     }
 
 
@@ -477,21 +435,11 @@ public:
     }
 
     bool is_instruction(u_ustring& s) {
-        try {
-            return (s == U"true" || s == U"nil" || instructions.check(string_to_code.at(s)));
-        }
-        catch (...) {
-            return false;
-        }
+        return (s == U"true" || s == U"nil" || instructions.check(get_code(s)));
     }
 
     bool is_instruction(wstring& s) {
-        try {
-            return (s == L"true" || s == L"nil" || instructions.check(string_to_code.at(_w_to_u(s))));
-        }
-        catch (...) {
-            return false;
-        }
+        return (s == L"true" || s == L"nil" || instructions.check(get_code(s)));
     }
 
     bool is_math_operator(int16_t c) {
@@ -508,15 +456,14 @@ public:
 
 
     long id_file(string& pathname) {
-        try {
-            return allfiles.at(pathname);
-        }
-        catch (...) {
+        const auto& a = allfiles.find(pathname);
+        if (a == allfiles.end()) {
             long i = allfiles.size();
             allfiles[pathname] = i;
             allfiles_names[i] = pathname;
             return i;
         }
+        return a->second;
     }
 
     Element* provideOperator(int16_t code) {
@@ -524,13 +471,7 @@ public:
     }
 
     bool sameArity(int16_t instruction_code, unsigned long arity) {
-        try {
-            return (arities.at(instruction_code) == arity);
-        }
-        catch (...) {
-            return false;
-        }
-        return false;
+        return (arities.check(instruction_code) && arities.at(instruction_code) == arity);
     }
 
     bool arity_check(int16_t instruction_code, unsigned long sz) {
@@ -581,6 +522,10 @@ public:
         breakpoints.clear();
     }
 
+    inline bool check_breakpoints(long i_file, long i_line) {
+        return (breakpoints.count(i_file) && breakpoints[i_file].count(i_line));
+    }
+
     inline bool activate_on_breakpoints(LispE* lisp, List* e) {
         if (next_stop) {
             if (debugfunction != NULL) {
@@ -588,28 +533,15 @@ public:
                 return true;
             }
         }
-        try {
-            if (breakpoints.at(i_current_file).at(i_current_line) == true) {
-                next_stop = false;
-                if (debugfunction != NULL) {
-                    (*debugfunction)(lisp, e, debugobject);
-                    return true;
-                }
+        
+        if (check_breakpoints(i_current_file, i_current_line)) {
+            next_stop = false;
+            if (debugfunction != NULL) {
+                (*debugfunction)(lisp, e, debugobject);
+                return true;
             }
         }
-        catch (...) {
-            return false;
-        }
         return false;
-    }
-
-    bool check_breakpoints(long i_file, long i_line) {
-        try {
-            return breakpoints.at(i_file).at(i_line);
-        }
-        catch (...) {
-            return false;
-        }
     }
     
     
@@ -638,10 +570,7 @@ public:
         //If the first element of e is a data structure: ( (L x x x))
         //We need to extract the second label...
         
-        try {
-            method_pool[space]->at(label);
-        }
-        catch (...) {
+        if (!method_pool[space]->count(label)) {
             //We record the first instance of a defpat declaration
             if (stack == NULL)
                 recordingFunction(e, label, space);
@@ -651,11 +580,11 @@ public:
         
         (*method_pool[space])[label][sublabel].push_back(e);
         
-        try {
-            for (const auto& a: data_descendant.at(sublabel))
+        const auto& ad = data_descendant.find(sublabel);
+        if (ad != data_descendant.end()) {
+            for (const auto& a: ad->second)
                 (*method_pool[space])[label][a].push_back(e);
         }
-        catch (...) {}
         
         return e;
     }
@@ -712,24 +641,46 @@ public:
     void setError(Error* err) {
         lock.locking(true);
         if ((stop_execution & 1) == 1) {
-            error_message->message += L"\n";
-            error_message->message += err->message;
+            current_error->message += L"\n";
+            current_error->message += err->message;
             err->release();
         }
         else {
             stop_execution |= 1;
-            error_message = err;
+            current_error = err;
+            current_error->increment();
         }
         lock.unlocking(true);
     }
     
+#ifdef LISPE_WASM
     void throwError() {
         //We need to  check if the error has not be thrown yet
         stop_execution &= 0xFFFE;
-        Error* err = error_message;
-        error_message = NULL;
+    }
+
+    inline void checkExecution() {
+        if (stop_execution) {
+            if (current_error != NULL)
+                current_error->decrement();
+            current_error = _THEEND;
+        }
+    }
+
+#else
+    void throwError() {
+        //We need to  check if the error has not be thrown yet
+        stop_execution &= 0xFFFE;
+        Error* err = current_error;
+        current_error = NULL;
         throw err;
     }
+    
+    inline void checkExecution() {
+        if (stop_execution)
+            throw _THEEND;
+    }
+#endif
     
     void atomise(u_ustring& a, List* liste, bool tobelocked) {
         Element* e;
@@ -765,15 +716,14 @@ public:
     
     bool trigger(u_ustring& w) {
         lock.locking();
-        try {
-            BlockThread* b = waitons.at(w);
+        const auto& a = waitons.find(w);
+        if (a != waitons.end()) {
             lock.unlocking();
-            b->released();
+            a->second->released();
             return true;
         }
-        catch (...) {
-            lock.unlocking();
-        }
+        
+        lock.unlocking();
         return false;
     }
     
@@ -801,10 +751,9 @@ public:
     Element* thread_retrieve(u_ustring& key) {
         Element* v = NULL;
         lock.locking();
-        try {
-            v = thread_pool.at(key).copying(true);
-        }
-        catch (...) {}
+        const auto& a = thread_pool.find(key);
+        if (a != thread_pool.end())
+            v = a->second.copying(true);
         lock.unlocking();
         return v;
     }
@@ -820,12 +769,12 @@ public:
     
     bool thread_clear(u_ustring& key) {
         lock.locking();
-        try {
-            thread_pool.at(key).clear();
+        const auto& a = thread_pool.find(key);
+        if (a != thread_pool.end()) {
+            a->second.clear();
             lock.unlocking();
             return true;
         }
-        catch (...) {}
         lock.unlocking();
         return false;
     }
@@ -908,16 +857,6 @@ public:
         return e;
     }
 
-    Element* provideNonLabelAtom(int16_t code) {
-        Element* e =  atom_pool.search(code);
-        if (e == NULL) {
-            e = new Atomnotlabel(code, code_to_string.at(code));
-            e->status = s_constant;
-            atom_pool[code] = e;
-        }
-        return e;
-    }
-
     Element* provideCADR(u_ustring& strvalue) {
         int16_t code = encode(strvalue);
         Element* e =  atom_pool.search(code);
@@ -929,28 +868,50 @@ public:
         return e;
     }
 
-    inline void checkExecution() {
-        if (stop_execution)
-            throw _THEEND;
+    inline void reset_error() {
+        if (current_error != NULL)
+            current_error->decrement();
+        current_error = NULL;
     }
-    
+
     inline void reset_context() {
-        context_is_error = false;
+        if (current_error != NULL)
+            current_error->decrement();
+        current_error = NULL;
         i_current_line = -1;
         i_current_file = -1;
     }
     
     
     inline void set_context(long l, long f) {
-        if (!context_is_error) {
+        if (!current_error) {
             i_current_line = l;
             i_current_file = f;
         }
     }
 
-    inline void set_error_context(long l, long f) {
-        if (!context_is_error) {
-            context_is_error = true;
+    inline Element* set_error(Error* err) {
+        if (!current_error) {
+            current_error = err;
+            current_error->increment();
+        }
+        else {
+            if (current_error != err)
+                err->release();
+        }
+        return current_error;
+    }
+    
+    inline void set_end() {
+        if (current_error != NULL)
+            current_error->decrement();
+        current_error = _THEEND;
+    }
+    
+    inline void set_error_context(Error* err, long l, long f) {
+        if (!current_error) {
+            current_error = err;
+            current_error->increment();
             i_current_line = l;
             i_current_file = f;
         }

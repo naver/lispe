@@ -325,14 +325,11 @@ void Set_s::append(LispE* lisp, long v) {
 Element* Set_s::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    String* element;
-    lisp->recording(null_, label);
+    String* element = lisp->provideString();
+    lisp->recording(element, label);
     long sz = code->liste.size();
-    u_ustring u;
     for (auto & a: ensemble) {
-        u = a;
-        element = lisp->provideString(u);
-        lisp->replacingvalue(element, label);
+        element->content = a;
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -392,20 +389,20 @@ Element* Set_s::next_iter_exchange(LispE* lisp, void* it) {
 }
 
 Element* Set_s::search_element(LispE* lisp, Element* a_value, long ix) {
-    return (ensemble.find(a_value->asUString(lisp)) == ensemble.end())?null_:a_value;
+    return !ensemble.count(a_value->asUString(lisp))?null_:a_value;
 }
 
 bool Set_s::check_element(LispE* lisp, Element* a_value) {
-    return (ensemble.find(a_value->asUString(lisp)) != ensemble.end());
+    return ensemble.count(a_value->asUString(lisp));
 }
 
 Element* Set_s::checkkey(LispE* lisp, Element* e) {
-    return (ensemble.find(e->asUString(lisp)) == ensemble.end())?null_:true_;
+    return !ensemble.count(e->asUString(lisp))?null_:true_;
 }
 
 Element* Set_s::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
     u_ustring keyvalue = a_value->asUString(lisp);
-    if (ensemble.find(keyvalue) != ensemble.end()) {
+    if (ensemble.count(keyvalue)) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asUString(lisp));
         return one_;
@@ -416,7 +413,7 @@ Element* Set_s::replace_all_elements(LispE* lisp, Element* a_value, Element* rem
 Element* Set_s::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     Strings* l = lisp->provideStrings();
     u_ustring keyvalue = a_value->asUString(lisp);
-    if (ensemble.find(keyvalue) == ensemble.end())
+    if (!ensemble.count(keyvalue))
         return emptylist_;
     l->liste.push_back(keyvalue);
     return l;
@@ -424,7 +421,7 @@ Element* Set_s::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_s::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     u_ustring keyvalue = a_value->asUString(lisp);
-    if (ensemble.find(keyvalue) == ensemble.end())
+    if (!ensemble.count(keyvalue))
         return zero_;
     return one_;
 }
@@ -486,7 +483,7 @@ Element* Set_s::list_xor(LispE* lisp, Element* value) {
     Set_s* intersection = (Set_s*)list_and(lisp, value);
     
     for (auto & a : ensemble) {
-        if (intersection->ensemble.find(a) == intersection->ensemble.end())
+        if (!intersection->ensemble.count(a))
             s->add(a);
     }
     
@@ -495,7 +492,7 @@ Element* Set_s::list_xor(LispE* lisp, Element* value) {
         u_link* a = ((LList*)value)->liste.begin();
         for (; a != NULL; a = a->next()) {
             v = a->value->asUString(lisp);
-            if (intersection->ensemble.find(v) == intersection->ensemble.end())
+            if (!intersection->ensemble.count(v))
                 s->add(v);
         }
     }
@@ -504,7 +501,7 @@ Element* Set_s::list_xor(LispE* lisp, Element* value) {
             long sz = value->size();
             for (long i = 0; i < sz; i++) {
                 v = value->index(i)->asUString(lisp);
-                if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                if (!intersection->ensemble.count(v))
                     s->add(v);
             }
         }
@@ -514,7 +511,7 @@ Element* Set_s::list_xor(LispE* lisp, Element* value) {
                 Element* next_value = value->next_iter_exchange(lisp, iter);
                 while (next_value != emptyatom_) {
                     v = next_value->asUString(lisp);
-                    if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                    if (!intersection->ensemble.count(v))
                         s->add(v);
                     next_value = value->next_iter_exchange(lisp, iter);
                 }
@@ -528,7 +525,7 @@ Element* Set_s::list_xor(LispE* lisp, Element* value) {
 }
 
 Element* Set_s::search_reverse(LispE* lisp, Element* a_value, long ix) {
-    return (ensemble.find(a_value->asUString(lisp)) == ensemble.end())?null_:a_value;
+    return !ensemble.count(a_value->asUString(lisp))?null_:a_value;
 }
 
 Element* Set_s::protected_index(LispE* lisp, long i) {
@@ -570,33 +567,33 @@ Element* Set_s::value_from_index(LispE* lisp, long i) {
 
 Element* Set_s::value_on_index(wstring& w, LispE* lisp) {
     u_pstring k = _w_to_u(w);
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         return null_;
     return lisp->provideString(k);
 }
 
 Element* Set_s::value_on_index(u_ustring& k, LispE* lisp) {
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         return null_;
     return lisp->provideString(k);
 }
 
 Element* Set_s::protected_index(LispE* lisp, u_ustring& k) {
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         return null_;
     return lisp->provideString(k);
 }
 
 Element* Set_s::value_on_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         return null_;
     return lisp->provideString(k);
 }
 
 Element* Set_s::protected_index(LispE* lisp, Element* ix) {
     u_ustring k = ix->asUString(lisp);
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         throw new Error("Error: index out of bounds");
     return lisp->provideString(k);
 }
@@ -693,7 +690,7 @@ Element* Set_i::next_iter_exchange(LispE* lisp, void* it) {
 }
 
 bool Set_i::check_element(LispE* lisp, Element* a_value) {
-    return (ensemble.find(a_value->asInteger()) != ensemble.end());
+    return ensemble.count(a_value->asInteger());
 }
 
 Element* Set_i::list_and(LispE* lisp, Element* value) {
@@ -753,7 +750,7 @@ Element* Set_i::list_xor(LispE* lisp, Element* value) {
     Set_i* intersection = (Set_i*)list_and(lisp, value);
     
     for (auto & a : ensemble) {
-        if (intersection->ensemble.find(a) == intersection->ensemble.end())
+        if (!intersection->ensemble.count(a))
             s->add(a);
     }
 
@@ -762,7 +759,7 @@ Element* Set_i::list_xor(LispE* lisp, Element* value) {
         u_link* a = ((LList*)value)->liste.begin();
         for (; a != NULL; a = a->next()) {
             v = a->value->asInteger();
-            if (intersection->ensemble.find(v) == intersection->ensemble.end())
+            if (!intersection->ensemble.count(v))
                 s->add(v);
         }
     }
@@ -771,7 +768,7 @@ Element* Set_i::list_xor(LispE* lisp, Element* value) {
             long sz = value->size();
             for (long i = 0; i < sz; i++) {
                 v = value->index(i)->asInteger();
-                if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                if (!intersection->ensemble.count(v))
                     s->add(v);
             }
         }
@@ -781,7 +778,7 @@ Element* Set_i::list_xor(LispE* lisp, Element* value) {
                 Element* next_value = value->next_iter_exchange(lisp, iter);
                 while (next_value != emptyatom_) {
                     v = next_value->asInteger();
-                    if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                    if (!intersection->ensemble.count(v))
                         s->add(v);
                     next_value = value->next_iter_exchange(lisp, iter);
                 }
@@ -889,13 +886,12 @@ void Set_i::flatten(LispE* lisp, List* l) {
 Element* Set_i::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    Integer* element;
-    lisp->recording(null_, label);
+    Integer* element = lisp->provideInteger(0);
+    lisp->recording(element, label);
     long sz = code->liste.size();
     for (auto & a: ensemble) {
-        element = lisp->provideInteger(a);
-        lisp->replacingvalue(element, label);
-        e = null_;
+        element->content = a;
+        _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -931,16 +927,16 @@ Element* Set_i::thevalues(LispE* lisp) {
 }
 
 Element* Set_i::search_element(LispE* lisp, Element* a_value, long ix) {
-    return (ensemble.find(a_value->asInteger()) == ensemble.end())?null_:a_value;
+    return !ensemble.count(a_value->asInteger())?null_:a_value;
 }
 
 Element* Set_i::checkkey(LispE* lisp, Element* e) {
-    return (ensemble.find(e->asInteger()) == ensemble.end())?null_:true_;
+    return !ensemble.count(e->asInteger())?null_:true_;
 }
 
 Element* Set_i::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
     long keyvalue = a_value->asInteger();
-    if (ensemble.find(keyvalue) != ensemble.end()) {
+    if (ensemble.count(keyvalue)) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asInteger());
         return one_;
@@ -951,7 +947,7 @@ Element* Set_i::replace_all_elements(LispE* lisp, Element* a_value, Element* rem
 Element* Set_i::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     Numbers* l = lisp->provideNumbers();
     long keyvalue = a_value->asInteger();
-    if (ensemble.find(keyvalue) == ensemble.end())
+    if (!ensemble.count(keyvalue))
         return emptylist_;
     l->liste.push_back(keyvalue);
     return l;
@@ -959,13 +955,13 @@ Element* Set_i::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_i::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     long keyvalue = a_value->asInteger();
-    if (ensemble.find(keyvalue) == ensemble.end())
+    if (!ensemble.count(keyvalue))
         return zero_;
     return one_;
 }
 
 Element* Set_i::search_reverse(LispE* lisp, Element* a_value, long ix) {
-    return (ensemble.find(a_value->asInteger()) == ensemble.end())?null_:a_value;
+    return !ensemble.count(a_value->asInteger())?null_:a_value;
 }
 
 Element* Set_i::protected_index(LispE* lisp, long i) {
@@ -1004,14 +1000,14 @@ Element* Set_i::value_from_index(LispE* lisp, long i) {
 
 Element* Set_i::value_on_index(LispE* lisp, Element* ix) {
     long k = ix->asInteger();
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         return null_;
     return lisp->provideInteger(k);
 }
 
 Element* Set_i::protected_index(LispE* lisp, Element* ix) {
     long k = ix->asInteger();
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         throw new Error("Error: index out of bounds");
     return lisp->provideInteger(k);
 }
@@ -1125,13 +1121,12 @@ void Set_n::flatten(LispE* lisp, List* l) {
 Element* Set_n::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    Number* element;
-    lisp->recording(null_, label);
+    Number* element = lisp->provideNumber(0);
+    lisp->recording(element, label);
     long sz = code->liste.size();
     for (auto & a: ensemble) {
-        element = lisp->provideNumber(a);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = a;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -1185,20 +1180,20 @@ Element* Set_n::next_iter_exchange(LispE* lisp, void* it) {
 }
 
 Element* Set_n::search_element(LispE* lisp, Element* a_value, long ix) {
-    return (ensemble.find(a_value->asNumber()) == ensemble.end())?null_:a_value;
+    return !ensemble.count(a_value->asNumber())?null_:a_value;
 }
 
 bool Set_n::check_element(LispE* lisp, Element* a_value) {
-    return (ensemble.find(a_value->asNumber()) != ensemble.end());
+    return ensemble.count(a_value->asNumber());
 }
 
 Element* Set_n::checkkey(LispE* lisp, Element* e) {
-    return (ensemble.find(e->asNumber()) == ensemble.end())?null_:true_;
+    return !ensemble.count(e->asNumber())?null_:true_;
 }
 
 Element* Set_n::replace_all_elements(LispE* lisp, Element* a_value, Element* remp) {
     double keyvalue = a_value->asNumber();
-    if (ensemble.find(keyvalue) != ensemble.end()) {
+    if (ensemble.count(keyvalue)) {
         ensemble.erase(keyvalue);
         ensemble.insert(remp->asNumber());
         return one_;
@@ -1209,7 +1204,7 @@ Element* Set_n::replace_all_elements(LispE* lisp, Element* a_value, Element* rem
 Element* Set_n::search_all_elements(LispE* lisp, Element* a_value, long ix) {
     Numbers* l = lisp->provideNumbers();
     double keyvalue = a_value->asNumber();
-    if (ensemble.find(keyvalue) == ensemble.end())
+    if (!ensemble.count(keyvalue))
         return emptylist_;
     l->liste.push_back(keyvalue);
     return l;
@@ -1217,7 +1212,7 @@ Element* Set_n::search_all_elements(LispE* lisp, Element* a_value, long ix) {
 
 Element* Set_n::count_all_elements(LispE* lisp, Element* a_value, long ix) {
     double keyvalue = a_value->asNumber();
-    if (ensemble.find(keyvalue) == ensemble.end())
+    if (!ensemble.count(keyvalue))
         return zero_;
     return one_;
 }
@@ -1279,7 +1274,7 @@ Element* Set_n::list_xor(LispE* lisp, Element* value) {
     Set_n* intersection = (Set_n*)list_and(lisp, value);
     
     for (auto & a : ensemble) {
-        if (intersection->ensemble.find(a) == intersection->ensemble.end())
+        if (!intersection->ensemble.count(a))
             s->add(a);
     }
 
@@ -1288,7 +1283,7 @@ Element* Set_n::list_xor(LispE* lisp, Element* value) {
         u_link* a = ((LList*)value)->liste.begin();
         for (; a != NULL; a = a->next()) {
             v = a->value->asNumber();
-            if (intersection->ensemble.find(v) == intersection->ensemble.end())
+            if (!intersection->ensemble.count(v))
                 s->add(v);
         }
     }
@@ -1297,7 +1292,7 @@ Element* Set_n::list_xor(LispE* lisp, Element* value) {
             long sz = value->size();
             for (long i = 0; i < sz; i++) {
                 v = value->index(i)->asNumber();
-                if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                if (!intersection->ensemble.count(v))
                     s->add(v);
             }
         }
@@ -1307,7 +1302,7 @@ Element* Set_n::list_xor(LispE* lisp, Element* value) {
                 Element* next_value = value->next_iter_exchange(lisp, iter);
                 while (next_value != emptyatom_) {
                     v = next_value->asNumber();
-                    if (intersection->ensemble.find(v) == intersection->ensemble.end())
+                    if (!intersection->ensemble.count(v))
                         s->add(v);
                     next_value = value->next_iter_exchange(lisp, iter);
                 }
@@ -1321,7 +1316,7 @@ Element* Set_n::list_xor(LispE* lisp, Element* value) {
 }
 
 Element* Set_n::search_reverse(LispE* lisp, Element* a_value, long ix) {
-    return (ensemble.find(a_value->asNumber()) == ensemble.end())?null_:a_value;
+    return !ensemble.count(a_value->asNumber())?null_:a_value;
 }
 
 Element* Set_n::protected_index(LispE* lisp, long i) {
@@ -1360,14 +1355,14 @@ Element* Set_n::value_from_index(LispE* lisp, long i) {
 
 Element* Set_n::value_on_index(LispE* lisp, Element* ix) {
     double k = ix->asNumber();
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         return null_;
     return lisp->provideNumber(k);
 }
 
 Element* Set_n::protected_index(LispE* lisp, Element* ix) {
     double k = ix->asNumber();
-    if (ensemble.find(k) == ensemble.end())
+    if (!ensemble.count(k))
         throw new Error("Error: index out of bounds");
     return lisp->provideNumber(k);
 }
@@ -1650,7 +1645,7 @@ Element* Set::list_xor(LispE* lisp, Element* value) {
     Set* intersection = (Set*)list_and(lisp, value);
     
     for (auto & a : dictionary) {
-        if (intersection->dictionary.find(a.first) == intersection->dictionary.end())
+        if (!intersection->dictionary.count(a.first))
             s->add(lisp, a.second);
     }
     
@@ -1659,7 +1654,7 @@ Element* Set::list_xor(LispE* lisp, Element* value) {
         u_link* a = ((LList*)value)->liste.begin();
         for (; a != NULL; a = a->next()) {
             v = a->value->asUString(lisp);
-            if (intersection->dictionary.find(v) == intersection->dictionary.end())
+            if (!intersection->dictionary.count(v))
                 s->add(lisp, a->value);
         }
     }
@@ -1668,7 +1663,7 @@ Element* Set::list_xor(LispE* lisp, Element* value) {
             long sz = value->size();
             for (long i = 0; i < sz; i++) {
                 v = value->index(i)->asUString(lisp);
-                if (intersection->dictionary.find(v) == intersection->dictionary.end())
+                if (!intersection->dictionary.count(v))
                     s->add(lisp, value->index(i));
             }
         }
@@ -1678,7 +1673,7 @@ Element* Set::list_xor(LispE* lisp, Element* value) {
                 Element* next_value = value->next_iter_exchange(lisp, iter);
                 while (next_value != emptyatom_) {
                     v = next_value->asUString(lisp);
-                    if (intersection->dictionary.find(v) == intersection->dictionary.end())
+                    if (!intersection->dictionary.count(v))
                         s->add(lisp, next_value);
                     next_value = value->next_iter_exchange(lisp, iter);
                 }
@@ -3004,7 +2999,7 @@ bool Heaplambda::check_element(LispE* lisp, Element* element_value) {
     try {
         res = root->check(lisp, element_value, compare, lab2);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
         lisp->reset_in_stack(e1, lab1);
         throw err;
@@ -3030,7 +3025,7 @@ Element* Heaplambda::search_element(LispE* lisp, Element* element_value, long id
     try {
         res = root->search(lisp, element_value, compare, lab2);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
         lisp->reset_in_stack(e1, lab1);
         throw err;
@@ -3057,7 +3052,7 @@ Element* Heaplambda::insert(LispE* lisp, Element* element, long idx) {
     try {
         root->insertion(lisp, &root, element, compare, lab2);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
         lisp->reset_in_stack(e1, lab1);
         throw err;
@@ -3083,7 +3078,7 @@ Element* Heaplambda::insert(LispE* lisp, Element* element) {
     try {
         root->insertion(lisp, &root, element, compare, lab2);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
         lisp->reset_in_stack(e1, lab1);
         throw err;
@@ -3109,7 +3104,7 @@ bool Heaplambda::remove(LispE* lisp, Element* element) {
     try {
         del = root->erase(lisp, &root, element, compare, lab2);
     }
-    catch(Error* err) {
+    catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
         lisp->reset_in_stack(e1, lab1);
         throw err;

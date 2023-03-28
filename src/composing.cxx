@@ -149,6 +149,24 @@
  //(defun xx(v) (for i (map '+ (range 1 10 1)) (+ i 10) (> i 3)))
  */
 
+
+List* create_instruction_class(LispE* lisp, int16_t label) {
+    switch (label) {
+        case l_power:
+            return new List_powern();
+        case l_divide:
+            return new List_dividen();
+        case l_plus:
+            return new List_plusn();
+        case l_minus:
+            return new List_minusn();
+        case l_multiply:
+            return new List_multiplyn();
+        default:
+            return lisp->cloning(label);
+    }
+}
+
 #define C_INS create_instruction
 
 class Code : public Element {
@@ -228,42 +246,95 @@ public:
         
         if (action->isList()) {
             if (action->isLambda()) {
-                List* a = new Listincode();
+                if (action->type != t_call_lambda) {
+                    action = new List_lambda_eval((Listincode*)action);
+                    lisp->garbaging(action);
+                }
+                if (((List_lambda_eval*)action)->parameters->size() != 1) {
+                    wstring err = L"Error: Wrong number of arguments for: '";
+                    err += action->asString(lisp);
+                    err += L"'";
+                    throw new Error(err);
+                }
+
+                List_call_lambda* a = new List_call_lambda();
                 lisp->garbaging(a);
                 a->append(action);
                 a->append(var);
                 action = a;
                 return this;
             }
-            if (action->size() == 2) {
+            long sz = action->size();
+            if (sz >= 2) {
+                long i;
                 if (action->index(0)->isOperator()) {
-                    List* a = new Listincode();
+                    List* a = create_instruction_class(lisp, action->index(0)->label());
                     lisp->garbaging(a);
                     a->append(action->index(0));
                     a->append(var);
-                    a->append(action->index(1));
+                    for (i = 1; i < sz; i++)
+                        a->append(action->index(i));
                     action = a;
                     return this;
                 }
-                if (action->index(1)->isOperator()) {
-                    List* a = new Listincode();
-                    lisp->garbaging(a);
-                    a->append(action->index(1));
-                    a->append(action->index(0));
+                if (action->index(sz - 1)->isOperator()) {
+                    List* a = create_instruction_class(lisp, action->index(sz - 1)->label());
+                    a->append(action->index(sz - 1));
+                    for (i = 0; i < sz - 1; i++)
+                        a->append(action->index(i));
                     a->append(var);
                     action = a;
+                    lisp->garbaging(action);
                     return this;
                 }
             }
             throw new Error("Error: missing operator");
         }
+        
+        int16_t lab = action->label();
+        if (lab > l_final) {
+            if (lisp->delegation->function_pool[0]->check(lab)) {
+                Element* body = (*lisp->delegation->function_pool[0])[lab];
+                switch (body->index(0)->label()) {
+                    case l_deflib: {
+                        List* a = new List_library_eval((List*)body);
+                        lisp->garbaging(a);
+                        a->append(var);
+                        action = a;
+                        return this;
+                    }
+                    case l_defun: {
+                        List* a = new List_function_eval(lisp, (List*)body);
+                        lisp->garbaging(a);
+                        a->append(var);
+                        action = a;
+                        return this;
+                    }
+                    case l_defpat: {
+                        List* a = new List_pattern_eval((List*)body);
+                        lisp->garbaging(a);
+                        a->append(var);
+                        action = a;
+                        return this;
+                    }
+                }
+            }
+        }
+        
         List* a = new Listincode();
-        lisp->garbaging(a);
         a->append(action);
         a->append(var);
         if (action->isOperator())
             a->append(var);
-        action = a;
+        
+        if (lisp->delegation->instructions.check(action->label())) {
+            action = lisp->cloning((Listincode*)a, action->label());
+            delete a;
+        }
+        else
+            action = a;
+        
+        lisp->garbaging(action);
         return this;
     }
 
@@ -304,35 +375,50 @@ public:
     u_ustring asUString(LispE* lisp) {
         return condition->asUString(lisp);
     }
-
+    
     Element* compose(LispE* lisp, Element* var, Element* e) {
         Element* c = condition;
         if (condition->isList()) {
             if (condition->isLambda()) {
-                List* a = new Listincode();
+                if (condition->type != t_call_lambda) {
+                    condition = new List_lambda_eval((Listincode*)condition);
+                    lisp->garbaging(condition);
+                }
+                if (((List_lambda_eval*)condition)->parameters->size() != 1) {
+                    wstring err = L"Error: Wrong number of arguments for: '";
+                    err += condition->asString(lisp);
+                    err += L"'";
+                    throw new Error(err);
+                }
+                
+                List_call_lambda* a = new List_call_lambda();
                 lisp->garbaging(a);
                 a->append(condition);
                 a->append(var);
                 c = a;
             }
             else {
-                if (condition->size() == 2) {
+                long sz = condition->size();
+                if (sz >= 2) {
+                    long i;
                     if (lisp->isComparator(condition->index(0))) {
-                        List* a = new Listincode();
-                        lisp->garbaging(a);
+                        List* a = lisp->cloning(condition->index(0)->label());
                         a->append(condition->index(0));
                         a->append(var);
-                        a->append(condition->index(1));
+                        for (i = 1; i < sz; i++)
+                            a->append(condition->index(i));
                         c = a;
+                        lisp->garbaging(c);
                     }
                     else {
-                        if (lisp->isComparator(condition->index(1))) {
-                            List* a = new Listincode();
-                            lisp->garbaging(a);
-                            a->append(condition->index(1));
-                            a->append(condition->index(0));
+                        if (lisp->isComparator(condition->index(sz - 1))) {
+                            List* a = lisp->cloning(condition->index(sz - 1)->label());
+                            a->append(condition->index(sz - 1));
+                            for (i = 0; i < sz - 1; i++)
+                                a->append(condition->index(i));
                             a->append(var);
                             c = a;
+                            lisp->garbaging(c);
                         }
                         else
                             throw new Error("Error: missing operator");
@@ -342,10 +428,15 @@ public:
         }
         else {
             List* a = new Listincode();
-            lisp->garbaging(a);
             a->append(condition);
             a->append(var);
-            c = a;
+            if (lisp->delegation->instructions.check(condition->label())) {
+                c = lisp->cloning((Listincode*)a, condition->label());
+                delete a;
+            }
+            else
+                c = a;
+            lisp->garbaging(c);
         }
         
         

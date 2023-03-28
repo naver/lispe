@@ -112,7 +112,7 @@ void Dictionarypool::decrement() {
         for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
-        lisp->dictionary_pool.push_back(this);
+        lisp->dictionary_pool.push_max(lisp->max_size, this);
     }
     marking = false;
 }
@@ -128,7 +128,7 @@ void Dictionarypool::decrementstatus(uint16_t nb) {
         for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
-        lisp->dictionary_pool.push_back(this);
+        lisp->dictionary_pool.push_max(lisp->max_size, this);
     }
     marking = false;
 }
@@ -142,7 +142,7 @@ void Dictionarypool::release() {
             a.second->decrement();
         marking = false;
         dictionary.clear();
-        lisp->dictionary_pool.push_back(this);
+        lisp->dictionary_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -250,7 +250,7 @@ void Dictionary_npool::decrement() {
         for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
-        lisp->dictionaryn_pool.push_back(this);
+        lisp->dictionaryn_pool.push_max(lisp->max_size, this);
     }
     marking = false;
 }
@@ -265,7 +265,7 @@ void Dictionary_npool::decrementstatus(uint16_t nb) {
         for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
-        lisp->dictionaryn_pool.push_back(this);
+        lisp->dictionaryn_pool.push_max(lisp->max_size, this);
     }
     marking = false;
 }
@@ -279,7 +279,7 @@ void Dictionary_npool::release() {
             a.second->decrement();
         marking = false;
         dictionary.clear();
-        lisp->dictionaryn_pool.push_back(this);
+        lisp->dictionaryn_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -353,7 +353,7 @@ void Dictionary_ipool::decrement() {
         for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
-        lisp->dictionaryi_pool.push_back(this);
+        lisp->dictionaryi_pool.push_max(lisp->max_size, this);
     }
     marking = false;
 }
@@ -368,7 +368,7 @@ void Dictionary_ipool::decrementstatus(uint16_t nb) {
         for (const auto& a : dictionary)
             a.second->decrement();
         dictionary.clear();
-        lisp->dictionaryi_pool.push_back(this);
+        lisp->dictionaryi_pool.push_max(lisp->max_size, this);
     }
     marking = false;
 }
@@ -382,7 +382,7 @@ void Dictionary_ipool::release() {
             a.second->decrement();
         marking = false;
         dictionary.clear();
-        lisp->dictionaryi_pool.push_back(this);
+        lisp->dictionaryi_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -471,8 +471,8 @@ Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     
-    String* element;
-    lisp->recording(null_, label);
+    String* element = lisp->provideString();
+    lisp->recording(element, label);
     
     long sz = code->liste.size();
     //We record the keys first, in  case the dictionary is changed
@@ -482,9 +482,8 @@ Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
         _keys->liste.push_back(a.first);
     try {
         for (long i = 0; i < _keys->size(); i++) {
-            element = lisp->provideString(_keys->liste[i]);
-            lisp->replacingvalue(element, label);
             _releasing(e);
+            element->content = _keys->liste[i];
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();
@@ -498,7 +497,7 @@ Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
             }
         }
     }
-    catch(Error* err) {
+    catch (Error* err) {
         _keys->release();
         throw err;
     }
@@ -806,8 +805,8 @@ void Dictionary_i::garbaging_values(LispE* lisp) {
 Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    
-    lisp->recording(null_, label);
+    Integer* element = lisp->provideInteger(0);
+    lisp->recording(element, label);
     
     long sz = code->liste.size();
     //We record the keys first, in  case the dictionary is changed
@@ -817,8 +816,8 @@ Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
         _keys->liste.push_back(a.first);
     try {
         for (long a_key = 0; a_key < _keys->liste.size(); a_key++) {
-            lisp->replacingvalue(lisp->provideNumber(_keys->liste[a_key]), label);
             _releasing(e);
+            element->content = _keys->liste[a_key];
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();
@@ -832,7 +831,7 @@ Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
             }
         }
     }
-    catch(Error* err) {
+    catch (Error* err) {
         _keys->release();
         throw err;
     }
@@ -1077,8 +1076,8 @@ void Dictionary_n::garbaging_values(LispE* lisp) {
 Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    
-    lisp->recording(null_, label);
+    Number* element = lisp->provideNumber(0);
+    lisp->recording(element, label);
     
     long sz = code->liste.size();
     //We record the keys first, in  case the dictionary is changed
@@ -1088,8 +1087,8 @@ Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
         _keys->liste.push_back(a.first);
     try {
         for (long a_key = 0; a_key < _keys->liste.size(); a_key++) {
-            lisp->replacingvalue(lisp->provideNumber(_keys->liste[a_key]), label);
             _releasing(e);
+            element->content = _keys->liste[a_key];
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();
@@ -1103,7 +1102,7 @@ Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
             }
         }
     }
-    catch(Error* err) {
+    catch (Error* err) {
         _keys->release();
         throw err;
     }

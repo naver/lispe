@@ -36,6 +36,7 @@ class Floats;
 class Strings;
 class ITEM;
 
+
 typedef enum {
     //Default values
     v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, 
@@ -48,7 +49,7 @@ typedef enum {
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
-    t_call, t_eval,
+    t_call, t_call_lambda, t_eval,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, l_next,
@@ -193,6 +194,7 @@ const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 #define check_mismatch -2
 #define check_ok -1
 
+#define thrown_error lisp->delegation->current_error
 //------------------------------------------------------------------------------------------
 #define _releasing(f) f->release();f=null_
 //------------------------------------------------------------------------------------------
@@ -568,7 +570,9 @@ public:
     virtual void append(Element* e) {}
     virtual Element* insert(LispE*, Element* e, long idx);
     virtual Element* insert_with_compare(LispE*, Element* e, List& comparison);
-    virtual void insertion(Element* e, long idx) {}
+    virtual bool insertion(Element* e, long idx) {
+        return true;
+    }
     virtual void front(Element* e) {}
     virtual void beforelast(Element* e) {}
     
@@ -606,6 +610,15 @@ public:
         return false;
     }
     //-----------------
+    
+#ifdef LISPE_WASM
+    Element* EVAL(LispE* lisp);
+    virtual Element* check_if_error(LispE*) {
+        return this;
+    }
+#endif
+    
+    virtual Element* eval_lambda_min(LispE*);
     
     virtual Element* eval(LispE*) {
         return this;
@@ -781,7 +794,7 @@ public:
         return 0;
     }
     
-    virtual int16_t function_label();
+    virtual int16_t function_label(LispE* lisp);
     
     virtual int16_t label() {
         return type;
@@ -917,6 +930,10 @@ public:
         return false;
     }
     
+#ifdef LISPE_WASM
+    Element* check_if_error(LispE*);
+#endif
+    
     bool isError() {
         return true;
     }
@@ -1044,7 +1061,7 @@ public:
         return (atome == v_null);
     }
 
-    int16_t function_label() {
+    int16_t function_label(LispE* lisp) {
         return atome;
     }
     
@@ -1065,7 +1082,7 @@ public:
     
     Element* eval(LispE* lisp);
     
-    virtual int16_t label() {
+    int16_t label() {
         return atome;
     }
     
@@ -1136,18 +1153,6 @@ public:
         return check_ok*(atome == value->type_element());
     }
 
-};
-
-class Atomnotlabel : public Atome {
-public:
-    
-    Atomnotlabel(int16_t a, u_ustring w) : Atome(a, w) {}
-    Atomnotlabel(int16_t a, uint16_t s, u_ustring w) : Atome(a, s, w) {}
-    
-    int16_t label() {
-        return v_null;
-    }
-    
 };
 
 class Atomekleene : public Atome {
@@ -2059,11 +2064,11 @@ public:
         return (content.real() || content.imag());
     }
     
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         return new Complex(content);
     }
 
-    Element* copyatom(LispE* lisp, uint16_t s) {
+    virtual Element* copyatom(LispE* lisp, uint16_t s) {
         if (status < s)
             return this;
         return new Complex(content);
@@ -2071,7 +2076,7 @@ public:
 
     // There is a difference between the two copies
     //The first one makes a final copy
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         if (!status)
             return this;
         
@@ -2083,7 +2088,6 @@ public:
     Element* multiply(LispE* l, Element* e);
     Element* divide(LispE* l, Element* e);
     Element* power(LispE* l, Element* e);
-    Element* mod(LispE* l, Element* e);
 
     Element* plus_direct(LispE* lisp, Element* e);
     Element* minus_direct(LispE* lisp, Element* e);
@@ -2091,6 +2095,41 @@ public:
     Element* divide_direct(LispE* lisp, Element* e);
 
 };
+
+/*
+Complex(std::complex<double>& cmp) : Element(t_complex), content(cmp) {}
+Complex(double d, double imaginary) : Element(t_complex), content(d, imaginary) {}
+Complex(double d, double imaginary, uint16_t s) : content(d, imaginary), Element(t_short, s) {}
+*/
+ 
+class Complexpool : public Complex {
+public:
+    LispE* lisp;
+    
+    Complexpool(LispE* l, std::complex<double>& cmp) : lisp(l), Complex(cmp) {}
+    Complexpool(LispE* l, double d, double imaginary) : lisp(l), Complex(d, imaginary) {}
+    Complexpool(double d, double imaginary) : lisp(NULL), Complex(d, imaginary, s_constant) {}
+
+    inline Complexpool* set(double d, double imaginary) {
+        content = std::complex<double>(d, imaginary);
+        return this;
+    }
+
+    inline Complexpool* set(std::complex<double>& d) {
+        content = d;
+        return this;
+    }
+
+    virtual void decrementstatus(uint16_t nb);
+    virtual void decrement();
+    
+    virtual void release();
+    virtual Element* fullcopy();
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
+    virtual Element* copying(bool duplicate = true);
+
+};
+
 
 class Integer : public Element {
 public:
@@ -2377,7 +2416,7 @@ public:
         return (value == this || value->compare_string(lisp, content));
     }
     
-    bool isequal(LispE* lisp, Element* value, bool record) {
+    bool isequal(LispE* lisp, Element* value) {
         return (value == this || value->compare_string(lisp, content));
     }
     
@@ -2412,11 +2451,12 @@ public:
     Element* list_or(LispE*, Element* value);
 
     Element* insert(LispE* lisp, Element* e, long idx);
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         if (idx >= content.size())
             content += e->asUString(NULL);
         else
             content.insert(idx, e->asUString(NULL));
+        return true;
     }
             
     Element* insert_with_compare(LispE*, Element* e, List& comparison);
@@ -2488,25 +2528,7 @@ public:
         return content;
     }
 
-    Element* charge(LispE* lisp, string chemin) {
-        std::ifstream f(chemin.c_str(),std::ios::in|std::ios::binary);
-        if (f.fail()) {
-            string erreur = "Unknown file: ";
-            erreur += chemin;
-            throw new Error(erreur);
-        }
-        
-        string ch = "";
-        string ln;
-        while (!f.eof()) {
-            getline(f, ln);
-            ch += ln + "\n";
-        }
-        
-        content = U"";
-        s_utf8_to_unicode(content, ch, ch.size());
-        return this;
-    }
+    Element* charge(LispE* lisp, string chemin);
     
     bool Boolean() {
         return (content != U"");
@@ -2586,26 +2608,45 @@ public:
     Element* duplicate_constant(LispE* lisp);
 };
 
-class InfiniterangeNumber : public Element {
+class Infiniterangenumber : public Element {
 public:
     Constnumber exchange_value;
+    LispE* lisp;
     double initial_value;
     double increment;
     double bound;
     bool infinite_loop;
 
-    InfiniterangeNumber(double v, double i) : Element(l_list), exchange_value(v) {
+    Infiniterangenumber(LispE* l, double v, double i) : Element(l_list), exchange_value(v) {
         initial_value = v;
         increment = i;
         infinite_loop = true;
         bound = 0;
+        lisp = l;
     }
     
-    InfiniterangeNumber(double v, double i, double b) : Element(l_list), exchange_value(v) {
+    Infiniterangenumber(LispE* l, double v, double i, double b) : Element(l_list), exchange_value(v) {
         initial_value = v;
         increment = i;
         infinite_loop = false;
         bound = b;
+        lisp = l;
+    }
+
+    Infiniterangenumber* set(double v, double i) {
+        initial_value = v;
+        increment = i;
+        infinite_loop = true;
+        bound = 0;
+        return this;
+    }
+    
+    Infiniterangenumber* set(double v, double i, double b) {
+        initial_value = v;
+        increment = i;
+        infinite_loop = false;
+        bound = b;
+        return this;
     }
     
     inline bool compare(char check, long value) {
@@ -2655,34 +2696,58 @@ public:
     Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* car(LispE*);
     Element* cdr(LispE*);
+    
+    void release();
+    void decrementstatus(uint16_t nb);
+    void decrement();
+
 };
 
-class InfiniterangeInteger : public Element {
+class Infiniterangeinteger : public Element {
 public:
     Constinteger exchange_value;
+    LispE* lisp;
     long initial_value;
     long increment;
     long bound;
     bool infinite_loop;
     
-    InfiniterangeInteger(long v, long i) : Element(l_list), exchange_value(v) {
+    Infiniterangeinteger(LispE* l, long v, long i) : Element(l_list), exchange_value(v) {
         initial_value = v;
         increment = i;
         infinite_loop = true;
         bound = 0;
+        lisp = l;
     }
     
-    InfiniterangeInteger(long v, long i, long b) : Element(l_list), exchange_value(v)  {
+    Infiniterangeinteger(LispE* l, long v, long i, long b) : Element(l_list), exchange_value(v)  {
         initial_value = v;
         increment = i;
         infinite_loop = false;
         bound = b;
+        lisp = l;
     }
     
     inline bool compare(char check, long value) {
         return (!check || (check == -1 && value > bound) || (check == 1 && value < bound));
     }
     
+    Infiniterangeinteger* set(long v, long i) {
+        initial_value = v;
+        increment = i;
+        infinite_loop = true;
+        bound = 0;
+        return this;
+    }
+    
+    Infiniterangeinteger* set(long v, long i, long b) {
+        initial_value = v;
+        increment = i;
+        infinite_loop = false;
+        bound = b;
+        return this;
+    }
+
     bool isContainer() {
         return true;
     }
@@ -2709,6 +2774,10 @@ public:
     Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* car(LispE*);
     Element* cdr(LispE*);
+
+    void release();
+    void decrementstatus(uint16_t nb);
+    void decrement();
 
 };
 
@@ -3213,30 +3282,6 @@ public:
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
-    
-    void append(Element* e) {
-        if (choice) {
-            if (!e->isNumber() && !e->isString())
-                throw new Error("Error: a key should be a string or a number");
-            else
-                if (u_key != U"") {
-                    u_ustring msg = U"Error: missing value for key:'";
-                    msg += u_key;
-                    msg += U"'";
-                    throw new Error(msg);
-                }
-            u_key = e->asUString(lisp);
-            e->release();
-        }
-        else {
-            dictionary[u_key] = e;
-            e->increment();
-            u_key = U"";
-            reversechoice();
-        }
-    }
-
-
 };
 
 
@@ -4220,28 +4265,6 @@ public:
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
 
-    void append(Element* e) {
-        if (choice) {
-            if (!e->isNumber() && !e->isString())
-                throw new Error("Error: a key should be a string or a number");
-            else
-                if (key != U"") {
-                    u_ustring msg = U"Error: missing value for key:'";
-                    msg += key;
-                    msg += U"'";
-                    throw new Error(msg);
-                }
-            key = e->asUString(NULL);
-            e->release();
-        }
-        else {
-            dico->dictionary[key] = e;
-            e->increment();
-            key = U"";
-            reversechoice();
-        }
-    }
-
     bool isDictionary() {
         return true;
     }
@@ -5185,7 +5208,7 @@ public:
     
     void add(LispE* lisp, Element* e) {
         u_ustring k = e->asUString(lisp);
-        if (dictionary.find(k) != dictionary.end())
+        if (dictionary.count(k))
             dictionary[k]->decrement();
         
         dictionary[k] = e;
@@ -5200,7 +5223,7 @@ public:
             return false;
 
         for (const auto& a: dictionary) {
-            if (((Set*)e)->dictionary.find(a.first) != ((Set*)e)->dictionary.end())
+            if (((Set*)e)->dictionary.count(a.first))
                 return false;
         }
         return true;
@@ -5214,7 +5237,7 @@ public:
             return false;
 
         for (const auto& a: dictionary) {
-            if (((Set*)e)->dictionary.find(a.first) != ((Set*)e)->dictionary.end())
+            if (((Set*)e)->dictionary.count(a.first))
                 return false;
         }
         return true;
@@ -5318,7 +5341,7 @@ public:
 
     void append(Element* e) {
         u_ustring k = e->asUString(NULL);
-        if (dictionary.find(k) != dictionary.end())
+        if (dictionary.count(k))
             dictionary[k]->decrement();
         dictionary[k] = e;
         e->increment();
@@ -5326,7 +5349,7 @@ public:
     
     void appendraw(Element* e) {
         u_ustring k = e->asUString(NULL);
-        if (dictionary.find(k) != dictionary.end())
+        if (dictionary.count(k))
             dictionary[k]->decrement();
         dictionary[k] = e;
         e->increment();
@@ -5334,7 +5357,7 @@ public:
 
     Element* insert(LispE* lisp, Element* e, long idx) {
         u_ustring k = e->asUString(NULL);
-        if (dictionary.find(k) != dictionary.end())
+        if (dictionary.count(k))
             dictionary[k]->decrement();
         dictionary[k] = e;
         e->increment();
@@ -5343,7 +5366,7 @@ public:
     
     Element* replace(LispE* lisp, Element* i, Element* e) {
         u_ustring k = i->asUString(lisp);
-        if (dictionary.find(k) != dictionary.end()) {
+        if (dictionary.count(k)) {
             dictionary[k]->decrement();
             dictionary.erase(k);
         }

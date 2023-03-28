@@ -377,7 +377,7 @@ void jag_editor::setscrolling() {
 #ifndef WIN32
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &wns);
     char buffer[20];
-    sprintf(buffer, "\33[%d,%dr", xcursor, wns.ws_row);
+    sprintf_s(buffer,20, "\33[%d,%dr", xcursor, wns.ws_row);
     cout << buffer;
 #endif
 }
@@ -2773,12 +2773,18 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
 
     //We only keep displayable characters
     wchar_t c;
+    wstring code;
     for (long i = 0; i < b.size(); i++) {
         c = b[i];
         //We replace these characters with a blank
         if (c < 32 && c != 9 && c != 10 && c != 13)
-            b[i] = 32;
+            continue;
+        code += c;
     }
+    if (code == L"")
+        return;
+    
+    b = code;
 
     if (emode())
         tobesaved = true;
@@ -2789,7 +2795,7 @@ void jag_editor::addabuffer(wstring& b, bool instring) {
             line = lines[poslines[currentline]];
 
             //We insert the character within our current line...
-        wstring code = line.substr(0, posinstring);
+        code = line.substr(0, posinstring);
         code += b;
         code += line.substr(posinstring,line.size());
 
@@ -3072,6 +3078,14 @@ void jag_editor::selectlines(long from_line, long to_line, long from_pos, long t
     if (to_line < from_line)
         return;
 
+    //If we are moving backward, we need to invert the values to correctly select our span of text
+    //from left to right
+    if (to_pos < from_pos) {
+        long val = to_pos;
+        to_pos = from_pos;
+        from_pos = val;
+    }
+    
     kbuffer = L"";
     sub = lines[from_line];
     char stat = lines.Status(from_line);
@@ -3165,7 +3179,7 @@ void jag_editor::computeposition(int& p, long position) {
         }
         i++;
     }
-    p = i;
+    p = (int)i;
 }
 
 void jag_editor::handlemousectrl(string& mousectrl) {

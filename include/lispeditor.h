@@ -488,7 +488,7 @@ public:
         
         thecurrentfilename = Normalizefilename(thecurrentfilename);
         setpathname(thecurrentfilename);
-        if (filenames.find(thecurrentfilename) != filenames.end()) {
+        if (filenames.count(thecurrentfilename)) {
             if (currentfileid != filenames[thecurrentfilename]) {
                 //We backup our current undo/redo buffer
                 undos.storein(editors_undos[currentfileid]);

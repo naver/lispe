@@ -381,7 +381,7 @@ public:
                 return null_;
             //We clean a client connection
             closesock(socketclient);
-            if (socketclients.find(socketclient) != socketclients.end())
+            if (socketclients.count(socketclient))
                 socketclients.erase(socketclient);
             return True_;
         }
@@ -663,7 +663,7 @@ public:
                 try {
                     return socket->methodCreateServer(lisp, nbclients,port, hostname);
                 }
-                catch(Error* err) {
+                catch (Error* err) {
                     delete socket;
                     throw err;
                 }
@@ -676,7 +676,7 @@ public:
                 try {
                     return socket->methodCreateClient(lisp, hostname, port);
                 }
-                catch(Error* err) {
+                catch (Error* err) {
                     delete socket;
                     throw err;
                 }

@@ -234,6 +234,7 @@ public:
         
         rules.push_back(U";;?*;;=#");
         rules.push_back(U";?*%r=#");
+        rules.push_back(U"%#!?+%r=#");
         
         //Strings
 		rules.push_back(U"\"\"\"?*\"\"\"=34");                   //long strings Python way """.."""
@@ -963,12 +964,12 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                         }
                         if (fg != 0) {
                             if (bg != 0)
-                                sprintf(buffer,"\033[%ld;%ld;%ldm", att, fg, bg);
+                                sprintf_s(buffer,100,"\033[%ld;%ld;%ldm", att, fg, bg);
                             else
-                                sprintf(buffer,"\033[%ld;%ldm", att, fg);
+                                sprintf_s(buffer,100,"\033[%ld;%ldm", att, fg);
                         }
                         else
-                            sprintf(buffer,"\033[%ldm", att);
+                            sprintf_s(buffer,100,"\033[%ldm", att);
                         
                         colors[i] = buffer;
                         cout << buffer << s << " " << att << " " << fg << " " << bg << m_current << endl;
@@ -1050,7 +1051,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             for (int i_att = e_att; m_attr[i_att] != att; i_att++) {
                 for (int i_fg = e_fg; m_clfg[i_fg] != fg; i_fg++) {
                     for (int i_bg = e_bg; m_clbg[i_bg] != bg; i_bg++) {
-                        sprintf(buffer,"\033[%d;%d;%dm", m_attr[i_att], m_clfg[i_fg], m_clbg[i_bg]);
+                        sprintf_s(buffer, 100,"\033[%d;%d;%dm", m_attr[i_att], m_clfg[i_fg], m_clbg[i_bg]);
                         printf("%s%d,%d,%d:\t%s displaying color%s\n",m_current,m_attr[i_att], m_clfg[i_fg], m_clbg[i_bg], buffer, m_current);
                     }
                 }

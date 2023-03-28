@@ -73,6 +73,7 @@ void s_unicode_to_utf16(std::u16string& w, u_ustring& u);
 void s_utf16_to_unicode(u_ustring& u, wstring& w);
 Exporting void s_utf16_to_utf8(string& s, u_ustring& str);
 Exporting void s_utf16_to_utf8(string& s, int32_t* str, long sz);
+void s_utf16_to_unicode(u_ustring& u, int32_t* str, long sz);
 
 Exporting string jsonstring(string value);
 Exporting wstring wjsonstring(wstring value);

@@ -75,6 +75,10 @@ public:
         }
     }
     
+    inline Element* operator[](long pos) {
+        return buffer[pos];
+    }
+
     inline void swap(long left, long right) {
         //We use the fact that the last element exists
         //but cannot be accessed...
@@ -263,12 +267,7 @@ public:
         item->buffer[item->last - 1] = val;
         return e;
     }
-    
-    //if this a list, which is not duplicated through CDR calls
-    bool nocdr() {
-        return !item->status;
-    }
-    
+        
     uint16_t shared(uint16_t status) {
         return status + (item->status != 0);
     }
@@ -467,7 +466,7 @@ public:
     inline Element* at(long i) {
         i += home;
         if (i < 0 || i >= item->last)
-            throw std::out_of_range("LIST error");
+            throw new Error("LIST error");
         return item->buffer[i];
     }
     
@@ -590,8 +589,9 @@ public:
         liste.swap(i, j);
     }
     
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         liste.insert(idx, e);
+        return true;
     }
     
     void front(Element* e) {
@@ -671,7 +671,7 @@ public:
     
     virtual Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
-        if (!is_protected() && liste.nocdr() && !duplicate)
+        if (!is_protected() && !duplicate)
             return this;
         
         List* l = new List;
@@ -953,7 +953,7 @@ public:
         liste.push_element(e);
     }
     
-    void extend(List* l) {
+    virtual void extend(List* l) {
         liste.extend(&l->liste);
     }
     
@@ -1034,7 +1034,7 @@ public:
         return (liste.is_not_empty()?t_list:v_null);
     }
     
-    int16_t function_label() {
+    int16_t function_label(LispE* lisp) {
         return liste[0]->label();
     }
     
@@ -1542,6 +1542,10 @@ public:
     
 };
 
+//-------------------------------------------------------
+// Pool of lists
+//-------------------------------------------------------
+
 class Listpool : public List {
 public:
     LispE* lisp;
@@ -1561,6 +1565,10 @@ public:
     Element* copying(bool duplicate = true);
     
 };
+
+//-------------------------------------------------------
+// Pattern function arguments
+//-------------------------------------------------------
 
 class Listargumentquote : public List {
 public:
@@ -1684,6 +1692,9 @@ public:
     }
 };
 
+//-------------------------------------------------------
+// Compiling code into Listincode objects
+//-------------------------------------------------------
 
 class Listincode : public List {
 public:
@@ -1696,7 +1707,14 @@ public:
         line = l->line;
         fileidx = l->fileidx;
     }
-    
+
+    Listincode(Listincode* l, long i) : List(l, i) {
+        terminal = l->terminal;
+        status = s_constant;
+        line = l->line;
+        fileidx = l->fileidx;
+    }
+
     Listincode(List* l) : List(l, 0) {
         terminal = l->terminal;
         status = s_constant;
@@ -1839,9 +1857,7 @@ public:
         return evalfunction(lisp, liste[0]->eval(lisp));
     }
 };
-//-------------------------------------------------------
-// Direct call to basic operations
-//-------------------------------------------------------
+
 class List_emptylist_eval : public Listincode {
 public:
     
@@ -1850,8 +1866,13 @@ public:
     }
     
     Element* eval(LispE* lisp);
+    Element* duplicate_constant(LispE* lisp);
 };
 
+
+//-------------------------------------------------------
+// Direct call to basic operations
+//-------------------------------------------------------
 class List_execute : public Listincode {
 public:
     methodEval method;
@@ -1973,28 +1994,7 @@ public:
     
 };
 
-class List_zipwith_eval : public Listincode {
-public:
-    
-    List_zipwith_eval(Listincode* l) : Listincode(l) {}
-    List_zipwith_eval(List* l) : Listincode(l) {}
-    List_zipwith_eval() {}
-    
-    Element* eval(LispE* lisp);
-    
-    bool is_straight_eval() {
-        return true;
-    }
-    
-    List* cloning(Listincode* e, methodEval m) {
-        return new List_zipwith_eval(e);
-    }
-    
-    List* cloning() {
-        return new List_zipwith_eval();
-    }
-    
-};
+
 
 class List_label_eval : public Listincode {
 public:
@@ -2766,10 +2766,19 @@ public:
 
 class List_and_eval : public Listincode {
 public:
+    int16_t listsize;
     
-    List_and_eval(Listincode* l) : Listincode(l) {}
-    List_and_eval(List* l) : Listincode(l) {}
-    List_and_eval() {}
+    List_and_eval(Listincode* l) : Listincode(l) {
+        listsize = liste.size();
+    }
+    
+    List_and_eval(List* l) : Listincode(l) {
+        listsize = liste.size();
+    }
+    
+    List_and_eval() {
+        listsize = 0;
+    }
     
     bool is_straight_eval() {
         return true;
@@ -2788,10 +2797,17 @@ public:
 
 class List_or_eval : public Listincode {
 public:
+    int16_t listsize;
     
-    List_or_eval(Listincode* l) : Listincode(l) {}
-    List_or_eval(List* l) : Listincode(l) {}
-    List_or_eval() {}
+    List_or_eval(Listincode* l) : Listincode(l) {
+        listsize = liste.size();
+    }
+    List_or_eval(List* l) : Listincode(l) {
+        listsize = liste.size();
+    }
+    List_or_eval() {
+        listsize = 0;        
+    }
     
     bool is_straight_eval() {
         return true;
@@ -3621,49 +3637,231 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_lambda_eval : public Listincode {
+public:
+    List* parameters;
+    vecte<int16_t> labels;
+    int16_t nbinstructions;
+    
+    List_lambda_eval(Listincode* l) : Listincode(l) {
+        type = t_call_lambda;
+        status = s_constant;
+        //the third element is the argument list .
+        //we need our body to be the same number
+        parameters = (List*)liste[1];
+        nbinstructions = size();
+        for (long i = 0; i < parameters->size(); i++) {
+            labels.push_back(parameters->liste[i]->label());
+        }
+    }
+
+    List_lambda_eval(List* l) : Listincode(l) {
+        type = t_call_lambda;
+        status = s_constant;
+        //the third element is the argument list .
+        //we need our body to be the same number
+        parameters = (List*)liste[1];
+        nbinstructions = size();
+        for (long i = 0; i < parameters->size(); i++) {
+            labels.push_back(parameters->liste[i]->label());
+        }
+    }
+
+    Element* eval_lambda_min(LispE*);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+
+    Element* duplicate_constant(LispE* lisp) {
+        return this;
+    }
+    
+    Element* eval(LispE* lisp) {
+        return this;
+    }
+    
+    List_lambda_eval() {
+        parameters = NULL;
+    }
+    
+    int16_t label() {
+        return t_call_lambda;
+    }
+
+    List* cloning() {
+        return new List_lambda_eval();
+    }
+
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_lambda_eval(e);
+    }
+
+};
+
+class List_call_lambda : public Listincode {
+public:
+    List_lambda_eval* body;
+    long nbarguments;
+
+    List_call_lambda()  {
+        body = NULL;
+        nbarguments = 0;
+    }
+
+    List_call_lambda(LispE* lisp, Listincode* l);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+
+    List* cloning() {
+        return new List_call_lambda();
+    }
+
+    Element* eval(LispE*);
+    
+    //We define these methods to handle the creation of a full-fledge List_call_lambda
+    //The next two methods are actually called in apply
+    void append(Element* b) {
+        //The first element is the lambda itself
+        if (body == NULL)
+            body = (List_lambda_eval*)b;
+        else
+            nbarguments++;
+        List::append(b);
+    }
+    
+    void extend(List* l) {
+        nbarguments = l->size();
+        if (nbarguments != body->parameters->size()) {
+            wstring message = L"Error: Wrong number of arguments in: 'lambda'";
+            throw new Error(message);
+        }
+        List::extend(l);
+    }
+};
+
+class List_zipwith_lambda_eval : public Listincode {
+public:
+    List_lambda_eval* lambda_e;
+    vecte<int16_t> params;
+    int16_t listsize;
+    bool choose;
+    bool del;
+    
+    List_zipwith_lambda_eval(Listincode* l) : Listincode(l) {
+        choose = true;
+        listsize = size();
+        if (liste.back()->type == v_null) {
+            listsize--;
+            choose = liste.back()->Boolean();
+        }
+        Element* function = liste[1];
+        if (function->type == t_call_lambda) {
+            lambda_e = (List_lambda_eval*)function;
+            del = false;
+        }
+        else {
+            lambda_e = new List_lambda_eval((List*)function);
+            del = true;
+        }
+         params = lambda_e->labels;
+    }
+    
+    List_zipwith_lambda_eval(List* l) : Listincode(l) {
+        choose = true;
+        listsize = size();
+        if (liste.back()->type == v_null) {
+            listsize--;
+            choose = liste.back()->Boolean();
+        }
+        Element* function = liste[1];
+        if (function->type == t_call_lambda) {
+            lambda_e = (List_lambda_eval*)function;
+            del = false;
+        }
+        else {
+            lambda_e = new List_lambda_eval((List*)function);
+            del = true;
+        }
+         params = lambda_e->labels;
+    }
+    
+    List_zipwith_lambda_eval() {
+        del = false;
+    }
+    
+    ~List_zipwith_lambda_eval() {
+        if (del)
+            delete lambda_e;
+    }
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_zipwith_lambda_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_zipwith_lambda_eval();
+    }
+    
+};
+
+class List_zipwith_eval : public Listincode {
+public:
+    int16_t listsize;
+    bool choose;
+    
+    List_zipwith_eval(Listincode* l) : Listincode(l) {
+        choose = true;
+        listsize = size();
+        if (liste.back()->type == v_null) {
+            listsize--;
+            choose = liste.back()->Boolean();
+        }
+    }
+    List_zipwith_eval(List* l) : Listincode(l) {
+        choose = true;
+        listsize = size();
+        if (liste.back()->type == v_null) {
+            listsize--;
+            choose = liste.back()->Boolean();
+        }
+    }
+    
+    List_zipwith_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_zipwith_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_zipwith_eval();
+    }
+    
+};
 
 class List_function_eval : public Listincode {
 public:
     List* body;
     Element* parameters;
     long nbarguments, defaultarguments;
+    bool same;
     
-    List_function_eval(LispE* lisp, Listincode* l, List* b) : body(b), Listincode(l) {
-        type = t_call;
-        status = s_constant;
-        nbarguments = liste.size() - 1;
-        //the third element is the argument list .
-        //we need our body to be the same number
-        parameters = body->liste[2];
-        defaultarguments = parameters->argumentsize(nbarguments);
-        if (defaultarguments == -1) {
-            wstring message = L"Error: Wrong number of arguments in call to: '(";
-            message += body->liste[1]->asString(lisp);
-            message += L" ";
-            message += body->liste[2]->asString(lisp);
-            message += L"...)'";
-            throw new Error(message);
-        }
-    }
-    
-    List_function_eval(LispE* lisp, List* b) : body(b) {
-        liste.push_element(b);
-        type = t_eval;
-        status = s_constant;
-        nbarguments = 1;
-        //the third element is the argument list .
-        //we need our body to be the same number
-        parameters = body->liste[2];
-        defaultarguments = parameters->argumentsize(nbarguments);
-        if (defaultarguments == -1) {
-            wstring message = L"Error: Wrong number of arguments in call to: '(";
-            message += body->liste[1]->asString(lisp);
-            message += L" ";
-            message += body->liste[2]->asString(lisp);
-            message += L"...)'";
-            throw new Error(message);
-        }
-    }
+    List_function_eval(LispE* lisp, Listincode* l, List* b);
+    List_function_eval(LispE* lisp, List* b);
     
     Element* eval(LispE* lisp);
     
@@ -3710,9 +3908,10 @@ public:
 class List_library_eval : public Listincode {
 public:
     List* body;
-    Element* parameters;
+    List* parameters;
     long nbarguments;
     long defaultarguments;
+    bool same;
     
     //the third element is the argument list .
     //we need our body to be the same number
@@ -3720,8 +3919,9 @@ public:
         type = t_call;
         status = s_constant;
         nbarguments = liste.size() - 1;
-        parameters = body->liste[2];
+        parameters = (List*)body->liste[2];
         defaultarguments = parameters->argumentsize(nbarguments);
+        same = (defaultarguments == parameters->size());
     }
     
     List_library_eval(List* b) : body(b), Listincode() {
@@ -3729,8 +3929,9 @@ public:
         type = t_eval;
         status = s_constant;
         nbarguments = 1;
-        parameters = body->liste[2];
+        parameters = (List*)body->liste[2];
         defaultarguments = parameters->argumentsize(nbarguments);
+        same = (defaultarguments == parameters->size());
     }
     
     Element* eval(LispE* lisp);
@@ -4194,11 +4395,64 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_maplist_lambda_eval : public Listincode {
+public:
+    long listesize;
+    int16_t label;
+    bool choice;
+    
+    List_maplist_lambda_eval(Listincode* l) : Listincode(l) {
+        listesize = size();
+        if (!liste[1]->index(1)->size())
+            throw new Error("Error: Wrong number of arguments");
+        label = liste[1]->index(1)->index(0)->label();
+        if (label < l_final)
+            throw new Error("Error: Wrong argument");
+        choice = (liste[0]->label() == l_maplist);
+    }
+    
+    List_maplist_lambda_eval(List* l) : Listincode(l) {
+        listesize = size();
+        if (!liste[1]->index(1)->size())
+            throw new Error("Error: Wrong number of arguments");
+        label = liste[1]->index(1)->index(0)->label();
+        if (label < l_final)
+            throw new Error("Error: Wrong argument");
+        choice = (liste[0]->label() == l_maplist);
+    }
+    
+    List_maplist_lambda_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_maplist_lambda_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_maplist_lambda_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 class List_maplist_eval : public Listincode {
 public:
-    List_maplist_eval(Listincode* l) : Listincode(l) {}
+    long listesize;
+    bool choice;
+
+    List_maplist_eval(Listincode* l) : Listincode(l) {
+        listesize = size();
+        choice = (liste[0]->label() == l_maplist);
+    }
     
-    List_maplist_eval(List* l) : Listincode(l) {}
+    List_maplist_eval(List* l) : Listincode(l) {
+        listesize = size();
+        choice = (liste[0]->label() == l_maplist);
+    }
+    
     List_maplist_eval() {}
     
     bool is_straight_eval() {
@@ -4285,8 +4539,11 @@ public:
 
 class List_greater_eval : public Listincode {
 public:
+    int16_t listsize;
     
-    List_greater_eval(List* l) : Listincode(l) {}
+    List_greater_eval(List* l) : Listincode(l) {
+        listsize = size();
+    }
     List_greater_eval() {}
     
     bool is_straight_eval() {
@@ -4306,8 +4563,11 @@ public:
 
 class List_greaterorequal_eval : public Listincode {
 public:
+    int16_t listsize;
     
-    List_greaterorequal_eval(List* l): Listincode(l) {}
+    List_greaterorequal_eval(List* l): Listincode(l) {
+        listsize = size();
+    }
     List_greaterorequal_eval() {}
     
     bool is_straight_eval() {
@@ -4327,8 +4587,12 @@ public:
 
 class List_lower_eval : public Listincode {
 public:
+    int16_t listsize;
     
-    List_lower_eval(List* l) : Listincode(l) {}
+    List_lower_eval(List* l) : Listincode(l) {
+        listsize = size();
+    }
+    
     List_lower_eval() {}
     
     bool is_straight_eval() {
@@ -4348,8 +4612,11 @@ public:
 
 class List_lowerorequal_eval : public Listincode {
 public:
+    int16_t listsize;
     
-    List_lowerorequal_eval(List* l): Listincode(l) {}
+    List_lowerorequal_eval(List* l): Listincode(l) {
+        listsize = size();
+    }
     List_lowerorequal_eval() {}
     
     bool is_straight_eval() {
@@ -4755,10 +5022,17 @@ public:
 
 class List_andvalue_eval : public Listincode {
 public:
+    int16_t listsize;
     
-    List_andvalue_eval(Listincode* l) : Listincode(l) {}
-    List_andvalue_eval(List* l) : Listincode(l) {}
-    List_andvalue_eval() {}
+    List_andvalue_eval(Listincode* l) : Listincode(l) {
+        listsize = size();
+    }
+    List_andvalue_eval(List* l) : Listincode(l) {
+        listsize = size();
+    }
+    List_andvalue_eval() {
+        listsize = 0;
+    }
     
     bool is_straight_eval() {
         return true;
@@ -6205,10 +6479,22 @@ public:
     Element* eval(LispE*);
 };
 
+class List_powern : public List {
+public:
+    Element* eval(LispE* lisp) {
+        return evall_power(lisp);
+    }
+};
+
 
 class List_divideequal_var : public List {
 public:
+    int16_t listsize;
+    int16_t label;
+    
     List_divideequal_var(List* l) : List(l, 0) {
+        listsize = size();
+        label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
@@ -6216,7 +6502,12 @@ public:
 
 class List_plusequal_var : public List {
 public:
+    int16_t listsize;
+    int16_t label;
+
     List_plusequal_var(List* l) : List(l, 0) {
+        listsize = size();
+        label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
@@ -6224,7 +6515,12 @@ public:
 
 class List_minusequal_var : public List {
 public:
+    int16_t listsize;
+    int16_t label;
+
     List_minusequal_var(List* l) : List(l, 0) {
+        listsize = size();
+        label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
@@ -6232,7 +6528,12 @@ public:
 
 class List_multiplyequal_var : public List {
 public:
+    int16_t listsize;
+    int16_t label;
+
     List_multiplyequal_var(List* l) : List(l, 0) {
+        listsize = size();
+        label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
@@ -6382,8 +6683,9 @@ public:
         liste.swap(i,j);
     }
     
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         liste.insert(idx, e->asFloat());
+        return true;
     }
     
     void front(Element* e) {
@@ -6860,8 +7162,9 @@ public:
         liste.swap(i,j);
     }
     
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         liste.insert(idx, e->asNumber());
+        return true;
     }
     
     void front(Element* e) {
@@ -7317,8 +7620,9 @@ public:
     
     Element* last_element(LispE* lisp);
     
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         liste.insert(idx, e->asShort());
+        return true;
     }
     
     void swap(long i, long j) {
@@ -7740,8 +8044,9 @@ public:
     
     Element* last_element(LispE* lisp);
     
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         liste.insert(idx, e->asInteger());
+        return true;
     }
     
     void swap(long i, long j) {
@@ -8208,7 +8513,7 @@ public:
     
     Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
-        if (!is_protected() && liste.nocdr() && !duplicate)
+        if (!is_protected() && !duplicate)
             return this;
         
         return new Matrice_float(this);
@@ -8228,7 +8533,7 @@ public:
     
     Element* inversion(LispE* lisp);
     Element* solve(LispE* lisp, Matrice_float* Y);
-    float determinant();
+    float determinant(LispE* lisp);
     Element* ludcmp(LispE* lisp);
     Element* lubksb(LispE* lisp, Integers* indexes, Matrice_float* Y = NULL);
     
@@ -8274,20 +8579,7 @@ public:
         return rotate(lisp, 1);
     }
     
-    void concatenate(LispE* lisp, Element* e) {
-        if (e->isList()) {
-            if (e->size() != size_x)
-                throw new Error("Error: Length error");
-            for (long i = 0; i < size_x; i++) {
-                liste[i]->concatenate(lisp, e->index(i));
-            }
-        }
-        else {
-            for (long i = 0; i < size_x; i++) {
-                liste[i]->concatenate(lisp, e);
-            }
-        }
-    }
+    void concatenate(LispE* lisp, Element* e);
     
     Element* rank(LispE* lisp, vecte<long>& positions);
     
@@ -8387,7 +8679,7 @@ public:
     
     Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
-        if (!is_protected() && liste.nocdr() && !duplicate)
+        if (!is_protected() && !duplicate)
             return this;
         
         return new Matrice(this);
@@ -8407,7 +8699,7 @@ public:
     
     Element* inversion(LispE* lisp);
     Element* solve(LispE* lisp, Matrice* Y);
-    double determinant();
+    double determinant(LispE* lisp);
     Element* ludcmp(LispE* lisp);
     Element* lubksb(LispE* lisp, Integers* indexes, Matrice* Y = NULL);
     
@@ -8453,20 +8745,7 @@ public:
         return rotate(lisp, 1);
     }
     
-    void concatenate(LispE* lisp, Element* e) {
-        if (e->isList()) {
-            if (e->size() != size_x)
-                throw new Error("Error: Length error");
-            for (long i = 0; i < size_x; i++) {
-                liste[i]->concatenate(lisp, e->index(i));
-            }
-        }
-        else {
-            for (long i = 0; i < size_x; i++) {
-                liste[i]->concatenate(lisp, e);
-            }
-        }
-    }
+    void concatenate(LispE* lisp, Element* e);
     
     Element* rank(LispE* lisp, vecte<long>& positions);
     
@@ -8687,7 +8966,7 @@ public:
     
     Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
-        if (!is_protected() && liste.nocdr() && !duplicate)
+        if (!is_protected() && !duplicate)
             return this;
         
         return new Tenseur_float(this);
@@ -8714,18 +8993,7 @@ public:
         }
     }
     
-    void concatenate(LispE* lisp, Element* e) {
-        if (e->isList()) {
-            vecte<long> sz;
-            e->getShape(sz);
-            for (long i = 0; i < sz.size()-1; i++) {
-                if (sz[i] != shape[i])
-                    throw new Error("Error: Incompatible dimensions");
-            }
-        }
-        
-        concatenate(lisp, 0, this, e);
-    }
+    void concatenate(LispE* lisp, Element* e);
     
     
     void setvalue(Element* res, Element* lst) {
@@ -8961,7 +9229,7 @@ public:
     
     Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
-        if (!is_protected() && liste.nocdr() && !duplicate)
+        if (!is_protected() && !duplicate)
             return this;
         
         return new Tenseur(this);
@@ -8988,18 +9256,7 @@ public:
         }
     }
     
-    void concatenate(LispE* lisp, Element* e) {
-        if (e->isList()) {
-            vecte<long> sz;
-            e->getShape(sz);
-            for (long i = 0; i < sz.size()-1; i++) {
-                if (sz[i] != shape[i])
-                    throw new Error("Error: Incompatible dimensions");
-            }
-        }
-        
-        concatenate(lisp, 0, this, e);
-    }
+    void concatenate(LispE* lisp, Element* e);
     
     
     void setvalue(Element* res, Element* lst) {
@@ -9126,8 +9383,9 @@ public:
     
     Element* last_element(LispE* lisp);
     
-    void insertion(Element* e, long idx) {
+    bool insertion(Element* e, long idx) {
         liste.insert(idx, e->asUString(NULL));
+        return true;
     }
     
     void swap(long i, long j) {

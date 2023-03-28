@@ -138,10 +138,8 @@ static void fltk_callback(Fl_Widget *w, void *data) {
             res = call->eval(lisp);
         }
         catch (Error* err) {
-            string val = err->toString(lisp);
-            val += "(callback)\n";
-            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-            err->release();
+            call->release();
+            throw err;
         }
         res->release();
         call->release();
@@ -166,10 +164,8 @@ static void fltk_close_callback(Fl_Widget *w, void *data) {
             closing = res->Boolean();
         }
         catch (Error* err) {
-            string val = err->toString(lisp);
-            val += "(closing)\n";
-            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-            err->release();
+            call->release();
+            throw err;
         }
         res->release();
         call->release();
@@ -1373,8 +1369,16 @@ void Fltk_window::run() {
 
     if (widget != NULL) {
         long tt = 1;
-        while (!stopall && tt && !lisp->hasStopped()) {
-            tt = Fl::wait(FOREVER);
+        try {
+            while (!stopall && tt && !lisp->hasStopped()) {
+                tt = Fl::wait(FOREVER);
+            }
+        }
+        catch (Error* err) {
+            stopall = true;
+            Fl::wait(0);
+            Fl::unlock();
+            throw err;
         }
         Fl::wait(0);
         Fl::unlock();
@@ -1515,18 +1519,19 @@ void Doublewindow::draw() {
         call->in_quote(1, fltk_window);
         call->in_quote(2, fltk_window->object);
         Element* res = null_;
-            res = call->eval(lisp);
         try {
+            res = call->eval(lisp);
         }
         catch (Error* err) {
-            string val = err->toString(lisp);
-            val += "(draw)\n";
-            lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-            err->release();
+            string label = err->toString(lisp);
+            fl_draw(STR(label), 10, 10);
+            call->release();
+            throw err;
         }
-        catch(...) {
+        catch (...) {
             res->release();
             call->release();
+            stopall = true;
             return;
         }
         res->release();
@@ -1550,261 +1555,253 @@ Element* Lispe_gui::eval(LispE* lisp) {
         wnd = (Fltk_window*)e;
     }
 
-    try {
-        switch (action) {
-            case fltk_create: {
-                int x = lisp->get_variable(U"x")->asInt();
-                int y = lisp->get_variable(U"y")->asInt();
-                int w = lisp->get_variable(U"w")->asInt();
-                int h = lisp->get_variable(U"h")->asInt();
-                string label = lisp->get_variable(U"label")->toString(lisp);
-                Element* function  = lisp->get_variable(U"function");
-                Element* object  = lisp->get_variable(U"object");
-                return new Fltk_window(lisp,fltk_widget,x,y,w,h, label,function, object);
-            }
-            case fltk_create_resizable: {
-                int x = lisp->get_variable(U"x")->asInt();
-                int y = lisp->get_variable(U"y")->asInt();
-                string label = lisp->get_variable(U"label")->toString(lisp);
-                Element* function  = lisp->get_variable(U"function");
-                Element* object  = lisp->get_variable(U"object");
-                return new Fltk_window(lisp,fltk_widget,x,y, label,function, object);
-            }
-            case fltk_input: {
-                int x = lisp->get_variable(U"x")->asInt();
-                int y = lisp->get_variable(U"y")->asInt();
-                int w = lisp->get_variable(U"w")->asInt();
-                int h = lisp->get_variable(U"h")->asInt();
-                bool multiline = lisp->get_variable(U"multiline")->Boolean();
-                string label = lisp->get_variable(U"label")->toString(lisp);
-                Element* function  = lisp->get_variable(U"function");
-                Element* object  = lisp->get_variable(U"object");
-                Fltk_input* wdg = new Fltk_input(lisp,fltk_widget,x,y,w,h, multiline,label,function, object);
-                wnd->push(wdg);
-                return wdg;
-            }
-            case fltk_output: {
-                int x = lisp->get_variable(U"x")->asInt();
-                int y = lisp->get_variable(U"y")->asInt();
-                int w = lisp->get_variable(U"w")->asInt();
-                int h = lisp->get_variable(U"h")->asInt();
-                bool multiline = lisp->get_variable(U"multiline")->Boolean();
-                string label = lisp->get_variable(U"label")->toString(lisp);
-                Fltk_output* wdg = new Fltk_output(lisp,fltk_widget,x,y,w,h, multiline,label);
-                wnd->push(wdg);
-                return wdg;
-            }
-            case fltk_button: {
-                //widget x y w h label function (object) (button_type) (button_shape)
-                int x = lisp->get_variable(U"x")->asInt();
-                int y = lisp->get_variable(U"y")->asInt();
-                int w = lisp->get_variable(U"w")->asInt();
-                int h = lisp->get_variable(U"h")->asInt();
-                int thetype = lisp->get_variable(U"button_type")->asInt();
-                int shape = lisp->get_variable(U"button_shape")->asInt();
-                string label = lisp->get_variable(U"label")->toString(lisp);
-                Element* function  = lisp->get_variable(U"function");
-                Element* object  = lisp->get_variable(U"object");
-                Fltk_button* wdg = new Fltk_button(lisp,fltk_widget,x,y,w,h, thetype, shape, label,function, object);
-                wnd->push(wdg);
-                return wdg;
-            }
-            case fltk_slider: {
-                int x = lisp->get_variable(U"x")->asInt();
-                int y = lisp->get_variable(U"y")->asInt();
-                int w = lisp->get_variable(U"w")->asInt();
-                int h = lisp->get_variable(U"h")->asInt();
-                int align = lisp->get_variable(U"slider_orientation")->asInt();
-                bool value_slider = lisp->get_variable(U"slider_value_type")->Boolean();
-                string label = lisp->get_variable(U"label")->toString(lisp);
-                Element* function  = lisp->get_variable(U"function");
-                Element* object  = lisp->get_variable(U"object");
-                Fltk_slider* wdg = new Fltk_slider(lisp,fltk_widget,x,y,w,h, align,value_slider,label,function, object);
-                wnd->push(wdg);
-                return wdg;
-            }
-            case fltk_on_close: {
-                Element* function  = lisp->get_variable(U"function");
-                wnd->onclose(function);
-                return true_;
-            }
-            case fltk_run:
-                wnd->run();
-                return true_;
-            case fltk_resize:
-                wnd->resize();
-                return true_;
-            case fltk_close:
-                wnd->close();
-                return true_;
-            case fltk_end:
-                wnd->finalize(lisp);
-                return true_;
-            case fltk_redraw:
-                wnd->redraw();
-                return true_;
-            case fltk_circle:
-                wnd->circle(lisp);
-                return true_;
-            case fltk_selectioncolor:
-                return wnd->selectionColor(lisp);
-            case fltk_drawtext:
-                wnd->drawText(lisp);
-                return true_;
-            case fltk_rectangle:
-                wnd->rectangle(lisp);
-                return true_;
-            case fltk_rectanglefill:
-                wnd->rectangleFill(lisp);
-                return true_;
-            case fltk_arc:
-                wnd->arc(lisp);
-                return true_;
-            case fltk_pie:
-                wnd->pie(lisp);
-                return true_;
-            case fltk_point:
-                wnd->point(lisp);
-                return true_;
-            case fltk_line:
-                wnd->line(lisp);
-                return true_;
-            case fltk_lineshape:
-                wnd->lineShape(lisp);
-                return true_;
-            case fltk_textfont:
-                wnd->textfont(lisp);
-                return true_;
-            case fltk_rgbcolor:
-                return wnd->rgbcolor(lisp);
-            case fltk_show:
-                wnd->show(lisp);
-                return true_;
-            case fltk_focus:
-                wnd->focus(lisp);
-                return true_;
-            case fltk_align:
-                wnd->align(lisp);
-                return true_;
-            case fltk_coordinates:
-                return wnd->coordinates(lisp);
-            case fltk_labelwindow:
-                return wnd->labelwindow(lisp);
-            case fltk_labeltype:
-                return wnd->labeltype(lisp);
-            case fltk_labelcolor:
-                return wnd->labelcolor(lisp);
-            case fltk_labelfont:
-                return wnd->labelfont(lisp);
-            case fltk_labelsize:
-                return wnd->labelsize(lisp);
-            case fltk_drawcolor:
-                wnd->drawcolor(lisp);
-                return true_;
-            case fltk_polygon:
-                wnd->polygon(lisp);
-                return true_;
-            case fltk_loop:
-                wnd->loop(lisp);
-                return true_;
-            case fltk_linerotation:
-                return wnd->linerotation(lisp);
-            case fltk_scale:
-                wnd->scale(lisp);
-                return true_;
-            case fltk_translate:
-                wnd->translate(lisp);
-                return true_;
-            case fltk_rotate:
-                wnd->rotate(lisp);
-                return true_;
-            case fltk_multmatrix:
-                wnd->multmatrix(lisp);
-                return true_;
-            case fltk_transform_x:
-                return wnd->transform_x(lisp);
-            case fltk_transform_y:
-                return wnd->transform_y(lisp);
-            case fltk_transform_dx:
-                return wnd->transform_dx(lisp);
-            case fltk_transform_dy:
-                return wnd->transform_dy(lisp);
-            case fltk_transform_vertex:
-                wnd->transform_vertex(lisp);
-                return true_;
-            case fltk_pushclip:
-                wnd->pushclip(lisp);
-                return true_;
-            case fltk_popclip:
-                wnd->popclip(lisp);
-                return true_;
-            case fltk_textsize:
-                return wnd->textsize(lisp);
-            case fltk_hide:
-                wnd->hide(lisp);
-                return true_;
-            case fltk_backgroundcolor:
-                return wnd->backgroundcolor(lisp);
-            case fltk_plot:
-                return wnd->plot(lisp);
-            case fltk_ask:
-                return wnd->ask(lisp);
-            case fltk_alert:
-                wnd->alert(lisp);
-                return true_;
-            case fltk_plotcoords:
-                return wnd->plotcoords(lisp);
-            case fltk_value:
-                return wnd->value(lisp);
-            case fltk_insert:
-                wnd->insert(lisp);
-                return true_;
-            case fltk_selection:
-                return wnd->selection(lisp);
-            case fltk_wrap:
-                wnd->wrap();
-                return true_;
-            case fltk_step:
-                wnd->step();
-                return true_;
-            case fltk_boundaries:
-                wnd->boundaries();
-                return true_;
-            case fltk_label:
-                return wnd->widget_label(lisp);
-            case fltk_create_bitmap: {
-                Element* kbitmaps = lisp->get_variable(U"bitmap");
-                if (!kbitmaps->isList())
-                    throw new Error("Error: The argument should be a list of integers in 'fltk_create_bitmap'");
-
-                int w = lisp->get_variable(U"length")->asInt();
-                int h = lisp->get_variable(U"height")->asInt();
-                int sz = (int)kbitmaps->size();
-
-                if (sz != ((w*h) >> 3) )
-                    throw new Error("Wrong size for the bitmap. sz=(width*height)/8 in 'fltk_create_bitmap'");
-
-                return new Fltk_bitmap(lisp, fltk_type_bitmap, (List*)kbitmaps, w, h, sz);
-            }
-            case fltk_bitmap:
-                wnd->bitmap(lisp);
-                return true_;
-            case fltk_create_gif: {
-                string filename = lisp->get_variable(U"filename")->toString(lisp);
-                return new Fltk_gif(lisp, fltk_type_gif, filename);
-            }
-            case fltk_gif_image:
-                wnd->gif_image(lisp);
-                return true_;
+    switch (action) {
+        case fltk_create: {
+            int x = lisp->get_variable(U"x")->asInt();
+            int y = lisp->get_variable(U"y")->asInt();
+            int w = lisp->get_variable(U"w")->asInt();
+            int h = lisp->get_variable(U"h")->asInt();
+            string label = lisp->get_variable(U"label")->toString(lisp);
+            Element* function  = lisp->get_variable(U"function");
+            Element* object  = lisp->get_variable(U"object");
+            return new Fltk_window(lisp,fltk_widget,x,y,w,h, label,function, object);
         }
+        case fltk_create_resizable: {
+            int x = lisp->get_variable(U"x")->asInt();
+            int y = lisp->get_variable(U"y")->asInt();
+            string label = lisp->get_variable(U"label")->toString(lisp);
+            Element* function  = lisp->get_variable(U"function");
+            Element* object  = lisp->get_variable(U"object");
+            return new Fltk_window(lisp,fltk_widget,x,y, label,function, object);
+        }
+        case fltk_input: {
+            int x = lisp->get_variable(U"x")->asInt();
+            int y = lisp->get_variable(U"y")->asInt();
+            int w = lisp->get_variable(U"w")->asInt();
+            int h = lisp->get_variable(U"h")->asInt();
+            bool multiline = lisp->get_variable(U"multiline")->Boolean();
+            string label = lisp->get_variable(U"label")->toString(lisp);
+            Element* function  = lisp->get_variable(U"function");
+            Element* object  = lisp->get_variable(U"object");
+            Fltk_input* wdg = new Fltk_input(lisp,fltk_widget,x,y,w,h, multiline,label,function, object);
+            wnd->push(wdg);
+            return wdg;
+        }
+        case fltk_output: {
+            int x = lisp->get_variable(U"x")->asInt();
+            int y = lisp->get_variable(U"y")->asInt();
+            int w = lisp->get_variable(U"w")->asInt();
+            int h = lisp->get_variable(U"h")->asInt();
+            bool multiline = lisp->get_variable(U"multiline")->Boolean();
+            string label = lisp->get_variable(U"label")->toString(lisp);
+            Fltk_output* wdg = new Fltk_output(lisp,fltk_widget,x,y,w,h, multiline,label);
+            wnd->push(wdg);
+            return wdg;
+        }
+        case fltk_button: {
+            //widget x y w h label function (object) (button_type) (button_shape)
+            int x = lisp->get_variable(U"x")->asInt();
+            int y = lisp->get_variable(U"y")->asInt();
+            int w = lisp->get_variable(U"w")->asInt();
+            int h = lisp->get_variable(U"h")->asInt();
+            int thetype = lisp->get_variable(U"button_type")->asInt();
+            int shape = lisp->get_variable(U"button_shape")->asInt();
+            string label = lisp->get_variable(U"label")->toString(lisp);
+            Element* function  = lisp->get_variable(U"function");
+            Element* object  = lisp->get_variable(U"object");
+            Fltk_button* wdg = new Fltk_button(lisp,fltk_widget,x,y,w,h, thetype, shape, label,function, object);
+            wnd->push(wdg);
+            return wdg;
+        }
+        case fltk_slider: {
+            int x = lisp->get_variable(U"x")->asInt();
+            int y = lisp->get_variable(U"y")->asInt();
+            int w = lisp->get_variable(U"w")->asInt();
+            int h = lisp->get_variable(U"h")->asInt();
+            int align = lisp->get_variable(U"slider_orientation")->asInt();
+            bool value_slider = lisp->get_variable(U"slider_value_type")->Boolean();
+            string label = lisp->get_variable(U"label")->toString(lisp);
+            Element* function  = lisp->get_variable(U"function");
+            Element* object  = lisp->get_variable(U"object");
+            Fltk_slider* wdg = new Fltk_slider(lisp,fltk_widget,x,y,w,h, align,value_slider,label,function, object);
+            wnd->push(wdg);
+            return wdg;
+        }
+        case fltk_on_close: {
+            Element* function  = lisp->get_variable(U"function");
+            wnd->onclose(function);
+            return true_;
+        }
+        case fltk_run:
+            wnd->run();
+            return true_;
+        case fltk_resize:
+            wnd->resize();
+            return true_;
+        case fltk_close:
+            wnd->close();
+            return true_;
+        case fltk_end:
+            wnd->finalize(lisp);
+            return true_;
+        case fltk_redraw:
+            wnd->redraw();
+            return true_;
+        case fltk_circle:
+            wnd->circle(lisp);
+            return true_;
+        case fltk_selectioncolor:
+            return wnd->selectionColor(lisp);
+        case fltk_drawtext:
+            wnd->drawText(lisp);
+            return true_;
+        case fltk_rectangle:
+            wnd->rectangle(lisp);
+            return true_;
+        case fltk_rectanglefill:
+            wnd->rectangleFill(lisp);
+            return true_;
+        case fltk_arc:
+            wnd->arc(lisp);
+            return true_;
+        case fltk_pie:
+            wnd->pie(lisp);
+            return true_;
+        case fltk_point:
+            wnd->point(lisp);
+            return true_;
+        case fltk_line:
+            wnd->line(lisp);
+            return true_;
+        case fltk_lineshape:
+            wnd->lineShape(lisp);
+            return true_;
+        case fltk_textfont:
+            wnd->textfont(lisp);
+            return true_;
+        case fltk_rgbcolor:
+            return wnd->rgbcolor(lisp);
+        case fltk_show:
+            wnd->show(lisp);
+            return true_;
+        case fltk_focus:
+            wnd->focus(lisp);
+            return true_;
+        case fltk_align:
+            wnd->align(lisp);
+            return true_;
+        case fltk_coordinates:
+            return wnd->coordinates(lisp);
+        case fltk_labelwindow:
+            return wnd->labelwindow(lisp);
+        case fltk_labeltype:
+            return wnd->labeltype(lisp);
+        case fltk_labelcolor:
+            return wnd->labelcolor(lisp);
+        case fltk_labelfont:
+            return wnd->labelfont(lisp);
+        case fltk_labelsize:
+            return wnd->labelsize(lisp);
+        case fltk_drawcolor:
+            wnd->drawcolor(lisp);
+            return true_;
+        case fltk_polygon:
+            wnd->polygon(lisp);
+            return true_;
+        case fltk_loop:
+            wnd->loop(lisp);
+            return true_;
+        case fltk_linerotation:
+            return wnd->linerotation(lisp);
+        case fltk_scale:
+            wnd->scale(lisp);
+            return true_;
+        case fltk_translate:
+            wnd->translate(lisp);
+            return true_;
+        case fltk_rotate:
+            wnd->rotate(lisp);
+            return true_;
+        case fltk_multmatrix:
+            wnd->multmatrix(lisp);
+            return true_;
+        case fltk_transform_x:
+            return wnd->transform_x(lisp);
+        case fltk_transform_y:
+            return wnd->transform_y(lisp);
+        case fltk_transform_dx:
+            return wnd->transform_dx(lisp);
+        case fltk_transform_dy:
+            return wnd->transform_dy(lisp);
+        case fltk_transform_vertex:
+            wnd->transform_vertex(lisp);
+            return true_;
+        case fltk_pushclip:
+            wnd->pushclip(lisp);
+            return true_;
+        case fltk_popclip:
+            wnd->popclip(lisp);
+            return true_;
+        case fltk_textsize:
+            return wnd->textsize(lisp);
+        case fltk_hide:
+            wnd->hide(lisp);
+            return true_;
+        case fltk_backgroundcolor:
+            return wnd->backgroundcolor(lisp);
+        case fltk_plot:
+            return wnd->plot(lisp);
+        case fltk_ask:
+            return wnd->ask(lisp);
+        case fltk_alert:
+            wnd->alert(lisp);
+            return true_;
+        case fltk_plotcoords:
+            return wnd->plotcoords(lisp);
+        case fltk_value:
+            return wnd->value(lisp);
+        case fltk_insert:
+            wnd->insert(lisp);
+            return true_;
+        case fltk_selection:
+            return wnd->selection(lisp);
+        case fltk_wrap:
+            wnd->wrap();
+            return true_;
+        case fltk_step:
+            wnd->step();
+            return true_;
+        case fltk_boundaries:
+            wnd->boundaries();
+            return true_;
+        case fltk_label:
+            return wnd->widget_label(lisp);
+        case fltk_create_bitmap: {
+            Element* kbitmaps = lisp->get_variable(U"bitmap");
+            if (!kbitmaps->isList())
+                throw new Error("Error: The argument should be a list of integers in 'fltk_create_bitmap'");
+            
+            int w = lisp->get_variable(U"length")->asInt();
+            int h = lisp->get_variable(U"height")->asInt();
+            int sz = (int)kbitmaps->size();
+            
+            if (sz != ((w*h) >> 3) )
+                throw new Error("Wrong size for the bitmap. sz=(width*height)/8 in 'fltk_create_bitmap'");
+            
+            return new Fltk_bitmap(lisp, fltk_type_bitmap, (List*)kbitmaps, w, h, sz);
+        }
+        case fltk_bitmap:
+            wnd->bitmap(lisp);
+            return true_;
+        case fltk_create_gif: {
+            string filename = lisp->get_variable(U"filename")->toString(lisp);
+            return new Fltk_gif(lisp, fltk_type_gif, filename);
+        }
+        case fltk_gif_image:
+            wnd->gif_image(lisp);
+            return true_;
     }
-    catch(Error* err) {
-        string val = err->toString(lisp);
-        val += "(eval)\n";
-        lisp->delegation->display_string_function(val, lisp->delegation->reading_string_function_object);
-        err->release();
-    }
-
+    
     return true_;
 }
 

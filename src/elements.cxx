@@ -20,8 +20,8 @@ binSetIter::binSetIter(binSet& b) {
     tsize = b.tsize;
     base = b.base;
     idx = 0;
-    nb = 0;
     filter = indexes[0];
+    nb = base << binBits;
 }
 
 void binSetIter::set(binSet& b) {
@@ -29,8 +29,8 @@ void binSetIter::set(binSet& b) {
     tsize = b.tsize;
     base = b.base;
     idx = 0;
-    nb = 0;
     filter = indexes[0];
+    nb = base << binBits;
 }
 
 //------------------------------------------------------------------------------------------
@@ -47,9 +47,39 @@ Rankloop::Rankloop(LispE* lp, List* l) : List(l,0) {
     max_iterator = 0;
 }
 //------------------------------------------------------------------------------------------
-int16_t Element::function_label() {
+#ifdef LISPE_WASM
+int16_t Element::function_label(LispE* lisp) {
+    lisp->delegation->set_error(new Error("Error: Not a function or a data structure"));
+    return -1;
+}
+#else
+int16_t Element::function_label(LispE* lisp) {
     throw new Error("Error: Not a function or a data structure");
 }
+#endif
+
+//------------------------------------------------------------------------------------------
+
+Element* String::charge(LispE* lisp, string chemin) {
+    std::ifstream f(chemin.c_str(),std::ios::in|std::ios::binary);
+    if (f.fail()) {
+        string erreur = "Unknown file: ";
+        erreur += chemin;
+        throw new Error(erreur);
+    }
+    
+    string ch = "";
+    string ln;
+    while (!f.eof()) {
+        getline(f, ln);
+        ch += ln + "\n";
+    }
+    
+    content = U"";
+    s_utf8_to_unicode(content, ch, ch.size());
+    return this;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Float::duplicate_constant(LispE* lisp) {
     return !status?this:lisp->provideFloat(content);
@@ -64,7 +94,7 @@ Element* Short::duplicate_constant(LispE* lisp) {
 }
 
 Element* Complex::duplicate_constant(LispE* lisp) {
-    return !status?this:new Complex(content);
+    return !status?this:lisp->provideComplex(content);
 }
 
 Element* Integer::duplicate_constant(LispE* lisp) {
@@ -227,7 +257,7 @@ Element* Strings::copyatom(LispE* lisp, uint16_t s) {
 void Quotedpool::release() {
     if (!status) {
         value->decrement();
-        lisp->quoted_pool.push_back(this);
+        lisp->quoted_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -235,7 +265,7 @@ void Quotedpool::decrement() {
     status -= not_protected();
     if (!status) {
         value->decrement();
-        lisp->quoted_pool.push_back(this);
+        lisp->quoted_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -243,86 +273,147 @@ void Quotedpool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
         value->decrement();
-        lisp->quoted_pool.push_back(this);
+        lisp->quoted_pool.push_max(lisp->max_size, this);
     }
 }
 
 void Floatpool::decrement() {
     status -= not_protected();
     if (!status)
-        lisp->float_pool.push_back(this);
+        lisp->float_pool.push_max(lisp->larger_max_size, this);
 }
 
 void Floatpool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status)
-        lisp->float_pool.push_back(this);
+        lisp->float_pool.push_max(lisp->larger_max_size, this);
 }
 
 void Floatpool::release() {
     if (!status)
-        lisp->float_pool.push_back(this);
+        lisp->float_pool.push_max(lisp->larger_max_size, this);
 }
 
 void Numberpool::decrement() {
     status -= not_protected();
     if (!status)
-        lisp->number_pool.push_back(this);
+        lisp->number_pool.push_max(lisp->larger_max_size, this);
 }
 
 void Numberpool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status)
-        lisp->number_pool.push_back(this);
+        lisp->number_pool.push_max(lisp->larger_max_size, this);
 }
 
 void Numberpool::release() {
     if (!status)
-        lisp->number_pool.push_back(this);
+        lisp->number_pool.push_max(lisp->larger_max_size, this);
 }
 
 void Returnpool::decrement() {
     status -= not_protected();
     if (!status)
-        lisp->return_pool.push_back(this);
+        lisp->return_pool.push_max(lisp->max_size, this);
 }
 
 void Returnpool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status)
-        lisp->return_pool.push_back(this);
+        lisp->return_pool.push_max(lisp->max_size, this);
 }
 
 void Returnpool::release() {
     if (!status)
-        lisp->return_pool.push_back(this);
+        lisp->return_pool.push_max(lisp->max_size, this);
 }
 
 void Integerpool::decrement() {
     status -= not_protected();
     if (!status) {
-        lisp->integer_pool.push_back(this);
+        lisp->integer_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
 void Integerpool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
-        lisp->integer_pool.push_back(this);
+        lisp->integer_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
 void Integerpool::release() {
     if (!status) {
-        lisp->integer_pool.push_back(this);
+        lisp->integer_pool.push_max(lisp->larger_max_size, this);
     }
 }
+
+void Complexpool::decrement() {
+    status -= not_protected();
+    if (!status) {
+        lisp->complex_pool.push_max(lisp->max_size, this);
+    }
+}
+
+void Complexpool::decrementstatus(uint16_t nb) {
+    status -= nb * not_protected();
+    if (!status) {
+        lisp->complex_pool.push_max(lisp->max_size, this);
+    }
+}
+
+void Complexpool::release() {
+    if (!status) {
+        lisp->complex_pool.push_max(lisp->max_size, this);
+    }
+}
+
+void Infiniterangenumber::release() {
+    if (!status) {
+        lisp->rangenumber_pool.push_max(lisp->larger_max_size, this);
+    }
+}
+
+void Infiniterangeinteger::release() {
+    if (!status) {
+        lisp->rangeinteger_pool.push_max(lisp->larger_max_size, this);
+    }
+}
+
+void Infiniterangenumber::decrement() {
+    status -= not_protected();
+    if (!status) {
+        lisp->rangenumber_pool.push_max(lisp->larger_max_size, this);
+    }
+}
+
+void Infiniterangenumber::decrementstatus(uint16_t nb) {
+    status -= nb * not_protected();
+    if (!status) {
+        lisp->rangenumber_pool.push_max(lisp->larger_max_size, this);
+    }
+}
+
+void Infiniterangeinteger::decrement() {
+    status -= not_protected();
+    if (!status) {
+        lisp->rangeinteger_pool.push_max(lisp->larger_max_size, this);
+    }
+}
+
+void Infiniterangeinteger::decrementstatus(uint16_t nb) {
+    status -= nb * not_protected();
+    if (!status) {
+        lisp->rangeinteger_pool.push_max(lisp->larger_max_size, this);
+    }
+}
+
 
 void Stringpool::decrement() {
     status -= not_protected();
     if (!status) {
         content = U"";
-        lisp->string_pool.push_back(this);
+        lisp->string_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
@@ -330,14 +421,14 @@ void Stringpool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
         content = U"";
-        lisp->string_pool.push_back(this);
+        lisp->string_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
 void Stringpool::release() {
     if (!status) {
         content = U"";
-        lisp->string_pool.push_back(this);
+        lisp->string_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
@@ -409,6 +500,30 @@ Element* Integerpool::copying(bool duplicate) {
         return this;
     
     return lisp->provideInteger(content);
+}
+
+Element* Complexpool::fullcopy() {
+    if (lisp->preparingthread)
+        return new Complex(content);
+    return lisp->provideComplex(content);
+}
+
+Element* Complexpool::copyatom(LispE* lsp, uint16_t s) {
+    return (status < s)?this:lsp->provideComplex(content);
+}
+
+Element* Complexpool::copying(bool duplicate) {
+    //If we are in a thread preparation, then we
+    //copy it as non pool objects
+    //to avoid pool objects to access a lisp thread environment
+    //through the wrong lisp pointer
+    if (lisp->preparingthread)
+        return new Complex(content);
+    
+    if (!status)
+        return this;
+    
+    return lisp->provideComplex(content);
 }
 
 Element* Constfloat::copying(bool duplicate) {
@@ -546,7 +661,10 @@ Dictionary_as_buffer::Dictionary_as_buffer(LispE* lisp) : Element(t_dictionary) 
     choice = true;
 }
 
-
+//------------------------------------------------------------------------------------------
+Element* Element::eval_lambda_min(LispE*) {
+    throw new Error("Error: this is not a lambda function");
+}
 //------------------------------------------------------------------------------------------
 Element* Element::minimum(LispE* lisp) {
     throw new Error("Error: cannot find the minimum for this object");
@@ -828,9 +946,9 @@ Element* Complex::invert_sign(LispE* lisp) {
         content *= -1;
         return this;
     }
-    std::complex<double> c(content);
-    c *= -1;
-    return new Complex(c);
+    Complex* c = lisp->provideComplex(content);
+    c->content *= -1;
+    return c;
 }
 
 Element* Integer::invert_sign(LispE* lisp) {
@@ -892,7 +1010,7 @@ Element* Dictionary_as_list::dictionary(LispE* lisp) {
         last_element->release();
         return keycmd;
     }
-    catch(Error* err) {
+    catch (Error* err) {
         err->release();
         return last_element;
     }
@@ -961,17 +1079,17 @@ Element* Element::loop(LispE* lisp, int16_t label,  List* code) {
 Element* String::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    lisp->recording(null_, label);
-    Element* element;
+    String* element = lisp->provideString();
+    lisp->recording(element, label);
+    
     long sz = code->liste.size();
     long i = 0;
     u_ustring localvalue;
     long szc = content.size();
     while (i < szc) {
         lisp->handlingutf8->getchar(content, localvalue, i, szc);
-        element = lisp->provideString(localvalue);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = localvalue;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -1056,7 +1174,7 @@ Element* Rankloop::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
-Element* InfiniterangeNumber::loop(LispE* lisp, int16_t label, List* code) {
+Element* Infiniterangenumber::loop(LispE* lisp, int16_t label, List* code) {
     if (!increment)
         throw new Error("Error: increment cannot be 0");
     long i_loop;
@@ -1064,8 +1182,8 @@ Element* InfiniterangeNumber::loop(LispE* lisp, int16_t label, List* code) {
     long sz = code->liste.size();
     double value = initial_value;
     
-    Number* element;
-    lisp->recording(null_, label);
+    Number* element = lisp->provideNumber(0);
+    lisp->recording(element, label);
     
     char check = 0;
     if (!infinite_loop) {
@@ -1076,9 +1194,8 @@ Element* InfiniterangeNumber::loop(LispE* lisp, int16_t label, List* code) {
     }
     
     while (!lisp->hasStopped() && compare(check, value)) {
-        element = lisp->provideNumber(value);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = value;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
             e->release();
@@ -1094,7 +1211,7 @@ Element* InfiniterangeNumber::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
-Element* InfiniterangeInteger::loop(LispE* lisp, int16_t label, List* code) {
+Element* Infiniterangeinteger::loop(LispE* lisp, int16_t label, List* code) {
     if (!increment)
         throw new Error("Error: increment cannot be 0");
     
@@ -1102,8 +1219,6 @@ Element* InfiniterangeInteger::loop(LispE* lisp, int16_t label, List* code) {
     Element* e = null_;
     long sz = code->liste.size();
     long value = initial_value;
-    Integer* element;
-    lisp->recording(null_, label);
     char check = 0;
     if (!infinite_loop) {
         if (increment < 0)
@@ -1111,12 +1226,13 @@ Element* InfiniterangeInteger::loop(LispE* lisp, int16_t label, List* code) {
         else
             check = 1;
     }
-    
+    Integer* element = lisp->provideInteger(value);
+    lisp->recording(element, label);
+
     while (!lisp->hasStopped() && compare(check, value)) {
-        element = lisp->provideInteger(value);
-        lisp->replacingvalue(element, label);
         _releasing(e);
         //We then execute our instructions
+        element->content = value;
         for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
             e->release();
             e = code->liste[i_loop]->eval(lisp);
@@ -1580,9 +1696,9 @@ Element* Short::reverse(LispE* lisp, bool duplicate) {
 }
 
 Element* Complex::reverse(LispE* lisp, bool duplicate) {
-    std::complex<double> c(content);
-    c *= -1;
-    return new Complex(c);
+    Complex* c = lisp->provideComplex(content);
+    c->content *= -1;
+    return c;
 }
 
 Element* Integer::reverse(LispE* lisp, bool duplicate) {
@@ -1747,13 +1863,13 @@ wstring Cyclelist::asString(LispE* lisp) {
     return tampon;
 }
 
-wstring InfiniterangeNumber::asString(LispE* lisp) {
+wstring Infiniterangenumber::asString(LispE* lisp) {
     std::wstringstream str;
     str << L"(irange " << initial_value << " " << increment << L")";
     return str.str();
 }
 
-wstring InfiniterangeInteger::asString(LispE* lisp) {
+wstring Infiniterangeinteger::asString(LispE* lisp) {
     std::wstringstream str;
     str << L"(irange " << initial_value << " " << increment << L")";
     return str.str();
@@ -2658,20 +2774,20 @@ Element* String::cadr(LispE* lisp, u_ustring& action) {
 //There is potentially a infinite potential loop
 //in the list...
 
-Element* InfiniterangeNumber::car(LispE* lisp) {
+Element* Infiniterangenumber::car(LispE* lisp) {
     return lisp->provideNumber(initial_value);
 }
 
-Element* InfiniterangeNumber::cdr(LispE* lisp) {
-    return new InfiniterangeNumber(initial_value+increment, increment);
+Element* Infiniterangenumber::cdr(LispE* lisp) {
+    return lisp->providerange_Number(initial_value+increment, increment);
 }
 
-Element* InfiniterangeInteger::car(LispE* lisp) {
+Element* Infiniterangeinteger::car(LispE* lisp) {
     return lisp->provideInteger(initial_value);
 }
 
-Element* InfiniterangeInteger::cdr(LispE* lisp) {
-    return new InfiniterangeInteger(initial_value+increment, increment);
+Element* Infiniterangeinteger::cdr(LispE* lisp) {
+    return lisp->providerange_Integer(initial_value+increment, increment);
 }
 
 

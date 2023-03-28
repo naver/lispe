@@ -24,8 +24,7 @@ using std::u16string;
 
 using std::vector;
 using std::unordered_map;
-typedef enum {flag_none = 0, flag_negation = 1, flag_skip = 2, flag_fail = 4, flag_start_fail = 8, flag_blocking_gate = 16, flag_action = 31,
-    flag_vectorized = 32, flag_added = 64, flag_postpone = 128, flag_seen = 256, flag_visited = 512} tokenizer_flag;
+typedef enum {flag_none = 0, flag_negation = 1, flag_skip = 2, flag_fail = 4, flag_start_fail = 8, flag_blocking_gate = 16, flag_tail = 32, flag_action = 63, flag_vectorized = 64, flag_postpone = 128, flag_seen = 256, flag_visited = 512, flag_added = 1024} tokenizer_flag;
 
 
 typedef enum {act_none, act_char , act_uppercase, act_ckj, act_space_and_carriage, act_alphabetical,
@@ -45,13 +44,19 @@ const int16_t table_character_size = 1611;
 //---------------------------------------------------
 //---------------------------------------------------
 
+class tokenizer_node;
 template <typename STRNG> class tokenizer_result {
 public:
     vecte<int16_t> stacktype;
     vector<long> stackln;
     vector<long> positions;
     
+    vector<long> p_stack;
+    vector<short> i_stack;
+    vector<tokenizer_node*> r_stack;
+
     u_uchar currentchr;
+    u_ustring token;
     
     long line;
     long start;
@@ -80,8 +85,53 @@ public:
         store_all = true;
     }
         
-    void store(u_ustring& token, int32_t label);
+    void store(int32_t label);
     void store_currentchr();
+    
+    inline void clear_stack() {
+        r_stack.clear();
+        i_stack.clear();
+        p_stack.clear();
+    }
+
+    //Keeping the stack small
+    inline void check_stack(tokenizer_node* rule) {
+        if (r_stack.size() > 1000 && rule == r_stack[1]) {
+            r_stack.erase(r_stack.begin() + 1, r_stack.end());
+            i_stack.erase(i_stack.begin() + 1, i_stack.end());
+            p_stack.erase(p_stack.begin() + 3, p_stack.end());
+        }
+    }
+    
+    inline long pop() {
+        long i = p_stack.back();
+        p_stack.pop_back();
+        return i;
+    }
+
+    inline void push_stack(tokenizer_node* rule, long i) {
+        r_stack.push_back(rule);
+        i_stack.push_back(i);
+        
+        p_stack.push_back(line);
+        p_stack.push_back(position);
+        p_stack.push_back(token.size());
+        p_stack.push_back((long)currentchr);
+    }
+
+    inline long pop_stack() {
+        long  i = i_stack.back();
+        i_stack.pop_back();
+        r_stack.pop_back();
+        
+        currentchr = (u_uchar)pop();
+        token = token.substr(0, pop());
+        position = pop();
+        line = pop();
+                
+        return i;
+    }
+
     
     void clear(STRNG& u) {
         buffer = &u;
@@ -198,6 +248,10 @@ public:
 
     inline bool check_blocking_gate() {
         return check_flag(flags, flag_blocking_gate);
+    }
+
+    inline bool check_tail() {
+        return check_flag(flags, flag_tail);
     }
 
     void processing_postponed_nodes(std::set<long>& visited, vector<tokenizer_node*>& nodes, long idpos);
@@ -531,21 +585,83 @@ public:
         return n;
     }
         
+    template <typename STRNG> bool iterative_traversal(tokenizer_result<STRNG>& rst, tokenizer_node* rule) {
+        //In this case, we apply a iterative analysis...
+        //The first element is the one that should be found to stop
+        tokenizer_node* r;
+        long i = 0;
+        
+        rst.clear_stack();
+        rst.push_stack(rule, 0);
+        if (!check_flag(rule->action, act_epsilon)) {
+            if (!rule->check_skip())
+                rst.token += rst.currentchr;
+            rst.getnext();
+        }
+
+        long sz = rule->size();
+        while (rst.r_stack.size() && !rst.end()) {
+            for (; i < sz && !rst.end(); i++) {
+                r = rule->arcs[i];
+                if (r->action == act_end) {
+                    rst.store(r->label);
+                    return true;
+                }
+                
+                if (r->check(rst.currentchr, access, operators, !r->check_negation())) {
+                    if (r == rule) {
+                        i = -1;
+                        if (!check_flag(r->action, act_epsilon)) {
+                            if (!r->check_skip())
+                                rst.token += rst.currentchr;
+                            rst.getnext();
+                        }
+                    }
+                    else {
+                        rst.check_stack(r);
+                        rst.push_stack(r, i + 1);
+                        if (!check_flag(r->action, act_epsilon)) {
+                            if (!r->check_skip())
+                                rst.token += rst.currentchr;
+                            rst.getnext();
+                        }
+                        rule = r;
+                        sz = rule->size();
+                        i = 0;
+                        break;
+                    }
+                }
+            }
+            if (i == sz) {
+                i = rst.pop_stack();
+                if (rst.r_stack.size()) {
+                    rule = rst.r_stack.back();
+                    sz = rule->size();
+                }
+            }
+        }
+        return false;
+    }
+    
     //Since, the code is slightly different according to the type of string we are handling, we create a template function to handle all these cases in one code.
-    template <typename STRNG> bool traverse(tokenizer_result<STRNG>& rst, u_ustring token, tokenizer_node* rule, bool alreadychecked, bool top) {
+    template <typename STRNG> bool traverse(tokenizer_result<STRNG>& rst, tokenizer_node* rule, bool alreadychecked, bool top) {
         if (rule->action == act_end) {
-            rst.store(token, rule->label);
+            rst.store(rule->label);
             return true;
         }
         if (rst.end())
             return false;
         
-        if (top)
+        if (top) {
             rst.start = rst.position - rst.sz_read;
+            rst.token = U"";
+        }
         
+
         u_uchar chr = rst.currentchr;
         long l = rst.line;
         long p = rst.position;
+        long tokenlen = rst.token.size();
 
         long sz = rule->arcs.size();
 
@@ -555,21 +671,25 @@ public:
                 // For instance, we want the system to fail if abc is detected with rule: ~{[abc]...}
                 if (rule->check_fail())
                     return true;
-                
+
+                if (rule->check_tail())
+                    return iterative_traversal<STRNG>(rst, rule);
+
                 if (!check_flag(rule->action, act_epsilon)) {
                     if (!rule->check_skip())
-                        token += rst.currentchr;
+                        rst.token += rst.currentchr;
                     rst.getnext();
                 }
                 rule = rule->arcs[0];
                 if (rule->action == act_end) {
-                    rst.store(token, rule->label);
+                    rst.store(rule->label);
                     return true;
                 }
                 alreadychecked = false;
                 sz = rule->arcs.size();
             }
             else {
+                rst.token = rst.token.substr(0, tokenlen);
                 rst.currentchr = chr;
                 rst.line = l;
                 rst.position = p;
@@ -577,16 +697,19 @@ public:
             }
         }
         
-        
+
         if (alreadychecked || rule->check(rst.currentchr, access, operators, !rule->check_negation())) {
             if (rule->check_fail())
                 return true;
+
+            if (rule->check_tail())
+                return iterative_traversal<STRNG>(rst, rule);
 
             //If it is not an epsilon, there was an actual character comparison
             alreadychecked = false;
             if (!check_flag(rule->action, act_epsilon)) {
                 if (!rule->check_skip())
-                    token += rst.currentchr;
+                    rst.token += rst.currentchr;
                 alreadychecked = true;
                 rst.getnext();
             }
@@ -595,7 +718,7 @@ public:
             for (long i = 0; i < sz; i++) {
                 r = rule->arcs[i];
                 if (r->action == act_end) {
-                    rst.store(token, r->label);
+                    rst.store(r->label);
                     return true;
                 }
                 if (r->check(rst.currentchr, access, operators, !r->check_negation())) {
@@ -604,7 +727,7 @@ public:
                     if (alreadychecked && r == rule) {
                         i = -1;
                         if (!r->check_skip())
-                            token += rst.currentchr;
+                            rst.token += rst.currentchr;
                         rst.getnext();
                     }
                     else {
@@ -617,12 +740,14 @@ public:
                         and fail on the last element of the disjunction. Hence, if the sequence succeeds deep in recursion
                         we will fail it by returning !start_fail.
                         */
-                        if ((r->check_fail() || traverse<STRNG>(rst, token, r, true, false)))
+                        if ((r->check_fail() || traverse<STRNG>(rst, r, true, false)))
                             return (!r->check_start_fail());
                     }
                 }
             }
         }
+        
+        rst.token = rst.token.substr(0, tokenlen);
         rst.currentchr = chr;
         rst.line = l;
         rst.position = p;
@@ -630,11 +755,11 @@ public:
     }
     
     template <typename STRNG> inline bool execute_rule(u_uchar c, tokenizer_result<STRNG>& rst) {
-        return (c < table_character_size) && vectorization_table[c]?traverse<STRNG>(rst, U"", vectorization_table[c], false, true):false;
+        return (c < table_character_size) && vectorization_table[c]?traverse<STRNG>(rst, vectorization_table[c], false, true):false;
     }
     
     template <typename STRNG> inline bool execute_rule(tokenizer_result<STRNG>& rst) {
-        return traverse<STRNG>(rst, U"", vectorization_table[0], false, true);
+        return traverse<STRNG>(rst, vectorization_table[0], false, true);
     }
 
     template <typename STRNG> void apply(tokenizer_result<STRNG>& rst) {
@@ -674,13 +799,14 @@ public:
         rules[0] = U"%s+=#";
         long i;
         for (i = 0; i < rules.size(); i++) {
-            if (rules[i] == U";;?+;;=67")
+            if (rules[i] == U";;?+;;=:67")
                 break;
         }
         //Comments are no longer recorded...
         if (i != rules.size()) {
-            rules[i] = U";;?+;;=#";
+            rules[i] = U";;?+;;=:#";
             rules[i+1] = U";?+#10=#";
+            rules[i+2] = U"%#!?+%r=#";
         }
     }
     
@@ -701,7 +827,7 @@ public:
     void setrules();
     
     bool check_rule(int32_t label) {
-        return (indexed_on_label.find(label) != indexed_on_label.end() && indexed_on_label[label].size());
+        return (indexed_on_label.count(label) && indexed_on_label[label].size());
     }
     
     //Rules do not skip blanks anymore

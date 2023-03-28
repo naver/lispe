@@ -28,7 +28,7 @@ typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_
     str_format, str_padding, str_fill, str_getstruct,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
     str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
-    str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter,
+    str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter, str_indent
     
 } string_method;
 
@@ -250,6 +250,21 @@ public:
     }
 
 };
+
+void IndentatingCode(string& str, string& codeindente);
+void IndenteCode(string& codestr, string& indentedcode, bool lispmode) {
+    indentedcode = "";
+    
+    s_trimright(codestr);
+    codestr+="\n";
+    cr_normalise(codestr);
+    if (lispmode)
+        IndentCode(codestr, indentedcode, GetBlankSize(), true, false);
+    else
+        IndentatingCode(codestr, indentedcode);
+    indentedcode += "\n";
+}
+
 
 class Stringmethod : public Element {
 public:
@@ -477,7 +492,7 @@ public:
         wchar_t wc;
         for (n = 0; n < w.size(); n++) {
             wc = w[n];
-            if (mcaracs.find(wc) == mcaracs.end() || mcaracs[wc] >= b)
+            if (!mcaracs.count(wc) || mcaracs[wc] >= b)
                 throw new Error(U"Error: Cannot analyze this string in this base.");
 
             v *= b;
@@ -901,6 +916,13 @@ public:
             case str_base: {
                 return methodBase(lisp);
             }
+            case str_indent: {
+                bool lm = lisp->get_variable(U"lispmode")->Boolean();
+                string s =  lisp->get_variable(v_str)->toString(lisp);
+                string ide;
+                IndenteCode(s, ide, lm);
+                return lisp->provideString(ide);
+            }
         }
 		return null_;
     }
@@ -1016,6 +1038,8 @@ public:
                 return L"Sets the list of operators, which are used with metacharacter: %o";
             case str_segmenter:
                 return L"Returns the segmenter object: (segmenter keepblanks point). point == 0 is regular decimal point. point == 1 uses comma as decimal point. point == 2 enables both point and comma.";
+            case str_indent:
+                return L"Indent a string containing code";
         }
 		return L"";
     }
@@ -1056,6 +1080,8 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
     
+    lisp->extension("deflib indent (str lispmode)", new Stringmethod(lisp, str_indent));
+
     //Tokenization methods
     lisp->extension("deflib segment (str (point 0))", new Stringmethod(lisp, str_segment_lispe));
     lisp->extension("deflib segment_e (str (point 0))", new Stringmethod(lisp, str_segment_empty));

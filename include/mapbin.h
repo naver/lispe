@@ -26,6 +26,8 @@ const uint64_t binVal64[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048,
 binOne << 55, binOne << 56, binOne << 57, binOne << 58, binOne << 59, binOne << 60, binOne << 61, binOne << 62, binOne << 63 };
 
 template <class Z> class binHash;
+template <class Z> class binHashe;
+template <class Z> class binhash;
 
 template<class S, class Z> class binIter : public std::iterator<std::forward_iterator_tag, Z> {
     public:
@@ -38,6 +40,8 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
     private:
     uint64_t* indexes;
     uint64_t filter;
+    uint64_t mask;
+    int16_t inc;
     int16_t tsize;
 
     public:
@@ -46,14 +50,14 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
     }
 
     binIter<S, Z>(Z** n, uint64_t* idx, int16_t sz, int16_t b = 0) {
-        first = 0;
         base = b;
         tsize = sz;
         table = n;
         indexes = idx;
         i = 0;
         j = 0;
-        filter = 0;
+        filter = indexes[i];
+        first = base << binBits;
         if (n != NULL)
             next();
     }
@@ -84,7 +88,123 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
         return (*this);
     }
 
+    binIter<S, Z>(binHash<Z>& p) {
+        base = p.base;
+        tsize = p.tsize;
+        table = p.table;
+        indexes = p.indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = base << binBits;
+        if (table != NULL)
+            next();
+    }
+    binIter<S, Z>(binhash<Z>& p) {
+        base = 0;
+        tsize = p.tsize;
+        table = p.table;
+        indexes = p.indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = base << binBits;
+        if (table != NULL)
+            next();
 
+    }
+    binIter<S, Z>(binHashe<Z>& p) {
+        base = p.base;
+        tsize = p.tsize;
+        table = p.table;
+        indexes = p.indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = base << binBits;
+        if (table != NULL)
+            next();
+
+    }
+
+    void set(binHash<Z>* p) {
+        base = p->base;
+        tsize = p->tsize;
+        table = p->table;
+        indexes = p->indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = 0;
+        if (table != NULL)
+            next();
+    }
+    
+    void set(binHashe<Z>* p) {
+        base = p->base;
+        tsize = p->tsize;
+        table = p->table;
+        indexes = p->indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = 0;
+        if (table != NULL)
+            next();
+    }
+    
+    void set(binhash<Z>* p) {
+        base = 0;
+        tsize = p->tsize;
+        table = p->table;
+        indexes = p->indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = 0;
+        if (table != NULL)
+            next();
+    }
+
+    void set(binHash<Z>& p) {
+        base = p.base;
+        tsize = p.tsize;
+        table = p.table;
+        indexes = p.indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = 0;
+        if (table != NULL)
+            next();
+    }
+    
+    void set(binHashe<Z>& p) {
+        base = p.base;
+        tsize = p.tsize;
+        table = p.table;
+        indexes = p.indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = 0;
+        if (table != NULL)
+            next();
+    }
+    void set(binhash<Z>& p) {
+        base = 0;
+        tsize = p.tsize;
+        table = p.table;
+        indexes = p.indexes;
+        i = 0;
+        j = 0;
+        filter = indexes[i];
+        first = 0;
+        if (table != NULL)
+            next();
+    }
+
+    
     binIter& operator++() {
         next();
     }
@@ -93,7 +213,43 @@ template<class S, class Z> class binIter : public std::iterator<std::forward_ite
         return this;
     }
 
+    bool end() {
+        return table == NULL;
+    }
+    
     inline void next() {
+        while (!filter && i != tsize) {
+            filter = indexes[++i];
+            base++;
+            j = 0;
+        }
+        
+        if (i == tsize) {
+            first = 0;
+            table = NULL;
+            tsize = -1;
+            return;
+        }
+        
+        mask = 0xFFFFFFFF;
+        inc = 32;
+        
+        while (!(filter & 1)) {
+            while (!(filter & mask)) {
+                filter >>= inc;
+                j += inc;
+            }
+            inc >>= 1;
+            mask >>= inc;
+        }
+
+        first = (base << binBits) + j;
+        second = table[i][j];
+        j++;
+        filter >>= 1;
+    }
+    
+    inline void next_value() {
         while (i < tsize) {
             if (!j)
                 filter = indexes[i];
@@ -156,19 +312,23 @@ class binSet;
 class binSetIter {
 public:
     uint64_t* indexes;
+    uint64_t filter;
+    uint64_t mask;
+
+    int16_t inc;
     int16_t tsize;
     int16_t base;
-    uint64_t filter;
     
     int16_t first;
-    int16_t idx;
     int16_t nb;
+    int16_t idx;
 
     binSetIter() {
         indexes = NULL;
         tsize = 0;
         base = -1;
         filter = 0;
+        first = 0;
     }
     
     binSetIter(binSet& b);
@@ -176,39 +336,31 @@ public:
     void set(binSet& b);
     
     bool next() {
-        while (idx < tsize && !filter) {
+        while (!filter && idx != tsize) {
             filter = indexes[++idx];
-            nb = 0;
-        }
-
-        if (idx >= tsize)
-            return false;
-
-        while (filter) {
-            while (!(filter & 65535)) {
-                filter >>= 16;
-                nb += 16;
-            }
-            while (!(filter & 255)) {
-                filter >>= 8;
-                nb += 8;
-            }
-            while (!(filter & 15)) {
-                filter >>= 4;
-                nb += 4;
-            }
-            while (!(filter & 1)) {
-                filter >>= 1;
-                nb++;
-            }
-
-            first = (((idx + base) << binBits) + nb);
-            nb++;
-            filter >>= 1;
-            return true;
+            base++;
+            nb = base << binBits;
         }
         
-        return false;
+        if (idx == tsize)
+            return false;
+        
+        first = nb;
+        mask = 0xFFFFFFFF;
+        inc = 32;
+        
+        while (!(filter & 1)) {
+            while (!(filter & mask)) {
+                filter >>= inc;
+                first += inc;
+            }
+            inc >>= 1;
+            mask >>= inc;
+        }
+        
+        nb = first + 1;
+        filter >>= 1;
+        return true;
     }
 };
 
@@ -253,14 +405,17 @@ public:
         return (i < tsize && (indexes[i] & binVal64[r & binMin]));
     }
 
+    inline int16_t checkvalue(uint16_t r) {
+        uint16_t i = (r >> binBits) - base;
+        return (i < tsize && (indexes[i] & binVal64[r & binMin]))?r:-1;
+    }
+
     inline bool checkanderase(uint16_t r) {
         uint16_t i = (r >> binBits) - base;
         r &= binMin;
-        if (i < tsize && (indexes[i] & binVal64[r])) {
-            indexes[i] &= ~binVal64[r];
-            return true;
-        }
-        return false;
+        bool ret = (i < tsize && (indexes[i] & binVal64[r]));
+        indexes[i] &= ~binVal64[r];
+        return ret;
     }
 
     bool empty() {
@@ -465,11 +620,6 @@ public:
 
     typedef binIter<int16_t, Z> iterator;
 
-    iterator begin(){ return iterator(table, indexes, tsize, 0); }
-    iterator end() {
-        return iterator();
-    }
-
     binhash()  {
         tsize = 1;
         table = (Z**)malloc(sizeof(Z*)*tsize);
@@ -491,6 +641,11 @@ public:
     inline bool check(uint16_t r) {
         uint16_t i = (r >> binBits);
         return (i < tsize && (indexes[i] & binVal64[r & binMin]));
+    }
+
+    inline int16_t checkvalue(uint16_t r) {
+        uint16_t i = (r >> binBits);
+        return (i < tsize && (indexes[i] & binVal64[r & binMin]))?r:-1;
     }
 
     inline Z search(uint16_t r) {
@@ -534,12 +689,7 @@ template <class Z> class binHash {
     int16_t base;
 
     typedef binIter<int16_t, Z> iterator;
-
-    iterator begin(){ return iterator(table, indexes, tsize, base); }
-    iterator end() {
-        return iterator();
-    }
-
+    
     binHash()  {
         base = -1;
         tsize = 1;
@@ -582,6 +732,11 @@ template <class Z> class binHash {
     inline bool check(uint16_t r) {
         uint16_t i = (r >> binBits) - base;
         return (i < tsize && (indexes[i] & binVal64[r & binMin]));
+    }
+
+    inline int16_t checkvalue(uint16_t r) {
+        uint16_t i = (r >> binBits) - base;
+        return (i < tsize && (indexes[i] & binVal64[r & binMin]))?r:-1;
     }
 
     void put(uint16_t r, Z a) {
@@ -853,12 +1008,7 @@ public:
     int16_t base;
 
     typedef binIter<int16_t, Z> iterator;
-    
-    iterator begin(){ return iterator(table, indexes, tsize, base); }
-    iterator end() {
-        return iterator();
-    }
-    
+        
     binHashe()  {
         base = -1;
         tsize = 1;
@@ -916,18 +1066,6 @@ public:
         uint16_t i = (r >> binBits) - base;
         r &= binMin;
         return (i < tsize && (indexes[i] & binVal64[r]))?table[i][r]:NULL;
-    }
-    
-    iterator find(uint16_t r) {
-        if (base == -1)
-            return iterator();
-        
-        uint16_t i = (r >> binBits) - base;
-        r &= binMin;
-        if (i < tsize && (indexes[i] & binVal64[r]))
-            return iterator(table, indexes, tsize, i, r);
-        
-        return iterator();
     }
     
     void erase(uint16_t r) {

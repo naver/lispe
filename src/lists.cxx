@@ -41,6 +41,140 @@ void u_link::connect_as_last(Element* v) {
     _next->inc(status);
 }
 
+void u_links::push_back_as_last(LispE* lisp, Element* v) {
+    u_link* e = last_raw();
+    if (e == NULL) {
+        first = new u_link_last(v);
+        first->inc(1);
+        return;
+    }
+
+    e->connect_as_last(v);
+#ifdef LISPE_WASM
+    if (e->error) {
+        e->error = false;
+        lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));
+    }
+#endif
+}
+
+void u_links::reverse(LispE* lisp) {
+    if (atleast2()) {
+        //First, if it in the middle of a longer list
+        //we cut it from it...
+        u_link* e = last();
+        if (e->isFinal())
+            throw new Error("Error: cannot reverse a linked list with a final '.' element");
+        
+        u_link* p = e->_next;
+        
+        //p != NULL => cycle
+        if (p == NULL) {
+            //no cycle, but "first"
+            //might be inside a list, with some elements before
+            //such as returned by a cdr...
+            p = first->_previous;
+            if (p != NULL) {
+                p->_next = e;
+                //we cut this element temporary from the list
+                first->_previous = NULL;
+            }
+        }
+        
+        u_link* n;
+        while (first != e) {
+            n = first->_next;
+            first->_next = first->_previous;
+            first->_previous = n;
+            first = n;
+        }
+
+        first->_next = first->_previous;
+        first->_previous = p;
+    }
+}
+
+void u_links::connect(LispE* lisp, u_links& l) {
+    u_link* u;
+    if (first == NULL) {
+        first = l.first;
+        u = begin();
+        while (u != NULL) {
+            u->inc(1);
+            u =  u->next();
+        }
+    }
+    else {
+        u = last_raw();
+        if (u->isFinal())
+            throw new Error("Error: Cannot add an element to this linked list");
+        
+        u->_next = l.first;
+        l.first->_previous = u;
+        //if there is no cycle
+        //No element in the current list is in l
+        if (l.first->mark != u->mark) {
+            int16_t status = u->status;
+            u = l.begin();
+            while (u != NULL) {
+                u->inc(status);
+                u = u->next();
+            }
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------
+
+List_call_lambda::List_call_lambda(LispE* lisp, Listincode* l) : Listincode(l) {
+    body = (List_lambda_eval*)liste[0];
+    nbarguments = l->size() - 1;
+    if (nbarguments != body->parameters->size()) {
+        wstring inside_class = L"Error: Wrong number of arguments in: '(lambda ";
+        inside_class += body->parameters->asString(lisp);
+        inside_class += L"...)'";
+        throw new Error(inside_class);
+    }
+}
+
+List_function_eval::List_function_eval(LispE* lisp, Listincode* l, List* b) : body(b), Listincode(l) {
+    type = t_call;
+    status = s_constant;
+    nbarguments = liste.size() - 1;
+    //the third element is the argument list .
+    //we need our body to be the same number
+    parameters = body->liste[2];
+    defaultarguments = parameters->argumentsize(nbarguments);
+    if (defaultarguments == -1) {
+        wstring inside_class = L"Error: Wrong number of arguments in call to: '(";
+        inside_class += body->liste[1]->asString(lisp);
+        inside_class += L" ";
+        inside_class += body->liste[2]->asString(lisp);
+        inside_class += L"...)'";
+        throw new Error(inside_class);
+    }
+    same = (defaultarguments == parameters->size());
+}
+
+List_function_eval::List_function_eval(LispE* lisp, List* b) : body(b) {
+    liste.push_element(b);
+    type = t_eval;
+    status = s_constant;
+    nbarguments = 1;
+    //the third element is the argument list .
+    //we need our body to be the same number
+    parameters = body->liste[2];
+    defaultarguments = parameters->argumentsize(nbarguments);
+    if (defaultarguments == -1) {
+        wstring inside_class = L"Error: Wrong number of arguments in call to: '(";
+        inside_class += body->liste[1]->asString(lisp);
+        inside_class += L" ";
+        inside_class += body->liste[2]->asString(lisp);
+        inside_class += L"...)'";
+        throw new Error(inside_class);
+    }
+    same = (defaultarguments == parameters->size());
+}
 //--------------------------------------------------------------------------------
 //Pools methods
 //--------------------------------------------------------------------------------
@@ -49,7 +183,7 @@ void Listpool::decrement() {
     if (!status) {
         liste.decrement();
         liste.clear();
-        lisp->list_pool.push_back(this);
+        lisp->list_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
@@ -58,7 +192,7 @@ void Listpool::decrementstatus(uint16_t nb) {
     if (!status) {
         liste.decrement();
         liste.clear();
-        lisp->list_pool.push_back(this);
+        lisp->list_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
@@ -66,7 +200,7 @@ void Listpool::release() {
     if (!status) {
         liste.decrement();
         liste.clear();
-        lisp->list_pool.push_back(this);
+        lisp->list_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
@@ -74,7 +208,7 @@ void Listpool::release(Element* e) {
     if (!status) {
         liste.decrement(e);
         liste.clear();
-        lisp->list_pool.push_back(this);
+        lisp->list_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
@@ -82,7 +216,7 @@ void Listpool::rawrelease() {
     if (!status) {
         liste.clear();
         liste.decrement();
-        lisp->list_pool.push_back(this);
+        lisp->list_pool.push_max(lisp->larger_max_size, this);
     }
 }
 
@@ -113,7 +247,6 @@ Element* Listpool::copyatom(LispE* lsp, uint16_t s) {
     for (long i = 0; i < liste.size(); i++) {
         l->append(liste[i]->copyatom(lisp, s));
     }
-    release();
     return l;
 }
 
@@ -126,7 +259,7 @@ Element* Listpool::copying(bool duplicate) {
     if (lisp->preparingthread)
         l = new List;
     else {
-        if (!is_protected() && liste.nocdr() && !duplicate)
+        if (!is_protected() && !duplicate)
             return this;
         
         l = lisp->provideList();
@@ -141,7 +274,7 @@ void Numberspool::decrement() {
     status -= not_protected();
     if (!status) {
         liste.clear();
-        lisp->numbers_pool.push_back(this);
+        lisp->numbers_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -149,7 +282,7 @@ void Floatspool::decrement() {
     status -= not_protected();
     if (!status) {
         liste.clear();
-        lisp->floats_pool.push_back(this);
+        lisp->floats_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -157,14 +290,14 @@ void Floatspool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
         liste.clear();
-        lisp->floats_pool.push_back(this);
+        lisp->floats_pool.push_max(lisp->max_size, this);
     }
 }
 
 void Floatspool::release() {
     if (!status) {
         liste.clear();
-        lisp->floats_pool.push_back(this);
+        lisp->floats_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -201,23 +334,21 @@ Element* Floatspool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
-    Floats* f = lisp->provideFloats(this);
-    release();
-    return f;
+    return lisp->provideFloats(this);
 }
 
 void Numberspool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
         liste.clear();
-        lisp->numbers_pool.push_back(this);
+        lisp->numbers_pool.push_max(lisp->max_size, this);
     }
 }
 
 void Numberspool::release() {
     if (!status) {
         liste.clear();
-        lisp->numbers_pool.push_back(this);
+        lisp->numbers_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -254,15 +385,13 @@ Element* Numberspool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
-    Numbers* n = lisp->provideNumbers(this);
-    release();
-    return n;
+    return lisp->provideNumbers(this);
 }
 
 void Integerspool::decrement() {
     status -= not_protected();
     if (!status) {
-        lisp->integers_pool.push_back(this);
+        lisp->integers_pool.push_max(lisp->max_size, this);
         liste.clear();
     }
 }
@@ -270,14 +399,14 @@ void Integerspool::decrement() {
 void Integerspool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
-        lisp->integers_pool.push_back(this);
+        lisp->integers_pool.push_max(lisp->max_size, this);
         liste.clear();
     }
 }
 
 void Integerspool::release() {
     if (!status) {
-        lisp->integers_pool.push_back(this);
+        lisp->integers_pool.push_max(lisp->max_size, this);
         liste.clear();
     }
 }
@@ -316,15 +445,13 @@ Element* Integerspool::copyatom(LispE* lsp, uint16_t s) {
     if (liste.shared(status) < s)
         return this;
     
-    Integers* i = lisp->provideIntegers(this);
-    release();
-    return i;
+    return lisp->provideIntegers(this);
 }
 
 void Stringspool::decrement() {
     status -= not_protected();
     if (!status) {
-        lisp->strings_pool.push_back(this);
+        lisp->strings_pool.push_max(lisp->max_size, this);
         liste.clear();
     }
 }
@@ -332,14 +459,14 @@ void Stringspool::decrement() {
 void Stringspool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
-        lisp->strings_pool.push_back(this);
+        lisp->strings_pool.push_max(lisp->max_size, this);
         liste.clear();
     }
 }
 
 void Stringspool::release() {
     if (!status) {
-        lisp->strings_pool.push_back(this);
+        lisp->strings_pool.push_max(lisp->max_size, this);
         liste.clear();
     }
 }
@@ -841,7 +968,8 @@ Element* LList::insert(LispE* lisp, Element* e, long ix) {
     
     e = e->copying(false);
     LList* l = (LList*)duplicate_constant(lisp);
-    l->insertion(e, ix);
+    if (!l->insertion(e, ix))
+        throw new Error("Error: cannot insert this element in this list");
     return l;
 }
 
@@ -1367,7 +1495,7 @@ Element* LList::reverse(LispE* lisp, bool duplicate) {
         return l;
     }
     
-    liste.reverse();
+    liste.reverse(lisp);
     return this;
 }
 
@@ -1404,7 +1532,7 @@ Element* LList::last_element(LispE* lisp) {
 }
 
 
-Element* InfiniterangeNumber::value_on_index(LispE* lisp, long i) {
+Element* Infiniterangenumber::value_on_index(LispE* lisp, long i) {
     double v = initial_value + increment*i;
     if (infinite_loop) {
         exchange_value.content = v;
@@ -1426,7 +1554,7 @@ Element* InfiniterangeNumber::value_on_index(LispE* lisp, long i) {
     return null_;
 }
 
-Element* InfiniterangeInteger::value_on_index(LispE* lisp, long i) {
+Element* Infiniterangeinteger::value_on_index(LispE* lisp, long i) {
     long v = initial_value + increment*i;
     if (infinite_loop) {
         exchange_value.content = v;
@@ -2516,6 +2644,10 @@ Element* LList::duplicate_constant(LispE* lisp) {
     return this;
 }
 
+Element* List_emptylist_eval::duplicate_constant(LispE* lisp) {
+    return lisp->provideList();
+}
+
 Element* LList::asList(LispE* lisp, List* l) {
     for (u_link* a = liste.begin(); a != NULL; a = a->next())
         l->append(a->value);
@@ -2912,13 +3044,12 @@ void Numbers::append(LispE* lisp, long v) {
 Element* Numbers::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    Number* element;
-    lisp->recording(null_, label);
+    Number* element = lisp->provideNumber(0);
+    lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element = lisp->provideNumber(liste[i]);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = liste[i];
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3496,13 +3627,12 @@ void Integers::append(LispE* lisp, long v) {
 Element* Integers::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    Integer* element;
-    lisp->recording(null_, label);
+    Integer* element = lisp->provideInteger(0);
+    lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element = lisp->provideInteger(liste[i]);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = liste[i];
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -4075,13 +4205,13 @@ void Strings::append(LispE* lisp, long v) {
 Element* Strings::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    String* element;
-    lisp->recording(null_, label);
+    String* element = lisp->provideString();
+    lisp->recording(element, label);
+    
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element = lisp->provideString(liste[i]);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = liste[i];
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -5001,13 +5131,12 @@ void Shorts::append(LispE* lisp, long v) {
 Element* Shorts::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    Integer* element;
-    lisp->recording(null_, label);
+    Short* element = new Short(0);
+    lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element = lisp->provideInteger(liste[i]);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = liste[i];
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -5604,13 +5733,12 @@ void Floats::append(LispE* lisp, long v) {
 Element* Floats::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
-    Float* element;
-    lisp->recording(null_, label);
+    Float* element = lisp->provideFloat(0);
+    lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element = lisp->provideFloat(liste[i]);
-        lisp->replacingvalue(element, label);
         _releasing(e);
+        element->content = liste[i];
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -6828,19 +6956,35 @@ void LList::push_element_back(LispE* lisp, List* l) {
             liste.first = u;
             u->inc(1);
         }
-        else
-            current->push(u);
+        else {
+            current->u_push(u);
+#ifdef LISPE_WASM
+            if (current->error) {
+                current->error = false;
+                lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));
+                return;
+            }
+#endif
+        }
         u->value->incrementstatus(u->status);
         
         for (long i = 3; i < l->size(); i++) {
             value = l->liste[i]->eval(lisp);
             current = u;
             u = new u_link(value->copying(false));
-            current->push(u);
+            current->u_push(u);
+#ifdef LISPE_WASM
+            if (current->error) {
+                current->error = false;
+                lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));
+                return;
+            }
+#endif
+
             u->value->incrementstatus(u->status);
         }
     }
-    catch(Error* err) {
+    catch (Error* err) {
         u->release();
         throw err;
     }
@@ -7480,8 +7624,15 @@ Element* LList::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
         liste.first = u;
         u->inc(1);
     }
-    else
-        last->push(u);
+    else {
+        last->u_push(u);
+#ifdef LISPE_WASM
+            if (last->error) {
+                last->error = false;
+                return lisp->delegation->set_error(new Error("Error: Cannot add an element to this linked list"));
+            }
+#endif
+    }
         
     return this;
 }

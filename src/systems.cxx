@@ -205,7 +205,7 @@ public:
                 }
             }
         }
-        catch(Error* err) {
+        catch (Error* err) {
             myfile.close();
             mode = file_open;
             throw err;

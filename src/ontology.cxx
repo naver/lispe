@@ -477,7 +477,7 @@ Concept::Concept(Ontology* h, u_ustring& s, long i) : Element(h->local_concept) 
     concept.elements.push_back(new Granule(i));
 }
 
-Concept* Concept::concept_remove(Concept* c) {
+Element* Concept::concept_remove(Concept* c) {
     if (c == this) {
         concept.clean();
         if (!index)
@@ -494,7 +494,7 @@ Concept* Concept::concept_remove(Concept* c) {
     return this;
 }
 
-Concept* Concept::concept_or(Concept* c) {
+Element* Concept::concept_or(Concept* c) {
     if (c->ontologie != ontologie)
         throw new Error("Error: these concepts do not belong to the same ontology");
     Concept* n = new Concept(ontologie);
@@ -506,7 +506,7 @@ Concept* Concept::concept_or(Concept* c) {
     return n;
 }
 
-Concept* Concept::concept_xor(Concept* c) {
+Element* Concept::concept_xor(Concept* c) {
     if (c->ontologie != ontologie)
         throw new Error("Error: these concepts do not belong to the same ontology");
     Concept* n = new Concept(ontologie);
@@ -518,7 +518,7 @@ Concept* Concept::concept_xor(Concept* c) {
     return n;
 }
 
-Concept* Concept::concept_and(Concept* c) {
+Element* Concept::concept_and(Concept* c) {
     if (c->ontologie != ontologie)
         throw new Error("Error: these concepts do not belong to the same ontology");
     Concept* n = new Concept(ontologie);
@@ -530,7 +530,7 @@ Concept* Concept::concept_and(Concept* c) {
     return n;
 }
 
-Concept* Concept::concept_and_not(Concept* c) {
+Element* Concept::concept_and_not(Concept* c) {
     if (c->ontologie != ontologie)
         throw new Error("Error: these concepts do not belong to the same ontology");
     Concept* n = new Concept(ontologie);
@@ -542,7 +542,7 @@ Concept* Concept::concept_and_not(Concept* c) {
     return n;
 }
 
-Concept* Concept::concept_not(long mx) {
+Element* Concept::concept_not(long mx) {
     Concept* n = new Concept(ontologie);
     long pos = 0;
     uint64_t v;
@@ -568,35 +568,35 @@ Element* Concept::bit_not(LispE* l) {
     return concept_not(ontologie->size());
 }
 
-Element* Concept::bit_and(LispE* l, Element* e) {
+Element* Concept::bit_and(LispE* lisp, Element* e) {
     if (e->type != type)
         throw new Error("Error: cannot apply '&' to this operand");
-    Concept* result = concept_and((Concept*)e);
+    Element* result = concept_and((Concept*)e);
     release();
     return result;
     
 }
 
-Element* Concept::bit_and_not(LispE* l, Element* e) {
+Element* Concept::bit_and_not(LispE* lisp, Element* e) {
     if (e->type != type)
         throw new Error("Error: cannot apply '&~' to this operand");
-    Concept* result =  concept_and_not((Concept*)e);
+    Element* result =  concept_and_not((Concept*)e);
     release();
     return result;
 }
 
-Element* Concept::bit_or(LispE* l, Element* e) {
+Element* Concept::bit_or(LispE* lisp, Element* e) {
     if (e->type != type)
         throw new Error("Error: cannot apply '|' to this operand");
-    Concept* result = concept_or((Concept*)e);
+    Element* result = concept_or((Concept*)e);
     release();
     return result;
 }
 
-Element* Concept::bit_xor(LispE* l, Element* e) {
+Element* Concept::bit_xor(LispE* lisp, Element* e) {
     if (e->type != type)
         throw new Error("Error: cannot apply '^' to this operand");
-    Concept* result =  concept_xor((Concept*)e);
+    Element* result =  concept_xor((Concept*)e);
     release();
     return result;
 }
@@ -660,12 +660,10 @@ Element* Ontology::find(LispE* lisp, Concept* c) {
 }
 
 Element* Ontology::find(LispE* lisp, u_ustring& w) {
-    try {
-        return indexes.at(w);
-    }
-    catch (...) {
+    const auto& a = indexes.find(w);
+    if (a == indexes.end())
         throw new Error("Error: unknown concept");
-    }
+    return a->second;
 }
 
 Element* Ontology::loop(LispE* lisp, int16_t label, List* code) {

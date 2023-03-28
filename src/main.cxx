@@ -73,8 +73,8 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
             exit(-1);
         }
     }
-    
-    lisp.eval(U"(setq accu1 0) (setq accu2 0) (setq accu3 0) (setq accu4 0) (setq accu5 0) (setq accu6 0) (setq accu7 0) (setq accu8 0) (setq accu9 0)");
+    u_ustring u_code = U"(setq accu1 0) (setq accu2 0) (setq accu3 0) (setq accu4 0) (setq accu5 0) (setq accu6 0) (setq accu7 0) (setq accu8 0) (setq accu9 0)";
+    lisp.eval(u_code);
     
     if (with_file) {
         e = lisp.load(code);
@@ -106,7 +106,8 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
             rgxtype[0] = 'r';
         rgx = rgx.substr(1, rgx.size());
         setq << "(setq rx (" << rgxtype << "gx `" << rgx <<"`))";
-        e = lisp.eval(setq.str());
+        string code = setq.str();
+        e = lisp.eval(code);
         if (e->isError()) {
             std::cerr << e->toString(&lisp);
             exit(-1);
@@ -158,8 +159,8 @@ void execute_pipe(string& code, string& codeinitial, string& codefinal, string& 
         if (rgxtype[0])
             setq << "))" << endl;
         
-        
-        e = lisp.eval(setq.str());
+        string code = setq.str();
+        e = lisp.eval(code);
         
         line_in = e->toString(&lisp);
         if (line_in != "" && codefinal == "")
@@ -491,12 +492,16 @@ int main(int argc, char *argv[]) {
         lisp.arguments(arguments);
         string the_file = file_name;
         Element* e = lisp.n_null;
+#ifdef LISPE_WASM
+        e = lisp.load(the_file);
+#else
         try {
             e = lisp.load(the_file);
         }
         catch(Error* err) {
             e = err;
         }
+#endif
         std::cout << e->toString(&lisp) << std::endl;
         e->release();
         return 0;

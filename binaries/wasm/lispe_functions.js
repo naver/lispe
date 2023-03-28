@@ -384,7 +384,7 @@ function callEvalAsInt(code) {
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
 
-    entryFunction = Module['_eval_as_int_lispe'];
+    entryFunction = Module['_eval_to_int_lispe'];
 
     string_to_array = provideCharactersAsInts(code);
     var ret;
@@ -396,8 +396,8 @@ function callEvalAsInt(code) {
         Module._free(string_to_array);
         return handleException(e);
     }
-    if (ret < 0) {
-        ret *= -1;
+    if (string_to_array[0] == 27) {
+        string_to_array[0] = 32;
         str = decode(string_to_array, ret)
         throw new Error(str);
     }
@@ -410,7 +410,7 @@ function callEvalAsFloat(code) {
     assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
 
 
-    entryFunction = Module['_eval_as_float_lispe'];
+    entryFunction = Module['_eval_to_float_lispe'];
 
     string_to_array = provideCharactersAsInts(code);
     var ret;
@@ -422,13 +422,43 @@ function callEvalAsFloat(code) {
         Module._free(string_to_array);
        return handleException(e);
     }
-    if (ret < 0) {
-        ret *= -1;
+    if (string_to_array[0] == 27) {
+        string_to_array[0] = 32;
         str = decode(string_to_array, ret)
         throw new Error(str);
     }
     Module._free(string_to_array);
     return ret;
+}
+
+function callEvalAsString(code) {
+    assert(runDependencies == 0, 'cannot call main when async dependencies remain! (listen on Module["onRuntimeInitialized"])');
+    assert(__ATPRERUN__.length == 0, 'cannot call main when preRun functions remain to be called');
+
+
+    entryFunction = Module['_eval_to_string_lispe'];
+
+    string_to_array = provideCharactersAsInts(code);
+
+    the_size = provideIntegers(2);
+
+    try {
+
+        var result = entryFunction(string_to_array, code.length, the_size);
+        Module._free(string_to_array);
+        sz = decode_size(the_size);
+        if (sz < 0) {
+            sz *= -1;
+            str = decode(result, sz)
+            throw new Error(str);    
+        }
+        return decode(result, sz);
+    }
+    catch (e) {
+        Module._free(string_to_array);
+        Module._free(the_size);
+        return handleException(e);
+    }
 }
 
 function callIndent(code) {
