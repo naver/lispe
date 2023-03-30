@@ -5924,10 +5924,34 @@ Element* List_xor_eval::eval(LispE* lisp) {
     return booleans_[test];
 }
 
+#ifdef LISPE_WASM
+Element* List_setq_eval::eval(LispE* lisp) {
+    Element* e = liste[2]->eval(lisp);
+    if (thrown_error)
+        return e;
+    
+    lisp->storing_variable(e, liste[1]->label());
+    return True_;
+}
+
+Element* List_let_eval::eval(LispE* lisp) {
+    Element* e = liste[2]->eval(lisp);
+    if (thrown_error)
+        return e;
+    lisp->storing_variable(e, liste[1]->label());
+    return True_;
+}
+#else
 Element* List_setq_eval::eval(LispE* lisp) {
     lisp->storing_variable(liste[2]->eval(lisp), liste[1]->label());
     return True_;
 }
+
+Element* List_let_eval::eval(LispE* lisp) {
+    lisp->storing_variable(liste[2]->eval(lisp), liste[1]->label());
+    return True_;
+}
+#endif
 
 Element* List_set_const_eval::eval(LispE* lisp) {
     int16_t label = liste[1]->label();
@@ -5944,11 +5968,6 @@ Element* List_setg_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     if (!lisp->delegation->replaceFunction(element, label, lisp->current_space))
         lisp->storing_global(element, label);
-    return True_;
-}
-
-Element* List_let_eval::eval(LispE* lisp) {
-    lisp->storing_variable(liste[2]->eval(lisp), liste[1]->label());
     return True_;
 }
 
