@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.3.16.9.36";
+static std::string version = "1.2023.3.29.11.53";
 string LispVersion() {
     return version;
 }
@@ -1153,7 +1153,7 @@ static inline bool checkcadr(u_ustring& l, long sz) {
 lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
     u_ustring buffer;
 
-    long line_number = 0;
+    long line_number = 1;
 
     long nb_parentheses = 0;
     long nb_braces = 0;
@@ -1174,7 +1174,7 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
         while (lg_value != string::npos) {
             culprit = code.find(U"\n", lg_value);
             if (culprit != string::npos) {
-                buffer = code.substr(lg_value, culprit - lg_value);
+                buffer = code.substr(lg_value, culprit - lg_value + 1);
                 if (buffer != U"") {
                     s = "";
                     s_unicode_to_utf8(s, buffer);
@@ -1193,6 +1193,8 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
             s_unicode_to_utf8(s, buffer);
             add_to_listing(line_number, s);
         }
+        
+        line_number = 1;
     }
     
     //We then tokenize our code
@@ -1209,8 +1211,7 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
     vector<int16_t> icodes;
     r_parse.stacktype.to_vector(icodes);
 #endif
-        
-    line_number = 1;
+            
     culprit = -1;
     long i;
     long ipos = 0;
@@ -2810,6 +2811,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

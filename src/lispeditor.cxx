@@ -232,26 +232,26 @@ public:
         rules.push_back(U"%[=40");
         rules.push_back(U"%{=40");
         
-        rules.push_back(U";;?*;;=#");
+        rules.push_back(U";;?*;;=:#");
         rules.push_back(U";?*%r=#");
         rules.push_back(U"%#!?+%r=#");
         
         //Strings
-		rules.push_back(U"\"\"\"?*\"\"\"=34");                   //long strings Python way """.."""
-        rules.push_back(U"\"{[\\-\"] ~%r}*\"=34");     //string "" does not contain CR and can escape characters
-        rules.push_back(U"`?*`=34");                   //long strings Unix way
+		rules.push_back(U"\"\"\"?*\"\"\"=:34");                   //long strings Python way """.."""
+        rules.push_back(U"\"{[\\-\"] ~%r}*\"=:34");     //string "" does not contain CR and can escape characters
+        rules.push_back(U"`?*`=:34");                   //long strings Unix way
 #ifdef WIN32
-		rules.push_back(U"#171?*#187=34");                   //long strings French way
-		rules.push_back(U"#8220?*#8221=34");                   //long strings English
-		rules.push_back(U"#8216?*#8217=34");                   //long strings with single quotes (English)
-		rules.push_back(U"#8222?*#8221=34");                //long strings German/Polish
-		rules.push_back(U"#10077?*#10078=34");                   //long strings
+		rules.push_back(U"#171?*#187=:34");                   //long strings French way
+		rules.push_back(U"#8220?*#8221=:34");                   //long strings English
+		rules.push_back(U"#8216?*#8217=:34");                   //long strings with single quotes (English)
+		rules.push_back(U"#8222?*#8221=:34");                //long strings German/Polish
+		rules.push_back(U"#10077?*#10078=:34");                   //long strings
 #else
-		rules.push_back(U"«?*»=34");                   //long strings French way
-		rules.push_back(U"“?*”=34");                   //long strings English
-		rules.push_back(U"‘?*’=34");                   //long strings with single quotes (English)
-		rules.push_back(U"„?*{“”}=34");                //long strings German/Polish
-		rules.push_back(U"❝?*❞=34");                   //long strings
+		rules.push_back(U"«?*»=:34");                   //long strings French way
+		rules.push_back(U"“?*”=:34");                   //long strings English
+		rules.push_back(U"‘?*’=:34");                   //long strings with single quotes (English)
+		rules.push_back(U"„?*{“”}=:34");                //long strings German/Polish
+		rules.push_back(U"❝?*❞=:34");                   //long strings
 #endif
 
         rules.push_back(U"%a{%a %d %o}+=65");       //Regular strings

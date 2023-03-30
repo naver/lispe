@@ -284,6 +284,17 @@ Element* List_cons_eval::eval(LispE* lisp) {
         second_element = liste[2]->eval(lisp);
         
         switch (second_element->type) {
+            case t_floats:
+            case t_shorts:
+            case t_integers:
+            case t_numbers:
+            case t_strings: {
+                lisp->resetStack();
+                second_element = second_element->copyatom(lisp, 1);
+                second_element->insert(lisp, first_element, 0);
+                first_element->release();
+                return second_element;
+            }
             case t_llist:
                 lisp->resetStack();
                 return second_element->insert(lisp, first_element, 0);
@@ -344,6 +355,17 @@ Element* List_consb_eval::eval(LispE* lisp) {
 
         if (!first_element->isList()) {
             switch (second_element->type) {
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                case t_strings: {
+                    lisp->resetStack();
+                    second_element = second_element->copyatom(lisp, 1);
+                    second_element->insert(lisp, first_element, 0);
+                    first_element->release();
+                    return second_element;
+                }
                 case t_llist:
                     lisp->resetStack();
                     return second_element->insert(lisp, first_element, 0);
@@ -1513,8 +1535,10 @@ Element* List_call_lambda::eval(LispE* lisp) {
     //When it corresponds to a function call, then it is processed here
     //We do not create any new stack element and we store our arguments back into the stack
     //with their new values in case of terminal recursion.
+    
     if (terminal && lisp->called() == body) {
         sameSizeTerminalArguments(lisp, body->parameters);
+        lisp->check_end_trace(lisp->check_trace_in_function());
         return terminal_;
     }
     
@@ -1547,7 +1571,7 @@ Element* List_call_lambda::eval(LispE* lisp) {
     //This is a very specific case, we do not want to go into recursion
     //but handle the call properly as an iteration
     //We do not try to execute the code again, we simply returns back to the original loop.
-
+    char tr = lisp->check_trace_in_function();
     long nbinstructions = body->size();
     Element* stackfunction = lisp->exchangestackfunction(body);
     try {
@@ -1569,6 +1593,7 @@ Element* List_call_lambda::eval(LispE* lisp) {
                 for (i = nbarguments - 1; i >= 0; i--)
                     lisp->reset_in_stack(recorded[i], body->labels[i], e);
                 lisp->resetStack();
+                lisp->check_end_trace(tr);
                 return e;
             }
         }
@@ -1576,6 +1601,7 @@ Element* List_call_lambda::eval(LispE* lisp) {
     }
     catch (Error* err) {
         lisp->resetStack();
+        lisp->check_end_trace(tr);
         lisp->setstackfunction(stackfunction);
         for (i = nbarguments - 1; i >= 0; i--)
             lisp->reset_in_stack(recorded[i], body->labels[i]);
@@ -1586,6 +1612,7 @@ Element* List_call_lambda::eval(LispE* lisp) {
         lisp->reset_in_stack(recorded[i], body->labels[i], element);
     lisp->setstackfunction(stackfunction);
     lisp->resetStack();
+    lisp->check_end_trace(tr);
     return element;
 }
 
@@ -1635,6 +1662,7 @@ Element* List_function_eval::eval(LispE* lisp) {
             sameSizeTerminalArguments(lisp, (List*)parameters);
         else
             differentSizeTerminalArguments(lisp, (List*)parameters, nbarguments, defaultarguments);
+        lisp->check_end_trace(lisp->check_trace_in_function());
         return terminal_;
     }
     
@@ -1644,6 +1672,7 @@ Element* List_function_eval::eval(LispE* lisp) {
     else
         differentSizeNoTerminalArguments(lisp, body, (List*)parameters, nbarguments, defaultarguments);
         
+    char tr = lisp->check_trace_in_function();
     //This is a very specific case, we do not want to go into recursion
     //but handle the call properly as an iteration
     //We do not try to execute the code again, we simply returns back to the original loop.
@@ -1668,6 +1697,7 @@ Element* List_function_eval::eval(LispE* lisp) {
                 element->release();
                 //This version protects 'e' from being destroyed in the stack.
                 lisp->resetStack();
+                lisp->check_end_trace(tr);
                 return lisp->pop(current_value);
             }
         }
@@ -1675,10 +1705,12 @@ Element* List_function_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         lisp->pop();
+        lisp->check_end_trace(tr);
         return lisp->check_error(this, err, line, fileidx);
     }
     
     lisp->resetStack();
+    lisp->check_end_trace(tr);
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
@@ -1749,6 +1781,8 @@ Element* List_pattern_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, line, fileidx);
     }
 
+    char tr = lisp->check_trace_in_function();
+
     body = NULL;
     auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
     auto subfunction = functions.find(sublabel);
@@ -1787,6 +1821,7 @@ Element* List_pattern_eval::eval(LispE* lisp) {
                     lisp->remove_sub_stack(sta);
                     arguments->release();
                     lisp->resetStack();
+                    lisp->check_end_trace(tr);
                     return terminal_;
                 }
                 lisp->setstackfunction(body);
@@ -1840,6 +1875,7 @@ Element* List_pattern_eval::eval(LispE* lisp) {
                 //This version protects 'e' from being destroyed in the stack.
                 arguments->release(body);
                 lisp->resetStack();
+                lisp->check_end_trace(tr);
                 return lisp->pop(body);
             }
         }
@@ -1848,11 +1884,13 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     catch (Error* err) {
         arguments->release();
         lisp->pop();
+        lisp->check_end_trace(tr);
         return lisp->check_error(this, err, line, fileidx);
     }
 
     arguments->release(element);
     lisp->resetStack();
+    lisp->check_end_trace(tr);
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }

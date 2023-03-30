@@ -314,6 +314,26 @@ public:
         delegation->next_stop = true;
     }
     
+    inline char check_trace_in_function() {
+        if (trace) {
+            char tr = debug_next;
+            if (trace == debug_inside_function)
+                stop_at_next_line(debug_next);
+            else {
+                if (trace == debug_next) {
+                    trace = debug_none;
+                }
+            }
+            return tr;
+        }
+        return 0;
+    }
+    
+    inline void check_end_trace(char tr) {
+        if (tr && trace && trace != debug_goto)
+            stop_at_next_line(tr);
+    }
+    
     void add_pathname(string pathname);
     void set_pathname(string pathname);
     
