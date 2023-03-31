@@ -42,7 +42,6 @@ The loading and initialisation of the *LispE* interpreter is done in *lispe_run.
 This is the encapsulation in JavaScript of the WASM libary loading.
 It exposes:
 ```JavaScript
-function setMaxSizeInput(v); //which set the maximum size of code sent to Tamgu 
 function callEval(code); //which executes the execution of a piece of Tamgu code, it returns a string
 function callResetLispE(); which resets the current Tamgu interpreter
 ```
