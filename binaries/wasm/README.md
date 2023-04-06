@@ -16,11 +16,6 @@ Do `git clone https://github.com/juj/emsdk.git` to create a new version.
 ./emsdk activate latest
 ```
 
-### To compile
-
-The Makefile has been modified to be able to use: **emsdk**
-
-`make all`
 
 ### To launch the server
 
@@ -47,5 +42,5 @@ function callResetLispE(); which resets the current Tamgu interpreter
 ```
 
 ### lispe.wasm
-This is the WASM library, which is loaded with tamgu_run.js.
+See the `wasm` directory at the root to see how `lispe.wasm` was compiled.
 
