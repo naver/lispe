@@ -27,6 +27,10 @@ You can also use python:
 
 `python -m http.server --directory . 8080`
 
+### Playground
+
+Once the server has been launched, type: `http://localhost:8080` to play with it.
+
 ## Important Files
 
 ### index.html
