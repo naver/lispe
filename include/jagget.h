@@ -104,45 +104,44 @@ const char m_deleteline[] = { 27, 91, '1', 'M', 0 };
 const char m_home[] = {27, 91, 'H', 0};
 
 #ifdef WIN32
-const uchar is_up = 72;
-const uchar is_down = 80;
-const char right[] = { 224, 77, 0 };
-const char left[] = { 224, 75, 0 };
-const char down[] = {224,80, 0 };
-const char up[] = {224,72, 0 };
-const char del[] = { 224, 83, 0 };
-const char homekey[] = { 224, 71, 0 };
-const char endkey[] = { 224, 79, 0 };
+const uchar u_is_up = 72;
+const uchar u_is_down = 80;
+const char u_right[] = { 224, 77, 0 };
+const char u_left[] = { 224, 75, 0 };
+const char u_down[] = {224,80, 0 };
+const char u_up[] = {224,72, 0 };
+const char u_delete[] = { 224, 83, 0 };
+const char u_homekey[] = { 224, 71, 0 };
+const char u_endkey[] = { 224, 79, 0 };
 const char c_homekey[] = { 224, 119, 0 };
 const char c_endkey[] = { 224, 117, 0 };
-const char c_up[] = { 224, 73, 0 };
-const char c_down[] = { 224,81, 0 };
-const char page_up[] = { 224, 73, 0 };
-const char page_down[] = { 224,81, 0 };
-const char c_right[] = { 224,116, 0 };
-const char c_left[] = { 224,115, 0 };
-const unsigned char alt_xbis[] = { 226, 'x', 0 };
-const unsigned char alt_cbis[] = { 226, 'c', 0 };
-const unsigned char alt_vbis[] = { 226, 'v', 0 };
+const char u_c_up[] = { 224, 73, 0 };
+const char u_c_down[] = { 224,81, 0 };
+const char u_page_up[] = { 224, 73, 0 };
+const char u_page_down[] = { 224,81, 0 };
+const char u_c_right[] = { 224,116, 0 };
+const char u_c_left[] = { 224,115, 0 };
+const unsigned char u_alt_xbis[] = { 226, 'x', 0 };
+const unsigned char u_alt_cbis[] = { 226, 'c', 0 };
+const unsigned char u_alt_vbis[] = { 226, 'v', 0 };
 
-const unsigned char alt_x[] = { 226, 'x', 0 };
-const unsigned char alt_c[] = { 226, 'c', 0 };
-const unsigned char alt_v[] = { 226, 'v', 0 };
-const unsigned char alt_plus[] = { 226, '+', 0 };
-const unsigned char alt_minus[] = { 226, '-', 0 };
-const unsigned char shift_right[] = { 225, 77, 0 };
-const unsigned char shift_left[] = { 225, 75, 0 };
+const unsigned char u_alt_x[] = { 226, 'x', 0 };
+const unsigned char u_alt_c[] = { 226, 'c', 0 };
+const unsigned char u_alt_v[] = { 226, 'v', 0 };
+const unsigned char u_alt_plus[] = { 226, '+', 0 };
+const unsigned char u_alt_minus[] = { 226, '-', 0 };
+const unsigned char u_shift_right[] = { 225, 77, 0 };
+const unsigned char u_shift_left[] = { 225, 75, 0 };
 #else
-const char c_right[] = { 27, 91, 49, 59, 53, 67, 0 };
-const char c_left[] = { 27, 91, 49, 59, 53, 68, 0 };
+const char u_c_right[] = { 27, 91, 49, 59, 53, 67, 0 };
+const char u_c_left[] = { 27, 91, 49, 59, 53, 68, 0 };
 #ifdef APPLE
-const char c_up[] = { 27, 91, 53, 126, 0 };
-const char c_down[] = { 27, 91, 54, 126, 0 };
+const char u_c_up[] = { 27, 91, 53, 126, 0 };
+const char u_c_down[] = { 27, 91, 54, 126, 0 };
 #else
-const char c_up[] = { 27, 91, 49, 59, 53, 65, 0 }; //\033[1;5A
-const char c_down[] = { 27, 91, 49, 59, 53, 66, 0 }; //\033[1;5B
+const char u_c_up[] = { 27, 91, 49, 59, 53, 65, 0 }; //\033[1;5A
+const char u_c_down[] = { 27, 91, 49, 59, 53, 66, 0 }; //\033[1;5B
 #endif
-
 
 const char enablemouse100[] = {27,91,'?','1','0','0','3','h',0};
 const char enablemouse[] = {27,91,'?','1','0','0','3','h',27,91,'?','1','0','1','5','h',27,91,'?','1','0','1','6','h',0};
@@ -152,32 +151,86 @@ const char showcursor[] = {27,91,'?','2','5','h',0};
 const char hidecursor[] = {27,91,'?','2','5','l',0};
 const char cursor_position[] = { 27, 91, '6', 'n', 0 };
 
-const uchar is_up = 65;
-const uchar is_down = 66;
-const char right[] = { 27, 91, 67, 0 };
-const char left[] = { 27, 91, 68, 0 };
-const char down[] = {27, 91, 66, 0};
-const char up[] = {27, 91, 65, 0};
-const char del[] = { 27, 91, 51, 126, 0 };
-const char page_up[] = { 27, 91, '5', '~', 0 }; //\033[5~
-const char page_down[] = { 27, 91, '6', '~', 0 }; //\033[6~
-const char homekey[] = { 27, 91, 72, 0 };
-const char endkey[] = { 27, 91, 70, 0 };
+const uchar u_is_up = 65;
+const uchar u_is_down = 66;
+const char u_right[] = { 27, 91, 67, 0 };
+const char u_left[] = { 27, 91, 68, 0 };
+const char u_down[] = {27, 91, 66, 0};
+const char u_up[] = {27, 91, 65, 0};
+const char u_delete[] = { 27, 91, 51, 126, 0 };
+const char u_page_up[] = { 27, 91, '5', '~', 0 }; //\033[5~
+const char u_page_down[] = { 27, 91, '6', '~', 0 }; //\033[6~
+const char u_homekey[] = { 27, 91, 72, 0 };
+const char u_endkey[] = { 27, 91, 70, 0 };
 
-const unsigned char alt_plus[] = {226, 137, 160, 0};
-const unsigned char alt_minus[] = {226, 128, 148, 0};
+const unsigned char u_alt_plus[] = {226, 137, 160, 0};
+const unsigned char u_alt_minus[] = {226, 128, 148, 0};
 
-const unsigned char alt_xbis[] = { 27, 'x', 0 };
-const unsigned char alt_cbis[] = { 27, 'c', 0 };
-const unsigned char alt_vbis[] = { 27, 'v', 0 };
+const unsigned char u_alt_xbis[] = { 27, 'x', 0 };
+const unsigned char u_alt_cbis[] = { 27, 'c', 0 };
+const unsigned char u_alt_vbis[] = { 27, 'v', 0 };
 
-const unsigned char alt_x[] = {226, 137, 136, 0};
-const unsigned char alt_c[] = {194, 169, 0};
-const unsigned char alt_v[] = {226, 151, 138, 0};
-const unsigned char shift_right[] = {27, 91, 49, 59, 50, 67, 0};
-const unsigned char shift_left[] = {27, 91, 49, 59, 50, 68, 0};
+const unsigned char u_alt_x[] = {226, 137, 136, 0};
+const unsigned char u_alt_c[] = {194, 169, 0};
+const unsigned char u_alt_v[] = {226, 151, 138, 0};
+const unsigned char u_shift_right[] = {27, 91, 49, 59, 50, 67, 0};
+const unsigned char u_shift_left[] = {27, 91, 49, 59, 50, 68, 0};
 #endif
 
+extern unsigned char* alt_c;
+extern char* alt_vbis;
+extern unsigned char* alt_v;
+extern char* page_down;
+extern unsigned char* alt_x;
+extern uchar is_up;
+extern char* c_down;
+extern char* c_left;
+extern unsigned char* alt_xbis;
+extern char* c_up;
+extern char* endkey;
+extern char* down;
+extern char* homekey;
+extern char* up;
+extern char* right;
+extern unsigned char* alt_cbis;
+extern unsigned char* shift_left;
+extern char* page_up;
+extern char* left;
+extern unsigned char* alt_plus;
+extern uchar is_down;
+extern char* c_right;
+extern unsigned char* alt_minus;
+extern unsigned char* shift_right;
+extern char* del;
+
+const uchar wnd_is_up = 72;
+const uchar wnd_is_down = 80;
+const uchar wnd_right[] = { 224, 77, 0 };
+const uchar wnd_left[] = { 224, 75, 0 };
+const uchar wnd_down[] = {224,80, 0 };
+const uchar wnd_up[] = {224,72, 0 };
+const uchar wnd_del[] = { 224, 83, 0 };
+const uchar wnd_homekey[] = { 224, 71, 0 };
+const uchar wnd_endkey[] = { 224, 79, 0 };
+const uchar wnd_c_homekey[] = { 224, 119, 0 };
+const uchar wnd_c_endkey[] = { 224, 117, 0 };
+const uchar wnd_c_up[] = { 224, 73, 0 };
+const uchar wnd_c_down[] = { 224,81, 0 };
+const uchar wnd_page_up[] = { 224, 73, 0 };
+const uchar wnd_page_down[] = { 224,81, 0 };
+const uchar wnd_c_right[] = { 224,116, 0 };
+const uchar wnd_c_left[] = { 224,115, 0 };
+const unsigned char wnd_alt_xbis[] = { 226, 'x', 0 };
+const unsigned char wnd_alt_cbis[] = { 226, 'c', 0 };
+const unsigned char wnd_alt_vbis[] = { 226, 'v', 0 };
+
+const unsigned char wnd_alt_x[] = { 226, 'x', 0 };
+const unsigned char wnd_alt_c[] = { 226, 'c', 0 };
+const unsigned char wnd_alt_v[] = { 226, 'v', 0 };
+const unsigned char wnd_alt_plus[] = { 226, '+', 0 };
+const unsigned char wnd_alt_minus[] = { 226, '-', 0 };
+const unsigned char wnd_shift_right[] = { 225, 77, 0 };
+const unsigned char wnd_shift_left[] = { 225, 75, 0 };
 
 const char back = 13;
 
@@ -274,6 +327,63 @@ public:
     }
 #endif
     
+    void set_window_control_codes() {
+        alt_c = (unsigned char*)wnd_alt_c;
+        alt_vbis = (char*)wnd_alt_vbis;
+        alt_v = (unsigned char*)wnd_alt_v;
+        page_down = (char*)wnd_page_down;
+        alt_x = (unsigned char*)wnd_alt_x;
+        is_up = wnd_is_up;
+        c_down = (char*)wnd_c_down;
+        c_left = (char*)wnd_c_left;
+        alt_xbis = (unsigned char*)wnd_alt_xbis;
+        c_up = (char*)wnd_c_up;
+        endkey = (char*)wnd_endkey;
+        down = (char*)wnd_down;
+        homekey = (char*)wnd_homekey;
+        up = (char*)wnd_up;
+        right = (char*)wnd_right;
+        alt_cbis = (unsigned char*)wnd_alt_cbis;
+        shift_left = (unsigned char*)wnd_shift_left;
+        page_up = (char*)wnd_page_up;
+        left = (char*)wnd_left;
+        alt_plus = (unsigned char*)wnd_alt_plus;
+        is_down = wnd_is_down;
+        c_right = (char*)wnd_c_right;
+        alt_minus = (unsigned char*)wnd_alt_minus;
+        shift_right = (unsigned char*)wnd_shift_right;
+        del = (char*)wnd_del;
+    }
+
+
+    void init_control_codes() {
+        alt_c = (unsigned char*)u_alt_c;
+        alt_vbis = (char*)u_alt_vbis;
+        alt_v = (unsigned char*)u_alt_v;
+        page_down = (char*)u_page_down;
+        alt_x = (unsigned char*)u_alt_x;
+        is_up = u_is_up;
+        c_down = (char*)u_c_down;
+        c_left = (char*)u_c_left;
+        alt_xbis = (unsigned char*)u_alt_xbis;
+        c_up = (char*)u_c_up;
+        endkey = (char*)u_endkey;
+        down = (char*)u_down;
+        homekey = (char*)u_homekey;
+        up = (char*)u_up;
+        right = (char*)u_right;
+        alt_cbis = (unsigned char*)u_alt_cbis;
+        shift_left = (unsigned char*)u_shift_left;
+        page_up = (char*)u_page_up;
+        left = (char*)u_left;
+        alt_plus = (unsigned char*)u_alt_plus;
+        is_down = u_is_down;
+        c_right = (char*)u_c_right;
+        alt_minus = (unsigned char*)u_alt_minus;
+        shift_right = (unsigned char*)u_shift_right;
+        del = (char*)u_delete;
+    }
+
     bool isScrollingUp100(vector<int>& vect, string& mousectrl) {
         int action, mxcursor, mycursor;
         if (mouse_status && mousectrl.size() >= 6 && mousectrl[0] == 27 && mousectrl[1] == '[' && mousectrl[2] == 'M') {

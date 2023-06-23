@@ -34,6 +34,33 @@ static char m_deletechar[] = { 27, 91, '1', 'P', 0 };
 static char m_oneleft[] = { 27, '[', '1', 68, 0 };
 static char m_oneright[] = {27, '[', '0', '0', '1', 67, 0};
 
+unsigned char* alt_c= NULL;
+char* alt_vbis= NULL;
+unsigned char* alt_v= NULL;
+char* page_down= NULL;
+unsigned char* alt_x= NULL;
+uchar is_up= 0;
+char* c_down= NULL;
+char* c_left= NULL;
+unsigned char* alt_xbis= NULL;
+char* c_up= NULL;
+char* endkey= NULL;
+char* down= NULL;
+char* homekey= NULL;
+char* up= NULL;
+char* right= NULL;
+unsigned char* alt_cbis= NULL;
+unsigned char* shift_left= NULL;
+char* page_up= NULL;
+char* left= NULL;
+unsigned char* alt_plus= NULL;
+uchar is_down= 0;
+char* c_right= NULL;
+unsigned char* alt_minus= NULL;
+unsigned char* shift_right= NULL;
+char* del= NULL;
+
+
 #ifdef WIN32
 static char m_delback = 8;
 static char m_delbackbis = 8;
@@ -67,7 +94,6 @@ string get_char(jag_get* h) {
     return h->getch();
 }
 //------------------------------------------------------------------------------------
-
 void jag_get::initialisation() {
     if (initialized)
         return;
@@ -76,6 +102,7 @@ void jag_get::initialisation() {
 	Getscreensizes(mouse_status);
 #else
     tcgetattr(0, &oldterm);
+    init_control_codes();
     
     //We enable ctrl-s and ctrl-q within the editor
     termios theterm;

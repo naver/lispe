@@ -22,7 +22,7 @@
 
 #include "jag.h"
 
-static string version = "0.99 build 17";
+static string version = "0.99 build 18";
 
 #ifndef WIN32
 static void handle_ctrl_c(int theSignal) {
@@ -32,36 +32,36 @@ static void handle_ctrl_c(int theSignal) {
         std::cout.flush();
         return;
     }
-
+    
     JAGEDITOR->terminate();
     exit(-1);
 }
 #endif
 
 bool movedup() {
-   return JAGEDITOR->moveup;
+    return JAGEDITOR->moveup;
 }
 
 int main(int argc, char *argv[]) {
-
+    
     vector<string> newcolors;
-
+    
 #ifndef WIN32
     signal(SIGINT,handle_ctrl_c);
 #endif
-
+    
     JAGEDITOR = new jag_editor;
     JAGEDITOR->setnoprefix();
-
+    
     std::vector<std::string> args;
     bool darkmode = false;
     int i = 1;
     string cmd;
-
+    
 #if defined(APPLE) || defined(WIN32)
     JAGEDITOR->mouseon();
 #endif
-
+    
     while(i < argc) {
         cmd = argv[i++];
         if (cmd == "-h" || cmd == "-help" || cmd == "--help" || cmd == "--h") {
@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
             cerr << m_red << "Copyright 2019-present NAVER Corp." << m_current << endl;
             cerr << m_redital << "-b:" << m_current << " to launch the editor in dark mode" << endl;
             cerr << m_redital << "-n:" << m_current << " to display lines with line number" << endl << endl;
+            cerr << m_redital << "-wn:" << m_current << " Windows mode (before -m)" << endl << endl;
             cerr << m_redital << "-vt100:" << m_current << " VT100 mouse mode (before -m)" << endl << endl;
             cerr << m_redital << "-m:" << m_current << " to activate mouse at launch" << endl << endl;
             cerr << m_redital << "Ctrl-xh:" << m_current << " to display this help from within" << endl << endl;
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
             JAGEDITOR->terminate();
             exit(0);
         }
-
+        
         if (cmd == "-syncolor") {
             if (i < argc) {
                 string args = argv[i + 1];
@@ -125,39 +126,44 @@ int main(int argc, char *argv[]) {
             i--;
             continue;
         }
-
+        
         if (cmd == "-m") {
-           JAGEDITOR->mouseon();
-           continue;
+            JAGEDITOR->mouseon();
+            continue;
         }
-
+        
         if (cmd == "-vt100") {
-           JAGEDITOR->vt100 = true;
-           continue;
+            JAGEDITOR->vt100 = true;
+            continue;
         }
-
+        
+        if (cmd == "-wn") {
+            JAGEDITOR->set_window_control_codes();
+            continue;
+        }
+        
         if (cmd == "-b") {
             darkmode = true;
             continue;
         }
-
+        
         if (cmd == "-n") {
             JAGEDITOR->setnoprefix();
             continue;
         }
-
+        
         if (cmd[0] == '-') {
             cerr << "Unknown command: " << cmd << endl;
             exit(0);
         }
-
+        
         if (JAGEDITOR->loadfile(cmd))
             JAGEDITOR->launchterminal(darkmode, true, args, newcolors);
         else
             JAGEDITOR->launchterminal(darkmode, false, args, newcolors);
         exit(0);
     }
-
+    
     JAGEDITOR->launchterminal(darkmode, false, args, newcolors);
 }
 

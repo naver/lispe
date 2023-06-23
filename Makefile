@@ -1,7 +1,5 @@
 ################################################################
 include Makefile.in
-################################################################
-COMPPLUSPLUS = g++
 ################ Compiler LispE #################################
 SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx randoms.cxx rgx.cxx sockets.cxx composing.cxx ontology.cxx sets.cxx lists.cxx dictionaries.cxx straight_eval.cxx
 SOURCEMAIN = jag.cxx main.cxx lispeditor.cxx

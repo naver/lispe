@@ -13,6 +13,7 @@ ostype=ostype.strip()
 if ostype == b"Darwin":
     print("This is a Mac OS platform\n")
     f=open("Makefile.in", "w")
+    f.write("COMPPLUSPLUS = clang++\n")
     f.write("CURLLIB = -lcurl\n")
     f.write("SQLITELIB = -lsqlite3\n")
     f.write("REGEX = -DPOSIXREGEX\n")
@@ -111,6 +112,7 @@ def cherchelib(lalib):
 def selectionBoost():
     os.system("cd check; rm -f lib*.so")
     f=open("Makefile.in", "w")
+    f.write("COMPPLUSPLUS = g++\n")
     f.write("COPTION = -O3\n")
     f.write("PLATFORM=linux\n")
     f.write("# If mouse does not work, decomment next line and recompile\n")
@@ -133,6 +135,7 @@ def selectionBoost():
 def selectionNoRegex():
     os.system("cd check; rm -f lib*.so")
     f=open("Makefile.in", "w")
+    f.write("COMPPLUSPLUS = g++\n")
     f.write("COPTION = -O3\n")
     f.write("PLATFORM=linux\n")
     f.write("# If mouse does not work, decomment next line and recompile")

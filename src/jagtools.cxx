@@ -547,7 +547,6 @@ bool UTF8_Handler::u_is_emoji(u_ustring& s) {
     if (s == U"")
         return false;
     long lg = s.size();
-    u_uchar c;
 
     for (long i = 0; i < lg; i++) {
         if (scan_emoji(s, i))

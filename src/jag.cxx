@@ -3489,7 +3489,7 @@ void editor_lines::setcode(wstring& code, bool clean) {
     vector<wstring> subs;
 
     if (clean) {
-        while (buff.back() == L"") {
+        while (buff.size() && buff.back() == L"") {
             buff.pop_back();
         }
 
