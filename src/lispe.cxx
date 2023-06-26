@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.3.29.11.53";
+static std::string version = "1.2023.6.26.15.32";
 string LispVersion() {
     return version;
 }
@@ -590,7 +590,6 @@ void Delegation::initialisation(LispE* lisp) {
     comparators[l_lowerorequal] = true;
     comparators[l_greaterorequal] = true;
     comparators[l_concatenate] = true;
-    comparators[l_compare] = true;
 
     assignors[l_equal] = true;
     assignors[l_bitandequal] = true;
@@ -1316,7 +1315,7 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 break;
             case '?': //operators and comparators
                 lc = delegation->is_atom(buffer);
-                if (lc >= l_minus_plus && lc <= l_modequal)
+                if (delegation->operators.check(lc))
                     infos.append(buffer, t_operator, line_number, left, right);
                 else
                     infos.append(buffer, t_atom, line_number, left, right);
@@ -2811,6 +2810,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

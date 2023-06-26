@@ -55,6 +55,10 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
 }
 
 //We evaluation function beforehand
+Element* eval_body_as_argument(LispE* lisp, Element* function, const unsigned long arity) {
+    return eval_body_as_argument_min(lisp, function->eval(lisp), arity);
+}
+
 Element* eval_body_as_argument(LispE* lisp, Element* function) {
     return eval_body_as_argument_min(lisp, function->eval(lisp), P_TWO);
 }
@@ -3212,7 +3216,7 @@ Element* List_outerproduct_eval::eval(LispE* lisp) {
             }
         }
 
-        op = eval_body_as_argument(lisp, liste[2]);
+        op = eval_body_as_argument(lisp, liste[2], P_THREE);
         if (op->type == l_equal)
             op = lisp->provideAtom(l_equalonezero);
         
