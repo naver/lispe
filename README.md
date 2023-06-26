@@ -2,7 +2,7 @@
   
 Hello,
 
-Welcome to __Lisp Elémentaire__, a version of Lisp that is ultra-minimal but contains all the basic instructions of the language. The code also comes with a small internal editor from another NAVER's project: [TAMGU](https://github.com/naver/tamgu).
+Welcome to __Lisp Elémentaire__, a version of Lisp that is both compact and offers an remarkable variety of functional and array language features. The code also comes with a small internal editor from another NAVER's project: [TAMGU](https://github.com/naver/tamgu).
 
 The main goal of __LispE__ is to provide a multi-platform language that can harness the power of functional languages with array languages.
 The real strength of the Lisp language, of which _LispE_ is a dialect, is its very simple but incredible versatile formalism that helps combining all these programming trends together in one single language.
@@ -25,6 +25,12 @@ __LispE__ provides also some interesting properties such as: [Data Structures](h
 Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/naver/lispe/wiki/7.-Shell)
 
 Come and discover __LispE__: the __Lisp Elémentaire__.
+
+# But also array language capabilities
+
+Thanks to an internal structure implemented with [arrays](https://github.com/naver/lispe/wiki/2.3-Lists), we also provide some array operators.
+
+See: [Array Operators](https://github.com/naver/lispe/wiki/5.3-A-la-APL)
 
 ## Play with it
 
