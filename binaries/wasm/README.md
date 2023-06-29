@@ -16,6 +16,11 @@ Do `git clone https://github.com/juj/emsdk.git` to create a new version.
 ./emsdk activate latest
 ```
 
+### To compile
+
+The Makefile has been modified to be able to use: **emsdk**
+
+`make all`
 
 ### To launch the server
 
@@ -27,24 +32,21 @@ You can also use python:
 
 `python -m http.server --directory . 8080`
 
-### Playground
-
-Once the server has been launched, type: `http://localhost:8080` to play with it.
-
 ## Important Files
 
 ### index.html
 This file contains the minimum code to execute a LispE instruction from within a browser.
 The loading and initialisation of the *LispE* interpreter is done in *lispe_run.js*
 
-### lispe_functions.js
+### lispe_run.js
 This is the encapsulation in JavaScript of the WASM libary loading.
-For instance, it exposes methods such as:
+It exposes:
 ```JavaScript
+function setMaxSizeInput(v); //which set the maximum size of code sent to Tamgu 
 function callEval(code); //which executes the execution of a piece of Tamgu code, it returns a string
 function callResetLispE(); which resets the current Tamgu interpreter
 ```
 
 ### lispe.wasm
-See the `wasm` directory at the root to see how `lispe.wasm` was compiled.
+This is the WASM library, which is loaded with tamgu_run.js.
 

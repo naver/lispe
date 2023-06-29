@@ -5997,8 +5997,8 @@ template<> void tokenizer_result<u_ustring>::getnext() {
     }
     
     sz_read = 1;
-    currentchr = (*buffer)[position++];
     line += (currentchr == '\n');
+    currentchr = (*buffer)[position++];
 }
 
 template<> void tokenizer_result<wstring>::getnext() {
@@ -6008,11 +6008,11 @@ template<> void tokenizer_result<wstring>::getnext() {
     }
     
     sz_read = 1;
+    line += (currentchr == '\n');
     if (c_utf16_to_unicode(currentchr, (*buffer)[position++], false)) {
         sz_read = 2;
         c_utf16_to_unicode(currentchr, (*buffer)[position++], true);
     }
-    line += (currentchr == '\n');
 }
 
 template<> void tokenizer_result<u16string>::getnext() {
@@ -6022,11 +6022,11 @@ template<> void tokenizer_result<u16string>::getnext() {
     }
     
     sz_read = 1;
+    line += (currentchr == '\n');
     if (c_utf16_to_unicode(currentchr, (*buffer)[position++], false)) {
         sz_read = 2;
         c_utf16_to_unicode(currentchr, (*buffer)[position++], true);
     }
-    line += (currentchr == '\n');
 }
 
 template<> void tokenizer_result<string>::getnext() {
@@ -6035,9 +6035,9 @@ template<> void tokenizer_result<string>::getnext() {
         return;
     }
     
+    line += (currentchr == '\n');
     sz_read = 1 + c_utf8_to_unicode(buffer, position, currentchr);
     position += sz_read;
-    line += (currentchr == '\n');
 }
 
 
