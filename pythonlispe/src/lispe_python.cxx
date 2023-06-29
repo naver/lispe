@@ -35,6 +35,13 @@ PyObject* ConvertToPythonString(string s) {
     return PyUnicode_FromStringAndSize(STR(s), s.size());
 }
 
+#if PY_MINOR_VERSION >= 9
+string PyAsString(PyObject* po) {
+	PyObject* utf8_string = PyUnicode_AsUTF8String(po);
+	char* c_string = PyBytes_AsString(utf8_string);
+	return c_string;
+}
+#else
 string PyAsString(PyObject* po) {
     string s;
     Py_ssize_t sz = PyUnicode_GET_LENGTH(po);
@@ -43,7 +50,7 @@ string PyAsString(PyObject* po) {
         s += cs_unicode_to_utf8(ibuff[i]);
     return s;
 }
-
+#endif
 #else
 #define ConvertToPythonString(s)  PyString_FromString(s)
     #define ConvertToPythonLong(i)    PyInt_FromLong(i)
@@ -150,7 +157,15 @@ static Element* toLispE(LispE* lisp, PyObject* po) {
         }
         return lisp->provideString(s);
     }
-    #else
+    #elif PY_MINOR_VERSION >= 9
+	if (PyUnicode_Check(po)) {
+		string s;
+		PyObject* utf8_string = PyUnicode_AsUTF8String(po);
+		char* c_string = PyBytes_AsString(utf8_string);
+		s = c_string;
+		return lisp->provideString(s);
+	}
+	#else
     if (PyUnicode_Check(po)) {
         Py_ssize_t sz = PyUnicode_GET_LENGTH(po);
         Py_UNICODE* ibuff = PyUnicode_AsUnicode(po);
@@ -159,7 +174,7 @@ static Element* toLispE(LispE* lisp, PyObject* po) {
             s += cs_unicode_to_utf8(ibuff[i]);
         return lisp->provideString(s);
     }
-    #endif
+	#endif
 
     PyObject* perr = PyObject_Str(po);
     if (perr != NULL) {
