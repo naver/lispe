@@ -368,7 +368,7 @@ static PyObject* LispE_eval(LispEObject* self, PyObject* args)
 static PyObject* LispE_execute(LispEObject* self, PyObject* args)
 {
     int nbelements = PyTuple_Size(args);
-    if (!nbelements) {
+    if (nbelements < 2) {
         PyErr_SetString(PyExc_AttributeError, "Expecting some parameters");
         return ConvertToPythonLong(-1);
     }
@@ -384,13 +384,18 @@ static PyObject* LispE_execute(LispEObject* self, PyObject* args)
     code.append(toLispE(self->lisp, pelement));
 
     Element* e;
-    for (int i = 1; i < nbelements; i++) {
-        pelement = PyTuple_GetItem(args, i);
-        e = toLispE(self->lisp, pelement);
-        code.append(e);
+    try {
+        for (int i = 1; i < nbelements; i++) {
+            pelement = PyTuple_GetItem(args, i);
+            e = toLispE(self->lisp, pelement);
+            code.append(e);
+        }
+        e = code.eval(self->lisp);
     }
-
-    e = code.eval(self->lisp);
+    catch(Error* err) {
+        e = err;
+    }
+    
     pelement = toPython(self->lisp, e);
     e->release();
     return pelement;
