@@ -140,7 +140,11 @@ Delegation::Delegation() : main_tokenizer(NULL) {
     i_current_line = -1;
     i_current_file = -1;
 #ifdef UNIX
+#ifdef APPLE
+    const rlim_t kStackSize = 10240;
+#else
     const rlim_t kStackSize = 32 * 1024 * 1024;   // min stack size = 32 MB
+#endif
     struct rlimit rl;
     int result;
 

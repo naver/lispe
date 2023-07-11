@@ -1,7 +1,5 @@
 include ../Makefile.in
 ###################################################################
-COMPPLUSPLUS = g++
-#------------------------------------------------------------
 sourcetransducer = lispe_transducer.cxx automaton.cxx conversion.cxx
 #------------------------------------------------------------
 LBINPATH = ../bin

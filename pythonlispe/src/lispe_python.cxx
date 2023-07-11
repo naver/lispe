@@ -380,8 +380,9 @@ static PyObject* LispE_execute(LispEObject* self, PyObject* args)
     }
 
     //The first element is an atom...
-    List code;
-    code.append(toLispE(self->lisp, pelement));
+    Listincode code;
+    string function_code = PyAsString(pelement);
+    code.append(self->lisp->provideAtom(self->lisp->encode(function_code)));
 
     Element* e;
     try {
