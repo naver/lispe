@@ -2384,22 +2384,8 @@ Element* List::evall_atoms(LispE* lisp) {
 }
 
 Element* List::evall_bitnot(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    first_element = first_element->copyatom(lisp, 1);
-    Element* e;
-        
-    try {
-        e = first_element->bit_not(lisp);
-    }
-    catch (Error* err) {
-        first_element->release();
-        throw err;
-    }
-
-    if (e != first_element)
-        first_element->release();
-    
-    return e;
+    List_bitnot m(this);
+    return m.eval(lisp);
 }
 
 Element* List::evall_addr_(LispE* lisp) {

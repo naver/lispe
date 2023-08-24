@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.6.26.15.32";
+static std::string version = "1.2023.8.24.11.30";
 string LispVersion() {
     return version;
 }
@@ -266,14 +266,14 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise, new List_atomise_eval());
     set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp, new List_atomp_eval());
     set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
-    set_instruction(l_bitand, "&", P_ATLEASTTWO, &List::evall_bitand);
+    set_instruction(l_bitand, "&", P_ATLEASTTWO, &List::evall_bitand, new List_bitand());
     set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
-    set_instruction(l_bitandnot, "&~", P_ATLEASTTWO, &List::evall_bitandnot);
+    set_instruction(l_bitandnot, "&~", P_ATLEASTTWO, &List::evall_bitandnot, new List_bitandnot());
     set_instruction(l_bitandnotequal, "&~=", P_ATLEASTTHREE, &List::evall_bitandnotequal);
-    set_instruction(l_bitnot, "~", P_TWO, &List::evall_bitnot);
-    set_instruction(l_bitor, "|", P_ATLEASTTWO, &List::evall_bitor);
+    set_instruction(l_bitnot, "~", P_TWO, &List::evall_bitnot, new List_bitnot);
+    set_instruction(l_bitor, "|", P_ATLEASTTWO, &List::evall_bitor, new List_bitor());
     set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE, &List::evall_bitorequal);
-    set_instruction(l_bitxor, "^", P_ATLEASTTWO, &List::evall_bitxor);
+    set_instruction(l_bitxor, "^", P_ATLEASTTWO, &List::evall_bitxor, new List_bitxor());
     set_instruction(l_bitxorequal, "^=", P_ATLEASTTHREE, &List::evall_bitxorequal);
     set_instruction(l_block, "block", P_ATLEASTONE, &List::evall_block, new List_block_eval());
     set_instruction(l_bodies, "bodies", P_TWO, &List::evall_bodies, new List_bodies_eval());
@@ -2814,6 +2814,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

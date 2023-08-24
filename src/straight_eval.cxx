@@ -8379,3 +8379,361 @@ Element* List_invert_eval::eval(LispE* lisp) {
     lisp->resetStack();
     return res;
 }
+
+Element* List_bitand::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    int16_t listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+    long i;
+    
+    try {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_and(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+        
+        
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '&' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '&' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->bit_and(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_and(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_and(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
+            }
+            lst->release();
+        }
+        else {
+            first_element = first_element->copyatom(lisp, 1);
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->bit_and(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
+Element* List_bitor::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    int16_t listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+    long i;
+    
+    try {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_or(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+        
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '|' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '|' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->bit_or(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_or(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_or(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
+            }
+            lst->release();
+        }
+        else {
+            first_element = first_element->copyatom(lisp, 1);
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->bit_or(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    return first_element;
+}
+
+Element* List_bitxor::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    int16_t listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+    long i;
+    
+    try {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_xor(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+        
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '^' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '^' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->bit_xor(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_xor(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_xor(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
+            }
+            lst->release();
+        }
+        else {
+            first_element = first_element->copyatom(lisp, 1);
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->bit_xor(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    return first_element;
+}
+
+Element* List_bitandnot::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    int16_t listsize = liste.size();
+    Element* lst = this;
+    Element* second_element = null_;
+    long i;
+    
+    try {
+        if (listsize == 3) {
+            first_element = first_element->copyatom(lisp, 1);
+            second_element = liste[2]->eval(lisp);
+            first_element = first_element->bit_and_not(lisp, second_element);
+            if (first_element != second_element)
+                second_element->release();
+            return first_element;
+        }
+        
+        if (listsize == 2) {
+            if (!first_element->isList())
+                throw new Error("Error: cannot apply '&~' to one element");
+            lst = first_element;
+            switch (lst->type) {
+                case t_strings:
+                    throw new Error("Error: cannot apply '&~' to a string");
+                case t_floats:
+                case t_shorts:
+                case t_integers:
+                case t_numbers:
+                    if (!lst->size()) {
+                        first_element->release();
+                        return zero_;
+                    }
+                    lst = lst->bit_and_not(lisp, NULL);
+                    first_element->release();
+                    return lst;
+                case t_llist: {
+                    first_element = zero_;
+                    u_link* u = ((LList*)lst)->liste.begin();
+                    if (u != NULL) {
+                        first_element = u->value->copyatom(lisp, 1);
+                        u = u->next();
+                        while (u != NULL) {
+                            first_element = first_element->bit_and_not(lisp, u->value);
+                            u = u->next();
+                        }
+                    }
+                    break;
+                }
+                case t_list: {
+                    first_element = zero_;
+                    listsize = lst->size();
+                    if (listsize) {
+                        first_element = lst->index(0)->copyatom(lisp, 1);
+                        for (i = 1; i < listsize; i++) {
+                            first_element = first_element->bit_and_not(lisp, lst->index(i));
+                        }
+                    }
+                    break;
+                }
+            }
+            lst->release();
+        }
+        else {
+            first_element = first_element->copyatom(lisp, 1);
+            for (i = 2; i < listsize; i++) {
+                second_element = liste[i]->eval(lisp);
+                first_element = first_element->bit_and_not(lisp, second_element);
+                if (first_element != second_element)
+                    _releasing(second_element);
+            }
+        }
+    }
+    catch (Error* err) {
+        if (lst != this)
+            lst->release();
+        if (first_element != second_element)
+            second_element->release();
+        first_element->release();
+        throw err;
+    }
+    
+    return first_element;
+}
+
+Element* List_bitnot::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    first_element = first_element->copyatom(lisp, 1);
+    Element* e;
+        
+    try {
+        e = first_element->bit_not(lisp);
+    }
+    catch (Error* err) {
+        first_element->release();
+        throw err;
+    }
+
+    if (e != first_element)
+        first_element->release();
+    
+    return e;
+}

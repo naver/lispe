@@ -6571,6 +6571,111 @@ public:
     Element* eval(LispE*);
 };
 
+class List_bitand : public Listincode {
+public:
+    List_bitand(Listincode* l) : Listincode(l) {}
+    List_bitand(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_bitand() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_bitand(e);
+    }
+    
+    List* cloning() {
+        return new List_bitand();
+    }
+    Element* eval(LispE*);
+};
+
+class List_bitandnot : public Listincode {
+public:
+    List_bitandnot(Listincode* l) : Listincode(l) {}
+    List_bitandnot(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_bitandnot() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_bitandnot(e);
+    }
+    
+    List* cloning() {
+        return new List_bitandnot();
+    }
+    Element* eval(LispE*);
+};
+
+class List_bitnot : public Listincode {
+public:
+    List_bitnot(Listincode* l) : Listincode(l) {}
+    List_bitnot(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_bitnot() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_bitnot(e);
+    }
+    
+    List* cloning() {
+        return new List_bitnot();
+    }
+    Element* eval(LispE*);
+};
+
+class List_bitor : public Listincode {
+public:
+    List_bitor(Listincode* l) : Listincode(l) {}
+    List_bitor(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_bitor() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_bitor(e);
+    }
+    
+    List* cloning() {
+        return new List_bitor();
+    }
+    Element* eval(LispE*);
+};
+
+class List_bitxor : public Listincode {
+public:
+    List_bitxor(Listincode* l) : Listincode(l) {}
+    List_bitxor(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_bitxor() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_bitxor(e);
+    }
+    
+    List* cloning() {
+        return new List_bitxor();
+    }
+    Element* eval(LispE*);
+};
+
 
 class Floats : public Element {
 public:
