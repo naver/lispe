@@ -535,7 +535,7 @@ public:
         return this;
     }
     
-    void reserve(long sz) {
+    inline void reserve(long sz) {
         liste.reserve(sz);
     }
     
@@ -6695,10 +6695,14 @@ public:
     
     Element* asList(LispE* lisp, List* l);
     
-    void reserve(long sz) {
+    inline void reserve(long sz) {
         liste.reserve(sz);
     }
     
+    inline void reset() {
+        liste.reset();
+    }
+
     Element* newInstance(Element* v) {
         return new Floats(liste.size(), v->asFloat());
     }
@@ -6753,9 +6757,10 @@ public:
     }
     
     Element* rotate(LispE* lisp, long axis) {
-        Floats* n = new Floats;
+        Floats* n = new Floats(size(), 0);
+        n->liste.items->last = 0;
         for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_back(liste[i]);
+            n->liste.push_raw(liste[i]);
         return n;
     }
     
@@ -7172,10 +7177,14 @@ public:
         return new Numbers;
     }
     
-    void reserve(long sz) {
+    inline void reserve(long sz) {
         liste.reserve(sz);
     }
     
+    inline void reset() {
+        liste.reset();
+    }
+
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -7232,9 +7241,10 @@ public:
     }
     
     Element* rotate(LispE* lisp, long axis) {
-        Numbers* n = new Numbers;
+        Numbers* n = new Numbers(size(), 0);
+        n->liste.items->last = 0;
         for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_back(liste[i]);
+            n->liste.push_raw(liste[i]);
         return n;
     }
     
@@ -7649,10 +7659,14 @@ public:
         return new Shorts;
     }
     
-    void reserve(long sz) {
+    inline void reserve(long sz) {
         liste.reserve(sz);
     }
     
+    inline void reset() {
+        liste.reset();
+    }
+
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -7956,9 +7970,10 @@ public:
     Element* reverse(LispE*, bool duplique = true);
     
     Element* rotate(LispE* lisp, long axis) {
-        Shorts* n = new Shorts;
+        Shorts* n = new Shorts(size(), 0);
+        n->liste.items->last = 0;
         for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_back(liste[i]);
+            n->liste.push_raw(liste[i]);
         return n;
     }
     
@@ -8073,10 +8088,14 @@ public:
         return new Integers;
     }
     
-    void reserve(long sz) {
+    inline void reserve(long sz) {
         liste.reserve(sz);
     }
     
+    inline void reset() {
+        liste.reset();
+    }
+
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -8380,9 +8399,10 @@ public:
     Element* reverse(LispE*, bool duplique = true);
     
     Element* rotate(LispE* lisp, long axis) {
-        Integers* n = new Integers;
+        Integers* n = new Integers(size(), 0);
+        n->liste.items->last = 0;
         for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_back(liste[i]);
+            n->liste.push_raw(liste[i]);
         return n;
     }
     
@@ -9433,7 +9453,7 @@ public:
         return new Strings(liste.size(), v->asString(NULL));
     }
     
-    void reserve(long sz) {
+    inline void reserve(long sz) {
         liste.reserve(sz);
     }
     
@@ -9732,8 +9752,9 @@ public:
     Element* reverse(LispE*, bool duplique = true);
     Element* rotate(LispE* lisp, long axis) {
         Strings* n = new Strings;
+        n->reserve(size());
         for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_back(liste[i]);
+            n->liste.push_raw(liste[i]);
         return n;
     }
     

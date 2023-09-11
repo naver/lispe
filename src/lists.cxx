@@ -391,23 +391,23 @@ Element* Numberspool::copyatom(LispE* lsp, uint16_t s) {
 void Integerspool::decrement() {
     status -= not_protected();
     if (!status) {
-        lisp->integers_pool.push_max(lisp->max_size, this);
         liste.clear();
+        lisp->integers_pool.push_max(lisp->max_size, this);
     }
 }
 
 void Integerspool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
-        lisp->integers_pool.push_max(lisp->max_size, this);
         liste.clear();
+        lisp->integers_pool.push_max(lisp->max_size, this);
     }
 }
 
 void Integerspool::release() {
     if (!status) {
-        lisp->integers_pool.push_max(lisp->max_size, this);
         liste.clear();
+        lisp->integers_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -451,23 +451,23 @@ Element* Integerspool::copyatom(LispE* lsp, uint16_t s) {
 void Stringspool::decrement() {
     status -= not_protected();
     if (!status) {
-        lisp->strings_pool.push_max(lisp->max_size, this);
         liste.clear();
+        lisp->strings_pool.push_max(lisp->max_size, this);
     }
 }
 
 void Stringspool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
-        lisp->strings_pool.push_max(lisp->max_size, this);
         liste.clear();
+        lisp->strings_pool.push_max(lisp->max_size, this);
     }
 }
 
 void Stringspool::release() {
     if (!status) {
-        lisp->strings_pool.push_max(lisp->max_size, this);
         liste.clear();
+        lisp->strings_pool.push_max(lisp->max_size, this);
     }
 }
 
@@ -1931,6 +1931,7 @@ Element* List::extraction(LispE* lisp, List* l) {
         return new Listpool(lisp, this, from);
 
     l = lisp->provideList();
+    l->reserve(upto-from+1);
     for (;from < upto; from++)
         l->append(liste[from]->copying(false));
     return l;
@@ -2992,14 +2993,16 @@ void Numbers::flatten(LispE* lisp, List* l) {
 }
 
 void Numbers::flatten(LispE* lisp, Numbers* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
 void Numbers::flatten(LispE* lisp, Floats* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
@@ -3078,16 +3081,17 @@ Element* Numbers::rotate(bool left) {
         return this;
     
     Numbers* l = (Numbers*)newInstance();
+    l->reserve(size());
     if (left) {
         for (long i = 1; i < liste.size(); i++)
-            l->liste.push_back(liste[i]);
-        l->liste.push_back(liste[0]);
+            l->liste.push_raw(liste[i]);
+        l->liste.push_raw(liste[0]);
         return l;
     }
     
-    l->liste.push_back(liste.back());
+    l->liste.push_raw(liste.back());
     for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     return l;
 }
 
@@ -3282,9 +3286,10 @@ Element* Numbers::reverse(LispE* lisp, bool duplicate) {
         return this;
     
     if (duplicate) {
-        Numbers* l = lisp->provideNumbers();
+        Numbers* l = lisp->provideNumbers(size(), 0);
+        l->reset();
         for (long i = liste.size()-1; i >= 0; i--) {
-            l->liste.push_back(liste[i]);
+            l->liste.push_raw(liste[i]);
         }
         return l;
     }
@@ -3393,9 +3398,10 @@ Element* Numbers::extraction(LispE* lisp, List* l) {
     if (upto == sz)
         return lisp->provideNumbers(this, from);
     
-    Numbers* n = lisp->provideNumbers();
+    Numbers* n = lisp->provideNumbers(upto-from, 0);
+    n->reset();
     for (;from < upto; from++) {
-        n->liste.push_back(liste[from]);
+        n->liste.push_raw(liste[from]);
     }
     return n;
 }
@@ -3577,14 +3583,16 @@ void Integers::flatten(LispE* lisp, List* l) {
 }
 
 void Integers::flatten(LispE* lisp, Numbers* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
 void Integers::flatten(LispE* lisp, Floats* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
@@ -3661,16 +3669,17 @@ Element* Integers::rotate(bool left) {
         return this;
     
     Integers* l = (Integers*)newInstance();
+    l->reserve(size());
     if (left) {
         for (long i = 1; i < liste.size(); i++)
-            l->liste.push_back(liste[i]);
-        l->liste.push_back(liste[0]);
+            l->liste.push_raw(liste[i]);
+        l->liste.push_raw(liste[0]);
         return l;
     }
     
-    l->liste.push_back(liste.back());
+    l->liste.push_raw(liste.back());
     for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     return l;
 }
 
@@ -3863,9 +3872,10 @@ Element* Integers::reverse(LispE* lisp, bool duplicate) {
         return this;
     
     if (duplicate) {
-        Integers* l = lisp->provideIntegers();
+        Integers* l = lisp->provideIntegers(size(), 0);
+        l->reset();
         for (long i = liste.size()-1; i >= 0; i--) {
-            l->liste.push_back(liste[i]);
+            l->liste.push_raw(liste[i]);
         }
         return l;
     }
@@ -3976,9 +3986,10 @@ Element* Integers::extraction(LispE* lisp, List* l) {
     if (upto == sz)
         return lisp->provideIntegers(this, from);
     
-    Integers* n = lisp->provideIntegers();
+    Integers* n = lisp->provideIntegers(upto-from, 0);
+    n->reset();
     for (;from < upto; from++) {
-        n->liste.push_back(liste[from]);
+        n->liste.push_raw(liste[from]);
     }
     return n;
 }
@@ -4167,14 +4178,16 @@ void Strings::flatten(LispE* lisp, List* l) {
 }
 
 void Strings::flatten(LispE* lisp, Numbers* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(convertingfloathexa(liste[i].c_str()));
+        l->liste.push_raw(convertingfloathexa(liste[i].c_str()));
     }
 }
 
 void Strings::flatten(LispE* lisp, Floats* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(convertingfloathexa(liste[i].c_str()));
+        l->liste.push_raw(convertingfloathexa(liste[i].c_str()));
     }
 }
 
@@ -4240,16 +4253,17 @@ Element* Strings::rotate(bool left) {
         return this;
     
     Strings* l = (Strings*)newInstance();
+    l->reserve(size());
     if (left) {
         for (long i = 1; i < liste.size(); i++)
-            l->liste.push_back(liste[i]);
-        l->liste.push_back(liste[0]);
+            l->liste.push_raw(liste[i]);
+        l->liste.push_raw(liste[0]);
         return l;
     }
     
-    l->liste.push_back(liste.back());
+    l->liste.push_raw(liste.back());
     for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     return l;
 }
 
@@ -4451,8 +4465,9 @@ Element* Strings::reverse(LispE* lisp, bool duplicate) {
     
     if (duplicate) {
         Strings* l = lisp->provideStrings();
+        l->reserve(size());
         for (long i = liste.size()-1; i >= 0; i--) {
-            l->liste.push_back(liste[i]);
+            l->liste.push_raw(liste[i]);
         }
         return l;
     }
@@ -4739,8 +4754,9 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         return new Stringspool(lisp, this, from);
         
     Strings* n = lisp->provideStrings();
+    n->reserve(upto-from);
     for (;from < upto; from++) {
-        n->liste.push_back(liste[from]);
+        n->liste.push_raw(liste[from]);
     }
     return n;
 }
@@ -5081,14 +5097,16 @@ void Shorts::flatten(LispE* lisp, List* l) {
 }
 
 void Shorts::flatten(LispE* lisp, Numbers* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
 void Shorts::flatten(LispE* lisp, Floats* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
@@ -5165,16 +5183,17 @@ Element* Shorts::rotate(bool left) {
         return this;
     
     Shorts* l = (Shorts*)newInstance();
+    l->reserve(size());
     if (left) {
         for (long i = 1; i < liste.size(); i++)
-            l->liste.push_back(liste[i]);
-        l->liste.push_back(liste[0]);
+            l->liste.push_raw(liste[i]);
+        l->liste.push_raw(liste[0]);
         return l;
     }
     
-    l->liste.push_back(liste.back());
+    l->liste.push_raw(liste.back());
     for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     return l;
 }
 
@@ -5370,9 +5389,10 @@ Element* Shorts::reverse(LispE* lisp, bool duplicate) {
         return this;
     
     if (duplicate) {
-        Shorts* l = new Shorts();
+        Shorts* l = new Shorts(size(), 0);
+        l->reset();
         for (long i = liste.size()-1; i >= 0; i--) {
-            l->liste.push_back(liste[i]);
+            l->liste.push_raw(liste[i]);
         }
         return l;
     }
@@ -5482,9 +5502,10 @@ Element* Shorts::extraction(LispE* lisp, List* l) {
     if (upto == sz)
         return new Shorts(this, from);
     
-    Shorts* n = new Shorts();
+    Shorts* n = new Shorts(upto-from, 0);
+    n->reset();
     for (;from < upto; from++) {
-        n->liste.push_back(liste[from]);
+        n->liste.push_raw(liste[from]);
     }
     return n;
 }
@@ -5673,14 +5694,16 @@ void Floats::flatten(LispE* lisp, List* l) {
 }
 
 void Floats::flatten(LispE* lisp, Numbers* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
 void Floats::flatten(LispE* lisp, Floats* l) {
+    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     }
 }
 
@@ -5767,16 +5790,17 @@ Element* Floats::rotate(bool left) {
         return this;
     
     Floats* l = (Floats*)newInstance();
+    l->reserve(size());
     if (left) {
         for (long i = 1; i < liste.size(); i++)
-            l->liste.push_back(liste[i]);
-        l->liste.push_back(liste[0]);
+            l->liste.push_raw(liste[i]);
+        l->liste.push_raw(liste[0]);
         return l;
     }
     
-    l->liste.push_back(liste.back());
+    l->liste.push_raw(liste.back());
     for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_back(liste[i]);
+        l->liste.push_raw(liste[i]);
     return l;
 }
 
@@ -5972,9 +5996,10 @@ Element* Floats::reverse(LispE* lisp, bool duplicate) {
         return this;
     
     if (duplicate) {
-        Floats* l = lisp->provideFloats();
+        Floats* l = lisp->provideFloats(size(), 0);
+        l->reset();
         for (long i = liste.size()-1; i >= 0; i--) {
-            l->liste.push_back(liste[i]);
+            l->liste.push_raw(liste[i]);
         }
         return l;
     }
@@ -6084,8 +6109,9 @@ Element* Floats::extraction(LispE* lisp, List* l) {
         return lisp->provideFloats(this, from);
     
     Floats* n = lisp->provideFloats();
+    n->reserve(upto-from+1);
     for (;from < upto; from++) {
-        n->liste.push_back(liste[from]);
+        n->liste.push_raw(liste[from]);
     }
     return n;
 }

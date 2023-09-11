@@ -196,20 +196,20 @@ public:
     
     inline void initpools() {
         for (long i = 0; i < 25; i++) {
-            list_pool.push_max(larger_max_size, new Listpool(this));
-            number_pool.push_max(larger_max_size, new Numberpool(this, 0));
-            float_pool.push_max(larger_max_size, new Floatpool(this, 0));
-            integer_pool.push_max(larger_max_size, new Integerpool(this, 0));
-            string_pool.push_max(larger_max_size, new Stringpool(this));
+            list_pool.push_raw(new Listpool(this));
+            number_pool.push_raw(new Numberpool(this, 0));
+            float_pool.push_raw(new Floatpool(this, 0));
+            integer_pool.push_raw(new Integerpool(this, 0));
+            string_pool.push_raw(new Stringpool(this));
             
-            quoted_pool.push_max(max_size, new Quotedpool(this));
-            rangenumber_pool.push_max(max_size, new Infiniterangenumber(this, 0,0));
-            rangeinteger_pool.push_max(max_size, new Infiniterangeinteger(this, 0,0));
-            complex_pool.push_max(max_size, new Complexpool(this, 0, 0));
-            strings_pool.push_max(max_size, new Stringspool(this));
-            numbers_pool.push_max(max_size, new Numberspool(this));
-            floats_pool.push_max(max_size, new Floatspool(this));
-            integers_pool.push_max(max_size, new Integerspool(this));
+            quoted_pool.push_raw(new Quotedpool(this));
+            rangenumber_pool.push_raw(new Infiniterangenumber(this, 0,0));
+            rangeinteger_pool.push_raw(new Infiniterangeinteger(this, 0,0));
+            complex_pool.push_raw(new Complexpool(this, 0, 0));
+            strings_pool.push_raw(new Stringspool(this));
+            numbers_pool.push_raw(new Numberspool(this));
+            floats_pool.push_raw(new Floatspool(this));
+            integers_pool.push_raw(new Integerspool(this));
         }
     }
     inline bool checkArity(List* l) {

@@ -4663,8 +4663,26 @@ Element* List::evall_setg(LispE* lisp) {
 }
 
 Element* List::evall_let(LispE* lisp) {
-    Element* element = liste[2]->eval(lisp);
-    lisp->storing_variable(element, liste[1]->label());
+    Element* e = liste[2]->eval(lisp);
+    lisp->storing_variable(e, liste[1]->label());
+    
+    long sz = size();
+    if (sz > 3) {
+        e = null_;
+        try {
+            for (long i = 3; i < sz; i++) {
+                e->release();
+                e = liste[i]->eval(lisp);
+            }
+            lisp->removefromstack(liste[1]->label(), e);
+            return e;
+        }
+        catch (Error* err) {
+            lisp->removefromstack(liste[1]->label());
+            throw err;
+        }
+    }
+
     return True_;
 }
 
