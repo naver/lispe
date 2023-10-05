@@ -2993,16 +2993,14 @@ void Numbers::flatten(LispE* lisp, List* l) {
 }
 
 void Numbers::flatten(LispE* lisp, Numbers* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
 void Numbers::flatten(LispE* lisp, Floats* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
@@ -3583,16 +3581,14 @@ void Integers::flatten(LispE* lisp, List* l) {
 }
 
 void Integers::flatten(LispE* lisp, Numbers* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
 void Integers::flatten(LispE* lisp, Floats* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
@@ -4178,16 +4174,14 @@ void Strings::flatten(LispE* lisp, List* l) {
 }
 
 void Strings::flatten(LispE* lisp, Numbers* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(convertingfloathexa(liste[i].c_str()));
+        l->liste.push_back(convertingfloathexa(liste[i].c_str()));
     }
 }
 
 void Strings::flatten(LispE* lisp, Floats* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(convertingfloathexa(liste[i].c_str()));
+        l->liste.push_back(convertingfloathexa(liste[i].c_str()));
     }
 }
 
@@ -5097,16 +5091,14 @@ void Shorts::flatten(LispE* lisp, List* l) {
 }
 
 void Shorts::flatten(LispE* lisp, Numbers* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
 void Shorts::flatten(LispE* lisp, Floats* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
@@ -5694,16 +5686,14 @@ void Floats::flatten(LispE* lisp, List* l) {
 }
 
 void Floats::flatten(LispE* lisp, Numbers* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
 void Floats::flatten(LispE* lisp, Floats* l) {
-    l->reserve(size());
     for (long i = 0; i < size(); i++) {
-        l->liste.push_raw(liste[i]);
+        l->liste.push_back(liste[i]);
     }
 }
 
