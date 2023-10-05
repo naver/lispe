@@ -59,6 +59,10 @@ int16_t Element::function_label(LispE* lisp) {
 #endif
 
 //------------------------------------------------------------------------------------------
+Element* Element::matrix_product(LispE* lisp, Element* m2, Element* shape1, Element* shape2) {
+    throw new Error("Error: '+*' only apply to numerical vectors");
+}
+//------------------------------------------------------------------------------------------
 
 Element* String::charge(LispE* lisp, string chemin) {
     std::ifstream f(chemin.c_str(),std::ios::in|std::ios::binary);

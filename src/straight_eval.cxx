@@ -8770,3 +8770,31 @@ Element* List_bitnot::eval(LispE* lisp) {
     
     return e;
 }
+
+//Fast matrix multiplication with shapes
+
+Element* List_plusmultiply::eval(LispE* lisp) {
+    Element* m1 = liste[1]->eval(lisp);
+    Element* shape1 = liste[2]->eval(lisp);
+    Element* m2 = liste[3]->eval(lisp);
+    Element* shape2 = liste[4]->eval(lisp);
+    
+    if (m1->label() != m2->label())
+        throw new Error("Error: The two matrices should have the same type");
+    
+    if (!shape1->isList() || shape1->size() != 2)
+        throw new Error("Error: The first shape should be a list of two elements");
+
+    if (!shape2->isList() || shape2->size() != 2)
+        throw new Error("Error: The second shape should be a list of two elements");
+
+    if (shape2->index(0)->asInteger() != shape1->index(1)->asInteger())
+        throw new Error("Error: Incompatible shapes");
+    
+    Element* res = m1->matrix_product(lisp, m2, shape1, shape2);
+    m1->release();
+    m2->release();
+    shape1->release();
+    shape2->release();
+    return res;
+}

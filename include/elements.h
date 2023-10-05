@@ -90,6 +90,7 @@ typedef enum {
     l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank,
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
+    l_plusmultiply,
     
     //Comparisons
         
@@ -437,6 +438,8 @@ public:
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
     virtual void flatten(LispE*, Floats* l);
+    
+    virtual Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
     
     virtual void* begin_iter() {
         return NULL;

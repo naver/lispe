@@ -407,6 +407,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe, new List_pipe_eval());
     set_instruction(l_plus, "+", P_ATLEASTTWO, &List::evall_plus, new List_plusn());
     set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
+    set_instruction(l_plusmultiply, "+*", P_FIVE, &List::evall_plusmultiply, new List_plusmultiply());
     set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop, new List_pop_eval());
     set_instruction(l_popfirst, "popfirst", P_TWO, &List::evall_popfirst, new List_popfirst_eval());
     set_instruction(l_poplast, "poplast", P_TWO, &List::evall_poplast, new List_poplast_eval());

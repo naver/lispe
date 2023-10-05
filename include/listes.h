@@ -1370,6 +1370,7 @@ public:
     Element* evall_pipe(LispE* lisp);
     Element* evall_plus(LispE* lisp);
     Element* evall_plusequal(LispE* lisp);
+    Element* evall_plusmultiply(LispE* lisp);
     Element* evall_pop(LispE* lisp);
     Element* evall_popfirst(LispE* lisp);
     Element* evall_poplast(LispE* lisp);
@@ -6255,6 +6256,27 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_plusmultiply : public Listincode {
+public:
+    
+    List_plusmultiply(Listincode* l) : Listincode(l) {}
+    List_plusmultiply(List* l) : Listincode(l) {}
+    List_plusmultiply() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_plusmultiply(e);
+    }
+    
+    List* cloning() {
+        return new List_plusmultiply();
+    }
+    
+    Element* eval(LispE* lisp);
+};
 
 class List_divide2 : public List {
 public:
@@ -6688,6 +6710,8 @@ public:
     Floats(uint16_t s) : Element(t_floats, s), exchange_value(0) {}
     Floats(long nb, float v) : liste(nb, v), Element(t_floats), exchange_value(0) {}
     Floats(Floats* f, long pos) : liste(f->liste, pos), Element(t_floats), exchange_value(0) {}
+    
+    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
     
     virtual Element* newInstance() {
         return new Floats;
@@ -7173,6 +7197,8 @@ public:
     Numbers(uint16_t s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
     
+    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
+    
     virtual Element* newInstance() {
         return new Numbers;
     }
@@ -7655,6 +7681,8 @@ public:
     Shorts(Shorts* i) : liste(i->liste), Element(t_shorts), exchange_value(0) {}
     Shorts(Shorts* i, long pos) : liste(i->liste, pos), Element(t_shorts), exchange_value(0) {}
     
+    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
+    
     virtual Element* newInstance() {
         return new Shorts;
     }
@@ -8083,6 +8111,8 @@ public:
     Integers(long nb, long v) : liste(nb, v), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i) : liste(i->liste), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i, long pos) : liste(i->liste, pos), Element(t_integers), exchange_value(0) {}
+    
+    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
     
     virtual Element* newInstance() {
         return new Integers;

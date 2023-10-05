@@ -8053,6 +8053,11 @@ Element* List::evall_listxor(LispE* lisp) {
     return m.eval(lisp);
 }
 
+Element* List::evall_plusmultiply(LispE* lisp) {
+    List_plusmultiply m(this);
+    return m.eval(lisp);
+}
+
 Element* List::evall_plus(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     
@@ -11179,4 +11184,181 @@ void moduleMaths(LispE* lisp) {
     lisp->recordingunique(value, lisp->encode(nom));
     
 }
+
+Element* Floats::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+    Floats* m2 = (Floats*)mat;
+    
+    long sh = shape1->index(1)->asInteger();
+    long sh10 = shape1->index(0)->asInteger();
+    long sh21 = shape2->index(1)->asInteger();
+
+    Floats* result = lisp->provideFloats();
+    result->liste.reserve(sh10 * sh21);
+
+    long sz = size();
+    long szf = m2->size();
+    long i, j, k;
+    vector<float> transpose;
+    float v;
+
+    transpose.reserve(szf);
+    
+    for (i = 0; i < sh21; i++) {
+        for (j = 0; j < sh; j++) {
+            transpose.push_back(m2->liste[i+j*sh21]);
+        }
+    }
+    
+    for (i = 0; i < sz; i += sh) {
+        for (j = 0; j < szf; j += sh) {
+            v = 0;
+            for (k = 0; k < sh; k++) {
+                v += liste[k + i] * transpose[k + j];
+            }
+            result->liste.push_back(v);
+        }
+    }
+    
+    Integers* shapes = lisp->provideIntegers();
+    shapes->liste.push_back(sh10);
+    shapes->liste.push_back(sh21);
+    
+    List* l = lisp->provideList();
+    l->append(shapes);
+    l->append(result);
+    return l;
+}
+
+Element* Numbers::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+    Numbers* m2 = (Numbers*)mat;
+    
+    long sh = shape1->index(1)->asInteger();
+    long sh10 = shape1->index(0)->asInteger();
+    long sh21 = shape2->index(1)->asInteger();
+
+    Numbers* result = lisp->provideNumbers();
+    result->liste.reserve(sh10 * sh21);
+
+    long sz = size();
+    long szf = m2->size();
+    long i, j, k;
+    vector<double> transpose;
+    double v;
+
+    transpose.reserve(szf);
+    
+    for (i = 0; i < sh21; i++) {
+        for (j = 0; j < sh; j++) {
+            transpose.push_back(m2->liste[i+j*sh21]);
+        }
+    }
+    
+    for (i = 0; i < sz; i += sh) {
+        for (j = 0; j < szf; j += sh) {
+            v = 0;
+            for (k = 0; k < sh; k++) {
+                v += liste[k + i] * transpose[k + j];
+            }
+            result->liste.push_back(v);
+        }
+    }
+
+    Integers* shapes = lisp->provideIntegers();
+    shapes->liste.push_back(sh10);
+    shapes->liste.push_back(sh21);
+    
+    List* l = lisp->provideList();
+    l->append(shapes);
+    l->append(result);
+    return l;
+}
+
+Element* Shorts::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+    Shorts* m2 = (Shorts*)mat;
+    
+    long sh = shape1->index(1)->asInteger();
+    long sh10 = shape1->index(0)->asInteger();
+    long sh21 = shape2->index(1)->asInteger();
+
+    Shorts* result = new Shorts();
+    result->liste.reserve(sh10 * sh21);
+
+    long sz = size();
+    long szf = m2->size();
+    long i, j, k;
+    vector<short> transpose;
+    short v;
+
+    transpose.reserve(szf);
+    
+    for (i = 0; i < sh21; i++) {
+        for (j = 0; j < sh; j++) {
+            transpose.push_back(m2->liste[i+j*sh21]);
+        }
+    }
+    
+    for (i = 0; i < sz; i += sh) {
+        for (j = 0; j < szf; j += sh) {
+            v = 0;
+            for (k = 0; k < sh; k++) {
+                v += liste[k + i] * transpose[k + j];
+            }
+            result->liste.push_back(v);
+        }
+    }
+
+    Integers* shapes = lisp->provideIntegers();
+    shapes->liste.push_back(sh10);
+    shapes->liste.push_back(sh21);
+    
+    List* l = lisp->provideList();
+    l->append(shapes);
+    l->append(result);
+    return l;
+}
+
+Element* Integers::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+    Integers* m2 = (Integers*)mat;
+    
+    long sh = shape1->index(1)->asInteger();
+    long sh10 = shape1->index(0)->asInteger();
+    long sh21 = shape2->index(1)->asInteger();
+
+    Integers* result = lisp->provideIntegers();
+    result->liste.reserve(sh10 * sh21);
+
+    long sz = size();
+    long szf = m2->size();
+    long i, j, k;
+    vector<long> transpose;
+    long v;
+
+    transpose.reserve(szf);
+    
+    for (i = 0; i < sh21; i++) {
+        for (j = 0; j < sh; j++) {
+            transpose.push_back(m2->liste[i+j*sh21]);
+        }
+    }
+    
+    for (i = 0; i < sz; i += sh) {
+        for (j = 0; j < szf; j += sh) {
+            v = 0;
+            for (k = 0; k < sh; k++) {
+                v += liste[k + i] * transpose[k + j];
+            }
+            result->liste.push_back(v);
+        }
+    }
+
+    Integers* shapes = lisp->provideIntegers();
+    shapes->liste.push_back(sh10);
+    shapes->liste.push_back(sh21);
+    
+    List* l = lisp->provideList();
+    l->append(shapes);
+    l->append(result);
+    return l;
+}
+
 
