@@ -439,7 +439,7 @@ public:
     virtual void flatten(LispE*, Numbers* l);
     virtual void flatten(LispE*, Floats* l);
     
-    virtual Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
+    virtual Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
     
     virtual void* begin_iter() {
         return NULL;

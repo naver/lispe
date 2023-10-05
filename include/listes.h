@@ -6711,7 +6711,7 @@ public:
     Floats(long nb, float v) : liste(nb, v), Element(t_floats), exchange_value(0) {}
     Floats(Floats* f, long pos) : liste(f->liste, pos), Element(t_floats), exchange_value(0) {}
     
-    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
+    Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
     
     virtual Element* newInstance() {
         return new Floats;
@@ -7197,7 +7197,7 @@ public:
     Numbers(uint16_t s) : Element(t_numbers, s), exchange_value(0) {}
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
     
-    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
+    Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
     
     virtual Element* newInstance() {
         return new Numbers;
@@ -7681,7 +7681,7 @@ public:
     Shorts(Shorts* i) : liste(i->liste), Element(t_shorts), exchange_value(0) {}
     Shorts(Shorts* i, long pos) : liste(i->liste, pos), Element(t_shorts), exchange_value(0) {}
     
-    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
+    Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
     
     virtual Element* newInstance() {
         return new Shorts;
@@ -8112,7 +8112,7 @@ public:
     Integers(Integers* i) : liste(i->liste), Element(t_integers), exchange_value(0) {}
     Integers(Integers* i, long pos) : liste(i->liste, pos), Element(t_integers), exchange_value(0) {}
     
-    Element* matrix_product(LispE*, Element* m2, Element* shape1, Element* shape2);
+    Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
     
     virtual Element* newInstance() {
         return new Integers;

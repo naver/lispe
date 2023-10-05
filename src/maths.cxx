@@ -11185,27 +11185,21 @@ void moduleMaths(LispE* lisp) {
     
 }
 
-Element* Floats::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+Element* Floats::matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21) {
     Floats* m2 = (Floats*)mat;
     
-    long sh = shape1->index(1)->asInteger();
-    long sh10 = shape1->index(0)->asInteger();
-    long sh21 = shape2->index(1)->asInteger();
-
     Floats* result = lisp->provideFloats();
     result->liste.reserve(sh10 * sh21);
 
     long sz = size();
     long szf = m2->size();
     long i, j, k;
-    vector<float> transpose;
+    vecte_a<float> transpose(szf);
     float v;
 
-    transpose.reserve(szf);
-    
     for (i = 0; i < sh21; i++) {
         for (j = 0; j < sh; j++) {
-            transpose.push_back(m2->liste[i+j*sh21]);
+            transpose.push_raw(m2->liste[i+j*sh21]);
         }
     }
     
@@ -11215,7 +11209,7 @@ Element* Floats::matrix_product(LispE* lisp, Element* mat, Element* shape1, Elem
             for (k = 0; k < sh; k++) {
                 v += liste[k + i] * transpose[k + j];
             }
-            result->liste.push_back(v);
+            result->liste.push_raw(v);
         }
     }
     
@@ -11229,27 +11223,23 @@ Element* Floats::matrix_product(LispE* lisp, Element* mat, Element* shape1, Elem
     return l;
 }
 
-Element* Numbers::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+Element* Numbers::matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21) {
     Numbers* m2 = (Numbers*)mat;
     
-    long sh = shape1->index(1)->asInteger();
-    long sh10 = shape1->index(0)->asInteger();
-    long sh21 = shape2->index(1)->asInteger();
-
     Numbers* result = lisp->provideNumbers();
     result->liste.reserve(sh10 * sh21);
 
     long sz = size();
     long szf = m2->size();
     long i, j, k;
-    vector<double> transpose;
+    vecte_a<double> transpose(szf);
     double v;
 
     transpose.reserve(szf);
     
     for (i = 0; i < sh21; i++) {
         for (j = 0; j < sh; j++) {
-            transpose.push_back(m2->liste[i+j*sh21]);
+            transpose.push_raw(m2->liste[i+j*sh21]);
         }
     }
     
@@ -11259,7 +11249,7 @@ Element* Numbers::matrix_product(LispE* lisp, Element* mat, Element* shape1, Ele
             for (k = 0; k < sh; k++) {
                 v += liste[k + i] * transpose[k + j];
             }
-            result->liste.push_back(v);
+            result->liste.push_raw(v);
         }
     }
 
@@ -11273,27 +11263,23 @@ Element* Numbers::matrix_product(LispE* lisp, Element* mat, Element* shape1, Ele
     return l;
 }
 
-Element* Shorts::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+Element* Shorts::matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21) {
     Shorts* m2 = (Shorts*)mat;
     
-    long sh = shape1->index(1)->asInteger();
-    long sh10 = shape1->index(0)->asInteger();
-    long sh21 = shape2->index(1)->asInteger();
-
     Shorts* result = new Shorts();
     result->liste.reserve(sh10 * sh21);
 
     long sz = size();
     long szf = m2->size();
     long i, j, k;
-    vector<short> transpose;
+    vecte_a<short> transpose(szf);
     short v;
 
     transpose.reserve(szf);
     
     for (i = 0; i < sh21; i++) {
         for (j = 0; j < sh; j++) {
-            transpose.push_back(m2->liste[i+j*sh21]);
+            transpose.push_raw(m2->liste[i+j*sh21]);
         }
     }
     
@@ -11303,7 +11289,7 @@ Element* Shorts::matrix_product(LispE* lisp, Element* mat, Element* shape1, Elem
             for (k = 0; k < sh; k++) {
                 v += liste[k + i] * transpose[k + j];
             }
-            result->liste.push_back(v);
+            result->liste.push_raw(v);
         }
     }
 
@@ -11317,27 +11303,23 @@ Element* Shorts::matrix_product(LispE* lisp, Element* mat, Element* shape1, Elem
     return l;
 }
 
-Element* Integers::matrix_product(LispE* lisp, Element* mat, Element* shape1, Element* shape2) {
+Element* Integers::matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21) {
     Integers* m2 = (Integers*)mat;
     
-    long sh = shape1->index(1)->asInteger();
-    long sh10 = shape1->index(0)->asInteger();
-    long sh21 = shape2->index(1)->asInteger();
-
     Integers* result = lisp->provideIntegers();
     result->liste.reserve(sh10 * sh21);
 
     long sz = size();
     long szf = m2->size();
     long i, j, k;
-    vector<long> transpose;
+    vecte_a<long> transpose(szf);
     long v;
 
     transpose.reserve(szf);
     
     for (i = 0; i < sh21; i++) {
         for (j = 0; j < sh; j++) {
-            transpose.push_back(m2->liste[i+j*sh21]);
+            transpose.push_raw(m2->liste[i+j*sh21]);
         }
     }
     
@@ -11347,7 +11329,7 @@ Element* Integers::matrix_product(LispE* lisp, Element* mat, Element* shape1, El
             for (k = 0; k < sh; k++) {
                 v += liste[k + i] * transpose[k + j];
             }
-            result->liste.push_back(v);
+            result->liste.push_raw(v);
         }
     }
 
