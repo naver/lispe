@@ -3409,74 +3409,111 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (// operation l1)
     
-    Element* l1 = null_;
+    Element* current_list = null_;
     Element* op = null_;
-    long sz = 0;
-    
+    List* res;
+    List* call;
     
     try {
         lisp->checkState(this);
         if (listsz == 2) {
             //This is a copy
-            l1 = liste[1]->eval(lisp);
-            op = l1->fullcopy();
-            if (op != l1)
-                l1->release();
+            current_list = liste[1]->eval(lisp);
+            op = current_list->fullcopy();
+            if (op != current_list)
+                current_list->release();
             lisp->resetStack();
             return op;
         }
         
-        l1 = liste[2]->eval(lisp);
+        current_list = liste[2]->eval(lisp);
         
-        if (!l1->isList())
+        if (!current_list->isList())
             throw new Error("Error: argument for 'reduce' should be a list");
-        
+    }
+    catch (Error* err) {
+        current_list->release();
+        op->release();
+        return lisp->check_error(this, err, line, fileidx);
+    }
+    
+    long sz = current_list->size();
+    if (!sz) {
+        lisp->resetStack();
+        return null_;
+    }
+    
+    //if l1 is a matrix, we recursively call the function on each sublist
+    if (current_list->index(0)->isList()) {
+        res = lisp->provideList();
+        call = lisp->provideList();
+        call->append(liste[0]);
+        call->append(liste[1]);
+        call->append(lisp->quoted());
+        //Then we apply the current instructions but on each element
+        try {
+            Element* e;
+            for (long i = 0; i < current_list->size(); i++) {
+                //We apply the operator recursively
+                call->in_quote(2, current_list->index(i));
+                e = call->eval(lisp);
+                res->append(e);
+            }
+        }
+        catch (Error* err) {
+            res->release();
+            call->force_release();
+            current_list->release();
+            return lisp->check_error(this, err, line, fileidx);
+        }
+        call->force_release();
+        current_list->release();
+        lisp->resetStack();
+        return res;
+    }
+    
+    try {
         op = liste[1]->eval(lisp);
 
-        sz = l1->size();
-        if (!sz) {
-            lisp->resetStack();
-            return null_;
-        }
-         
         if (op->isLambda()) {
-            l1 = reduce_lambda(lisp, l1, op, sz);
+            current_list = reduce_lambda(lisp, current_list, op, sz);
             lisp->resetStack();
-            return l1;
+            return current_list;
         }
 
         if (op->isList() && op->size()) {
-            l1 = reduce_with_list(lisp, l1, op, sz);
+            current_list = reduce_with_list(lisp, current_list, op, sz);
             lisp->resetStack();
-            return l1;
+            return current_list;
         }
         
         if (sz == 1) {
-            op = l1->value_on_index(lisp, (long)0);
+            op = current_list->value_on_index(lisp, (long)0);
             lisp->resetStack();
             return op;
         }
     }
     catch (Error* err) {
-        l1->release();
+        current_list->release();
         op->release();
         return lisp->check_error(this, err, line, fileidx);
     }
     
+    call = NULL;
+
     bool sb = lisp->set_true_as_one();
-    List* call = NULL;
     op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
     if (op->type == l_equal)
         op = lisp->provideAtom(l_equalonezero);
     
     if (op->isOperator()) {
         call = lisp->provideCall(op, 1);
-        call->in_quote(1, l1);
+        call->in_quote(1, current_list);
         
         methodEval met = lisp->delegation->evals[op->type];
         
         try {
-            l1 = (call->*met)(lisp);
+            current_list = (call->*met)(lisp);
         }
         catch (Error* err) {
             lisp->reset_to_true(sb);
@@ -3487,29 +3524,27 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         lisp->reset_to_true(sb);
         call->force_release();
         lisp->resetStack();
-        return l1;
+        return current_list;
     }
     
     try {
         call = lisp->provideCall(op, 2);
-        
-        call->in_quote(1, l1->value_on_index(lisp, (long)0));
-        call->in_quote(2, l1->index(1));
-        Element* e = null_;
+        call->in_quote(1, current_list->value_on_index(lisp, (long)0));
+        call->in_quote(2, current_list->index(1));
         
         methodEval met = lisp->delegation->evals[op->type];
-        e = (call->*met)(lisp);
+        Element* e = (call->*met)(lisp);
         
         call->in_quote(1, e);
-        for (long i = 2; i < l1->size(); i++) {
-            call->in_quote(2, l1->index(i));
+        for (long i = 2; i < current_list->size(); i++) {
+            call->in_quote(2, current_list->index(i));
             e = (call->*met)(lisp);
             call->in_quote(1, e);
         }
         e->increment();
         call->force_release();
         e->decrementkeep();
-        l1->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
         return e->release_but_last();
@@ -3517,7 +3552,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         if (call != NULL)
             call->force_release();
-        l1->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         return lisp->check_error(this, err, line, fileidx);
     }
@@ -3529,60 +3564,100 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (-// operation l1)
     
-    Element* l1 = null_;
+    Element* current_list = null_;
     Element* op = null_;
-    long sz = 0;
-        
+    List* call = NULL;
+    List* res;
+    
     try {
         lisp->checkState(this);
         if (listsz == 2) {
             //This is a copy
-            l1 = liste[1]->eval(lisp);
-            op = l1->reverse(lisp);
-            if (op != l1)
-                l1->release();
+            current_list = liste[1]->eval(lisp);
+            op = current_list->reverse(lisp);
+            if (op != current_list)
+                current_list->release();
             lisp->resetStack();
             return op;
         }
         
-        l1 = liste[2]->eval(lisp);
+        current_list = liste[2]->eval(lisp);
         
-        if (!l1->isList())
+        if (!current_list->isList())
             throw new Error("Error: argument for 'backreduce' should be a list");
+    }
+    catch (Error* err) {
+        current_list->release();
+        op->release();
+        return lisp->check_error(this, err, line, fileidx);
+    }
+
+    long sz = current_list->size();
+    if (!sz) {
+        lisp->resetStack();
+        return null_;
+    }
+    
+    //if l1 is a matrix, we recursively call the function on each sublist out of the transposed matrix
+    if (current_list->index(0)->isList()) {
+        Element* current_transposed = current_list->transposed(lisp);
+        res = lisp->provideList();
+        //Then we apply the current instructions but on each element
+        call = lisp->provideList();
+        call->append(liste[0]);
+        call->append(liste[1]);
+        call->append(lisp->quoted());
+        try {
+            Element* e;
+            for (long i = 0; i < current_transposed->size(); i++) {
+                //We apply the operator recursively
+                call->in_quote(2, current_transposed->index(i));
+                e = call->eval(lisp);
+                res->append(e);
+            }
+        }
+        catch (Error* err) {
+            call->force_release();
+            current_transposed->release();
+            res->release();
+            current_list->release();
+            return lisp->check_error(this, err, line, fileidx);
+        }
         
+        call->force_release();
+        current_list->release();
+        current_transposed->release();
+        lisp->resetStack();
+        return res;
+    }
+    
+    try {
         op = liste[1]->eval(lisp);
 
-        sz = l1->size();
-        if (!sz) {
-            lisp->resetStack();
-            return null_;
-        }
-
         if (op->isLambda()) {
-            l1 = backreduce_lambda(lisp, l1, op, sz);
+            current_list = backreduce_lambda(lisp, current_list, op, sz);
             lisp->resetStack();
-            return l1;
+            return current_list;
         }
 
         if (op->isList() && op->size()) {
-            l1 = backreduce_with_list(lisp, l1, op, sz);
+            current_list = backreduce_with_list(lisp, current_list, op, sz);
             lisp->resetStack();
-            return l1;
+            return current_list;
         }
         
         if (sz == 1) {
-            op = l1->value_on_index(lisp, (long)0);
+            op = current_list->value_on_index(lisp, (long)0);
             lisp->resetStack();
             return op;
         }
     }
     catch (Error* err) {
-        l1->release();
+        current_list->release();
         op->release();
         return lisp->check_error(this, err, line, fileidx);
     }
-
-    List* call = NULL;
+    
     bool sb = lisp->set_true_as_one();
     op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
     if (op->type == l_equal)
@@ -3590,7 +3665,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     
     if (op->isOperator()) {
         call = lisp->provideCall(op, 1);
-        call->in_quote(1, l1->reverse(lisp));
+        call->in_quote(1, current_list->reverse(lisp));
         
         methodEval met = lisp->delegation->evals[op->type];
         Element* e;
@@ -3606,35 +3681,35 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         
         lisp->reset_to_true(sb);
         call->force_release();
-        l1->release();
+        current_list->release();
         lisp->resetStack();
         return e;
     }
     
     try {
-        Element* e = l1->reverse(lisp);
-        l1->release();
-        l1 = e;
+        Element* e = current_list->reverse(lisp);
+        current_list->release();
+        current_list = e;
         
         call = lisp->provideCall(op, 2);
         
-        call->in_quote(1, l1->value_on_index(lisp, (long)0));
-        call->in_quote(2, l1->index(1));
+        call->in_quote(1, current_list->value_on_index(lisp, (long)0));
+        call->in_quote(2, current_list->index(1));
         
         methodEval met = lisp->delegation->evals[op->type];
         
         e = null_;
         e = (call->*met)(lisp);
         call->in_quote(1, e);
-        for (long i = 2; i < l1->size(); i++) {
-            call->in_quote(2, l1->index(i));
+        for (long i = 2; i < current_list->size(); i++) {
+            call->in_quote(2, current_list->index(i));
             e = (call->*met)(lisp);
             call->in_quote(1, e);
         }
         e->increment();
         call->force_release();
         e->decrementkeep();
-        l1->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
         return e->release_but_last();
@@ -3642,7 +3717,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         if (call != NULL)
             call->force_release();
-        l1->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         return lisp->check_error(this, err, line, fileidx);
     }
@@ -4301,45 +4376,76 @@ Element* List_equalonezero_eval::eval(LispE* lisp) {
 Element* List_scan_eval::eval(LispE* lisp) {
     //Operation is: (\\ operation l1 l2)
     
-    Element* l1 = liste[2]->eval(lisp);
+    Element* current_list = liste[2]->eval(lisp);
     
-    if (!l1->isList()) {
-        l1->release();
+    if (!current_list->isList()) {
+        current_list->release();
         throw new Error("Error: argument for 'scan' should be a list");
     }
 
     Element* op = null_;
-    long sz = 0;
+    List* res;
+    List* call;
+
+    long sz = current_list->size();
+    if (!sz)
+        return emptylist_;
+
+    //if l1 is a matrix, we recursively call the function on each sublist
+    if (current_list->index(0)->isList()) {
+        res = lisp->provideList();
+        call = lisp->provideList();
+        
+        call->append(liste[0]);
+        call->append(liste[1]);
+        call->append(lisp->quoted());
+        //Then we apply the current instructions but on each element
+        try {
+            Element* e;
+            lisp->checkState(this);
+            for (long i = 0; i < current_list->size(); i++) {
+                //We apply the operator recursively
+                call->in_quote(2, current_list->index(i));
+                e = call->eval(lisp);
+                res->append(e);
+            }
+        }
+        catch (Error* err) {
+            current_list->release();
+            res->release();
+            call->force_release();
+            return lisp->check_error(this, err, line, fileidx);
+        }
+        call->force_release();
+        current_list->release();
+        lisp->resetStack();
+        return res;
+    }
 
     try {
         lisp->checkState(this);
         op = liste[1]->eval(lisp);
-        sz = l1->size();
-        if (!sz) {
-            lisp->resetStack();
-            return emptylist_;
-        }
-                
+
         if (op->isLambda()) {
-            l1 = scan_lambda(lisp, l1, op, sz);
+            current_list = scan_lambda(lisp, current_list, op, sz);
             lisp->resetStack();
-            return l1;
+            return current_list;
         }
 
         if (op->isList() && op->size()) {
-            l1 = scan_with_list(lisp, l1, op, sz);
+            current_list = scan_with_list(lisp, current_list, op, sz);
             lisp->resetStack();
-            return l1;
+            return current_list;
         }
     }
     catch (Error* err) {
-        l1->release();
+        current_list->release();
         op->release();
         return lisp->check_error(this, err, line, fileidx);
     }
 
-    List* res = lisp->provideList();
-    List* call = NULL;
+    res = lisp->provideList();
+    call = NULL;
     bool sb = lisp->set_true_as_one();
         
     try {
@@ -4350,14 +4456,14 @@ Element* List_scan_eval::eval(LispE* lisp) {
         bool monadic = op->check_arity(lisp, P_TWO);
         
         call = lisp->provideCall(op, 1);
-        Element* e = l1->index(0)->copying(false);
+        Element* e = current_list->index(0)->copying(false);
         res->append(e);
         call->in_quote(1, e);
         methodEval met = lisp->delegation->evals[op->type];
         if (!monadic) {
             call->append(lisp->quoted());
             for (long i = 1; i < sz; i++) {
-                call->in_quote(2, l1->index(i));
+                call->in_quote(2, current_list->index(i));
                 e = (call->*met)(lisp);
                 res->append(e);
                 call->in_quote(1, e);
@@ -4365,21 +4471,21 @@ Element* List_scan_eval::eval(LispE* lisp) {
         }
         else {
             for (long i = 1; i < sz; i++) {
-                call->in_quote(1, l1->index(i));
+                call->in_quote(1, current_list->index(i));
                 e = (call->*met)(lisp);
                 res->append(e);
             }
         }
         
         call->force_release();
-        l1->release();
+        current_list->release();
         lisp->reset_to_true(sb);
     }
     catch (Error* err) {
         call->force_release();
         lisp->reset_to_true(sb);
         res->release();
-        l1->release();
+        current_list->release();
         return lisp->check_error(this, err, line, fileidx);
     }
     
@@ -4389,51 +4495,88 @@ Element* List_scan_eval::eval(LispE* lisp) {
 
 Element* List_backscan_eval::eval(LispE* lisp) {
     //Operation is: (-\\ operation l1 l2)
-    Element* l1 = liste[2]->eval(lisp);
-    if (!l1->isList()) {
-        l1->release();
+    Element* current_list = liste[2]->eval(lisp);
+    if (!current_list->isList()) {
+        current_list->release();
         throw new Error("Error: argument for 'backscan' should be a list");
     }
-    
 
     Element* op = null_;
-    long sz = 0;
     bool sb = lisp->set_true_as_one();
+    List* res;
+    List* call;
+
+    long sz = current_list->size();
+    if (!sz) {
+        lisp->reset_to_true(sb);
+        return null_;
+    }
+    
+    //if l1 is a matrix, we recursively call the function on each sublist out of the transposed matrix
+    if (current_list->index(0)->isList()) {
+        Element* current_transposed = current_list->transposed(lisp);
+        res = lisp->provideList();
+        call = lisp->provideList();
+        
+        call->append(liste[0]);
+        call->append(liste[1]);
+        call->append(lisp->quoted());
+        //Then we apply the current instructions but on each element
+        try {
+            lisp->checkState(this);
+            Element* e;
+            for (long i = 0; i < current_transposed->size(); i++) {
+                //We apply the operator recursively
+                call->in_quote(2, current_transposed->index(i));
+                e = call->eval(lisp);
+                res->append(e);
+            }
+        }
+        catch (Error* err) {
+            res->release();
+            current_transposed->release();
+            call->force_release();
+            current_list->release();
+            lisp->reset_to_true(sb);
+            return lisp->check_error(this, err, line, fileidx);
+        }
+        
+        call->force_release();
+        current_list->release();
+        current_transposed->release();
+        lisp->resetStack();
+        return res;
+    }
 
     try {
         lisp->checkState(this);
+        
         op = liste[1]->eval(lisp);
-        sz = l1->size();
-        if (!sz) {
-            lisp->resetStack();
-            lisp->reset_to_true(sb);
-            return null_;
-        }
-                
+
         if (op->isLambda()) {
-            l1 = backscan_lambda(lisp, l1, op, sz);
+            current_list = backscan_lambda(lisp, current_list, op, sz);
             lisp->resetStack();
             lisp->reset_to_true(sb);
-            return l1;
+            return current_list;
         }
 
         if (op->isList() && op->size()) {
-            l1 = backscan_with_list(lisp, l1, op, sz);
+            current_list = backscan_with_list(lisp, current_list, op, sz);
             lisp->resetStack();
             lisp->reset_to_true(sb);
-            return l1;
+            return current_list;
         }
  
     }
     catch (Error* err) {
-        l1->release();
+        current_list->release();
         op->release();
         lisp->reset_to_true(sb);
         return lisp->check_error(this, err, line, fileidx);
     }
 
-    List* call = NULL;
-    List* res = lisp->provideList();
+    call = NULL;
+    res = lisp->provideList();
     
     try {
         op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
@@ -4446,14 +4589,14 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         call = lisp->provideCall(op, 1);
 
         sz--;
-        Element* e = l1->value_on_index(lisp, sz);
+        Element* e = current_list->value_on_index(lisp, sz);
         res->append(e);
         call->in_quote(1, e);
         methodEval met = lisp->delegation->evals[op->type];
         if (!monadic) {
             call->append(lisp->quoted());
             for (long i = sz-1; i >= 0; i--) {
-                call->in_quote(2, l1->index(i));
+                call->in_quote(2, current_list->index(i));
                 e = (call->*met)(lisp);
                 res->append(e);
                 call->in_quote(1, e);
@@ -4461,14 +4604,14 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         }
         else {
             for (long i = sz-1; i >= 0; i--) {
-                call->in_quote(1, l1->index(i));
+                call->in_quote(1, current_list->index(i));
                 e = (call->*met)(lisp);
                 res->append(e);
             }
         }
         
         call->force_release();
-        l1->release();
+        current_list->release();
         lisp->reset_to_true(sb);
     }
     catch (Error* err) {
@@ -4476,7 +4619,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
             call->force_release();
         res->release();
         lisp->reset_to_true(sb);
-        l1->release();
+        current_list->release();
         return lisp->check_error(this, err, line, fileidx);
     }
     lisp->resetStack();
