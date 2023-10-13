@@ -2530,6 +2530,10 @@ Element* List::evall_droplist(LispE* lisp) {
     return m.eval(lisp);
 }
 
+Element* List::evall_takenb(LispE* lisp) {
+    List_takenb_eval m(this);
+    return m.eval(lisp);
+}
 
 Element* List::evall_factorial(LispE* lisp) {
      List_factorial_eval m(this);
@@ -4214,6 +4218,11 @@ Element* List::evall_input(LispE* lisp) {
 
 Element* List::evall_insert(LispE* lisp) {
     List_insert_eval m(this);
+    return m.eval(lisp);
+}
+
+Element* List::evall_over(LispE* lisp) {
+    List_over_eval m(this);
     return m.eval(lisp);
 }
 

@@ -7653,4 +7653,149 @@ Element* LList::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
     return this;
 }
 
+//------------------------------------------------------------------------------------------
+#define lmin(x,y) x<y?x:y
 
+Element* List::takenb(LispE* lisp, long nb, bool direction) {
+    List* l = lisp->provideList();
+    
+    if (direction) {
+        nb = lmin(nb, size());
+        for (long i = 0; i < nb; i++) {
+            l->append(liste[i]->copying(false));
+        }
+    }
+    else {
+        nb = lmin(size() - nb, size()-1);
+        for (long i = nb; i < size(); i++)
+            l->append(liste[i]->copying(false));
+    }
+    return l;
+}
+
+Element* LList::takenb(LispE* lisp, long nb, bool direction) {
+    LList* l = new LList(liste.mark);
+    
+    if (direction)
+        nb = size() - nb;
+    
+    u_link* a = liste.last();
+    if (a == NULL)
+        return l;
+    
+    u_link* tail = NULL;
+    bool cyclic = (a->_next != NULL);
+    
+    for (; a != NULL; a = a->previous()) {
+        if (direction) {
+            if (nb) {
+                nb--;
+                continue;
+            }
+        }
+        else {
+            if (!nb)
+                break;
+            nb--;
+        }
+        
+        l->push_front(a->value->fullcopy(), a->isFinal());
+        if (cyclic) {
+            tail = l->liste.first;
+            cyclic = false;
+        }
+    }
+    if (tail != NULL) {
+        //there is a cycle
+        //we need to reproduce it...
+        l->liste.first->_previous = tail;
+        tail->_next = l->liste.first;
+    }
+    
+    return l;
+}
+
+Element* Floats::takenb(LispE* lisp, long nb, bool direction) {
+    Floats* l = lisp->provideFloats();
+    
+    if (direction) {
+        nb = lmin(nb, size());
+        for (long i = 0; i < nb; i++) {
+            l->liste.push_back(liste[i]);
+        }
+    }
+    else {
+        nb = lmin(size() - nb, size()-1);
+        for (long i = nb; i < size(); i++)
+            l->liste.push_back(liste[i]);
+    }
+    return l;
+}
+
+Element* Numbers::takenb(LispE* lisp, long nb, bool direction) {
+    Numbers* l = lisp->provideNumbers();
+    
+    if (direction) {
+        nb = lmin(nb, size());
+        for (long i = 0; i < nb; i++) {
+            l->liste.push_back(liste[i]);
+        }
+    }
+    else {
+        nb = lmin(size() - nb, size()-1);
+        for (long i = nb; i < size(); i++)
+            l->liste.push_back(liste[i]);
+    }
+    return l;
+}
+
+Element* Integers::takenb(LispE* lisp, long nb, bool direction) {
+    Integers* l = lisp->provideIntegers();
+    
+    if (direction) {
+        nb = lmin(nb, size());
+        for (long i = 0; i < nb; i++) {
+            l->liste.push_back(liste[i]);
+        }
+    }
+    else {
+        nb = lmin(size() - nb, size()-1);
+        for (long i = nb; i < size(); i++)
+            l->liste.push_back(liste[i]);
+    }
+    return l;
+}
+
+Element* Shorts::takenb(LispE* lisp, long nb, bool direction) {
+    Shorts* l = new Shorts();
+    
+    if (direction) {
+        nb = lmin(nb, size());
+        for (long i = 0; i < nb; i++) {
+            l->liste.push_back(liste[i]);
+        }
+    }
+    else {
+        nb = lmin(size() - nb, size()-1);
+        for (long i = nb; i < size(); i++)
+            l->liste.push_back(liste[i]);
+    }
+    return l;
+}
+
+Element* Strings::takenb(LispE* lisp, long nb, bool direction) {
+    Strings* l = lisp->provideStrings();
+    
+    if (direction) {
+        nb = lmin(nb, size());
+        for (long i = 0; i < nb; i++) {
+            l->liste.push_back(liste[i]);
+        }
+    }
+    else {
+        nb = lmin(size() - nb, size()-1);
+        for (long i = nb; i < size(); i++)
+            l->liste.push_back(liste[i]);
+    }
+    return l;
+}

@@ -911,7 +911,12 @@ Element* List::evall_scanr1_cps(LispE* lisp) {
 
 Element* LispE::compose(Element* fin) {
     static u_uchar idx_var = 48;
-    
+
+    if (composition_stack.size() < 2) {
+        composition_stack.clear();
+        throw new Error("Error: This instruction must be composed with other instructions such as 'drop' or 'take'");
+    }
+
     
     u_ustring s_idx(U"%i");
     s_idx += idx_var;
@@ -937,6 +942,7 @@ Element* LispE::compose(Element* fin) {
 
     
     vector<Element*> composed;
+    
     composed.push_back(composition_stack[1]->compose(this, idx, NULL));
     Element* last = composed.back();
     if (last->label() == l_for) {

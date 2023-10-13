@@ -2646,6 +2646,34 @@ Element* List_droplist_eval::eval(LispE* lisp) {
     return emptylist_;
 }
 
+Element* List_takenb_eval::eval(LispE* lisp) {
+    long nb;
+    
+    evalAsInteger(1, lisp, nb);
+    
+    Element* lst = liste[2]->eval(lisp);
+    if (!lst->isList())
+        throw new Error("Error: Expecting a list as second element");
+    
+    bool direction = true;
+    if (liste.size() == 4)
+        direction = false;
+    
+    if (nb < 0) {
+        if (direction) {
+            nb *= -1;
+            direction = false;
+        }
+        else {
+            lst->release();
+            throw new Error("Error: wrong value for first argument");
+        }
+    }
+    
+    Element* l_result = lst->takenb(lisp, nb, direction);
+    lst->release();
+    return l_result;
+}
 
 Element* List_eq_eval::eval(LispE* lisp) {
     long listsize = liste.size();
@@ -6740,6 +6768,56 @@ Element* List_apply_eval::eval(LispE* lisp) {
     return result;
 }
 
+Element* List_over_eval::eval(LispE* lisp) {
+    Element* function = liste[1]->eval(lisp);
+    Element* arguments = NULL;
+    List* call = NULL;
+    Element* result = NULL;
+    int16_t lab = function->label();
+    bool use_list = !lisp->delegation->straight_eval.check(lab);
+
+    try {
+        lisp->checkState(this);
+        if (use_list)
+            call = lisp->provideList();
+        else
+            call = lisp->delegation->straight_eval[lab]->cloning();
+
+        arguments = liste[2]->eval(lisp);
+        if (!arguments->isList())
+            throw new Error("Error: argument to 'over' should be a list");
+        
+        call->append(function);
+        call->append(lisp->quoted(arguments));
+        result = call->eval(lisp);
+        //We then replace the values in arguments with the values in result
+        if (result->label() != arguments->label())
+            throw new Error("Error: The result should be of the same type as the argument");
+        arguments->copyfrom(result);
+        function->release();
+        call->force_release();
+        result->release();
+    }
+    catch (Error* err) {
+        if (call != NULL) {
+            call->force_release();
+            arguments->release();
+        }
+        else {
+            if (arguments == NULL)
+                function->release();
+            else
+                arguments->release();
+        }
+        if (result != NULL)
+            result->release();
+        return lisp->check_error(this, err, line, fileidx);
+    }
+    lisp->resetStack();
+    return arguments;
+}
+
+
 
 Element* List_atomise_eval::eval(LispE* lisp) {
     Element* values = liste[1]->eval(lisp);
@@ -8797,7 +8875,7 @@ Element* List_plusmultiply::eval(LispE* lisp) {
         long sh20 = shape2->index(0)->asInteger();
         long sh21 = shape2->index(1)->asInteger();
 
-        if (m1->label() != m2->label())
+        if (m1->type != m2->type)
             throw new Error("Error: The two matrices should have the same type");
                 
         if (sh20 != sh11)

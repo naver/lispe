@@ -625,7 +625,7 @@ public:
         n[0] = 0;
         return n;
     }
-    
+        
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
     
@@ -1082,6 +1082,8 @@ public:
         return true;
     }
     
+    Element* takenb(LispE* lisp, long nb, bool direction);
+    
     virtual char isPureList() {
         for (long i = 0; i < liste.size(); i++) {
             if (liste[i]->isList())
@@ -1186,6 +1188,13 @@ public:
         liste.clean();
     }
     
+    void copyfrom(Element* x) {
+        liste.clean();
+        List* l = (List*)x;
+        for (long i = 0; i < l->size(); i++)
+            append(l->liste[i]);
+    }
+    
     Element* transformargument(LispE*);
     
 #ifdef MAX_STACK_SIZE_ENABLED
@@ -1286,6 +1295,7 @@ public:
     Element* evall_filterlist(LispE* lisp);
     Element* evall_droplist(LispE* lisp);
     Element* evall_takelist(LispE* lisp);
+    Element* evall_takenb(LispE* lisp);
     Element* evall_flatten(LispE* lisp);
     Element* evall_flip(LispE* lisp);
     Element* evall_stringf(LispE* lisp);
@@ -1367,6 +1377,7 @@ public:
     Element* evall_floats(LispE* lisp);
     Element* evall_or(LispE* lisp);
     Element* evall_outerproduct(LispE* lisp);
+    Element* evall_over(LispE* lisp);
     Element* evall_pipe(LispE* lisp);
     Element* evall_plus(LispE* lisp);
     Element* evall_plusequal(LispE* lisp);
@@ -1737,6 +1748,10 @@ public:
         fileidx = 0;
     }
     
+    void copyfrom(Element* l) {
+        throw new Error("Error: You cannot modify a static list");
+    }
+    
     Element* eval(LispE*);
     Element* eval_infix(LispE* lisp);
     Element* eval_call_self(LispE* lisp);
@@ -1794,7 +1809,6 @@ public:
         return new List_switch_eval();
     }
 };
-
 
 class Listbreak : public Element {
 public:
@@ -1901,6 +1915,28 @@ public:
     
     List* cloning() {
         return new List_at_eval();
+    }
+};
+
+class List_over_eval : public Listincode {
+public:
+    
+    List_over_eval(Listincode* l) : Listincode(l) {}
+    List_over_eval(List* l) : Listincode(l) {}
+    List_over_eval() {}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_over_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_over_eval();
     }
 };
 
@@ -4538,6 +4574,29 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_takenb_eval : public Listincode {
+public:
+    
+    List_takenb_eval(Listincode* l) : Listincode(l) {}
+    List_takenb_eval(List* l) : Listincode(l) {}
+    List_takenb_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_takenb_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_takenb_eval();
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
 class List_greater_eval : public Listincode {
 public:
     int16_t listsize;
@@ -6727,6 +6786,10 @@ public:
         liste.reset();
     }
 
+    virtual void copyfrom(Element* l) {
+        liste = ((Floats*)l)->liste;
+    }
+
     Element* newInstance(Element* v) {
         return new Floats(liste.size(), v->asFloat());
     }
@@ -7078,6 +7141,8 @@ public:
         return true;
     }
     
+    Element* takenb(LispE* lisp, long nb, bool direction);
+    
     void getShape(vecte<long>& sz) {
         sz.push_back(liste.size());
     }
@@ -7209,6 +7274,10 @@ public:
     
     inline void reset() {
         liste.reset();
+    }
+
+    void copyfrom(Element* l) {
+        liste = ((Numbers*)l)->liste;
     }
 
     bool checkShape(long depth, vecte<long>& sz) {
@@ -7561,6 +7630,8 @@ public:
         return true;
     }
     
+    Element* takenb(LispE* lisp, long nb, bool direction);
+    
     void getShape(vecte<long>& sz) {
         sz.push_back(liste.size());
     }
@@ -7693,6 +7764,10 @@ public:
     
     inline void reset() {
         liste.reset();
+    }
+
+    void copyfrom(Element* l) {
+        liste = ((Shorts*)l)->liste;
     }
 
     bool checkShape(long depth, vecte<long>& sz) {
@@ -8043,6 +8118,8 @@ public:
         return true;
     }
     
+    Element* takenb(LispE* lisp, long nb, bool direction);
+    
     void getShape(vecte<long>& sz) {
         sz.push_back(liste.size());
     }
@@ -8124,6 +8201,10 @@ public:
     
     inline void reset() {
         liste.reset();
+    }
+
+    void copyfrom(Element* l) {
+        liste = ((Integers*)l)->liste;
     }
 
     bool checkShape(long depth, vecte<long>& sz) {
@@ -8473,6 +8554,8 @@ public:
         liste.erase(d);
         return true;
     }
+    
+    Element* takenb(LispE* lisp, long nb, bool direction);
     
     void getShape(vecte<long>& sz) {
         sz.push_back(liste.size());
@@ -9461,6 +9544,10 @@ public:
         return new Strings;
     }
     
+    void copyfrom(Element* l) {
+        liste = ((Strings*)l)->liste;
+    }
+
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -9825,6 +9912,8 @@ public:
         liste.erase(d);
         return true;
     }
+    
+    Element* takenb(LispE* lisp, long nb, bool direction);
     
     void getShape(vecte<long>& sz) {
         sz.push_back(liste.size());

@@ -184,7 +184,7 @@ public:
     u_links(uint32_t* m) : mark(m) {
         first = NULL;
     }
-    
+
     u_links(u_links& l, long from) {
         mark = l.mark;
         u_link* e = l.at(from);
@@ -562,6 +562,32 @@ public:
         liste.push_front(e);
     }
     
+    void copyfrom(Element* x) {
+        liste.clear();
+        LList* l = (LList*)x;
+        u_link* a = l->liste.last();
+        if (a == NULL)
+            return;
+        
+        u_link* tail = NULL;
+        bool cyclic = (a->_next != NULL);
+
+        for (; a != NULL; a = a->previous()) {
+            push_front(a->value->fullcopy(), a->isFinal());
+            if (cyclic) {
+                tail = liste.first;
+                cyclic = false;
+            }
+        }
+        
+        if (tail != NULL) {
+            //there is a cycle
+            //we need to reproduce it...
+            liste.first->_previous = tail;
+            tail->_next = liste.first;
+        }
+    }
+
     void* begin_iter() {
         u_links* u = new u_links(liste.mark);
         u->first = liste.begin();
@@ -690,6 +716,8 @@ public:
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
+    
+    Element* takenb(LispE* lisp, long nb, bool direction);
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant

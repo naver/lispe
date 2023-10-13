@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.10.5.10.53";
+static std::string version = "1.2023.10.13.9.49";
 string LispVersion() {
     return version;
 }
@@ -328,6 +328,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_filterlist, "filterlist", P_THREE | P_FOUR, &List::evall_filterlist, new List_filterlist_eval());
     set_instruction(l_droplist, "droplist", P_THREE | P_FOUR, &List::evall_droplist, new List_droplist_eval());
     set_instruction(l_takelist, "takelist", P_THREE | P_FOUR, &List::evall_takelist, new List_takelist_eval());
+    set_instruction(l_takenb, "takenb", P_THREE | P_FOUR, &List::evall_takenb, new List_takenb_eval());
     set_instruction(l_filtercar, "filtercar", P_THREE, &List::evall_filterlist, new List_filterlist_eval());
     set_instruction(l_dropcar, "dropcar", P_THREE, &List::evall_droplist, new List_droplist_eval());
     set_instruction(l_takecar, "takecar", P_THREE, &List::evall_takelist, new List_takelist_eval());
@@ -379,7 +380,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare, new List_compare_eval());
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower, new List_lower_eval());
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal, new List_lowerorequal_eval());
-    set_instruction(l_maplist, "maplist", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
+    set_instruction(l_maplist, "¨", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mapcar, "mapcar", P_THREE, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark, new List_mark_eval());
     set_instruction(l_matrix, "matrix", P_TWO | P_THREE | P_FOUR, &List::evall_matrix, new List_matrix_eval());
@@ -404,6 +405,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_floats, "floats", P_ATLEASTONE, &List::evall_floats, new List_floats_eval());
     set_instruction(l_numbers, "numbers", P_ATLEASTONE, &List::evall_numbers, new List_numbers_eval());
     set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or, new List_or_eval());
+    set_instruction(l_over, "over", P_THREE, &List::evall_over, new List_over_eval());
     set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe, new List_pipe_eval());
     set_instruction(l_plus, "+", P_ATLEASTTWO, &List::evall_plus, new List_plusn());
     set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
@@ -863,6 +865,9 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U"/\\";
     string_to_code[w] = l_infix;
+    
+    w = U("maplist");
+    string_to_code[w] = l_maplist;
 
     //But also 'false', which is a substitute to nil as well
     w = U"false";
@@ -2815,6 +2820,8 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
 
 
 
