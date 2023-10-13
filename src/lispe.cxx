@@ -520,8 +520,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb, new List_lubksb_eval());
     set_instruction(l_iota0, "⍳0", P_ATLEASTTWO, &List::evall_iota0, new List_iota0_eval());
     set_instruction(l_irank, "irank", P_ATLEASTTHREE, &List::evall_irank, new List_irank_eval());
-    set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce, new List_reduce_eval());
-    set_instruction(l_scan, "scan", P_THREE, &List::evall_scan, new List_scan_eval());
+    set_instruction(l_reduce, "↗", P_TWO | P_THREE, &List::evall_reduce, new List_reduce_eval());
+    set_instruction(l_scan, "↘", P_THREE, &List::evall_scan, new List_scan_eval());
     set_instruction(l_backreduce, "⌿", P_TWO | P_THREE, &List::evall_backreduce, new List_backreduce_eval());
     set_instruction(l_backscan, "⍀", P_THREE, &List::evall_backscan, new List_backscan_eval());
     set_instruction(l_rank, "⍤", P_ATLEASTTWO, &List::evall_rank, new List_rank_eval());
@@ -882,8 +882,14 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U"//";
     string_to_code[w] = l_reduce;
-    
+
+    w = U"reduce";
+    string_to_code[w] = l_reduce;
+
     w = U"\\\\";
+    string_to_code[w] = l_scan;
+
+    w = U"scan";
     string_to_code[w] = l_scan;
 
     w = U"-//";
