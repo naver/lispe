@@ -522,6 +522,8 @@ public:
         return true;
     }
     
+    virtual Element* negate(LispE* lisp);
+    
     Element* quoting() {
         return new Quoted(this);
     }
@@ -6862,6 +6864,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -7354,6 +7358,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -7828,6 +7834,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
     bool check_element(LispE* lisp, Element* element_value);
@@ -8264,6 +8272,8 @@ public:
     bool isValueList() {
         return true;
     }
+    
+    Element* negate(LispE* lisp);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
@@ -8819,7 +8829,7 @@ public:
     }
     
     void concatenate(LispE* lisp, Element* e);
-    
+    Element* negate(LispE* lisp);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
     Element* newInstance(Element* e) {
@@ -8987,6 +8997,8 @@ public:
     void concatenate(LispE* lisp, Element* e);
     
     Element* rank(LispE* lisp, vecte<long>& positions);
+    
+    Element* negate(LispE* lisp);
     
     Element* newInstance(Element* e) {
         return new Matrice(size_x, size_y, e);
@@ -9252,6 +9264,8 @@ public:
         setvalue(this, lst);
     }
     
+    Element* negate(LispE* lisp);
+    
     Element* newInstance() {
         return new Tenseur_float(shape, 0.0);
     }
@@ -9515,6 +9529,8 @@ public:
         setvalue(this, lst);
     }
     
+    Element* negate(LispE* lisp);
+    
     Element* newInstance() {
         return new Tenseur(shape, 0.0);
     }
@@ -9610,6 +9626,8 @@ public:
     bool isValueList() {
         return true;
     }
+    
+    Element* negate(LispE* lisp);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
@@ -10004,7 +10022,7 @@ public:
     bool isContainer() {
         return true;
     }
-    
+        
     bool isList() {
         return true;
     }

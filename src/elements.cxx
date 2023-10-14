@@ -32,7 +32,6 @@ void binSetIter::set(binSet& b) {
     filter = indexes[0];
     nb = base << binBits;
 }
-
 //------------------------------------------------------------------------------------------
 Returnpool::Returnpool(LispE* l) : lisp(l), Element(l_return) {
     value = null_;

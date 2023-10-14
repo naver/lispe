@@ -519,6 +519,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     bool element_container() {
         return true;
     }

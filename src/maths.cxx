@@ -11342,5 +11342,201 @@ Element* Integers::matrix_product(LispE* lisp, Element* mat, long sh, long sh10,
     l->append(result);
     return l;
 }
+//------------------------------------------------------------------------
+// Negation of elements
+// Lists and dictionaries are negated element by element: (1 0 1) -> (0 1 0)
+//------------------------------------------------------------------------
+Element* Element::negate(LispE* lisp) {
+    return booleans_[!Boolean()];
+}
 
+Element* Float::negate(LispE* lisp) {
+    return numbools_[!content];
+}
+
+Element* Number::negate(LispE* lisp) {
+    return numbools_[!content];
+}
+
+Element* Integer::negate(LispE* lisp) {
+    return numbools_[!content];
+}
+
+Element* Short::negate(LispE* lisp) {
+    return numbools_[!content];
+}
+
+Element* Complex::negate(LispE* lisp) {
+    return numbools_[!Boolean()];
+}
+
+Element* Set_n::negate(LispE* lisp) {
+    Integers* n = lisp->provideIntegers();
+    for (const auto& a: ensemble) {
+        n->append(numbools_[!a]);
+    }
+    return n;
+}
+
+Element* Set_i::negate(LispE* lisp) {
+    Integers* n = lisp->provideIntegers();
+    for (const auto& a: ensemble) {
+        n->append(numbools_[!a]);
+    }
+    return n;
+}
+
+Element* Set_s::negate(LispE* lisp) {
+    List* n = lisp->provideList();
+    for (const auto& a: ensemble)
+        n->append(booleans_[!a.size()]);
+    return n;
+}
+
+Element* Set::negate(LispE* lisp) {
+    Set* n = lisp->provideSet();
+    for (const auto& a: dictionary) {
+        n->dictionary[a.first] = a.second->negate(lisp);
+    }
+    return n;
+}
+
+Element* Dictionary::negate(LispE* lisp) {
+    Dictionary* n = lisp->provideDictionary();
+    for (const auto& a: dictionary) {
+        n->dictionary[a.first] = a.second->negate(lisp);
+    }
+    return n;
+}
+
+Element* Dictionary_i::negate(LispE* lisp) {
+    Dictionary_i* n = lisp->provideDictionary_i();
+    for (const auto& a: dictionary) {
+        n->dictionary[a.first] = a.second->negate(lisp);
+    }
+    return n;
+}
+
+Element* Dictionary_n::negate(LispE* lisp) {
+    Dictionary_n* n = lisp->provideDictionary_n();
+    for (const auto& a: dictionary) {
+        n->dictionary[a.first] = a.second->negate(lisp);
+    }
+    return n;
+}
+
+Element* LList::negate(LispE* lisp) {
+    LList* l = new LList(liste.mark);
+    
+    u_link* a = liste.last();
+    if (a == NULL)
+        return l;
+    
+    u_link* tail = NULL;
+    bool cyclic = (a->_next != NULL);
+    
+    for (; a != NULL; a = a->previous()) {
+        l->push_front(a->value->negate(lisp), a->isFinal());
+        if (cyclic) {
+            tail = l->liste.first;
+            cyclic = false;
+        }
+    }
+    
+    if (tail != NULL) {
+        //there is a cycle
+        //we need to reproduce it...
+        l->liste.first->_previous = tail;
+        tail->_next = l->liste.first;
+    }
+    
+    return l;
+}
+
+static int neg_[] = {0,1};
+Element* Floats::negate(LispE* lisp) {
+    Floats* n = lisp->provideFloats();
+    for (long i = 0; i < size(); i++) {
+        n->liste.push_back(neg_[!liste[i]]);
+    }
+    return n;
+}
+
+Element* Integers::negate(LispE* lisp) {
+    Integers* n = lisp->provideIntegers();
+    for (long i = 0; i < size(); i++) {
+        n->liste.push_back(neg_[!liste[i]]);
+    }
+    return n;
+}
+
+Element* Numbers::negate(LispE* lisp) {
+    Numbers* n = lisp->provideNumbers();
+    for (long i = 0; i < size(); i++) {
+        n->liste.push_back(neg_[!liste[i]]);
+    }
+    return n;
+}
+
+Element* Shorts::negate(LispE* lisp) {
+    Shorts* n = new Shorts();
+    for (long i = 0; i < size(); i++) {
+        n->liste.push_back(neg_[!liste[i]]);
+    }
+    return n;
+}
+
+Element* Strings::negate(LispE* lisp) {
+    List* n = lisp->provideList();
+    for (long i = 0; i < size(); i++) {
+        n->append(booleans_[!liste[i].size()]);
+    }
+    return n;
+}
+
+Element* List::negate(LispE* lisp) {
+    List* n = lisp->provideList();
+    for (long i = 0; i < size(); i++) {
+        n->append(liste[i]->negate(lisp));
+    }
+    return n;
+}
+
+Element* Matrice_float::negate(LispE* lisp) {
+    Matrice_float* m = new Matrice_float();
+    m->size_x = size_x;
+    m->size_y = size_y;
+    for (long i = 0; i < size_x; i++) {
+        m->append(liste[i]->negate(lisp));
+    }
+    return m;
+}
+
+Element* Matrice::negate(LispE* lisp) {
+    Matrice* m = new Matrice();
+    m->size_x = size_x;
+    m->size_y = size_y;
+    for (long i = 0; i < size_x; i++) {
+        m->append(liste[i]->negate(lisp));
+    }
+    return m;
+}
+
+Element* Tenseur_float::negate(LispE* lisp) {
+    Tenseur_float* m = new Tenseur_float();
+    m->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        m->append(liste[i]->negate(lisp));
+    }
+    return m;
+}
+
+Element* Tenseur::negate(LispE* lisp) {
+    Tenseur* m = new Tenseur();
+    m->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        m->append(liste[i]->negate(lisp));
+    }
+    return m;
+}
 

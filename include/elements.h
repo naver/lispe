@@ -358,6 +358,8 @@ public:
     virtual void append(LispE* lisp, double v) {}
     virtual void append(LispE* lisp, long v) {}
     
+    virtual Element* negate(LispE* lisp);
+    
     virtual void push_element(LispE* lisp, List* l);
     virtual void push_element_true(LispE* lisp, List* l);
     virtual void push_element_front(LispE* lisp, List* l);
@@ -1479,6 +1481,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     double checkNumber(LispE* lisp) {
         return content;
     }
@@ -1633,6 +1637,8 @@ public:
     bool isNumber() {
         return true;
     }
+    
+    Element* negate(LispE* lisp);
     
     double checkNumber(LispE* lisp) {
         return content;
@@ -1864,6 +1870,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     double checkNumber(LispE* lisp) {
         return content;
     }
@@ -2037,6 +2045,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     double checkNumber(LispE* lisp) {
         return content.real();
     }
@@ -2209,6 +2219,8 @@ public:
     bool isNumber() {
         return true;
     }
+    
+    Element* negate(LispE* lisp);
     
     double checkNumber(LispE* lisp) {
         return content;
@@ -2899,6 +2911,8 @@ public:
         return true;
     }
     
+    Element* negate(LispE* lisp);
+    
     void setmark(bool v) {
         marking = v;
     }
@@ -3350,6 +3364,8 @@ public:
         return marking;
     }
 
+    Element* negate(LispE* lisp);
+    
     void setusermark(bool v) {
         usermarking = v;
     }
@@ -3768,6 +3784,8 @@ public:
         return marking;
     }
 
+    Element* negate(LispE* lisp);
+    
     void setusermark(bool v) {
         usermarking = v;
     }
@@ -4312,6 +4330,8 @@ public:
         return ensemble.empty();
     }
     
+    Element* negate(LispE* lisp);
+    
     virtual Element* newInstance() {
         return new Set_s();
     }
@@ -4605,6 +4625,8 @@ public:
         return ensemble.empty();
     }
 
+    Element* negate(LispE* lisp);
+    
     Element* newInstance() {
         return new Set_n();
     }
@@ -4882,6 +4904,8 @@ public:
         return ensemble.empty();
     }
 
+    Element* negate(LispE* lisp);
+    
     Element* asList(LispE* lisp, List* l);
     
     Element* newInstance() {
@@ -5168,6 +5192,8 @@ public:
     bool isEmpty() {
         return dictionary.empty();
     }
+    
+    Element* negate(LispE* lisp);
     
     virtual Element* newInstance() {
         return new Set();
