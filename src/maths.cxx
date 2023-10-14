@@ -11351,37 +11351,37 @@ Element* Element::negate(LispE* lisp) {
 }
 
 Element* Float::negate(LispE* lisp) {
-    return numbools_[!content];
+    return booleans_[!content];
 }
 
 Element* Number::negate(LispE* lisp) {
-    return numbools_[!content];
+    return booleans_[!content];
 }
 
 Element* Integer::negate(LispE* lisp) {
-    return numbools_[!content];
+    return booleans_[!content];
 }
 
 Element* Short::negate(LispE* lisp) {
-    return numbools_[!content];
+    return booleans_[!content];
 }
 
 Element* Complex::negate(LispE* lisp) {
-    return numbools_[!Boolean()];
+    return booleans_[!Boolean()];
 }
 
 Element* Set_n::negate(LispE* lisp) {
-    Integers* n = lisp->provideIntegers();
+    List* n = lisp->provideList();
     for (const auto& a: ensemble) {
-        n->append(numbools_[!a]);
+        n->append(booleans_[!a]);
     }
     return n;
 }
 
 Element* Set_i::negate(LispE* lisp) {
-    Integers* n = lisp->provideIntegers();
+    List* n = lisp->provideList();
     for (const auto& a: ensemble) {
-        n->append(numbools_[!a]);
+        n->append(booleans_[!a]);
     }
     return n;
 }
