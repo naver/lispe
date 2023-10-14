@@ -1112,10 +1112,51 @@ Element* List_ncheck_eval::eval(LispE* lisp) {
 }
 
 Element* List_not_eval::eval(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    bool test = first_element->Boolean();
-    first_element->release();
-    return booleans_[!test];
+    Element* element = liste[1]->eval(lisp);
+    if (element->isContainer()) {
+        Element* e;
+        Element* clone = element->newInstance();
+        void* iter = element->begin_iter();
+        Element* next = element->next_iter(lisp, iter);
+        while (next != emptyatom_) {
+            if (next->isContainer()) {
+                List_not_eval* neg = new List_not_eval;
+                neg->append(liste[0]);
+                neg->append(lisp->quoted(next));
+                e = neg->eval(lisp);
+                neg->force_release();
+            }
+            else {
+                if (next->isNumber()) {
+                    if (next->Boolean())
+                        e = zero_;
+                    else
+                        e = one_;
+                }
+                else
+                    e = booleans_[!next->Boolean()];
+                next->release();
+            }
+                
+            clone->append(e);
+            next = element->next_iter(lisp, iter);
+        }
+        element->clean_iter(iter);
+        element->release();
+        return clone;
+    }
+    bool test = element->Boolean();
+    Element* e;
+    if (element->isNumber()) {
+        if (test)
+            e = zero_;
+        else
+            e = one_;
+    }
+    else
+        e = booleans_[!test];
+    element->release();
+    return e;
 }
 
 Element* List_nullp_eval::eval(LispE* lisp) {

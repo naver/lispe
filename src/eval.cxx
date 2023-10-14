@@ -4418,10 +4418,8 @@ Element* List::evall_next(LispE* lisp) {
 }
 
 Element* List::evall_not(LispE* lisp) {
-    Element* first_element = liste[1]->eval(lisp);
-    bool test = first_element->Boolean();
-    first_element->release();
-    return booleans_[!test];
+    List_not_eval neg(this);
+    return neg.eval(lisp);
 }
 
 Element* List::evall_nullp(LispE* lisp) {

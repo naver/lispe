@@ -3987,6 +3987,7 @@ class List_not_eval : public Listincode {
 public:
     
     List_not_eval(Listincode* l) : Listincode(l) {}
+    List_not_eval(List* l) : Listincode(l) {}
     List_not_eval() {}
     
     bool is_straight_eval() {
