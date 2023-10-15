@@ -4694,13 +4694,19 @@ Element* List_equal_eval::eval(LispE* lisp) {
     Element* second_element;
     char test = true;
 
-
     try {
         lisp->checkState(this);
-        second_element = liste[2]->eval(lisp);
-        test = first_element->isequal(lisp, second_element);
+        for (long i = 2; i < size(); i++) {
+            second_element = liste[i]->eval(lisp);
+            if (!first_element->isequal(lisp, second_element)) {
+                test = false;
+                break;
+            }
+            first_element->release();
+            first_element = second_element;
+        }
+        
         first_element->release();
-        second_element->release();
     }
     catch (Error* err) {
         first_element->release();
