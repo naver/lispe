@@ -5141,37 +5141,38 @@ Element* LispE::load_library(string nom_bib) {
             throw new Error(message.str());
         }
         
-        char erreur = 0;
         string ldlibpath;
-        
 #ifdef __apple_build_version__
-        if (erreur) {
-            ldlibpath="";
-            //Specific to MAC OS
-            if (getenv("DYLD_LIBRARY_PATH") != NULL)
-                ldlibpath = getenv("DYLD_LIBRARY_PATH");
-            
-            if (ldlibpath.find(atanlib) == -1) {
-                stringstream message;
-                message << "On Mac OS you need to initialize DYLD_LIBRARY_PATH." << endl;
-                message << "Place this initialisation in your bash or zsh profile:" << endl;
-                message << "\texport DYLD_LIBRARY_PATH=$LISPEPATH:$DYLD_LIBRARY_PATH" << endl;
-                throw new Error(message.str());
-            }
+        if (getenv("DYLD_LIBRARY_PATH") != NULL) {
+            ldlibpath = getenv("DYLD_LIBRARY_PATH");
         }
-#else
-        if (getenv("LD_LIBRARY_PATH") != NULL)
-            ldlibpath = getenv("LD_LIBRARY_PATH");
-
+        
         if (ldlibpath.find(atanlib) == -1) {
-            stringstream message;
-            message << "Error: on most platforms, you need to initialize LD_LIBRARY_PATH." << endl;
-            message << "Place this initialisation in your bash or zsh profile:" << endl;
-            message << "\texport LD_LIBRARY_PATH=$LISPEPATH:$LD_LIBRARY_PATH" << endl;
-            throw new Error(message.str());
+            ldlibpath = "/usr/local/lib:" + atanlib + ":" + ldlibpath;
+            setenv("DYLD_LIBRARY_PATH", ldlibpath.c_str(), 1);
         }
 #endif
+
+        ldlibpath="";
+        if (getenv("LD_LIBRARY_PATH") != NULL) {
+            ldlibpath = getenv("LD_LIBRARY_PATH");
+        }
         
+        if (ldlibpath.find(atanlib) == -1) {
+            ldlibpath = atanlib + ":" + ldlibpath;
+            setenv("LD_LIBRARY_PATH", ldlibpath.c_str(), 1);
+        }
+                
+        ldlibpath = "";
+        if (getenv("PATH") != NULL) {
+            ldlibpath = getenv("PATH");
+        }
+        
+        if (ldlibpath.find(atanlib) == -1) {
+            ldlibpath = atanlib + ":" + ldlibpath;
+            setenv("PATH", ldlibpath.c_str(), 1);
+        }
+
         if (atanlib.back() != '/')
             atanlib += "/";
         
