@@ -19,7 +19,7 @@ We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) prec
 
 ## Modern Functional Properties
 
-__LispE__ provides an alternative to parentheses with the composition operator: ".":
+__LispE__ provides an alternative to parentheses with the [composition operator: "."](https://github.com/naver/lispe/wiki/5.-Description-of-Functions,-Operators-and-Libraries#composition-):
 
 ```Lisp
 (sum (numbers 1 2 3)) can be written (sum . numbers 1 2 3)
