@@ -1336,8 +1336,7 @@ Element* List::transformargument(LispE* lisp) {
     return this;
 }
 
-
-Element* LispE::for_composition(Element* current_program,Element* current,Tokenizer& parse) {
+Element* LispE::for_composition(Element* current_program,Element* current_element,Tokenizer& parse) {
     
 #ifdef LISPE_WASM
     LispE* lisp = this;
@@ -1345,55 +1344,105 @@ Element* LispE::for_composition(Element* current_program,Element* current,Tokeni
 
     Element* check_composition_depth = NULL;
     uint16_t currentspace = current_space;
+    int16_t label;
 
-    List* element = (List*)current;
-    long sz = element->size();
+    List* list = (List*)current_element;
+    Element* element;
+    long sz = list->size();
     //Each function is separated from the next with a "."
     //We go to the last separator
     long x = 0;
-    List* l = provideList();
+    List* stack = provideList();
     Element* sub = NULL;
     for (x = 0; x < sz; x++) {
-        if (element->liste[x] == n_compose) {
+        if (list->liste[x] == n_compose) {
             if (sub != NULL)
-                l->append(sub);
+                stack->append(sub);
             sub = provideList();
         }
         else
-            sub->append(element->liste[x]);
+            sub->append(list->liste[x]);
     }
     
     if (sub != NULL)
-        l->append(sub);
-        
-    if (!l->size()) {
-        l->release();
+        stack->append(sub);
+    
+    if (!stack->size()) {
+        stack->release();
         throw new Error("Error: wrong composition");
     }
-    
-    long last = l->size() - 1;
-    Element* e = NULL;
+        
+    long last = stack->size() - 1;
+    element = NULL;
     Listincode* lic = NULL;
     bool cont = false;
+    bool high_level = false;
     try {
         while (last >= 0) {
-            lic = new Listincode(element->infoIdx());
-            for (x  = 0; x < l->liste[last]->size(); x++)
-                lic->append(l->liste[last]->index(x));
-            if (e != NULL)
-                lic->append(e);
-            garbaging(lic);
-            e = compileLocalStructure(current_program, lic, parse, check_composition_depth, currentspace, cont);
+            label = stack->liste[last]->index(0)->label();
+            //We need to keep track of high level function composition such as:
+            //(filter '(< 100) . map '* '(1 3 9 10 12 34 5 7))
+            //(scanl '+ 10 . take 3 '(1 2 3 4))
+            if (label >= l_map && label <= l_scanr1) {
+                high_level = true;
+
+                //if we have just produced a drop or a take, we must process it locally before anything else
+                if (element != NULL && (element->label() == t_countertake || element->label() == t_counterdrop)) {
+                    List lst;
+                    compose(&lst);
+                    composition_stack.push_back(lst.liste[0]);
+                    //It has been consumed, we can propagate it to the next element
+                    element = NULL;
+                }
+                
+                bool popvalue = false;
+                if (element != NULL) {
+                    //We must push the current element into the list we are processing
+                    stack->liste[last]->append(element);
+                    popvalue = true;
+                }
+                
+                //We then create the corresponding structure in composition_stack
+                //The evaluation of map, filter etc... calls for specific associated functions
+                //such as evall_map_cps or evall_filter_cps (see above)
+                element = stack->liste[last]->eval(this);
+                
+                if (popvalue) {
+                    //We remove the previous value without deleting it...
+                    ((List*)stack->liste[last])->liste.item->last--;
+                }
+            }
+            else {
+                if (high_level) {
+                    //This is a combination of high level functions with regular functions
+                    //(sqrt . sum . filter '(< 100) . map '* '(1 3 9 10 12 34 5 7))
+                    List lst;
+                    compose(&lst);
+                    element = lst.liste[0];
+                    high_level = false;
+                }
+                lic = new Listincode(list->infoIdx());
+                for (x  = 0; x < stack->liste[last]->size(); x++)
+                    lic->append(stack->liste[last]->index(x));
+                if (element != NULL)
+                    lic->append(element);
+                garbaging(lic);
+                element = compileLocalStructure(current_program, lic, parse, check_composition_depth, currentspace, cont);
+            }
             last--;
         }
-        //(sum . numbers 1 2 3)
-        removefromgarbage(element);
-        l->release();
+        if (high_level) {
+            List lst;
+            compose(&lst);
+            element = lst.liste[0];
+        }
+        removefromgarbage(list);
+        stack->release();
     }
     catch (Error* err) {
-        l->release();
+        stack->release();
         throw err;
     }
-    return e;
+    return element;
 }
 

@@ -11124,6 +11124,8 @@ public:
 //We are also going to implement the body of the call
 void moduleMaths(LispE* lisp) {
     //We first create the body of the function
+    lisp->extension("deflib √ (val)", new Math(lisp, math_sqrt));
+    lisp->extension("deflib ∛ (val)", new Math(lisp, math_cbrt));
     lisp->extension("deflib fabs (val)", new Math(lisp, math_fabs));
     lisp->extension("deflib acos (val)", new Math(lisp, math_acos));
     lisp->extension("deflib acosh (val)", new Math(lisp, math_acosh));
@@ -11132,7 +11134,6 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib atan (val)", new Math(lisp, math_atan));
     lisp->extension("deflib atanh (val)", new Math(lisp, math_atanh));
     lisp->extension("deflib cbrt (val)", new Math(lisp, math_cbrt));
-    lisp->extension("deflib ∛ (val)", new Math(lisp, math_cbrt));
     lisp->extension("deflib cos (val)", new Math(lisp, math_cos));
     lisp->extension("deflib cosh (val)", new Math(lisp, math_cosh));
     lisp->extension("deflib erf (val)", new Math(lisp, math_erf));
@@ -11155,7 +11156,6 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib sin (val)", new Math(lisp, math_sin));
     lisp->extension("deflib sinh (val)", new Math(lisp, math_sinh));
     lisp->extension("deflib sqrt (val)", new Math(lisp, math_sqrt));
-    lisp->extension("deflib √ (val)", new Math(lisp, math_sqrt));
     lisp->extension("deflib tan (val)", new Math(lisp, math_tan));
     lisp->extension("deflib tanh (val)", new Math(lisp, math_tanh));
     lisp->extension("deflib tgamma (val)", new Math(lisp, math_tgamma));
