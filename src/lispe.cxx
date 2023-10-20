@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.10.15.14.30";
+static std::string version = "1.2023.10.20.9.47";
 string LispVersion() {
     return version;
 }
@@ -958,7 +958,7 @@ void Delegation::initialisation(LispE* lisp) {
     lisp->provideAtom(c_colon);
     lisp->provideAtom(c_opening_bracket);
     lisp->provideAtom(c_closing_bracket);
-
+    lisp->n_compose = provideAtom(l_compose);
     
     //We add an extension to the language... see systeme.cxx
     moduleSysteme(lisp);
@@ -1349,8 +1349,12 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                     in_quote = 0;
                     infos.append(buffer, t_atom, line_number, left, right);
                 }
-                else
-                    infos.append(buffer, c_point, line_number, left, right);
+                else {
+                    if (infos.types.size() && infos.types.back() == c_opening)
+                        infos.append(buffer, c_point, line_number, left, right);
+                    else
+                        infos.append(buffer, l_compose, line_number, left, right);
+                }
                 break;
             case ':':
                 if (in_quote == 1) {
@@ -1616,6 +1620,318 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
     return res;
 }
 
+Element* LispE::compileLocalStructure(Element* current_program,Element* element,Tokenizer& parse,Element*& check_depth,uint16_t space,bool& cont) {
+#ifdef LISPE_WASM
+    LispE* lisp = this;
+#endif
+
+    int16_t lab = -1;
+    bool equal_op_list = false;
+    
+    if (element->size() >= 1) {
+        lab = element->index(0)->label();
+
+        //if it is a high level function, then we push it into composition_stack
+        //otherwise, we compose the expressions in composition_stack,
+        //beforehand.
+        if (composition_stack.size() && (lab < l_map || lab > l_scanr1))
+            compose(element);
+        
+        switch(lab) {
+                //for defmacro and link, we evaluate these expressions on the fly
+            case l_defspace:
+                current_space = space;
+                cont = true;
+                return element;
+            case l_set_const:
+            case l_lambda:
+                element->eval(this);
+                break;
+            case t_call_lambda: {
+                //This is a lambda call with arguments
+                Element* lm = new List_call_lambda(this, (Listincode*)element);
+                removefromgarbage(element);
+                garbaging(lm);
+                element = lm;
+                break;
+            }
+            case l_defmacro:
+            case l_data:
+            case l_dethread:
+            case l_defun:
+                element->eval(this);
+                cont = true;
+                return element;
+            case l_defpat: {
+                Element* arguments = element->index(2);
+                Element* a;
+                Element* idx;
+                for (long i = 0; i < arguments->size(); i++) {
+                    idx = arguments->index(i);
+                    a = idx->transformargument(this);
+                    if (a != idx)
+                        ((List*)arguments)->liste.put(i, a);
+                }
+                element->eval(this);
+                cont = true;
+                return element;
+            }
+            case l_compose: {
+                //In this case, we build in advance all our calling lists...
+                element = for_composition(current_program, element, parse);
+                return element;
+            }
+            case l_let:
+            case l_set_range:
+            case l_set_shape:
+            case l_setq:
+            case l_seth:
+            case l_set_at:
+            case l_setg:
+                if (element->size() > 1) {
+                    if (element->index(1)->label() < l_final) {
+                        wstring msg = L"Error: Invalid variable name: '";
+                        msg += element->index(1)->asString(this);
+                        msg += L"' (keyword)";
+                        throw new Error(msg);
+                    }
+                    else {
+                        if (delegation->const_values.check(element->index(1)->label())) {
+                            wstring msg = L"Error: '";
+                            msg += element->index(1)->asString(this);
+                            msg += L"' is a constant value";
+                            throw new Error(msg);
+                        }
+                    }
+                }
+                break;
+            case l_plusequal:
+            case l_minusequal:
+            case l_multiplyequal:
+            case l_powerequal:
+            case l_leftshiftequal:
+            case l_rightshiftequal:
+            case l_bitandequal:
+            case l_bitandnotequal:
+            case l_bitorequal:
+            case l_bitxorequal:
+            case l_divideequal:
+            case l_modequal:
+                if (element->size() > 1) {
+                    Element* nxt = element->index(1);
+                    if (nxt->label() < l_final) {
+                        if (nxt->isList()) {
+                            if (nxt->size() < 2 || nxt->index(0)->label() != l_at) {
+                                wstring msg = L"Error: Expecting an index access with 'at'";
+                                throw new Error(msg);
+                            }
+                            equal_op_list = true;
+                        }
+                        else {
+                            wstring msg = L"Error: Invalid variable name: '";
+                            msg += element->index(1)->asString(this);
+                            msg += L"' (keyword)";
+                            throw new Error(msg);
+                        }
+                    }
+                    else {
+                        if (delegation->const_values.check(element->index(1)->label())) {
+                            wstring msg = L"Error: '";
+                            msg += element->index(1)->asString(this);
+                            msg += L"' is a constant value";
+                            throw new Error(msg);
+                        }
+                    }
+                }
+                break;
+            case l_link:
+                element->eval(this);
+                removefromgarbage(element);
+                cont = true;
+                return element;
+            case l_if:
+                if (element->size() == 3)
+                    element->append(void_function);
+                break;
+            case l_infix: {
+                Element* inter = ((Listincode*)element)->eval_infix(this);
+                if (inter != element) {
+                    removefromgarbage(element);
+                    element = inter;
+                    lab = element->index(0)->label();
+                }
+                else
+                    break;
+            }
+            default: {
+                if (lab >= l_map && lab <= l_scanr1) {
+                    if (composition_stack.size() && (composition_stack.back()->label() == t_countertake || composition_stack.back()->label() == t_counterdrop)) {
+                        List lst;
+                        compose(&lst);
+                        composition_stack.push_back(lst.liste[0]);
+                    }
+                    element = element->eval(this);
+                    check_depth = current_program;
+                    cont = true;
+                    return element;
+                }
+            }
+        }
+    }
+                                                    
+    element = generate_macro(element);
+    
+    if (lab > l_final) {
+        if (parse.defun_functions.check(lab)) {
+            Element* body = parse.defun_functions[lab];
+            //This is a call to a function: t_atom, a1, a2...
+            if (body->index(0)->label() == l_defun)
+                body = new List_function_eval(this, (Listincode*)element, (List*)body);
+            else
+                body = new List_pattern_eval((Listincode*)element, (List*)body);
+            
+            garbaging(body);
+            removefromgarbage(element);
+            element = body;
+        }
+        else {
+            if (delegation->function_pool[current_space]->check(lab)) {
+                Element* body = (*delegation->function_pool[current_space])[lab];
+                if (body->index(0)->label() == l_deflib) {
+                    body = new List_library_eval((Listincode*)element, (List*)body);
+                    garbaging(body);
+                    removefromgarbage(element);
+                    element = body;
+                }
+            }
+        }
+    }
+
+
+    /*
+    We detect if it is an instruction beforehand, in order
+    to limit the call to lisp->delegation->evals during the execution (see Listincode::eval)
+    - List_basic_instruction is used for instructions that do not fail, which means that we do not need to record
+    their position and even trace them back.
+    - List_instruction on the other hand will set the position of the current instruction.
+    */
+    if (delegation->instructions.check(lab)) {
+        Element* lm = NULL;
+        long nbarguments = element->size();
+        switch (lab) {
+            case l_break:
+                if (nbarguments != 1)
+                    throw new Error("Error: break does not take any arguments");
+                removefromgarbage(element);
+                element = &delegation->_BREAKEVAL;
+                break;
+            case l_return:
+                if (element->size() == 1)
+                    lm = new Listreturn();
+                else
+                    lm = new Listreturnelement((Listincode*)element);
+                break;
+            case l_switch:
+                lm = new List_switch_eval((Listincode*)element);
+                ((List_switch_eval*)lm)->build(this);
+                break;
+            case l_power:
+                if (nbarguments == 3 && element->index(2)->equalvalue((long)2))
+                    lm = new List_power2((List*)element);
+                else
+                    lm = new List_execute((Listincode*)element, delegation->evals[lab]);
+                break;
+            case l_divide:
+                if (nbarguments == 2)
+                    lm = new List_divide2((List*)element);
+                else
+                    if (nbarguments == 3)
+                        lm = new List_divide3((List*)element);
+                    else
+                        lm = new List_dividen((List*)element);
+                break;
+            case l_plus:
+                if (nbarguments == 2)
+                    lm = new List_plus2((List*)element);
+                else
+                    if (nbarguments == 3)
+                        lm = new List_plus3((List*)element);
+                    else
+                        lm = new List_plusn((List*)element);
+                break;
+            case l_minus:
+                if (nbarguments == 2)
+                    lm = new List_minus2((List*)element);
+                else
+                    if (nbarguments == 3)
+                        lm = new List_minus3((List*)element);
+                    else
+                        lm = new List_minusn((List*)element);
+                break;
+            case l_multiply:
+                if (nbarguments == 2)
+                    lm = new List_multiply2((List*)element);
+                else
+                    if (nbarguments == 3)
+                        lm = new List_multiply3((List*)element);
+                    else
+                        lm = new List_multiplyn((List*)element);
+                break;
+            case l_divideequal:
+                if (equal_op_list)
+                    lm = new List_divideequal_list((List*)element);
+                else
+                    lm = new List_divideequal_var((List*)element);
+                break;
+            case l_plusequal:
+                if (equal_op_list)
+                    lm = new List_plusequal_list((List*)element);
+                else
+                    lm = new List_plusequal_var((List*)element);
+                break;
+            case l_minusequal:
+                if (equal_op_list)
+                    lm = new List_minusequal_list((List*)element);
+                else
+                    lm = new List_minusequal_var((List*)element);
+                break;
+            case l_multiplyequal:
+                if (equal_op_list)
+                    lm = new List_multiplyequal_list((List*)element);
+                else
+                    lm = new List_multiplyequal_var((List*)element);
+                break;
+            case l_maplist:
+                if (element->index(1)->isLambda())
+                    lm = new List_maplist_lambda_eval((Listincode*)element);
+                else
+                    lm = new List_maplist_eval((Listincode*)element);
+                break;
+            case l_zipwith:
+                if (element->index(1)->isLambda())
+                    lm = new List_zipwith_lambda_eval((Listincode*)element);
+                else
+                    lm = new List_zipwith_eval((Listincode*)element);
+                break;
+            default:
+                lm = cloning((Listincode*)element, lab);
+        }
+        
+        if (lm != NULL) {
+            garbaging(lm);
+            if (!delegation->checkArity(lab, nbarguments)) {
+                wstring err = L"Error: Wrong number of arguments for: '";
+                err += delegation->asString(lab);
+                err += L"'";
+                throw new Error(err);
+            }
+            removefromgarbage(element);
+            element = lm;
+        }
+    }
+    return element;
+}
+
 /*
  As far as possible, we will try to avoid the multiplication of objects.
  status == s_constant means that the object is a constant and can never be destroyed...
@@ -1627,6 +1943,9 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
  */
 
 Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, long& index, long quoting) {
+#ifdef LISPE_WASM
+    LispE* lisp = this;
+#endif
     Element* element = NULL;
     int16_t lab = -1;
     Element* check_composition_depth = NULL;
@@ -1646,7 +1965,6 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 }
                 else {
                     uint16_t currentspace = current_space;
-                    bool equal_op_list = false;
                     
                     //If we are dealing with two compositional elements (map, filter, take etc...)
                     //which are at the same level, then we must first compose our composition stack
@@ -1654,7 +1972,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         compose(current_program);
                     
                     check_composition_depth = NULL;
-                    element = new Listincode(parse.lines[index], delegation->i_current_file);
+                    element = new Listincode(delegation->set_idx_info(parse.lines[index]));
                     garbaging(element);
                     abstractSyntaxTree(element, parse, index, quoting);
                     if (quoting) {
@@ -1668,299 +1986,13 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                         }
                     }
                     else {
-                        if (element->size() >= 1) {
-                            lab = element->index(0)->label();
-                            
-                            //if it is a high level function, then we push it into composition_stack
-                            //otherwise, we compose the expressions in composition_stack,
-                            //beforehand.
-                            if (composition_stack.size() && (lab < l_map || lab > l_scanr1))
-                                compose(element);
-                            
-                            switch(lab) {
-                                    //for defmacro and link, we evaluate these expressions on the fly
-                                case l_defspace:
-                                    current_space = currentspace;
-                                    continue;
-                                case l_set_const:
-                                case l_lambda:
-                                    element->eval(this);
-                                    break;
-                                case t_call_lambda: {
-                                    //This is a lambda call with arguments
-                                    Element* lm = new List_call_lambda(this, (Listincode*)element);
-                                    removefromgarbage(element);
-                                    garbaging(lm);
-                                    element = lm;
-                                    break;
-                                }
-                                case l_defmacro:
-                                case l_data:
-                                case l_dethread:
-                                case l_defun:
-                                    element->eval(this);
-                                    continue;
-                                case l_defpat: {
-                                    Element* arguments = element->index(2);
-                                    Element* a;
-                                    Element* idx;
-                                    for (long i = 0; i < arguments->size(); i++) {
-                                        idx = arguments->index(i);
-                                        a = idx->transformargument(this);
-                                        if (a != idx)
-                                            ((List*)arguments)->liste.put(i, a);
-                                    }
-                                    element->eval(this);
-                                    continue;
-                                }
-                                case l_let:
-                                case l_set_range:
-                                case l_set_shape:
-                                case l_setq:
-                                case l_seth:
-                                case l_set_at:
-                                case l_setg:
-                                    if (element->size() > 1) {
-                                        if (element->index(1)->label() < l_final) {
-                                            wstring msg = L"Error: Invalid variable name: '";
-                                            msg += element->index(1)->asString(this);
-                                            msg += L"' (keyword)";
-                                            throw new Error(msg);
-                                        }
-                                        else {
-                                            if (delegation->const_values.check(element->index(1)->label())) {
-                                                wstring msg = L"Error: '";
-                                                msg += element->index(1)->asString(this);
-                                                msg += L"' is a constant value";
-                                                throw new Error(msg);
-                                            }
-                                        }
-                                    }
-                                    break;
-                                case l_plusequal:
-                                case l_minusequal:
-                                case l_multiplyequal:
-                                case l_powerequal:
-                                case l_leftshiftequal:
-                                case l_rightshiftequal:
-                                case l_bitandequal:
-                                case l_bitandnotequal:
-                                case l_bitorequal:
-                                case l_bitxorequal:
-                                case l_divideequal:
-                                case l_modequal:
-                                    if (element->size() > 1) {
-                                        Element* nxt = element->index(1);
-                                        if (nxt->label() < l_final) {
-                                            if (nxt->isList()) {
-                                                if (nxt->size() < 2 || nxt->index(0)->label() != l_at) {
-                                                    wstring msg = L"Error: Expecting an index access with 'at'";
-                                                    throw new Error(msg);
-                                                }
-                                                equal_op_list = true;
-                                            }
-                                            else {
-                                                wstring msg = L"Error: Invalid variable name: '";
-                                                msg += element->index(1)->asString(this);
-                                                msg += L"' (keyword)";
-                                                throw new Error(msg);
-                                            }
-                                        }
-                                        else {
-                                            if (delegation->const_values.check(element->index(1)->label())) {
-                                                wstring msg = L"Error: '";
-                                                msg += element->index(1)->asString(this);
-                                                msg += L"' is a constant value";
-                                                throw new Error(msg);
-                                            }
-                                        }
-                                    }
-                                    break;
-                                case l_link:
-                                    element->eval(this);
-                                    removefromgarbage(element);
-                                    continue;
-                                case l_if:
-                                    if (element->size() == 3)
-                                        element->append(void_function);
-                                    break;
-                                case l_infix: {
-                                    Element* inter = ((Listincode*)element)->eval_infix(this);
-                                    if (inter != element) {
-                                        removefromgarbage(element);
-                                        element = inter;
-                                        lab = element->index(0)->label();
-                                    }
-                                    else
-                                        break;
-                                }
-                                default: {
-                                    if (lab >= l_map && lab <= l_scanr1) {
-                                        if (composition_stack.size() && (composition_stack.back()->label() == t_countertake || composition_stack.back()->label() == t_counterdrop)) {
-                                            List lst;
-                                            compose(&lst);
-                                            composition_stack.push_back(lst.liste[0]);
-                                        }
-                                        element = element->eval(this);
-                                        check_composition_depth = current_program;
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-                                                                        
-                        element = generate_macro(element);
-                        
-                        if (lab > l_final) {
-                            if (parse.defun_functions.check(lab)) {
-                                Element* body = parse.defun_functions[lab];
-                                //This is a call to a function: t_atom, a1, a2...
-                                if (body->index(0)->label() == l_defun)
-                                    body = new List_function_eval(this, (Listincode*)element, (List*)body);
-                                else
-                                    body = new List_pattern_eval((Listincode*)element, (List*)body);
-                                
-                                garbaging(body);
-                                removefromgarbage(element);
-                                element = body;
-                            }
-                            else {
-                                if (delegation->function_pool[current_space]->check(lab)) {
-                                    Element* body = (*delegation->function_pool[current_space])[lab];
-                                    if (body->index(0)->label() == l_deflib) {
-                                        body = new List_library_eval((Listincode*)element, (List*)body);
-                                        garbaging(body);
-                                        removefromgarbage(element);
-                                        element = body;
-                                    }
-                                }
-                            }
-                        }
-
-
-                        /*
-                        We detect if it is an instruction beforehand, in order
-                        to limit the call to lisp->delegation->evals during the execution (see Listincode::eval)
-                        - List_basic_instruction is used for instructions that do not fail, which means that we do not need to record
-                        their position and even trace them back.
-                        - List_instruction on the other hand will set the position of the current instruction.
-                        */
-                        if (delegation->instructions.check(lab)) {
-                            Element* lm = NULL;
-                            long nbarguments = element->size();
-                            switch (lab) {
-                                case l_break:
-                                    if (nbarguments != 1)
-                                        throw new Error("Error: break does not take any arguments");
-                                    removefromgarbage(element);
-                                    element = &delegation->_BREAKEVAL;
-                                    break;
-                                case l_return:
-                                    if (element->size() == 1)
-                                        lm = new Listreturn();
-                                    else
-                                        lm = new Listreturnelement((Listincode*)element);
-                                    break;
-                                case l_switch:
-                                    lm = new List_switch_eval((Listincode*)element);
-                                    ((List_switch_eval*)lm)->build(this);
-                                    break;
-                                case l_power:
-                                    if (nbarguments == 3 && element->index(2)->equalvalue((long)2))
-                                        lm = new List_power2((List*)element);
-                                    else
-                                        lm = new List_execute((Listincode*)element, delegation->evals[lab]);
-                                    break;
-                                case l_divide:
-                                    if (nbarguments == 2)
-                                        lm = new List_divide2((List*)element);
-                                    else
-                                        if (nbarguments == 3)
-                                            lm = new List_divide3((List*)element);
-                                        else
-                                            lm = new List_dividen((List*)element);
-                                    break;
-                                case l_plus:
-                                    if (nbarguments == 2)
-                                        lm = new List_plus2((List*)element);
-                                    else
-                                        if (nbarguments == 3)
-                                            lm = new List_plus3((List*)element);
-                                        else
-                                            lm = new List_plusn((List*)element);
-                                    break;
-                                case l_minus:
-                                    if (nbarguments == 2)
-                                        lm = new List_minus2((List*)element);
-                                    else
-                                        if (nbarguments == 3)
-                                            lm = new List_minus3((List*)element);
-                                        else
-                                            lm = new List_minusn((List*)element);
-                                    break;
-                                case l_multiply:
-                                    if (nbarguments == 2)
-                                        lm = new List_multiply2((List*)element);
-                                    else
-                                        if (nbarguments == 3)
-                                            lm = new List_multiply3((List*)element);
-                                        else
-                                            lm = new List_multiplyn((List*)element);
-                                    break;
-                                case l_divideequal:
-                                    if (equal_op_list)
-                                        lm = new List_divideequal_list((List*)element);
-                                    else
-                                        lm = new List_divideequal_var((List*)element);
-                                    break;
-                                case l_plusequal:
-                                    if (equal_op_list)
-                                        lm = new List_plusequal_list((List*)element);
-                                    else
-                                        lm = new List_plusequal_var((List*)element);
-                                    break;
-                                case l_minusequal:
-                                    if (equal_op_list)
-                                        lm = new List_minusequal_list((List*)element);
-                                    else
-                                        lm = new List_minusequal_var((List*)element);
-                                    break;
-                                case l_multiplyequal:
-                                    if (equal_op_list)
-                                        lm = new List_multiplyequal_list((List*)element);
-                                    else
-                                        lm = new List_multiplyequal_var((List*)element);
-                                    break;
-                                case l_maplist:
-                                    if (element->index(1)->isLambda())
-                                        lm = new List_maplist_lambda_eval((Listincode*)element);
-                                    else
-                                        lm = new List_maplist_eval((Listincode*)element);
-                                    break;
-                                case l_zipwith:
-                                    if (element->index(1)->isLambda())
-                                        lm = new List_zipwith_lambda_eval((Listincode*)element);
-                                    else
-                                        lm = new List_zipwith_eval((Listincode*)element);
-                                    break;
-                                default:
-                                    lm = cloning((Listincode*)element, lab);                                    
-                            }
-                            
-                            if (lm != NULL) {
-                                garbaging(lm);
-                                if (!delegation->checkArity(lab, nbarguments)) {
-                                    wstring err = L"Error: Wrong number of arguments for: '";
-                                    err += delegation->asString(lab);
-                                    err += L"'";
-                                    throw new Error(err);
-                                }
-                                removefromgarbage(element);
-                                element = lm;
-                            }
-                        }
+                        bool cont = false;
+                        element = compileLocalStructure(current_program, element, parse, check_composition_depth, currentspace, cont);
+                        if (cont)
+                            continue;
                     }
                 }
+                
                 if (element->size() || element->isComposable())
                     current_program->append(element);
                 else {
@@ -2088,6 +2120,16 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     current_program->append(element);
                 }
                 break;
+            case l_compose:
+                index++;
+                if (!current_program->size())
+                    throw new Error("Error: unknown operation: '.'");
+                if (current_program->index(0) != n_compose)
+                    ((List*)current_program)->liste.insert(0, n_compose);
+                if (current_program->last() == n_compose)
+                    throw new Error("Error: two '.' in a row. Composition is impossible");
+                current_program->append(n_compose);
+                break;
             case t_atom:
                 element = provideAtom(encode(parse.tokens[index]));
                 index++;
@@ -2116,7 +2158,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 }
                 break;
             case l_quote:
-                element = new List_quote_eval(parse.lines[index], delegation->i_current_file);
+                element = new List_quote_eval(delegation->set_idx_info(parse.lines[index]));
                 index++;
                 garbaging(element);
                 element->append(provideAtom(l_quote));
@@ -2651,8 +2693,7 @@ void Element::generate_body_from_macro(LispE* lisp, Listincode* code, binHash<El
             if (e->isList()) {
                 Listincode* lcode = new Listincode(s_constant);
                 lisp->garbaging(lcode);
-                lcode->line = ((Listincode*)code)->line;
-                lcode->fileidx = ((Listincode*)code)->fileidx;
+                lcode->idxinfo = ((Listincode*)code)->idxinfo;
                 code->append(lcode);
                 e->generate_body_from_macro(lisp, lcode, dico_variables);
             }
@@ -2826,6 +2867,8 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
 
 
 

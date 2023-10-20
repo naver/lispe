@@ -78,14 +78,14 @@ Element* List_and_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         Element* element;
-        for (long i = 1; i < listsize && test; i++) {
+        for (long i = 1; i < size() && test; i++) {
             element = liste[i]->eval(lisp);
             test = element->Boolean();
             element->release();
         }
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return booleans_[test];
@@ -122,7 +122,7 @@ Element* List_block_eval::eval(LispE* lisp) {
         return element;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -150,7 +150,7 @@ Element* List_cadr_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -173,7 +173,7 @@ Element* List_car_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -197,7 +197,7 @@ Element* List_cdr_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         lst->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -226,7 +226,7 @@ Element* List_check_eval::eval(LispE* lisp) {
         return element;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -267,7 +267,7 @@ Element* List_cond_eval::eval(LispE* lisp) {
         first_element->release();
         second_element->release();
         third_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -332,7 +332,7 @@ Element* List_cons_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     return null_;
 }
@@ -403,7 +403,7 @@ Element* List_consb_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -458,7 +458,7 @@ Element* List_cutlist_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -522,7 +522,7 @@ Element* List_if_eval::eval(LispE* lisp) {
         return condition;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -551,7 +551,7 @@ Element* List_ife_eval::eval(LispE* lisp) {
         return element;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -569,7 +569,7 @@ Element* List_in_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -606,7 +606,7 @@ Element* List_at_eval::eval(LispE* lisp) {
         container->release();
         if (container != result)
             result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -648,7 +648,7 @@ Element* List_set_at_eval::eval(LispE* lisp) {
         container->release();
         if (container != result)
             result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -749,7 +749,7 @@ Element* List_key_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -812,7 +812,7 @@ Element* List_keyi_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -874,7 +874,7 @@ Element* List_keyn_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -909,7 +909,7 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         dico->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -945,7 +945,7 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         dico->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -980,7 +980,7 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         dico->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -1004,7 +1004,7 @@ Element* List_list_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         a_list->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -1026,7 +1026,7 @@ Element* List_loop_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -1076,7 +1076,7 @@ Element* List_loopcount_eval::eval(LispE* lisp) {
     catch (Error* err) {
         if (label)
             lisp->removefromstack(label);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -1107,7 +1107,7 @@ Element* List_ncheck_eval::eval(LispE* lisp) {
         return element;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -1160,7 +1160,7 @@ Element* List_numbers_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -1195,7 +1195,7 @@ Element* List_integers_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -1230,7 +1230,7 @@ Element* List_strings_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -1242,14 +1242,14 @@ Element* List_or_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         Element* element;
-        for (long i = 1; i < listsize && !test; i++) {
+        for (long i = 1; i < size() && !test; i++) {
             element = liste[i]->eval(lisp);
             test = element->Boolean();
             element->release();
         }
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return booleans_[test];
@@ -1302,7 +1302,7 @@ Element* List_pop_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -1328,7 +1328,7 @@ Element* List_popfirst_eval::eval(LispE* lisp) {
         first_element->release();
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     return null_;
 }
@@ -1351,7 +1351,7 @@ Element* List_poplast_eval::eval(LispE* lisp) {
         first_element->release();
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     return null_;
 }
@@ -1374,7 +1374,7 @@ Element* List_push_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -1391,7 +1391,7 @@ Element* List_pushtrue_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -1409,7 +1409,7 @@ Element* List_pushfirst_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -1426,7 +1426,7 @@ Element* List_pushlast_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -1470,7 +1470,7 @@ Element* List_switch_eval::eval(LispE* lisp) {
         }
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return e;
@@ -1509,7 +1509,7 @@ Element* List_while_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -1711,7 +1711,7 @@ Element* List_function_eval::eval(LispE* lisp) {
     catch (Error* err) {
         lisp->pop();
         lisp->check_end_trace(tr);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -1733,7 +1733,7 @@ Element* List_library_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         lisp->pop();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -1783,7 +1783,7 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         arguments->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     char tr = lisp->check_trace_in_function();
@@ -1890,7 +1890,7 @@ Element* List_pattern_eval::eval(LispE* lisp) {
         arguments->release();
         lisp->pop();
         lisp->check_end_trace(tr);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     arguments->release(element);
@@ -1989,7 +1989,7 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
         element->release();
         if (container != NULL)
             container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     return emptylist_;
@@ -2107,7 +2107,7 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         element->release();
         if (container != NULL)
             container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     return emptylist_;
@@ -2278,7 +2278,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
             element->clean_iter(iter);
         element->release();
         result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     return emptylist_;
@@ -2462,7 +2462,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
         lisp->reset_to_true(sb);
         element->release();
         result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     return emptylist_;
@@ -2642,7 +2642,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
         lisp->reset_to_true(sb);
         element->release();
         result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     return emptylist_;
 }
@@ -2697,7 +2697,7 @@ Element* List_eq_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -2725,7 +2725,7 @@ Element* List_neq_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -2739,7 +2739,7 @@ Element* List_greater_eval::eval(LispE* lisp) {
     Element* test;
 
     Element* second_element;
-
+    int16_t listsize = size();
 
     try {
         lisp->checkState(this);
@@ -2775,7 +2775,7 @@ Element* List_greater_eval::eval(LispE* lisp) {
         if (res != NULL)
             res->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -2789,7 +2789,7 @@ Element* List_greaterorequal_eval::eval(LispE* lisp) {
     Element* second_element;
     Integers* res = NULL;
     Element* test;
-
+    int16_t listsize = size();
 
     try {
         lisp->checkState(this);
@@ -2825,7 +2825,7 @@ Element* List_greaterorequal_eval::eval(LispE* lisp) {
         if (res != NULL)
             res->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -2837,7 +2837,7 @@ Element* List_lower_eval::eval(LispE* lisp) {
     Element* second_element;
     Integers* res = NULL;
     Element* test;
-
+    int16_t listsize = size();
 
     try {
         lisp->checkState(this);
@@ -2873,7 +2873,7 @@ Element* List_lower_eval::eval(LispE* lisp) {
         if (res != NULL)
             res->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -2888,7 +2888,7 @@ Element* List_lowerorequal_eval::eval(LispE* lisp) {
     Integers* res = NULL;
     Element* test;
 
-
+    int16_t listsize = size();
     try {
         lisp->checkState(this);
         if (listsize == 3) {
@@ -2923,7 +2923,7 @@ Element* List_lowerorequal_eval::eval(LispE* lisp) {
         if (res != NULL)
             res->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -3016,7 +3016,7 @@ Element* List_iota_eval::eval(LispE* lisp) {
     catch (Error* err) {
         e->release();
         res->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -3077,7 +3077,7 @@ Element* List_iota0_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         res->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -3195,7 +3195,7 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
         l2->release();
         op1->release();
         op2->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     return null_;
@@ -3302,7 +3302,7 @@ Element* List_outerproduct_eval::eval(LispE* lisp) {
         l1->release();
         l2->release();
         res->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     return null_;
@@ -3345,7 +3345,7 @@ Element* List_rank_eval::eval(LispE* lisp) {
         lst->release();
         element->release();
         e->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -3398,7 +3398,7 @@ Element* List_irank_eval::eval(LispE* lisp) {
         lst->release();
         element->release();
         e->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -3435,7 +3435,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         current_list->release();
         op->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     long sz = current_list->size();
@@ -3465,7 +3465,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
             res->release();
             call->force_release();
             current_list->release();
-            return lisp->check_error(this, err, line, fileidx);
+            return lisp->check_error(this, err, idxinfo);
         }
         call->force_release();
         current_list->release();
@@ -3497,7 +3497,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         current_list->release();
         op->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     call = NULL;
@@ -3519,7 +3519,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         catch (Error* err) {
             lisp->reset_to_true(sb);
             call->force_release();
-            return lisp->check_error(this, err, line, fileidx);
+            return lisp->check_error(this, err, idxinfo);
         }
         
         lisp->reset_to_true(sb);
@@ -3555,7 +3555,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
             call->force_release();
         current_list->release();
         lisp->reset_to_true(sb);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     return null_;
 }
@@ -3590,7 +3590,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         current_list->release();
         op->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     long sz = current_list->size();
@@ -3622,7 +3622,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
             current_transposed->release();
             res->release();
             current_list->release();
-            return lisp->check_error(this, err, line, fileidx);
+            return lisp->check_error(this, err, idxinfo);
         }
         
         call->force_release();
@@ -3656,7 +3656,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         current_list->release();
         op->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     bool sb = lisp->set_true_as_one();
@@ -3677,7 +3677,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
             lisp->reset_to_true(sb);
             call->force_release();
             op->release();
-            return lisp->check_error(this, err, line, fileidx);
+            return lisp->check_error(this, err, idxinfo);
         }
         
         lisp->reset_to_true(sb);
@@ -3720,7 +3720,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
             call->force_release();
         current_list->release();
         lisp->reset_to_true(sb);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     return null_;
 }
@@ -3887,7 +3887,7 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
         res->release();
         second_element->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -3917,7 +3917,7 @@ Element* List_member_eval::eval(LispE* lisp) {
         lisp->reset_to_true(sb);
         element->release();
         the_set->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -4327,7 +4327,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
         e->release();
         res->release();
         lisp->reset_to_true(sb);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return res;
@@ -4367,7 +4367,7 @@ Element* List_equalonezero_eval::eval(LispE* lisp) {
         l2->release();
         if (res != NULL)
             res->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -4415,7 +4415,7 @@ Element* List_scan_eval::eval(LispE* lisp) {
             current_list->release();
             res->release();
             call->force_release();
-            return lisp->check_error(this, err, line, fileidx);
+            return lisp->check_error(this, err, idxinfo);
         }
         call->force_release();
         current_list->release();
@@ -4442,7 +4442,7 @@ Element* List_scan_eval::eval(LispE* lisp) {
     catch (Error* err) {
         current_list->release();
         op->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     res = lisp->provideList();
@@ -4487,7 +4487,7 @@ Element* List_scan_eval::eval(LispE* lisp) {
         lisp->reset_to_true(sb);
         res->release();
         current_list->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -4539,7 +4539,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
             call->force_release();
             current_list->release();
             lisp->reset_to_true(sb);
-            return lisp->check_error(this, err, line, fileidx);
+            return lisp->check_error(this, err, idxinfo);
         }
         
         call->force_release();
@@ -4573,7 +4573,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         current_list->release();
         op->release();
         lisp->reset_to_true(sb);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     call = NULL;
@@ -4621,7 +4621,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         res->release();
         lisp->reset_to_true(sb);
         current_list->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return res;
@@ -4683,7 +4683,7 @@ Element* List_flip_eval::eval(LispE* lisp) {
                 first_element->release();
             second_element->release();
         }
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     return null_;
@@ -4710,7 +4710,7 @@ Element* List_equal_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -4730,7 +4730,7 @@ Element* List_different_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -4748,7 +4748,7 @@ Element* List_extract_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     element->release();
@@ -4768,7 +4768,7 @@ Element* List_set_range_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     element->release();
@@ -4952,7 +4952,7 @@ Element* List_at_shape_eval::eval(LispE* lisp) {
             shape->release();
         container->release();
         result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5024,7 +5024,7 @@ Element* List_set_shape_eval::eval(LispE* lisp) {
         shape->release();
         value->release();
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5170,7 +5170,7 @@ Element* List_infix_eval::eval(LispE* lisp) {
         expression->release();
         root->release();
         sub->rawrelease();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     expression->release();
     sub->rawrelease();
@@ -5230,7 +5230,7 @@ Element* List_insert_eval::eval(LispE* lisp) {
             if (third_element != NULL)
                 third_element->release();
         }
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5252,7 +5252,7 @@ Element* List_join_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5287,7 +5287,7 @@ Element* List_label_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         value->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -5369,7 +5369,7 @@ Element* List_zip_eval::eval(LispE* lisp) {
         container->release();
         result->release();
         lists->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5395,6 +5395,9 @@ Element* List_zipwith_lambda_eval::eval(LispE* lisp) {
         lists->append(container);
     
     List* call = NULL;
+    int16_t listsize = size();
+    if (liste.back()->type == v_null)
+        listsize--;
     
     try {
         lisp->checkState(this);
@@ -5486,7 +5489,7 @@ Element* List_zipwith_lambda_eval::eval(LispE* lisp) {
         }
         lists->release();
         container->decrement();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5500,7 +5503,10 @@ Element* List_zipwith_eval::eval(LispE* lisp) {
         throw new Error(L"Error: 'zipwith' only accepts lists as arguments");
     }
     
-    
+    int16_t listsize = size();
+    if (liste.back()->type == v_null)
+        listsize--;
+
     List* call = NULL;
     
     List* lists = lisp->provideList();
@@ -5596,7 +5602,7 @@ Element* List_zipwith_eval::eval(LispE* lisp) {
             call->force_release();
         lists->release();
         container->decrement();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5622,7 +5628,7 @@ Element* List_search_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5650,7 +5656,7 @@ Element* List_count_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5677,7 +5683,7 @@ Element* List_searchall_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5703,7 +5709,7 @@ Element* List_replaceall_eval::eval(LispE* lisp) {
         object->release();
         search->release();
         replace->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5768,7 +5774,7 @@ Element* List_reverse_eval::eval(LispE* lisp) {
     catch (Error* err) {
         result->release();
         matrix->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5796,7 +5802,7 @@ Element* List_revertsearch_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5817,7 +5823,7 @@ Element* List_compare_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -5861,7 +5867,7 @@ Element* List_extend_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -5885,7 +5891,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
     catch (Error* err) {
         comparator->release();
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     
@@ -5904,7 +5910,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             catch (Error* err) {
                 comparator->decrement();
                 container->release();
-                return lisp->check_error(this, err, line, fileidx);
+                return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_numbers: {
@@ -5921,7 +5927,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             catch (Error* err) {
                 comparator->decrement();
                 container->release();
-                return lisp->check_error(this, err, line, fileidx);
+                return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_shorts: {
@@ -5938,7 +5944,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             catch (Error* err) {
                 comparator->decrement();
                 container->release();
-                return lisp->check_error(this, err, line, fileidx);
+                return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_integers: {
@@ -5955,7 +5961,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             catch (Error* err) {
                 comparator->decrement();
                 container->release();
-                return lisp->check_error(this, err, line, fileidx);
+                return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_strings: {
@@ -5972,7 +5978,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             catch (Error* err) {
                 comparator->decrement();
                 container->release();
-                return lisp->check_error(this, err, line, fileidx);
+                return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_llist: {
@@ -5996,7 +6002,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             catch (Error* err) {
                 container->release();
                 complist->force_release();
-                return lisp->check_error(this, err, line, fileidx);
+                return lisp->check_error(this, err, idxinfo);
             }
 
             l->liste.sorting(lisp, complist);
@@ -6031,7 +6037,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             catch (Error* err) {
                 container->release();
                 complist->force_release();
-                return lisp->check_error(this, err, line, fileidx);
+                return lisp->check_error(this, err, idxinfo);
             }
             l->liste.sorting(lisp, complist);
             complist->force_release();
@@ -6099,7 +6105,7 @@ Element* List_xor_eval::eval(LispE* lisp) {
         }
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     element->release();
@@ -6218,7 +6224,7 @@ Element* List_print_eval::eval(LispE* lisp) {
             std::cout.flush();
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return emptyatom_;
@@ -6246,7 +6252,7 @@ Element* List_printerr_eval::eval(LispE* lisp) {
             std::cerr.flush();
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     lisp->resetStack();
@@ -6277,7 +6283,7 @@ Element* List_printerrln_eval::eval(LispE* lisp) {
             std::cerr.flush();
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return emptyatom_;
@@ -6314,7 +6320,7 @@ Element* List_println_eval::eval(LispE* lisp) {
             std::cout.flush();
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6342,7 +6348,7 @@ Element* List_set_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6410,7 +6416,7 @@ Element* List_sets_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6479,7 +6485,7 @@ Element* List_seti_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6547,7 +6553,7 @@ Element* List_setn_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6599,7 +6605,7 @@ Element* List_minmax_eval::eval(LispE* lisp) {
             max_element->release();
         if (first_element != min_element)
             min_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     
     res = lisp->provideList();
@@ -6640,7 +6646,7 @@ Element* List_max_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6740,7 +6746,7 @@ Element* List_min_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6786,7 +6792,7 @@ Element* List_nconc_eval::eval(LispE* lisp) {
     catch (Error* err) {
         result->release();
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6830,7 +6836,7 @@ Element* List_nconcn_eval::eval(LispE* lisp) {
     catch (Error* err) {
         result->release();
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -6841,7 +6847,7 @@ Element* List_andvalue_eval::eval(LispE* lisp) {
     Element* second_element = null_;
     bool test = true;
 
-    for (long i = 1; i < listsize && test; i++) {
+    for (long i = 1; i < size() && test; i++) {
         second_element->release();
         second_element = liste[i]->eval(lisp);
         test = second_element->Boolean();
@@ -6912,7 +6918,7 @@ Element* List_apply_eval::eval(LispE* lisp) {
             else
                 arguments->force_release();
         }
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -6961,7 +6967,7 @@ Element* List_over_eval::eval(LispE* lisp) {
         }
         if (result != NULL)
             result->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return arguments;
@@ -7104,7 +7110,7 @@ Element* List_elapse_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return lisp->provideNumber(diff);
@@ -7154,7 +7160,7 @@ Element* List_eval_eval::eval(LispE* lisp) {
     catch (Error* err) {
         code->release();
         lisp->check_arity_on_fly = false;
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -7209,7 +7215,7 @@ Element* List_factorial_eval::eval(LispE* lisp) {
     catch (Error* err) {
         e->release();
         r->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     lisp->resetStack();
@@ -7251,7 +7257,7 @@ Element* List_fread_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -7301,7 +7307,7 @@ Element* List_shorts_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         delete n;
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return n;
@@ -7365,7 +7371,7 @@ Element* List_llist_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -7431,7 +7437,7 @@ Element* List_to_llist_eval::eval(LispE* lisp) {
     catch (Error* err) {
         a_llist->release();
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return a_llist;
@@ -7455,7 +7461,7 @@ Element* List_lock_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         _lock->unlocking(test);
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     _lock->unlocking(test);
     lisp->resetStack();
@@ -7518,7 +7524,7 @@ Element* List_mloop_eval::eval(LispE* lisp) {
     catch (Error* err) {
         values->release();
         indexes->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     values->release(e);
@@ -7580,7 +7586,7 @@ Element* List_lloop_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         values->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     values->release(e);
@@ -7607,7 +7613,7 @@ Element* List_mark_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         container->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     return True_;
@@ -7667,7 +7673,7 @@ Element* List_tensor_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         e->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return new Tenseur(lisp, shape, zero_);
@@ -7717,7 +7723,7 @@ Element* List_tensor_float_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         e->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return new Tenseur_float(lisp, shape, zero_);
@@ -7766,7 +7772,7 @@ Element* List_matrix_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         e->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return new Matrice(sx, sy, e);
@@ -7815,7 +7821,7 @@ Element* List_matrix_float_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         e->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return new Matrice_float(sx, sy, e);
@@ -7846,7 +7852,7 @@ Element* List_floats_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         n->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return n;
@@ -8142,7 +8148,7 @@ Element* List_heap_eval::eval(LispE* lisp) {
             compare->release();
         if (tas != NULL)
             tas->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return tas;
@@ -8186,7 +8192,7 @@ Element* List_solve_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return res;
@@ -8207,7 +8213,7 @@ Element* List_determinant_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 
     element->release();
@@ -8256,7 +8262,7 @@ Element* List_lubksb_eval::eval(LispE* lisp) {
         if (Y != NULL) {
             Y->release();
         }
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return Y;
@@ -8284,7 +8290,7 @@ Element* List_listand_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -8312,7 +8318,7 @@ Element* List_listor_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -8339,7 +8345,7 @@ Element* List_listxor_eval::eval(LispE* lisp) {
     catch (Error* err) {
         first_element->release();
         second_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return result;
@@ -8427,7 +8433,7 @@ Element* List_mod_eval::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -8515,7 +8521,7 @@ Element* List_leftshift_eval::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -8603,7 +8609,7 @@ Element* List_rightshift_eval::eval(LispE* lisp) {
         if (first_element != second_element)
             second_element->release();
         first_element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return first_element;
@@ -8635,7 +8641,7 @@ Element* List_invert_eval::eval(LispE* lisp) {
     }
     catch (Error* err) {
         element->release();
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
     return res;

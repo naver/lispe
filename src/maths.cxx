@@ -9092,7 +9092,8 @@ Element* List_divideequal_var::eval(LispE* lisp) {
     Element* first_element = liste[1];
     Element* second_element = null_;
     Element* lst = this;
-    
+    int16_t listsize = size();
+
     try {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
@@ -9507,7 +9508,8 @@ Element* List_minusequal_var::eval(LispE* lisp) {
     Element* first_element = liste[1];
     Element* second_element = null_;
     Element* lst = this;
-    
+    int16_t listsize = size();
+
     try {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
@@ -9923,7 +9925,8 @@ Element* List_multiplyequal_var::eval(LispE* lisp) {
     Element* first_element = liste[1];
     Element* second_element = null_;
     Element* lst = this;
-    
+    int16_t listsize = size();
+
     try {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {
@@ -10232,7 +10235,8 @@ Element* List_plusequal_var::eval(LispE* lisp) {
     Element* first_element = liste[1];
     Element* second_element = null_;
     Element* lst = this;
-    
+    int16_t listsize = size();
+
     try {
         first_element = first_element->eval(lisp)->copyatom(lisp, s_constant);
         if (listsize == 2) {

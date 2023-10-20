@@ -193,7 +193,13 @@ public:
             }
         }
     }
-    
+
+    inline void clean(long i) {
+        for (; i < last; i++) {
+            buffer[i]->decrement();
+        }
+    }
+
     inline void setAndQuote(long i, Element* v) {
         ((Quoted*)buffer[i])->requoting(v);
     }
@@ -280,6 +286,13 @@ public:
         return marking;
     }
     
+    inline bool cleanfromhome() {
+        item->clean(home);
+        item->last = home;
+        home--;
+        return (home >= 0);
+    }
+
     inline void setusermark(bool v) {
         usermarking = v;
     }
@@ -620,6 +633,10 @@ public:
     
     bool isFunction() {
         return (liste.size() > 1 && liste[0]->label() >= l_lambda && liste[0]->label() <= l_defpat);
+    }
+    
+    virtual int infoIdx() {
+        return 0;
     }
     
     void* begin_iter() {
@@ -1508,6 +1525,7 @@ public:
     Element* evall_foldr1_cps(LispE*);
     Element* evall_scanr1_cps(LispE*);
     
+    
 #ifdef MACDEBUG
     Element* evall_debug_function(LispE* lisp);
 #endif
@@ -1712,42 +1730,36 @@ public:
 
 class Listincode : public List {
 public:
-    long line;
-    long fileidx;
+    int idxinfo;
     
     Listincode(Listincode* l) : List(l, 0) {
         terminal = l->terminal;
         status = s_constant;
-        line = l->line;
-        fileidx = l->fileidx;
+        idxinfo = l->idxinfo;
     }
 
     Listincode(Listincode* l, long i) : List(l, i) {
         terminal = l->terminal;
         status = s_constant;
-        line = l->line;
-        fileidx = l->fileidx;
+        idxinfo = l->idxinfo;
     }
 
     Listincode(List* l) : List(l, 0) {
         terminal = l->terminal;
         status = s_constant;
-        line = -1;
-        fileidx = 0;
+        idxinfo = -1;
     }
     
-    Listincode(long l, long f) : List(s_constant) {
-        line = l;
-        fileidx = f;
+    Listincode(int idx) : List(s_constant) {
+        idxinfo = idx;
     }
+    
     Listincode(uint16_t s) : List(s) {
-        line = 0;
-        fileidx = 0;
+        idxinfo = 0;
     }
     
     Listincode() : List(s_constant) {
-        line = 0;
-        fileidx = 0;
+        idxinfo = 0;
     }
     
     void copyfrom(Element* l) {
@@ -1779,6 +1791,10 @@ public:
     virtual List* cloning(Listincode* e, methodEval m);
     virtual List* cloning() {
         return new Listincode();
+    }
+    
+    int infoIdx() {
+        return idxinfo;
     }
 };
 
@@ -2805,18 +2821,14 @@ public:
 
 class List_and_eval : public Listincode {
 public:
-    int16_t listsize;
     
     List_and_eval(Listincode* l) : Listincode(l) {
-        listsize = liste.size();
     }
     
     List_and_eval(List* l) : Listincode(l) {
-        listsize = liste.size();
     }
     
     List_and_eval() {
-        listsize = 0;
     }
     
     bool is_straight_eval() {
@@ -2831,21 +2843,18 @@ public:
         return new List_and_eval();
     }
     
+    
     Element* eval(LispE* lisp);
 };
 
 class List_or_eval : public Listincode {
 public:
-    int16_t listsize;
     
     List_or_eval(Listincode* l) : Listincode(l) {
-        listsize = liste.size();
     }
     List_or_eval(List* l) : Listincode(l) {
-        listsize = liste.size();
     }
     List_or_eval() {
-        listsize = 0;        
     }
     
     bool is_straight_eval() {
@@ -2860,6 +2869,7 @@ public:
         return new List_or_eval();
     }
     
+
     Element* eval(LispE* lisp);
 };
 
@@ -3785,15 +3795,12 @@ class List_zipwith_lambda_eval : public Listincode {
 public:
     List_lambda_eval* lambda_e;
     vecte<int16_t> params;
-    int16_t listsize;
     bool choose;
     bool del;
     
     List_zipwith_lambda_eval(Listincode* l) : Listincode(l) {
         choose = true;
-        listsize = size();
         if (liste.back()->type == v_null) {
-            listsize--;
             choose = liste.back()->Boolean();
         }
         Element* function = liste[1];
@@ -3810,9 +3817,7 @@ public:
     
     List_zipwith_lambda_eval(List* l) : Listincode(l) {
         choose = true;
-        listsize = size();
         if (liste.back()->type == v_null) {
-            listsize--;
             choose = liste.back()->Boolean();
         }
         Element* function = liste[1];
@@ -3849,27 +3854,23 @@ public:
     List* cloning() {
         return new List_zipwith_lambda_eval();
     }
-    
+  
+
 };
 
 class List_zipwith_eval : public Listincode {
 public:
-    int16_t listsize;
     bool choose;
     
     List_zipwith_eval(Listincode* l) : Listincode(l) {
         choose = true;
-        listsize = size();
         if (liste.back()->type == v_null) {
-            listsize--;
             choose = liste.back()->Boolean();
         }
     }
     List_zipwith_eval(List* l) : Listincode(l) {
         choose = true;
-        listsize = size();
         if (liste.back()->type == v_null) {
-            listsize--;
             choose = liste.back()->Boolean();
         }
     }
@@ -3890,6 +3891,7 @@ public:
         return new List_zipwith_eval();
     }
     
+
 };
 
 class List_function_eval : public Listincode {
@@ -4430,7 +4432,7 @@ public:
 class List_quote_eval : public Listincode {
 public:
     
-    List_quote_eval(long l, long f) : Listincode(l, f) {}
+    List_quote_eval(int idx_info) : Listincode(idx_info) {}
     
     Element* eval(LispE* lisp);
 };
@@ -4602,10 +4604,8 @@ public:
 
 class List_greater_eval : public Listincode {
 public:
-    int16_t listsize;
     
     List_greater_eval(List* l) : Listincode(l) {
-        listsize = size();
     }
     List_greater_eval() {}
     
@@ -4621,15 +4621,14 @@ public:
         return new List_greater_eval();
     }
     
+
     Element* eval(LispE* lisp);
 };
 
 class List_greaterorequal_eval : public Listincode {
 public:
-    int16_t listsize;
     
     List_greaterorequal_eval(List* l): Listincode(l) {
-        listsize = size();
     }
     List_greaterorequal_eval() {}
     
@@ -4645,15 +4644,14 @@ public:
         return new List_greaterorequal_eval();
     }
     
+
     Element* eval(LispE* lisp);
 };
 
 class List_lower_eval : public Listincode {
 public:
-    int16_t listsize;
     
     List_lower_eval(List* l) : Listincode(l) {
-        listsize = size();
     }
     
     List_lower_eval() {}
@@ -4670,15 +4668,14 @@ public:
         return new List_lower_eval();
     }
     
+
     Element* eval(LispE* lisp);
 };
 
 class List_lowerorequal_eval : public Listincode {
 public:
-    int16_t listsize;
     
     List_lowerorequal_eval(List* l): Listincode(l) {
-        listsize = size();
     }
     List_lowerorequal_eval() {}
     
@@ -4693,6 +4690,8 @@ public:
     List* cloning() {
         return new List_lowerorequal_eval();
     }
+    
+    
     Element* eval(LispE* lisp);
 };
 
@@ -4713,6 +4712,7 @@ public:
     List* cloning() {
         return new List_eq_eval();
     }
+    
     Element* eval(LispE* lisp);
 };
 
@@ -5085,16 +5085,12 @@ public:
 
 class List_andvalue_eval : public Listincode {
 public:
-    int16_t listsize;
     
     List_andvalue_eval(Listincode* l) : Listincode(l) {
-        listsize = size();
     }
     List_andvalue_eval(List* l) : Listincode(l) {
-        listsize = size();
     }
     List_andvalue_eval() {
-        listsize = 0;
     }
     
     bool is_straight_eval() {
@@ -5108,6 +5104,7 @@ public:
     List* cloning() {
         return new List_andvalue_eval();
     }
+    
     Element* eval(LispE* lisp);
 };
 
@@ -6573,11 +6570,9 @@ public:
 
 class List_divideequal_var : public List {
 public:
-    int16_t listsize;
     int16_t label;
     
     List_divideequal_var(List* l) : List(l, 0) {
-        listsize = size();
         label = liste[1]->label();
         terminal = l->terminal;
     }
@@ -6586,11 +6581,9 @@ public:
 
 class List_plusequal_var : public List {
 public:
-    int16_t listsize;
     int16_t label;
 
     List_plusequal_var(List* l) : List(l, 0) {
-        listsize = size();
         label = liste[1]->label();
         terminal = l->terminal;
     }
@@ -6599,11 +6592,9 @@ public:
 
 class List_minusequal_var : public List {
 public:
-    int16_t listsize;
     int16_t label;
 
     List_minusequal_var(List* l) : List(l, 0) {
-        listsize = size();
         label = liste[1]->label();
         terminal = l->terminal;
     }
@@ -6612,11 +6603,9 @@ public:
 
 class List_multiplyequal_var : public List {
 public:
-    int16_t listsize;
     int16_t label;
 
     List_multiplyequal_var(List* l) : List(l, 0) {
-        listsize = size();
         label = liste[1]->label();
         terminal = l->terminal;
     }

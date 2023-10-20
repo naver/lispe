@@ -110,6 +110,7 @@ public:
     vecte<unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > >* > method_pool;
 
     binHash<Element*> data_pool;
+    vecte<long> idxinfos;
     
     binSet assignors;
     binSet operators;
@@ -268,6 +269,18 @@ public:
         return (type == l_plus || type == l_minus || comparators.check(type) || logicals.check(type));
     }
 
+    int set_idx_info(long line) {
+        int idx = (int)idxinfos.size();
+        if (idx) {
+            if (idxinfos[idx - 2] == line && idxinfos[idx - 1] == i_current_file)
+                return idx;
+        }
+        
+        idxinfos.push_back(line);
+        idxinfos.push_back(i_current_file);
+        return idx;
+    }
+    
     bool isComparator(int16_t type) {
         return comparators.check(type);
     }
@@ -883,10 +896,10 @@ public:
     }
     
     
-    inline void set_context(long l, long f) {
-        if (!current_error) {
-            i_current_line = l;
-            i_current_file = f;
+    inline void set_context(int idxinfo) {
+        if (!current_error && idxinfo < idxinfos.size()) {
+            i_current_line = idxinfos[idxinfo];
+            i_current_file = idxinfos[idxinfo + 1];
         }
     }
 
@@ -908,12 +921,12 @@ public:
         current_error = _THEEND;
     }
     
-    inline void set_error_context(Error* err, long l, long f) {
-        if (!current_error) {
+    inline void set_error_context(Error* err, int idx_info) {
+        if (!current_error && idx_info < idxinfos.size()) {
             current_error = err;
             current_error->increment();
-            i_current_line = l;
-            i_current_file = f;
+            i_current_line = idxinfos[idx_info];
+            i_current_file = idxinfos[idx_info + 1];
         }
     }
 

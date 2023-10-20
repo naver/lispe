@@ -2262,12 +2262,12 @@ Element* List::eval(LispE* lisp) {
         return e;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, -1, 0);
+        return lisp->check_error(this, err, 0);
     }
 }
 
-Element* LispE::check_error(List* l, Error* err, long line, long fileidx) {
-    delegation->set_error_context(err, line, fileidx);
+Element* LispE::check_error(List* l, Error* err, int idxinfo) {
+    delegation->set_error_context(err, idxinfo);
     if (err != delegation->_THEEND) {
         resetStack();
         throw err;
@@ -2293,7 +2293,7 @@ Element* Listincode::eval(LispE* lisp) {
         return e;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 
@@ -2305,7 +2305,7 @@ Element* List_execute::eval(LispE* lisp) {
         return e;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, line, fileidx);
+        return lisp->check_error(this, err, idxinfo);
     }
 }
 //--------------------------------------------------------------------------------
@@ -4133,7 +4133,7 @@ Element* Listincode::eval_infix(LispE* lisp) {
         return this;
     
     //We use this instruction to read infix structures such as:
-    Listincode* operations = new Listincode(line, fileidx);
+    Listincode* operations = new Listincode(idxinfo);
     Listincode* root = operations;
     Listincode* inter;
     Element* op;
@@ -4173,7 +4173,7 @@ Element* Listincode::eval_infix(LispE* lisp) {
             }
             
             if (comp) {
-                inter = new Listincode(line, fileidx);
+                inter = new Listincode(idxinfo);
                 lisp->garbaging(inter);
                 inter->append(op);
                 inter->append(root);
@@ -4184,7 +4184,7 @@ Element* Listincode::eval_infix(LispE* lisp) {
             else {
                 //We create one level down.
                 //We feed this new List with the last element of the current list
-                inter = new Listincode(line, fileidx);
+                inter = new Listincode(idxinfo);
                 lisp->garbaging(inter);
                 inter->append(op);
                 Element* last = operations->liste.back();
@@ -4348,7 +4348,6 @@ Element* List::evall_compile(LispE* lisp) {
     the_code->release();
     return lisp->compile_eval(code);
 }
-
 
 Element* List::evall_lock(LispE* lisp) {
      List_lock_eval m(this);

@@ -407,6 +407,7 @@ public:
                         a->append(var);
                         for (i = 1; i < sz; i++)
                             a->append(condition->index(i));
+                        
                         c = a;
                         lisp->garbaging(c);
                     }
@@ -1334,3 +1335,65 @@ Element* List::transformargument(LispE* lisp) {
     }
     return this;
 }
+
+
+Element* LispE::for_composition(Element* current_program,Element* current,Tokenizer& parse) {
+    
+#ifdef LISPE_WASM
+    LispE* lisp = this;
+#endif
+
+    Element* check_composition_depth = NULL;
+    uint16_t currentspace = current_space;
+
+    List* element = (List*)current;
+    long sz = element->size();
+    //Each function is separated from the next with a "."
+    //We go to the last separator
+    long x = 0;
+    List* l = provideList();
+    Element* sub = NULL;
+    for (x = 0; x < sz; x++) {
+        if (element->liste[x] == n_compose) {
+            if (sub != NULL)
+                l->append(sub);
+            sub = provideList();
+        }
+        else
+            sub->append(element->liste[x]);
+    }
+    
+    if (sub != NULL)
+        l->append(sub);
+        
+    if (!l->size()) {
+        l->release();
+        throw new Error("Error: wrong composition");
+    }
+    
+    long last = l->size() - 1;
+    Element* e = NULL;
+    Listincode* lic = NULL;
+    bool cont = false;
+    try {
+        while (last >= 0) {
+            lic = new Listincode(element->infoIdx());
+            for (x  = 0; x < l->liste[last]->size(); x++)
+                lic->append(l->liste[last]->index(x));
+            if (e != NULL)
+                lic->append(e);
+            garbaging(lic);
+            e = compileLocalStructure(current_program, lic, parse, check_composition_depth, currentspace, cont);
+            last--;
+        }
+        //(sum . numbers 1 2 3)
+        removefromgarbage(element);
+        l->release();
+    }
+    catch (Error* err) {
+        l->release();
+        throw err;
+    }
+    return e;
+}
+

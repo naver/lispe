@@ -52,7 +52,7 @@ typedef enum {
     t_call, t_call_lambda, t_eval,
     
     //System instructions
-    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, l_next,
+    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, l_next, l_compose,
     
     //Default Lisp instructions
     l_number, l_float, l_string, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary,

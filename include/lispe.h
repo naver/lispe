@@ -112,6 +112,7 @@ public:
     Element* n_true;
     Element* n_zero;
     Element* n_one;
+    Element* n_compose;
     
     
     std::atomic<int16_t> nbjoined;
@@ -515,6 +516,8 @@ public:
     lisp_code segmenting(u_ustring& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
     Element* tokenize(u_ustring& code, bool keepblanks, short decimalpoint);
+    Element* compileLocalStructure(Element* current_program, Element* element, Tokenizer& parse, Element*& check_composition_depth, uint16_t currentspace, bool& cont);
+    Element* for_composition(Element* current_program, Element* element, Tokenizer& parse);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
     Element* syntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
     void arguments(std::vector<string>& args);
@@ -806,11 +809,11 @@ public:
         }
     }
     
-    Element* check_error(List* l,Error* err, long idx, long fileidx);
+    Element* check_error(List* l,Error* err, int idxinfo);
     
     inline void trace_and_context(Listincode* e) {
         //in the case of a goto, we only take into account breakpoints
-        delegation->set_context(e->line, e->fileidx);
+        delegation->set_context(e->idxinfo);
 
         if (trace == debug_goto)
             delegation->next_stop = false;
