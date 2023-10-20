@@ -13,12 +13,17 @@ I based a large part of this work on the following article: [The Root of Lisp](h
 * A help to the available functions is here: [LispE Language Description](https://github.com/naver/lispe/wiki/5.-Description-of-Functions,-Operators-and-Libraries)
 * The wiki index is here: [HOME](https://github.com/naver/lispe/wiki)
 
-
-# CHECK binaries
+## CHECK binaries
 
 We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) precompiled versions for Window and Mac OS (including M1)...
 
-# Modern Functional Properties
+## Modern Functional Properties
+
+__LispE__ provides an alternative to parentheses with the composition operator: ".":
+
+```Lisp
+(sum (numbers 1 2 3)) can be written (sum . numbers 1 2 3)
+```
 
 __LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.7-Data-Structures)
 
@@ -26,7 +31,7 @@ Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/nav
 
 Come and discover __LispE__: the __Lisp Elémentaire__.
 
-# But also array language capabilities
+## But also array language capabilities
 
 Thanks to an internal structure implemented with [arrays](https://github.com/naver/lispe/wiki/2.3-Lists), we also provide some array operators.
 
