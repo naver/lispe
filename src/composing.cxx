@@ -1356,16 +1356,23 @@ Element* LispE::for_composition(Element* current_program,Element* current_elemen
     Element* sub = NULL;
     for (x = 0; x < sz; x++) {
         if (list->liste[x] == n_compose) {
-            if (sub != NULL)
+            if (sub != NULL) {
+                if (!sub->size())
+                    continue;
                 stack->append(sub);
+            }
             sub = provideList();
         }
         else
             sub->append(list->liste[x]);
     }
     
-    if (sub != NULL)
-        stack->append(sub);
+    if (sub != NULL) {
+        if (!sub->size())
+            sub->release();
+        else
+            stack->append(sub);
+    }
     
     if (!stack->size()) {
         stack->release();
