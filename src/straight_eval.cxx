@@ -5757,7 +5757,10 @@ Element* List_rotate_eval::eval(LispE* lisp) {
             result = liste[2]->eval(lisp);
             if (result != true_) {
                 long nb = result->asInteger();
-                result = matrix->rotate(lisp, nb);
+                if (liste.size() == 4 && matrix->type >= t_matrix && matrix->type <= t_tensor_float)
+                    result = ((List*)matrix)->List::rotate(lisp, nb);
+                else
+                    result = matrix->rotate(lisp, nb);
                 if (matrix != result)
                     matrix->release();
                 lisp->resetStack();

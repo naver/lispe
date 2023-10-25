@@ -1518,21 +1518,21 @@ Element* List::rotate(LispE* lisp, long nb) {
         if (!nb)
             return this;
         List* reverse = lisp->provideList();
-        for (i = sz - nb; i < sz; i++)
-            reverse->append(liste[i]->copying(false));
         for (i = nb; i < sz; i++)
-            reverse->append(liste[i-nb]->copying(false));
+            reverse->append(liste[i]->copying(false));
+        for (i = 0; i < nb; i++)
+            reverse->append(liste[i]->copying(false));
+        
         return reverse;
     }
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
     List* reverse = lisp->provideList();
+    for (i = sz - nb; i < sz; i++)
+        reverse->append(liste[i]->copying(false));
     for (i = nb; i < sz; i++)
-        reverse->append(liste[i]->copying(false));
-    for (i = 0; i < nb; i++)
-        reverse->append(liste[i]->copying(false));
-    
+        reverse->append(liste[i-nb]->copying(false));
     return reverse;
 }
 
@@ -3122,21 +3122,21 @@ Element* Numbers::rotate(LispE* lisp, long nb) {
         if (!nb)
             return this;
         Numbers* reverse = lisp->provideNumbers();
-        for (i = sz - nb; i < sz; i++)
-            reverse->liste.push_back(liste[i]);
         for (i = nb; i < sz; i++)
-            reverse->liste.push_back(liste[i-nb]);
+            reverse->liste.push_back(liste[i]);
+        for (i = 0; i < nb; i++)
+            reverse->liste.push_back(liste[i]);
+        
         return reverse;
     }
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
     Numbers* reverse = lisp->provideNumbers();
+    for (i = sz - nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
     for (i = nb; i < sz; i++)
-        reverse->liste.push_back(liste[i]);
-    for (i = 0; i < nb; i++)
-        reverse->liste.push_back(liste[i]);
-    
+        reverse->liste.push_back(liste[i-nb]);
     return reverse;
 }
 
@@ -3746,21 +3746,21 @@ Element* Integers::rotate(LispE* lisp, long nb) {
         if (!nb)
             return this;
         Integers* reverse = lisp->provideIntegers();
-        for (i = sz - nb; i < sz; i++)
-            reverse->liste.push_back(liste[i]);
         for (i = nb; i < sz; i++)
-            reverse->liste.push_back(liste[i-nb]);
+            reverse->liste.push_back(liste[i]);
+        for (i = 0; i < nb; i++)
+            reverse->liste.push_back(liste[i]);
         return reverse;
     }
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
     Integers* reverse = lisp->provideIntegers();
+    for (i = sz - nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
     for (i = nb; i < sz; i++)
-        reverse->liste.push_back(liste[i]);
-    for (i = 0; i < nb; i++)
-        reverse->liste.push_back(liste[i]);
-    
+        reverse->liste.push_back(liste[i-nb]);
+
     return reverse;
 }
 
@@ -4366,21 +4366,21 @@ Element* Strings::rotate(LispE* lisp, long nb) {
         if (!nb)
             return this;
         Strings* reverse = lisp->provideStrings();
-        for (i = sz - nb; i < sz; i++)
-            reverse->liste.push_back(liste[i]);
         for (i = nb; i < sz; i++)
-            reverse->liste.push_back(liste[i-nb]);
+            reverse->liste.push_back(liste[i]);
+        for (i = 0; i < nb; i++)
+            reverse->liste.push_back(liste[i]);
+        
         return reverse;
     }
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
     Strings* reverse = lisp->provideStrings();
+    for (i = sz - nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
     for (i = nb; i < sz; i++)
-        reverse->liste.push_back(liste[i]);
-    for (i = 0; i < nb; i++)
-        reverse->liste.push_back(liste[i]);
-    
+        reverse->liste.push_back(liste[i-nb]);
     return reverse;
 }
 
@@ -5332,21 +5332,21 @@ Element* Shorts::rotate(LispE* lisp, long nb) {
         if (!nb)
             return this;
         Shorts* reverse = new Shorts();
-        for (i = sz - nb; i < sz; i++)
-            reverse->liste.push_back(liste[i]);
         for (i = nb; i < sz; i++)
-            reverse->liste.push_back(liste[i-nb]);
+            reverse->liste.push_back(liste[i]);
+        for (i = 0; i < nb; i++)
+            reverse->liste.push_back(liste[i]);
+        
         return reverse;
     }
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
     Shorts* reverse = new Shorts();
+    for (i = sz - nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
     for (i = nb; i < sz; i++)
-        reverse->liste.push_back(liste[i]);
-    for (i = 0; i < nb; i++)
-        reverse->liste.push_back(liste[i]);
-    
+        reverse->liste.push_back(liste[i-nb]);
     return reverse;
 }
 
@@ -5975,21 +5975,20 @@ Element* Floats::rotate(LispE* lisp, long nb) {
         if (!nb)
             return this;
         Floats* reverse = lisp->provideFloats();
-        for (i = sz - nb; i < sz; i++)
-            reverse->liste.push_back(liste[i]);
         for (i = nb; i < sz; i++)
-            reverse->liste.push_back(liste[i-nb]);
+            reverse->liste.push_back(liste[i]);
+        for (i = 0; i < nb; i++)
+            reverse->liste.push_back(liste[i]);
         return reverse;
     }
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
     Floats* reverse = lisp->provideFloats();
+    for (i = sz - nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
     for (i = nb; i < sz; i++)
-        reverse->liste.push_back(liste[i]);
-    for (i = 0; i < nb; i++)
-        reverse->liste.push_back(liste[i]);
-    
+        reverse->liste.push_back(liste[i-nb]);
     return reverse;
 }
 

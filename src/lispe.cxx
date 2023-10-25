@@ -435,7 +435,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch, new List_revertsearch_eval());
     set_instruction(l_rightshift, ">>", P_ATLEASTTWO, &List::evall_rightshift, new List_rightshift_eval());
     set_instruction(l_rightshiftequal, ">>=", P_ATLEASTTHREE, &List::evall_rightshiftequal);
-    set_instruction(l_rotate, "⌽", P_TWO | P_THREE, &List::evall_rotate, new List_rotate_eval());
+    set_instruction(l_rotate, "⌽", P_TWO | P_THREE | P_FOUR, &List::evall_rotate, new List_rotate_eval());
     set_instruction(l_search, "find", P_THREE|P_FOUR, &List::evall_search, new List_search_eval());
     set_instruction(l_searchall, "findall", P_THREE|P_FOUR, &List::evall_searchall, new List_searchall_eval());
     set_instruction(l_select, "select", P_ATLEASTTWO, &List::evall_select, new List_select_eval());

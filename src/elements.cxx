@@ -1521,20 +1521,20 @@ Element* String::rotate(LispE* lisp, long nb) {
         if (!nb)
             return this;
         String* reverse = lisp->provideString();
-        for (i = sz - nb; i < sz; i++)
-            reverse->content += content[i];
         for (i = nb; i < sz; i++)
-            reverse->content += content[i-nb];
+            reverse->content += content[i];
+        for (i = 0; i < nb; i++)
+            reverse->content += content[i];
         return reverse;
     }
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
     String* reverse = lisp->provideString();
-    for (i = nb; i < sz; i++)
+    for (i = sz - nb; i < sz; i++)
         reverse->content += content[i];
-    for (i = 0; i < nb; i++)
-        reverse->content += content[i];    
+    for (i = nb; i < sz; i++)
+        reverse->content += content[i-nb];
     return reverse;
 }
 
