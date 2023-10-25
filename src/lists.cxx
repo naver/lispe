@@ -974,21 +974,25 @@ Element* LList::insert(LispE* lisp, Element* e, long ix) {
 }
 
 Element* List::rotate(bool left) {
-    if (liste.size() <= 1)
+    long sz = size();
+    if (sz <= 1)
         return this;
+
+    List* reverse = (List*)newInstance();
     
-    List* l = (List*)newInstance();
+    long i;
     if (left) {
-        for (long i = 1; i < liste.size(); i++)
-            l->append(liste[i]->copying(false));
-        l->append(liste[0]->copying(false));
-        return l;
+        reverse->append(liste[sz-1]->copying(false));
+        for (i = 1; i < sz; i++)
+            reverse->append(liste[i-1]->copying(false));
+        return reverse;
     }
     
-    l->append(liste.back()->copying(false));
-    for (long i = 0; i < liste.size() - 1; i ++)
-        l->append(liste[i]->copying(false));
-    return l;
+    for (i = 1; i < sz; i++)
+        reverse->append(liste[i]->copying(false));
+    reverse->append(liste[0]->copying(false));
+    
+    return reverse;
 }
 
 Element* LList::rotate(bool left) {
@@ -1499,8 +1503,37 @@ Element* LList::reverse(LispE* lisp, bool duplicate) {
     return this;
 }
 
-Element* List::rotate(LispE* lisp, long axis) {
-    return reverse(lisp, true);
+Element* List::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = size();
+    if (sz <= 1)
+        return this;
+    
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        List* reverse = lisp->provideList();
+        for (i = sz - nb; i < sz; i++)
+            reverse->append(liste[i]->copying(false));
+        for (i = nb; i < sz; i++)
+            reverse->append(liste[i-nb]->copying(false));
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    List* reverse = lisp->provideList();
+    for (i = nb; i < sz; i++)
+        reverse->append(liste[i]->copying(false));
+    for (i = 0; i < nb; i++)
+        reverse->append(liste[i]->copying(false));
+    
+    return reverse;
 }
 
 Element* List::protected_index(LispE* lisp,long i) {
@@ -3074,23 +3107,61 @@ Element* Numbers::insert(LispE* lisp, Element* e, long ix) {
     return l;
 }
 
-Element* Numbers::rotate(bool left) {
-    if (liste.size() <= 1)
+Element* Numbers::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = size();
+    if (sz <= 1)
         return this;
     
-    Numbers* l = (Numbers*)newInstance();
-    l->reserve(size());
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        Numbers* reverse = lisp->provideNumbers();
+        for (i = sz - nb; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = nb; i < sz; i++)
+            reverse->liste.push_back(liste[i-nb]);
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    Numbers* reverse = lisp->provideNumbers();
+    for (i = nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < nb; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
+}
+
+Element* Numbers::rotate(bool left) {
+    long sz = size();
+    if (sz <= 1)
+        return this;
+
+    Numbers* reverse = (Numbers*)newInstance();
+    
+    long i;
     if (left) {
-        for (long i = 1; i < liste.size(); i++)
-            l->liste.push_raw(liste[i]);
-        l->liste.push_raw(liste[0]);
-        return l;
+        for (i = sz - 1; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = 1; i < sz; i++)
+            reverse->liste.push_back(liste[i-1]);
+        return reverse;
     }
     
-    l->liste.push_raw(liste.back());
-    for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_raw(liste[i]);
-    return l;
+    for (i = 1; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < 1; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
 }
 
 Element* Numbers::unique(LispE* lisp) {
@@ -3660,23 +3731,61 @@ Element* Integers::insert(LispE* lisp, Element* e, long ix) {
     return l;
 }
 
-Element* Integers::rotate(bool left) {
-    if (liste.size() <= 1)
+Element* Integers::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = size();
+    if (sz <= 1)
         return this;
     
-    Integers* l = (Integers*)newInstance();
-    l->reserve(size());
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        Integers* reverse = lisp->provideIntegers();
+        for (i = sz - nb; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = nb; i < sz; i++)
+            reverse->liste.push_back(liste[i-nb]);
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    Integers* reverse = lisp->provideIntegers();
+    for (i = nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < nb; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
+}
+
+Element* Integers::rotate(bool left) {
+    long sz = size();
+    if (sz <= 1)
+        return this;
+
+    Integers* reverse = (Integers*)newInstance();
+    
+    long i;
     if (left) {
-        for (long i = 1; i < liste.size(); i++)
-            l->liste.push_raw(liste[i]);
-        l->liste.push_raw(liste[0]);
-        return l;
+        for (i = sz - 1; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = 1; i < sz; i++)
+            reverse->liste.push_back(liste[i-1]);
+        return reverse;
     }
     
-    l->liste.push_raw(liste.back());
-    for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_raw(liste[i]);
-    return l;
+    for (i = 1; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < 1; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
 }
 
 Element* Integers::unique(LispE* lisp) {
@@ -4242,23 +4351,61 @@ Element* Strings::insert(LispE* lisp, Element* e, long ix) {
     return l;
 }
 
-Element* Strings::rotate(bool left) {
-    if (liste.size() <= 1)
+Element* Strings::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = size();
+    if (sz <= 1)
         return this;
     
-    Strings* l = (Strings*)newInstance();
-    l->reserve(size());
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        Strings* reverse = lisp->provideStrings();
+        for (i = sz - nb; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = nb; i < sz; i++)
+            reverse->liste.push_back(liste[i-nb]);
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    Strings* reverse = lisp->provideStrings();
+    for (i = nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < nb; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
+}
+
+Element* Strings::rotate(bool left) {
+    long sz = size();
+    if (sz <= 1)
+        return this;
+
+    Strings* reverse = (Strings*)newInstance();
+    
+    long i;
     if (left) {
-        for (long i = 1; i < liste.size(); i++)
-            l->liste.push_raw(liste[i]);
-        l->liste.push_raw(liste[0]);
-        return l;
+        for (i = sz - 1; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = 1; i < sz; i++)
+            reverse->liste.push_back(liste[i-1]);
+        return reverse;
     }
     
-    l->liste.push_raw(liste.back());
-    for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_raw(liste[i]);
-    return l;
+    for (i = 1; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < 1; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
 }
 
 Element* Strings::unique(LispE* lisp) {
@@ -5170,23 +5317,61 @@ Element* Shorts::insert(LispE* lisp, Element* e, long ix) {
     return l;
 }
 
-Element* Shorts::rotate(bool left) {
-    if (liste.size() <= 1)
+Element* Shorts::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = size();
+    if (sz <= 1)
         return this;
     
-    Shorts* l = (Shorts*)newInstance();
-    l->reserve(size());
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        Shorts* reverse = new Shorts();
+        for (i = sz - nb; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = nb; i < sz; i++)
+            reverse->liste.push_back(liste[i-nb]);
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    Shorts* reverse = new Shorts();
+    for (i = nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < nb; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
+}
+
+Element* Shorts::rotate(bool left) {
+    long sz = size();
+    if (sz <= 1)
+        return this;
+
+    Shorts* reverse = (Shorts*)newInstance();
+    
+    long i;
     if (left) {
-        for (long i = 1; i < liste.size(); i++)
-            l->liste.push_raw(liste[i]);
-        l->liste.push_raw(liste[0]);
-        return l;
+        for (i = sz - 1; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = 1; i < sz; i++)
+            reverse->liste.push_back(liste[i-1]);
+        return reverse;
     }
     
-    l->liste.push_raw(liste.back());
-    for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_raw(liste[i]);
-    return l;
+    for (i = 1; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < 1; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
 }
 
 Element* Shorts::unique(LispE* lisp) {
@@ -5775,23 +5960,61 @@ Element* Floats::insert(LispE* lisp, Element* e, long ix) {
     return l;
 }
 
-Element* Floats::rotate(bool left) {
-    if (liste.size() <= 1)
+Element* Floats::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = size();
+    if (sz <= 1)
         return this;
     
-    Floats* l = (Floats*)newInstance();
-    l->reserve(size());
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        Floats* reverse = lisp->provideFloats();
+        for (i = sz - nb; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = nb; i < sz; i++)
+            reverse->liste.push_back(liste[i-nb]);
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    Floats* reverse = lisp->provideFloats();
+    for (i = nb; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < nb; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
+}
+
+Element* Floats::rotate(bool left) {
+    long sz = size();
+    if (sz <= 1)
+        return this;
+
+    Floats* reverse = (Floats*)newInstance();
+    
+    long i;
     if (left) {
-        for (long i = 1; i < liste.size(); i++)
-            l->liste.push_raw(liste[i]);
-        l->liste.push_raw(liste[0]);
-        return l;
+        for (i = sz - 1; i < sz; i++)
+            reverse->liste.push_back(liste[i]);
+        for (i = 1; i < sz; i++)
+            reverse->liste.push_back(liste[i-1]);
+        return reverse;
     }
     
-    l->liste.push_raw(liste.back());
-    for (long i = 0; i < liste.size() - 1; i ++)
-        l->liste.push_raw(liste[i]);
-    return l;
+    for (i = 1; i < sz; i++)
+        reverse->liste.push_back(liste[i]);
+    for (i = 0; i < 1; i++)
+        reverse->liste.push_back(liste[i]);
+    
+    return reverse;
 }
 
 Element* Floats::unique(LispE* lisp) {
@@ -6310,25 +6533,25 @@ Element* Matrice::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
-Element* Matrice::rotate(LispE* lisp, long axis) {
+Element* Matrice::rotate(bool left) {
     Matrice* revert_matrix = new Matrice;
     revert_matrix->size_x = size_x;
     revert_matrix->size_y = size_y;
-    
-    long i;
-    
-    if (axis == 1) {
-        for (i = 0; i < size_x; i++) {
-            revert_matrix->append(liste[i]->rotate(lisp,0));
-        }
-        return revert_matrix;
+    for (long i = 0; i < size_x; i++) {
+        revert_matrix->append(liste[i]->rotate(left));
     }
     
-    Element* e;
-    for (i = size_x-1; i>= 0;  i--) {
-        e = lisp->provideNumbers((Numbers*)liste[i]);
-        revert_matrix->append(e);
+    return revert_matrix;
+}
+
+Element* Matrice::rotate(LispE* lisp, long nb) {
+    Matrice* revert_matrix = new Matrice;
+    revert_matrix->size_x = size_x;
+    revert_matrix->size_y = size_y;
+    for (long i = 0; i < size_x; i++) {
+        revert_matrix->append(liste[i]->rotate(lisp, nb));
     }
+    
     return revert_matrix;
 }
 
@@ -6427,24 +6650,23 @@ Element* Matrice_float::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
-Element* Matrice_float::rotate(LispE* lisp, long axis) {
+Element* Matrice_float::rotate(bool left) {
     Matrice_float* revert_matrix = new Matrice_float;
     revert_matrix->size_x = size_x;
     revert_matrix->size_y = size_y;
-    
-    long i;
-    
-    if (axis == 1) {
-        for (i = 0; i < size_x; i++) {
-            revert_matrix->append(liste[i]->rotate(lisp,0));
-        }
-        return revert_matrix;
+    for (long i = 0; i < size_x; i++) {
+        revert_matrix->append(liste[i]->rotate(left));
     }
     
-    Element* e;
-    for (i = size_x-1; i>= 0;  i--) {
-        e = lisp->provideFloats((Floats*)liste[i]);
-        revert_matrix->append(e);
+    return revert_matrix;
+}
+
+Element* Matrice_float::rotate(LispE* lisp, long nb) {
+    Matrice_float* revert_matrix = new Matrice_float;
+    revert_matrix->size_x = size_x;
+    revert_matrix->size_y = size_y;
+    for (long i = 0; i < size_x; i++) {
+        revert_matrix->append(liste[i]->rotate(lisp, nb));
     }
     return revert_matrix;
 }
@@ -6597,8 +6819,22 @@ Element* Tenseur::reversion(LispE* lisp, Element* value, long pos, long axis, bo
     return r;
 }
 
-Element* Tenseur::rotate(LispE* lisp, long axis) {
-    return reversion(lisp, this, 0, axis, true);
+Element* Tenseur::rotate(bool left) {
+    Tenseur* revert_matrix = new Tenseur();
+    revert_matrix->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        revert_matrix->append(liste[i]->rotate(left));
+    }
+    return revert_matrix;
+}
+
+Element* Tenseur::rotate(LispE* lisp, long nb) {
+    Tenseur* revert_matrix = new Tenseur();
+    revert_matrix->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        revert_matrix->append(liste[i]->rotate(lisp, nb));
+    }
+    return revert_matrix;
 }
 
 Element* Tenseur_float::check_member(LispE* lisp, Element* the_set) {
@@ -6744,8 +6980,22 @@ Element* Tenseur_float::reversion(LispE* lisp, Element* value, long pos, long ax
     return r;
 }
 
-Element* Tenseur_float::rotate(LispE* lisp, long axis) {
-    return reversion(lisp, this, 0, axis, true);
+Element* Tenseur_float::rotate(bool left) {
+    Tenseur_float* revert_matrix = new Tenseur_float();
+    revert_matrix->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        revert_matrix->append(liste[i]->rotate(left));
+    }
+    return revert_matrix;
+}
+
+Element* Tenseur_float::rotate(LispE* lisp, long nb) {
+    Tenseur_float* revert_matrix = new Tenseur_float();
+    revert_matrix->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        revert_matrix->append(liste[i]->rotate(lisp, nb));
+    }
+    return revert_matrix;
 }
 
 

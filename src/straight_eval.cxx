@@ -5745,29 +5745,28 @@ Element* List_replicate_eval::eval(LispE* lisp) {
     return l;
 }
 
-Element* List_reverse_eval::eval(LispE* lisp) {
+Element* List_rotate_eval::eval(LispE* lisp) {
     Element* matrix = liste[1]->eval(lisp);
     Element* result = null_;
 
-    bool duplicate = true;
+    bool left = false;
     
     try {
         lisp->checkState(this);
-        if (liste.size() == 3) {
+        if (liste.size() >= 3) {
             result = liste[2]->eval(lisp);
             if (result != true_) {
-                long axis = result->asInteger();
-                if (axis < 0 || axis >= matrix->shapesize())
-                    throw new Error("Error: cannot reverse along this axis");
-                result = matrix->rotate(lisp, axis);
-                matrix->release();
+                long nb = result->asInteger();
+                result = matrix->rotate(lisp, nb);
+                if (matrix != result)
+                    matrix->release();
                 lisp->resetStack();
                 return result;
             }
-            duplicate = false;
+            left = true;
         }
         
-        result = matrix->reverse(lisp, duplicate);
+        result = matrix->rotate(left);
         if (matrix != result)
             matrix->release();
     }
@@ -6056,19 +6055,20 @@ Element* List_type_eval::eval(LispE* lisp) {
     return atom_type;
 }
 
-Element* List_rotate_eval::eval(LispE* lisp) {
+Element* List_reverse_eval::eval(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* value;
     
-    bool left = false;
+    bool duplicate = false;
     
     if (liste.size() == 3) {
         value = liste[2]->eval(lisp);
-        left = value->Boolean();
+        duplicate = value->Boolean();
         value->release();
     }
-    value = container->rotate(left);
-    container->release();
+    value = container->reverse(lisp, duplicate);
+    if (value != container)
+        container->release();
     return value;
 }
 

@@ -6835,13 +6835,7 @@ public:
         delete (long*)it;
     }
     
-    Element* rotate(LispE* lisp, long axis) {
-        Floats* n = new Floats(size(), 0);
-        n->liste.items->last = 0;
-        for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_raw(liste[i]);
-        return n;
-    }
+    Element* rotate(LispE* lisp, long nb);
     
     Element* check_member(LispE* lisp, Element* the_set);
     
@@ -7329,13 +7323,7 @@ public:
         delete (long*)it;
     }
     
-    Element* rotate(LispE* lisp, long axis) {
-        Numbers* n = new Numbers(size(), 0);
-        n->liste.items->last = 0;
-        for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_raw(liste[i]);
-        return n;
-    }
+    Element* rotate(LispE* lisp, long nb);
     
     Element* check_member(LispE* lisp, Element* the_set);
     
@@ -8070,13 +8058,7 @@ public:
     
     Element* reverse(LispE*, bool duplique = true);
     
-    Element* rotate(LispE* lisp, long axis) {
-        Shorts* n = new Shorts(size(), 0);
-        n->liste.items->last = 0;
-        for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_raw(liste[i]);
-        return n;
-    }
+    Element* rotate(LispE* lisp, long nb);
     
     
     void storevalue(LispE*, double v);
@@ -8509,15 +8491,8 @@ public:
     
     Element* reverse(LispE*, bool duplique = true);
     
-    Element* rotate(LispE* lisp, long axis) {
-        Integers* n = new Integers(size(), 0);
-        n->liste.items->last = 0;
-        for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_raw(liste[i]);
-        return n;
-    }
-    
-    
+    Element* rotate(LispE* lisp, long nb);
+        
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
     void storevalue(LispE*, u_ustring& v);
@@ -8813,6 +8788,7 @@ public:
     
     Element* transposed(LispE* lisp);
     Element* rotate(LispE* lisp, long axis);
+    Element* rotate(bool left);
     Element* reverse(LispE* lisp, bool duplique = true) {
         return rotate(lisp, 1);
     }
@@ -8979,6 +8955,7 @@ public:
     
     Element* transposed(LispE* lisp);
     Element* rotate(LispE* lisp, long axis);
+    Element* rotate(bool left);
     Element* reverse(LispE* lisp, bool duplique = true) {
         return rotate(lisp, 1);
     }
@@ -9214,9 +9191,10 @@ public:
     
     Element* transposed(LispE* lisp);
     Element* rotate(LispE* lisp, long axis);
+    Element* rotate(bool left);
     Element* reversion(LispE* lisp, Element* value, long pos, long axis, bool init);
     Element* reverse(LispE* lisp, bool duplique = true) {
-        return rotate(lisp, shape.size()-1);
+        return rotate(lisp, 1);
     }
     
     void concatenate(LispE* lisp, long isz, Element* res, Element* e) {
@@ -9479,9 +9457,10 @@ public:
     
     Element* transposed(LispE* lisp);
     Element* rotate(LispE* lisp, long axis);
+    Element* rotate(bool left);
     Element* reversion(LispE* lisp, Element* value, long pos, long axis, bool init);
     Element* reverse(LispE* lisp, bool duplique = true) {
-        return rotate(lisp, shape.size()-1);
+        return rotate(lisp, 1);
     }
     
     void concatenate(LispE* lisp, long isz, Element* res, Element* e) {
@@ -9665,6 +9644,7 @@ public:
     
     Element* unique(LispE* lisp);
     Element* rotate(bool left);
+    Element* rotate(LispE*, long nb);
     
     
     virtual Element* copying(bool duplicate = true) {
@@ -9875,13 +9855,6 @@ public:
     }
     
     Element* reverse(LispE*, bool duplique = true);
-    Element* rotate(LispE* lisp, long axis) {
-        Strings* n = new Strings;
-        n->reserve(size());
-        for (long i = liste.size()-1; i >= 0; i--)
-            n->liste.push_raw(liste[i]);
-        return n;
-    }
     
     
     void storevalue(LispE*, double v);

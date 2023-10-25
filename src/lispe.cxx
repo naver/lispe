@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.10.23.11.34";
+static std::string version = "1.2023.10.25.12.25";
 string LispVersion() {
     return version;
 }
@@ -431,11 +431,11 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark, new List_resetmark_eval());
     set_instruction(l_return, "return", P_ONE | P_TWO , &List::evall_return);
     set_instruction(l_replaceall, "replaceall", P_FOUR, &List::evall_replaceall, new List_replaceall_eval());
-    set_instruction(l_reverse, "⌽", P_TWO | P_THREE, &List::evall_reverse, new List_reverse_eval());
+    set_instruction(l_reverse, "reverse", P_TWO | P_THREE, &List::evall_reverse, new List_reverse_eval());
     set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch, new List_revertsearch_eval());
     set_instruction(l_rightshift, ">>", P_ATLEASTTWO, &List::evall_rightshift, new List_rightshift_eval());
     set_instruction(l_rightshiftequal, ">>=", P_ATLEASTTHREE, &List::evall_rightshiftequal);
-    set_instruction(l_rotate, "rotate", P_TWO | P_THREE, &List::evall_rotate, new List_rotate_eval());
+    set_instruction(l_rotate, "⌽", P_TWO | P_THREE, &List::evall_rotate, new List_rotate_eval());
     set_instruction(l_search, "find", P_THREE|P_FOUR, &List::evall_search, new List_search_eval());
     set_instruction(l_searchall, "findall", P_THREE|P_FOUR, &List::evall_searchall, new List_searchall_eval());
     set_instruction(l_select, "select", P_ATLEASTTWO, &List::evall_select, new List_select_eval());
@@ -916,8 +916,8 @@ void Delegation::initialisation(LispE* lisp) {
     w = U("transpose");
     string_to_code[w] = l_transpose;
 
-    w = U("reverse");
-    string_to_code[w] = l_reverse;
+    w = U("rotate");
+    string_to_code[w] = l_rotate;
 
     w = U("not");
     string_to_code[w] = l_not;
@@ -2867,6 +2867,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
