@@ -5755,18 +5755,28 @@ Element* List_rotate_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         if (liste.size() >= 3) {
             result = liste[2]->eval(lisp);
-            if (result != true_) {
+            if (result->isNumber()) {
                 long nb = result->asInteger();
-                if (liste.size() == 4 && matrix->type >= t_matrix && matrix->type <= t_tensor_float)
-                    result = ((List*)matrix)->List::rotate(lisp, nb);
+                result->release();
+                if (liste.size() == 4 && matrix->type >= t_matrix && matrix->type <= t_tensor_float) {
+                    result = liste[3]->eval(lisp);
+                    left = result->Boolean();
+                    result->release();
+                    if (left)
+                        result = ((List*)matrix)->List::rotate(lisp, nb);
+                    else
+                        result = matrix->rotate(lisp, nb);
+                }
                 else
                     result = matrix->rotate(lisp, nb);
+                
                 if (matrix != result)
                     matrix->release();
                 lisp->resetStack();
                 return result;
             }
-            left = true;
+            left = result->Boolean();
+            result->release();
         }
         
         result = matrix->rotate(left);
@@ -5774,7 +5784,6 @@ Element* List_rotate_eval::eval(LispE* lisp) {
             matrix->release();
     }
     catch (Error* err) {
-        result->release();
         matrix->release();
         return lisp->check_error(this, err, idxinfo);
     }
