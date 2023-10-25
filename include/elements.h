@@ -2424,6 +2424,7 @@ public:
         
     Element* cadr(LispE*, u_ustring& actions);
     Element* rotate(bool left);
+    Element* rotate(LispE*, long nb);
     
     bool compare_string(LispE*, u_ustring& u) {
         return (content == u);

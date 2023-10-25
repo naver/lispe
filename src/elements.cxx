@@ -1506,6 +1506,38 @@ Element* String::insert_with_compare(LispE* lisp, Element* e, List& comparison) 
     return this;
 }
 
+Element* String::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = size();
+    if (sz <= 1)
+        return this;
+    
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        String* reverse = lisp->provideString();
+        for (i = sz - nb; i < sz; i++)
+            reverse->content += content[i];
+        for (i = nb; i < sz; i++)
+            reverse->content += content[i-nb];
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    String* reverse = lisp->provideString();
+    for (i = nb; i < sz; i++)
+        reverse->content += content[i];
+    for (i = 0; i < nb; i++)
+        reverse->content += content[i];    
+    return reverse;
+}
+
 Element* String::rotate(bool left) {
     if (content.size() <= 1)
         return this;
