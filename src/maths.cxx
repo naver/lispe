@@ -478,22 +478,20 @@ void LList::build(LispE* lisp, vecte<long>& shape, long isz, LList* res, LList* 
 }
 //---------------------------------------------------------------------------------------------------
 void List::combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
-    if (!l1->isList() && !l2->isList()) {
-        if (isz1.size() && isz2.size()) {
-            action->in_quote(1, l1);
-            action->in_quote(2, l2);
-            Element* e = action->eval(lisp);
-            Element* r = this;
-            long i;
-            for (i = 0; i < isz1.size(); i++) {
-                r = r->index(isz1[i]);
-            }
-            for (i = 0; i < isz2.size()-1; i++) {
-                r = r->index(isz2[i]);
-            }
-            r->replacing(isz2.back(), e);
-            e->release();
+    if ((!l1->isList() || !l2->isList()) && isz1.size() == isz2.size()) {
+        action->in_quote(1, l1);
+        action->in_quote(2, l2);
+        Element* e = action->eval(lisp);
+        Element* r = this;
+        long i;
+        for (i = 0; i < isz1.size(); i++) {
+            r = r->index(isz1[i]);
         }
+        for (i = 0; i < isz2.size()-1; i++) {
+            r = r->index(isz2[i]);
+        }
+        r->replacing(isz2.back(), e);
+        e->release();
         return;
     }
     
