@@ -42,7 +42,8 @@ typedef enum {
     v_null, v_emptylist, v_emptyatom, v_true, v_mainspace, 
     
     //Default types
-    t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number, t_complex,
+    t_emptystring, t_operator, t_atom,
+    t_short, t_integer, t_float, t_number, t_complex,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
     t_list, t_llist, t_matrix_number, t_matrix_integer, t_tensor_number, t_matrix_float, t_tensor_integer, t_tensor_float,
@@ -99,7 +100,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_to_llist, l_to_tensor, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
+    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
     l_pushtrue, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings,
@@ -310,12 +311,20 @@ public:
         return false;
     }
     
-    virtual void getShape(vecte<long>& sz) {}
-    
-    virtual Element* newTensor(long nb, long sz = -1) {
-        return this;
+    virtual bool is_same_tensor(Element* a) {
+        return false;
     }
     
+    virtual void getShape(vecte<long>& sz) {}
+
+    virtual Element* newTensor(LispE* lisp, List* l) {
+        return this;
+    }
+
+    virtual Element* newTensor(long nb) {
+        return this;
+    }
+
     virtual Element* transposed(LispE* lisp) {
         return this;
     }
@@ -436,6 +445,10 @@ public:
         return false;
     }
 
+    virtual bool consistentList(long depth, vecte<long>& sz, short& element_type) {
+        return false;
+    }
+    
     virtual Element* copying(bool duplicate = true) {
         return this;
     }

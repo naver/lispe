@@ -542,7 +542,9 @@ void List::combine(LispE* lisp, Element* res, Element* l1, Element* l2, List* ac
             char_tensor |= a_tensor;
         else
             char_tensor |= e->isPureList();
-            
+        if (char_tensor == a_tensor && res->size()) {
+            char_tensor |= !e->is_same_tensor(res->last());
+        }
         res->append(e);
         e->release();
         return;
@@ -559,8 +561,8 @@ void List::combine(LispE* lisp, Element* res, Element* l1, Element* l2, List* ac
             for (long i2 = 0; i2 < l2->size(); i2++) {
                 combine(lisp, sublist, e, l2->index(i2), action, c_tensor);
             }
-            if (c_tensor == 4) {
-                e = sublist->newTensor(0, sublist->size());
+            if (c_tensor == a_tensor) {
+                e = sublist->index(0)->newTensor(lisp, (List*)sublist);
                 sublist->release();
                 sublist = e;
             }

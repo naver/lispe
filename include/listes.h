@@ -604,7 +604,7 @@ public:
     void swap(long i, long j) {
         liste.swap(i, j);
     }
-    
+        
     bool insertion(Element* e, long idx) {
         liste.insert(idx, e);
         return true;
@@ -1159,6 +1159,31 @@ public:
     virtual Element* transposed(LispE* lisp);
     virtual Element* rotate(LispE* lisp, long axis);
     
+    
+    bool consistentList(long depth, vecte<long>& sz, short& element_type) {
+        if (size() != sz[depth])
+            return false;
+        
+        if (depth == sz.size()-1) {
+            Element* e;
+            for (long i = 0; i < size(); i++) {
+                e = liste[i];
+                if (!e->isNumber())
+                    return false;
+                element_type = (e->type > element_type)?e->type:element_type;
+            }
+            return true;
+        }
+        
+        for (long i = 0; i < size(); i++) {
+            if (!liste[i]->isList())
+                return false;
+            if (!liste[i]->consistentList(depth+1,sz, element_type))
+                return false;
+        }
+        return true;
+    }
+    
     bool checkShape(long depth, vecte<long>& sz) {
         if (size() != sz[depth])
             return false;
@@ -1190,9 +1215,7 @@ public:
             l = l->index(0);
         }
     }
-    
-    Element* newTensor(long nb, long sz);
-    
+        
     virtual Element* check_member(LispE*, Element* the_set);
     
     Element* insert(LispE* lisp, Element* e, long idx);
@@ -1376,7 +1399,6 @@ public:
     Element* evall_listxor(LispE* lisp);
     Element* evall_to_list(LispE* lisp);
     Element* evall_to_llist(LispE* lisp);
-    Element* evall_to_tensor(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_let(LispE* lisp);
     Element* evall_lock(LispE* lisp);
@@ -5589,28 +5611,6 @@ public:
     Element* eval(LispE* lisp);
 };
 
-class List_to_tensor_eval : public Listincode {
-public:
-    
-    List_to_tensor_eval(Listincode* l) : Listincode(l) {}
-    List_to_tensor_eval(List* l) : Listincode(l) {}
-    List_to_tensor_eval() {}
-    
-    bool is_straight_eval() {
-        return true;
-    }
-    
-    List* cloning(Listincode* e, methodEval m) {
-        return new List_to_tensor_eval(e);
-    }
-    
-    List* cloning() {
-        return new List_to_tensor_eval();
-    }
-    Element* eval(LispE* lisp);
-};
-
-
 class List_lock_eval : public Listincode {
 public:
     
@@ -9570,13 +9570,24 @@ public:
     Element* pureInstance() {
         return new Tenseur_float(0, shape);
     }
-    
-    Element* newTensor(long nb, long sz) {
-        Tenseur_float* f = new Tenseur_float(nb, shape);
-        if (sz != -1)
-            f->shape.insert(0, sz);
-        return f;
+
+    bool is_same_tensor(Element* a) {
+        if (a->type == type) {
+            vecte<long> sa;
+            a->getShape(sa);
+            return (shape == sa);
+        }
+        return false;
     }
+    
+    Element* newTensor(LispE* lisp, List* l) {
+        return new Tenseur_float(lisp, l);
+    }
+
+    Element* newTensor(long nb) {
+        return new Tenseur_float(nb, shape);
+    }
+    
 };
 
 class Tenseur_number : public List {
@@ -9852,11 +9863,21 @@ public:
         return new Tenseur_number(0, shape);
     }
     
-    Element* newTensor(long nb, long sz) {
-        Tenseur_number* f = new Tenseur_number(nb, shape);
-        if (sz != -1)
-            f->shape.insert(0, sz);
-        return f;
+    bool is_same_tensor(Element* a) {
+        if (a->type == type) {
+            vecte<long> sa;
+            a->getShape(sa);
+            return (shape == sa);
+        }
+        return false;
+    }
+
+    Element* newTensor(LispE* lisp, List* l) {
+        return new Tenseur_number(lisp, l);
+    }
+
+    Element* newTensor(long nb) {
+        return new Tenseur_number(nb, shape);
     }
 
 };
@@ -10134,11 +10155,21 @@ public:
         return new Tenseur_integer(0, shape);
     }
     
-    Element* newTensor(long nb, long sz) {
-        Tenseur_integer* f = new Tenseur_integer(nb, shape);
-        if (sz != -1)
-            f->shape.insert(0, sz);
-        return f;
+    bool is_same_tensor(Element* a) {
+        if (a->type == type) {
+            vecte<long> sa;
+            a->getShape(sa);
+            return (shape == sa);
+        }
+        return false;
+    }
+
+    Element* newTensor(LispE* lisp, List* l) {
+        return new Tenseur_integer(lisp, l);
+    }
+
+    Element* newTensor(long nb) {
+        return new Tenseur_integer(nb, shape);
     }
 
 };
@@ -10301,15 +10332,26 @@ public:
         return new Matrice_float(size_x, size_y);
     }
     
-    Element* newTensor(long nb, long sz) {
+    bool is_same_tensor(Element* a) {
+        if (a->type == type) {
+            vecte<long> sa;
+            a->getShape(sa);
+            return (sa.size() == 2 && size_x == sa[0] && size_y == sa[1]);
+        }
+        return false;
+    }
+
+    Element* newTensor(LispE* lisp, List* l) {
+        return new Tenseur_float(lisp, l);
+    }
+
+    Element* newTensor(long nb) {
         vecte<long> shape;
         shape.push_back(size_x);
         shape.push_back(size_y);
-        Tenseur_float* f = new Tenseur_float(nb, shape);
-        if (sz != -1)
-            f->shape.insert(0, sz);
-        return f;
+        return new Tenseur_float(nb, shape);
     }
+    
 };
 
 class Matrice_number : public List {
@@ -10489,15 +10531,25 @@ public:
         return new Matrice_number(size_x, size_y);
     }
     
-    Element* newTensor(long nb, long sz) {
+    bool is_same_tensor(Element* a) {
+        if (a->type == type) {
+            vecte<long> sa;
+            a->getShape(sa);
+            return (sa.size() == 2 && size_x == sa[0] && size_y == sa[1]);
+        }
+        return false;
+    }
+
+    Element* newTensor(LispE* lisp, List* l) {
+        return new Tenseur_number(lisp, l);
+    }
+
+    Element* newTensor(long nb) {
         vecte<long> shape;
         shape.push_back(size_x);
         shape.push_back(size_y);
         
-        Tenseur_number* f = new Tenseur_number(nb, shape);
-        if (sz != -1)
-            f->shape.insert(0, sz);
-        return f;
+        return new Tenseur_number(nb, shape);
     }
 
 };
@@ -10678,17 +10730,26 @@ public:
         return new Matrice_integer(size_x, size_y);
     }
     
-    Element* newTensor(long nb, long sz) {
+    bool is_same_tensor(Element* a) {
+        if (a->type == type) {
+            vecte<long> sa;
+            a->getShape(sa);
+            return (sa.size() == 2 && size_x == sa[0] && size_y == sa[1]);
+        }
+        return false;
+    }
+
+    Element* newTensor(LispE* lisp, List* l) {
+        return new Tenseur_integer(lisp, l);
+    }
+
+    Element* newTensor(long nb) {
         vecte<long> shape;
         shape.push_back(size_x);
         shape.push_back(size_y);
         
-        Tenseur_integer* f = new Tenseur_integer(nb, shape);
-        if (sz != -1)
-            f->shape.insert(0, sz);
-        return f;
-    }
-
+        return new Tenseur_integer(nb, shape);
+    }    
 };
 
 
