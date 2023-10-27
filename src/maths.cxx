@@ -147,8 +147,8 @@ public:
 
 //------------------------------------------------------------------------------------------
 
-Matrice::Matrice(LispE* lisp, Matrice* m) {
-    type = t_matrix;
+Matrice_number::Matrice_number(LispE* lisp, Matrice_number* m) {
+    type = t_matrix_number;
     size_x = m->size_x;
     size_y = m->size_y;
     Numbers* l;
@@ -159,8 +159,8 @@ Matrice::Matrice(LispE* lisp, Matrice* m) {
     }
 }
 
-Matrice::Matrice(LispE* lisp, Matrice_float* m) {
-    type = t_matrix;
+Matrice_number::Matrice_number(LispE* lisp, Matrice_float* m) {
+    type = t_matrix_number;
     size_x = m->size_x;
     size_y = m->size_y;
     Numbers* l;
@@ -172,8 +172,8 @@ Matrice::Matrice(LispE* lisp, Matrice_float* m) {
     }
 }
 
-Matrice::Matrice(LispE* lisp, long x, long y, double n) {
-    type = t_matrix;
+Matrice_number::Matrice_number(LispE* lisp, long x, long y, double n) {
+    type = t_matrix_number;
     size_x = x;
     size_y = y;
     
@@ -182,7 +182,7 @@ Matrice::Matrice(LispE* lisp, long x, long y, double n) {
     }
 }
 
-void Matrice::build(LispE* lisp, Element* lst) {
+void Matrice_number::build(LispE* lisp, Element* lst) {
     Numbers* l;
     long idx = 0;
     for (long x = 0; x < size_x; x++) {
@@ -196,7 +196,7 @@ void Matrice::build(LispE* lisp, Element* lst) {
     }
 }
 
-void Matrice::concatenate(LispE* lisp, Element* e) {
+void Matrice_number::concatenate(LispE* lisp, Element* e) {
     if (e->isList()) {
         if (e->size() != size_x)
             throw new Error("Error: Length error");
@@ -212,7 +212,7 @@ void Matrice::concatenate(LispE* lisp, Element* e) {
 }
 
 
-Matrice_float::Matrice_float(LispE* lisp, Matrice* m) {
+Matrice_float::Matrice_float(LispE* lisp, Matrice_number* m) {
     type = t_matrix_float;
     size_x = m->size_x;
     size_y = m->size_y;
@@ -277,7 +277,59 @@ void Matrice_float::build(LispE* lisp, Element* lst) {
     }
 }
 
-void Tenseur::concatenate(LispE* lisp, Element* e) {
+Matrice_integer::Matrice_integer(LispE* lisp, Matrice_integer* m) {
+    type = t_matrix_integer;
+    size_x = m->size_x;
+    size_y = m->size_y;
+    Integers* l;
+    for (long i = 0; i < size_x; i++) {
+        l = lisp->provideIntegers();
+        l->liste = ((Integers*)m->liste[i])->liste;
+        append(l);
+    }
+}
+
+Matrice_integer::Matrice_integer(LispE* lisp, long x, long y, double n) {
+    type = t_matrix_integer;
+    size_x = x;
+    size_y = y;
+    
+    for (long i = 0; i < size_x; i++) {
+        append(lisp->provideIntegers(size_y, n));
+    }
+}
+
+void Matrice_integer::build(LispE* lisp, Element* lst) {
+    Integers* l;
+    long idx = 0;
+    for (long x = 0; x < size_x; x++) {
+        l = lisp->provideIntegers();
+        append(l);
+        for (long y = 0; y < size_y; y++) {
+            if (idx == lst->size())
+                idx = 0;
+            l->liste.push_back(lst->index(idx++)->asInteger());
+        }
+    }
+}
+
+void Matrice_integer::concatenate(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        if (e->size() != size_x)
+            throw new Error("Error: Length error");
+        for (long i = 0; i < size_x; i++) {
+            liste[i]->concatenate(lisp, e->index(i));
+        }
+    }
+    else {
+        for (long i = 0; i < size_x; i++) {
+            liste[i]->concatenate(lisp, e);
+        }
+    }
+}
+
+
+void Tenseur_number::concatenate(LispE* lisp, Element* e) {
     if (e->isList()) {
         vecte<long> sz;
         e->getShape(sz);
@@ -290,7 +342,7 @@ void Tenseur::concatenate(LispE* lisp, Element* e) {
     concatenate(lisp, 0, this, e);
 }
 
-void Tenseur::build(LispE* lisp, long isz, Element* res, double n) {
+void Tenseur_number::build(LispE* lisp, long isz, Element* res, double n) {
     if (isz == shape.size()-2) {
         Numbers* lst;
         for (long i = 0; i < shape[isz]; i++) {
@@ -299,16 +351,16 @@ void Tenseur::build(LispE* lisp, long isz, Element* res, double n) {
         }
     }
     else {
-        List* lst;
+        Tenseur_number* lst;
         for (long i = 0; i < shape[isz]; i++) {
-            lst = lisp->provideList();
+            lst = new Tenseur_number(isz+1, shape);
             res->append(lst);
             build(lisp, isz+1, lst, n);
         }
     }
 }
 
-void Tenseur::build(LispE* lisp, long isz, Element* res, Element* lst, long& idx) {
+void Tenseur_number::build(LispE* lisp, long isz, Element* res, Element* lst, long& idx) {
     if (isz == shape.size()-2) {
         Numbers* l;
         long i,j;
@@ -323,16 +375,16 @@ void Tenseur::build(LispE* lisp, long isz, Element* res, Element* lst, long& idx
         }
     }
     else {
-        List* l;
+        Tenseur_number* l;
         for (long i = 0; i < shape[isz]; i++) {
-            l = lisp->provideList();
+            l = new Tenseur_number(isz+1, shape);
             res->append(l);
             build(lisp, isz+1, l, lst, idx);
         }
     }
 }
 
-void Tenseur::build(LispE* lisp, long isz, Element* res) {
+void Tenseur_number::build(LispE* lisp, long isz, Element* res) {
     if (isz == shape.size()-2) {
         Numbers* l;
         for (long i = 0; i < shape[isz]; i++) {
@@ -342,9 +394,9 @@ void Tenseur::build(LispE* lisp, long isz, Element* res) {
         }
     }
     else {
-        List* l;
+        Tenseur_number* l;
         for (long i = 0; i < shape[isz]; i++) {
-            l = lisp->provideList();
+            l = new Tenseur_number(isz+1, shape);
             res->append(l);
             build(lisp, isz+1,l);
         }
@@ -374,9 +426,9 @@ void Tenseur_float::build(LispE* lisp, long isz, Element* res, float n) {
         }
     }
     else {
-        List* lst;
+        Tenseur_float* lst;
         for (long i = 0; i < shape[isz]; i++) {
-            lst = lisp->provideList();
+            lst = new Tenseur_float(isz+1, shape);
             res->append(lst);
             build(lisp, isz+1, lst, n);
         }
@@ -398,9 +450,9 @@ void Tenseur_float::build(LispE* lisp, long isz, Element* res, Element* lst, lon
         }
     }
     else {
-        List* l;
+        Tenseur_float* l;
         for (long i = 0; i < shape[isz]; i++) {
-            l = lisp->provideList();
+            l = new Tenseur_float(isz+1, shape);
             res->append(l);
             build(lisp, isz+1, l, lst, idx);
         }
@@ -417,9 +469,9 @@ void Tenseur_float::build(LispE* lisp, long isz, Element* res) {
         }
     }
     else {
-        List* l;
+        Tenseur_float* l;
         for (long i = 0; i < shape[isz]; i++) {
-            l = lisp->provideList();
+            l = new Tenseur_float(isz+1, shape);
             res->append(l);
             build(lisp, isz+1,l);
         }
@@ -477,49 +529,50 @@ void LList::build(LispE* lisp, vecte<long>& shape, long isz, LList* res, LList* 
     }
 }
 //---------------------------------------------------------------------------------------------------
-void List::combine(LispE* lisp, vecte<long>& isz1, vecte<long>& isz2, Element* l1, Element* l2, List* action) {
-    if ((!l1->isList() || !l2->isList()) && isz1.size() == isz2.size()) {
+void List::combine(LispE* lisp, Element* res, Element* l1, Element* l2, List* action, char& char_tensor) {
+    //We combine the different level of l1 with l2
+    //Whenever we reach a level where l1 or l2 ar no longer list we apply our rule
+    Element* e;
+    if (!l1->isList() || !l2->isList()) {
         action->in_quote(1, l1);
         action->in_quote(2, l2);
-        Element* e = action->eval(lisp);
-        Element* r = this;
-        long i;
-        for (i = 0; i < isz1.size(); i++) {
-            r = r->index(isz1[i]);
-        }
-        for (i = 0; i < isz2.size()-1; i++) {
-            r = r->index(isz2[i]);
-        }
-        r->replacing(isz2.back(), e);
+        e = action->eval(lisp);
+        //If it is a number, then potentially it can be a tensor
+        if (e->isNumber())
+            char_tensor |= a_tensor;
+        else
+            char_tensor |= e->isPureList();
+            
+        res->append(e);
         e->release();
         return;
     }
-    
-    if (l1->isList()) {
-        for (long i1 = 0; i1 < l1->size(); i1++) {
-            isz1.push_back(i1);
-            combine(lisp, isz1, isz2, l1->index(i1), l2, action);
-            isz1.pop_back();
-        }
-    }
-    if (l2->isList()) {
-        for (long i2 = 0; i2 < l2->size(); i2++) {
-            isz2.push_back(i2);
-            combine(lisp, isz1, isz2, l1, l2->index(i2), action);
-            isz2.pop_back();
-        }
-    }
-}
 
-void List::combine(LispE* lisp, Element* l1, Element* l2, List* action) {
-    vecte<long> isz1;
-    vecte<long> isz2;
-    combine(lisp, isz1, isz2, l1, l2, action);
+    if (l1->isList()) {
+        //we add a new element to res
+        Element* sublist;
+        char c_tensor = 0;
+        for (long i1 = 0; i1 < l1->size(); i1++) {
+            sublist = lisp->provideList();
+            e = l1->index(i1);
+            c_tensor = 0;
+            for (long i2 = 0; i2 < l2->size(); i2++) {
+                combine(lisp, sublist, e, l2->index(i2), action, c_tensor);
+            }
+            if (c_tensor == 4) {
+                e = sublist->newTensor(0, sublist->size());
+                sublist->release();
+                sublist = e;
+            }
+            char_tensor |= c_tensor;
+            res->append(sublist);
+        }
+    }
 }
 //------------------------------------------------------------------------------------------
 
 //LU decomposition
-long LUDCMP(long n, vecte<long>& indexes, long& d, Matrice* m) {
+long LUDCMP(long n, vecte<long>& indexes, long& d, Matrice_number* m) {
     d = 1;
     double AMAX, DUM, thesum;
     long i, i_max = 0, j, k;
@@ -587,7 +640,7 @@ long LUDCMP(long n, vecte<long>& indexes, long& d, Matrice* m) {
     
 } // subroutine LUDCMP
 
-void LUBKSB(long n, vecte<long>& indexes, vecte<double>& b_values, Matrice* m)  {
+void LUBKSB(long n, vecte<long>& indexes, vecte<double>& b_values, Matrice_number* m)  {
     double thesum;
     long  i, ii, j, ll;
     
@@ -621,7 +674,7 @@ void LUBKSB(long n, vecte<long>& indexes, vecte<double>& b_values, Matrice* m)  
     
 } // LUBKSB
 
-double Matrice::determinant(LispE* lisp) {
+double Matrice_number::determinant(LispE* lisp) {
     if (size_x == 2 && size_y == 2) {
         //then in that case
         return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
@@ -637,7 +690,7 @@ double Matrice::determinant(LispE* lisp) {
         if (val(i,j) == 0)
             continue;
         
-        Matrice sub(size_x - 1, size_y - 1, 0.0);
+        Matrice_number sub(size_x - 1, size_y - 1, 0.0);
         
         long pc = 0;
         long pr = 0;
@@ -659,12 +712,12 @@ double Matrice::determinant(LispE* lisp) {
     return det;
 }
 
-Element* Matrice::inversion(LispE* lisp) {
+Element* Matrice_number::inversion(LispE* lisp) {
     if (size_x != size_y)
         throw new Error("Error: we can only apply 'invert' to square matrices");
     
     //else Local decomposition
-    Matrice m(this);
+    Matrice_number m(this);
     
     
     vecte<long> indexes(size_x);
@@ -675,7 +728,7 @@ Element* Matrice::inversion(LispE* lisp) {
         return emptylist_;
     }
     
-    Matrice* Y = new Matrice(lisp, size_x, size_x, 0.0);
+    Matrice_number* Y = new Matrice_number(lisp, size_x, size_x, 0.0);
     
     long i;
     //We create an identity matrix, which will contain the final result...
@@ -697,12 +750,12 @@ Element* Matrice::inversion(LispE* lisp) {
     return Y;
 }
 
-Element* Matrice::solve(LispE* lisp, Matrice* y) {
+Element* Matrice_number::solve(LispE* lisp, Matrice_number* y) {
     if (size_x != size_y || y->size_x != y->size_y || size_x != y->size_x)
         throw new Error("Error: we can only apply 'solve' to square matrices of equal sizes");
     
     //else Local decomposition
-    Matrice m(this);
+    Matrice_number m(this);
     
     vecte<long> indexes(size_x);
     long id;
@@ -712,7 +765,7 @@ Element* Matrice::solve(LispE* lisp, Matrice* y) {
         return emptylist_;
     }
     
-    Matrice* Y = new Matrice(lisp, y);
+    Matrice_number* Y = new Matrice_number(lisp, y);
     vecte<double> temp(size_x);
     long i;
     
@@ -728,7 +781,7 @@ Element* Matrice::solve(LispE* lisp, Matrice* y) {
     return Y;
 }
 
-Element* Matrice::ludcmp(LispE* lisp) {
+Element* Matrice_number::ludcmp(LispE* lisp) {
     if (size_x != size_y)
         throw new Error("Error: we can only apply 'ludcmp' to square matrices");
     
@@ -744,14 +797,14 @@ Element* Matrice::ludcmp(LispE* lisp) {
     return lst;
 }
 
-Element* Matrice::lubksb(LispE* lisp, Integers* idxs, Matrice* Y) {
+Element* Matrice_number::lubksb(LispE* lisp, Integers* idxs, Matrice_number* Y) {
     if (size_x != size_y || idxs->size() != size_x) {
         throw new Error("Error: we can only apply 'lubksb' to square matrices with the same number of indexes");
     }
     
     long i;
     if (Y == NULL) {
-        Y = new Matrice(lisp, size_x, size_x, 0.0);
+        Y = new Matrice_number(lisp, size_x, size_x, 0.0);
         //We create an identity matrix, which will contain the final result...
         for (i = 0; i < size_x; i++) {
             Y->set(i,i, 1);
@@ -1273,6 +1326,11 @@ Element* Float::power(LispE* lisp, Element* e) {
 }
 
 Element* Float::bit_not(LispE* lisp)  {
+    if ((int32_t)content == content) {
+        int32_t c = content;
+        return lisp->provideFloat(~c);
+    }
+
     double32 d(content);
     d.bits = ~d.bits;
     if (status != s_constant) {
@@ -1290,6 +1348,13 @@ Element* Float::bit_and_not(LispE* lisp, Element* e)  {
         release();
         return n->bit_and_not(lisp, e);
     }
+    
+    if ((int32_t)content == content) {
+        int32_t c = content;
+        c &= ~e->checkInteger(lisp);
+        return lisp->provideFloat(c);
+    }
+
     double32 d(content);
     d.bits &= ~e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1306,6 +1371,11 @@ Element* Float::bit_and(LispE* lisp, Element* e)  {
         n = n->bit_and(lisp, this);
         release();
         return n;
+    }
+    if ((int32_t)content == content) {
+        int32_t c = content;
+        c &= e->checkInteger(lisp);
+        return lisp->provideFloat(c);
     }
     double32 d(content);
     d.bits &= e->checkInteger(lisp);
@@ -1325,6 +1395,11 @@ Element* Float::bit_or(LispE* lisp, Element* e)  {
         release();
         return n;
     }
+    if ((int32_t)content == content) {
+        int32_t c = content;
+        c |= e->checkInteger(lisp);
+        return lisp->provideFloat(c);
+    }
     double32 d(content);
     d.bits |= e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1342,6 +1417,11 @@ Element* Float::bit_xor(LispE* lisp, Element* e)  {
         release();
         return n;
     }
+    if ((int32_t)content == content) {
+        int32_t c = content;
+        c ^= e->checkInteger(lisp);
+        return lisp->provideFloat(c);
+    }
     double32 d(content);
     d.bits ^= e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1357,6 +1437,11 @@ Element* Float::leftshift(LispE* lisp, Element* e)  {
         Element* n = e->newInstance(this);
         release();
         return n->leftshift(lisp, e);
+    }
+    if ((int32_t)content == content) {
+        int32_t c = content;
+        c <<= e->checkInteger(lisp);
+        return lisp->provideFloat(c);
     }
     double32 d(content);
     d.bits <<= e->checkInteger(lisp);
@@ -1374,6 +1459,13 @@ Element* Float::rightshift(LispE* lisp, Element* e)  {
         release();
         return n->rightshift(lisp, e);
     }
+    
+    if ((int32_t)content == content) {
+        int32_t c = content;
+        c >>= e->checkInteger(lisp);
+        return lisp->provideFloat(c);
+    }
+
     double32 d(content);
     d.bits >>= e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1584,6 +1676,11 @@ Element* Number::power(LispE* lisp, Element* e) {
 }
 
 Element* Number::bit_not(LispE* lisp)  {
+    if ((long)content == content) {
+        long c = content;
+        return lisp->provideNumber(~c);
+    }
+
     double64 d(content);
     d.bits = ~d.bits;
     if (status != s_constant) {
@@ -1601,6 +1698,13 @@ Element* Number::bit_and_not(LispE* lisp, Element* e)  {
         release();
         return n->bit_and_not(lisp, e);
     }
+    
+    if ((long)content == content) {
+        long c = content;
+        c &= ~e->checkInteger(lisp);
+        return lisp->provideNumber(c);
+    }
+
     double64 d(content);
     d.bits &= ~e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1618,6 +1722,12 @@ Element* Number::bit_and(LispE* lisp, Element* e)  {
         release();
         return n;
     }
+    if ((long)content == content) {
+        long c = content;
+        c &= e->checkInteger(lisp);
+        return lisp->provideNumber(c);
+    }
+    
     double64 d(content);
     d.bits &= e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1636,6 +1746,11 @@ Element* Number::bit_or(LispE* lisp, Element* e)  {
         release();
         return n;
     }
+    if ((long)content == content) {
+        long c = content;
+        c |= e->checkInteger(lisp);
+        return lisp->provideNumber(c);
+    }
     double64 d(content);
     d.bits |= e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1653,6 +1768,11 @@ Element* Number::bit_xor(LispE* lisp, Element* e)  {
         release();
         return n;
     }
+    if ((long)content == content) {
+        long c = content;
+        c ^= e->checkInteger(lisp);
+        return lisp->provideNumber(c);
+    }
     double64 d(content);
     d.bits ^= e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1669,6 +1789,11 @@ Element* Number::leftshift(LispE* lisp, Element* e)  {
         release();
         return n->leftshift(lisp, e);
     }
+    if ((long)content == content) {
+        long c = content;
+        c <<= e->checkInteger(lisp);
+        return lisp->provideNumber(c);
+    }
     double64 d(content);
     d.bits <<= e->checkInteger(lisp);
     if (status != s_constant) {
@@ -1684,6 +1809,11 @@ Element* Number::rightshift(LispE* lisp, Element* e)  {
         Element* n = e->newInstance(this);
         release();
         return n->rightshift(lisp, e);
+    }
+    if ((long)content == content) {
+        long c = content;
+        c >>= e->checkInteger(lisp);
+        return lisp->provideNumber(c);
     }
     double64 d(content);
     d.bits >>= e->checkInteger(lisp);
@@ -2844,7 +2974,7 @@ Element* Floats::bit_not(LispE* l) {
     //Two cases either e is a number or it is a list...
     if (!status) {
         for (long i = 0; i < size(); i++) {
-            replacing(i, index(i)->bit_not(l));
+            replacingandclean(i, index(i)->bit_not(l));
         }
         return this;
     }
@@ -2887,12 +3017,12 @@ Element* Floats::bit_and(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_and(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_and(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_and(lisp, e));
+        replacingandclean(i, index(i)->bit_and(lisp, e));
     }
     return this;
 }
@@ -2924,12 +3054,12 @@ Element* Floats::bit_and_not(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_and_not(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_and_not(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_and_not(lisp, e));
+        replacingandclean(i, index(i)->bit_and_not(lisp, e));
     }
     return this;
 }
@@ -2962,12 +3092,12 @@ Element* Floats::bit_or(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_or(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_or(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_or(lisp, e));
+        replacingandclean(i, index(i)->bit_or(lisp, e));
     }
     return this;
 }
@@ -3000,12 +3130,12 @@ Element* Floats::bit_xor(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_xor(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_xor(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_xor(lisp, e));
+        replacingandclean(i, index(i)->bit_xor(lisp, e));
     }
     return this;
 }
@@ -3069,11 +3199,23 @@ Element* Floats::plus_direct(LispE* lisp, Element* e) {
             liste.plus(v);
             return this;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    n->liste[i] += liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] += liste[i];
                 }
@@ -3158,11 +3300,23 @@ Element* Floats::minus_direct(LispE* lisp, Element* e) {
             liste.minus(v);
             return this;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    n->liste[i] = liste[i] - n->liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] - n->liste[i];
                 }
@@ -3246,11 +3400,23 @@ Element* Floats::multiply_direct(LispE* lisp, Element* e) {
             liste.multiply(v);
             return this;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    n->liste[i] *= liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] *= liste[i];
                 }
@@ -3345,11 +3511,27 @@ Element* Floats::divide_direct(LispE* lisp, Element* e) {
             liste.divide(v);
             return this;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    if (n->liste.check(0)) {
+                        result->release();
+                        throw new Error("Error: division by zero");
+                    }
+                    n->liste[i] = liste[i] / n->liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     if (n->liste.check(0)) {
                         result->release();
@@ -3629,12 +3811,12 @@ Element* Floats::leftshift(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->leftshift(lisp, e->index(i)));
+            replacingandclean(i, index(i)->leftshift(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->leftshift(lisp, e));
+        replacingandclean(i, index(i)->leftshift(lisp, e));
     }
     return this;
 }
@@ -3664,12 +3846,12 @@ Element* Floats::rightshift(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->rightshift(lisp, e->index(i)));
+            replacingandclean(i, index(i)->rightshift(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->rightshift(lisp, e));
+        replacingandclean(i, index(i)->rightshift(lisp, e));
     }
     return this;
 }
@@ -3678,7 +3860,7 @@ Element* Numbers::bit_not(LispE* l) {
     //Two cases either e is a number or it is a list...
     if (!status) {
         for (long i = 0; i < size(); i++) {
-            replacing(i, index(i)->bit_not(l));
+            replacingandclean(i, index(i)->bit_not(l));
         }
         return this;
     }
@@ -3721,12 +3903,12 @@ Element* Numbers::bit_and(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_and(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_and(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_and(lisp, e));
+        replacingandclean(i, index(i)->bit_and(lisp, e));
     }
     return this;
 }
@@ -3758,12 +3940,12 @@ Element* Numbers::bit_and_not(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_and_not(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_and_not(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_and_not(lisp, e));
+        replacingandclean(i, index(i)->bit_and_not(lisp, e));
     }
     return this;
 }
@@ -3796,12 +3978,12 @@ Element* Numbers::bit_or(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_or(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_or(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_or(lisp, e));
+        replacingandclean(i, index(i)->bit_or(lisp, e));
     }
     return this;
 }
@@ -3834,12 +4016,12 @@ Element* Numbers::bit_xor(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->bit_xor(lisp, e->index(i)));
+            replacingandclean(i, index(i)->bit_xor(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->bit_xor(lisp, e));
+        replacingandclean(i, index(i)->bit_xor(lisp, e));
     }
     return this;
 }
@@ -3914,11 +4096,23 @@ Element* Numbers::plus_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    n->liste[i] += liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] += liste[i];
                 }
@@ -4002,11 +4196,23 @@ Element* Numbers::minus_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    n->liste[i] = liste[i] - n->liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] = liste[i] - n->liste[i];
                 }
@@ -4090,11 +4296,23 @@ Element* Numbers::multiply_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    n->liste[i] *= liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     n->liste[i] *= liste[i];
                 }
@@ -4193,12 +4411,29 @@ Element* Numbers::divide_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             Numbers* n;
             
             for (long m = 0; m < result->size_x; m++) {
                 n = (Numbers*)result->index(m);
+                if (n->liste.check(0)) {
+                    result->release();
+                    throw new Error("Error: division by zero");
+                }
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    n->liste[i] = liste[i] / n->liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            
+            for (long m = 0; m < result->size_x; m++) {
+                n = (Integers*)result->index(m);
                 if (n->liste.check(0)) {
                     result->release();
                     throw new Error("Error: division by zero");
@@ -4466,12 +4701,12 @@ Element* Numbers::leftshift(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->leftshift(lisp, e->index(i)));
+            replacingandclean(i, index(i)->leftshift(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->leftshift(lisp, e));
+        replacingandclean(i, index(i)->leftshift(lisp, e));
     }
     return this;
 }
@@ -4501,12 +4736,12 @@ Element* Numbers::rightshift(LispE* lisp, Element* e) {
             return result;
         }
         for (long i = 0; i < e->size() && i < size(); i++) {
-            replacing(i, index(i)->rightshift(lisp, e->index(i)));
+            replacingandclean(i, index(i)->rightshift(lisp, e->index(i)));
         }
         return this;
     }
     for (long i = 0; i < size(); i++) {
-        replacing(i, index(i)->rightshift(lisp, e));
+        replacingandclean(i, index(i)->rightshift(lisp, e));
     }
     return this;
 }
@@ -4753,11 +4988,23 @@ Element* Integers::plus_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     ((Numbers*)result->index(m))->liste[i] += liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Integers*)result->index(m))->liste[i] += liste[i];
                 }
             }
             release();
@@ -4854,13 +5101,27 @@ Element* Integers::minus_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             double v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Numbers*)result->index(m))->liste[i];
                     ((Numbers*)result->index(m))->liste[i] = liste[i] - v;
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            Integers* n;
+            long v;
+            
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Integers*)result->index(m))->liste[i];
+                    ((Integers*)result->index(m))->liste[i] = liste[i] - v;
                 }
             }
             release();
@@ -4911,11 +5172,22 @@ Element* Integers::multiply_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     ((Numbers*)result->index(m))->liste[i] *= liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Integers*)result->index(m))->liste[i] *= liste[i];
                 }
             }
             release();
@@ -4983,8 +5255,8 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             double v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
@@ -4992,6 +5264,21 @@ Element* Integers::divide_direct(LispE* lisp, Element* e) {
                     if (!v)
                         throw new Error("Error: division by zero");
                     ((Numbers*)result->index(m))->liste[i] = liste[i] / v;
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            long v;
+            
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Integers*)result->index(m))->liste[i];
+                    if (!v)
+                        throw new Error("Error: division by zero");
+                    ((Integers*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
             release();
@@ -5488,11 +5775,22 @@ Element* Shorts::plus_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     ((Numbers*)result->index(m))->liste[i] += liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Integers*)result->index(m))->liste[i] += liste[i];
                 }
             }
             release();
@@ -5547,13 +5845,25 @@ Element* Shorts::minus_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             double v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     v = ((Numbers*)result->index(m))->liste[i];
                     ((Numbers*)result->index(m))->liste[i] = liste[i] - v;
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            long v;
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Integers*)result->index(m))->liste[i];
+                    ((Integers*)result->index(m))->liste[i] = liste[i] - v;
                 }
             }
             release();
@@ -5604,11 +5914,21 @@ Element* Shorts::multiply_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
                     ((Numbers*)result->index(m))->liste[i] *= liste[i];
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    ((Integers*)result->index(m))->liste[i] *= liste[i];
                 }
             }
             release();
@@ -5676,8 +5996,8 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
             release();
             return result;
         }
-        case t_matrix: {
-            Matrice* result = new Matrice(lisp, (Matrice*)e);
+        case t_matrix_number: {
+            Matrice_number* result = new Matrice_number(lisp, (Matrice_number*)e);
             double v;
             for (long m = 0; m < result->size_x; m++) {
                 for (long i = 0; i < liste.size() && i < result->size_y; i++) {
@@ -5685,6 +6005,20 @@ Element* Shorts::divide_direct(LispE* lisp, Element* e) {
                     if (!v)
                         throw new Error("Error: division by zero");
                     ((Numbers*)result->index(m))->liste[i] = liste[i] / v;
+                }
+            }
+            release();
+            return result;
+        }
+        case t_matrix_integer: {
+            Matrice_integer* result = new Matrice_integer(lisp, (Matrice_integer*)e);
+            long v;
+            for (long m = 0; m < result->size_x; m++) {
+                for (long i = 0; i < liste.size() && i < result->size_y; i++) {
+                    v = ((Integers*)result->index(m))->liste[i];
+                    if (!v)
+                        throw new Error("Error: division by zero");
+                    ((Integers*)result->index(m))->liste[i] = liste[i] / v;
                 }
             }
             release();
@@ -11514,11 +11848,30 @@ Element* Matrice_float::negate(LispE* lisp) {
     return m;
 }
 
-Element* Matrice::negate(LispE* lisp) {
-    Matrice* m = new Matrice();
+Element* Matrice_number::negate(LispE* lisp) {
+    Matrice_number* m = new Matrice_number();
     m->size_x = size_x;
     m->size_y = size_y;
     for (long i = 0; i < size_x; i++) {
+        m->append(liste[i]->negate(lisp));
+    }
+    return m;
+}
+
+Element* Matrice_integer::negate(LispE* lisp) {
+    Matrice_integer* m = new Matrice_integer();
+    m->size_x = size_x;
+    m->size_y = size_y;
+    for (long i = 0; i < size_x; i++) {
+        m->append(liste[i]->negate(lisp));
+    }
+    return m;
+}
+
+Element* Tenseur_integer::negate(LispE* lisp) {
+    Tenseur_integer* m = new Tenseur_integer();
+    m->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
         m->append(liste[i]->negate(lisp));
     }
     return m;
@@ -11533,8 +11886,8 @@ Element* Tenseur_float::negate(LispE* lisp) {
     return m;
 }
 
-Element* Tenseur::negate(LispE* lisp) {
-    Tenseur* m = new Tenseur();
+Element* Tenseur_number::negate(LispE* lisp) {
+    Tenseur_number* m = new Tenseur_number();
     m->shape = shape;
     for (long i = 0; i < shape[0]; i++) {
         m->append(liste[i]->negate(lisp));
@@ -11542,3 +11895,78 @@ Element* Tenseur::negate(LispE* lisp) {
     return m;
 }
 
+
+void Tenseur_integer::concatenate(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        vecte<long> sz;
+        e->getShape(sz);
+        for (long i = 0; i < sz.size()-1; i++) {
+            if (sz[i] != shape[i])
+                throw new Error("Error: Incompatible dimensions");
+        }
+    }
+    
+    concatenate(lisp, 0, this, e);
+}
+
+
+void Tenseur_integer::build(LispE* lisp, long isz, Element* res, long n) {
+    if (isz == shape.size()-2) {
+        Integers* lst;
+        for (long i = 0; i < shape[isz]; i++) {
+            lst = lisp->provideIntegers(shape[isz+1], n);
+            res->append(lst);
+        }
+    }
+    else {
+        Tenseur_integer* lst;
+        for (long i = 0; i < shape[isz]; i++) {
+            lst = new Tenseur_integer(isz+1, shape);
+            res->append(lst);
+            build(lisp, isz+1, lst, n);
+        }
+    }
+}
+
+void Tenseur_integer::build(LispE* lisp, long isz, Element* res, Element* lst, long& idx) {
+    if (isz == shape.size()-2) {
+        Integers* l;
+        long i,j;
+        for (i = 0; i < shape[isz]; i++) {
+            l = lisp->provideIntegers();
+            res->append(l);
+            for (j = 0; j < shape[isz+1]; j++) {
+                if (idx == lst->size())
+                    idx = 0;
+                l->liste.push_back(lst->index(idx++)->asFloat());
+            }
+        }
+    }
+    else {
+        Tenseur_integer* l;
+        for (long i = 0; i < shape[isz]; i++) {
+            l = new Tenseur_integer(isz+1, shape);
+            res->append(l);
+            build(lisp, isz+1, l, lst, idx);
+        }
+    }
+}
+
+void Tenseur_integer::build(LispE* lisp, long isz, Element* res) {
+    if (isz == shape.size()-2) {
+        Integers* l;
+        for (long i = 0; i < shape[isz]; i++) {
+            l = lisp->provideIntegers();
+            res->append(l);
+            l->liste = ((Integers*)liste[i])->liste;
+        }
+    }
+    else {
+        Tenseur_integer* l;
+        for (long i = 0; i < shape[isz]; i++) {
+            l = new Tenseur_integer(isz+1, shape);
+            res->append(l);
+            build(lisp, isz+1,l);
+        }
+    }
+}

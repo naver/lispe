@@ -1900,6 +1900,42 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     return lisp->pop(element);
 }
 
+Element* List::newTensor(long nb, long sz) {
+    long i;
+    vecte<long> shape;
+    vecte<long> shapeidx;
+    liste[0]->getShape(shape);
+    bool is_tensor = true;
+    char sublist = liste[0]->isPureList();
+    for (i = 1; i < sz; i++) {
+        liste[i]->getShape(shapeidx);
+        if (!(shape == shapeidx)) {
+            is_tensor = false;
+            break;
+        }
+        sublist |= liste[i]->isPureList();
+        shapeidx.clear();
+    }
+    
+    if (is_tensor) {
+        Element* tensor;
+        if (sublist == 4)
+            tensor = liste[0]->newTensor(0, sz);
+        else {
+            //Then this is a bit more complex...
+            shape.insert(0, sz);
+            if (shape.size() == 2)
+                tensor = new Matrice_number(shape[0], shape[1]);
+            else
+                tensor = new Tenseur_number(0, shape);
+        }
+        for (i = 0; i < sz; i++)
+            tensor->append(liste[i]);
+        return tensor;
+    }
+    return this;
+}
+
 Element* List_maplist_lambda_eval::eval(LispE* lisp) {
     Element* element = null_;
     Element* op = liste[1];
@@ -1932,7 +1968,7 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
         //if there is already a variable with this name on the stack
         //we record it to restore it later...
         save_variable = lisp->record_or_replace(nxt, label);
-        
+        char check_tensor = 0;
         Element* e = op->eval_lambda_min(lisp);
         if (e->type == l_return)
             container = emptylist_;
@@ -1967,6 +2003,8 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
                 e = op->eval_lambda_min(lisp);
                 if (e->type == l_return)
                     break;
+                
+                check_tensor |= e->isPureList();
                 e = e->copying(false);
                 container->append(e);
                 e->release();
@@ -1978,6 +2016,13 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
         element->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
+        if (check_tensor == 4) {
+            nxt = container->newTensor(0, container->size());
+            if (nxt != container) {
+                container->release();
+                return nxt;
+            }
+        }
         return container;
     }
     catch (Error* err) {
@@ -2178,7 +2223,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
         
         op = liste[1];
         Element* e;
-
+        char check_tensor = 0;
         if (op->isLambda()) {
             if (!op->index(1)->size())
                 throw new Error("Error: Wrong number of arguments");
@@ -2198,6 +2243,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
+                    check_tensor |= e->isPureList();
                     result->append(e);
                 }
                 e->release();
@@ -2210,6 +2256,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                     if (e->Boolean()) {
                         e->release();
                         e = nxt->copying(false);
+                        check_tensor |= e->isPureList();
                         result->append(e);
                     }
                     e->release();
@@ -2250,6 +2297,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
+                    check_tensor |= e->isPureList();
                     result->append(e);
                 }
                 e->release();
@@ -2261,6 +2309,13 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
         element->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
+        if (check_tensor == 4) {
+            element = result->newTensor(0, result->size());
+            if (element != result) {
+                result->release();
+                return element;
+            }
+        }
         return result;
     }
     catch (Error* err) {
@@ -2349,7 +2404,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
         
         op = liste[1];
         Element* e;
-
+        char check_tensor = 0;
         if (op->isLambda()) {
             if (!op->index(1)->size())
                 throw new Error("Error: Wrong number of arguments");
@@ -2369,6 +2424,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
+                    check_tensor |= e->isPureList();
                     result->append(e);
                 }
                 else
@@ -2384,6 +2440,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                     if (e->Boolean()) {
                         e->release();
                         e = nxt->copying(false);
+                        check_tensor |= e->isPureList();
                         result->append(e);
                     }
                     else {
@@ -2430,6 +2487,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
+                    check_tensor |= e->isPureList();
                     result->append(e);
                     e->release();
                 }
@@ -2445,6 +2503,13 @@ Element* List_takelist_eval::eval(LispE* lisp) {
         element->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
+        if (check_tensor == 4) {
+            element = result->newTensor(0, result->size());
+            if (element != result) {
+                result->release();
+                return element;
+            }
+        }
         return result;
     }
     catch (Error* err) {
@@ -2536,7 +2601,8 @@ Element* List_droplist_eval::eval(LispE* lisp) {
         
         Element* e;
         bool add = false;
-
+        char check_tensor = 0;
+        
         if (op->isLambda()) {
             if (!op->index(1)->size())
                 throw new Error("Error: Wrong number of arguments");
@@ -2556,6 +2622,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
+                    check_tensor |= e->isPureList();
                     result->append(e);
                     add = true;
                 }
@@ -2570,6 +2637,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                     if (add || e->Boolean()) {
                         e->release();
                         e = nxt->copying(false);
+                        check_tensor |= e->isPureList();
                         result->append(e);
                         add = true;
                     }
@@ -2613,6 +2681,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 if (add || e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
+                    check_tensor |= e->isPureList();
                     result->append(e);
                     add = true;
                 }
@@ -2625,6 +2694,13 @@ Element* List_droplist_eval::eval(LispE* lisp) {
         element->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
+        if (check_tensor == 4) {
+            element = result->newTensor(0, result->size());
+            if (element != result) {
+                result->release();
+                return element;
+            }
+        }
         return result;
     }
     catch (Error* err) {
@@ -3170,7 +3246,7 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
         l2_transposed = l2->transposed(lisp);
         
         Element* row;
-        Matrice* res = new Matrice(lisp, sx_1, sy_2, 0.0);
+        Matrice_number* res = new Matrice_number(lisp, sx_1, sy_2, 0.0);
         //We are dealing with matrices...
         for (i = 0; i < sx_1; i++) {
             row = l1->index(i);
@@ -3254,38 +3330,15 @@ Element* List_outerproduct_eval::eval(LispE* lisp) {
         vecte<long> size;
         l1->getShape(size);
         l2->getShape(size);
-        if (lisp->delegation->isNumberType(l1->type) && lisp->delegation->isNumberType(l2->type)) {
-            if (size.size() == 2) {
-                if ((l1->type == t_floats && l2->type == t_floats) ||
-                    (l1->type == t_shorts && l2->type == t_shorts)) {
-                    res = new Matrice_float(lisp, size[0], size[1], 0.0);
-                    ((Matrice_float*)res)->combine(lisp, l1, l2, call);
-                }
-                else {
-                    res = new Matrice(lisp, size[0], size[1], 0.0);
-                    ((Matrice*)res)->combine(lisp, l1, l2, call);
-                }
+        char char_tensor = 0;
+        res = lisp->provideList();
+        ((List*)res)->combine(lisp, res, l1, l2, call, char_tensor);
+        if (char_tensor == 4) {
+            Element* nxt = res->newTensor(0, res->size());
+            if (nxt != res) {
+                res->release();
+                res = nxt;
             }
-            else {
-                if ((l1->type == t_floats && l2->type == t_floats) ||
-                    (l1->type == t_shorts && l2->type == t_shorts)) {
-                    res = new Tenseur_float(lisp, size, zero_);
-                    ((Tenseur_float*)res)->combine(lisp, l1, l2, call);
-                }
-                else {
-                    res = new Tenseur(lisp, size, zero_);
-                    ((Tenseur*)res)->combine(lisp, l1, l2, call);
-                }
-            }
-        }
-        else {
-            res = lisp->provideList();
-            vecte<long> shape;
-            l1->getShape(shape);
-            l2->getShape(shape);
-            long idx = 0;
-            ((List*)res)->build(lisp, shape, 0, res, l1, idx);
-            ((List*)res)->combine(lisp, l1, l2, call);
         }
         
         call->force_release();
@@ -3405,14 +3458,302 @@ Element* List_irank_eval::eval(LispE* lisp) {
     return r;
 }
 
+Element* List_scan_eval::eval(LispE* lisp) {
+    //Operation is: (\\ operation l1 l2)
+    
+    Element* current_list = liste[2]->eval(lisp);
+    
+    if (!current_list->isList()) {
+        current_list->release();
+        throw new Error("Error: argument for 'scan' should be a list");
+    }
 
+    Element* op = null_;
+    List* res;
+    List* call;
+
+    long sz = current_list->size();
+    if (!sz)
+        return emptylist_;
+
+    //if l1 is a matrix, we recursively call the function on each sublist
+    if (current_list->isPureList() == a_tensor) {
+        call = new List_scan_eval();
+        call->append(liste[0]);
+        call->append(liste[1]);
+        call->append(lisp->quoted());
+        vecte<long> shape;
+        current_list->getShape(shape);
+        Element* e;
+        Element* res = null_;
+        Element* columns = NULL;
+        
+        try {
+            if (shape.size() == 2) {
+                res = lisp->provideList();
+                for (long i = 0; i < sz; i++)
+                    res->append(current_list->index(i));
+                call->in_quote(2, res);
+                e = call->eval(lisp);
+                res->release();
+                call->force_release();
+                current_list->release();
+                lisp->resetStack();
+                return e;
+            }
+            
+            res = current_list->newTensor(1);
+            for (long i = 0; i < shape[1]; i++) {
+                columns = current_list->newTensor(1);
+                for (long j = 0; j < shape[0]; j++) {
+                    columns->append(current_list->index(j)->index(i));
+                }
+                call->in_quote(2, columns);
+                e = call->eval(lisp);
+                res->append(e);
+            }
+        }
+        catch (Error* err) {
+            if (columns != NULL)
+                columns->release();
+            call->force_release();
+            res->release();
+            current_list->release();
+            return lisp->check_error(this, err, idxinfo);
+        }
+        
+        call->force_release();
+        current_list->release();
+        lisp->resetStack();
+        return res;
+    }
+
+    try {
+        lisp->checkState(this);
+        op = liste[1]->eval(lisp);
+
+        if (op->isLambda()) {
+            current_list = scan_lambda(lisp, current_list, op, sz);
+            lisp->resetStack();
+            return current_list;
+        }
+
+        if (op->isList() && op->size()) {
+            current_list = scan_with_list(lisp, current_list, op, sz);
+            lisp->resetStack();
+            return current_list;
+        }
+    }
+    catch (Error* err) {
+        current_list->release();
+        op->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+
+    res = lisp->provideList();
+    call = NULL;
+    bool sb = lisp->set_true_as_one();
+        
+    try {
+        op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+        
+        bool monadic = op->check_arity(lisp, P_TWO);
+        
+        call = lisp->provideCall(op, 1);
+        Element* e = current_list->index(0)->copying(false);
+        res->append(e);
+        call->in_quote(1, e);
+        methodEval met = lisp->delegation->evals[op->type];
+        if (!monadic) {
+            call->append(lisp->quoted());
+            for (long i = 1; i < sz; i++) {
+                call->in_quote(2, current_list->index(i));
+                e = (call->*met)(lisp);
+                res->append(e);
+                call->in_quote(1, e);
+            }
+        }
+        else {
+            for (long i = 1; i < sz; i++) {
+                call->in_quote(1, current_list->index(i));
+                e = (call->*met)(lisp);
+                res->append(e);
+            }
+        }
+        
+        call->force_release();
+        current_list->release();
+        lisp->reset_to_true(sb);
+    }
+    catch (Error* err) {
+        call->force_release();
+        lisp->reset_to_true(sb);
+        res->release();
+        current_list->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    
+    lisp->resetStack();
+    return res;
+}
+
+Element* List_backscan_eval::eval(LispE* lisp) {
+    //Operation is: (-\\ operation l1 l2)
+    Element* current_list = liste[2]->eval(lisp);
+    if (!current_list->isList()) {
+        current_list->release();
+        throw new Error("Error: argument for 'backscan' should be a list");
+    }
+
+    Element* op = null_;
+    bool sb = lisp->set_true_as_one();
+    List* res;
+    List* call;
+
+    long sz = current_list->size();
+    if (!sz) {
+        lisp->reset_to_true(sb);
+        return null_;
+    }
+    
+    //if l1 is a matrix, we recursively call the function on each sublist out of the transposed matrix
+    if (current_list->isPureList() == a_tensor) {
+        call = new List_backscan_eval();
+        call->append(liste[0]);
+        call->append(liste[1]);
+        call->append(lisp->quoted());
+        vecte<long> shape;
+        current_list->getShape(shape);
+        //We extract our columns
+        Element* e;
+        Element* res = null_;
+        Element* columns = NULL;
+        
+        try {
+            if (shape.size() == 2) {
+                res = lisp->provideList();
+                for (long i = 0; i < sz; i++)
+                    res->append(current_list->index(i));
+                call->in_quote(2, res);
+                e = call->eval(lisp);
+                res->release();
+                call->force_release();
+                current_list->release();
+                lisp->resetStack();
+                return e;
+            }
+            
+            res = current_list->newTensor(1);
+            for (long i = 0; i < shape[1]; i++) {
+                columns = current_list->newTensor(1);
+                for (long j = 0; j < shape[0]; j++) {
+                    columns->append(current_list->index(j)->index(i));
+                }
+                call->in_quote(2, columns);
+                e = call->eval(lisp);
+                res->append(e);
+            }
+        }
+        catch (Error* err) {
+            if (columns != NULL)
+                columns->release();
+            call->force_release();
+            res->release();
+            current_list->release();
+            return lisp->check_error(this, err, idxinfo);
+        }
+        
+        call->force_release();
+        current_list->release();
+        lisp->resetStack();
+        return res;
+    }
+    try {
+        lisp->checkState(this);
+        
+        op = liste[1]->eval(lisp);
+
+        if (op->isLambda()) {
+            current_list = backscan_lambda(lisp, current_list, op, sz);
+            lisp->resetStack();
+            lisp->reset_to_true(sb);
+            return current_list;
+        }
+
+        if (op->isList() && op->size()) {
+            current_list = backscan_with_list(lisp, current_list, op, sz);
+            lisp->resetStack();
+            lisp->reset_to_true(sb);
+            return current_list;
+        }
+ 
+    }
+    catch (Error* err) {
+        current_list->release();
+        op->release();
+        lisp->reset_to_true(sb);
+        return lisp->check_error(this, err, idxinfo);
+    }
+
+    call = NULL;
+    res = lisp->provideList();
+    
+    try {
+        op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+        
+
+        bool monadic = op->check_arity(lisp, P_TWO);
+
+        call = lisp->provideCall(op, 1);
+
+        sz--;
+        Element* e = current_list->value_on_index(lisp, sz);
+        res->append(e);
+        call->in_quote(1, e);
+        methodEval met = lisp->delegation->evals[op->type];
+        if (!monadic) {
+            call->append(lisp->quoted());
+            for (long i = sz-1; i >= 0; i--) {
+                call->in_quote(2, current_list->index(i));
+                e = (call->*met)(lisp);
+                res->append(e);
+                call->in_quote(1, e);
+            }
+        }
+        else {
+            for (long i = sz-1; i >= 0; i--) {
+                call->in_quote(1, current_list->index(i));
+                e = (call->*met)(lisp);
+                res->append(e);
+            }
+        }
+        
+        call->force_release();
+        current_list->release();
+        lisp->reset_to_true(sb);
+    }
+    catch (Error* err) {
+        if (call != NULL)
+            call->force_release();
+        res->release();
+        lisp->reset_to_true(sb);
+        current_list->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return res;
+}
 Element* List_reduce_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (// operation l1)
     
     Element* current_list = null_;
     Element* op = null_;
-    List* res;
+    //List* res;
     List* call;
     
     try {
@@ -3445,28 +3786,52 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     }
     
     //if l1 is a matrix, we recursively call the function on each sublist
-    if (current_list->index(0)->isList()) {
-        res = lisp->provideList();
-        call = lisp->provideList();
+    if (current_list->isPureList() == a_tensor) {
+        call = new List_reduce_eval();
         call->append(liste[0]);
         call->append(liste[1]);
         call->append(lisp->quoted());
-        //Then we apply the current instructions but on each element
+        vecte<long> shape;
+        current_list->getShape(shape);
+        //We extract our columns
+        Element* e;
+        Element* res = null_;
+        Element* columns = NULL;
+        
         try {
-            Element* e;
-            for (long i = 0; i < current_list->size(); i++) {
-                //We apply the operator recursively
-                call->in_quote(2, current_list->index(i));
+            if (shape.size() == 2) {
+                res = lisp->provideList();
+                for (long i = 0; i < sz; i++)
+                    res->append(current_list->index(i));
+                call->in_quote(2, res);
+                e = call->eval(lisp);
+                res->release();
+                call->force_release();
+                current_list->release();
+                lisp->resetStack();
+                return e;
+            }
+            
+            res = current_list->newTensor(1);
+            for (long i = 0; i < shape[1]; i++) {
+                columns = current_list->newTensor(1);
+                for (long j = 0; j < shape[0]; j++) {
+                    columns->append(current_list->index(j)->index(i));
+                }
+                call->in_quote(2, columns);
                 e = call->eval(lisp);
                 res->append(e);
             }
         }
         catch (Error* err) {
-            res->release();
+            if (columns != NULL)
+                columns->release();
             call->force_release();
+            res->release();
             current_list->release();
             return lisp->check_error(this, err, idxinfo);
         }
+        
         call->force_release();
         current_list->release();
         lisp->resetStack();
@@ -3568,7 +3933,6 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     Element* current_list = null_;
     Element* op = null_;
     List* call = NULL;
-    List* res;
     
     try {
         lisp->checkState(this);
@@ -3599,27 +3963,47 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         return null_;
     }
     
-    //if l1 is a matrix, we recursively call the function on each sublist out of the transposed matrix
-    if (current_list->index(0)->isList()) {
-        Element* current_transposed = current_list->transposed(lisp);
-        res = lisp->provideList();
-        //Then we apply the current instructions but on each element
-        call = lisp->provideList();
+    if (current_list->isPureList() == a_tensor) {
+        call = new List_backreduce_eval();
         call->append(liste[0]);
         call->append(liste[1]);
         call->append(lisp->quoted());
+        vecte<long> shape;
+        current_list->getShape(shape);
+        //We extract our columns
+        Element* e;
+        Element* res = null_;
+        Element* columns = NULL;
+        
         try {
-            Element* e;
-            for (long i = 0; i < current_transposed->size(); i++) {
-                //We apply the operator recursively
-                call->in_quote(2, current_transposed->index(i));
+            if (shape.size() == 2) {
+                res = lisp->provideList();
+                for (long i = 0; i < sz; i++)
+                    res->append(current_list->index(i));
+                call->in_quote(2, res);
+                e = call->eval(lisp);
+                res->release();
+                call->force_release();
+                current_list->release();
+                lisp->resetStack();
+                return e;
+            }
+            
+            res = current_list->newTensor(1);
+            for (long i = 0; i < shape[1]; i++) {
+                columns = current_list->newTensor(1);
+                for (long j = 0; j < shape[0]; j++) {
+                    columns->append(current_list->index(j)->index(i));
+                }
+                call->in_quote(2, columns);
                 e = call->eval(lisp);
                 res->append(e);
             }
         }
         catch (Error* err) {
+            if (columns != NULL)
+                columns->release();
             call->force_release();
-            current_transposed->release();
             res->release();
             current_list->release();
             return lisp->check_error(this, err, idxinfo);
@@ -3627,7 +4011,6 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         
         call->force_release();
         current_list->release();
-        current_transposed->release();
         lisp->resetStack();
         return res;
     }
@@ -3750,8 +4133,8 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 return first_element;
             }
             switch (first_element->type) {
-                case t_matrix:
-                case t_tensor: {
+                case t_matrix_number:
+                case t_tensor_number: {
                     Numbers* l = lisp->provideNumbers();
                     first_element->flatten(lisp, l);
                     first_element->release();
@@ -3806,19 +4189,35 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
         vecte<long> sz1;
         vecte<long> sz2;
         switch (first_element->type) {
-            case t_matrix: {
+            case t_matrix_integer: {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Matrice(lisp, sz1[0], sz1[1], 0.0);
-                ((Matrice*)res)->setvalue((Matrice*)first_element);
+                res = new Matrice_integer(lisp, sz1[0], sz1[1], 0.0);
+                ((Matrice_integer*)res)->setvalue((Matrice_integer*)first_element);
                 res->concatenate(lisp,second_element);
                 if (sz2.size() == 2)
                     sz1.vecteur[1] += sz2[1];
                 else
                     sz1.vecteur[1] += 1;
-                ((Matrice*)res)->size_y = sz1[1];
+                ((Matrice_integer*)res)->size_y = sz1[1];
+                first_element->release();
+                break;
+            }
+            case t_matrix_number: {
+                first_element->getShape(sz1);
+                second_element->getShape(sz2);
+                if (sz1.size() < sz2.size())
+                    throw new Error("Error: Dimension error");
+                res = new Matrice_number(lisp, sz1[0], sz1[1], 0.0);
+                ((Matrice_number*)res)->setvalue((Matrice_number*)first_element);
+                res->concatenate(lisp,second_element);
+                if (sz2.size() == 2)
+                    sz1.vecteur[1] += sz2[1];
+                else
+                    sz1.vecteur[1] += 1;
+                ((Matrice_number*)res)->size_y = sz1[1];
                 first_element->release();
                 break;
             }
@@ -3838,20 +4237,20 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 first_element->release();
                 break;
             }
-            case t_tensor: {
+            case t_tensor_number: {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
                 if (sz1.size() < sz2.size())
                     throw new Error("Error: Dimension error");
-                res = new Tenseur(lisp, sz1, zero_);
-                ((Tenseur*)res)->setvalue((Tenseur*)first_element);
+                res = new Tenseur_number(lisp, sz1, zero_);
+                ((Tenseur_number*)res)->setvalue((Tenseur_number*)first_element);
                 res->concatenate(lisp, second_element);
                 long i = 0;
                 while (i < sz2.size() && sz1[i] == sz2[i]) i++;
                 if (i == sz2.size())
-                    ((Tenseur*)res)->shape.vecteur[i] += 1;
+                    ((Tenseur_number*)res)->shape.vecteur[i] += 1;
                 else
-                    ((Tenseur*)res)->shape.vecteur[i] += sz2[i];
+                    ((Tenseur_number*)res)->shape.vecteur[i] += sz2[i];
                 first_element->release();
                 break;
             }
@@ -3869,6 +4268,23 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                     ((Tenseur_float*)res)->shape.vecteur[i] += 1;
                 else
                     ((Tenseur_float*)res)->shape.vecteur[i] += sz2[i];
+                first_element->release();
+                break;
+            }
+            case t_tensor_integer: {
+                first_element->getShape(sz1);
+                second_element->getShape(sz2);
+                if (sz1.size() < sz2.size())
+                    throw new Error("Error: Dimension error");
+                res = new Tenseur_integer(lisp, sz1, zero_);
+                ((Tenseur_integer*)res)->setvalue((Tenseur_integer*)first_element);
+                res->concatenate(lisp, second_element);
+                long i = 0;
+                while (i < sz2.size() && sz1[i] == sz2[i]) i++;
+                if (i == sz2.size())
+                    ((Tenseur_integer*)res)->shape.vecteur[i] += 1;
+                else
+                    ((Tenseur_integer*)res)->shape.vecteur[i] += sz2[i];
                 first_element->release();
                 break;
             }
@@ -3936,10 +4352,10 @@ Element* List_rho_eval::eval(LispE* lisp) {
             //In this case we return the shape of our list
             e = liste[1]->eval(lisp);
             switch (e->type) {
-                case t_matrix: {
+                case t_matrix_number: {
                     res = lisp->provideIntegers();
-                    ((Integers*)res)->liste.push_back(((Matrice*)e)->size_x);
-                    ((Integers*)res)->liste.push_back(((Matrice*)e)->size_y);
+                    ((Integers*)res)->liste.push_back(((Matrice_number*)e)->size_x);
+                    ((Integers*)res)->liste.push_back(((Matrice_number*)e)->size_y);
                     e->release();
                     lisp->reset_to_true(sb);
                     lisp->resetStack();
@@ -3954,9 +4370,9 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     lisp->resetStack();
                     return res;
                 }
-                case t_tensor: {
+                case t_tensor_number: {
                     res = lisp->provideIntegers();
-                    ((Integers*)res)->liste = ((Tenseur*)e)->shape;
+                    ((Integers*)res)->liste = ((Tenseur_number*)e)->shape;
                     e->release();
                     lisp->reset_to_true(sb);
                     lisp->resetStack();
@@ -4184,6 +4600,13 @@ Element* List_rho_eval::eval(LispE* lisp) {
             evalAsInteger(2, lisp, sz2);
             switch (e->type) {
                 case t_shorts:
+                case t_integers:
+                    if (e->isEmpty()) {
+                        e->release();
+                        e = lisp->provideIntegers(1, 0);
+                    }
+                    res = new Matrice_integer(lisp, e, sz1, sz2);
+                    break;
                 case t_floats:
                     if (e->isEmpty()) {
                         e->release();
@@ -4192,12 +4615,11 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     res = new Matrice_float(lisp, e, sz1, sz2);
                     break;
                 case t_numbers:
-                case t_integers:
                     if (e->isEmpty()) {
                         e->release();
                         e = lisp->provideIntegers(1, 0);
                     }
-                    res = new Matrice(lisp, e, sz1, sz2);
+                    res = new Matrice_number(lisp, e, sz1, sz2);
                     break;
                 case t_strings: {
                     if (e->isEmpty()) {
@@ -4217,7 +4639,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     if (e->isEmpty()) {
                         e->release();
                         e = lisp->provideIntegers(1, 0);
-                        res = new Matrice(lisp, e, sz1, sz2);
+                        res = new Matrice_number(lisp, e, sz1, sz2);
                         break;
                     }
                     else {
@@ -4266,6 +4688,13 @@ Element* List_rho_eval::eval(LispE* lisp) {
 
         switch (e->type) {
             case t_shorts:
+            case t_integers:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = lisp->provideIntegers(1, 0);
+                }
+                res = new Tenseur_integer(lisp, e, shape);
+                break;
             case t_floats:
                 if (e->isEmpty()) {
                     e->release();
@@ -4274,12 +4703,11 @@ Element* List_rho_eval::eval(LispE* lisp) {
                 res = new Tenseur_float(lisp, e, shape);
                 break;
             case t_numbers:
-            case t_integers:
                 if (e->isEmpty()) {
                     e->release();
-                    e = lisp->provideIntegers(1, 0);
+                    e = lisp->provideNumbers(1, 0);
                 }
-                res = new Tenseur(lisp, e, shape);
+                res = new Tenseur_number(lisp, e, shape);
                 break;
             case t_strings:
                 if (e->isEmpty()) {
@@ -4297,7 +4725,7 @@ Element* List_rho_eval::eval(LispE* lisp) {
                 if (e->isEmpty()) {
                     e->release();
                     e = lisp->provideIntegers(1, 0);
-                    res = new Tenseur(lisp, e, shape);
+                    res = new Tenseur_number(lisp, e, shape);
                 }
                 else {
                     res = new List;
@@ -4333,31 +4761,167 @@ Element* List_rho_eval::eval(LispE* lisp) {
     return res;
 }
 
+Element* Element::comparison(LispE* lisp, Element* l) {
+    if (isequal(lisp, l))
+        return one_;
+    else
+        return zero_;
+}
+
+Element* List::comparison(LispE* lisp, Element* l) {
+    if (l->isList()) {
+        if (l->size() != size())
+            return zero_;
+        List* res = lisp->provideList();
+        for (long i = 0; i < size(); i++) {
+            res->append(liste[i]->comparison(lisp, l->index(i)));
+        }
+        return res;
+    }
+    
+    Element* res = pureInstance();
+    for (long i = 0; i < size(); i++) {
+        res->append(liste[i]->comparison(lisp, l));
+    }
+    return res;
+}
+
+Element* Floats::comparison(LispE* lisp, Element* l) {
+    if (l->isList()) {
+        if (l->size() != size())
+            return zero_;
+        Integers* res = lisp->provideIntegers();
+        for (long i = 0; i < size(); i++) {
+            if (liste[i] == l->index(i)->asFloat())
+                res->liste.push_back(1);
+            else
+                res->liste.push_back(0);
+        }
+        return res;
+    }
+    
+    float v = l->asFloat();
+    Integers* res = lisp->provideIntegers();
+    for (long i = 0; i < size(); i++) {
+        if (liste[i] == v)
+            res->liste.push_back(1);
+        else
+            res->liste.push_back(0);
+    }
+    return res;
+}
+
+Element* Numbers::comparison(LispE* lisp, Element* l) {
+    if (l->isList()) {
+        if (l->size() != size())
+            return zero_;
+        Numbers* res = lisp->provideNumbers();
+        for (long i = 0; i < size(); i++) {
+            if (liste[i] == l->index(i)->asNumber())
+                res->liste.push_back(1);
+            else
+                res->liste.push_back(0);
+        }
+        return res;
+    }
+    
+    double v = l->asNumber();
+    Numbers* res = lisp->provideNumbers();
+    for (long i = 0; i < size(); i++) {
+        if (liste[i] == v)
+            res->liste.push_back(1);
+        else
+            res->liste.push_back(0);
+    }
+    return res;
+}
+
+Element* Integers::comparison(LispE* lisp, Element* l) {
+    if (l->isList()) {
+        if (l->size() != size())
+            return zero_;
+        Integers* res = lisp->provideIntegers();
+        for (long i = 0; i < size(); i++) {
+            if (liste[i] == l->index(i)->asInteger())
+                res->liste.push_back(1);
+            else
+                res->liste.push_back(0);
+        }
+        return res;
+    }
+    
+    long v = l->asInteger();
+    Integers* res = lisp->provideIntegers();
+    for (long i = 0; i < size(); i++) {
+        if (liste[i] == v)
+            res->liste.push_back(1);
+        else
+            res->liste.push_back(0);
+    }
+    return res;
+}
+
+Element* Shorts::comparison(LispE* lisp, Element* l) {
+    if (l->isList()) {
+        if (l->size() != size())
+            return zero_;
+        Integers* res = lisp->provideIntegers();
+        for (long i = 0; i < size(); i++) {
+            if (liste[i] == l->index(i)->asShort())
+                res->liste.push_back(1);
+            else
+                res->liste.push_back(0);
+        }
+        return res;
+    }
+    
+    short v = l->asShort();
+    Integers* res = lisp->provideIntegers();
+    for (long i = 0; i < size(); i++) {
+        if (liste[i] == v)
+            res->liste.push_back(1);
+        else
+            res->liste.push_back(0);
+    }
+    return res;
+}
+
+Element* Strings::comparison(LispE* lisp, Element* l) {
+    if (l->isList()) {
+        if (l->size() != size())
+            return zero_;
+        Integers* res = lisp->provideIntegers();
+        for (long i = 0; i < size(); i++) {
+            if (liste[i] == l->index(i)->asUString(lisp))
+                res->liste.push_back(1);
+            else
+                res->liste.push_back(0);
+        }
+        return res;
+    }
+    
+    u_ustring v = l->asUString(lisp);
+    Integers* res = lisp->provideIntegers();
+    for (long i = 0; i < size(); i++) {
+        if (liste[i] == v)
+            res->liste.push_back(1);
+        else
+            res->liste.push_back(0);
+    }
+    return res;
+}
+
+
 Element* List_equalonezero_eval::eval(LispE* lisp) {
     Element* l1 = liste[1]->eval(lisp);
-    
     Element* l2 = null_;
-    Integers* res = NULL;
+    Element* res = NULL;
     
     try {
         lisp->checkState(this);
         l2 = liste[2]->eval(lisp);
         
-        if (!l1->isList() || !l2->isList()) {
-            bool test = l1->isequal(lisp, l2);
-            l1->release();
-            l2->release();
-            lisp->resetStack();
-            return numbools_[test];
-        }
-        
-        res = lisp->provideIntegers();
-        for (long i = 0; i < l1->size() && i < l2->size(); i++) {
-            if (l1->index(i)->isequal(lisp, l2->index(i)))
-                res->liste.push_back(1);
-            else
-                res->liste.push_back(0);
-        }
+        res = l1->comparison(lisp, l2);
         
         l1->release();
         l2->release();
@@ -4374,258 +4938,7 @@ Element* List_equalonezero_eval::eval(LispE* lisp) {
     return res;
 }
 
-Element* List_scan_eval::eval(LispE* lisp) {
-    //Operation is: (\\ operation l1 l2)
-    
-    Element* current_list = liste[2]->eval(lisp);
-    
-    if (!current_list->isList()) {
-        current_list->release();
-        throw new Error("Error: argument for 'scan' should be a list");
-    }
 
-    Element* op = null_;
-    List* res;
-    List* call;
-
-    long sz = current_list->size();
-    if (!sz)
-        return emptylist_;
-
-    //if l1 is a matrix, we recursively call the function on each sublist
-    if (current_list->index(0)->isList()) {
-        res = lisp->provideList();
-        call = lisp->provideList();
-        
-        call->append(liste[0]);
-        call->append(liste[1]);
-        call->append(lisp->quoted());
-        //Then we apply the current instructions but on each element
-        try {
-            Element* e;
-            lisp->checkState(this);
-            for (long i = 0; i < current_list->size(); i++) {
-                //We apply the operator recursively
-                call->in_quote(2, current_list->index(i));
-                e = call->eval(lisp);
-                res->append(e);
-            }
-        }
-        catch (Error* err) {
-            current_list->release();
-            res->release();
-            call->force_release();
-            return lisp->check_error(this, err, idxinfo);
-        }
-        call->force_release();
-        current_list->release();
-        lisp->resetStack();
-        return res;
-    }
-
-    try {
-        lisp->checkState(this);
-        op = liste[1]->eval(lisp);
-
-        if (op->isLambda()) {
-            current_list = scan_lambda(lisp, current_list, op, sz);
-            lisp->resetStack();
-            return current_list;
-        }
-
-        if (op->isList() && op->size()) {
-            current_list = scan_with_list(lisp, current_list, op, sz);
-            lisp->resetStack();
-            return current_list;
-        }
-    }
-    catch (Error* err) {
-        current_list->release();
-        op->release();
-        return lisp->check_error(this, err, idxinfo);
-    }
-
-    res = lisp->provideList();
-    call = NULL;
-    bool sb = lisp->set_true_as_one();
-        
-    try {
-        op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
-        if (op->type == l_equal)
-            op = lisp->provideAtom(l_equalonezero);
-        
-        bool monadic = op->check_arity(lisp, P_TWO);
-        
-        call = lisp->provideCall(op, 1);
-        Element* e = current_list->index(0)->copying(false);
-        res->append(e);
-        call->in_quote(1, e);
-        methodEval met = lisp->delegation->evals[op->type];
-        if (!monadic) {
-            call->append(lisp->quoted());
-            for (long i = 1; i < sz; i++) {
-                call->in_quote(2, current_list->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-                call->in_quote(1, e);
-            }
-        }
-        else {
-            for (long i = 1; i < sz; i++) {
-                call->in_quote(1, current_list->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-            }
-        }
-        
-        call->force_release();
-        current_list->release();
-        lisp->reset_to_true(sb);
-    }
-    catch (Error* err) {
-        call->force_release();
-        lisp->reset_to_true(sb);
-        res->release();
-        current_list->release();
-        return lisp->check_error(this, err, idxinfo);
-    }
-    
-    lisp->resetStack();
-    return res;
-}
-
-Element* List_backscan_eval::eval(LispE* lisp) {
-    //Operation is: (-\\ operation l1 l2)
-    Element* current_list = liste[2]->eval(lisp);
-    if (!current_list->isList()) {
-        current_list->release();
-        throw new Error("Error: argument for 'backscan' should be a list");
-    }
-
-    Element* op = null_;
-    bool sb = lisp->set_true_as_one();
-    List* res;
-    List* call;
-
-    long sz = current_list->size();
-    if (!sz) {
-        lisp->reset_to_true(sb);
-        return null_;
-    }
-    
-    //if l1 is a matrix, we recursively call the function on each sublist out of the transposed matrix
-    if (current_list->index(0)->isList()) {
-        Element* current_transposed = current_list->transposed(lisp);
-        res = lisp->provideList();
-        call = lisp->provideList();
-        
-        call->append(liste[0]);
-        call->append(liste[1]);
-        call->append(lisp->quoted());
-        //Then we apply the current instructions but on each element
-        try {
-            lisp->checkState(this);
-            Element* e;
-            for (long i = 0; i < current_transposed->size(); i++) {
-                //We apply the operator recursively
-                call->in_quote(2, current_transposed->index(i));
-                e = call->eval(lisp);
-                res->append(e);
-            }
-        }
-        catch (Error* err) {
-            res->release();
-            current_transposed->release();
-            call->force_release();
-            current_list->release();
-            lisp->reset_to_true(sb);
-            return lisp->check_error(this, err, idxinfo);
-        }
-        
-        call->force_release();
-        current_list->release();
-        current_transposed->release();
-        lisp->resetStack();
-        return res;
-    }
-
-    try {
-        lisp->checkState(this);
-        
-        op = liste[1]->eval(lisp);
-
-        if (op->isLambda()) {
-            current_list = backscan_lambda(lisp, current_list, op, sz);
-            lisp->resetStack();
-            lisp->reset_to_true(sb);
-            return current_list;
-        }
-
-        if (op->isList() && op->size()) {
-            current_list = backscan_with_list(lisp, current_list, op, sz);
-            lisp->resetStack();
-            lisp->reset_to_true(sb);
-            return current_list;
-        }
- 
-    }
-    catch (Error* err) {
-        current_list->release();
-        op->release();
-        lisp->reset_to_true(sb);
-        return lisp->check_error(this, err, idxinfo);
-    }
-
-    call = NULL;
-    res = lisp->provideList();
-    
-    try {
-        op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
-        if (op->type == l_equal)
-            op = lisp->provideAtom(l_equalonezero);
-        
-
-        bool monadic = op->check_arity(lisp, P_TWO);
-
-        call = lisp->provideCall(op, 1);
-
-        sz--;
-        Element* e = current_list->value_on_index(lisp, sz);
-        res->append(e);
-        call->in_quote(1, e);
-        methodEval met = lisp->delegation->evals[op->type];
-        if (!monadic) {
-            call->append(lisp->quoted());
-            for (long i = sz-1; i >= 0; i--) {
-                call->in_quote(2, current_list->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-                call->in_quote(1, e);
-            }
-        }
-        else {
-            for (long i = sz-1; i >= 0; i--) {
-                call->in_quote(1, current_list->index(i));
-                e = (call->*met)(lisp);
-                res->append(e);
-            }
-        }
-        
-        call->force_release();
-        current_list->release();
-        lisp->reset_to_true(sb);
-    }
-    catch (Error* err) {
-        if (call != NULL)
-            call->force_release();
-        res->release();
-        lisp->reset_to_true(sb);
-        current_list->release();
-        return lisp->check_error(this, err, idxinfo);
-    }
-    lisp->resetStack();
-    return res;
-}
 
 Element* List_flip_eval::eval(LispE* lisp) {
     Element* first_element = liste[0];
@@ -4784,7 +5097,7 @@ Element* List_flatten_eval::eval(LispE* lisp) {
     if (element->isValueList())
         return element;
     
-    if (element->type == t_matrix || element->type == t_tensor) {
+    if (element->type == t_matrix_number || element->type == t_tensor_number) {
         Numbers* l = lisp->provideNumbers();
         element->flatten(lisp, l);
         element->release();
@@ -5758,7 +6071,7 @@ Element* List_rotate_eval::eval(LispE* lisp) {
             if (result->isNumber()) {
                 long nb = result->asInteger();
                 result->release();
-                if (liste.size() == 4 && matrix->type >= t_matrix && matrix->type <= t_tensor_float) {
+                if (liste.size() == 4 && matrix->isPureList() == a_tensor) {
                     result = liste[3]->eval(lisp);
                     left = result->Boolean();
                     result->release();
@@ -7455,6 +7768,35 @@ Element* List_to_llist_eval::eval(LispE* lisp) {
     return a_llist;
 }
 
+Element* List_to_tensor_eval::eval(LispE* lisp) {
+    Element* values;
+    if (size() == 2) {
+        values = liste[1]->eval(lisp);
+        Element* results = values->newTensor(0, values->size());
+        values->release();
+        return results;
+    }
+    vecte<long> shape;
+    long v;
+    long i;
+    for (i = 1; i < liste.size()-1;i++) {
+        evalAsInteger(i, lisp, v);
+        shape.push_back(v);
+    }
+    
+    values = liste[i]->eval(lisp);
+    Numbers* n = lisp->provideNumbers();
+    values->flatten(lisp, n);
+    Element* tense;
+    if (shape.size() == 2)
+        tense = new Matrice_number(n, shape[0], shape[1]);
+    else
+        tense = new Tenseur_number(shape, n);
+    values->release();
+    n->release();
+    return tense;
+}
+
 
 Element* List_lock_eval::eval(LispE* lisp) {
     u_ustring key;
@@ -7640,7 +7982,7 @@ Element* List_resetmark_eval::eval(LispE* lisp) {
 }
 
 
-Element* List_tensor_eval::eval(LispE* lisp) {
+Element* List_tensor_number_eval::eval(LispE* lisp) {
     long sz = size();
     Element* e = zero_;
     vecte<long> shape;
@@ -7649,8 +7991,8 @@ Element* List_tensor_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         if (sz == 2) {
             e = liste[1]->eval(lisp);
-            if (e->type == t_tensor) {
-                Tenseur* ts = new Tenseur(lisp, (List*)e);
+            if (e->type == t_tensor_number) {
+                Tenseur_number* ts = new Tenseur_number(lisp, (List*)e);
                 e->release();
                 lisp->resetStack();
                 return ts;
@@ -7658,8 +8000,8 @@ Element* List_tensor_eval::eval(LispE* lisp) {
             if (!e->isList())
                 throw new Error("Error: The first element should be a list");
 
-            if (e->type == t_tensor_float)
-                ((Tenseur_float*)e)->getShape(shape);
+            if (e->type == t_tensor_float || e->type == t_tensor_integer)
+                e->getShape(shape);
             else {
                 Element* c = e;
                 while (c->isList()) {
@@ -7672,7 +8014,7 @@ Element* List_tensor_eval::eval(LispE* lisp) {
 
             Numbers l;
             e->flatten(lisp,&l);
-            Tenseur* ts = new Tenseur(lisp, &l, shape);
+            Tenseur_number* ts = new Tenseur_number(lisp, &l, shape);
             e->release();
             lisp->resetStack();
             return ts;
@@ -7688,9 +8030,59 @@ Element* List_tensor_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
-    return new Tenseur(lisp, shape, zero_);
+    return new Tenseur_number(lisp, shape, zero_);
 }
 
+Element* List_tensor_integer_eval::eval(LispE* lisp) {
+    long sz = size();
+    Element* e = zero_;
+    vecte<long> shape;
+    long s;
+    try {
+        lisp->checkState(this);
+        if (sz == 2) {
+            e = liste[1]->eval(lisp);
+            if (e->type == t_tensor_integer) {
+                Tenseur_integer* ts = new Tenseur_integer(lisp, (List*)e);
+                e->release();
+                lisp->resetStack();
+                return ts;
+            }
+            if (!e->isList())
+                throw new Error("Error: The first element should be a list");
+
+            if (e->type == t_tensor_float || e->type == t_tensor_number)
+                e->getShape(shape);
+            else {
+                Element* c = e;
+                while (c->isList()) {
+                    shape.push_back(c->size());
+                    c = c->index(0);
+                }
+                if (!c->isNumber())
+                    throw new Error("Error: this list should contain integers");
+            }
+
+            Integers l;
+            e->flatten(lisp,&l);
+            Tenseur_integer* ts = new Tenseur_integer(lisp, &l, shape);
+            e->release();
+            lisp->resetStack();
+            return ts;
+        }
+
+        for (long i = 1; i < sz; i++) {
+            evalAsInteger(i, lisp, s);
+            shape.push_back(s);
+        }
+    }
+    catch (Error* err) {
+        e->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return new Tenseur_integer(lisp, shape, zero_);
+}
 
 Element* List_tensor_float_eval::eval(LispE* lisp) {
     long sz = size();
@@ -7709,8 +8101,8 @@ Element* List_tensor_float_eval::eval(LispE* lisp) {
             }
             if (!e->isList())
                 throw new Error("Error: The first element should be a list");
-            if (e->type == t_tensor)
-                ((Tenseur*)e)->getShape(shape);
+            if (e->type == t_tensor_float || e->type == t_tensor_integer)
+                e->getShape(shape);
             else {
                 Element* c = e;
                 while (c->isList()) {
@@ -7741,8 +8133,7 @@ Element* List_tensor_float_eval::eval(LispE* lisp) {
     return new Tenseur_float(lisp, shape, zero_);
 }
 
-
-Element* List_matrix_eval::eval(LispE* lisp) {
+Element* List_matrix_number_eval::eval(LispE* lisp) {
     long sz = size();
     Element* e = zero_;
     long sx, sy;
@@ -7751,18 +8142,27 @@ Element* List_matrix_eval::eval(LispE* lisp) {
         if (sz == 2) {
             //then this is a list of lists
             e = liste[1]->eval(lisp);
-            if (e->type == t_matrix) {
-                Matrice* m = new Matrice(lisp, (Matrice*)e);
-                e->release();
-                lisp->resetStack();
-                return m;
+            switch (e->type) {
+                case t_matrix_integer: {
+                    Matrice_integer* m = new Matrice_integer(lisp, (Matrice_integer*)e);
+                    e->release();
+                    lisp->resetStack();
+                    return m;
+                }
+                case t_matrix_number: {
+                    Matrice_number* m = new Matrice_number(lisp, (Matrice_number*)e);
+                    e->release();
+                    lisp->resetStack();
+                    return m;
+                }
+                case t_matrix_float: {
+                    Matrice_number* m = new Matrice_number(lisp, (Matrice_float*)e);
+                    e->release();
+                    lisp->resetStack();
+                    return m;
+                }
             }
-            if (e->type == t_matrix_float) {
-                Matrice* m = new Matrice(lisp, (Matrice_float*)e);
-                e->release();
-                lisp->resetStack();
-                return m;
-            }
+            
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
                 throw new Error("Error: Cannot initialize a matrix with this value");
 
@@ -7770,7 +8170,7 @@ Element* List_matrix_eval::eval(LispE* lisp) {
             long size_y = e->index(0)->size();
             Numbers l;
             e->flatten(lisp, &l);
-            Matrice* m = new Matrice(lisp, &l, size_x, size_y);
+            Matrice_number* m = new Matrice_number(lisp, &l, size_x, size_y);
             e->release();
             lisp->resetStack();
             return m;
@@ -7787,9 +8187,65 @@ Element* List_matrix_eval::eval(LispE* lisp) {
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();
-    return new Matrice(sx, sy, e);
+    return new Matrice_number(sx, sy, e);
 }
 
+Element* List_matrix_integer_eval::eval(LispE* lisp) {
+    long sz = size();
+    Element* e = zero_;
+    long sx, sy;
+    try {
+        lisp->checkState(this);
+        if (sz == 2) {
+            //then this is a list of lists
+            e = liste[1]->eval(lisp);
+            switch (e->type) {
+                case t_matrix_integer: {
+                    Matrice_integer* m = new Matrice_integer(lisp, (Matrice_integer*)e);
+                    e->release();
+                    lisp->resetStack();
+                    return m;
+                }
+                case t_matrix_number: {
+                    Matrice_number* m = new Matrice_number(lisp, (Matrice_number*)e);
+                    e->release();
+                    lisp->resetStack();
+                    return m;
+                }
+                case t_matrix_float: {
+                    Matrice_number* m = new Matrice_number(lisp, (Matrice_float*)e);
+                    e->release();
+                    lisp->resetStack();
+                    return m;
+                }
+            }
+            
+            if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
+                throw new Error("Error: Cannot initialize a matrix with this value");
+
+            long size_x = e->size();
+            long size_y = e->index(0)->size();
+            Integers l;
+            e->flatten(lisp, &l);
+            Matrice_integer* m = new Matrice_integer(lisp, &l, size_x, size_y);
+            e->release();
+            lisp->resetStack();
+            return m;
+        }
+
+        evalAsInteger(1, lisp, sx);
+        evalAsInteger(2, lisp, sy);
+        if (sz == 4)
+            e = liste[3]->eval(lisp);
+
+    }
+    catch (Error* err) {
+        e->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return new Matrice_integer(sx, sy, e);
+}
 
 Element* List_matrix_float_eval::eval(LispE* lisp) {
     long sz = size();
@@ -7806,8 +8262,8 @@ Element* List_matrix_float_eval::eval(LispE* lisp) {
                 lisp->resetStack();
                 return m;
             }
-            if (e->type == t_matrix) {
-                Matrice_float* m = new Matrice_float(lisp, (Matrice*)e);
+            if (e->type == t_matrix_number) {
+                Matrice_float* m = new Matrice_float(lisp, (Matrice_number*)e);
                 e->release();
                 lisp->resetStack();
                 return m;
@@ -8196,9 +8652,9 @@ Element* List_solve_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         Y = liste[2]->eval(lisp);
-        if (element->type != t_matrix || Y->type != t_matrix)
+        if (element->type != t_matrix_number || Y->type != t_matrix_number)
             throw new Error("Error: solve can only be applied to matrices");
-        res = ((Matrice*)element)->solve(lisp, (Matrice*)Y);
+        res = ((Matrice_number*)element)->solve(lisp, (Matrice_number*)Y);
         Y->release();
         element->release();
     }
@@ -8213,7 +8669,7 @@ Element* List_solve_eval::eval(LispE* lisp) {
 
 Element* List_determinant_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
-    if (element->type != t_matrix) {
+    if (element->type != t_matrix_number) {
         element->release();
         throw new Error("Error: We can only compute the determinant of a matrix");
     }
@@ -8221,7 +8677,7 @@ Element* List_determinant_eval::eval(LispE* lisp) {
 
     try {
         lisp->checkState(this);
-        det = ((Matrice*)element)->determinant(lisp);
+        det = ((Matrice_number*)element)->determinant(lisp);
     }
     catch (Error* err) {
         element->release();
@@ -8236,11 +8692,11 @@ Element* List_determinant_eval::eval(LispE* lisp) {
 
 Element* List_ludcmp_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
-    if (element->type != t_matrix) {
+    if (element->type != t_matrix_number) {
         element->release();
         throw new Error("Error: the first element should be a matrix");
     }
-    Element* res = ((Matrice*)element)->ludcmp(lisp);
+    Element* res = ((Matrice_number*)element)->ludcmp(lisp);
     element->release();
     return res;
 }
@@ -8254,17 +8710,17 @@ Element* List_lubksb_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         element = liste[1]->eval(lisp);
-        if (element->type != t_matrix)
+        if (element->type != t_matrix_number)
             throw new Error("Error: the first element should be a matrix");
         idxs = liste[2]->eval(lisp);
         if (idxs->type != t_integers)
             throw new Error("Error: the second element should be an integers_ (a list of integers)");
         if (liste.size() == 4) {
             Y = liste[3]->eval(lisp);
-            if (Y->type != t_matrix)
+            if (Y->type != t_matrix_number)
                 throw new Error("Error: the last element should be a matrix");
         }
-        Y = ((Matrice*)element)->lubksb(lisp, (Integers*)idxs, (Matrice*)Y);
+        Y = ((Matrice_number*)element)->lubksb(lisp, (Integers*)idxs, (Matrice_number*)Y);
         element->release();
         idxs->release();
     }
@@ -8629,7 +9085,7 @@ Element* List_rightshift_eval::eval(LispE* lisp) {
 
 Element* List_invert_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
-    if (element->type != t_matrix) {
+    if (element->type != t_matrix_number) {
         element->release();
         throw new Error("Error: 'invert' can only be applied to matrices");
     }
@@ -8641,13 +9097,13 @@ Element* List_invert_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         if (liste.size() == 3) {
             Y = liste[2]->eval(lisp);
-            if (Y->type != t_matrix)
+            if (Y->type != t_matrix_number)
                 throw new Error("Error: 'solve' can only be applied to matrices");
-            res = ((Matrice*)element)->solve(lisp, (Matrice*)Y);
+            res = ((Matrice_number*)element)->solve(lisp, (Matrice_number*)Y);
             Y->release();
         }
         else
-            res = ((Matrice*)element)->inversion(lisp);
+            res = ((Matrice_number*)element)->inversion(lisp);
 
         element->release();
     }

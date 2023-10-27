@@ -719,6 +719,12 @@ void List::flatten(LispE* lisp, Numbers* l) {
     }
 }
 
+void List::flatten(LispE* lisp, Integers* l) {
+    for (long i = 0; i < size(); i++) {
+        liste[i]->flatten(lisp, l);
+    }
+}
+
 void List::flatten(LispE* lisp, Floats* l) {
     for (long i = 0; i < size(); i++) {
         liste[i]->flatten(lisp, l);
@@ -732,6 +738,12 @@ void LList::flatten(LispE* lisp, List* l) {
 }
 
 void LList::flatten(LispE* lisp, Numbers* l) {
+    for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
+        a->value->flatten(lisp, l);
+    }
+}
+
+void LList::flatten(LispE* lisp, Integers* l) {
     for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
         a->value->flatten(lisp, l);
     }
@@ -753,9 +765,9 @@ Element* List::transposed(LispE* lisp) {
     sz.vecteur[1] = i;
     Element* tenseur;
     if (sz.size() == 2)
-        tenseur = new Matrice(lisp, sz[0], sz[1], 0.0);
+        tenseur = new Matrice_number(lisp, sz[0], sz[1], 0.0);
     else
-        tenseur = new Tenseur(lisp, sz, zero_);
+        tenseur = new Tenseur_number(lisp, sz, zero_);
     
     Element* e;
     for (i = 0; i < sz[1]; i++) {
@@ -1517,7 +1529,7 @@ Element* List::rotate(LispE* lisp, long nb) {
         nb = nb % sz;
         if (!nb)
             return this;
-        List* reverse = lisp->provideList();
+        Element* reverse = pureInstance();
         for (i = nb; i < sz; i++)
             reverse->append(liste[i]->copying(false));
         for (i = 0; i < nb; i++)
@@ -1528,7 +1540,7 @@ Element* List::rotate(LispE* lisp, long nb) {
     nb = (nb*-1) % sz;
     if (!nb)
         return this;
-    List* reverse = lisp->provideList();
+    Element* reverse = pureInstance();
     for (i = sz - nb; i < sz; i++)
         reverse->append(liste[i]->copying(false));
     for (i = nb; i < sz; i++)
@@ -3031,6 +3043,12 @@ void Numbers::flatten(LispE* lisp, Numbers* l) {
     }
 }
 
+void Numbers::flatten(LispE* lisp, Integers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(liste[i]);
+    }
+}
+
 void Numbers::flatten(LispE* lisp, Floats* l) {
     for (long i = 0; i < size(); i++) {
         l->liste.push_back(liste[i]);
@@ -3652,6 +3670,12 @@ void Integers::flatten(LispE* lisp, List* l) {
 }
 
 void Integers::flatten(LispE* lisp, Numbers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(liste[i]);
+    }
+}
+
+void Integers::flatten(LispE* lisp, Integers* l) {
     for (long i = 0; i < size(); i++) {
         l->liste.push_back(liste[i]);
     }
@@ -4283,6 +4307,12 @@ void Strings::flatten(LispE* lisp, List* l) {
 }
 
 void Strings::flatten(LispE* lisp, Numbers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(convertingfloathexa(liste[i].c_str()));
+    }
+}
+
+void Strings::flatten(LispE* lisp, Integers* l) {
     for (long i = 0; i < size(); i++) {
         l->liste.push_back(convertingfloathexa(liste[i].c_str()));
     }
@@ -5243,6 +5273,12 @@ void Shorts::flatten(LispE* lisp, Numbers* l) {
     }
 }
 
+void Shorts::flatten(LispE* lisp, Integers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(liste[i]);
+    }
+}
+
 void Shorts::flatten(LispE* lisp, Floats* l) {
     for (long i = 0; i < size(); i++) {
         l->liste.push_back(liste[i]);
@@ -5876,6 +5912,12 @@ void Floats::flatten(LispE* lisp, Numbers* l) {
     }
 }
 
+void Floats::flatten(LispE* lisp, Integers* l) {
+    for (long i = 0; i < size(); i++) {
+        l->liste.push_back(liste[i]);
+    }
+}
+
 void Floats::flatten(LispE* lisp, Floats* l) {
     for (long i = 0; i < size(); i++) {
         l->liste.push_back(liste[i]);
@@ -6437,8 +6479,8 @@ Element* Floats::cdr(LispE* lisp) {
 //Matrice methods
 //--------------------------------------------------------------------------------
 
-Element* Matrice::check_member(LispE* lisp,Element* the_set) {
-    Matrice* r = new Matrice;
+Element* Matrice_number::check_member(LispE* lisp,Element* the_set) {
+    Matrice_number* r = new Matrice_number;
     r->size_x = size_x;
     r->size_y = size_y;
     Element* e;
@@ -6449,8 +6491,8 @@ Element* Matrice::check_member(LispE* lisp,Element* the_set) {
     return r;
 }
 
-Element* Matrice::transposed(LispE* lisp) {
-    Matrice* transposed_matrix = new Matrice(lisp, size_y, size_x, 0.0);
+Element* Matrice_number::transposed(LispE* lisp) {
+    Matrice_number* transposed_matrix = new Matrice_number(lisp, size_y, size_x, 0.0);
     long i, j = 0;
     
     Element* e;
@@ -6463,7 +6505,7 @@ Element* Matrice::transposed(LispE* lisp) {
     return transposed_matrix;
 }
 
-Element* Matrice::rank(LispE* lisp, vecte<long>& positions) {
+Element* Matrice_number::rank(LispE* lisp, vecte<long>& positions) {
     int16_t sz = positions.size();
     if (!sz || sz > 2)
         throw new Error("Error: index mismatch");
@@ -6471,7 +6513,7 @@ Element* Matrice::rank(LispE* lisp, vecte<long>& positions) {
     if (positions[0] == -1) {
         //We return all columns
         if (sz == 1 || positions[1] == -1) {
-            Matrice* m = new Matrice();
+            Matrice_number* m = new Matrice_number();
             Numbers* result;
             
             for (long j = 0; j < size_y; j++) {
@@ -6510,7 +6552,7 @@ Element* Matrice::rank(LispE* lisp, vecte<long>& positions) {
     return result;
 }
 
-Element* Matrice::loop(LispE* lisp, int16_t label, List* code) {
+Element* Matrice_number::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -6532,8 +6574,8 @@ Element* Matrice::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
-Element* Matrice::rotate(bool left) {
-    Matrice* revert_matrix = new Matrice;
+Element* Matrice_number::rotate(bool left) {
+    Matrice_number* revert_matrix = new Matrice_number;
     revert_matrix->size_x = size_x;
     revert_matrix->size_y = size_y;
     for (long i = 0; i < size_x; i++) {
@@ -6543,8 +6585,8 @@ Element* Matrice::rotate(bool left) {
     return revert_matrix;
 }
 
-Element* Matrice::rotate(LispE* lisp, long nb) {
-    Matrice* revert_matrix = new Matrice;
+Element* Matrice_number::rotate(LispE* lisp, long nb) {
+    Matrice_number* revert_matrix = new Matrice_number;
     revert_matrix->size_x = size_x;
     revert_matrix->size_y = size_y;
     for (long i = 0; i < size_x; i++) {
@@ -6670,12 +6712,129 @@ Element* Matrice_float::rotate(LispE* lisp, long nb) {
     return revert_matrix;
 }
 
+
+Element* Matrice_integer::check_member(LispE* lisp,Element* the_set) {
+    Matrice_integer* r = new Matrice_integer;
+    r->size_x = size_x;
+    r->size_y = size_y;
+    Element* e;
+    for (long i = 0; i < size(); i++) {
+        e = liste[i]->check_member(lisp, the_set);
+        r->append(e);
+    }
+    return r;
+}
+
+Element* Matrice_integer::transposed(LispE* lisp) {
+    Matrice_integer* transposed_matrix = new Matrice_integer(lisp, size_y, size_x, 0.0);
+    long i, j = 0;
+    
+    Element* e;
+    for (i = 0; i < size_x; i++) {
+        e = liste[i];
+        for (j = 0; j < size_y; j++) {
+            transposed_matrix->index(j)->replacing(i, e->index(j));
+        }
+    }
+    return transposed_matrix;
+}
+
+Element* Matrice_integer::rank(LispE* lisp, vecte<long>& positions) {
+    int16_t sz = positions.size();
+    if (!sz || sz > 2)
+        throw new Error("Error: index mismatch");
+        
+    if (positions[0] == -1) {
+        //We return all columns
+        if (sz == 1 || positions[1] == -1) {
+            Matrice_integer* m = new Matrice_integer();
+            Integers* result;
+            
+            for (long j = 0; j < size_y; j++) {
+                result = lisp->provideIntegers();
+                for (long i = 0; i < size_x; i++) {
+                    result->liste.push_back(val(i,j));
+                }
+                m->append(result);
+            }
+            m->size_x = size_y;
+            m->size_y = size_x;
+            return m;
+        }
+        else {
+            if (positions[1] >= size_y)
+                throw new Error("Error: indexes out of bounds");
+        }
+    }
+    else {
+        if (sz == 2 && positions[1] != -1) {
+            if (positions[1] >= size_y)
+                throw new Error("Error: indexes out of bounds");
+            return lisp->provideNumber(val(positions[0], positions[1]));
+        }
+        
+        if (positions[0] >= size_x)
+            throw new Error("Error: indexes out of bounds");
+        
+        return lisp->provideIntegers(((Integers*)liste[positions[0]]));
+    }
+
+    Integers* result = lisp->provideIntegers();
+    for (long i = 0; i < size_x; i++) {
+        result->liste.push_back(val(i,positions[1]));
+    }
+    return result;
+}
+
+Element* Matrice_integer::loop(LispE* lisp, int16_t label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    long sz = code->liste.size();
+    for (long i = 0; i < size_x; i++) {
+        lisp->replacingvalue(liste[i], label);
+        _releasing(e);
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Matrice_integer::rotate(bool left) {
+    Matrice_integer* revert_matrix = new Matrice_integer;
+    revert_matrix->size_x = size_x;
+    revert_matrix->size_y = size_y;
+    for (long i = 0; i < size_x; i++) {
+        revert_matrix->append(liste[i]->rotate(left));
+    }
+    
+    return revert_matrix;
+}
+
+Element* Matrice_integer::rotate(LispE* lisp, long nb) {
+    Matrice_integer* revert_matrix = new Matrice_integer;
+    revert_matrix->size_x = size_x;
+    revert_matrix->size_y = size_y;
+    for (long i = 0; i < size_x; i++) {
+        revert_matrix->append(liste[i]->rotate(lisp, nb));
+    }
+    
+    return revert_matrix;
+}
 //--------------------------------------------------------------------------------
 //Tenseur methods
 //--------------------------------------------------------------------------------
 
-Element* Tenseur::check_member(LispE* lisp, Element* the_set) {
-    Tenseur* r = new Tenseur;
+Element* Tenseur_number::check_member(LispE* lisp, Element* the_set) {
+    Tenseur_number* r = new Tenseur_number;
     r->shape = shape;
     Element* e;
     for (long i = 0; i < size(); i++) {
@@ -6685,14 +6844,14 @@ Element* Tenseur::check_member(LispE* lisp, Element* the_set) {
     return r;
 }
 
-Element* Tenseur::transposed(LispE* lisp) {
+Element* Tenseur_number::transposed(LispE* lisp) {
     vecte<long> sz;
     sz = shape;
     long i = sz[0];
     sz.vecteur[0] = sz[1];
     sz.vecteur[1] = i;
     
-    Tenseur* transposed_matrix = new Tenseur(lisp, sz, zero_);
+    Tenseur_number* transposed_matrix = new Tenseur_number(lisp, sz, zero_);
     long j = 0;
     
     Element* e;
@@ -6705,7 +6864,7 @@ Element* Tenseur::transposed(LispE* lisp) {
     return transposed_matrix;
 }
 
-Element* Tenseur::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx) {
+Element* Tenseur_number::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx) {
     long axis = idx;
 
     //first we search for our first actual axis...
@@ -6740,7 +6899,7 @@ Element* Tenseur::storeRank(LispE* lisp, Element* result, Element* current, vect
     return result;
 }
 
-Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
+Element* Tenseur_number::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
     int16_t sz = positions.size();
     if (!sz || sz > shape.size())
@@ -6764,16 +6923,16 @@ Element* Tenseur::rank(LispE* lisp, vecte<long>& positions) {
     //which is a very fast operation
     //Since its internal values are not copied but borrowed
     if (res->index(0)->type == t_floats) {
-        Matrice* m = new Matrice((List*)res);
+        Matrice_number* m = new Matrice_number((List*)res);
         res->release();
         return m;
     }
-    Tenseur* ts = new Tenseur(lisp, (List*)res);
+    Tenseur_number* ts = new Tenseur_number(lisp, (List*)res);
     res->release();
     return ts;
 }
 
-Element* Tenseur::loop(LispE* lisp, int16_t label, List* code) {
+Element* Tenseur_number::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
     lisp->recording(null_, label);
@@ -6795,7 +6954,7 @@ Element* Tenseur::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
-Element* Tenseur::reversion(LispE* lisp, Element* value, long pos, long axis, bool init) {
+Element* Tenseur_number::reversion(LispE* lisp, Element* value, long pos, long axis, bool init) {
     if (pos == axis)
         return value->reverse(lisp,true);
     
@@ -6804,8 +6963,8 @@ Element* Tenseur::reversion(LispE* lisp, Element* value, long pos, long axis, bo
     
     Element* r;
     if (init) {
-        r = new Tenseur;
-        ((Tenseur*)r)->shape = shape;
+        r = new Tenseur_number;
+        ((Tenseur_number*)r)->shape = shape;
     }
     else
         r = lisp->provideList();
@@ -6818,8 +6977,8 @@ Element* Tenseur::reversion(LispE* lisp, Element* value, long pos, long axis, bo
     return r;
 }
 
-Element* Tenseur::rotate(bool left) {
-    Tenseur* revert_matrix = new Tenseur();
+Element* Tenseur_number::rotate(bool left) {
+    Tenseur_number* revert_matrix = new Tenseur_number();
     revert_matrix->shape = shape;
     for (long i = 0; i < shape[0]; i++) {
         revert_matrix->append(liste[i]->rotate(left));
@@ -6827,8 +6986,8 @@ Element* Tenseur::rotate(bool left) {
     return revert_matrix;
 }
 
-Element* Tenseur::rotate(LispE* lisp, long nb) {
-    Tenseur* revert_matrix = new Tenseur();
+Element* Tenseur_number::rotate(LispE* lisp, long nb) {
+    Tenseur_number* revert_matrix = new Tenseur_number();
     revert_matrix->shape = shape;
     for (long i = 0; i < shape[0]; i++) {
         revert_matrix->append(liste[i]->rotate(lisp, nb));
@@ -8047,4 +8206,166 @@ Element* Strings::takenb(LispE* lisp, long nb, bool direction) {
             l->liste.push_back(liste[i]);
     }
     return l;
+}
+
+
+Element* Tenseur_integer::check_member(LispE* lisp, Element* the_set) {
+    Tenseur_integer* r = new Tenseur_integer;
+    r->shape = shape;
+    Element* e;
+    for (long i = 0; i < size(); i++) {
+        e = liste[i]->check_member(lisp, the_set);
+        r->append(e);
+    }
+    return r;
+}
+
+Element* Tenseur_integer::transposed(LispE* lisp) {
+    vecte<long> sz;
+    sz = shape;
+    long i = sz[0];
+    sz.vecteur[0] = sz[1];
+    sz.vecteur[1] = i;
+    
+    Tenseur_integer* transposed_matrix = new Tenseur_integer(lisp, sz, zero_);
+    long j = 0;
+    
+    Element* e;
+    for (i = 0; i < shape[0]; i++) {
+        e = liste[i];
+        for (j = 0; j < shape[1]; j++) {
+            transposed_matrix->index(j)->replacing(i, e->index(j));
+        }
+    }
+    return transposed_matrix;
+}
+
+Element* Tenseur_integer::storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx) {
+    long axis = idx;
+
+    //first we search for our first actual axis...
+    while (axis < positions.size() && positions[axis] == -1) axis++;
+
+    if (axis == idx) {
+        //It is a direct value...
+        if (idx == positions.size() - 1)
+            return current->index(positions[idx])->duplicate_constant(lisp);
+        
+        return storeRank(lisp, result, current->index(positions[idx]), positions, idx+1);
+    }
+    
+    //otherwise, this is an axis
+    vecte<long> paths;
+    if (axis < positions.size()) {
+        long p_idx = positions[axis];
+        paths.push_back(p_idx);
+        buildList(lisp, result, current, shape, paths, idx, axis - 1);
+        return result;
+    }
+
+    
+    paths.push_back(0);
+    Element* r;
+    for (long i = 0; i < shape[axis]; i++) {
+        paths.setlast(i);
+        r = lisp->provideList();
+        result->append(r);
+        buildList(lisp, r, current, shape, paths, idx, axis - 1);
+    }
+    return result;
+}
+
+Element* Tenseur_integer::rank(LispE* lisp, vecte<long>& positions) {
+    //We get rid of the final negative values (useless)
+    int16_t sz = positions.size();
+    if (!sz || sz > shape.size())
+        throw new Error("Error: index mismatch");
+
+    //Check positions
+    for (long i = 0; i < sz; i++) {
+        if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
+            throw new Error("Error: indexes out of bounds");
+    }
+    Element* result = lisp->provideList();
+    Element* res = storeRank(lisp, result, this, positions, 0);
+    if (res != result)
+        result->release();
+    
+    if (res->type == t_integers || res->type == t_integer)
+        return res;
+    
+    //We steal the ITEM structure of res
+    //which is a very fast operation
+    //Since its internal values are not copied but borrowed
+    if (res->index(0)->type == t_integers) {
+        Matrice_integer* m = new Matrice_integer((List*)res);
+        res->release();
+        return m;
+    }
+    Tenseur_integer* ts = new Tenseur_integer(lisp, (List*)res);
+    res->release();
+    return ts;
+}
+
+Element* Tenseur_integer::loop(LispE* lisp, int16_t label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    long sz = code->liste.size();
+    for (long i = 0; i < shape[0]; i++) {
+        lisp->replacingvalue(liste[i], label);
+        _releasing(e);
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Tenseur_integer::reversion(LispE* lisp, Element* value, long pos, long axis, bool init) {
+    if (pos == axis)
+        return value->reverse(lisp,true);
+    
+    if (pos == shape.size() -1)
+        return lisp->provideNumbers((Numbers*)value);
+    
+    Element* r;
+    if (init) {
+        r = new Tenseur_integer;
+        ((Tenseur_integer*)r)->shape = shape;
+    }
+    else
+        r = lisp->provideList();
+    
+    Element* e;
+    for (long i = 0; i < shape[pos]; i++) {
+        e = reversion(lisp, value->index(i), pos+1, axis, false);
+        r->append(e);
+    }
+    return r;
+}
+
+Element* Tenseur_integer::rotate(bool left) {
+    Tenseur_integer* revert_matrix = new Tenseur_integer();
+    revert_matrix->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        revert_matrix->append(liste[i]->rotate(left));
+    }
+    return revert_matrix;
+}
+
+Element* Tenseur_integer::rotate(LispE* lisp, long nb) {
+    Tenseur_integer* revert_matrix = new Tenseur_integer();
+    revert_matrix->shape = shape;
+    for (long i = 0; i < shape[0]; i++) {
+        revert_matrix->append(liste[i]->rotate(lisp, nb));
+    }
+    return revert_matrix;
 }

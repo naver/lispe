@@ -45,7 +45,7 @@ typedef enum {
     t_emptystring, t_operator, t_atom, t_float, t_short, t_integer, t_number, t_complex,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
-    t_list, t_llist, t_matrix, t_tensor, t_matrix_float, t_tensor_float,
+    t_list, t_llist, t_matrix_number, t_matrix_integer, t_tensor_number, t_matrix_float, t_tensor_integer, t_tensor_float,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
@@ -87,7 +87,7 @@ typedef enum {
     l_andvalue, l_and, l_or, l_xor, l_not, l_eq, l_neq,
     l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max, l_compare,
     
-    l_innerproduct, l_matrix, l_tensor, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
+    l_innerproduct, l_matrix_number, l_tensor_number, l_matrix_integer, l_tensor_integer, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank,
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     l_plusmultiply,
@@ -99,7 +99,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
+    l_to_list, l_to_llist, l_to_tensor, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
     l_pushtrue, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings,
@@ -311,7 +311,11 @@ public:
     }
     
     virtual void getShape(vecte<long>& sz) {}
-
+    
+    virtual Element* newTensor(long nb, long sz = -1) {
+        return this;
+    }
+    
     virtual Element* transposed(LispE* lisp) {
         return this;
     }
@@ -420,6 +424,10 @@ public:
         return this;
     }
 
+    virtual Element* pureInstance() {
+        return newInstance();
+    }
+
     virtual Element* newInstance(Element* v) {
         return this;
     }
@@ -441,6 +449,7 @@ public:
     
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
+    virtual void flatten(LispE*, Integers* l);
     virtual void flatten(LispE*, Floats* l);
     
     virtual Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
@@ -487,6 +496,8 @@ public:
     }
     
     virtual bool isequal(LispE* lisp, Element* value);
+    virtual Element* comparison(LispE* lisp, Element* value);
+    
     virtual bool unify(LispE* lisp, Element* value, bool record);
     virtual Element* check_member(LispE*, Element* s) {
         return this;
@@ -590,6 +601,9 @@ public:
     }
     
     virtual void replacing(long i, Element* e) {}
+    virtual void replacingandclean(long i, Element* e) {
+        replacing(i, e);
+    }
     
     virtual Element* release_but_last() {
         return this;
@@ -801,6 +815,13 @@ public:
         return 0;
     }
     
+    virtual void dimensions(long& v) {
+        if (isContainer())
+            v += size();
+        else
+            v++;
+    }
+    
     virtual int16_t function_label(LispE* lisp);
     
     virtual int16_t label() {
@@ -834,6 +855,10 @@ public:
         return this;
     }
 
+    virtual Element* index(vecte<long> idx) {
+        return this;
+    }
+    
     virtual Element* protected_index(LispE*, Element* k);
     virtual Element* protected_index(LispE*, double k);
     virtual Element* protected_index(LispE*, long i);

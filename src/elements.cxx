@@ -699,6 +699,10 @@ void Element::flatten(LispE* lisp, Numbers* l) {
     l->append(this);
 }
 
+void Element::flatten(LispE* lisp, Integers* l) {
+    l->append(this);
+}
+
 //------------------------------------------------------------------------------------------
 
 void Element::prettyfying(LispE* lisp, string& code, long mx) {
