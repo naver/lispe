@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.10.28.12.25";
+static std::string version = "1.2023.10.28.17.2";
 string LispVersion() {
     return version;
 }
@@ -370,6 +370,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_listxor, "^^^", P_ATLEASTTWO, &List::evall_listxor, new List_listxor_eval());
     set_instruction(l_to_list, "to_list", P_TWO | P_THREE, &List::evall_to_list, new List_to_list_eval());
     set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist, new List_to_llist_eval());
+    set_instruction(l_to_tensor, "to_tensor", P_TWO | P_THREE, &List::evall_to_tensor, new List_to_tensor_eval());
     set_instruction(l_let, "let", P_ATLEASTTHREE, &List::evall_let, new List_let_eval());
     set_instruction(l_load, "load", P_TWO | P_THREE, &List::evall_load);
     set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock, new List_lock_eval());
@@ -824,6 +825,12 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce _ as a substitute to nil
     w = U"_";
     string_to_code[w] = v_null;
+    
+    w = U"inner";
+    string_to_code[w] = l_innerproduct;
+
+    w = U"outer";
+    string_to_code[w] = l_outerproduct;
 
     //We introduce @ as a substitute to at
     w = U"@";
@@ -2874,6 +2881,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

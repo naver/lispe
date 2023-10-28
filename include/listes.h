@@ -1160,7 +1160,7 @@ public:
     virtual Element* rotate(LispE* lisp, long axis);
     
     
-    bool consistentList(long depth, vecte<long>& sz, short& element_type) {
+    bool structuredList(long depth, vecte<long>& sz, short& element_type) {
         if (size() != sz[depth])
             return false;
         
@@ -1178,7 +1178,7 @@ public:
         for (long i = 0; i < size(); i++) {
             if (!liste[i]->isList())
                 return false;
-            if (!liste[i]->consistentList(depth+1,sz, element_type))
+            if (!liste[i]->structuredList(depth+1,sz, element_type))
                 return false;
         }
         return true;
@@ -1398,6 +1398,7 @@ public:
     Element* evall_listor(LispE* lisp);
     Element* evall_listxor(LispE* lisp);
     Element* evall_to_list(LispE* lisp);
+    Element* evall_to_tensor(LispE* lisp);
     Element* evall_to_llist(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_let(LispE* lisp);
@@ -5589,6 +5590,27 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_to_tensor_eval : public Listincode {
+public:
+    
+    List_to_tensor_eval(Listincode* l) : Listincode(l) {}
+    List_to_tensor_eval(List* l) : Listincode(l) {}
+    List_to_tensor_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_to_tensor_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_to_tensor_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
 
 class List_to_llist_eval : public Listincode {
 public:
@@ -9374,7 +9396,16 @@ public:
         if (shape.size())
             build(0,this, n);
     }
-    
+
+    Tenseur_float(vecte<long>& sz, Floats* n) {
+        type = t_tensor_float;
+        shape = sz;
+        if (shape.size()) {
+            long idx = 0;
+            build(0, idx, this, n);
+        }
+    }
+
     Tenseur_float(LispE* lisp, vecte<long>& sz, Element* n) {
         type = t_tensor_float;
         shape = sz;
@@ -9555,6 +9586,30 @@ public:
         }
     }
     
+    void build(long isz, long& idx, Element* res, Floats* lst) {
+        if (isz == shape.size()-2) {
+            Integers* l;
+            long i,j;
+            for (i = 0; i < shape[isz]; i++) {
+                l = new Integers;
+                res->append(l);
+                for (j = 0; j < shape[isz+1]; j++) {
+                    if (idx == lst->size())
+                        idx = 0;
+                    l->liste.push_back(lst->liste[idx++]);
+                }
+            }
+        }
+        else {
+            Tenseur_float* l;
+            for (long i = 0; i < shape[isz]; i++) {
+                l = new Tenseur_float(isz+1, shape);
+                res->append(l);
+                build(isz+1, idx, l, lst);
+            }
+        }
+    }
+
     void concatenate(LispE* lisp, Element* e);
     
     
@@ -10225,6 +10280,13 @@ public:
         build(lisp, lst);
     }
     
+    Matrice_float(LispE* lisp, long x, Floats* lst, long y) {
+        type = t_matrix_float;
+        size_x = x;
+        size_y = y;
+        buildfromvalues(lisp, lst);
+    }
+
     Matrice_float(long x, long y, float n) {
         type = t_matrix_float;
         size_x = x;
@@ -10318,6 +10380,7 @@ public:
     Element* lubksb(LispE* lisp, Integers* indexes, Matrice_float* Y = NULL);
     
     void build(LispE* lisp, Element* lst);
+    void buildfromvalues(LispE* lisp, Floats* lst);
     
     void setvalue(Matrice_float* lst) {
         for (long i = 0; i < lst->size_x; i++) {
@@ -10421,7 +10484,14 @@ public:
         size_y = y;
         build(lisp, lst);
     }
-    
+
+    Matrice_number(LispE* lisp, long x, Numbers* lst, long y) {
+        type = t_matrix_number;
+        size_x = x;
+        size_y = y;
+        buildfromvalues(lisp, lst);
+    }
+
     Matrice_number(long x, long y, double n) {
         type = t_matrix_number;
         size_x = x;
@@ -10515,6 +10585,7 @@ public:
     Element* lubksb(LispE* lisp, Integers* indexes, Matrice_number* Y = NULL);
     
     void build(LispE* lisp, Element* lst);
+    void buildfromvalues(LispE* lisp, Numbers* lst);
     
     void setvalue(Matrice_number* lst) {
         for (long i = 0; i < lst->size_x; i++) {
@@ -10621,7 +10692,14 @@ public:
         size_y = y;
         build(lisp, lst);
     }
-    
+
+    Matrice_integer(LispE* lisp, long x, Integers* lst, long y) {
+        type = t_matrix_integer;
+        size_x = x;
+        size_y = y;
+        buildfromvalues(lisp, lst);
+    }
+
     Matrice_integer(long x, long y, double n) {
         type = t_matrix_integer;
         size_x = x;
@@ -10714,6 +10792,7 @@ public:
     Element* lubksb(LispE* lisp, Integers* indexes, Matrice_integer* Y = NULL);
     
     void build(LispE* lisp, Element* lst);
+    void buildfromvalues(LispE* lisp, Integers* lst);
     
     void setvalue(Matrice_integer* lst) {
         for (long i = 0; i < lst->size_x; i++) {

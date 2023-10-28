@@ -7775,6 +7775,107 @@ Element* List_to_llist_eval::eval(LispE* lisp) {
     return a_llist;
 }
 
+Element* List_to_tensor_eval::eval(LispE* lisp) {
+    Element* values = liste[1]->eval(lisp);
+    //First we check if we can guess a list of value lists or of tensors
+    if (!values->isList()) {
+        values->release();
+        throw new Error("Error: Expecting a list");
+    }
+    
+    char char_tensor = values->isPureList();
+    if (char_tensor == a_valuelist || char_tensor == a_tensor)
+        return this;
+    
+    long sz = values->size();
+    if (!sz || sz == 1)
+        return values;
+    
+    //We check if all the elements in list are of the same type
+    Element* first = values->index(0);
+    char_tensor = first->isPureList();
+    for (long i = 1; i < sz && (char_tensor == a_valuelist || char_tensor == a_tensor); i++) {
+        char_tensor |= !first->is_same_tensor(values->index(i));
+    }
+    
+    if (char_tensor == a_valuelist || char_tensor == a_tensor) {
+        Element* tensor = first->newTensor(lisp, (List*)values);
+        values->release();
+        return tensor;
+    }
+    
+    vecte<long> shape;
+    values->getShape(shape);
+    short element_type = v_null;
+    
+    if (values->structuredList(0, shape, element_type)) {
+        Element* val;
+        switch (element_type) {
+            case t_short:
+            case t_integer: {
+                val = lisp->provideIntegers();
+                values->flatten(lisp, (Integers*)val);
+                break;
+            }
+            case t_float: {
+                val = lisp->provideFloats();
+                values->flatten(lisp, (Floats*)val);
+                break;
+            }
+            case t_number: {
+                val = lisp->provideNumbers();
+                values->flatten(lisp, (Numbers*)val);
+                break;
+            }
+            default:
+                values->release();
+                throw new Error("Error: cannot apply to_tensor to this object");
+        }
+        switch (shape.size()) {
+            case 1:
+                values->release();
+                return val;
+            case 2:
+                switch (element_type) {
+                    case t_short:
+                    case t_integer: {
+                        first = new Matrice_integer(lisp, shape[0], (Integers*)val, shape[1]);
+                        break;
+                    }
+                    case t_float: {
+                        first = new Matrice_float(lisp, shape[0], (Floats*)val, shape[1]);
+                        break;
+                    }
+                    case t_number: {
+                        first = new Matrice_number(lisp, shape[0], (Numbers*)val, shape[1]);
+                        break;
+                    }
+                }
+                break;
+            default:
+                switch (element_type) {
+                    case t_short:
+                    case t_integer: {
+                        first = new Tenseur_integer(shape, (Integers*)val);
+                        break;
+                    }
+                    case t_float: {
+                        first = new Tenseur_float(shape, (Floats*)val);
+                        break;
+                    }
+                    case t_number: {
+                        first = new Tenseur_number(shape, (Numbers*)val);
+                        break;
+                    }
+                }
+        }
+        val->release();
+        values->release();
+        return first;
+    }
+    return values;
+}
+
 Element* List_lock_eval::eval(LispE* lisp) {
     u_ustring key;
     evalAsUString(1, lisp, key);

@@ -4311,6 +4311,11 @@ Element* List::evall_to_list(LispE* lisp) {
      return m.eval(lisp);
 }
 
+Element* List::evall_to_tensor(LispE* lisp) {
+     List_to_tensor_eval m(this);
+     return m.eval(lisp);
+}
+
 
 Element* List::evall_to_llist(LispE* lisp) {
      List_to_llist_eval m(this);

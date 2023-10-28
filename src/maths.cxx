@@ -196,6 +196,20 @@ void Matrice_number::build(LispE* lisp, Element* lst) {
     }
 }
 
+void Matrice_number::buildfromvalues(LispE* lisp, Numbers* lst) {
+    Numbers* l;
+    long idx = 0;
+    for (long x = 0; x < size_x; x++) {
+        l = lisp->provideNumbers();
+        append(l);
+        for (long y = 0; y < size_y; y++) {
+            if (idx == lst->size())
+                idx = 0;
+            l->liste.push_back(lst->liste[idx++]);
+        }
+    }
+}
+
 void Matrice_number::concatenate(LispE* lisp, Element* e) {
     if (e->isList()) {
         if (e->size() != size_x)
@@ -277,6 +291,21 @@ void Matrice_float::build(LispE* lisp, Element* lst) {
     }
 }
 
+void Matrice_float::buildfromvalues(LispE* lisp, Floats* lst) {
+    Floats* l;
+    long idx = 0;
+    for (long x = 0; x < size_x; x++) {
+        l = lisp->provideFloats();
+        append(l);
+        for (long y = 0; y < size_y; y++) {
+            if (idx == lst->size())
+                idx = 0;
+            l->liste.push_back(lst->liste[idx++]);
+        }
+    }
+}
+
+
 Matrice_integer::Matrice_integer(LispE* lisp, Matrice_integer* m) {
     type = t_matrix_integer;
     size_x = m->size_x;
@@ -309,6 +338,20 @@ void Matrice_integer::build(LispE* lisp, Element* lst) {
             if (idx == lst->size())
                 idx = 0;
             l->liste.push_back(lst->index(idx++)->asInteger());
+        }
+    }
+}
+
+void Matrice_integer::buildfromvalues(LispE* lisp, Integers* lst) {
+    Integers* l;
+    long idx = 0;
+    for (long x = 0; x < size_x; x++) {
+        l = lisp->provideIntegers();
+        append(l);
+        for (long y = 0; y < size_y; y++) {
+            if (idx == lst->size())
+                idx = 0;
+            l->liste.push_back(lst->liste[idx++]);
         }
     }
 }

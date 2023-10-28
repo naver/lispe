@@ -100,7 +100,7 @@ typedef enum {
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
-    l_to_list, l_to_llist, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
+    l_to_list, l_to_llist, l_to_tensor, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
     l_pushtrue, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
     l_numbers, l_floats, l_shorts, l_integers, l_strings,
@@ -445,7 +445,7 @@ public:
         return false;
     }
 
-    virtual bool consistentList(long depth, vecte<long>& sz, short& element_type) {
+    virtual bool structuredList(long depth, vecte<long>& sz, short& element_type) {
         return false;
     }
     
