@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.10.27.18.47";
+static std::string version = "1.2023.10.28.9.46";
 string LispVersion() {
     return version;
 }
@@ -380,7 +380,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare, new List_compare_eval());
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower, new List_lower_eval());
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal, new List_lowerorequal_eval());
-    set_instruction(l_maplist, "¨", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
+    set_instruction(l_maplist, "↑", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mapcar, "mapcar", P_THREE, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark, new List_mark_eval());
     set_instruction(l_matrix_integer, "matrix_integer", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_integer, new List_matrix_integer_eval());
@@ -871,6 +871,9 @@ void Delegation::initialisation(LispE* lisp) {
     string_to_code[w] = l_infix;
     
     w = U("maplist");
+    string_to_code[w] = l_maplist;
+        
+    w = U("¨");
     string_to_code[w] = l_maplist;
 
     //But also 'false', which is a substitute to nil as well
@@ -2871,6 +2874,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

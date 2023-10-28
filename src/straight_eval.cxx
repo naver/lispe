@@ -3153,12 +3153,12 @@ Element* List_iota0_eval::eval(LispE* lisp) {
 }
 
 
-// (.  '((1 2) (5 4) (3 0)) '+ '* '((6 2 3 4) (7 0 1 8)))
-// (. (iota 10) '+ '* (iota 10.0))
+// (. '+ '* '((1 2) (5 4) (3 0)) '((6 2 3 4) (7 0 1 8)))
+// (. '+ '* (iota 10) (iota 10.0))
 //(setq m1 (rho 3 2 '(1 2 5 4 3 0)))
 //(setq m2 (rho 2 4 '(6 2 3 4 7 0 1 8)))
 Element* List_innerproduct_eval::eval(LispE* lisp) {
-    Element* l1 = liste[1]->eval(lisp);
+    Element* l1 = liste[3]->eval(lisp);
     
     Element* l2 = null_;
     Element* op1 = null_;
@@ -3179,14 +3179,14 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
         if (!t1 || !t2 || t1 != t2)
             throw new Error("Error: arguments for '.' must be compatible lists or matrices");
         
-        op1 = liste[2]->eval(lisp);
+        op1 = liste[1]->eval(lisp);
         if (op1->type == l_equal)
             op1 = lisp->provideAtom(l_equalonezero);
-        op2 = liste[3]->eval(lisp);
+        op2 = liste[2]->eval(lisp);
         if (op2->type == l_equal)
             op2 = lisp->provideAtom(l_equalonezero);
 
-        if (t1 == 2) {
+        if (t1 == a_flat_list) {
             if (sx_1 != sx_2)
                 throw new Error("Error: lists should have the same size for '.'");
                                 
@@ -3202,7 +3202,7 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
             return e;
         }
 
-        if (t1 == 3) {
+        if (t1 == a_valuelist) {
             if (sx_1 != sx_2)
                 throw new Error("Error: lists should have the same size for '.'");
                                 
@@ -3236,9 +3236,23 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
         long i, j = 0;
         
         l2_transposed = l2->transposed(lisp);
-        
+        List* res;
+        if (l1->type == l2->type && l1->type != l_list) {
+            switch (l1->type) {
+                case t_matrix_float:
+                    res = new Matrice_float(lisp, sx_1, sy_2, 0.0);
+                    break;
+                case t_matrix_integer:
+                    res = new Matrice_integer(lisp, sx_1, sy_2, 0);
+                    break;
+                default:
+                    res = new Matrice_number(lisp, sx_1, sy_2, 0.0);
+            }
+        }
+        else
+            res = new Matrice_number(lisp, sx_1, sy_2, 0.0);
+
         Element* row;
-        Matrice_number* res = new Matrice_number(lisp, sx_1, sy_2, 0.0);
         //We are dealing with matrices...
         for (i = 0; i < sx_1; i++) {
             row = l1->index(i);
@@ -3269,11 +3283,11 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
     return null_;
 }
 
-// (° '(2 3 4) '* '(1 2 3 4))
-// (° (rho 2 3 '(4 5 6 9)) '* (rho 3 3 (iota 10)))
+// (° '* '(2 3 4)  '(1 2 3 4))
+// (° '* (rho 2 3 '(4 5 6 9)) (rho 3 3 (iota 10)))
 Element* List_outerproduct_eval::eval(LispE* lisp) {
     //Operation is: (° operation l1 l2)
-    Element* l1 = liste[1]->eval(lisp);
+    Element* l1 = liste[2]->eval(lisp);
     
     Element* l2 = null_;
     Element* op = null_;
@@ -3313,7 +3327,7 @@ Element* List_outerproduct_eval::eval(LispE* lisp) {
             }
         }
 
-        op = eval_body_as_argument(lisp, liste[2], P_THREE);
+        op = eval_body_as_argument(lisp, liste[1], P_THREE);
         if (op->type == l_equal)
             op = lisp->provideAtom(l_equalonezero);
         
@@ -4416,14 +4430,35 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     return lisp->provideInteger(listsize);
             }
         }
+        
         long ei = 0;
         long sz1;
 
+        vecte<long> shape;
+        e = liste[1]->eval(lisp);
+        if (e->isInteger()) {
+            shape.push_back(e->asInteger());
+            e->release();
+            for (long i = 2; i < listsize-1; i++) {
+                evalAsInteger(i, lisp, sz1);
+                shape.push_back(sz1);
+            }
+        }
+        else {
+            if (!e->isList() || listsize != 3)
+                throw new Error("Error: Shape elements are either integers or a list of integers");
+            for (long i = 0; i < e->size(); i++)
+                shape.push_back(e->index(i)->asInteger());
+            listsize += shape.size()-1;
+            e->release();
+        }
+
+        e = liste.back()->eval(lisp);
+        if (!e->isList())
+            throw new Error("Error: last argument should be a list");
+
         if (listsize == 3) {
-            e = liste[2]->eval(lisp);
-            if (!e->isList())
-                throw new Error("Error: Second argument should be a list");
-            evalAsInteger(1, lisp, sz1);
+            sz1 = shape[0];
             switch (e->type) {
                 case t_floats: {
                     listsize = e->size();
@@ -4583,13 +4618,9 @@ Element* List_rho_eval::eval(LispE* lisp) {
         }
         
         if (listsize == 4) {
-            long sz2;
-            e = liste[3]->eval(lisp);
-            if (!e->isList())
-                throw new Error("Error: third argument should be a list");
+            sz1 = shape[0];
+            long sz2 = shape[1];
             
-            evalAsInteger(1, lisp, sz1);
-            evalAsInteger(2, lisp, sz2);
             switch (e->type) {
                 case t_shorts:
                 case t_integers:
@@ -4667,17 +4698,6 @@ Element* List_rho_eval::eval(LispE* lisp) {
             return res;
         }
 
-        vecte<long> shape;
-        long idx;
-        listsize--;
-        for (long i = 1; i < listsize; i++) {
-            evalAsInteger(i, lisp, idx);
-            shape.push_back(idx);
-        }
-        e = liste[listsize]->eval(lisp);
-        if (!e->isList())
-            throw new Error("Error: last argument should be a list");
-
         switch (e->type) {
             case t_shorts:
             case t_integers:
@@ -4709,8 +4729,8 @@ Element* List_rho_eval::eval(LispE* lisp) {
                 }
                 else {
                     res = new List;
-                    idx = 0;
-                    ((List*)res)->build(lisp,shape, 0,res, e, idx);
+                    sz1 = 0;
+                    ((List*)res)->build(lisp,shape, 0,res, e, sz1);
                 }
                 break;
             case t_list: {
@@ -4721,8 +4741,8 @@ Element* List_rho_eval::eval(LispE* lisp) {
                 }
                 else {
                     res = new List;
-                    idx = 0;
-                    ((List*)res)->build(lisp,shape, 0,res, e, idx);
+                    sz1 = 0;
+                    ((List*)res)->build(lisp,shape, 0,res, e, sz1);
                 }
                 break;
             }
