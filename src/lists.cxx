@@ -8369,3 +8369,47 @@ Element* Tenseur_integer::rotate(LispE* lisp, long nb) {
     }
     return revert_matrix;
 }
+
+Element* Float::newTensor(LispE* lisp, List* l) {
+    Floats* f = lisp->provideFloats();
+    for (long i = 0; i < l->size(); i++)
+        f->liste.push_back(l->liste[i]->asFloat());
+    
+    return f;
+}
+
+Element* Number::newTensor(LispE* lisp, List* l) {
+    Numbers* f = lisp->provideNumbers();
+    for (long i = 0; i < l->size(); i++)
+        f->liste.push_back(l->liste[i]->asNumber());
+    
+    return f;
+}
+
+Element* Integer::newTensor(LispE* lisp, List* l) {
+    Integers* f = lisp->provideIntegers();
+    for (long i = 0; i < l->size(); i++)
+        f->liste.push_back(l->liste[i]->asInteger());
+    
+    return f;
+}
+
+Element* Short::newTensor(LispE* lisp, List* l) {
+    Integers* f = lisp->provideIntegers();
+    for (long i = 0; i < l->size(); i++)
+        f->liste.push_back(l->liste[i]->asInteger());
+    
+    return f;
+}
+
+Element* Floats::newTensor(LispE* lisp, List* l) {
+    return new Matrice_float(l);
+}
+
+Element* Numbers::newTensor(LispE* lisp, List* l) {
+    return new Matrice_number(l);
+}
+
+Element* Integers::newTensor(LispE* lisp, List* l) {
+    return new Matrice_integer(l);
+}

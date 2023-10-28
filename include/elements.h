@@ -1479,7 +1479,8 @@ public:
     
     Element* duplicate_constant(LispE* lisp);
 
-
+    Element* newTensor(LispE* lisp, List* l);
+    
     Element* invert_sign(LispE* lisp);
     Element* reverse(LispE*, bool duplique = true);
     
@@ -1640,6 +1641,7 @@ public:
         return (content == 0);
     }
 
+    Element* newTensor(LispE* lisp, List* l);
     Element* replace(LispE* lisp, Element* i, Element* e) {
         content = e->asNumber();
         return this;
@@ -1851,6 +1853,8 @@ public:
         return (content == n);
     }
 
+    Element* newTensor(LispE* lisp, List* l);
+    
     bool isEmpty() {
         return (content == 0);
     }
@@ -2202,6 +2206,7 @@ public:
         return (content == n);
     }
     
+    Element* newTensor(LispE* lisp, List* l);
     bool isEmpty() {
         return (content == 0);
     }

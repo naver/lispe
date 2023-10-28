@@ -18,7 +18,7 @@
 #include <list>
 
 typedef Element* (List::*methodEval)(LispE*);
-typedef enum {a_various_list, a_flat_list, a_structured_list, a_valuelist, a_tensor} liste_type;
+typedef enum {a_various_list, a_flat_list, a_valuelist, a_structured_list, a_tensor} liste_type;
 
 class Matrice_number;
 
@@ -6851,6 +6851,12 @@ public:
         return new Floats;
     }
     
+    bool is_same_tensor(Element* a) {
+        return (a->type == type && liste.size() == a->size());
+    }
+
+    Element* newTensor(LispE* lisp, List* l);
+    
     Element* asList(LispE* lisp, List* l);
     
     inline void reserve(long sz) {
@@ -7341,6 +7347,12 @@ public:
     Numbers(long nb, double v) : liste(nb,v), Element(t_numbers), exchange_value(0) {}
     
     Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
+    
+    bool is_same_tensor(Element* a) {
+        return (a->type == type && liste.size() == a->size());
+    }
+
+    Element* newTensor(LispE* lisp, List* l);
     
     virtual Element* newInstance() {
         return new Numbers;
@@ -8278,6 +8290,12 @@ public:
     virtual Element* newInstance() {
         return new Integers;
     }
+    
+    bool is_same_tensor(Element* a) {
+        return (a->type == type && liste.size() == a->size());
+    }
+
+    Element* newTensor(LispE* lisp, List* l);
     
     inline void reserve(long sz) {
         liste.reserve(sz);

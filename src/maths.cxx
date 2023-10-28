@@ -539,13 +539,14 @@ void List::combine(LispE* lisp, Element* res, Element* l1, Element* l2, List* ac
         e = action->eval(lisp);
         //If it is a number, then potentially it can be a tensor
         if (e->isNumber())
-            char_tensor |= a_tensor;
-        else
-            char_tensor |= e->isPureList();
-        if (char_tensor == a_tensor && res->size()) {
-            char_tensor |= !e->is_same_tensor(res->last());
+            char_tensor |= a_valuelist;
+        else {
+            char_tensor |= e->isPureList();            
+            if (res->size())
+                char_tensor |= !e->is_same_tensor(res->last());
         }
-        res->append(e);
+
+        res->append(e->copying(false));
         e->release();
         return;
     }
@@ -561,10 +562,12 @@ void List::combine(LispE* lisp, Element* res, Element* l1, Element* l2, List* ac
             for (long i2 = 0; i2 < l2->size(); i2++) {
                 combine(lisp, sublist, e, l2->index(i2), action, c_tensor);
             }
-            if (c_tensor == a_tensor) {
+            if (c_tensor == a_tensor || c_tensor == a_valuelist) {
                 e = sublist->index(0)->newTensor(lisp, (List*)sublist);
-                sublist->release();
-                sublist = e;
+                if (e != sublist) {
+                    sublist->release();
+                    sublist = e;
+                }
             }
             char_tensor |= c_tensor;
             res->append(sublist);
