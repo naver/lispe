@@ -7785,7 +7785,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
     
     char char_tensor = values->isPureList();
     if (char_tensor == a_valuelist || char_tensor == a_tensor)
-        return this;
+        return values;
     
     long sz = values->size();
     if (!sz || sz == 1)
@@ -7794,14 +7794,17 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
     //We check if all the elements in list are of the same type
     Element* first = values->index(0);
     char_tensor = first->isPureList();
-    for (long i = 1; i < sz && (char_tensor == a_valuelist || char_tensor == a_tensor); i++) {
-        char_tensor |= !first->is_same_tensor(values->index(i));
-    }
-    
     if (char_tensor == a_valuelist || char_tensor == a_tensor) {
-        Element* tensor = first->newTensor(lisp, (List*)values);
-        values->release();
-        return tensor;
+        for (long i = 1; i < sz && (char_tensor == a_valuelist || char_tensor == a_tensor); i++) {
+            char_tensor |= !first->is_same_tensor(values->index(i));
+        }
+        
+        if (char_tensor == a_valuelist || char_tensor == a_tensor) {
+            Element* tensor = first->newTensor(lisp, (List*)values);
+            values->release();
+            return tensor;
+        }
+        return values;
     }
     
     vecte<long> shape;
