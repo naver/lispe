@@ -21,6 +21,7 @@ typedef Element* (List::*methodEval)(LispE*);
 typedef enum {a_various_list, a_flat_list, a_valuelist, a_structured_list, a_tensor} liste_type;
 
 class Matrice_number;
+class Shorts;
 
 class Atomefonction : public Element {
 public:
@@ -717,6 +718,7 @@ public:
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Shorts* l);
     void flatten(LispE*, Floats* l);
     
     //In the case of a container for push, key and keyn
@@ -1412,6 +1414,7 @@ public:
     Element* evall_ludcmp(LispE* lisp);
     Element* evall_maplist(LispE* lisp);
     Element* evall_mark(LispE* lisp);
+    Element* evall_matrix_short(LispE* lisp);
     Element* evall_matrix_integer(LispE* lisp);
     Element* evall_matrix_number(LispE* lisp);
     Element* evall_matrix_float(LispE* lisp);
@@ -1504,6 +1507,7 @@ public:
     Element* evall_space(LispE* lisp);
     Element* evall_sum(LispE* lisp);
     Element* evall_switch(LispE* lisp);
+    Element* evall_tensor_short(LispE* lisp);
     Element* evall_tensor_integer(LispE* lisp);
     Element* evall_tensor_number(LispE* lisp);
     Element* evall_tensor_float(LispE* lisp);
@@ -5786,6 +5790,27 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_tensor_short_eval : public Listincode {
+public:
+    
+    List_tensor_short_eval(Listincode* l) : Listincode(l) {}
+    List_tensor_short_eval(List* l) : Listincode(l) {}
+    List_tensor_short_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_tensor_short_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_tensor_short_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
 class List_tensor_integer_eval : public Listincode {
 public:
     
@@ -5828,6 +5853,28 @@ public:
     }
     Element* eval(LispE* lisp);
 };
+
+class List_matrix_short_eval : public Listincode {
+public:
+    
+    List_matrix_short_eval(Listincode* l) : Listincode(l) {}
+    List_matrix_short_eval(List* l) : Listincode(l) {}
+    List_matrix_short_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_matrix_short_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_matrix_short_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
 
 class List_matrix_integer_eval : public Listincode {
 public:
@@ -7057,6 +7104,7 @@ public:
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Shorts* l);
     
     Element* protected_index(LispE*,long i);
     
@@ -7559,6 +7607,7 @@ public:
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Shorts* l);
     
     Element* protected_index(LispE*,long i);
     
@@ -7919,6 +7968,8 @@ public:
         }
     }
     
+    Element* newTensor(LispE* lisp, List* l);
+    
     void* begin_iter() {
         long* n = new long[1];
         n[0] = 0;
@@ -8043,10 +8094,15 @@ public:
     Element* maximum(LispE*);
     Element* minmax(LispE*);
     
+    bool is_same_tensor(Element* a) {
+        return (a->type == type && liste.size() == a->size());
+    }
+
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Shorts* l);
     
     Element* protected_index(LispE*,long i);
     
@@ -8493,6 +8549,7 @@ public:
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Shorts* l);
     
     Element* protected_index(LispE*,long i);
     
@@ -8980,6 +9037,7 @@ public:
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Shorts* l);
     
     Element* protected_index(LispE*,long i);
     
@@ -9365,79 +9423,49 @@ public:
 
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
-// Tensors and Matrices
+// Tensor Template
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
 
-class Tenseur_float : public List {
+
+#define Tenseur_short Tenseur<short, t_tensor_short, Shorts*>
+#define Tenseur_integer Tenseur<long, t_tensor_integer, Integers*>
+#define Tenseur_float Tenseur<float, t_tensor_float, Floats*>
+#define Tenseur_number Tenseur<double, t_tensor_number, Numbers*>
+
+
+template <typename A, lisp_code T, typename C> class Tenseur : public List {
 public:
     vecte<long> shape;
     
-    Tenseur_float() {
-        type = t_tensor_float;
+    Tenseur<A,T,C>() {
+        type = T;
     }
     
-    Tenseur_float(short nb, vecte<long>& sz) {
-        type = t_tensor_float;
+    Tenseur<A,T,C>(short nb, vecte<long>& sz) {
+        type = T;
         for (; nb < sz.size(); nb++)
             shape.push_back(sz[nb]);
     }
-    
-    Tenseur_float(vecte<long>& sz, Element* n) {
-        type = t_tensor_float;
-        shape = sz;
-        if (shape.size())
-            build(0,this, n->asFloat());
-    }
-    
-    Tenseur_float(vecte<long>& sz, float n) {
-        type = t_tensor_float;
-        shape = sz;
-        if (shape.size())
-            build(0,this, n);
-    }
 
-    Tenseur_float(vecte<long>& sz, Floats* n) {
-        type = t_tensor_float;
-        shape = sz;
-        if (shape.size()) {
-            long idx = 0;
-            build(0, idx, this, n);
-        }
-    }
-
-    Tenseur_float(LispE* lisp, vecte<long>& sz, Element* n) {
-        type = t_tensor_float;
-        shape = sz;
-        if (shape.size())
-            build(lisp, 0,this, n->asFloat());
-    }
+    Tenseur<A,T,C>(vecte<long>& sz, Element* n);
+    Tenseur<A,T,C>(vecte<long>& sz, A n);
+    Tenseur<A,T,C>(vecte<long>& sz, C n);
+    Tenseur<A,T,C>(LispE* lisp, vecte<long>& sz, Element* n);
     
-    Tenseur_float(LispE* lisp, Element* lst, vecte<long>& sz) {
-        type = t_tensor_float;
-        shape = sz;
-        if (shape.size()) {
-            long idx = 0;
-            build(lisp, 0,this, lst, idx);
-        }
-    }
-    
-    Tenseur_float(Tenseur_float* tensor) {
-        type = t_tensor_float;
-        shape = tensor->shape;
-        tensor->build(0, this);
-    }
+    Tenseur<A,T,C>(LispE* lisp, Element* lst, vecte<long>& sz);
+    Tenseur<A,T,C>(Tenseur<A,T,C>* tensor);
     
     //We steal the ITEM structure of this list
-    Tenseur_float(LispE* lisp, List* l) : List(l, 0) {
-        type = t_tensor_float;
-        Element* e = l;
-        while (e->isList()) {
-            shape.push_back(e->size());
-            e = e->index(0);
-        }
-    }
+    Tenseur<A,T,C>(LispE* lisp, List* l);
     
+    A asValue(Element* e);
+    C provide();
+    C provide(LispE* lisp, C n);
+    C provide(LispE* lisp);
+    C provide(long nb, A v);
+    C provide(LispE* lisp, long nb, A v);
+
     long shapesize() {
         return shape.size();
     }
@@ -9463,34 +9491,34 @@ public:
     
     Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
-            return new Tenseur_float(this);
+            return new Tenseur<A,T,C>(this);
         return this;
     }
     
     Element* fullcopy() {
-        return new Tenseur_float(this);
+        return new Tenseur<A,T,C>(this);
     }
     
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
-    void build(LispE* lisp, long isz, Element* res, float n);
+    void build(LispE* lisp, long isz, Element* res, A n);
     void build(LispE* lisp, long isz, Element* res, Element* lst, long& idx);
     void build(LispE* lisp, long isz, Element* res);
     
     
-    void build(long isz, Element* res, float n) {
+    void build(long isz, Element* res, A n) {
         if (isz == shape.size()-2) {
-            Floats* lst;
+            C lst;
             for (long i = 0; i < shape[isz]; i++) {
-                lst = new Floats(shape[isz+1], n);
+                lst = provide(shape[isz+1], n);
                 res->append(lst);
             }
         }
         else {
-            Tenseur_float* lst;
+            Tenseur<A,T,C>* lst;
             for (long i = 0; i < shape[isz]; i++) {
-                lst = new Tenseur_float(isz+1, shape);
+                lst = new Tenseur<A,T,C>(isz+1, shape);
                 res->append(lst);
                 build(isz+1, lst, n);
             }
@@ -9499,52 +9527,75 @@ public:
     
     void build(long isz, Element* res, Element* lst, long& idx) {
         if (isz == shape.size()-2) {
-            Floats* l;
+            C l;
             long i,j;
             for (i = 0; i < shape[isz]; i++) {
-                l = new Floats;
+                l = provide();
                 res->append(l);
                 for (j = 0; j < shape[isz+1]; j++) {
                     if (idx == lst->size())
                         idx = 0;
-                    l->liste.push_back(lst->index(idx++)->asFloat());
+                    l->liste.push_back(asValue(lst->index(idx++)));
                 }
             }
         }
         else {
-            Tenseur_float* l;
+            Tenseur<A,T,C>* l;
             for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_float(isz+1, shape);
+                l = new Tenseur<A,T,C>(isz+1, shape);
                 res->append(l);
                 build(isz+1, l, lst, idx);
             }
         }
     }
-    
-    void build(long isz, Element* res) {
+
+    void build(long isz, long& idx, Element* res, C lst) {
         if (isz == shape.size()-2) {
-            Floats* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Floats;
+            C l;
+            long i,j;
+            for (i = 0; i < shape[isz]; i++) {
+                l = provide();
                 res->append(l);
-                l->liste = ((Floats*)liste[i])->liste;
+                for (j = 0; j < shape[isz+1]; j++) {
+                    if (idx == lst->size())
+                        idx = 0;
+                    l->liste.push_back(lst->liste[idx++]);
+                }
             }
         }
         else {
-            Tenseur_float* l;
+            Tenseur<A,T,C>* l;
             for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_float(isz+1, shape);
+                l = new Tenseur<A,T,C>(isz+1, shape);
+                res->append(l);
+                build(isz+1, idx, l, lst);
+            }
+        }
+    }
+
+    void build(long isz, Element* res) {
+        if (isz == shape.size()-2) {
+            C l;
+            for (long i = 0; i < shape[isz]; i++) {
+                l = provide();
+                res->append(l);
+                l->liste = ((C)liste[i])->liste;
+            }
+        }
+        else {
+            Tenseur<A,T,C>* l;
+            for (long i = 0; i < shape[isz]; i++) {
+                l = new Tenseur<A,T,C>(isz+1, shape);
                 res->append(l);
                 build(isz+1,l);
             }
         }
     }
     
-
     char isPureList(long& x, long& y) {
         x = shape[0];
         y = shape[1];
-        return 1;
+        return a_tensor;
     }
     
     void getShape(vecte<long>& sz) {
@@ -9561,323 +9612,7 @@ public:
         if (!is_protected() && !duplicate)
             return this;
         
-        return new Tenseur_float(this);
-    }
-    
-    Element* transposed(LispE* lisp);
-    Element* rotate(LispE* lisp, long axis);
-    Element* rotate(bool left);
-    Element* reversion(LispE* lisp, Element* value, long pos, long axis, bool init);
-    Element* reverse(LispE* lisp, bool duplique = true) {
-        return rotate(lisp, 1);
-    }
-    
-    void concatenate(LispE* lisp, long isz, Element* res, Element* e) {
-        if (res->isValueList()) {
-            res->concatenate(lisp, e);
-        }
-        else {
-            for (long i = 0; i < shape[isz]; i++) {
-                if (e->isList())
-                    concatenate(lisp, isz+1, res->index(i), e->index(i));
-                else
-                    concatenate(lisp, isz+1, res->index(i), e);
-            }
-        }
-    }
-    
-    void build(long isz, long& idx, Element* res, Floats* lst) {
-        if (isz == shape.size()-2) {
-            Integers* l;
-            long i,j;
-            for (i = 0; i < shape[isz]; i++) {
-                l = new Integers;
-                res->append(l);
-                for (j = 0; j < shape[isz+1]; j++) {
-                    if (idx == lst->size())
-                        idx = 0;
-                    l->liste.push_back(lst->liste[idx++]);
-                }
-            }
-        }
-        else {
-            Tenseur_float* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_float(isz+1, shape);
-                res->append(l);
-                build(isz+1, idx, l, lst);
-            }
-        }
-    }
-
-    void concatenate(LispE* lisp, Element* e);
-    
-    
-    void setvalue(Element* res, Element* lst) {
-        if (lst->type == t_numbers) {
-            for (long i = 0; i < lst->size(); i++) {
-                res->replacing(i, lst->index(i));
-            }
-        }
-        else {
-            for (long i = 0; i < lst->size(); i++) {
-                setvalue(res->index(i), lst->index(i));
-            }
-        }
-    }
-    
-    void setvalue(Tenseur_float* lst) {
-        setvalue(this, lst);
-    }
-    
-    Element* negate(LispE* lisp);
-    
-    Element* newInstance() {
-        return new Tenseur_float(shape, 0.0);
-    }
-    
-    Element* newInstance(Element* e) {
-        return new Tenseur_float(shape, e);
-    }
-    
-    Element* pureInstance() {
-        return new Tenseur_float(0, shape);
-    }
-
-    bool is_same_tensor(Element* a) {
-        if (a->type == type) {
-            vecte<long> sa;
-            a->getShape(sa);
-            return (shape == sa);
-        }
-        return false;
-    }
-    
-    Element* newTensor(LispE* lisp, List* l) {
-        return new Tenseur_float(lisp, l);
-    }
-
-    Element* newTensor(long nb) {
-        return new Tenseur_float(nb, shape);
-    }
-    
-};
-
-class Tenseur_number : public List {
-public:
-    vecte<long> shape;
-    
-    Tenseur_number() {
-        type = t_tensor_number;
-    }
-    
-    Tenseur_number(short nb, vecte<long>& sz) {
-        type = t_tensor_number;
-        for (; nb < sz.size(); nb++)
-            shape.push_back(sz[nb]);
-    }
-
-    Tenseur_number(vecte<long>& sz, Element* n) {
-        type = t_tensor_number;
-        shape = sz;
-        if (shape.size())
-            build(0,this, n->asNumber());
-    }
-    
-    Tenseur_number(vecte<long>& sz, double n) {
-        type = t_tensor_number;
-        shape = sz;
-        if (shape.size())
-            build(0,this, n);
-    }
-
-    Tenseur_number(vecte<long>& sz, Numbers* n) {
-        type = t_tensor_number;
-        shape = sz;
-        long idx = 0;
-        if (shape.size())
-            build(0, idx, this, n);
-    }
-
-    Tenseur_number(LispE* lisp, vecte<long>& sz, Element* n) {
-        type = t_tensor_number;
-        shape = sz;
-        if (shape.size())
-            build(lisp, 0,this, n->asNumber());
-    }
-    
-    Tenseur_number(LispE* lisp, Element* lst, vecte<long>& sz) {
-        type = t_tensor_number;
-        shape = sz;
-        if (shape.size()) {
-            long idx = 0;
-            build(lisp, 0,this, lst, idx);
-        }
-    }
-    
-    Tenseur_number(Tenseur_number* tensor) {
-        type = t_tensor_number;
-        shape = tensor->shape;
-        tensor->build(0, this);
-    }
-    
-    //We steal the ITEM structure of this list
-    Tenseur_number(LispE* lisp, List* l) : List(l, 0) {
-        type = t_tensor_number;
-        Element* e = l;
-        while (e->isList()) {
-            shape.push_back(e->size());
-            e = e->index(0);
-        }
-    }
-    
-    long shapesize() {
-        return shape.size();
-    }
-    
-    void dimensions(long& v) {
-        long nb = 1;
-        for (long i = 0; i < shape.size(); i++)
-            nb *= shape[i];        
-        v += nb;
-    }
-
-    Element* check_member(LispE*, Element* the_set);
-    
-    long nbelements() {
-        long nb = 1;
-        for (int16_t i = 0; i < shape.size(); i++)
-            nb*=shape[i];
-        return nb;
-    }
-    
-    
-    Element* loop(LispE* lisp, int16_t label,  List* code);
-    
-    Element* duplicate_constant(LispE* lisp, bool pair = false) {
-        if (status == s_constant)
-            return new Tenseur_number(this);
-        return this;
-    }
-    
-    Element* fullcopy() {
-        return new Tenseur_number(this);
-    }
-    
-    Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
-    Element* rank(LispE* lisp, vecte<long>& positions);
-    
-    void build(LispE* lisp, long isz, Element* res, double n);
-    void build(LispE* lisp, long isz, Element* res, Element* lst, long& idx);
-    void build(LispE* lisp, long isz, Element* res);
-    
-    
-    void build(long isz, Element* res, double n) {
-        if (isz == shape.size()-2) {
-            Numbers* lst;
-            for (long i = 0; i < shape[isz]; i++) {
-                lst = new Numbers(shape[isz+1], n);
-                res->append(lst);
-            }
-        }
-        else {
-            Tenseur_number* lst;
-            for (long i = 0; i < shape[isz]; i++) {
-                lst = new Tenseur_number(isz+1, shape);
-                res->append(lst);
-                build(isz+1, lst, n);
-            }
-        }
-    }
-    
-    void build(long isz, Element* res, Element* lst, long& idx) {
-        if (isz == shape.size()-2) {
-            Numbers* l;
-            long i,j;
-            for (i = 0; i < shape[isz]; i++) {
-                l = new Numbers;
-                res->append(l);
-                for (j = 0; j < shape[isz+1]; j++) {
-                    if (idx == lst->size())
-                        idx = 0;
-                    l->liste.push_back(lst->index(idx++)->asNumber());
-                }
-            }
-        }
-        else {
-            Tenseur_number* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_number(isz+1, shape);
-                res->append(l);
-                build(isz+1, l, lst, idx);
-            }
-        }
-    }
-
-    void build(long isz, long& idx, Element* res, Numbers* lst) {
-        if (isz == shape.size()-2) {
-            Numbers* l;
-            long i,j;
-            for (i = 0; i < shape[isz]; i++) {
-                l = new Numbers;
-                res->append(l);
-                for (j = 0; j < shape[isz+1]; j++) {
-                    if (idx == lst->size())
-                        idx = 0;
-                    l->liste.push_back(lst->liste[idx++]);
-                }
-            }
-        }
-        else {
-            Tenseur_number* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_number(isz+1, shape);
-                res->append(l);
-                build(isz+1, idx, l, lst);
-            }
-        }
-    }
-
-    void build(long isz, Element* res) {
-        if (isz == shape.size()-2) {
-            Numbers* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Numbers;
-                res->append(l);
-                l->liste = ((Numbers*)liste[i])->liste;
-            }
-        }
-        else {
-            Tenseur_number* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_number(isz+1, shape);
-                res->append(l);
-                build(isz+1,l);
-            }
-        }
-    }
-    
-    char isPureList(long& x, long& y) {
-        x = shape[0];
-        y = shape[1];
-        return 1;
-    }
-    
-    void getShape(vecte<long>& sz) {
-        for (long i = 0; i < shape.size(); i++)
-            sz.push_back(shape[i]);
-    }
-    
-    char isPureList() {
-        return a_tensor;
-    }
-    
-    Element* copying(bool duplicate = true) {
-        //If it is a CDR, we need to copy it...
-        if (!is_protected() && !duplicate)
-            return this;
-        
-        return new Tenseur_number(this);
+        return new Tenseur<A,T,C>(this);
     }
     
     Element* transposed(LispE* lisp);
@@ -9905,35 +9640,24 @@ public:
     void concatenate(LispE* lisp, Element* e);
     
     
-    void setvalue(Element* res, Element* lst) {
-        if (lst->type == t_numbers) {
-            for (long i = 0; i < lst->size(); i++) {
-                res->replacing(i, lst->index(i));
-            }
-        }
-        else {
-            for (long i = 0; i < lst->size(); i++) {
-                setvalue(res->index(i), lst->index(i));
-            }
-        }
-    }
+    void setvalue(Element* res, Element* lst);
     
-    void setvalue(Tenseur_number* lst) {
+    void setvalue(Tenseur<A,T,C>* lst) {
         setvalue(this, lst);
     }
     
     Element* negate(LispE* lisp);
     
     Element* newInstance() {
-        return new Tenseur_number(shape, 0.0);
+        return new Tenseur<A,T,C>(shape, 0.0);
     }
     
     Element* newInstance(Element* e) {
-        return new Tenseur_number(shape, e);
+        return new Tenseur<A,T,C>(shape, e);
     }
     
     Element* pureInstance() {
-        return new Tenseur_number(0, shape);
+        return new Tenseur<A,T,C>(0, shape);
     }
     
     bool is_same_tensor(Element* a) {
@@ -9946,574 +9670,57 @@ public:
     }
 
     Element* newTensor(LispE* lisp, List* l) {
-        return new Tenseur_number(lisp, l);
+        return new Tenseur<A,T,C>(lisp, l);
     }
 
     Element* newTensor(long nb) {
-        return new Tenseur_number(nb, shape);
+        return new Tenseur<A,T,C>(nb, shape);
     }
 
 };
 
-class Tenseur_integer : public List {
-public:
-    vecte<long> shape;
-    
-    Tenseur_integer() {
-        type = t_tensor_integer;
-    }
-    
-    Tenseur_integer(short nb, vecte<long>& sz) {
-        type = t_tensor_integer;
-        for (; nb < sz.size(); nb++)
-            shape.push_back(sz[nb]);
-    }
+//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
+// Matrice Template
+//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
 
-    Tenseur_integer(vecte<long>& sz, Element* n) {
-        type = t_tensor_integer;
-        shape = sz;
-        if (shape.size())
-            build(0,this, n->asInteger());
-    }
-    
-    Tenseur_integer(vecte<long>& sz, long n) {
-        type = t_tensor_integer;
-        shape = sz;
-        if (shape.size())
-            build(0,this, n);
-    }
+#define Matrice_short Matrice<short, t_matrix_short, t_tensor_short, Shorts*>
+#define Matrice_integer Matrice<long, t_matrix_integer, t_tensor_integer, Integers*>
+#define Matrice_float Matrice<float, t_matrix_float, t_tensor_float, Floats*>
+#define Matrice_number Matrice<double, t_matrix_number, t_tensor_number, Numbers*>
 
-    Tenseur_integer(vecte<long>& sz, Integers* n) {
-        type = t_tensor_integer;
-        shape = sz;
-        long idx = 0;
-        if (shape.size())
-            build(0, idx, this, n);
-    }
-
-    Tenseur_integer(LispE* lisp, vecte<long>& sz, Element* n) {
-        type = t_tensor_integer;
-        shape = sz;
-        if (shape.size())
-            build(lisp, 0,this, n->asInteger());
-    }
-    
-    Tenseur_integer(LispE* lisp, Element* lst, vecte<long>& sz) {
-        type = t_tensor_integer;
-        shape = sz;
-        if (shape.size()) {
-            long idx = 0;
-            build(lisp, 0,this, lst, idx);
-        }
-    }
-    
-    Tenseur_integer(Tenseur_integer* tensor) {
-        type = t_tensor_integer;
-        shape = tensor->shape;
-        tensor->build(0, this);
-    }
-    
-    //We steal the ITEM structure of this list
-    Tenseur_integer(LispE* lisp, List* l) : List(l, 0) {
-        type = t_tensor_integer;
-        Element* e = l;
-        while (e->isList()) {
-            shape.push_back(e->size());
-            e = e->index(0);
-        }
-    }
-    
-    long shapesize() {
-        return shape.size();
-    }
-    
-    void dimensions(long& v) {
-        long nb = 1;
-        for (long i = 0; i < shape.size(); i++)
-            nb *= shape[i];
-        v += nb;
-    }
-
-    Element* check_member(LispE*, Element* the_set);
-    
-    long nbelements() {
-        long nb = 1;
-        for (int16_t i = 0; i < shape.size(); i++)
-            nb*=shape[i];
-        return nb;
-    }
-    
-    
-    Element* loop(LispE* lisp, int16_t label,  List* code);
-    
-    Element* duplicate_constant(LispE* lisp, bool pair = false) {
-        if (status == s_constant)
-            return new Tenseur_integer(this);
-        return this;
-    }
-    
-    Element* fullcopy() {
-        return new Tenseur_integer(this);
-    }
-    
-    Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
-    Element* rank(LispE* lisp, vecte<long>& positions);
-    
-    void build(LispE* lisp, long isz, Element* res, long n);
-    void build(LispE* lisp, long isz, Element* res, Element* lst, long& idx);
-    void build(LispE* lisp, long isz, Element* res);
-    
-    
-    void build(long isz, Element* res, long n) {
-        if (isz == shape.size()-2) {
-            Integers* lst;
-            for (long i = 0; i < shape[isz]; i++) {
-                lst = new Integers(shape[isz+1], n);
-                res->append(lst);
-            }
-        }
-        else {
-            Tenseur_integer* lst;
-            for (long i = 0; i < shape[isz]; i++) {
-                lst = new Tenseur_integer(isz+1, shape);
-                res->append(lst);
-                build(isz+1, lst, n);
-            }
-        }
-    }
-    
-    void build(long isz, Element* res, Element* lst, long& idx) {
-        if (isz == shape.size()-2) {
-            Integers* l;
-            long i,j;
-            for (i = 0; i < shape[isz]; i++) {
-                l = new Integers;
-                res->append(l);
-                for (j = 0; j < shape[isz+1]; j++) {
-                    if (idx == lst->size())
-                        idx = 0;
-                    l->liste.push_back(lst->index(idx++)->asInteger());
-                }
-            }
-        }
-        else {
-            Tenseur_integer* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_integer(isz+1, shape);
-                res->append(l);
-                build(isz+1, l, lst, idx);
-            }
-        }
-    }
-
-    void build(long isz, long& idx, Element* res, Integers* lst) {
-        if (isz == shape.size()-2) {
-            Integers* l;
-            long i,j;
-            for (i = 0; i < shape[isz]; i++) {
-                l = new Integers;
-                res->append(l);
-                for (j = 0; j < shape[isz+1]; j++) {
-                    if (idx == lst->size())
-                        idx = 0;
-                    l->liste.push_back(lst->liste[idx++]);
-                }
-            }
-        }
-        else {
-            Tenseur_integer* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_integer(isz+1, shape);
-                res->append(l);
-                build(isz+1, idx, l, lst);
-            }
-        }
-    }
-
-    void build(long isz, Element* res) {
-        if (isz == shape.size()-2) {
-            Integers* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Integers;
-                res->append(l);
-                l->liste = ((Integers*)liste[i])->liste;
-            }
-        }
-        else {
-            Tenseur_integer* l;
-            for (long i = 0; i < shape[isz]; i++) {
-                l = new Tenseur_integer(isz+1, shape);
-                res->append(l);
-                build(isz+1,l);
-            }
-        }
-    }
-    
-    char isPureList(long& x, long& y) {
-        x = shape[0];
-        y = shape[1];
-        return 1;
-    }
-    
-    void getShape(vecte<long>& sz) {
-        for (long i = 0; i < shape.size(); i++)
-            sz.push_back(shape[i]);
-    }
-    
-    char isPureList() {
-        return a_tensor;
-    }
-    
-    Element* copying(bool duplicate = true) {
-        //If it is a CDR, we need to copy it...
-        if (!is_protected() && !duplicate)
-            return this;
-        
-        return new Tenseur_integer(this);
-    }
-    
-    Element* transposed(LispE* lisp);
-    Element* rotate(LispE* lisp, long axis);
-    Element* rotate(bool left);
-    Element* reversion(LispE* lisp, Element* value, long pos, long axis, bool init);
-    Element* reverse(LispE* lisp, bool duplique = true) {
-        return rotate(lisp, 1);
-    }
-    
-    void concatenate(LispE* lisp, long isz, Element* res, Element* e) {
-        if (res->isValueList()) {
-            res->concatenate(lisp, e);
-        }
-        else {
-            for (long i = 0; i < shape[isz]; i++) {
-                if (e->isList())
-                    concatenate(lisp, isz+1, res->index(i), e->index(i));
-                else
-                    concatenate(lisp, isz+1, res->index(i), e);
-            }
-        }
-    }
-    
-    void concatenate(LispE* lisp, Element* e);
-    
-    
-    void setvalue(Element* res, Element* lst) {
-        if (lst->type == t_integers) {
-            for (long i = 0; i < lst->size(); i++) {
-                res->replacing(i, lst->index(i));
-            }
-        }
-        else {
-            for (long i = 0; i < lst->size(); i++) {
-                setvalue(res->index(i), lst->index(i));
-            }
-        }
-    }
-    
-    void setvalue(Tenseur_integer* lst) {
-        setvalue(this, lst);
-    }
-    
-    Element* negate(LispE* lisp);
-    
-    Element* newInstance() {
-        return new Tenseur_integer(shape, 0.0);
-    }
-    
-    Element* newInstance(Element* e) {
-        return new Tenseur_integer(shape, e);
-    }
-    
-    Element* pureInstance() {
-        return new Tenseur_integer(0, shape);
-    }
-    
-    bool is_same_tensor(Element* a) {
-        if (a->type == type) {
-            vecte<long> sa;
-            a->getShape(sa);
-            return (shape == sa);
-        }
-        return false;
-    }
-
-    Element* newTensor(LispE* lisp, List* l) {
-        return new Tenseur_integer(lisp, l);
-    }
-
-    Element* newTensor(long nb) {
-        return new Tenseur_integer(nb, shape);
-    }
-
-};
-
-class Matrice_float : public List {
+template <typename A, lisp_code T, lisp_code TT, typename C> class Matrice : public List {
 public:
     long size_x, size_y;
     
-    Matrice_float() {
-        type = t_matrix_float;
+    Matrice<A,T,TT,C>() {
+        type = T;
     }
     
-    Matrice_float(long x, long y) {
-        type = t_matrix_float;
+    Matrice<A,T,TT,C>(long x, long y) {
+        type = T;
         size_x = x;
         size_y = y;
     }
 
-    Matrice_float(long x, long y, Element* n) {
-        type = t_matrix_float;
-        size_x = x;
-        size_y = y;
-        Floats* l;
-        float v = n->asNumber();
-        for (long i = 0; i < size_x; i++) {
-            l = new Floats(size_y, v);
-            append(l);
-        }
-    }
-    
-    Matrice_float(LispE* lisp, Element* lst, long x, long y) {
-        type = t_matrix_float;
-        size_x = x;
-        size_y = y;
-        build(lisp, lst);
-    }
-    
-    Matrice_float(LispE* lisp, long x, Floats* lst, long y) {
-        type = t_matrix_float;
-        size_x = x;
-        size_y = y;
-        buildfromvalues(lisp, lst);
-    }
-
-    Matrice_float(long x, long y, float n) {
-        type = t_matrix_float;
-        size_x = x;
-        size_y = y;
-        Floats* l;
-        
-        for (long i = 0; i < size_x; i++) {
-            l = new Floats(size_y, n);
-            append(l);
-        }
-    }
-    
-    Matrice_float(LispE* lisp, long x, long y, float n);
-    Matrice_float(LispE* lisp, Matrice_float* m);
-    Matrice_float(LispE* lisp, Matrice_number* m);
-    
     //We steal the ITEM structure of this list
-    Matrice_float(List* l) : List(l,0) {
-        type = t_matrix_float;
+    Matrice<A,T,TT,C>(List* l) : List(l,0) {
+        type = T;
         size_x = l->size();
         size_y = l->index(0)->size();
     }
-    
-    long shapesize() {
-        return 2;
-    }
-    
-    void dimensions(long& v) {
-        v += size_x*size_y;
-    }
-    
-    void getShape(vecte<long>& sz) {
-        sz.push_back(size_x);
-        sz.push_back(size_y);
-    }
-    
-    Element* check_member(LispE*, Element* the_set);
-    
-    Element* loop(LispE* lisp, int16_t label,  List* code);
-    
-    inline float val(long i, long j) {
-        return ((Floats*)liste[i])->liste[j];
-    }
-    
-    inline Element* indexe(long i, long j) {
-        return liste[i]->index(j);
-    }
-    
-    inline void set(long i, long j, float v) {
-        ((Floats*)liste[i])->liste.at(j,v);
-    }
-    
-    inline void mult(long i, long j, float v) {
-        ((Floats*)liste[i])->liste[j] *= v;
-    }
-    
-    char isPureList(long& x, long& y) {
-        x = size_x;
-        y = size_y;
-        return 1;
-    }
-    
-    char isPureList() {
-        return a_tensor;
-    }
-    
-    Element* copying(bool duplicate = true) {
-        //If it is a CDR, we need to copy it...
-        if (!is_protected() && !duplicate)
-            return this;
-        
-        return new Matrice_float(this);
-    }
-    
-    //In the case of a container for push, key and keyn
-    // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false) {
-        if (status == s_constant)
-            return new Matrice_float(this);
-        return this;
-    }
-    
-    Element* fullcopy() {
-        return new Matrice_float(this);
-    }
-    
-    Element* inversion(LispE* lisp);
-    Element* solve(LispE* lisp, Matrice_float* Y);
-    float determinant(LispE* lisp);
-    Element* ludcmp(LispE* lisp);
-    Element* lubksb(LispE* lisp, Integers* indexes, Matrice_float* Y = NULL);
-    
-    void build(LispE* lisp, Element* lst);
-    void buildfromvalues(LispE* lisp, Floats* lst);
-    
-    void setvalue(Matrice_float* lst) {
-        for (long i = 0; i < lst->size_x; i++) {
-            for (long j = 0; j < lst->size_y; j++) {
-                liste[i]->replacing(j, lst->index(i)->index(j));
-            }
-        }
-    }
-    
-    Element* transposed(LispE* lisp);
-    Element* rotate(LispE* lisp, long axis);
-    Element* rotate(bool left);
-    Element* reverse(LispE* lisp, bool duplique = true) {
-        return rotate(lisp, 1);
-    }
-    
-    void concatenate(LispE* lisp, Element* e);
-    Element* negate(LispE* lisp);
-    Element* rank(LispE* lisp, vecte<long>& positions);
-    
-    Element* newInstance(Element* e) {
-        return new Matrice_float(size_x, size_y, e);
-    }
-    
-    Element* newInstance() {
-        return new Matrice_float(size_x, size_y, 0.0);
-    }
-    
-    Element* pureInstance() {
-        return new Matrice_float(size_x, size_y);
-    }
-    
-    bool is_same_tensor(Element* a) {
-        if (a->type == type) {
-            vecte<long> sa;
-            a->getShape(sa);
-            return (sa.size() == 2 && size_x == sa[0] && size_y == sa[1]);
-        }
-        return false;
-    }
 
-    Element* newTensor(LispE* lisp, List* l) {
-        return new Tenseur_float(lisp, l);
-    }
-
-    Element* newTensor(long nb) {
-        vecte<long> shape;
-        shape.push_back(size_x);
-        shape.push_back(size_y);
-        return new Tenseur_float(nb, shape);
-    }
-    
-};
-
-class Matrice_number : public List {
-public:
-    long size_x, size_y;
-    
-    Matrice_number() {
-        type = t_matrix_number;
-    }
-    
-    Matrice_number(long x, long y) {
-        type = t_matrix_number;
-        size_x = x;
-        size_y = y;
-    }
-    
-    Matrice_number(long x, long y, Element* n) {
-        type = t_matrix_number;
-        size_x = x;
-        size_y = y;
-        Numbers* l;
-        double v = n->asNumber();
-        for (long i = 0; i < size_x; i++) {
-            l = new Numbers(size_y, v);
-            append(l);
-        }
-    }
-
-    Matrice_number(Numbers* n, long x, long y) {
-        type = t_matrix_number;
-        size_x = x;
-        size_y = y;
-        long idx = 0;
-        Numbers* l;
-        for (x = 0; x < size_x; x++) {
-            l  = new Numbers();
-            append(l);
-            for (y = 0; y < size_y; y++) {
-                if (idx == n->size())
-                    idx = 0;
-                l->liste.push_back(n->liste[idx++]);
-            }
-        }
-    }
-
-    Matrice_number(LispE* lisp, Element* lst, long x, long y) {
-        type = t_matrix_number;
-        size_x = x;
-        size_y = y;
-        build(lisp, lst);
-    }
-
-    Matrice_number(LispE* lisp, long x, Numbers* lst, long y) {
-        type = t_matrix_number;
-        size_x = x;
-        size_y = y;
-        buildfromvalues(lisp, lst);
-    }
-
-    Matrice_number(long x, long y, double n) {
-        type = t_matrix_number;
-        size_x = x;
-        size_y = y;
-        Numbers* l;
-        
-        for (long i = 0; i < size_x; i++) {
-            l = new Numbers(size_y, n);
-            append(l);
-        }
-    }
-    
-    Matrice_number(LispE* lisp, long x, long y, double n);
-    Matrice_number(LispE* lisp, Matrice_number* m);
-    Matrice_number(LispE* lisp, Matrice_float* m);
-    
-    //We steal the ITEM structure of this list
-    Matrice_number(List* l) : List(l,0) {
-        type = t_matrix_number;
-        size_x = l->size();
-        size_y = l->index(0)->size();
-    }
+    Matrice<A,T,TT,C>(long x, long y, Element* n);
+    Matrice<A,T,TT,C>(C n, long x, long y);
+    Matrice<A,T,TT,C>(LispE* lisp, Element* lst, long x, long y);
+    Matrice<A,T,TT,C>(LispE* lisp, long x, C lst, long y);
+    Matrice<A,T,TT,C>(LispE* lisp, long x, long y, A n);
+    Matrice<A,T,TT,C>(long x, long y, A n);
+    Matrice<A,T,TT,C>(LispE* lisp, Matrice_short* m);
+    Matrice<A,T,TT,C>(LispE* lisp, Matrice_integer* m);
+    Matrice<A,T,TT,C>(LispE* lisp, Matrice_float* m);
+    Matrice<A,T,TT,C>(LispE* lisp, Matrice_number* m);
     
     long shapesize() {
         return 2;
@@ -10532,22 +9739,28 @@ public:
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
     
-    inline double val(long i, long j) {
-        return ((Numbers*)liste[i])->liste[j];
+    inline A val(long i, long j) {
+        return ((C)liste[i])->liste[j];
     }
     
     inline Element* indexe(long i, long j) {
         return liste[i]->index(j);
     }
     
-    inline void set(long i, long j, double v) {
-        ((Numbers*)liste[i])->liste.at(j,v);
+    inline void set(long i, long j, A v) {
+        ((C)liste[i])->liste.at(j,v);
     }
     
-    inline void mult(long i, long j, double v) {
-        ((Numbers*)liste[i])->liste[j] *= v;
+    inline void mult(long i, long j, A v) {
+        ((C)liste[i])->liste[j] *= v;
     }
     
+    A asValue(Element* e);
+    C provide();
+    C provide(long nb, A v);
+    C provide(LispE* lisp);
+    C provide(LispE* lisp, long nb, A v);
+
     char isPureList(long& x, long& y) {
         x = size_x;
         y = size_y;
@@ -10563,31 +9776,31 @@ public:
         if (!is_protected() && !duplicate)
             return this;
         
-        return new Matrice_number(this);
+        return new Matrice<A,T,TT,C>(this);
     }
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
     Element* duplicate_constant(LispE* lisp, bool pair = false) {
         if (status == s_constant)
-            return new Matrice_number(this);
+            return new Matrice<A,T,TT,C>(this);
         return this;
     }
     
     Element* fullcopy() {
-        return new Matrice_number(this);
+        return new Matrice<A,T,TT,C>(this);
     }
     
     Element* inversion(LispE* lisp);
-    Element* solve(LispE* lisp, Matrice_number* Y);
+    Element* solve(LispE* lisp, Matrice<A,T,TT,C>* Y);
     double determinant(LispE* lisp);
     Element* ludcmp(LispE* lisp);
-    Element* lubksb(LispE* lisp, Integers* indexes, Matrice_number* Y = NULL);
+    Element* lubksb(LispE* lisp, Integers* indexes, Matrice<A,T,TT,C>* Y = NULL);
     
     void build(LispE* lisp, Element* lst);
-    void buildfromvalues(LispE* lisp, Numbers* lst);
+    void buildfromvalues(LispE* lisp, C lst);
     
-    void setvalue(Matrice_number* lst) {
+    void setvalue(Matrice<A,T,TT,C>* lst) {
         for (long i = 0; i < lst->size_x; i++) {
             for (long j = 0; j < lst->size_y; j++) {
                 liste[i]->replacing(j, lst->index(i)->index(j));
@@ -10609,15 +9822,15 @@ public:
     Element* negate(LispE* lisp);
     
     Element* newInstance(Element* e) {
-        return new Matrice_number(size_x, size_y, e);
+        return new Matrice<A,T,TT,C>(size_x, size_y, e);
     }
     
     Element* newInstance() {
-        return new Matrice_number(size_x, size_y, 0.0);
+        return new Matrice<A,T,TT,C>(size_x, size_y, 0.0);
     }
 
     Element* pureInstance() {
-        return new Matrice_number(size_x, size_y);
+        return new Matrice<A,T,TT,C>(size_x, size_y);
     }
     
     bool is_same_tensor(Element* a) {
@@ -10630,7 +9843,7 @@ public:
     }
 
     Element* newTensor(LispE* lisp, List* l) {
-        return new Tenseur_number(lisp, l);
+        return new Tenseur<A,TT,C>(lisp, l);
     }
 
     Element* newTensor(long nb) {
@@ -10638,215 +9851,10 @@ public:
         shape.push_back(size_x);
         shape.push_back(size_y);
         
-        return new Tenseur_number(nb, shape);
+        return new Tenseur<A,TT,C>(nb, shape);
     }
 
-};
 
-class Matrice_integer : public List {
-public:
-    long size_x, size_y;
-    
-    Matrice_integer() {
-        type = t_matrix_integer;
-    }
-    
-    Matrice_integer(long x, long y) {
-        type = t_matrix_integer;
-        size_x = x;
-        size_y = y;
-    }
-    
-    Matrice_integer(long x, long y, Element* n) {
-        type = t_matrix_integer;
-        size_x = x;
-        size_y = y;
-        Integers* l;
-        double v = n->asNumber();
-        for (long i = 0; i < size_x; i++) {
-            l = new Integers(size_y, v);
-            append(l);
-        }
-    }
-
-    Matrice_integer(Integers* n, long x, long y) {
-        type = t_matrix_integer;
-        size_x = x;
-        size_y = y;
-        long idx = 0;
-        Integers* l;
-        for (x = 0; x < size_x; x++) {
-            l  = new Integers();
-            append(l);
-            for (y = 0; y < size_y; y++) {
-                if (idx == n->size())
-                    idx = 0;
-                l->liste.push_back(n->liste[idx++]);
-            }
-        }
-    }
-
-    Matrice_integer(LispE* lisp, Element* lst, long x, long y) {
-        type = t_matrix_integer;
-        size_x = x;
-        size_y = y;
-        build(lisp, lst);
-    }
-
-    Matrice_integer(LispE* lisp, long x, Integers* lst, long y) {
-        type = t_matrix_integer;
-        size_x = x;
-        size_y = y;
-        buildfromvalues(lisp, lst);
-    }
-
-    Matrice_integer(long x, long y, double n) {
-        type = t_matrix_integer;
-        size_x = x;
-        size_y = y;
-        Integers* l;
-        
-        for (long i = 0; i < size_x; i++) {
-            l = new Integers(size_y, n);
-            append(l);
-        }
-    }
-    
-    Matrice_integer(LispE* lisp, long x, long y, double n);
-    Matrice_integer(LispE* lisp, Matrice_integer* m);
-    
-    //We steal the ITEM structure of this list
-    Matrice_integer(List* l) : List(l,0) {
-        type = t_matrix_integer;
-        size_x = l->size();
-        size_y = l->index(0)->size();
-    }
-    
-    long shapesize() {
-        return 2;
-    }
-    
-    void dimensions(long& v) {
-        v += size_x*size_y;
-    }
-
-    void getShape(vecte<long>& sz) {
-        sz.push_back(size_x);
-        sz.push_back(size_y);
-    }
-
-    Element* check_member(LispE*, Element* the_set);
-    
-    Element* loop(LispE* lisp, int16_t label,  List* code);
-    
-    inline double val(long i, long j) {
-        return ((Integers*)liste[i])->liste[j];
-    }
-    
-    inline Element* indexe(long i, long j) {
-        return liste[i]->index(j);
-    }
-    
-    inline void set(long i, long j, double v) {
-        ((Integers*)liste[i])->liste.at(j,v);
-    }
-    
-    inline void mult(long i, long j, double v) {
-        ((Integers*)liste[i])->liste[j] *= v;
-    }
-    
-    char isPureList(long& x, long& y) {
-        x = size_x;
-        y = size_y;
-        return 1;
-    }
-    
-    char isPureList() {
-        return a_tensor;
-    }
-    
-    Element* copying(bool duplicate = true) {
-        //If it is a CDR, we need to copy it...
-        if (!is_protected() && !duplicate)
-            return this;
-        
-        return new Matrice_integer(this);
-    }
-    
-    //In the case of a container for push, key and keyn
-    // We must force the copy when it is a constant
-    Element* duplicate_constant(LispE* lisp, bool pair = false) {
-        if (status == s_constant)
-            return new Matrice_integer(this);
-        return this;
-    }
-    
-    Element* fullcopy() {
-        return new Matrice_integer(this);
-    }
-    
-    Element* inversion(LispE* lisp);
-    Element* solve(LispE* lisp, Matrice_integer* Y);
-    double determinant(LispE* lisp);
-    Element* ludcmp(LispE* lisp);
-    Element* lubksb(LispE* lisp, Integers* indexes, Matrice_integer* Y = NULL);
-    
-    void build(LispE* lisp, Element* lst);
-    void buildfromvalues(LispE* lisp, Integers* lst);
-    
-    void setvalue(Matrice_integer* lst) {
-        for (long i = 0; i < lst->size_x; i++) {
-            for (long j = 0; j < lst->size_y; j++) {
-                liste[i]->replacing(j, lst->index(i)->index(j));
-            }
-        }
-    }
-    
-    Element* transposed(LispE* lisp);
-    Element* rotate(LispE* lisp, long axis);
-    Element* rotate(bool left);
-    Element* reverse(LispE* lisp, bool duplique = true) {
-        return rotate(lisp, 1);
-    }
-    
-    void concatenate(LispE* lisp, Element* e);
-    
-    Element* rank(LispE* lisp, vecte<long>& positions);
-    
-    Element* negate(LispE* lisp);
-    
-    Element* newInstance(Element* e) {
-        return new Matrice_integer(size_x, size_y, e);
-    }
-    
-    Element* newInstance() {
-        return new Matrice_integer(size_x, size_y, 0.0);
-    }
-
-    Element* pureInstance() {
-        return new Matrice_integer(size_x, size_y);
-    }
-    
-    bool is_same_tensor(Element* a) {
-        if (a->type == type) {
-            vecte<long> sa;
-            a->getShape(sa);
-            return (sa.size() == 2 && size_x == sa[0] && size_y == sa[1]);
-        }
-        return false;
-    }
-
-    Element* newTensor(LispE* lisp, List* l) {
-        return new Tenseur_integer(lisp, l);
-    }
-
-    Element* newTensor(long nb) {
-        vecte<long> shape;
-        shape.push_back(size_x);
-        shape.push_back(size_y);
-        
-        return new Tenseur_integer(nb, shape);
-    }    
 };
 
 

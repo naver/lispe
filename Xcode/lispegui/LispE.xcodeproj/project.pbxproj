@@ -29,6 +29,7 @@
 		0BAF45C827970101004BDD50 /* dictionaries.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C527970101004BDD50 /* dictionaries.cxx */; };
 		0BAF45C927970101004BDD50 /* lists.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C627970101004BDD50 /* lists.cxx */; };
 		0BAF45CA27970101004BDD50 /* sets.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BAF45C727970101004BDD50 /* sets.cxx */; };
+		0BBB2F112AEEF703006E2B5D /* tensors.cxx in Sources */ = {isa = PBXBuildFile; fileRef = 0BBB2F102AEEF703006E2B5D /* tensors.cxx */; };
 		0BF4E3EA1FC2D12D004C0821 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E3E91FC2D12D004C0821 /* AppDelegate.m */; };
 		0BF4E3ED1FC2D12D004C0821 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BF4E3EC1FC2D12D004C0821 /* ViewController.m */; };
 		0BF4E3EF1FC2D12D004C0821 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0BF4E3EE1FC2D12D004C0821 /* Assets.xcassets */; };
@@ -107,6 +108,7 @@
 		0BAF45C527970101004BDD50 /* dictionaries.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = dictionaries.cxx; path = ../../../src/dictionaries.cxx; sourceTree = "<group>"; };
 		0BAF45C627970101004BDD50 /* lists.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = lists.cxx; path = ../../../src/lists.cxx; sourceTree = "<group>"; };
 		0BAF45C727970101004BDD50 /* sets.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sets.cxx; path = ../../../src/sets.cxx; sourceTree = "<group>"; };
+		0BBB2F102AEEF703006E2B5D /* tensors.cxx */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tensors.cxx; path = ../../../src/tensors.cxx; sourceTree = "<group>"; };
 		0BC14C0A27970E9C0093AC2C /* llistes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = llistes.h; path = ../../../include/llistes.h; sourceTree = "<group>"; };
 		0BF4E3E51FC2D12D004C0821 /* LispE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LispE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BF4E3E81FC2D12D004C0821 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -207,6 +209,7 @@
 				0BA876BC298030510072CB1B /* straight_eval.cxx */,
 				0B4E1A94260B85D700BBAE21 /* strings.cxx */,
 				0B4E1A99260B85D700BBAE21 /* systems.cxx */,
+				0BBB2F102AEEF703006E2B5D /* tensors.cxx */,
 				0B4E1A9A260B85D700BBAE21 /* tools.cxx */,
 			);
 			name = src;
@@ -443,6 +446,7 @@
 				0BAF45C827970101004BDD50 /* dictionaries.cxx in Sources */,
 				0B4EC6341FC8150400082CA6 /* lispedebugger.m in Sources */,
 				0B4E1AB1260B85D800BBAE21 /* maths.cxx in Sources */,
+				0BBB2F112AEEF703006E2B5D /* tensors.cxx in Sources */,
 				0B4E1AAE260B85D800BBAE21 /* rgx.cxx in Sources */,
 				0B4E1AAB260B85D800BBAE21 /* systems.cxx in Sources */,
 				0BA876BD298030510072CB1B /* straight_eval.cxx in Sources */,

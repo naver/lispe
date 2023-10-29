@@ -33,6 +33,7 @@ class Listincode;
 class Numbers;
 class Integers;
 class Floats;
+class Shorts;
 class Strings;
 class ITEM;
 
@@ -46,7 +47,9 @@ typedef enum {
     t_short, t_integer, t_float, t_number, t_complex,
     t_string, t_plus_string, t_minus_string, t_minus_plus_string,
     t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
-    t_list, t_llist, t_matrix_number, t_matrix_integer, t_tensor_number, t_matrix_float, t_tensor_integer, t_tensor_float,
+    t_list, t_llist, 
+    t_matrix_short, t_matrix_number, t_matrix_float, t_matrix_integer,
+    t_tensor_short, t_tensor_number, t_tensor_float, t_tensor_integer,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
@@ -88,7 +91,10 @@ typedef enum {
     l_andvalue, l_and, l_or, l_xor, l_not, l_eq, l_neq,
     l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max, l_compare,
     
-    l_innerproduct, l_matrix_number, l_tensor_number, l_matrix_integer, l_tensor_integer, l_matrix_float, l_tensor_float, l_outerproduct, l_factorial, l_iota, l_iota0,
+    l_innerproduct, 
+    l_matrix_short, l_matrix_number, l_tensor_number, l_matrix_integer,
+    l_tensor_short, l_tensor_integer, l_matrix_float, l_tensor_float,
+    l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank,
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     l_plusmultiply,
@@ -463,6 +469,7 @@ public:
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
     virtual void flatten(LispE*, Integers* l);
+    virtual void flatten(LispE*, Shorts* l);
     virtual void flatten(LispE*, Floats* l);
     
     virtual Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
@@ -584,6 +591,10 @@ public:
     
     virtual int asInt() {
         return (int)asInteger();
+    }
+    
+    virtual double determinant(LispE* lisp) {
+        return 0;
     }
     
     virtual void setvalue(double v) {}

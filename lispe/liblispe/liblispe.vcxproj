@@ -183,6 +183,7 @@
     <ClCompile Include="..\..\src\strings.cxx" />
     <ClCompile Include="..\..\src\systems.cxx" />
     <ClCompile Include="..\..\src\tools.cxx" />
+    <ClCompile Include="..\..\src\tensors.cxx" />
     <ClCompile Include="..\..\src\ontology.cxx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

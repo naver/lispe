@@ -4,7 +4,7 @@ LIBBOOST = -L/usr/lib/
 COMPPLUSPLUS = em++
 ################ Compiler LispE #################################
 SOURCE = lispe.cxx jagget.cxx eval.cxx elements.cxx tools.cxx systems.cxx maths.cxx strings.cxx\
-randoms.cxx rgx.cxx composing.cxx ontology.cxx sets.cxx lists.cxx dictionaries.cxx straight_eval.cxx
+randoms.cxx rgx.cxx composing.cxx ontology.cxx sets.cxx lists.cxx dictionaries.cxx straight_eval.cxx tensors.cxx
 SOURCEASM = mainwasm.cxx
 #------------------------------------------------------------
 OBJECTCXX = $(SOURCE:%.cxx=objs/%.o)

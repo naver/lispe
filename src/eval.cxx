@@ -4448,6 +4448,11 @@ Element* List::evall_tensor_integer(LispE* lisp) {
      return m.eval(lisp);
 }
 
+Element* List::evall_tensor_short(LispE* lisp) {
+     List_tensor_short_eval m(this);
+     return m.eval(lisp);
+}
+
 Element* List::evall_tensor_number(LispE* lisp) {
      List_tensor_number_eval m(this);
      return m.eval(lisp);
@@ -4462,6 +4467,11 @@ Element* List::evall_tensor_float(LispE* lisp) {
 
 Element* List::evall_matrix_number(LispE* lisp) {
      List_matrix_number_eval m(this);
+     return m.eval(lisp);
+}
+
+Element* List::evall_matrix_short(LispE* lisp) {
+     List_matrix_short_eval m(this);
      return m.eval(lisp);
 }
 

@@ -384,6 +384,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_maplist, "↑", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mapcar, "mapcar", P_THREE, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark, new List_mark_eval());
+    set_instruction(l_matrix_short, "matrix_short", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_short, new List_matrix_short_eval());
     set_instruction(l_matrix_integer, "matrix_integer", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_integer, new List_matrix_integer_eval());
     set_instruction(l_matrix_number, "matrix_number", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_number, new List_matrix_number_eval());
     set_instruction(l_matrix_float, "matrix_float", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_float, new List_matrix_float_eval());
@@ -463,6 +464,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings, new List_strings_eval());
     set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
     set_instruction(l_sum, "∑", P_TWO, &List::evall_sum, new List_sum_eval());
+    set_instruction(l_tensor_short, "tensor_short", P_ATLEASTTWO, &List::evall_tensor_short, new List_tensor_short_eval());
     set_instruction(l_tensor_number, "tensor_number", P_ATLEASTTWO, &List::evall_tensor_number, new List_tensor_number_eval());
     set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO, &List::evall_tensor_float, new List_tensor_float_eval());
     set_instruction(l_tensor_integer, "tensor_integer", P_ATLEASTTWO, &List::evall_tensor_integer, new List_tensor_integer_eval());
@@ -641,12 +643,16 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_shorts] = U"shorts_";
     code_to_string[t_list] = U"list_";
     code_to_string[t_llist] = U"llist_";
+
     code_to_string[t_matrix_number] = U"matrix_number_";
     code_to_string[t_matrix_float] = U"matrix_float_";
     code_to_string[t_matrix_integer] = U"matrix_integer_";
-    code_to_string[t_tensor_integer] = U"tensor_integer_";
+    code_to_string[t_matrix_short] = U"matrix_short_";
     code_to_string[t_tensor_number] = U"tensor_number_";
     code_to_string[t_tensor_float] = U"tensor_float_";
+    code_to_string[t_tensor_integer] = U"tensor_integer_";
+    code_to_string[t_tensor_short] = U"tensor_short_";
+
     code_to_string[t_data] = U"data_";
     code_to_string[t_dictionary] = U"dictionary_";
     code_to_string[t_dictionaryn] = U"dictionary_n_";

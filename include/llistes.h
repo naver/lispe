@@ -719,6 +719,7 @@ public:
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Shorts* l);
     
     Element* takenb(LispE* lisp, long nb, bool direction);
     
