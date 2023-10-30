@@ -9764,7 +9764,7 @@ public:
     char isPureList(long& x, long& y) {
         x = size_x;
         y = size_y;
-        return 1;
+        return a_tensor;
     }
     
     char isPureList() {

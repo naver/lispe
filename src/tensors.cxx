@@ -641,22 +641,14 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::
 }
 
 //------------------------------------------------------------
-
 template <typename A, lisp_code T, lisp_code TT, typename C> double Matrice<A, T, TT, C>::determinant(LispE* lisp) {
     if (size_x == 2 && size_y == 2) {
         //then in that case
         return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
     }
 
-#ifdef LISPE_WASM
-    if (size_x != size_y) {
-        lisp->delegation->set_error(new Error("Error: we can only apply 'determinant' to square matrices"));
-        return 0;
-    }
-#else
     if (size_x != size_y)
-        throw new Error("Error: we can only apply 'determinant' to square matrices");
-#endif
+        sent_error_0("Error: we can only apply 'determinant' to square matrices");
 
     long i;
     i = 0;
@@ -688,15 +680,8 @@ template <typename A, lisp_code T, lisp_code TT, typename C> double Matrice<A, T
 }
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::inversion(LispE* lisp) {
-#ifdef LISPE_WASM
-    if (size_x != size_y) {
-        lisp->delegation->set_error(new Error("Error: we can only apply 'invert' to square matrices"));
-        return error_;
-    }
-#else
     if (size_x != size_y)
-        throw new Error("Error: we can only apply 'invert' to square matrices");
-#endif
+        sent_error("Error: we can only apply 'invert' to square matrices");
     
     //else Local decomposition
     Matrice<A,T,TT,C> m(this);
@@ -734,15 +719,8 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
 
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::solve(LispE* lisp, Matrice<A,T,TT,C>* y) {
-#ifdef LISPE_WASM
-    if (size_x != size_y || y->size_x != y->size_y || size_x != y->size_x) {
-        lisp->delegation->set_error(new Error("Error: we can only apply 'solve' to square matrices of equal sizes"));
-        return error_;
-    }
-#else
     if (size_x != size_y || y->size_x != y->size_y || size_x != y->size_x)
-        throw new Error("Error: we can only apply 'solve' to square matrices of equal sizes");
-#endif
+        sent_error("Error: we can only apply 'solve' to square matrices of equal sizes");
         
     //else Local decomposition
     Matrice<A,T,TT,C> m(this);
@@ -772,15 +750,9 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
 }
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::ludcmp(LispE* lisp) {
-#ifdef LISPE_WASM
-    if (size_x != size_y) {
-        lisp->delegation->set_error(new Error("Error: we can only apply 'ludcmp' to square matrices"));
-        return error_;
-    }
-#else
     if (size_x != size_y)
-        throw new Error("Error: we can only apply 'ludcmp' to square matrices");
-#endif
+        sent_error("Error: we can only apply 'ludcmp' to square matrices");
+
     vecte<long> indexes(size_x);
     long id;
     //call LU decomposition
@@ -794,16 +766,9 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
 }
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::lubksb(LispE* lisp, Integers* idxs, Matrice<A,T,TT,C>* Y) {
-#ifdef LISPE_WASM
-    if (size_x != size_y || idxs->size() != size_x) {
-        lisp->delegation->set_error(new Error("Error: we can only apply 'lubksb' to square matrices with the same number of indexes"));
-        return error_;
-    }
-#else
-    if (size_x != size_y || idxs->size() != size_x) {
-        throw new Error("Error: we can only apply 'lubksb' to square matrices with the same number of indexes");
-    }
-#endif
+    if (size_x != size_y || idxs->size() != size_x)
+        sent_error("Error: we can only apply 'lubksb' to square matrices with the same number of indexes");
+    
     long i;
     if (Y == NULL) {
         Y = new Matrice<A,T,TT,C>(lisp, size_x, size_x, (A)0);
@@ -813,15 +778,8 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
         }
     }
     else {
-#ifdef LISPE_WASM
-        if (Y->size_x != size_x) {
-            lisp->delegation->set_error(new Error("Error: we can only apply 'lubksb' to square matrices of the same shape"));
-            return error_;
-        }
-#else
         if (Y->size_x != size_x)
-            throw new Error("Error: we can only apply 'lubksb' to square matrices of the same shape");
-#endif
+            sent_error("Error: we can only apply 'lubksb' to square matrices of the same shape");
     }
     
     vecte<long> indexes(size_x);
@@ -872,15 +830,8 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::rank(LispE* lisp, vecte<long>& positions) {
     int16_t sz = positions.size();
-#ifdef LISPE_WASM
-    if (!sz || sz > 2) {
-        lisp->delegation->set_error(new Error("Error: index mismatch"));
-        return error_;
-    }
-#else
     if (!sz || sz > 2)
-        throw new Error("Error: index mismatch");
-#endif
+        sent_error("Error: index mismatch");
 
     if (positions[0] == -1) {
         //We return all columns
@@ -900,40 +851,19 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
             return m;
         }
         else {
-#ifdef LISPE_WASM
-            if (positions[1] >= size_y) {
-                lisp->delegation->set_error(new Error("Error: indexes out of bounds"));
-                return error_;
-            }
-#else
             if (positions[1] >= size_y)
-                throw new Error("Error: indexes out of bounds");
-#endif
+                sent_error("Error: indexes out of bounds");
         }
     }
     else {
         if (sz == 2 && positions[1] != -1) {
-#ifdef LISPE_WASM
-            if (positions[1] >= size_y) {
-                lisp->delegation->set_error(new Error("Error: indexes out of bounds"));
-                return error_;
-            }
-#else
             if (positions[1] >= size_y)
-                throw new Error("Error: indexes out of bounds");
-#endif
+                sent_error("Error: indexes out of bounds");
             return lisp->provideNumber(val(positions[0], positions[1]));
         }
 
-#ifdef LISPE_WASM
-        if (positions[0] >= size_x) {
-            lisp->delegation->set_error(new Error("Error: indexes out of bounds"));
-            return error_;
-        }
-#else
         if (positions[0] >= size_x)
-            throw new Error("Error: indexes out of bounds");
-#endif
+            sent_error("Error: indexes out of bounds");
         return lisp->provideNumbers(((Numbers*)liste[positions[0]]));
     }
 
@@ -1019,7 +949,8 @@ template <typename A, lisp_code T, lisp_code TT, typename C> void Matrice<A,T,TT
 template <typename A, lisp_code T, lisp_code TT, typename C> void Matrice<A,T,TT,C>::concatenate(LispE* lisp, Element* e) {
     if (e->isList()) {
         if (e->size() != size_x)
-            throw new Error("Error: Length error");
+            sent_error_e("Error: Length error");
+        
         for (long i = 0; i < size_x; i++) {
             liste[i]->concatenate(lisp, e->index(i));
         }
@@ -1402,12 +1333,12 @@ template<> Element* Tenseur_short::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
     int16_t sz = positions.size();
     if (!sz || sz > shape.size())
-        throw new Error("Error: index mismatch");
+        sent_error("Error: index mismatch");
 
     //Check positions
     for (long i = 0; i < sz; i++) {
         if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
-            throw new Error("Error: indexes out of bounds");
+            sent_error("Error: indexes out of bounds");
     }
     Element* result = lisp->provideList();
     Element* res = storeRank(lisp, result, this, positions, 0);
@@ -1434,12 +1365,12 @@ template<> Element* Tenseur_integer::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
     int16_t sz = positions.size();
     if (!sz || sz > shape.size())
-        throw new Error("Error: index mismatch");
+        sent_error("Error: index mismatch");
 
     //Check positions
     for (long i = 0; i < sz; i++) {
         if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
-            throw new Error("Error: indexes out of bounds");
+            sent_error("Error: indexes out of bounds");
     }
     Element* result = lisp->provideList();
     Element* res = storeRank(lisp, result, this, positions, 0);
@@ -1466,12 +1397,12 @@ template<> Element* Tenseur_float::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
     int16_t sz = positions.size();
     if (!sz || sz > shape.size())
-        throw new Error("Error: index mismatch");
+        sent_error("Error: index mismatch");
 
     //Check positions
     for (long i = 0; i < sz; i++) {
         if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
-            throw new Error("Error: indexes out of bounds");
+            sent_error("Error: indexes out of bounds");
     }
     Element* result = lisp->provideList();
     Element* res = storeRank(lisp, result, this, positions, 0);
@@ -1498,12 +1429,12 @@ template<> Element* Tenseur_number::rank(LispE* lisp, vecte<long>& positions) {
     //We get rid of the final negative values (useless)
     int16_t sz = positions.size();
     if (!sz || sz > shape.size())
-        throw new Error("Error: index mismatch");
+        sent_error("Error: index mismatch");
 
     //Check positions
     for (long i = 0; i < sz; i++) {
         if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
-            throw new Error("Error: indexes out of bounds");
+            sent_error("Error: indexes out of bounds");
     }
     Element* result = lisp->provideList();
     Element* res = storeRank(lisp, result, this, positions, 0);
@@ -1532,7 +1463,7 @@ template <typename A, lisp_code T, typename C> void Tenseur<A,T,C>::concatenate(
         e->getShape(sz);
         for (long i = 0; i < sz.size()-1; i++) {
             if (sz[i] != shape[i])
-                throw new Error("Error: Incompatible dimensions");
+                sent_error_e("Error: Incompatible dimensions");
         }
     }
     
