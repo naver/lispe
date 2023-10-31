@@ -1137,6 +1137,93 @@ template <typename A, lisp_code T, typename C> Tenseur<A,T,C>::Tenseur(LispE* li
     }
 }
 
+//------------------------------------------------------------------------------------------
+
+template <> Element* Tenseur_short::newTensor(bool nb, LispE* lisp, List* l) {
+    if (nb) {
+        switch (shape.size()) {
+            case 2:
+                return new Shorts();
+            case 3:
+                return new Matrice_short();
+            default:
+                return new Tenseur_short();
+        }
+    }
+    switch (shape.size()) {
+        case 2:
+            return new Shorts();
+        case 3:
+            return new Matrice_short(l);
+        default:
+            return new Tenseur_short(lisp, l);
+    }
+}
+
+template <> Element* Tenseur_integer::newTensor(bool nb, LispE* lisp, List* l) {
+    if (nb) {
+        switch (shape.size()) {
+            case 2:
+                return new Integers();
+            case 3:
+                return new Matrice_integer();
+            default:
+                return new Tenseur_integer();
+        }
+    }
+    switch (shape.size()) {
+        case 2:
+            return new Integers();
+        case 3:
+            return new Matrice_integer(l);
+        default:
+            return new Tenseur_integer(lisp, l);
+    }
+}
+
+template <> Element* Tenseur_float::newTensor(bool nb, LispE* lisp, List* l) {
+    if (nb) {
+        switch (shape.size()) {
+            case 2:
+                return new Floats();
+            case 3:
+                return new Matrice_float();
+            default:
+                return new Tenseur_float();
+        }
+    }
+    switch (shape.size()) {
+        case 2:
+            return new Floats();
+        case 3:
+            return new Matrice_float(l);
+        default:
+            return new Tenseur_float(lisp, l);
+    }
+}
+
+template <> Element* Tenseur_number::newTensor(bool nb, LispE* lisp, List* l) {
+    if (nb) {
+        switch (shape.size()) {
+            case 2:
+                return new Numbers();
+            case 3:
+                return new Matrice_number();
+            default:
+                return new Tenseur_number();
+        }
+    }
+    switch (shape.size()) {
+        case 2:
+            return new Numbers();
+        case 3:
+            return new Matrice_number(l);
+        default:
+            return new Tenseur_number(lisp, l);
+    }
+}
+//------------------------------------------------------------------------------------------
+
 template<> void Tenseur_short::setvalue(Element* res, Element* lst) {
     if (lst->type == t_shorts) {
         for (long i = 0; i < lst->size(); i++) {
@@ -4215,35 +4302,18 @@ Element* List_rho_eval::eval(LispE* lisp) {
             //In this case we return the shape of our list
             e = liste[1]->eval(lisp);
             switch (e->type) {
-                case t_matrix_number: {
-                    res = lisp->provideIntegers();
-                    ((Integers*)res)->liste.push_back(((Matrice_number*)e)->size_x);
-                    ((Integers*)res)->liste.push_back(((Matrice_number*)e)->size_y);
-                    e->release();
-                    lisp->reset_to_true(sb);
-                    lisp->resetStack();
-                    return res;
-                }
-                case t_matrix_float: {
-                    res = lisp->provideIntegers();
-                    ((Integers*)res)->liste.push_back(((Matrice_float*)e)->size_x);
-                    ((Integers*)res)->liste.push_back(((Matrice_float*)e)->size_y);
-                    e->release();
-                    lisp->reset_to_true(sb);
-                    lisp->resetStack();
-                    return res;
-                }
+                case t_matrix_short:
+                case t_matrix_integer:
+                case t_matrix_number:
+                case t_matrix_float:
+                case t_tensor_integer:
+                case t_tensor_short:
+                case t_tensor_float:
                 case t_tensor_number: {
+                    vecte<long> shape;
                     res = lisp->provideIntegers();
-                    ((Integers*)res)->liste = ((Tenseur_number*)e)->shape;
-                    e->release();
-                    lisp->reset_to_true(sb);
-                    lisp->resetStack();
-                    return res;
-                }
-                case t_tensor_float: {
-                    res = lisp->provideIntegers();
-                    ((Integers*)res)->liste = ((Tenseur_float*)e)->shape;
+                    e->getShape(shape);
+                    ((Integers*)res)->liste = shape;
                     e->release();
                     lisp->reset_to_true(sb);
                     lisp->resetStack();

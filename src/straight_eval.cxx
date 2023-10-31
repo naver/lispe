@@ -3357,15 +3357,18 @@ Element* List_scan_eval::eval(LispE* lisp) {
         current_list->getShape(shape);
         Element* e;
         Element* res = null_;
-        
+        Element* lines;
+            
         try {
-            res = current_list->newTensor(1);            
+            res = current_list->newTensor(true);
             for (long i = 0; i < shape[0]; i++) {
-                call->in_quote(2, current_list->index(i));
+                lines = current_list->newTensor(false, lisp, (List*)current_list->index(i));
+                call->in_quote(2, lines);
                 e = call->eval(lisp);
                 res->append(e);
                 e->release();
             }
+            res->setShape();
         }
         catch (Error* err) {
             call->force_release();
@@ -3484,17 +3487,19 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         Element* columns = NULL;
         
         try {
-            res = current_list->newTensor(1);
+            res = current_list->newTensor(true);
             for (long i = 0; i < shape[1]; i++) {
-                columns = current_list->newTensor(1);
+                columns = current_list->newTensor(true);
                 for (long j = 0; j < shape[0]; j++) {
                     columns->append(current_list->index(j)->index(i));
                 }
+                columns->setShape();
                 call->in_quote(2, columns);
                 e = call->eval(lisp);
                 res->append(e);
                 e->release();
             }
+            res->setShape();
         }
         catch (Error* err) {
             if (columns != NULL)
@@ -3625,6 +3630,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         return null_;
     }
     
+    // (// '+ (rho 5 4 3 2 (iota 120)))
     //if l1 is a matrix, we recursively call the function on each sublist
     if (current_list->isPureList() == a_tensor) {
         call = new List_reduce_eval();
@@ -3636,16 +3642,19 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         //We extract our columns
         Element* e;
         Element* res = null_;
-        
+        Element* lines;
+            
         try {
-            res = current_list->newTensor(1);
+            res = current_list->newTensor(true);
             
             for (long i = 0; i < shape[0]; i++) {
-                call->in_quote(2, current_list->index(i));
+                lines = current_list->newTensor(false, lisp, (List*)current_list->index(i));
+                call->in_quote(2, lines);
                 e = call->eval(lisp);
                 res->append(e);
                 e->release();
             }
+            res->setShape();
         }
         catch (Error* err) {
             call->force_release();
@@ -3797,18 +3806,22 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         Element* res = null_;
         Element* columns = NULL;
         
+        // (-// '+ (rho 5 4 3 2 (iota 120)))
+        // (-// '+ (rho 4 3 2 (iota 24)))
         try {
-            res = current_list->newTensor(1);
+            res = current_list->newTensor(true);
             for (long i = 0; i < shape[1]; i++) {
-                columns = current_list->newTensor(1);
+                columns = current_list->newTensor(true);
                 for (long j = 0; j < shape[0]; j++) {
                     columns->append(current_list->index(j)->index(i));
                 }
+                columns->setShape();
                 call->in_quote(2, columns);
                 e = call->eval(lisp);
                 res->append(e);
                 e->release();
             }
+            res->setShape();
         }
         catch (Error* err) {
             if (columns != NULL)

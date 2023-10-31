@@ -334,13 +334,14 @@ public:
         return false;
     }
     
+    virtual void setShape() {}
     virtual void getShape(vecte<long>& sz) {}
 
     virtual Element* newTensor(LispE* lisp, List* l) {
         return this;
     }
 
-    virtual Element* newTensor(long nb) {
+    virtual Element* newTensor(bool nb, LispE* lisp = NULL, List* l = NULL) {
         return this;
     }
 

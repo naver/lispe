@@ -1217,7 +1217,7 @@ public:
             l = l->index(0);
         }
     }
-        
+            
     virtual Element* check_member(LispE*, Element* the_set);
     
     Element* insert(LispE* lisp, Element* e, long idx);
@@ -9442,10 +9442,10 @@ public:
         type = T;
     }
     
-    Tenseur<A,T,C>(short nb, vecte<long>& sz) {
+    Tenseur<A,T,C>(long nb, vecte<long>& sz) {
         type = T;
-        for (; nb < sz.size(); nb++)
-            shape.push_back(sz[nb]);
+        for (long i = 1; i < sz.size(); i++)
+            shape.push_back(sz[i]);
     }
 
     Tenseur<A,T,C>(vecte<long>& sz, Element* n);
@@ -9499,6 +9499,15 @@ public:
         return new Tenseur<A,T,C>(this);
     }
     
+    void setShape() {
+        shape.clear();
+        Element* e = this;
+        while (e->isList()) {
+            shape.push_back(e->size());
+            e = e->index(0);
+        }
+    }
+
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
@@ -9673,9 +9682,7 @@ public:
         return new Tenseur<A,T,C>(lisp, l);
     }
 
-    Element* newTensor(long nb) {
-        return new Tenseur<A,T,C>(nb, shape);
-    }
+    Element* newTensor(bool nb, LispE* lisp, List* l = NULL);
 
 };
 
@@ -9733,6 +9740,11 @@ public:
     void getShape(vecte<long>& sz) {
         sz.push_back(size_x);
         sz.push_back(size_y);
+    }
+
+    void setShape() {
+        size_x = size();
+        size_y = index(0)->size();
     }
 
     Element* check_member(LispE*, Element* the_set);
@@ -9846,8 +9858,13 @@ public:
         return new Tenseur<A,TT,C>(lisp, l);
     }
 
-    Element* newTensor(long nb) {
-        return provide();
+    Element* newTensor(bool nb, LispE* lisp, List* l) {
+        if (l == NULL)
+            return provide();
+        C v = provide();
+        for (long i = 0; i < l->size(); i++)
+            v->append(l->index(i));
+        return v;
     }
 };
 
