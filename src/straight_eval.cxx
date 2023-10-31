@@ -3357,36 +3357,17 @@ Element* List_scan_eval::eval(LispE* lisp) {
         current_list->getShape(shape);
         Element* e;
         Element* res = null_;
-        Element* columns = NULL;
         
         try {
-            if (shape.size() == 2) {
-                res = lisp->provideList();
-                for (long i = 0; i < sz; i++)
-                    res->append(current_list->index(i));
-                call->in_quote(2, res);
-                e = call->eval(lisp);
-                res->release();
-                call->force_release();
-                current_list->release();
-                lisp->resetStack();
-                return e;
-            }
-            
-            res = current_list->newTensor(1);
-            for (long i = 0; i < shape[1]; i++) {
-                columns = current_list->newTensor(1);
-                for (long j = 0; j < shape[0]; j++) {
-                    columns->append(current_list->index(j)->index(i));
-                }
-                call->in_quote(2, columns);
+            res = current_list->newTensor(1);            
+            for (long i = 0; i < shape[0]; i++) {
+                call->in_quote(2, current_list->index(i));
                 e = call->eval(lisp);
                 res->append(e);
+                e->release();
             }
         }
         catch (Error* err) {
-            if (columns != NULL)
-                columns->release();
             call->force_release();
             res->release();
             current_list->release();
@@ -3503,19 +3484,6 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         Element* columns = NULL;
         
         try {
-            if (shape.size() == 2) {
-                res = lisp->provideList();
-                for (long i = 0; i < sz; i++)
-                    res->append(current_list->index(i));
-                call->in_quote(2, res);
-                e = call->eval(lisp);
-                res->release();
-                call->force_release();
-                current_list->release();
-                lisp->resetStack();
-                return e;
-            }
-            
             res = current_list->newTensor(1);
             for (long i = 0; i < shape[1]; i++) {
                 columns = current_list->newTensor(1);
@@ -3525,6 +3493,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
                 call->in_quote(2, columns);
                 e = call->eval(lisp);
                 res->append(e);
+                e->release();
             }
         }
         catch (Error* err) {
@@ -3667,36 +3636,18 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         //We extract our columns
         Element* e;
         Element* res = null_;
-        Element* columns = NULL;
         
         try {
-            if (shape.size() == 2) {
-                res = lisp->provideList();
-                for (long i = 0; i < sz; i++)
-                    res->append(current_list->index(i));
-                call->in_quote(2, res);
-                e = call->eval(lisp);
-                res->release();
-                call->force_release();
-                current_list->release();
-                lisp->resetStack();
-                return e;
-            }
-            
             res = current_list->newTensor(1);
-            for (long i = 0; i < shape[1]; i++) {
-                columns = current_list->newTensor(1);
-                for (long j = 0; j < shape[0]; j++) {
-                    columns->append(current_list->index(j)->index(i));
-                }
-                call->in_quote(2, columns);
+            
+            for (long i = 0; i < shape[0]; i++) {
+                call->in_quote(2, current_list->index(i));
                 e = call->eval(lisp);
                 res->append(e);
+                e->release();
             }
         }
         catch (Error* err) {
-            if (columns != NULL)
-                columns->release();
             call->force_release();
             res->release();
             current_list->release();
@@ -3847,19 +3798,6 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         Element* columns = NULL;
         
         try {
-            if (shape.size() == 2) {
-                res = lisp->provideList();
-                for (long i = 0; i < sz; i++)
-                    res->append(current_list->index(i));
-                call->in_quote(2, res);
-                e = call->eval(lisp);
-                res->release();
-                call->force_release();
-                current_list->release();
-                lisp->resetStack();
-                return e;
-            }
-            
             res = current_list->newTensor(1);
             for (long i = 0; i < shape[1]; i++) {
                 columns = current_list->newTensor(1);
@@ -3869,6 +3807,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
                 call->in_quote(2, columns);
                 e = call->eval(lisp);
                 res->append(e);
+                e->release();
             }
         }
         catch (Error* err) {

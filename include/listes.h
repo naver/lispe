@@ -9847,14 +9847,8 @@ public:
     }
 
     Element* newTensor(long nb) {
-        vecte<long> shape;
-        shape.push_back(size_x);
-        shape.push_back(size_y);
-        
-        return new Tenseur<A,TT,C>(nb, shape);
+        return provide();
     }
-
-
 };
 
 
