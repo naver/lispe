@@ -16,21 +16,28 @@
 (defun gol1(⍵) (maplist (\(x) . ⌽ ⍵ x) '(1 0 -1)))
 (defun gol2(⍵) (outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1)))
 (defun gol3(⍵) (-// '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1)))
-(defun gol4(⍵) (// '+ . -// '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1)))
-(defun gol5(⍵) ((\(⍺) (& (== ⍺ 4) ⍵)) (// '+ . // '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1))))
-(defun gol6(⍵) ((\(⍺) ( == ⍺ 3)) (// '+ . // '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1))))
-(defun gol7(⍵) ((\(⍺) (| (& (== ⍺ 4) r) ( == ⍺ 3))) . // '+ . // '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1)))
-(defun gol8(⍵) ((λ(⍺) (| (& (== ⍺ 4) r) (== ⍺ 3))) (↗ '+ (↗ '+ (° (λ (x ⍺) (⊖ ⍺ x)) '(1 0 -1) (↑ (λ (x) (⌽ ⍵ x)) '(1 0 -1)))))))
+(defun gol4(⍵) (-// '+ . -// '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1)))
+(defun gol5(⍵) ((\(⍺) (& (== ⍺ 4) ⍵)) (-// '+ . -// '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1))))
+(defun gol6(⍵) ((\(⍺) ( == ⍺ 3)) (-// '+ . -// '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1))))
+(defun gol7(⍵) ((\(⍺) (| (& (== ⍺ 4) r) ( == ⍺ 3))) . -// '+ . -// '+ . outer (\(x ⍺) . ⊖ ⍺ x) '(1 0 -1)  . maplist (\(x) . ⌽ ⍵ x) '(1 0 -1)))
+(defun gol8(⍵) ((λ(⍺) (| (& (== ⍺ 4) r) (== ⍺ 3))) (⌿ '+ (⌿  '+ (° (λ (x ⍺) (⊖ ⍺ x)) '(1 0 -1) (↑ (λ (x) (⌽ ⍵ x)) '(1 0 -1)))))))
 
 
 
 (setq nb 20)
 (println . prettify r nb)
-(println . prettify (gol1 r) nb)
-(println . prettify (gol2 r) nb)
-(println . prettify (gol3 r) nb)
+;(println . prettify (gol1 r) nb)
+;(println . prettify (gol2 r) nb)
+;(println . prettify (gol3 r) nb)
 (println . prettify (gol4 r) nb)
-(println . prettify (gol5 r) nb)
-(println . prettify (gol6 r) nb)
+;(println . prettify (gol5 r) nb)
+;(println . prettify (gol6 r) nb)
 (println . prettify (gol7 r) nb)
+
+
+
+
+
+
+
 
