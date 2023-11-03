@@ -3417,7 +3417,7 @@ Element* List_scan_eval::eval(LispE* lisp) {
 
     Element* op = null_;
     Element* res = null_;
-    List* call;
+    List* call = NULL;
 
     long sz = current_list->size();
     if (!sz)
@@ -3470,15 +3470,14 @@ Element* List_scan_eval::eval(LispE* lisp) {
         }
     }
     catch (Error* err) {
-        call->force_release();
+        if (call != NULL)
+            call->force_release();
         res->release();
         current_list->release();
         lisp->reset_to_true(sb);
         return lisp->check_error(this, err, idxinfo);
     }
     
-    call = NULL;
-
     try {
         lisp->checkState(this);
         op = liste[1]->eval(lisp);
@@ -3859,7 +3858,7 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     Element* current_list = null_;
     Element* op = null_;
     Element* res = null_;
-    List* call;
+    List* call = NULL;
     
     try {
         lisp->checkState(this);
@@ -3939,14 +3938,13 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         }
     }
     catch (Error* err) {
-        call->force_release();
+        if (call != NULL)
+            call->force_release();
         res->release();
         current_list->release();
         lisp->reset_to_true(sb);
         return lisp->check_error(this, err, idxinfo);
     }
-
-    call = NULL;
     
     try {
         op = liste[1]->eval(lisp);
