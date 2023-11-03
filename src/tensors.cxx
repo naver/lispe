@@ -1138,6 +1138,11 @@ template <typename A, lisp_code T, typename C> Tenseur<A,T,C>::Tenseur(LispE* li
 }
 
 //------------------------------------------------------------------------------------------
+Element* List::newTensor(bool nb, LispE* lisp, List* l) {
+    if (nb)
+        return lisp->provideList();
+    return new List(l, 0);
+}
 
 template <> Element* Tenseur_short::newTensor(bool nb, LispE* lisp, List* l) {
     if (nb) {
@@ -3937,9 +3942,8 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
         values->release();
         throw new Error("Error: Expecting a list");
     }
-    
-    char char_tensor = values->isPureList();
-    if (char_tensor == a_valuelist || char_tensor == a_tensor)
+
+    if (values->isTensor() || values->isValueList())
         return values;
     
     long sz = values->size();
@@ -3948,7 +3952,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
     
     //We check if all the elements in list are of the same type
     Element* first = values->index(0);
-    char_tensor = first->isPureList();
+    char char_tensor = first->isPureList();
     if (char_tensor == a_valuelist || char_tensor == a_tensor) {
         for (long i = 1; i < sz && (char_tensor == a_valuelist || char_tensor == a_tensor); i++) {
             char_tensor |= !first->is_same_tensor(values->index(i));

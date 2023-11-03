@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.10.31.16.3";
+static std::string version = "1.2023.11.3.11.7";
 string LispVersion() {
     return version;
 }
@@ -368,9 +368,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_listand, "&&&", P_ATLEASTTWO, &List::evall_listand, new List_listand_eval());
     set_instruction(l_listor, "|||", P_ATLEASTTWO, &List::evall_listor, new List_listor_eval());
     set_instruction(l_listxor, "^^^", P_ATLEASTTWO, &List::evall_listxor, new List_listxor_eval());
-    set_instruction(l_to_list, "to_list", P_TWO | P_THREE, &List::evall_to_list, new List_to_list_eval());
+    set_instruction(l_to_list, "⊂", P_TWO | P_THREE, &List::evall_to_list, new List_to_list_eval());
     set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist, new List_to_llist_eval());
-    set_instruction(l_to_tensor, "to_tensor", P_TWO | P_THREE, &List::evall_to_tensor, new List_to_tensor_eval());
+    set_instruction(l_to_tensor, "⊃", P_TWO | P_THREE, &List::evall_to_tensor, new List_to_tensor_eval());
     set_instruction(l_let, "let", P_ATLEASTTHREE, &List::evall_let, new List_let_eval());
     set_instruction(l_load, "load", P_TWO | P_THREE, &List::evall_load);
     set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock, new List_lock_eval());
@@ -464,6 +464,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings, new List_strings_eval());
     set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
     set_instruction(l_sum, "∑", P_TWO, &List::evall_sum, new List_sum_eval());
+    set_instruction(l_tally, "≢", P_TWO, &List::evall_tally, new List_tally_eval());
     set_instruction(l_tensor_short, "tensor_short", P_ATLEASTTWO, &List::evall_tensor_short, new List_tensor_short_eval());
     set_instruction(l_tensor_number, "tensor_number", P_ATLEASTTWO, &List::evall_tensor_number, new List_tensor_number_eval());
     set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO, &List::evall_tensor_float, new List_tensor_float_eval());
@@ -874,6 +875,12 @@ void Delegation::initialisation(LispE* lisp) {
     w = U"containervalues";
     string_to_code[w] = l_values;
 
+    w = U("to_list");
+    string_to_code[w] = l_to_list;
+
+    w = U("to_tensor");
+    string_to_code[w] = l_to_tensor;
+
     w = U("§");
     string_to_code[w] = l_infix;
     
@@ -956,7 +963,10 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U("member");
     string_to_code[w] = l_member;
-    
+
+    w = U("tally");
+    string_to_code[w] = l_tally;
+
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
     e = new Cadr("cadr");
@@ -2887,6 +2897,9 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
+
 
 
 

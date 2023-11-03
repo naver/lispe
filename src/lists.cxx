@@ -20,6 +20,10 @@ List* Listincode::cloning(Listincode* e, methodEval m) {
     return new List_execute(e, m);
 }
 //--------------------------------------------------------------------------------
+List_eval::List_eval(LispE* lisp, Element* a) : met(lisp->delegation->evals[a->type]) {
+    liste.push_element(a);
+}
+//--------------------------------------------------------------------------------
 
 void u_links::push_front(Element* v, bool is_final) {
     u_link* e;

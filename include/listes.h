@@ -1128,6 +1128,16 @@ public:
         return a_flat_list;
     }
     
+    bool checkListofTensor() {
+        for (long i = 0; i < liste.size(); i++) {
+            if (!liste[i]->isTensor())
+                return false;
+        }
+        return true;
+    }
+    
+    virtual Element* newTensor(bool nb, LispE* lisp, List* l);
+    
     virtual char isPureList(long& x, long& y) {
         x = liste.size();
         if (x) {
@@ -1207,13 +1217,9 @@ public:
     }
     
     void getShape(vecte<long>& sz) {
-        long s;
         Element* l = this;
-        while (l->type != v_null) {
-            s = l->size();
-            if (!s)
-                return;
-            sz.push_back(s);
+        while (l->isList()) {
+            sz.push_back(l->size());
             l = l->index(0);
         }
     }
@@ -1262,18 +1268,11 @@ public:
     Element* evall_set_max_stack_size(LispE* lisp);
 #endif
     
-    Element* reduce_with_list(LispE* lisp, Element* l1, Element* op, long sz);
-    Element* backreduce_with_list(LispE* lisp, Element* l1, Element* op, long sz);
-    
-    Element* scan_with_list(LispE* lisp, Element* l1, Element* op, long sz);
-    Element* backscan_with_list(LispE* lisp, Element* l1, Element* op, long sz);
-    
-    Element* reduce_lambda(LispE* lisp, Element* l1, Element* op, long sz);
-    Element* backreduce_lambda(LispE* lisp, Element* l1, Element* op, long sz);
-    
-    Element* scan_lambda(LispE* lisp, Element* l1, Element* op, long sz);
-    Element* backscan_lambda(LispE* lisp, Element* l1, Element* op, long sz);
-    
+    virtual Element* reduce(LispE* lisp, Element* l1, long sz);
+    virtual Element* backreduce(LispE* lisp, Element* l1, long sz);    
+    virtual Element* scan(LispE* lisp, Element* l1, long sz);
+    virtual Element* backscan(LispE* lisp, Element* l1, long sz);
+        
     virtual Element* eval_call_function(LispE* lisp);
     
     virtual Element* eval_call_self(LispE* lisp);
@@ -1507,6 +1506,7 @@ public:
     Element* evall_space(LispE* lisp);
     Element* evall_sum(LispE* lisp);
     Element* evall_switch(LispE* lisp);
+    Element* evall_tally(LispE* lisp);
     Element* evall_tensor_short(LispE* lisp);
     Element* evall_tensor_integer(LispE* lisp);
     Element* evall_tensor_number(LispE* lisp);
@@ -1958,6 +1958,15 @@ public:
     methodEval method;
     
     List_execute(Listincode* l, methodEval m) : method(m), Listincode(l) {}
+    Element* eval(LispE* lisp);
+};
+
+class List_eval : public Listincode {
+public:
+    methodEval met;
+    
+    List_eval(LispE* lisp, Element* a);
+    
     Element* eval(LispE* lisp);
 };
 
@@ -3792,6 +3801,12 @@ public:
     List* cloning(Listincode* e, methodEval m) {
         return new List_lambda_eval(e);
     }
+
+    Element* reduce(LispE* lisp, Element* l1, long sz);
+    Element* backreduce(LispE* lisp, Element* l1, long sz);
+    Element* scan(LispE* lisp, Element* l1, long sz);
+    Element* backscan(LispE* lisp, Element* l1, long sz);
+
 
 };
 
@@ -6069,6 +6084,27 @@ public:
     
     List* cloning() {
         return new List_size_eval();
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_tally_eval : public Listincode {
+public:
+    
+    List_tally_eval(Listincode* l) : Listincode(l) {}
+    List_tally_eval(List* l) : Listincode(l) {}
+    List_tally_eval() {}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_tally_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_tally_eval();
     }
     Element* eval(LispE* lisp);
 };
@@ -9499,6 +9535,13 @@ public:
         return new Tenseur<A,T,C>(this);
     }
     
+    long tally() {
+        long ta = 1;
+        for (long i = 0; i < shape.size(); i++)
+            ta *= shape[i];
+        return ta;
+    }
+
     void setShape() {
         shape.clear();
         Element* e = this;
@@ -9614,6 +9657,10 @@ public:
     
     char isPureList() {
         return a_tensor;
+    }
+    
+    bool isTensor() {
+        return true;
     }
     
     Element* copying(bool duplicate = true) {
@@ -9747,6 +9794,10 @@ public:
         size_y = index(0)->size();
     }
 
+    long tally() {
+        return (size_x * size_y);
+    }
+
     Element* check_member(LispE*, Element* the_set);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
@@ -9783,6 +9834,10 @@ public:
         return a_tensor;
     }
     
+    bool isTensor() {
+        return true;
+    }
+
     Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && !duplicate)

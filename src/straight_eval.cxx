@@ -1900,7 +1900,7 @@ Element* List_pattern_eval::eval(LispE* lisp) {
 }
 
 Element* List_maplist_lambda_eval::eval(LispE* lisp) {
-    Element* element = null_;
+    Element* current_list = null_;
     Element* op = liste[1];
     Element* container = NULL;
     
@@ -1911,22 +1911,22 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         if (listesize == 4) {
-            element = liste[3]->eval(lisp);
-            choice = element->Boolean();
-            element->release();
+            current_list = liste[3]->eval(lisp);
+            choice = current_list->Boolean();
+            current_list->release();
         }
         
-        element = liste[2]->eval(lisp);
-        long listsz = element->size();
+        current_list = liste[2]->eval(lisp);
+        long listsz = current_list->size();
         if (!listsz) {
-            element->release();
+            current_list->release();
             lisp->reset_to_true(sb);
             lisp->resetStack();
             return emptylist_;
         }
                 
-        iter = element->begin_iter();
-        Element* nxt = element->next_iter_exchange(lisp, iter);
+        iter = current_list->begin_iter();
+        Element* nxt = current_list->next_iter_exchange(lisp, iter);
         
         //if there is already a variable with this name on the stack
         //we record it to restore it later...
@@ -1961,7 +1961,7 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
             check_tensor |= e->isPureList();
             container->append(e);
             e->release();
-            nxt = element->next_iter_exchange(lisp, iter);
+            nxt = current_list->next_iter_exchange(lisp, iter);
             while (nxt != emptyatom_) {
                 lisp->replacingvalue(nxt, label);
                 e = op->eval_lambda_min(lisp);
@@ -1973,12 +1973,12 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
                 e = e->copying(false);
                 container->append(e);
                 e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
+                nxt = current_list->next_iter_exchange(lisp, iter);
             }
         }
-        element->clean_iter(iter);
+        current_list->clean_iter(iter);
         lisp->reset_in_stack(save_variable, label);
-        element->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
         if (check_tensor == a_valuelist || check_tensor == a_tensor) {
@@ -1994,9 +1994,9 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
         if (save_variable != this)
             lisp->reset_in_stack(save_variable, label);
         if (iter != NULL)
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
         lisp->reset_to_true(sb);
-        element->release();
+        current_list->release();
         if (container != NULL)
             container->release();
         return lisp->check_error(this, err, idxinfo);
@@ -2008,7 +2008,7 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
 Element* List_maplist_eval::eval(LispE* lisp) {
     //Operation is: (// operation l1)
     
-    Element* element = null_;
+    Element* current_list = null_;
     Element* op = liste[1];
     Element* container = NULL;
     
@@ -2020,15 +2020,15 @@ Element* List_maplist_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         if (listesize == 4) {
-            element = liste[3]->eval(lisp);
-            choice = element->Boolean();
-            element->release();
+            current_list = liste[3]->eval(lisp);
+            choice = current_list->Boolean();
+            current_list->release();
         }
         
-        element = liste[2]->eval(lisp);
-        long listsz = element->size();
+        current_list = liste[2]->eval(lisp);
+        long listsz = current_list->size();
         if (!listsz) {
-            element->release();
+            current_list->release();
             lisp->reset_to_true(sb);
             lisp->resetStack();
             return emptylist_;
@@ -2037,10 +2037,9 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         op = eval_body_as_argument(lisp, op);
         if (op->is_straight_eval())
             call = (List*)op;
-        else {
-            call = lisp->provideList();
-            call->append(op);
-        }
+        else
+            call = new List_eval(lisp, op);
+
         /*
          The first element is "quoted" to avoid it to be evaluated later
          otherwise we might have an error later.
@@ -2062,14 +2061,13 @@ Element* List_maplist_eval::eval(LispE* lisp) {
          */
         call->append(lisp->quoted());
         
-        methodEval met = lisp->delegation->evals[op->type];
-        iter = element->begin_iter();
-        Element* nxt = element->next_iter_exchange(lisp, iter);
+        iter = current_list->begin_iter();
+        Element* nxt = current_list->next_iter_exchange(lisp, iter);
         //Replacing the element in position 1, which is quoted with nxt
         call->in_quote(1, nxt);
         //"met" is a List function, hence the weird call: call->*met, which consists of executing
         //this method within the current List object: call
-        Element* e = (call->*met)(lisp);
+        Element* e = call->eval(lisp);
         if (choice) {
             switch (e->type) {
                 case t_string:
@@ -2095,19 +2093,19 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         e = e->copying(false);
         container->append(e);
         e->release();
-        nxt = element->next_iter_exchange(lisp, iter);
+        nxt = current_list->next_iter_exchange(lisp, iter);
         while (nxt != emptyatom_) {
             call->in_quote(1, nxt);
-            e = (call->*met)(lisp)->copying(false);
+            e = call->eval(lisp)->copying(false);
             check_tensor |= e->isPureList();
             check_tensor |= !e->is_same_tensor(container->last());
             container->append(e);
             e->release();
-            nxt = element->next_iter_exchange(lisp, iter);
+            nxt = current_list->next_iter_exchange(lisp, iter);
         }
         call->force_release();
-        element->clean_iter(iter);
-        element->release();
+        current_list->clean_iter(iter);
+        current_list->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
         
@@ -2124,9 +2122,9 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         if (call != NULL)
             call->force_release();
         if (iter != NULL)
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
         lisp->reset_to_true(sb);
-        element->release();
+        current_list->release();
         if (container != NULL)
             container->release();
         return lisp->check_error(this, err, idxinfo);
@@ -2139,7 +2137,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (// operation l1)
     
-    Element* element = null_;
+    Element* current_list = null_;
     Element* op = null_;
     Element* result = null_;
     
@@ -2154,14 +2152,14 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         if (listsz == 4) {
-            element = liste[3]->eval(lisp);
-            choice = element->Boolean();
-            element->release();
+            current_list = liste[3]->eval(lisp);
+            choice = current_list->Boolean();
+            current_list->release();
         }
-        element = liste[2]->eval(lisp);
+        current_list = liste[2]->eval(lisp);
         
         if (choice) {
-            switch (element->type) {
+            switch (current_list->type) {
                 case t_floats:
                     result = lisp->provideFloats();
                     break;
@@ -2190,9 +2188,9 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
         else
             result = lisp->provideList();
 
-        listsz = element->size();
+        listsz = current_list->size();
         if (!listsz) {
-            element->release();
+            current_list->release();
             lisp->reset_to_true(sb);
             lisp->resetStack();
             return result;
@@ -2208,8 +2206,8 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
             if (label < l_final)
                 throw new Error("Error: Wrong argument");
 
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
@@ -2224,7 +2222,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                     result->append(e);
                 }
                 e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
+                nxt = current_list->next_iter_exchange(lisp, iter);
                 while (nxt != emptyatom_) {
                     lisp->replacingvalue(nxt, label);
                     e = op->eval_lambda_min(lisp);
@@ -2238,10 +2236,10 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                         result->append(e);
                     }
                     e->release();
-                    nxt = element->next_iter_exchange(lisp, iter);
+                    nxt = current_list->next_iter_exchange(lisp, iter);
                 }
             }
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
             lisp->reset_in_stack(save_variable, label);
         }
         else {
@@ -2258,20 +2256,19 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                 op = eval_body_as_argument(lisp, op);
                 if (op->is_straight_eval())
                     call = (List*)op;
-                else {
-                    call = lisp->provideList();
-                    call->append(op);
-                }
+                else
+                    call = new List_eval(lisp, op);
+
                 ps = 1;
             }
             
             call->append(lisp->quoted());
-            methodEval met = lisp->delegation->evals[op->type];
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
+            
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
             while (nxt != emptyatom_) {
                 call->in_quote(ps, nxt);
-                e = (call->*met)(lisp);
+                e = call->eval(lisp);
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
@@ -2281,19 +2278,19 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                     result->append(e);
                 }
                 e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
+                nxt = current_list->next_iter_exchange(lisp, iter);
             }
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
             call->force_release();
         }
-        element->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
         if (check_tensor == a_valuelist || check_tensor == a_tensor) {
-            element = result->index(0)->newTensor(lisp, (List*)result);
-            if (element != result) {
+            current_list = result->index(0)->newTensor(lisp, (List*)result);
+            if (current_list != result) {
                 result->release();
-                return element;
+                return current_list;
             }
         }
         return result;
@@ -2310,8 +2307,8 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
 
         lisp->reset_to_true(sb);
         if (iter != NULL)
-            element->clean_iter(iter);
-        element->release();
+            current_list->clean_iter(iter);
+        current_list->release();
         result->release();
         return lisp->check_error(this, err, idxinfo);
     }
@@ -2323,7 +2320,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (// operation l1)
     
-    Element* element = null_;
+    Element* current_list = null_;
     Element* op = null_;
     Element* result = null_;
     
@@ -2338,14 +2335,14 @@ Element* List_takelist_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         if (listsz == 4) {
-            element = liste[3]->eval(lisp);
-            choice = element->Boolean();
-            element->release();
+            current_list = liste[3]->eval(lisp);
+            choice = current_list->Boolean();
+            current_list->release();
         }
-        element = liste[2]->eval(lisp);
+        current_list = liste[2]->eval(lisp);
         
         if (choice) {
-            switch (element->type) {
+            switch (current_list->type) {
                 case t_floats:
                     result = lisp->provideFloats();
                     break;
@@ -2374,9 +2371,9 @@ Element* List_takelist_eval::eval(LispE* lisp) {
         else
             result = lisp->provideList();
 
-        listsz = element->size();
+        listsz = current_list->size();
         if (!listsz) {
-            element->release();
+            current_list->release();
             lisp->reset_to_true(sb);
             lisp->resetStack();
             return result;
@@ -2392,8 +2389,8 @@ Element* List_takelist_eval::eval(LispE* lisp) {
             if (label < l_final)
                 throw new Error("Error: Wrong argument");
 
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
@@ -2411,7 +2408,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                     listsz = 0; //we force to stop now...
                 
                 e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
+                nxt = current_list->next_iter_exchange(lisp, iter);
                 while (nxt != emptyatom_) {
                     lisp->replacingvalue(nxt, label);
                     e = op->eval_lambda_min(lisp);
@@ -2429,10 +2426,10 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                         break;
                     }
                     e->release();
-                    nxt = element->next_iter_exchange(lisp, iter);
+                    nxt = current_list->next_iter_exchange(lisp, iter);
                 }
             }
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
             lisp->reset_in_stack(save_variable, label);
         }
         else {
@@ -2449,22 +2446,19 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 op = eval_body_as_argument(lisp, op);
                 if (op->is_straight_eval())
                     call = (List*)op;
-                else {
-                    call = lisp->provideList();
-                    call->append(op);
-                }
+                else
+                    call = new List_eval(lisp, op);
                 ps = 1;
             }
 
             call->append(lisp->quoted());
-            
-            methodEval met = lisp->delegation->evals[op->type];
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
+                        
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
             while (nxt != emptyatom_) {
                 call->in_quote(ps, nxt);
-                e = (call->*met)(lisp);
+                e = call->eval(lisp);
                 if (e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
@@ -2478,19 +2472,19 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                     e->release();
                     break;
                 }
-                nxt = element->next_iter_exchange(lisp, iter);
+                nxt = current_list->next_iter_exchange(lisp, iter);
             }
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
             call->force_release();
         }
-        element->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
         if (check_tensor == a_valuelist || check_tensor == a_tensor) {
-            element = result->index(0)->newTensor(lisp, (List*)result);
-            if (element != result) {
+            current_list = result->index(0)->newTensor(lisp, (List*)result);
+            if (current_list != result) {
                 result->release();
-                return element;
+                return current_list;
             }
         }
         return result;
@@ -2506,9 +2500,9 @@ Element* List_takelist_eval::eval(LispE* lisp) {
         }
 
         if (iter != NULL)
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
         lisp->reset_to_true(sb);
-        element->release();
+        current_list->release();
         result->release();
         return lisp->check_error(this, err, idxinfo);
     }
@@ -2520,7 +2514,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (// operation l1)
     
-    Element* element = null_;
+    Element* current_list = null_;
     Element* op = null_;
     Element* result = null_;
     
@@ -2535,14 +2529,14 @@ Element* List_droplist_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         if (listsz == 4) {
-            element = liste[3]->eval(lisp);
-            choice = element->Boolean();
-            element->release();
+            current_list = liste[3]->eval(lisp);
+            choice = current_list->Boolean();
+            current_list->release();
         }
-        element = liste[2]->eval(lisp);
+        current_list = liste[2]->eval(lisp);
         
         if (choice) {
-            switch (element->type) {
+            switch (current_list->type) {
                 case t_floats:
                     result = lisp->provideFloats();
                     break;
@@ -2572,9 +2566,9 @@ Element* List_droplist_eval::eval(LispE* lisp) {
             result = lisp->provideList();
         
 
-        listsz = element->size();
+        listsz = current_list->size();
         if (!listsz) {
-            element->release();
+            current_list->release();
             lisp->reset_to_true(sb);
             lisp->resetStack();
             return result;
@@ -2593,8 +2587,8 @@ Element* List_droplist_eval::eval(LispE* lisp) {
             if (label < l_final)
                 throw new Error("Error: Wrong argument");
 
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
             //if there is already a variable with this name on the stack
             //we record it to restore it later...
@@ -2610,7 +2604,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                     add = true;
                 }
                 e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
+                nxt = current_list->next_iter_exchange(lisp, iter);
                 
                 while (nxt != emptyatom_) {
                     lisp->replacingvalue(nxt, label);
@@ -2626,10 +2620,10 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                         add = true;
                     }
                     e->release();
-                    nxt = element->next_iter_exchange(lisp, iter);
+                    nxt = current_list->next_iter_exchange(lisp, iter);
                 }
             }
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
             lisp->reset_in_stack(save_variable, label);
         }
         else {
@@ -2646,22 +2640,19 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 op = eval_body_as_argument(lisp, op);
                 if (op->is_straight_eval())
                     call = (List*)op;
-                else {
-                    call = lisp->provideList();
-                    call->append(op);
-                }
+                else
+                    call = new List_eval(lisp, op);
                 ps = 1;
             }
 
             call->append(lisp->quoted());
-            
-            methodEval met = lisp->delegation->evals[op->type];
-            iter = element->begin_iter();
-            Element* nxt = element->next_iter_exchange(lisp, iter);
+                        
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
             while (nxt != emptyatom_) {
                 call->in_quote(ps, nxt);
-                e = (call->*met)(lisp);
+                e = call->eval(lisp);
                 if (add || e->Boolean()) {
                     e->release();
                     e = nxt->copying(false);
@@ -2672,19 +2663,19 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                     add = true;
                 }
                 e->release();
-                nxt = element->next_iter_exchange(lisp, iter);
+                nxt = current_list->next_iter_exchange(lisp, iter);
             }
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
             call->force_release();
         }
-        element->release();
+        current_list->release();
         lisp->reset_to_true(sb);
         lisp->resetStack();
         if (check_tensor == a_valuelist || check_tensor == a_tensor) {
-            element = result->index(0)->newTensor(lisp, (List*)result);
-            if (element != result) {
+            current_list = result->index(0)->newTensor(lisp, (List*)result);
+            if (current_list != result) {
                 result->release();
-                return element;
+                return current_list;
             }
         }
         return result;
@@ -2700,9 +2691,9 @@ Element* List_droplist_eval::eval(LispE* lisp) {
         }
 
         if (iter != NULL)
-            element->clean_iter(iter);
+            current_list->clean_iter(iter);
         lisp->reset_to_true(sb);
-        element->release();
+        current_list->release();
         result->release();
         return lisp->check_error(this, err, idxinfo);
     }
@@ -3329,38 +3320,124 @@ Element* List_irank_eval::eval(LispE* lisp) {
     return r;
 }
 
+//------------------------------------------------------------------
+Element* List::scan(LispE* lisp, Element* current_list, long sz) {
+    Element* res = current_list->newInstance();
+
+    if (size() == 0)
+        return res;
+
+    try {
+        //this is a filter, the first list
+        long j = 0;
+        long nb;
+
+        for (long i = 0; i < size(); i++) {
+            nb = liste[i]->asInteger();
+            if (!nb)
+                res->append(zero_);
+            else {
+                if (j == sz) {
+                    res->release();
+                    throw new Error("Error: List size mismatch");
+                }
+                while (nb > 0) {
+                    res->append(current_list->index(j));
+                    nb--;
+                }
+                j++;
+            }
+        }
+        if (j != sz) {
+            res->release();
+            throw new Error("Error: List size mismatch");
+        }
+    }
+    catch (Error* err) {
+        res->release();
+        throw err;
+    }
+
+    return res;
+}
+
+Element* List_lambda_eval::scan(LispE* lisp, Element* current_list, long sz) {
+    if (labels.size() != 2)
+        throw new Error("Error: Wrong number of arguments");
+    
+    List* res = lisp->provideList();
+
+    Element* rarg1 = this;
+    Element* rarg2 = this;
+    
+    int16_t arg1 = labels[0];
+    int16_t arg2 = labels[1];
+
+    try {
+        Element* e = current_list->index(0)->copying(false);
+        
+        rarg1 = lisp->record_or_replace(e, arg1);
+        rarg2 = lisp->record_or_replace(null_, arg2);
+        res->append(e);
+        
+        for (long i = 1; i < sz; i++) {
+            lisp->replacingvalue(current_list->index(i), arg2);
+            e = eval_lambda_min(lisp);
+            if (e->type == l_return)
+                break;
+            e = e->copying(false);
+            res->append(e);
+            lisp->replacingvalue(e, arg1);
+        }
+        
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
+    }
+    catch (Error* err) {
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
+        res->release();
+        throw err;
+    }
+    return res;
+}
+
 Element* List_scan_eval::eval(LispE* lisp) {
     //Operation is: (\\ operation l1 l2)
     
     Element* current_list = liste[2]->eval(lisp);
     
+
     if (!current_list->isList()) {
         current_list->release();
         throw new Error("Error: argument for 'scan' should be a list");
     }
 
     Element* op = null_;
-    List* res;
+    Element* res = null_;
     List* call;
 
     long sz = current_list->size();
     if (!sz)
         return emptylist_;
 
+    bool sb = lisp->set_true_as_one();
+    
     //if l1 is a matrix, we recursively call the function on each sublist
-    if (current_list->isPureList() == a_tensor) {
-        call = new List_scan_eval();
-        call->append(liste[0]);
-        call->append(liste[1]);
-        call->append(lisp->quoted());
-        vecte<long> shape;
-        current_list->getShape(shape);
-        Element* e;
-        Element* res = null_;
-        Element* lines;
+    try {
+        if (current_list->isTensor()) {
+            call = new List_scan_eval();
+            call->append(liste[0]);
+            call->append(liste[1]);
+            call->append(lisp->quoted());
+            vecte<long> shape;
+            current_list->getShape(shape);
+            Element* e;
+            Element* lines;
             
-        try {
-            res = current_list->newTensor(true);
+            res = current_list->newTensor(true, lisp);
             for (long i = 0; i < shape[0]; i++) {
                 lines = current_list->newTensor(false, lisp, (List*)current_list->index(i));
                 call->in_quote(2, lines);
@@ -3369,47 +3446,53 @@ Element* List_scan_eval::eval(LispE* lisp) {
                 e->release();
             }
             res->setShape();
-        }
-        catch (Error* err) {
-            call->force_release();
-            res->release();
+            
             current_list->release();
-            return lisp->check_error(this, err, idxinfo);
+            call->force_release();
+            lisp->resetStack();
+            lisp->reset_to_true(sb);
+            return res;
         }
         
-        call->force_release();
-        current_list->release();
-        lisp->resetStack();
-        return res;
+        if (current_list->checkListofTensor()) {
+            call = new List_backscan_eval();
+            call->append(liste[0]);
+            call->append(liste[1]);
+            call->append(lisp->quoted());
+            call->in_quote(2, current_list);
+            //current_list will be cleaned by call if necessary
+            current_list = null_;
+            res = call->eval(lisp);
+            call->force_release();
+            lisp->reset_to_true(sb);
+            lisp->resetStack();
+            return res;
+        }
     }
+    catch (Error* err) {
+        call->force_release();
+        res->release();
+        current_list->release();
+        lisp->reset_to_true(sb);
+        return lisp->check_error(this, err, idxinfo);
+    }
+    
+    call = NULL;
 
     try {
         lisp->checkState(this);
         op = liste[1]->eval(lisp);
 
-        if (op->isLambda()) {
-            current_list = scan_lambda(lisp, current_list, op, sz);
+        if (op->isLambda() || op->isList()) {
+            res = op->scan(lisp, current_list, sz);
+            current_list->release();
+            op->release();
             lisp->resetStack();
-            return current_list;
+            lisp->reset_to_true(sb);
+            return res;
         }
-
-        if (op->isList() && op->size()) {
-            current_list = scan_with_list(lisp, current_list, op, sz);
-            lisp->resetStack();
-            return current_list;
-        }
-    }
-    catch (Error* err) {
-        current_list->release();
-        op->release();
-        return lisp->check_error(this, err, idxinfo);
-    }
-
-    res = lisp->provideList();
-    call = NULL;
-    bool sb = lisp->set_true_as_one();
         
-    try {
+        res = lisp->provideList();
         op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
         if (op->type == l_equal)
             op = lisp->provideAtom(l_equalonezero);
@@ -3420,12 +3503,12 @@ Element* List_scan_eval::eval(LispE* lisp) {
         Element* e = current_list->index(0)->copying(false);
         res->append(e);
         call->in_quote(1, e);
-        methodEval met = lisp->delegation->evals[op->type];
+
         if (!monadic) {
             call->append(lisp->quoted());
             for (long i = 1; i < sz; i++) {
                 call->in_quote(2, current_list->index(i));
-                e = (call->*met)(lisp);
+                e = call->eval(lisp);
                 res->append(e);
                 call->in_quote(1, e);
             }
@@ -3433,24 +3516,113 @@ Element* List_scan_eval::eval(LispE* lisp) {
         else {
             for (long i = 1; i < sz; i++) {
                 call->in_quote(1, current_list->index(i));
-                e = (call->*met)(lisp);
+                e = call->eval(lisp);
                 res->append(e);
             }
         }
         
         call->force_release();
-        current_list->release();
-        lisp->reset_to_true(sb);
     }
     catch (Error* err) {
-        call->force_release();
+        if (call != NULL)
+            call->force_release();
+        else
+            op->release();
         lisp->reset_to_true(sb);
         res->release();
         current_list->release();
         return lisp->check_error(this, err, idxinfo);
     }
     
+    current_list->release();
+    lisp->reset_to_true(sb);
     lisp->resetStack();
+    return res;
+}
+//------------------------------------------------------------------
+Element* List::backscan(LispE* lisp, Element* current_list, long sz) {
+    Element* res = current_list->newInstance();
+
+    if (size() == 0)
+        return res;
+    
+    //this is a filter, the first list
+    long j = sz - 1;
+    long nb;
+    try {
+        for (long i = size() - 1; i >= 0 ; i--) {
+            nb = liste[i]->asInteger();
+            if (!nb)
+                res->append(zero_);
+            else {
+                if (j == -1) {
+                    res->release();
+                    throw new Error("Error: List size mismatch");
+                }
+                while (nb > 0) {
+                    res->append(current_list->index(j));
+                    nb--;
+                }
+                j--;
+            }
+        }
+        if (j != -1) {
+            res->release();
+            throw new Error("Error: List size mismatch");
+        }
+    }
+    catch (Error* err) {
+        res->release();
+        throw err;
+    }
+    return res;
+}
+
+Element* List_lambda_eval::backscan(LispE* lisp, Element* current_list, long sz) {
+    if (labels.size() != 2)
+        throw new Error("Error: Wrong number of arguments");
+    
+    List* res = lisp->provideList();
+
+    Element* rarg1 = this;
+    Element* rarg2 = this;
+    
+    int16_t arg1 = labels[0];
+    int16_t arg2 = labels[1];
+
+    try {
+        sz--;
+        Element* e = current_list->index(sz)->copying(false);
+
+        //if there is already a variable with this name on the stack
+        //we record it to restore it later...
+        rarg1 = lisp->record_or_replace(e, arg1);
+        rarg2 = lisp->record_or_replace(null_, arg2);
+
+        res->append(e);
+        
+        for (long i = sz-1; i >= 0; i--) {
+            lisp->replacingvalue(current_list->index(i), arg2);
+            e = eval_lambda_min(lisp);
+            if (e->type == l_return)
+                break;
+            e = e->copying(false);
+            res->append(e);
+            lisp->replacingvalue(e, arg1);
+        }
+        
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
+    }
+    catch (Error* err) {
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
+
+        res->release();
+        throw err;
+    }
     return res;
 }
 
@@ -3463,18 +3635,18 @@ Element* List_backscan_eval::eval(LispE* lisp) {
     }
 
     Element* op = null_;
-    bool sb = lisp->set_true_as_one();
-    List* res;
+
+    Element* res = null_;
     List* call;
 
     long sz = current_list->size();
-    if (!sz) {
-        lisp->reset_to_true(sb);
+    if (!sz)
         return null_;
-    }
-    
+
+    bool sb = lisp->set_true_as_one();
+
     //if l1 is a matrix, we recursively call the function on each sublist out of the transposed matrix
-    if (current_list->isPureList() == a_tensor) {
+    if (current_list->isTensor() || current_list->checkListofTensor()) {
         call = new List_backscan_eval();
         call->append(liste[0]);
         call->append(liste[1]);
@@ -3483,13 +3655,12 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         current_list->getShape(shape);
         //We extract our columns
         Element* e;
-        Element* res = null_;
         Element* columns = NULL;
         
         try {
-            res = current_list->newTensor(true);
+            res = current_list->newTensor(true, lisp);
             for (long i = 0; i < shape[1]; i++) {
-                columns = current_list->newTensor(true);
+                columns = current_list->newTensor(true, lisp);
                 for (long j = 0; j < shape[0]; j++) {
                     columns->append(current_list->index(j)->index(i));
                 }
@@ -3499,11 +3670,18 @@ Element* List_backscan_eval::eval(LispE* lisp) {
                 res->append(e);
                 e->release();
             }
-            res->setShape();
+            if (current_list->type == t_list) {
+                columns = current_list->index(0)->newTensor(lisp, (List*)res);
+                res->release();
+                res = columns;
+            }
+            else
+                res->setShape();
         }
         catch (Error* err) {
             if (columns != NULL)
                 columns->release();
+            lisp->reset_to_true(sb);
             call->force_release();
             res->release();
             current_list->release();
@@ -3512,59 +3690,49 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         
         call->force_release();
         current_list->release();
+        lisp->reset_to_true(sb);
         lisp->resetStack();
         return res;
     }
+    
+    call = NULL;
+    
     try {
         lisp->checkState(this);
         
         op = liste[1]->eval(lisp);
 
-        if (op->isLambda()) {
-            current_list = backscan_lambda(lisp, current_list, op, sz);
+        if (op->isLambda() || op->isList()) {
+            res = op->backscan(lisp, current_list, sz);
+            op->release();
+            current_list->release();
             lisp->resetStack();
             lisp->reset_to_true(sb);
-            return current_list;
+            return res;
         }
-
-        if (op->isList() && op->size()) {
-            current_list = backscan_with_list(lisp, current_list, op, sz);
-            lisp->resetStack();
-            lisp->reset_to_true(sb);
-            return current_list;
-        }
- 
-    }
-    catch (Error* err) {
-        current_list->release();
-        op->release();
-        lisp->reset_to_true(sb);
-        return lisp->check_error(this, err, idxinfo);
-    }
-
-    call = NULL;
-    res = lisp->provideList();
-    
-    try {
+        
+        
+        res = lisp->provideList();
+        
         op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
         if (op->type == l_equal)
             op = lisp->provideAtom(l_equalonezero);
         
-
+        
         bool monadic = op->check_arity(lisp, P_TWO);
-
+        
         call = lisp->provideCall(op, 1);
-
+        
         sz--;
         Element* e = current_list->value_on_index(lisp, sz);
         res->append(e);
         call->in_quote(1, e);
-        methodEval met = lisp->delegation->evals[op->type];
+        
         if (!monadic) {
             call->append(lisp->quoted());
             for (long i = sz-1; i >= 0; i--) {
                 call->in_quote(2, current_list->index(i));
-                e = (call->*met)(lisp);
+                e = call->eval(lisp);
                 res->append(e);
                 call->in_quote(1, e);
             }
@@ -3572,7 +3740,7 @@ Element* List_backscan_eval::eval(LispE* lisp) {
         else {
             for (long i = sz-1; i >= 0; i--) {
                 call->in_quote(1, current_list->index(i));
-                e = (call->*met)(lisp);
+                e = call->eval(lisp);
                 res->append(e);
             }
         }
@@ -3584,6 +3752,8 @@ Element* List_backscan_eval::eval(LispE* lisp) {
     catch (Error* err) {
         if (call != NULL)
             call->force_release();
+        else
+            op->release();
         res->release();
         lisp->reset_to_true(sb);
         current_list->release();
@@ -3592,13 +3762,103 @@ Element* List_backscan_eval::eval(LispE* lisp) {
     lisp->resetStack();
     return res;
 }
+
+//------------------------------------------------------------------------------------
+Element* List::reduce(LispE* lisp, Element* current_list, long sz) {
+    if (sz == 1) {
+        Element* op = current_list->value_on_index(lisp, (long)0);
+        lisp->resetStack();
+        return op;
+    }
+    
+    Element* res = current_list->newInstance();
+
+    if (size() == 0)
+        return res;
+    
+    try {
+        long j = 0;
+        long nb;
+        
+        for (long i = 0; i < size(); i++) {
+            nb = liste[i]->asInteger();
+            if (!nb) {
+                j++;
+                continue;
+            }
+            
+            if (j == sz) {
+                res->release();
+                throw new Error("Error: List size mismatch");
+            }
+            while (nb > 0) {
+                res->append(current_list->index(j));
+                nb--;
+            }
+            j++;
+        }
+    }
+    catch (Error* err) {
+        res->release();
+        throw err;
+    }
+
+    return res;
+}
+
+
+Element* List_lambda_eval::reduce(LispE* lisp, Element* current_list, long sz) {
+    if (labels.size() != 2)
+        throw new Error("Error: Wrong number of arguments");
+    
+    int16_t arg1 = 0;
+    int16_t arg2 = 0;
+    Element* rarg1 = this;
+    Element* rarg2 = this;
+    try {
+        arg1 = labels[0];
+        arg2 = labels[1];
+        
+        Element* element = current_list->index(0)->copying(false);
+        rarg1 = lisp->record_or_replace(element, arg1);
+        rarg2 = lisp->record_or_replace(current_list->index(1), arg2);
+        
+        element = eval_lambda_min(lisp);
+        if (element->type != l_return) {
+            lisp->replacingvalue(element, arg1);
+            
+            for (long i = 2; i < sz; i++) {
+                lisp->replacingvalue(current_list->index(i), arg2);
+                element = eval_lambda_min(lisp);
+                if (element->type == l_return)
+                    break;
+                lisp->replacingvalue(element, arg1);
+            }
+        }
+        element->increment();
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
+        element->decrementkeep();
+        return element;
+    }
+    catch (Error* err) {
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
+        throw err;
+    }
+    
+    return null_;
+}
+
 Element* List_reduce_eval::eval(LispE* lisp) {
     long listsz = liste.size();
     //Operation is: (// operation l1)
     
     Element* current_list = null_;
     Element* op = null_;
-    //List* res;
+    Element* res = null_;
     List* call;
     
     try {
@@ -3630,22 +3890,23 @@ Element* List_reduce_eval::eval(LispE* lisp) {
         return null_;
     }
     
+    bool sb = lisp->set_true_as_one();
+
     // (// '+ (rho 5 4 3 2 (iota 120)))
     //if l1 is a matrix, we recursively call the function on each sublist
-    if (current_list->isPureList() == a_tensor) {
-        call = new List_reduce_eval();
-        call->append(liste[0]);
-        call->append(liste[1]);
-        call->append(lisp->quoted());
-        vecte<long> shape;
-        current_list->getShape(shape);
-        //We extract our columns
-        Element* e;
-        Element* res = null_;
-        Element* lines;
+    try {
+        if (current_list->isTensor()) {
+            call = new List_reduce_eval();
+            call->append(liste[0]);
+            call->append(liste[1]);
+            call->append(lisp->quoted());
+            vecte<long> shape;
+            current_list->getShape(shape);
+            //We extract our columns
+            Element* e;
+            Element* lines;
             
-        try {
-            res = current_list->newTensor(true);
+            res = current_list->newTensor(true, lisp);
             
             for (long i = 0; i < shape[0]; i++) {
                 lines = current_list->newTensor(false, lisp, (List*)current_list->index(i));
@@ -3655,87 +3916,64 @@ Element* List_reduce_eval::eval(LispE* lisp) {
                 e->release();
             }
             res->setShape();
-        }
-        catch (Error* err) {
             call->force_release();
-            res->release();
             current_list->release();
-            return lisp->check_error(this, err, idxinfo);
+            lisp->resetStack();
+            lisp->reset_to_true(sb);
+            return res;
         }
         
-        call->force_release();
-        current_list->release();
-        lisp->resetStack();
-        return res;
+        if (current_list->checkListofTensor()) {
+            call = new List_backreduce_eval();
+            call->append(liste[0]);
+            call->append(liste[1]);
+            call->append(lisp->quoted());
+            call->in_quote(2, current_list);
+            //It will be cleaned with call
+            current_list = null_;
+            res = call->eval(lisp);
+            call->force_release();
+            lisp->resetStack();
+            lisp->reset_to_true(sb);
+            return res;
+        }
     }
+    catch (Error* err) {
+        call->force_release();
+        res->release();
+        current_list->release();
+        lisp->reset_to_true(sb);
+        return lisp->check_error(this, err, idxinfo);
+    }
+
+    call = NULL;
     
     try {
         op = liste[1]->eval(lisp);
 
-        if (op->isLambda()) {
-            current_list = reduce_lambda(lisp, current_list, op, sz);
-            lisp->resetStack();
-            return current_list;
-        }
-
-        if (op->isList() && op->size()) {
-            current_list = reduce_with_list(lisp, current_list, op, sz);
-            lisp->resetStack();
-            return current_list;
-        }
-        
-        if (sz == 1) {
-            op = current_list->value_on_index(lisp, (long)0);
-            lisp->resetStack();
-            return op;
-        }
-    }
-    catch (Error* err) {
-        current_list->release();
-        op->release();
-        return lisp->check_error(this, err, idxinfo);
-    }
-    
-    call = NULL;
-
-    bool sb = lisp->set_true_as_one();
-    op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
-    if (op->type == l_equal)
-        op = lisp->provideAtom(l_equalonezero);
-    
-    if (op->isOperator()) {
-        call = lisp->provideCall(op, 1);
-        call->in_quote(1, current_list);
-        
-        methodEval met = lisp->delegation->evals[op->type];
-        
-        try {
-            current_list = (call->*met)(lisp);
-        }
-        catch (Error* err) {
+        if (op->isLambda() || op->isList()) {
+            res = op->reduce(lisp, current_list, sz);
+            current_list->release();
+            op->release();
             lisp->reset_to_true(sb);
-            call->force_release();
-            return lisp->check_error(this, err, idxinfo);
+            lisp->resetStack();
+            return res;
         }
+
+        op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
         
-        lisp->reset_to_true(sb);
-        call->force_release();
-        lisp->resetStack();
-        return current_list;
-    }
-    
-    try {
         call = lisp->provideCall(op, 2);
         call->in_quote(1, current_list->value_on_index(lisp, (long)0));
         call->in_quote(2, current_list->index(1));
         
-        methodEval met = lisp->delegation->evals[op->type];
-        Element* e = (call->*met)(lisp);
+        Element* e = call->eval(lisp);
         
         call->in_quote(1, e);
         for (long i = 2; i < current_list->size(); i++) {
             call->in_quote(2, current_list->index(i));
-            e = (call->*met)(lisp);
+            e = call->eval(lisp);
             call->in_quote(1, e);
         }
         e->increment();
@@ -3755,7 +3993,102 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     }
     return null_;
 }
+//------------------------------------------------------------------------------------
+Element* List::backreduce(LispE* lisp, Element* current_list, long sz) {
+    if (sz == 1) {
+        Element* op = current_list->value_on_index(lisp, (long)0);
+        lisp->resetStack();
+        return op;
+    }
 
+    Element* res = current_list->newInstance();
+
+    if (size() == 0)
+        return res;
+
+    try {
+        //this is a filter, the first list
+        long j = sz - 1;
+        long nb;
+        
+        for (long i = size() - 1; i >= 0; i--) {
+            nb = liste[i]->asInteger();
+            if (!nb) {
+                j--;
+                continue;
+            }
+            if (j == -1) {
+                res->release();
+                throw new Error("Error: List size mismatch");
+            }
+            while (nb > 0) {
+                res->append(current_list->index(j));
+                nb--;
+            }
+            j--;
+        }
+    }
+    catch (Error* err) {
+        res->release();
+        throw err;
+    }
+
+    return res;
+}
+
+Element* List_lambda_eval::backreduce(LispE* lisp, Element* current_list, long sz) {
+    if (labels.size() != 2)
+        throw new Error("Error: Wrong number of arguments");
+    
+    int16_t arg1 = 0;
+    int16_t arg2 = 0;
+    Element* rarg1 = this;
+    Element* rarg2 = this;
+
+    current_list = current_list->reverse(lisp);
+
+    try {
+        
+        arg1 = labels[0];
+        arg2 = labels[1];
+        
+        Element* element = current_list->index(0)->copying(false);
+        
+        rarg1 = lisp->record_or_replace(element, arg1);
+        rarg2 = lisp->record_or_replace(current_list->index(1), arg2);
+        
+        element = eval_lambda_min(lisp);
+        if (element->type != l_return) {
+            lisp->replacingvalue(element, arg1);
+            
+            for (long i = 2; i < sz; i++) {
+                lisp->replacingvalue(current_list->index(i), arg2);
+                element = eval_lambda_min(lisp);
+                if (element->type == l_return)
+                    break;
+                lisp->replacingvalue(element, arg1);
+            }
+        }
+        
+        element->increment();
+        
+        lisp->reset_in_stack(rarg2, arg2);
+        lisp->reset_in_stack(rarg1, arg1);
+        current_list->release();
+        
+        element->decrementkeep();
+        return element;
+    }
+    catch (Error* err) {
+        if (rarg2 != this)
+            lisp->reset_in_stack(rarg2, arg2);
+        if (rarg1 != this)
+            lisp->reset_in_stack(rarg1, arg1);
+        current_list->release();
+        throw err;
+    }
+    return null_;
+}
 
 Element* List_backreduce_eval::eval(LispE* lisp) {
     long listsz = liste.size();
@@ -3763,6 +4096,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     
     Element* current_list = null_;
     Element* op = null_;
+    Element* res = null_;
     List* call = NULL;
     
     try {
@@ -3794,7 +4128,9 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         return null_;
     }
     
-    if (current_list->isPureList() == a_tensor) {
+    bool sb = lisp->set_true_as_one();
+
+    if (current_list->isTensor() || current_list->checkListofTensor()) {
         call = new List_backreduce_eval();
         call->append(liste[0]);
         call->append(liste[1]);
@@ -3803,15 +4139,14 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         current_list->getShape(shape);
         //We extract our columns
         Element* e;
-        Element* res = null_;
         Element* columns = NULL;
         
         // (-// '+ (rho 5 4 3 2 (iota 120)))
         // (-// '+ (rho 4 3 2 (iota 24)))
         try {
-            res = current_list->newTensor(true);
+            res = current_list->newTensor(true, lisp);
             for (long i = 0; i < shape[1]; i++) {
-                columns = current_list->newTensor(true);
+                columns = current_list->newTensor(true, lisp);
                 for (long j = 0; j < shape[0]; j++) {
                     columns->append(current_list->index(j)->index(i));
                 }
@@ -3821,7 +4156,13 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
                 res->append(e);
                 e->release();
             }
-            res->setShape();
+            if (current_list->type == t_list) {
+                columns = current_list->index(0)->newTensor(lisp, (List*)res);
+                res->release();
+                res = columns;
+            }
+            else
+                res->setShape();
         }
         catch (Error* err) {
             if (columns != NULL)
@@ -3829,71 +4170,34 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
             call->force_release();
             res->release();
             current_list->release();
+            lisp->reset_to_true(sb);
             return lisp->check_error(this, err, idxinfo);
         }
         
         call->force_release();
         current_list->release();
         lisp->resetStack();
+        lisp->reset_to_true(sb);
         return res;
     }
+    
+    call = NULL;
     
     try {
         op = liste[1]->eval(lisp);
 
-        if (op->isLambda()) {
-            current_list = backreduce_lambda(lisp, current_list, op, sz);
-            lisp->resetStack();
-            return current_list;
-        }
-
-        if (op->isList() && op->size()) {
-            current_list = backreduce_with_list(lisp, current_list, op, sz);
-            lisp->resetStack();
-            return current_list;
-        }
-        
-        if (sz == 1) {
-            op = current_list->value_on_index(lisp, (long)0);
-            lisp->resetStack();
-            return op;
-        }
-    }
-    catch (Error* err) {
-        current_list->release();
-        op->release();
-        return lisp->check_error(this, err, idxinfo);
-    }
-    
-    bool sb = lisp->set_true_as_one();
-    op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
-    if (op->type == l_equal)
-        op = lisp->provideAtom(l_equalonezero);
-    
-    if (op->isOperator()) {
-        call = lisp->provideCall(op, 1);
-        call->in_quote(1, current_list->reverse(lisp));
-        
-        methodEval met = lisp->delegation->evals[op->type];
-        Element* e;
-        try {
-            e = (call->*met)(lisp);
-        }
-        catch (Error* err) {
-            lisp->reset_to_true(sb);
-            call->force_release();
+        if (op->isLambda() || op->isList()) {
+            res = op->backreduce(lisp, current_list, sz);
             op->release();
-            return lisp->check_error(this, err, idxinfo);
+            current_list->release();
+            lisp->resetStack();
+            return res;
         }
         
-        lisp->reset_to_true(sb);
-        call->force_release();
-        current_list->release();
-        lisp->resetStack();
-        return e;
-    }
-    
-    try {
+        op = eval_body_as_argument_min(lisp, op, P_TWO|P_THREE);
+        if (op->type == l_equal)
+            op = lisp->provideAtom(l_equalonezero);
+        
         Element* e = current_list->reverse(lisp);
         current_list->release();
         current_list = e;
@@ -3903,14 +4207,13 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
         call->in_quote(1, current_list->value_on_index(lisp, (long)0));
         call->in_quote(2, current_list->index(1));
         
-        methodEval met = lisp->delegation->evals[op->type];
         
         e = null_;
-        e = (call->*met)(lisp);
+        e = call->eval(lisp);
         call->in_quote(1, e);
         for (long i = 2; i < current_list->size(); i++) {
             call->in_quote(2, current_list->index(i));
-            e = (call->*met)(lisp);
+            e = call->eval(lisp);
             call->in_quote(1, e);
         }
         e->increment();
@@ -3924,6 +4227,8 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         if (call != NULL)
             call->force_release();
+        else
+            op->release();
         current_list->release();
         lisp->reset_to_true(sb);
         return lisp->check_error(this, err, idxinfo);
@@ -3931,6 +4236,7 @@ Element* List_backreduce_eval::eval(LispE* lisp) {
     return null_;
 }
 
+//---------------------------------------------------------------------
 Element* List_member_eval::eval(LispE* lisp) {
     Element* element = liste[1];
     Element* the_set = liste[1];
@@ -5270,7 +5576,7 @@ Element* List_rotate_eval::eval(LispE* lisp) {
             if (result->isNumber()) {
                 long nb = result->asInteger();
                 result->release();
-                if (liste.size() == 4 && matrix->isPureList() == a_tensor) {
+                if (liste.size() == 4 && matrix->isTensor()) {
                     result = liste[3]->eval(lisp);
                     left = result->Boolean();
                     result->release();
@@ -6905,8 +7211,14 @@ Element* List_llist_eval::eval(LispE* lisp) {
 Element* List_to_list_eval::eval(LispE* lisp) {
     Element* values = liste[1]->eval(lisp);
     if (size() == 2) {
-        if (values->type == t_list)
+        if (values->isTensor()) {
+            Element* result = new List((List*)values, 0);
+            values->release();
+            return result;
+        }
+        if (values->type == t_list) {
             return values;
+        }
         Element* results = values->asList(lisp, lisp->provideList());
         values->release();
         return results;
@@ -7242,10 +7554,16 @@ Element* List_sign_eval::eval(LispE* lisp) {
     return liste[1]->eval(lisp)->invert_sign(lisp);
 }
 
-
 Element* List_size_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     long sz = element->size();
+    element->release();
+    return lisp->provideInteger(sz);
+}
+
+Element* List_tally_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    long sz = element->tally();
     element->release();
     return lisp->provideInteger(sz);
 }

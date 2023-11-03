@@ -1353,10 +1353,8 @@ public:
         List* call;
         if (op->is_straight_eval())
             call = (List*)op;
-        else {
-            call = list_pool.last?list_pool.backpop(): new Listpool(this);
-            call->append(op);
-        }
+        else
+            call = new List_eval(this, op);
         while (nb) {
             call->append(quoted());
             nb--;

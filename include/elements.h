@@ -100,7 +100,7 @@ typedef enum {
     l_leftshiftequal, l_rightshiftequal,
     l_bitandequal, l_bitandnotequal, l_bitorequal, l_bitxorequal,
     l_divideequal,l_modequal,
-    l_concatenate, l_sum, l_product, l_stringf, l_size,
+    l_concatenate, l_sum, l_product, l_stringf, l_size, l_tally,
     l_andvalue, l_and, l_or, l_xor, l_not, l_eq, l_neq,
     l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max, l_compare,
     
@@ -320,6 +320,14 @@ public:
         return 0;
     }
 
+    virtual bool isTensor() {
+        return false;
+    }
+
+    virtual bool checkListofTensor() {
+        return false;
+    }
+    
     virtual void copyfrom(Element* x);
     
     virtual char isPureList(long& x, long& y) {
@@ -341,7 +349,7 @@ public:
         return this;
     }
 
-    virtual Element* newTensor(bool nb, LispE* lisp = NULL, List* l = NULL) {
+    virtual Element* newTensor(bool nb, LispE* lisp, List* l = NULL) {
         return this;
     }
 
@@ -650,7 +658,19 @@ public:
     virtual void change(long i, Element* e) {}
     virtual void changelast(Element* e) {}
     
-    
+    virtual Element* reduce(LispE* lisp, Element* l1, long sz) {
+        return this;
+    }
+    virtual Element* backreduce(LispE* lisp, Element* l1, long sz) {
+        return this;
+    }
+    virtual Element* scan(LispE* lisp, Element* l1, long sz) {
+        return this;
+    }
+    virtual Element* backscan(LispE* lisp, Element* l1, long sz) {
+        return this;
+    }
+
     //-----------------
     //Composing functions
     virtual Element* compose(LispE*, Element* var, Element* e) {
@@ -847,6 +867,10 @@ public:
     
     virtual long size() {
         return 0;
+    }
+    
+    virtual long tally() {
+        return size();
     }
     
     virtual long shapesize() {
