@@ -2,7 +2,7 @@
   
 Hello,
 
-Welcome to __Lisp Elémentaire__, a version of Lisp that is both compact and offers an remarkable variety of functional and array language features. The code also comes with a small internal editor from another NAVER's project: [TAMGU](https://github.com/naver/tamgu).
+Welcome to __Lisp Elémentaire__, a version of Lisp that is both compact and offers a remarkable variety of functional and array language features. The code also comes with a small internal editor from another NAVER's project: [TAMGU](https://github.com/naver/tamgu).
 
 The main goal of __LispE__ is to provide a multi-platform language that can harness the power of functional languages with array languages.
 The real strength of the Lisp language, of which _LispE_ is a dialect, is its very simple but incredible versatile formalism that helps combining all these programming trends together in one single language.
