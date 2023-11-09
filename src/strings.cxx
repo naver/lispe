@@ -63,7 +63,11 @@ public:
     virtual Element* tokenize(u_ustring& u, bool types) {
         return null_;
     }
-    
+
+    virtual Element* tokenize(string& u, bool types) {
+        return null_;
+    }
+
     virtual Strings* getrules() {
         return NULL;
     }
@@ -136,6 +140,21 @@ public:
         return l;
     }
 
+    Element* tokenize(string& u, bool types) {
+        Stringbytes* res = new Stringbytes();
+        tokenizer_result<string> tokres(&res->liste, types);
+        tok->tokenize(u, tokres);
+        if (!types)
+            return res;
+        List* l = lisp->provideList();
+        l->append(res);
+        Shorts* ty = new Shorts();
+        ty->liste = tokres.stacktype;
+        l->append(ty);
+        return l;
+    }
+
+
     Strings* getrules() {
         Strings* vstr = lisp->provideStrings();
         tok->get_rules(vstr->liste);
@@ -188,6 +207,20 @@ public:
         Strings* res = lisp->provideStrings();
         tokenizer_result<u_ustring> tokres(&res->liste, false);
         tok.tokenize<u_ustring>(u, tokres);
+        if (!types)
+            return res;
+        List* l = lisp->provideList();
+        l->append(res);
+        Shorts* ty = new Shorts();
+        ty->liste = tokres.stacktype;
+        l->append(ty);
+        return l;
+    }
+
+    Element* tokenize(string& u, bool types) {
+        Stringbytes* res = new Stringbytes();
+        tokenizer_result<string> tokres(&res->liste, false);
+        tok.tokenize<string>(u, tokres);
         if (!types)
             return res;
         List* l = lisp->provideList();
@@ -312,8 +345,28 @@ public:
         return parse_json(lisp, ch.content);
     }
     
+    Element* methodFormat(LispE* lisp, Element* val) {
+        string sformat =  val->toString(lisp);
+        string v("n%");
+        Element* e;
+        for (long i = 57; i >= 49; i--) {
+            v[1] = (u_uchar)i;
+            e = lisp->get_variable(v);
+            if (e == null_)
+                continue;
+            v[0] = '%';
+            sformat = s_replacingstring(sformat, v, e->toString(lisp));
+            v[0] = 'n';
+        }
+        return new Stringbyte(sformat);
+    }
+
     Element* methodFormat(LispE* lisp) {
-        u_ustring sformat =  lisp->get_variable(v_str)->asUString(lisp);
+        Element* val = lisp->get_variable(v_str);
+        if (val->type == t_stringbyte)
+            return methodFormat(lisp, val);
+        
+        u_ustring sformat =  val->asUString(lisp);
 
         //In this case, we might have more than two parameters...
         u_ustring v(U"n%");
@@ -330,10 +383,39 @@ public:
         return lisp->provideString(sformat);
     }
 
+    Element* methodPadding(LispE* lisp, Element* val, long nb) {
+        string value =  val->toString(lisp);
+        string sval = lisp->get_variable(U"c")->toString(lisp);
+        long sz = nb - value.size();
+        if (sval.size() == 1) {
+            while (sz) {
+                value += sval;
+                sz--;
+            }
+        }
+        else {
+            long i = 0;
+            nb = sval.size();
+            while (sz) {
+                value += sval[i++];
+                sz--;
+                if (i == nb)
+                    i = 0;
+            }
+        }
+        
+        return new Stringbyte(value);
+    }
+
     Element* methodPadding(LispE* lisp) {
-        u_ustring value =  lisp->get_variable(v_str)->asUString(lisp);
-        u_ustring sval = lisp->get_variable(U"c")->asUString(lisp);
+        Element* val = lisp->get_variable(v_str);
         long nb = lisp->get_variable(v_nb)->asInteger();
+
+        if (val->type == t_stringbyte)
+            return methodPadding(lisp, val, nb);
+        
+        u_ustring value =  val->asUString(lisp);
+        u_ustring sval = lisp->get_variable(U"c")->asUString(lisp);
         long sz = nb - value.size();
         if (sval.size() == 1) {
             while (sz) {
@@ -355,8 +437,71 @@ public:
         return lisp->provideString(value);
     }
 
+    Element* getstruct8(LispE* lisp, Element* var) {
+        string value =  var->toString(lisp);
+        string s_open = lisp->get_variable(U"open")->toString(lisp);
+        string s_close = lisp->get_variable(U"close")->toString(lisp);
+        long i = lisp->get_variable(U"pos")->asInteger();
+        
+        uchar o = s_open[0];
+        uchar c = s_close[0];
+        
+        
+        long sz = value.size();
+        while (i < sz && value[i] != o) i++;
+        
+        if (i == sz)
+            return null_;
+        
+        long initial = i;
+        
+        //We extract a full-fledge structure...
+        //Which could contain embeddings...
+        long count = 1;
+        
+        if (value[++i] == c) {
+            string str = s_open + s_close;
+            List* l = lisp->provideList();
+            l->append(lisp->provideString(str));
+            l->append(lisp->provideInteger(initial));
+            l->append(lisp->provideInteger(i+1));
+            return l;
+        }
+
+        while (count && i < sz) {
+            if (value[i] == o)
+                count++;
+            if (value[i] == '"') {
+                i++;
+                while (i < sz && value[i] != '"') {
+                    if (value[i] == '\\')
+                        i++;
+                    i++;
+                }
+            }
+            if (value[++i] == c)
+                count--;
+        }
+        
+        if (i == sz)
+            return null_;
+
+        i++;
+        string str = value.substr(initial, i - initial);
+        List* l = lisp->provideList();
+        l->append(lisp->provideString(str));
+        l->append(lisp->provideInteger(initial));
+        l->append(lisp->provideInteger(i));
+        return l;
+    }
+    
     Element* getstruct(LispE* lisp) {
-        u_ustring value =  lisp->get_variable(v_str)->asUString(lisp);
+        Element* var = lisp->get_variable(v_str);
+        
+        if (var->type == t_stringbyte)
+            return getstruct8(lisp,var);
+        
+        u_ustring value =  var->asUString(lisp);
         u_ustring s_open = lisp->get_variable(U"open")->asUString(lisp);
         u_ustring s_close = lisp->get_variable(U"close")->asUString(lisp);
         long i = lisp->get_variable(U"pos")->asInteger();
@@ -414,12 +559,28 @@ public:
     }
     
     Element* methodFill(LispE* lisp) {
+        Element* v = lisp->get_variable(v_str);
         long nb = lisp->get_variable(v_nb)->asInteger();
+        if (v->type == t_stringbyte) {
+            string sval;
+            if (nb <= 0)
+                return new Stringbyte(sval);
+            
+            sval = v->toString(lisp);
+            string val;
+            while (nb > 0) {
+                val += sval;
+                nb--;
+            }
+            
+            return new Stringbyte(val);
+        }
+        
         u_ustring sval;
         if (nb <= 0)
             return lisp->provideString(sval);
         
-        sval = lisp->get_variable(v_str)->asUString(lisp);
+        sval = v->asUString(lisp);
         u_ustring val;
         while (nb > 0) {
             val += sval;
@@ -502,12 +663,41 @@ public:
     }
     
     #define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
+    Element* methodEditDistance8(LispE* lisp, Element* v) {
+        unsigned long s1len, s2len, x, y, lastdiag, olddiag;
 
+        string s1 = v->toString(lisp);
+        string s2 = lisp->get_variable("strbis")->toString(lisp);
+        
+        s1len = s1.size();
+        s2len = s2.size();
+        size_t* column = new size_t[s1len + 1];
+        for (y = 1; y <= s1len; y++)
+            column[y] = y;
+        for (x = 1; x <= s2len; x++) {
+            column[0] = x;
+            for (y = 1, lastdiag = x - 1; y <= s1len; y++) {
+                olddiag = column[y];
+                column[y] = MIN3(column[y] + 1, column[y - 1] + 1, lastdiag + (s1[y - 1] == s2[x - 1] ? 0 : 1));
+                lastdiag = olddiag;
+            }
+        }
+        s2len = column[s1len];
+        delete[] column;
+        return lisp->provideInteger(s2len);
+    }
+    
     Element* methodEditDistance(LispE* lisp) {
+        Element* v = lisp->get_variable(v_str);
+
+        if (v->type == t_stringbyte)
+            return methodEditDistance8(lisp, v);
+        
+        unsigned long s1len, s2len, x, y, lastdiag, olddiag;
+
         u_ustring s1 = lisp->get_variable(v_str)->asUString(lisp);
         u_ustring s2 = lisp->get_variable("strbis")->asUString(lisp);
         
-        unsigned long s1len, s2len, x, y, lastdiag, olddiag;
         s1len = s1.size();
         s2len = s2.size();
         size_t* column = new size_t[s1len + 1];
@@ -526,58 +716,389 @@ public:
         return lisp->provideInteger(s2len);
     }
 
+    Element* method_replace(LispE* lisp, Element* end) {
+        u_ustring strvalue = end->asUString(lisp);
+        
+        end = lisp->get_variable(U"index");
+
+        u_ustring cherche;
+        if (end == null_) {
+            cherche = lisp->get_variable(v_fnd)->asUString(lisp);
+            u_ustring remplacement = lisp->get_variable(v_rep)->asUString(lisp);
+            strvalue = s_ureplacestring(strvalue,cherche, remplacement);
+            return lisp->provideString(strvalue);
+        }
+        //In this case, we have indexes...
+        u_ustring remplacement = lisp->get_variable(v_fnd)->asUString(lisp);
+        long i_beg = lisp->get_variable(v_rep)->asInteger();
+        long i_end = end->asInteger();
+        long sz = strvalue.size();
+        if (i_beg < 0)
+            i_beg = sz + i_beg;
+        if (i_beg >= sz)
+            throw new Error("Error: out of range");
+        if (i_beg < 0)
+            i_beg = 0;
+        if (i_end < 0)
+            i_end = sz + i_end;
+        if (i_end < i_beg)
+            throw new Error("Error: out of range");
+        if (i_end > sz)
+            i_end = sz;
+        cherche = strvalue.substr(0, i_beg);
+        cherche += remplacement;
+        cherche += strvalue.substr(i_end, sz);
+        return lisp->provideString(cherche);
+    }
+
+    Element* method_replace8(LispE* lisp, Element* end) {
+        string strvalue = end->toString(lisp);
+        
+        end = lisp->get_variable(U"index");
+
+        string cherche;
+        if (end == null_) {
+            cherche = lisp->get_variable(v_fnd)->toString(lisp);
+            string remplacement = lisp->get_variable(v_rep)->toString(lisp);
+            strvalue = s_replacingstring(strvalue,cherche, remplacement);
+            return lisp->provideString(strvalue);
+        }
+        //In this case, we have indexes...
+        string remplacement = lisp->get_variable(v_fnd)->toString(lisp);
+        long i_beg = lisp->get_variable(v_rep)->asInteger();
+        long i_end = end->asInteger();
+        long sz = strvalue.size();
+        if (i_beg < 0)
+            i_beg = sz + i_beg;
+        if (i_beg >= sz)
+            throw new Error("Error: out of range");
+        if (i_beg < 0)
+            i_beg = 0;
+        if (i_end < 0)
+            i_end = sz + i_end;
+        if (i_end < i_beg)
+            throw new Error("Error: out of range");
+        if (i_end > sz)
+            i_end = sz;
+        cherche = strvalue.substr(0, i_beg);
+        cherche += remplacement;
+        cherche += strvalue.substr(i_end, sz);
+        return new Stringbyte(cherche);
+    }
+
+    Element* method_split_byte(LispE* lisp, Element* vstr) {
+        string strvalue =  vstr->toString(lisp);
+        Element* u_find = lisp->get_variable(v_fnd);
+        Stringbytes* result = new Stringbytes();
+        string search_string;
+        
+        if (u_find == null_) {
+            u_uchar c;
+            long sz = strvalue.size();
+            for (long i = 0; i < sz; i++) {
+                c = strvalue[i];
+                if (c <= 32) {
+                    if (search_string != "") {
+                        result->liste.push_back(search_string);
+                        search_string = "";
+                    }
+                }
+                else
+                    search_string += c;
+            }
+            if (search_string != "")
+                result->liste.push_back(search_string);
+            return result;
+        }
+        
+        string localvalue;
+        long pos = 0;
+        
+        search_string = u_find->toString(lisp);
+        if (search_string == "") {
+            long sz = strvalue.size();
+            //we split the string into an array of characters
+            while (pos < sz) {
+                lisp->handlingutf8->getchar(strvalue, localvalue, pos);
+                result->append(localvalue);
+            }
+            return result;
+        }
+
+        size_t found = 0;
+        while (pos != string::npos) {
+            found = strvalue.find(search_string, pos);
+            if (found != string::npos) {
+                localvalue = strvalue.substr(pos, found - pos);
+                if (localvalue != "") {
+                    result->append(localvalue);
+                }
+                pos = found + search_string.size();
+            }
+            else
+                break;
+        }
+        
+        localvalue = strvalue.substr(pos, strvalue.size() - pos);
+        if (localvalue != "") {
+            result->append(localvalue);
+        }
+        
+        return result;
+    }
+    
+    Element* method_split(LispE* lisp) {
+        Element* vstr = lisp->get_variable(v_str);
+        if (vstr)
+            return method_split_byte(lisp, vstr);
+        
+        u_ustring strvalue =  vstr->asUString(lisp);
+        Element* u_find = lisp->get_variable(v_fnd);
+        Strings* result = lisp->provideStrings();
+        u_ustring search_string;
+        
+        if (u_find == null_) {
+            u_uchar c;
+            long sz = strvalue.size();
+            for (long i = 0; i < sz; i++) {
+                c = strvalue[i];
+                if (c <= 32) {
+                    if (search_string != U"") {
+                        result->liste.push_back(search_string);
+                        search_string = U"";
+                    }
+                }
+                else
+                    search_string += c;
+            }
+            if (search_string != U"")
+                result->liste.push_back(search_string);
+            return result;
+        }
+        
+        u_ustring localvalue;
+        long pos = 0;
+        
+        search_string = u_find->asUString(lisp);
+        if (search_string == U"") {
+            long sz = strvalue.size();
+            //we split the string into an array of characters
+            while (pos < sz) {
+                lisp->handlingutf8->getchar(strvalue, localvalue, pos);
+                result->append(localvalue);
+            }
+            return result;
+        }
+
+        size_t found = 0;
+        while (pos != string::npos) {
+            found = strvalue.find(search_string, pos);
+            if (found != string::npos) {
+                localvalue = strvalue.substr(pos, found - pos);
+                if (localvalue != U"") {
+                    result->append(localvalue);
+                }
+                pos = found + search_string.size();
+            }
+            else
+                break;
+        }
+        
+        localvalue = strvalue.substr(pos, strvalue.size() - pos);
+        if (localvalue != U"") {
+            result->append(localvalue);
+        }
+        
+        return result;
+    }
+    
+    Element* method_splite_byte(LispE* lisp, Element* vstr) {
+        string strvalue =  vstr->toString(lisp);
+        Element* u_find = lisp->get_variable(v_fnd);
+        Stringbytes* result = new Stringbytes();
+        string search_string;
+        
+        //Cutting at space characters
+        if (u_find == null_) {
+            u_uchar c;
+            long sz = strvalue.size();
+            for (long i = 0; i < sz; i++) {
+                c = strvalue[i];
+                if (c <= 32) {
+                    result->liste.push_back(search_string);
+                    search_string = "";
+                }
+                else
+                    search_string += c;
+            }
+            if (search_string != "")
+                result->liste.push_back(search_string);
+            return result;
+        }
+        
+        string localvalue;
+        long pos = 0;
+
+        search_string = u_find->toString(lisp);
+        if (search_string == "") {
+            long sz = strvalue.size();
+            //we split the string into an array of characters
+            while (pos < sz) {
+                lisp->handlingutf8->getchar(strvalue, localvalue, pos);
+                result->append(localvalue);
+            }
+            return result;
+        }
+
+        size_t found = 0;
+        while (pos != string::npos) {
+            found = strvalue.find(search_string, pos);
+            if (found != string::npos) {
+                localvalue = strvalue.substr(pos, found - pos);
+                result->append(localvalue);
+                pos = found + search_string.size();
+            }
+            else
+                break;
+        }
+
+        if (strvalue.size() < pos) {
+            localvalue = strvalue.substr(pos, strvalue.size() - pos);
+            result->append(localvalue);
+        }
+    
+        return result;
+
+    }
+    
+    Element* method_splite(LispE* lisp) {
+        Element* vstr = lisp->get_variable(v_str);
+        if (vstr->type == t_stringbyte)
+            return method_splite_byte(lisp, vstr);
+        
+        u_ustring strvalue =  vstr->asUString(lisp);
+        Element* u_find = lisp->get_variable(v_fnd);
+        Strings* result = lisp->provideStrings();
+        u_ustring search_string;
+        
+        if (u_find == null_) {
+            u_uchar c;
+            long sz = strvalue.size();
+            for (long i = 0; i < sz; i++) {
+                c = strvalue[i];
+                if (c <= 32) {
+                    result->liste.push_back(search_string);
+                    search_string = U"";
+                }
+                else
+                    search_string += c;
+            }
+            if (search_string != U"")
+                result->liste.push_back(search_string);
+            return result;
+        }
+        
+        u_ustring localvalue;
+        long pos = 0;
+
+        search_string = u_find->asUString(lisp);
+        if (search_string == U"") {
+            long sz = strvalue.size();
+            //we split the string into an array of characters
+            while (pos < sz) {
+                lisp->handlingutf8->getchar(strvalue, localvalue, pos);
+                result->append(localvalue);
+            }
+            return result;
+        }
+
+        size_t found = 0;
+        while (pos != string::npos) {
+            found = strvalue.find(search_string, pos);
+            if (found != string::npos) {
+                localvalue = strvalue.substr(pos, found - pos);
+                result->append(localvalue);
+                pos = found + search_string.size();
+            }
+            else
+                break;
+        }
+
+        if (strvalue.size() < pos) {
+            localvalue = strvalue.substr(pos, strvalue.size() - pos);
+            result->append(localvalue);
+        }
+    
+        return result;
+
+    }
+
+    Element* method_ngrams(LispE* lisp, long nb, Element* vstr) {
+        string s =  vstr->toString(lisp);
+        long j;
+        long mx = s.size() - nb + 1;
+        string u;
+        Stringbytes* ke = new Stringbytes();
+        for (long i = 0; i < mx; i++) {
+            u = "";
+            for (j = i; j < i + nb; j++) {
+                u += lisp->handlingutf8->getachar(s,j);
+            }
+            ke->liste.push_back(u);
+        }
+        return ke;
+    }
+
+    Element* method_ngrams(LispE* lisp, long nb) {
+        Element* vstr = lisp->get_variable(v_str);
+        if (vstr->type == t_stringbyte)
+            return method_ngrams(lisp, nb, vstr);
+        
+        u_ustring s =  vstr->asUString(lisp);
+        long j;
+        long mx = s.size() - nb + 1;
+        u_ustring u;
+        Strings* ke = lisp->provideStrings();
+        for (long i = 0; i < mx; i++) {
+            u = U"";
+            for (j = i; j < i + nb; j++) {
+                u += lisp->handlingutf8->getachar(s,j);
+            }
+            ke->liste.push_back(u);
+        }
+        return ke;
+    }
     
     Element* eval(LispE* lisp) {
         //eval is either: command, setenv or getenv...
         switch (met) {
             case str_remplace: {
-                u_ustring cherche;
                 Element* end =  lisp->get_variable(v_str);
+                if (end->type == t_stringbyte)
+                    return method_replace8(lisp, end);
                 if (end->type != t_string)
                     throw new Error("Error: cannot apply 'replace' to this type of object");
-                u_ustring strvalue = end->asUString(lisp);
-                
-                end = lisp->get_variable(U"index");
-                if (end == null_) {
-                    cherche = lisp->get_variable(v_fnd)->asUString(lisp);
-                    u_ustring remplacement = lisp->get_variable(v_rep)->asUString(lisp);
-                    strvalue = s_ureplacestring(strvalue,cherche, remplacement);
-                    return lisp->provideString(strvalue);
-                }
-                //In this case, we have indexes...
-                u_ustring remplacement = lisp->get_variable(v_fnd)->asUString(lisp);
-                long i_beg = lisp->get_variable(v_rep)->asInteger();
-                long i_end = end->asInteger();
-                long sz = strvalue.size();
-                if (i_beg < 0)
-                    i_beg = sz + i_beg;
-                if (i_beg >= sz)
-                    throw new Error("Error: out of range");
-                if (i_beg < 0)
-                    i_beg = 0;
-                if (i_end < 0)
-                    i_end = sz + i_end;
-                if (i_end < i_beg)
-                    throw new Error("Error: out of range");
-                if (i_end > sz)
-                    i_end = sz;
-                cherche = strvalue.substr(0, i_beg);
-                cherche += remplacement;
-                cherche += strvalue.substr(i_end, sz);
-                return lisp->provideString(cherche);
+                return method_replace(lisp, end);
             }
             case str_lowercase: {
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                u_ustring s =  v->asUString(lisp);
                 s = lisp->handlingutf8->u_to_lower(s);
                 return lisp->provideString(s);
             }
             case str_uppercase: {
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                u_ustring s =  v->asUString(lisp);
                 s = lisp->handlingutf8->u_to_upper(s);
+                if (v->type == t_stringbyte)
+                    return new Stringbyte(s);
                 return lisp->provideString(s);
             }
             case str_is_emoji: {
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                u_ustring s =  v->asUString(lisp);
+                if (v->type == t_stringbyte)
+                    return new Stringbyte(s);
                 return booleans_[lisp->handlingutf8->u_is_emoji(s)];
             }
             case str_is_lowercase: {
@@ -597,21 +1118,39 @@ public:
                 return booleans_[lisp->handlingutf8->s_is_digit(s)];
             }
             case str_left: {
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
                 long n = lisp->get_variable(v_nb)->asInteger();
+                if (v->type == t_stringbyte) {
+                    string s = v->toString(lisp);
+                    s = s_left(s,n);
+                    return new Stringbyte(s);
+                }
+                u_ustring s =  v->asUString(lisp);
                 s = s_uleft(s,n);
                 return lisp->provideString(s);
             }
             case str_right: {
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
                 long n = lisp->get_variable(v_nb)->asInteger();
+                if (v->type == t_stringbyte) {
+                    string s = v->toString(lisp);
+                    s = s_right(s,n);
+                    return new Stringbyte(s);
+                }
+                u_ustring s =  v->asUString(lisp);
                 s = s_uright(s, n);
                 return lisp->provideString(s);
             }
             case str_middle: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
                 long p = lisp->get_variable(v_pos)->asInteger();
                 long n = lisp->get_variable(v_nb)->asInteger();
+                if (v->type == t_stringbyte) {
+                    string strvalue =  v->toString(lisp);
+                    strvalue = s_middle(strvalue,p,n);
+                    return new Stringbyte(strvalue);
+                }
+                u_ustring strvalue =  v->asUString(lisp);
                 strvalue = s_umiddle(strvalue,p,n);
                 return lisp->provideString(strvalue);
             }
@@ -619,159 +1158,62 @@ public:
                 long nb = lisp->get_variable(v_nb)->asNumber();
                 if (nb <= 0)
                     throw new Error("Error: nb should be a positive value");
-                
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
-                long j;
-                long mx = s.size() - nb + 1;
-                u_ustring u;
-                Strings* ke = lisp->provideStrings();
-                for (long i = 0; i < mx; i++) {
-                    u = U"";
-                    for (j = i; j < i + nb; j++) {
-                        u += lisp->handlingutf8->getachar(s,j);
-                    }
-                    ke->liste.push_back(u);
-                }
-                return ke;
+                return method_ngrams(lisp, nb);
             }
             case str_trim0: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                if (v->type == t_stringbyte) {
+                    string strvalue =  v->toString(lisp);
+                    strvalue = s_trim0(strvalue);
+                    return new Stringbyte(strvalue);
+                }
+                
+                u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trim0(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trim:  {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                if (v->type == t_stringbyte) {
+                    string strvalue =  v->toString(lisp);
+                    strvalue = s_trim(strvalue);
+                    return new Stringbyte(strvalue);
+                }
+                
+                u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trim(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimleft:  {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                if (v->type == t_stringbyte) {
+                    string strvalue =  v->toString(lisp);
+                    strvalue = s_trimleft(strvalue);
+                    return new Stringbyte(strvalue);
+                }
+                
+                u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trimleft(strvalue);
                 return lisp->provideString(strvalue);
             }
             case str_trimright:  {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                if (v->type == t_stringbyte) {
+                    string strvalue =  v->toString(lisp);
+                    strvalue = s_trimright(strvalue);
+                    return new Stringbyte(strvalue);
+                }
+                
+                u_ustring strvalue =  v->asUString(lisp);
                 strvalue = u_trimright(strvalue);
                 return lisp->provideString(strvalue);
             }
-            case str_split_empty: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
-                Element* u_find = lisp->get_variable(v_fnd);
-                Strings* result = lisp->provideStrings();
-                u_ustring search_string;
-                
-                if (u_find == null_) {
-                    u_uchar c;
-                    long sz = strvalue.size();
-                    for (long i = 0; i < sz; i++) {
-                        c = strvalue[i];
-                        if (c <= 32) {
-                            result->liste.push_back(search_string);
-                            search_string = U"";
-                        }
-                        else
-                            search_string += c;
-                    }
-                    if (search_string != U"")
-                        result->liste.push_back(search_string);
-                    return result;
-                }
-                
-                u_ustring localvalue;
-                long pos = 0;
-
-                search_string = u_find->asUString(lisp);
-                if (search_string == U"") {
-                    long sz = strvalue.size();
-                    //we split the string into an array of characters
-                    while (pos < sz) {
-                        lisp->handlingutf8->getchar(strvalue, localvalue, pos, sz);
-                        result->append(localvalue);
-                    }
-                    return result;
-                }
-
-                size_t found = 0;
-                while (pos != string::npos) {
-                    found = strvalue.find(search_string, pos);
-                    if (found != string::npos) {
-                        localvalue = strvalue.substr(pos, found - pos);
-                        result->append(localvalue);
-                        pos = found + search_string.size();
-                    }
-                    else
-                        break;
-                }
-
-                if (strvalue.size() < pos) {
-                    localvalue = strvalue.substr(pos, strvalue.size() - pos);
-                    result->append(localvalue);
-                }
-            
-                return result;
-            }
+            case str_split_empty:
+                return method_splite(lisp);
             case str_getstruct:
                 return getstruct(lisp);
-            case str_split: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
-                Element* u_find = lisp->get_variable(v_fnd);
-                Strings* result = lisp->provideStrings();
-                u_ustring search_string;
-                
-                if (u_find == null_) {
-                    u_uchar c;
-                    long sz = strvalue.size();
-                    for (long i = 0; i < sz; i++) {
-                        c = strvalue[i];
-                        if (c <= 32) {
-                            if (search_string != U"") {
-                                result->liste.push_back(search_string);
-                                search_string = U"";
-                            }
-                        }
-                        else
-                            search_string += c;
-                    }
-                    if (search_string != U"")
-                        result->liste.push_back(search_string);
-                    return result;
-                }
-                
-                u_ustring localvalue;
-                long pos = 0;
-                
-                search_string = u_find->asUString(lisp);
-                if (search_string == U"") {
-                    long sz = strvalue.size();
-                    //we split the string into an array of characters
-                    while (pos < sz) {
-                        lisp->handlingutf8->getchar(strvalue, localvalue, pos, sz);
-                        result->append(localvalue);
-                    }
-                    return result;
-                }
-
-                size_t found = 0;
-                while (pos != string::npos) {
-                    found = strvalue.find(search_string, pos);
-                    if (found != string::npos) {
-                        localvalue = strvalue.substr(pos, found - pos);
-                        if (localvalue != U"") {
-                            result->append(localvalue);
-                        }
-                        pos = found + search_string.size();
-                    }
-                    else
-                        break;
-                }
-                
-                localvalue = strvalue.substr(pos, strvalue.size() - pos);
-                if (localvalue != U"") {
-                    result->append(localvalue);
-                }
-                
-                return result;
-            }
+            case str_split:
+                return method_split(lisp);
             case str_ord: {
                 u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 if (strvalue.size() == 0)
@@ -813,18 +1255,31 @@ public:
                 return booleans_[lisp->handlingutf8->s_is_consonant(s)];
             }
             case str_deaccentuate: {
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* v = lisp->get_variable(v_str);
+                u_ustring s =  v->asUString(lisp);
                 s = lisp->handlingutf8->s_deaccentuate(s);
+                if (v->type == t_stringbyte)
+                    return new Stringbyte(s);
                 return lisp->provideString(s);
             }
             case str_segment_lispe: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* vstr = lisp->get_variable(v_str);
                 short point = lisp->get_variable("point")->asShort();
+                if (vstr->type == t_stringbyte) {
+                    string strvalue =  vstr->toString(lisp);
+                    return lisp->tokenize(strvalue, false, point);
+                }
+                u_ustring strvalue =  vstr->asUString(lisp);
                 return lisp->tokenize(strvalue, false, point);
             }
             case str_segment_empty: {
-                u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
+                Element* vstr = lisp->get_variable(v_str);
                 short point = lisp->get_variable("point")->asShort();
+                if (vstr->type == t_stringbyte) {
+                    string strvalue =  vstr->toString(lisp);
+                    return lisp->tokenize(strvalue, true, point);
+                }
+                u_ustring strvalue =  vstr->asUString(lisp);
                 return lisp->tokenize(strvalue, true, point);
             }
             case str_tokenizer_main: {
@@ -862,9 +1317,13 @@ public:
                 if (tok->type != v_tokenize)
                     throw new Error("Error: the first element should be a string_rule object");
                 Element* types = lisp->get_variable(U"types");
-                u_ustring s =  lisp->get_variable(v_str)->asUString(lisp);
-                Element* vstr = ((Rulemethod*)tok)->tokenize(s, types->Boolean());
-                return vstr;
+                Element* vstr = lisp->get_variable(v_str);
+                if (vstr->type == t_stringbyte) {
+                    string s =  vstr->toString(lisp);
+                    return ((Rulemethod*)tok)->tokenize(s, types->Boolean());
+                }
+                u_ustring s =  vstr->asUString(lisp);
+                return ((Rulemethod*)tok)->tokenize(s, types->Boolean());
             }
             case str_get_rules: {
                 Element* tok = lisp->get_variable(U"rules");

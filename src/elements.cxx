@@ -89,6 +89,44 @@ Element* String::charge(LispE* lisp, string chemin) {
     return this;
 }
 
+Element* Stringbyte::charge(LispE* lisp, string chemin) {
+    std::ifstream f(chemin.c_str(),std::ios::in|std::ios::binary);
+    if (f.fail()) {
+        string erreur = "Unknown file: ";
+        erreur += chemin;
+        throw new Error(erreur);
+    }
+    
+    content = "";
+    string ln;
+    while (!f.eof()) {
+        getline(f, ln);
+        content += ln + "\n";
+    }
+    
+    return this;
+}
+
+Element* String::chargebin(LispE* lisp, string chemin) {
+    std::ifstream f(chemin.c_str(),std::ios::in|std::ios::binary);
+    if (f.fail()) {
+        string erreur = "Unknown file: ";
+        erreur += chemin;
+        throw new Error(erreur);
+    }
+
+    Shorts* s = new Shorts();
+    string ln;
+    long i;
+    while (!f.eof()) {
+        getline(f, ln);
+        for (i = 0; i < ln.size(); i++)
+            s->liste.push_back((uchar)ln[i]);
+    }
+    
+    return s;
+}
+    
 //------------------------------------------------------------------------------------------
 Element* Float::duplicate_constant(LispE* lisp) {
     return !status?this:lisp->provideFloat(content);
@@ -112,6 +150,11 @@ Element* Integer::duplicate_constant(LispE* lisp) {
 Element* String::duplicate_constant(LispE* lisp) {
     return !status?this:lisp->provideString(content);
 }
+
+Element* Stringbyte::duplicate_constant(LispE* lisp) {
+    return !status?this:new Stringbyte(content);
+}
+
 //------------------------------------------------------------------------------------------
 
 Element* Float::copyatom(LispE* lisp, uint16_t s) {
@@ -129,6 +172,10 @@ Element* Integer::copyatom(LispE* lisp, uint16_t s) {
 
 Element* String::copyatom(LispE* lisp, uint16_t s) {
     return (status < s)?this:lisp->provideString(content);
+}
+
+Element* Stringbyte::copyatom(LispE* lisp, uint16_t s) {
+    return (status < s)?this:new Stringbyte(content);
 }
 
 Element* Dictionary::copyatom(LispE* lisp, uint16_t s) {
@@ -258,6 +305,15 @@ Element* Strings::copyatom(LispE* lisp, uint16_t s) {
         return this;
     
     Strings* sl = lisp->provideStrings(this);
+    release();
+    return sl;
+}
+
+Element* Stringbytes::copyatom(LispE* lisp, uint16_t s) {
+    if (liste.shared(status) < s)
+        return this;
+    
+    Stringbytes* sl = new Stringbytes(this);
     release();
     return sl;
 }
@@ -631,6 +687,22 @@ Element* Conststring::duplicate_constant(LispE* lisp) {
     return lisp->provideString(content);
 }
 
+Element* Conststringbyte::copying(bool duplicate) {
+    return new Stringbyte(content);
+}
+
+Element* Conststringbyte::fullcopy() {
+    return new Stringbyte(content);
+}
+
+Element* Conststringbyte::copyatom(LispE* lsp, uint16_t s) {
+    return new Stringbyte(content);
+}
+
+Element* Conststringbyte::duplicate_constant(LispE* lisp) {
+    return new Stringbyte(content);
+}
+
 Element* Stringpool::fullcopy() {
     if (lisp->preparingthread)
         return new String(content);
@@ -704,6 +776,14 @@ void Element::flatten(LispE* lisp, Integers* l) {
 }
 
 void Element::flatten(LispE* lisp, Shorts* l) {
+    l->append(this);
+}
+
+void Element::flatten(LispE* lisp, Strings* l) {
+    l->append(this);
+}
+
+void Element::flatten(LispE* lisp, Stringbytes* l) {
     l->append(this);
 }
 
@@ -1104,7 +1184,36 @@ Element* String::loop(LispE* lisp, int16_t label, List* code) {
     u_ustring localvalue;
     long szc = content.size();
     while (i < szc) {
-        lisp->handlingutf8->getchar(content, localvalue, i, szc);
+        lisp->handlingutf8->getchar(content, localvalue, i);
+        _releasing(e);
+        element->content = localvalue;
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            //the break is local, the return is global to a function
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
+Element* Stringbyte::loop(LispE* lisp, int16_t label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    Stringbyte* element = new Stringbyte();
+    lisp->recording(element, label);
+    
+    long sz = code->liste.size();
+    long i = 0;
+    string localvalue;
+    long szc = content.size();
+    while (i < szc) {
+        lisp->handlingutf8->getchar(content, localvalue, i);
         _releasing(e);
         element->content = localvalue;
         //We then execute our instructions
@@ -1328,6 +1437,22 @@ Element* Cyclelist::loop(LispE* lisp, int16_t label, List* code) {
  */
 
 //------------------------------------------------------------------------------------------
+Element* s_findall(LispE* lisp, string& s, string& sub, long from) {
+    long sz = sub.size();
+    if (!sz)
+        return emptylist_;
+    
+    long pos = s.find(sub, from);
+    if (pos == -1)
+        return emptylist_;
+    Integers* liste = lisp->provideIntegers();
+    while (pos != -1) {
+        liste->liste.push_back(pos);
+        pos=s.find(sub,pos+sz);
+    }
+    return liste;
+}
+
 Element* s_findall(LispE* lisp, wstring& s, wstring& sub, long from) {
     long sz = sub.size();
     if (!sz)
@@ -1358,6 +1483,22 @@ Element* s_findall(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
         pos=s.find(sub,pos+sz);
     }
     return liste;
+}
+
+Element* s_count(LispE* lisp, string& s, string& sub, long from) {
+    long sz = sub.size();
+    if (!sz)
+        return zero_;
+    
+    long pos = s.find(sub, from);
+    if (pos == -1)
+        return zero_;
+    long nb = 0;
+    while (pos != -1) {
+        nb++;
+        pos=s.find(sub,pos+sz);
+    }
+    return lisp->provideInteger(nb);
 }
 
 Element* s_count(LispE* lisp, u_ustring& s, u_ustring& sub, long from) {
@@ -1438,13 +1579,12 @@ Element* String::insert(LispE* lisp, Element* e, long ix) {
     return lisp->provideString(res);
 }
 
-
-
 Element* String::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
     long end = size();
+    String* result = lisp->provideString(content);
     if (!end) {
-        content += e->asUString(lisp);
-        return this;
+        result->content += e->asUString(lisp);
+        return result;
     }
     
     String* ct = lisp->provideString();
@@ -1452,66 +1592,19 @@ Element* String::insert_with_compare(LispE* lisp, Element* e, List& comparison) 
     comparison.in_quote(2, ct);
     
     Element* test = NULL;
-    
-    if (end < 3) {
-        ct->content = content[0];
+
+    long pos = 0;
+    long previous = 0;
+    while (pos < end) {
+        lisp->handlingutf8->getchar(content, ct->content, pos);
         test = comparison.eval(lisp);
-        if (test->Boolean())
-            insertion(e, 0);
-        else {
-            if (end == 2) {
-                ct->content = content[1];
-                test = comparison.eval(lisp);
-                if (test->Boolean()) {
-                    insertion(e , 1);
-                    return this;
-                }
-            }
-            append(e);
+        if (test->Boolean()) {
+            result->content.insert(previous, e->asUString(lisp));
+            break;
         }
-        return this;
+        previous = pos;
     }
-    
-    end--;
-    long begin = 0;
-    long i = 0;
-    
-    //then we compare by dichotomy
-    while ((end-begin) > 1) {
-        i = begin + ((end - begin) >> 1);
-        ct->content = content[i];
-        test = comparison.eval(lisp);
-        if (test->Boolean())
-            end = i;
-        else
-            begin = i;
-    }
-    
-    if (test->Boolean()) {
-        if (i == begin)
-            insertion(e, i);
-        else {
-            ct->content = content[begin];
-            test = comparison.eval(lisp);
-            if (test->Boolean())
-                insertion(e, begin);
-            else
-                insertion(e, end);
-        }
-    }
-    else {
-        if (i == end)
-            insertion(e, i + 1);
-        else {
-            ct->content = content[end];
-            test = comparison.eval(lisp);
-            if (test->Boolean())
-                insertion(e, end);
-            else
-                insertion(e, end + 1);
-        }
-    }
-    return this;
+    return result;
 }
 
 Element* String::rotate(LispE* lisp, long nb) {
@@ -1546,7 +1639,7 @@ Element* String::rotate(LispE* lisp, long nb) {
     return reverse;
 }
 
-Element* String::rotate(bool left) {
+Element* String::rotating(LispE* lisp, bool left) {
     if (content.size() <= 1)
         return this;
     
@@ -1560,7 +1653,140 @@ Element* String::rotate(bool left) {
     s->content += content.substr(0, content.size()-1);
     return s;
 }
+//------------------------------------------------------------------------------------
+void Stringbyte::push_element(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        content += value->toString(lisp);
+        value->release();
+    }
+}
 
+void Stringbyte::push_element_true(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        if (value->label() > 1) {
+            content += value->toString(lisp);
+            value->release();
+        }
+    }
+}
+
+void Stringbyte::push_element_front(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        content.insert(0, value->toString(lisp));
+        value->release();
+    }
+}
+
+void Stringbyte::push_element_back(LispE* lisp, List* l) {
+    Element* value;
+    for (long i = 2; i < l->size(); i++) {
+        value = l->liste[i]->eval(lisp);
+        content += value->toString(lisp);
+        value->release();
+    }
+}
+
+Element* Stringbyte::insert(LispE* lisp, Element* e, long ix) {
+    string res;
+    if (ix < 0)
+        res = lisp->handlingutf8->insert_sep(content, e->toString(lisp));
+    else {
+        if (ix >= size())
+            res = content + e->toString(lisp);
+        else {
+            res = content;
+            ix  = lisp->handlingutf8->charTobyte(content, ix);
+            res.insert(ix, e->toString(lisp));
+        }
+    }
+    return new Stringbyte(res);
+}
+
+Element* Stringbyte::insert_with_compare(LispE* lisp, Element* e, List& comparison) {
+    long end = size();
+    Stringbyte* result = new Stringbyte(content);
+    if (!end) {
+        result->content += e->toString(lisp);
+        return result;
+    }
+    
+    Stringbyte* ct = new Stringbyte();
+    
+    comparison.in_quote(2, ct);
+    
+    Element* test = NULL;
+    long pos = 0;
+    long previous = 0;
+    while (pos < end) {
+        lisp->handlingutf8->getchar(content, ct->content, pos);
+        test = comparison.eval(lisp);
+        if (test->Boolean()) {
+            result->content.insert(previous, e->toString(lisp));
+            break;
+        }
+        previous = pos;
+    }
+    return result;
+}
+
+Element* Stringbyte::rotate(LispE* lisp, long nb) {
+    //In this case, we rotate our list by nb elements
+    //If nb is negative we rotate to the right
+    //+1: (a b c d) -> (d a b c)
+    //-1: (a b c d) -> (b c d a)
+    long sz = content.size();
+    if (sz <= 1)
+        return this;
+    
+    long i;
+    if (nb > 0) {
+        nb = nb % sz;
+        if (!nb)
+            return this;
+        Stringbyte* reverse = new Stringbyte();
+        nb = lisp->handlingutf8->charTobyte(content, nb);
+        for (i = nb; i < sz; i++)
+            reverse->content += content[i];
+        for (i = 0; i < nb; i++)
+            reverse->content += content[i];
+        return reverse;
+    }
+    nb = (nb*-1) % sz;
+    if (!nb)
+        return this;
+    Stringbyte* reverse = new Stringbyte();
+    nb = lisp->handlingutf8->charTobyte(content, nb);
+    for (i = sz - nb; i < sz; i++)
+        reverse->content += content[i];
+    for (i = nb; i < sz; i++)
+        reverse->content += content[i-nb];
+    return reverse;
+}
+
+Element* Stringbyte::rotating(LispE* lisp, bool left) {
+    if (content.size() <= 1)
+        return this;
+    
+    Stringbyte* s = new Stringbyte();
+    long nb;
+    if (left) {
+        nb = lisp->handlingutf8->charTobyte(content, 0);
+        s->content = content.substr(nb + 1,content.size());
+        s->content += content[0];
+        return s;
+    }
+    s->content = content.back();
+    nb = size_c(content) - 1;
+    nb = lisp->handlingutf8->charTobyte(content, nb);
+    s->content += content.substr(0, nb);
+    return s;
+}
 //------------------------------------------------------------------------------------------
 
 Element* Element::thekeys(LispE* lisp) {
@@ -1568,6 +1794,14 @@ Element* Element::thekeys(LispE* lisp) {
 }
 
 Element* String::thekeys(LispE* lisp) {
+    Integers* keys = lisp->provideIntegers();
+    for (long i = 0; i< size(); i++) {
+        keys->liste.push_back(i);
+    }
+    return keys;
+}
+
+Element* Stringbyte::thekeys(LispE* lisp) {
     Integers* keys = lisp->provideIntegers();
     for (long i = 0; i< size(); i++) {
         keys->liste.push_back(i);
@@ -1605,6 +1839,13 @@ Element* String::search_element(LispE* lisp, Element* valeur, long ix) {
     return (ix == -1)?null_:lisp->provideInteger(ix);
 }
 
+Element* Stringbyte::search_element(LispE* lisp, Element* valeur, long ix) {
+    string val = valeur->toString(lisp);
+    ix =  content.find(val, ix);
+    ix = lisp->handlingutf8->byteTochar(content, ix);
+    return (ix == -1)?null_:lisp->provideInteger(ix);
+}
+
 //------------------------------------------------------------------------------------------
 bool Element::check_element(LispE* lisp, Element* valeur) {
     return false;
@@ -1612,6 +1853,11 @@ bool Element::check_element(LispE* lisp, Element* valeur) {
 
 bool String::check_element(LispE* lisp, Element* valeur) {
     u_ustring val = valeur->asUString(lisp);
+    return (content.find(val, 0) != -1);
+}
+
+bool Stringbyte::check_element(LispE* lisp, Element* valeur) {
+    string val = valeur->toString(lisp);
     return (content.find(val, 0) != -1);
 }
 
@@ -1633,6 +1879,13 @@ Element* String::replace_all_elements(LispE* lisp, Element* valeur, Element* rem
     return lisp->provideInteger(nb);
 }
 
+Element* Stringbyte::replace_all_elements(LispE* lisp, Element* valeur, Element* remp) {
+    string cherche = valeur->toString(lisp);
+    string remplacement = remp->toString(lisp);
+    long nb = nb_replacestring(content,cherche, remplacement);
+    return lisp->provideInteger(nb);
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     return emptylist_;
@@ -1644,6 +1897,12 @@ Element* String::search_all_elements(LispE* lisp, Element* valeur, long ix) {
     return s_findall(lisp,content, val, ix);
 }
 
+Element* Stringbyte::search_all_elements(LispE* lisp, Element* valeur, long ix) {
+    string val = valeur->toString(lisp);
+    ix =  content.find(val, ix);
+    return s_findall(lisp,content, val, ix);
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     return zero_;
@@ -1651,6 +1910,12 @@ Element* Element::count_all_elements(LispE* lisp, Element* valeur, long ix) {
 
 Element* String::count_all_elements(LispE* lisp, Element* valeur, long ix) {
     u_ustring val = valeur->asUString(lisp);
+    ix =  content.find(val, ix);
+    return s_count(lisp,content, val, ix);
+}
+
+Element* Stringbyte::count_all_elements(LispE* lisp, Element* valeur, long ix) {
+    string val = valeur->toString(lisp);
     ix =  content.find(val, ix);
     return s_count(lisp,content, val, ix);
 }
@@ -1670,6 +1935,16 @@ Element* String::list_and(LispE* lisp, Element* value) {
     return result;
 }
 
+Element* Stringbyte::list_and(LispE* lisp, Element* value) {
+    Stringbyte* result = new Stringbyte();
+    string val = value->toString(lisp);
+    for (long i = 0; i < content.size(); i++) {
+        if (val.find(content[i]) != -1 && result->content.find(content[i]) == -1)
+            result->content += content[i];
+    }
+    return result;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::list_or(LispE* lisp, Element* value) {
     return this;
@@ -1678,6 +1953,23 @@ Element* Element::list_or(LispE* lisp, Element* value) {
 Element* String::list_or(LispE* lisp, Element* value) {
     String* result = lisp->provideString();
     u_ustring val = value->asUString(lisp);
+    long i;
+    for (i = 0; i < content.size(); i++) {
+        if (result->content.find(content[i]) == -1)
+            result->content += content[i];
+    }
+    
+    for (i = 0; i < val.size(); i++) {
+        if (result->content.find(val[i]) == -1)
+            result->content += val[i];
+    }
+    
+    return result;
+}
+
+Element* Stringbyte::list_or(LispE* lisp, Element* value) {
+    Stringbyte* result = new Stringbyte();
+    string val = value->toString(lisp);
     long i;
     for (i = 0; i < content.size(); i++) {
         if (result->content.find(content[i]) == -1)
@@ -1716,6 +2008,25 @@ Element* String::list_xor(LispE* lisp, Element* value) {
     return result;
 }
 
+Element* Stringbyte::list_xor(LispE* lisp, Element* value) {
+    Stringbyte* intersection = (Stringbyte*)list_and(lisp, value);
+    
+    Stringbyte* result = new Stringbyte();
+    string val = value->toString(lisp);
+    long i;
+    for (i = 0; i < content.size(); i++) {
+        if (intersection->content.find(content[i]) == -1 && result->content.find(content[i]) == -1)
+            result->content += content[i];
+    }
+    
+    for (i = 0; i < val.size(); i++) {
+        if (intersection->content.find(val[i]) == -1 && result->content.find(val[i]) == -1)
+            result->content += val[i];
+    }
+    intersection->release();
+    return result;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::search_reverse(LispE* lisp, Element* valeur, long ix) {
     return null_;
@@ -1724,6 +2035,13 @@ Element* Element::search_reverse(LispE* lisp, Element* valeur, long ix) {
 Element* String::search_reverse(LispE* lisp, Element* valeur, long ix) {
     u_ustring val = valeur->asUString(lisp);
     ix =  content.rfind(val, content.size() - ix);
+    return (ix == -1)?null_:lisp->provideInteger(ix);
+}
+
+Element* Stringbyte::search_reverse(LispE* lisp, Element* valeur, long ix) {
+    string val = valeur->toString(lisp);
+    ix =  content.rfind(val, content.size() - ix);
+    ix = lisp->handlingutf8->byteTochar(content, ix);
     return (ix == -1)?null_:lisp->provideInteger(ix);
 }
 
@@ -1756,11 +2074,35 @@ Element* Integer::reverse(LispE* lisp, bool duplicate) {
 
 Element* String::reverse(LispE* lisp, bool duplicate) {
     u_ustring resultat;
-    for (long i = content.size()-1; i >= 0; i--)
-        resultat += content[i];
-    
+    long sz = content.size();
+    long pos = 0;
+    //we split the string into an array of characters
+    u_ustring localvalue;
+    while (pos < sz) {
+        lisp->handlingutf8->getchar(content, localvalue, pos);
+        resultat = localvalue + resultat;
+    }
+
     if (duplicate)
         return lisp->provideString(resultat);
+    
+    content = resultat;
+    return this;
+}
+
+Element* Stringbyte::reverse(LispE* lisp, bool duplicate) {
+    string resultat;
+    long sz = content.size();
+    long pos = 0;
+    //we split the string into an array of characters
+    string localvalue;
+    while (pos < sz) {
+        lisp->handlingutf8->getchar(content, localvalue, pos);
+        resultat = localvalue + resultat;
+    }
+
+    if (duplicate)
+        return new Stringbyte(resultat);
     
     content = resultat;
     return this;
@@ -1788,6 +2130,15 @@ Element* String::protected_index(LispE* lisp,long i) {
     return null_;
 }
 
+Element* Stringbyte::protected_index(LispE* lisp,long i) {
+    if (i >= 0 && i < size()) {
+        string res;
+        lisp->handlingutf8->getAtchar(content, res, i);
+        return new Stringbyte(res);
+    }
+    return null_;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::last_element(LispE* lisp) {
     return null_;
@@ -1798,6 +2149,15 @@ Element* String::last_element(LispE* lisp) {
         return null_;
     wchar_t c = content.back();
     return lisp->provideString(c);
+}
+
+Element* Stringbyte::last_element(LispE* lisp) {
+    if (!content.size())
+        return null_;
+    long sz = size() - 1;
+    string res;
+    lisp->handlingutf8->getAtchar(content, res, sz);
+    return new Stringbyte(res);
 }
 
 //------------------------------------------------------------------------------------------
@@ -1811,12 +2171,22 @@ Element* String::value_on_index(LispE* lisp, long i) {
     return null_;
 }
 
+Element* Stringbyte::value_on_index(LispE* lisp, long i) {
+    if (i >= 0 && i < content.size())
+        return new Stringbyte(content[i]);
+    return null_;
+}
+
 Element* Element::value_from_index(LispE* lisp, long i) {
     return null_;
 }
 
 Element* String::value_from_index(LispE* lisp, long i) {
     return lisp->provideString(content[i]);
+}
+
+Element* Stringbyte::value_from_index(LispE* lisp, long i) {
+    return new Stringbyte(content[i]);
 }
 
 //------------------------------------------------------------------------------------------
@@ -1851,6 +2221,16 @@ Element* String::value_on_index(LispE* lisp, Element* ix) {
     return null_;
 }
 
+Element* Stringbyte::value_on_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
+    if (i < 0)
+        i = content.size() + i;
+    
+    if (i >= 0 && i < content.size())
+        return new Stringbyte(content[i]);
+    return null_;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::protected_index(LispE* lisp,Element*) {
     throw new Error("Error: value cannot be access through index");
@@ -1867,6 +2247,21 @@ Element* String::protected_index(LispE* lisp, Element* ix) {
     throw new Error("Error: index out of bounds");
 }
 
+Element* Stringbyte::protected_index(LispE* lisp, Element* ix) {
+    long i = ix->checkInteger(lisp);
+    
+    long sz = size();
+    if (i < 0)
+        i = sz + i;
+    
+    if (i >= 0 && i < sz) {
+        string res;
+        lisp->handlingutf8->getAtchar(content, res, i);
+        return new Stringbyte(res);
+    }
+    throw new Error("Error: index out of bounds");
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::join_in_list(LispE* lisp, u_ustring& sep) {
     throw new Error("Error: 'join' can only be used for lists");
@@ -1876,6 +2271,11 @@ Element* Element::join_in_list(LispE* lisp, u_ustring& sep) {
 Element* Element::charge(LispE* lisp, string chemin) {
     return emptyatom_;
 }
+
+Element* Element::chargebin(LispE* lisp, string chemin) {
+    return emptylist_;
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::replace(LispE* lisp, long i, Element* e) {
     throw new Error("Error: cannot modify this element");
@@ -1896,6 +2296,23 @@ Element* String::replace(LispE* lisp, long i, Element* e) {
     c += content.substr(i+1, content.size());
     return lisp->provideString(c);
 }
+
+Element* Stringbyte::replace(LispE* lisp, long i, Element* e) {
+    if (i < 0) {
+        i += content.size();
+        if (i < 0)
+            throw new Error("Error: index out of bounds");
+    }
+    
+    if (i >= content.size())
+        throw new Error("Error: index out of bounds");
+    
+    string c = content.substr(0, i);
+    c += e->toString(lisp);
+    c += content.substr(i+1, content.size());
+    return new Stringbyte(c);
+}
+
 //------------------------------------------------------------------------------------------
 
 wstring Infinitelist::asString(LispE* lisp) {
@@ -1983,6 +2400,10 @@ Element* String::equal(LispE* lisp, Element* e) {
     return booleans_[(e->type == t_string && content == ((String*)e)->content)];
 }
 
+Element* Stringbyte::equal(LispE* lisp, Element* e) {
+    return booleans_[(e->type == t_stringbyte && content == ((Stringbyte*)e)->content)];
+}
+
 Element* Number::equal(LispE* lisp, Element* e) {
     return booleans_[(e->isNumber() && content == e->asNumber())];
 }
@@ -2017,6 +2438,10 @@ bool Maybe::egal(Element* e) {
 
 bool String::egal(Element* e) {
     return (e->type == t_string && content == ((String*)e)->content);
+}
+
+bool Stringbyte::egal(Element* e) {
+    return (e->type == t_stringbyte && content == ((Stringbyte*)e)->content);
 }
 
 bool Number::egal(Element* e) {
@@ -2082,6 +2507,29 @@ Element* String::more(LispE* lisp, Element* e) {
 Element* String::moreorequal(LispE* lisp, Element* e) {
     return booleans_[content >= e->asUString(lisp)];
 }
+
+Element* Stringbyte::less(LispE* lisp, Element* e) {
+    return booleans_[content < e->toString(lisp)];
+}
+
+Element* Stringbyte::compare(LispE* lisp, Element* e) {
+    string v = e->toString(lisp);
+    int16_t test = (content == v) + (content < v) * 2;
+    return lisp->delegation->_COMPARE_BOOLEANS[test];
+}
+
+Element* Stringbyte::lessorequal(LispE* lisp, Element* e){
+    return booleans_[content <= e->toString(lisp)];
+}
+
+Element* Stringbyte::more(LispE* lisp, Element* e) {
+    return booleans_[content > e->toString(lisp)];
+}
+
+Element* Stringbyte::moreorequal(LispE* lisp, Element* e) {
+    return booleans_[content >= e->toString(lisp)];
+}
+
 
 Element* Number::less(LispE* lisp, Element* e) {
     return booleans_[content < e->asNumber()];
@@ -2279,6 +2727,21 @@ Element* String::plus(LispE* lisp, Element* e) {
     return lisp->provideString(c);
 }
 
+Element* Stringbyte::plus(LispE* lisp, Element* e) {
+    if (e->isList()) {
+        Element* n = e->newInstance(this);
+        release();
+        return n->plus(lisp, e);
+    }
+    
+    if (status != s_constant) {
+        content += e->toString(lisp);
+        return this;
+    }
+    string c = content + e->toString(lisp);
+    return new Stringbyte(c);
+}
+
 //------------------------------------------------------------------------------------------
 Element* Element::extraction(LispE* lisp, List* l) {
     return null_;
@@ -2325,6 +2788,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
     }
     
     switch (ty) {
+        case t_stringbyte:
         case t_string: {
             u_ustring ch = e_from->asUString(lisp);
             from = content.find(ch);
@@ -2417,6 +2881,7 @@ Element* String::extraction(LispE* lisp, List* liste) {
     long upto;
     
     switch (ty) {
+        case t_stringbyte:
         case t_string: {
             if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
@@ -2481,6 +2946,207 @@ Element* String::extraction(LispE* lisp, List* liste) {
     u_ustring remplace = content.substr(from, upto - from);
     return lisp->provideString(remplace);
 }
+
+Element* Stringbyte::extraction(LispE* lisp, List* liste) {
+    Element* e_from = liste->liste[2];
+    
+    long from;
+    long firstisString = -1;
+    int16_t nxt = 3;
+    int16_t ty;
+    switch (e_from->label()) {
+        case l_minus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-'");
+            break;
+        case l_plus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '+'");
+            break;
+        case l_minus_plus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-+'");
+            break;
+        default:
+            e_from = e_from->eval(lisp);
+            ty = e_from->type;
+    }
+    
+    switch (ty) {
+        case t_stringbyte:
+        case t_string: {
+            string ch = e_from->toString(lisp);
+            from = content.find(ch);
+            if (from == -1)
+                return emptystring_;
+            from += ch.size();
+            firstisString = 0;
+            break;
+        }
+        case t_plus_string: {
+            string ch = e_from->toString(lisp);
+            from = content.find(ch);
+            if (from == -1)
+                return emptystring_;
+            firstisString = ch.size();
+            break;
+        }
+        case t_minus_string: {
+            string ch = e_from->toString(lisp);
+            from = content.rfind(ch, content.size());
+            if (from == -1)
+                return emptystring_;
+            //We skip the first characters
+            from += ch.size();
+            firstisString = 0;
+            break;
+        }
+        case t_minus_plus_string: {
+            string ch = e_from->toString(lisp);
+            from = content.rfind(ch, content.size());
+            if (from == -1)
+                return emptystring_;
+            firstisString = ch.size();
+            break;
+        }
+        case t_float:
+        case t_short:
+        case t_integer:
+        case t_number:
+            //We transform an character position into a byte position
+            from = lisp->handlingutf8->charTobyte(content, e_from->asInteger());
+            if (from < 0)
+                from = content.size() + from;
+            break;
+        default:
+            e_from->release();
+            throw new Error("Error: cannot use the first position in 'extract'");
+    }
+    
+    e_from->release();
+    
+    if (from < 0 || from >= content.size())
+        return emptystring_;
+    
+    if (nxt == liste->size()) {
+        //Only one element is returned
+        return new Stringbyte(lisp->handlingutf8->getachar(content, from));
+    }
+    
+    Element* e_upto = liste->liste[nxt];
+    switch (e_upto->label()) {
+        case l_minus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-'");
+            break;
+        case l_plus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '+'");
+            break;
+        case l_minus_plus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-+'");
+            break;
+        default:
+            e_upto = e_upto->eval(lisp);
+            ty = e_upto->type;
+    }
+    
+    long upto;
+    
+    switch (ty) {
+        case t_stringbyte:
+        case t_string: {
+            if (firstisString == -1) firstisString = 0;
+            string ch = e_upto->toString(lisp);
+            upto = content.find(ch, from + firstisString);
+            if (upto == -1)
+                return emptystring_;
+            break;
+        }
+        case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
+            string ch = e_upto->toString(lisp);
+            upto = content.find(ch, from + firstisString);
+            if (upto == -1)
+                return emptystring_;
+            //All characters are integrated
+            upto += ch.size();
+            break;
+        }
+        case t_minus_string: {
+            string ch = e_upto->toString(lisp);
+            upto = content.rfind(ch, content.size());
+            if (upto == -1)
+                return emptystring_;
+            break;
+        }
+        case t_minus_plus_string: {
+            string ch = e_upto->toString(lisp);
+            upto = content.rfind(ch, content.size());
+            if (upto == -1)
+                return emptystring_;
+            //All characters are integrated
+            upto += ch.size();
+            break;
+        }
+        case t_float:
+        case t_short:
+        case t_integer:
+        case t_number:
+            upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
+            if (firstisString != -1 && upto > 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
+            else {
+                if (upto <= 0) {
+                    //We start from the end...
+                    upto = content.size() + upto;
+                }
+            }
+            break;
+        default:
+            e_upto->release();
+            throw new Error("Error: cannot use the second position in 'extract'");
+    }
+    
+    e_upto->release();
+    if (upto <= from)
+        return emptystring_;
+    
+    if (upto > content.size())
+        upto = content.size();
+    string remplace = content.substr(from, upto - from);
+    return new Stringbyte(remplace);
+}
 //------------------------------------------------------------------------------------------
 Element* Element::replace_in(LispE* lisp, List* l) {
     return null_;
@@ -2531,6 +3197,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     }
     
     switch (ty) {
+        case t_stringbyte:
         case t_string: {
             u_ustring ch = e_from->asUString(lisp);
             from = content.find(ch);
@@ -2626,6 +3293,7 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     long upto;
     
     switch (ty) {
+        case t_stringbyte:
         case t_string: {
             if (firstisString == -1) firstisString = 0;
             u_ustring ch = e_upto->asUString(lisp);
@@ -2692,6 +3360,215 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     result += content.substr(upto, content.size());
     return lisp->provideString(result);
 }
+
+Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
+    Element* e_from = liste->liste.back()->eval(lisp);
+    string last = e_from->toString(lisp);
+    e_from->release();
+    
+    e_from = liste->liste[2];
+    
+    long from;
+    long firstisString = -1;
+    int16_t nxt = 3;
+    int16_t ty;
+    switch (e_from->label()) {
+        case l_minus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-'");
+            break;
+        case l_plus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '+'");
+            break;
+        case l_minus_plus:
+            e_from = liste->liste[3]->eval(lisp);
+            nxt = 4;
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after first operator: '-+'");
+            break;
+        default:
+            e_from = e_from->eval(lisp);
+            ty = e_from->type;
+    }
+    
+    switch (ty) {
+        case t_stringbyte:
+        case t_string: {
+            string ch = e_from->toString(lisp);
+            from = content.find(ch);
+            if (from == -1)
+                return emptystring_;
+            from += ch.size();
+            firstisString = 0;
+            break;
+        }
+        case t_plus_string: {
+            string ch = e_from->toString(lisp);
+            from = content.find(ch);
+            if (from == -1)
+                return emptystring_;
+            firstisString = ch.size();
+            break;
+        }
+        case t_minus_string: {
+            string ch = e_from->toString(lisp);
+            from = content.rfind(ch, content.size());
+            if (from == -1)
+                return emptystring_;
+            //We skip the first characters
+            from += ch.size();
+            firstisString = 0;
+            break;
+        }
+        case t_minus_plus_string: {
+            string ch = e_from->toString(lisp);
+            from = content.rfind(ch, content.size());
+            if (from == -1)
+                return emptystring_;
+            firstisString = ch.size();
+            break;
+        }
+        case t_float:
+        case t_short:
+        case t_integer:
+        case t_number:
+            from = lisp->handlingutf8->charTobyte(content, e_from->asInteger());
+            if (from < 0)
+                from = content.size() + from;
+            break;
+        default:
+            e_from->release();
+            throw new Error("Error: cannot use the first position in 'setrange'");
+    }
+    
+    e_from->release();
+    
+    if (from < 0 || from >= content.size())
+        return this;
+    
+    if (nxt == liste->size() - 1) {
+        //Only one element is returned
+        string result = content.substr(0, from);
+        result += last;
+        result += content.substr(from+1, content.size());
+        return new Stringbyte(result);
+    }
+    
+    Element* e_upto = liste->liste[nxt];
+    switch (e_upto->label()) {
+        case l_minus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_minus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-'");
+            break;
+        case l_plus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_upto->type;
+            if (ty == t_string)
+                ty = t_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '+'");
+            break;
+        case l_minus_plus:
+            e_upto = liste->liste[nxt+1]->eval(lisp);
+            ty = e_from->type;
+            if (ty == t_string)
+                ty = t_minus_plus_string;
+            else
+                throw new Error("Error: Wrong value after second operator: '-+'");
+            break;
+        default:
+            e_upto = e_upto->eval(lisp);
+            ty = e_upto->type;
+    }
+    
+    long upto;
+    
+    switch (ty) {
+        case t_stringbyte:
+        case t_string: {
+            if (firstisString == -1) firstisString = 0;
+            string ch = e_upto->toString(lisp);
+            upto = content.find(ch, from + firstisString);
+            if (upto == -1)
+                return emptystring_;
+            break;
+        }
+        case t_plus_string: {
+            if (firstisString == -1) firstisString = 0;
+            string ch = e_upto->toString(lisp);
+            upto = content.find(ch, from + firstisString);
+            if (upto == -1)
+                return emptystring_;
+            //All characters are integrated
+            upto += ch.size();
+            break;
+        }
+        case t_minus_string: {
+            string ch = e_upto->toString(lisp);
+            upto = content.rfind(ch, content.size());
+            if (upto == -1)
+                return emptystring_;
+            break;
+        }
+        case t_minus_plus_string: {
+            string ch = e_upto->toString(lisp);
+            upto = content.rfind(ch, content.size());
+            if (upto == -1)
+                return emptystring_;
+            //All characters are integrated
+            upto += ch.size();
+            break;
+        }
+        case t_float:
+        case t_short:
+        case t_integer:
+        case t_number:
+            upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
+            if (firstisString != -1 && upto > 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
+            else {
+                if (upto <= 0) {
+                    //We start from the end...
+                    upto = content.size() + upto;
+                }
+            }
+            break;
+        default:
+            e_upto->release();
+            throw new Error("Error: cannot use the second position in 'setrange'");
+    }
+    
+    e_upto->release();
+    if (upto <= from)
+        return emptystring_;
+    
+    if (upto > content.size())
+        upto = content.size();
+    string result = content.substr(0, from);
+    result += last;
+    result += content.substr(upto, content.size());
+    return new Stringbyte(result);
+}
 //------------------------------------------------------------------------------------------
 void Listincode::protecting(bool protection, LispE* lisp) {
     if (protection) {
@@ -2741,6 +3618,33 @@ Element* String::asList(LispE* lisp, List* courant) {
     return lisp->syntaxTree(courant, parse, index, false);
 }
 
+Element* Stringbyte::asList(LispE* lisp, List* courant) {
+    Tokenizer parse;
+    
+    parse.asList = true;
+    u_ustring c = asUString(lisp);
+    lisp_code retour = lisp->segmenting(c, parse);
+    if (!parse.tokens.size())
+        return emptylist_;
+    
+    long index = 0;
+    switch (retour) {
+        case e_error_brace:
+            throw new Error("Error: braces do not balance");
+        case e_error_bracket:
+            throw new Error("Error: brackets do not balance");
+        case e_error_parenthesis:
+            throw new Error("Error: parentheses do not balance");
+        case e_error_string:
+            throw new Error("Error: missing end of string");
+        default:
+            index = 0;
+    }
+    
+    return lisp->syntaxTree(courant, parse, index, false);
+}
+
+
 //------------------------------------------------------------------------------------------
 //For running car/cdr, everything that is not List is an error
 Element* Element::cadr(LispE* lisp, Element*) {
@@ -2772,6 +3676,21 @@ Element* String::cdr(LispE* lisp) {
         throw new Error("Error: Empty string");
     u_ustring w = content.substr(1, content.size()-1);
     return lisp->provideString(w);
+}
+
+Element* Stringbyte::car(LispE* lisp) {
+    if (content.size() == 0)
+        throw new Error("Error: Empty string");
+    long i = 0;
+    return new Stringbyte(lisp->handlingutf8->getachar(content, i));
+}
+
+Element* Stringbyte::cdr(LispE* lisp) {
+    if (content.size() == 0)
+        throw new Error("Error: Empty string");
+    long i = c_test_utf8(content, 0) + 1;
+    string w = content.substr(i, content.size()-i);
+    return new Stringbyte(w);
 }
 
 Element* Element::cadr(LispE* lisp, u_ustring& actions) {
@@ -2817,6 +3736,37 @@ Element* String::cadr(LispE* lisp, u_ustring& action) {
     return null_;
 }
 
+
+Element* Stringbyte::cadr(LispE* lisp, u_ustring& action) {
+    long pos = 0;
+    long sz = size();
+    long i;
+    string u;
+    
+    for (i = action.size() - 1; i>= 0; i--) {
+        if (action[i] == 'a') {
+            if (i)
+                throw new Error("Error: cannot apply 'car/cdr' to one character");
+            u = lisp->handlingutf8->getachar(content, pos);
+            return new Stringbyte(u);
+        }
+        else {
+            if (pos >= sz)
+                throw new Error("Error: No more elements to traverse with 'cad..r'");
+            pos += c_test_utf8(content, pos) + 1;
+        }
+    }
+    
+    if (pos) {
+        if (pos >= sz)
+            return null_;
+        u = content.substr(pos, sz);
+        return new Stringbyte(u);
+    }
+    
+    return null_;
+}
+
 //Note that cycles are not taken into account here
 //If the next element points inside the list again
 //then cdr will return the list at this point...
@@ -2857,3 +3807,48 @@ Element* String::next_iter_exchange(LispE* lisp, void* it) {
     n[0]++;
     return lisp->provideString(u);
 }
+
+Element* Stringbyte::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == content.size())
+        return emptyatom_;
+    string u;
+    lisp->handlingutf8->getchar(content, u, n[0]);
+    return new Stringbyte(u);
+}
+
+Element* Stringbyte::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == content.size())
+        return emptyatom_;
+    string u;
+    lisp->handlingutf8->getchar(content, u, n[0]);
+    return new Stringbyte(u);
+}
+
+Element* Element::bytes(LispE* lisp) {
+    return emptylist_;
+}
+
+Element* String::bytes(LispE* lisp) {
+    uchar* s = (uchar*)content.c_str();
+    Shorts* lst = new Shorts();
+    
+    long sz = content.size()*4;
+    
+    for (long i = 0; i < sz; i++)
+        lst->liste.push_back(s[i]);
+    return lst;
+}
+
+Element* Stringbyte::bytes(LispE* lisp) {
+    uchar* s = (uchar*)content.c_str();
+    Shorts* lst = new Shorts();
+    
+    long sz = content.size();
+    
+    for (long i = 0; i < sz; i++)
+        lst->liste.push_back(s[i]);
+    return lst;
+}
+

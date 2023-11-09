@@ -87,6 +87,7 @@ public:
     unordered_map<wstring, Element*> pools;
     vector<Element*> vpools;
     
+    unordered_map<u_ustring, Stringbyte*> const_stringbyte_pool;
     unordered_map<u_ustring, String*> const_string_pool;
     unordered_map<long, Integer*> const_integer_pool;
     unordered_map<double, Number*> const_number_pool;
@@ -516,6 +517,7 @@ public:
     lisp_code segmenting(u_ustring& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
     Element* tokenize(u_ustring& code, bool keepblanks, short decimalpoint);
+    Element* tokenize(string& code, bool keepblanks, short decimalpoint);
     Element* compileLocalStructure(Element* current_program, Element* element, Tokenizer& parse, Element*& check_composition_depth, uint16_t currentspace, bool& cont);
     Element* for_composition(Element* current_program, Element* element, Tokenizer& parse);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
@@ -1323,6 +1325,15 @@ public:
         return c;
     }
 
+    inline Stringbyte* provideConststringbyte(u_ustring& u) {
+        Stringbyte* c = const_stringbyte_pool[u];
+        if (c == NULL) {
+            c = new Conststringbyte(u);
+            const_stringbyte_pool[u] = c;
+        }
+        return c;
+    }
+
     inline Integer* provideConstinteger(long u) {
         Integer* c = const_integer_pool[u];
         if (c == NULL) {
@@ -1468,6 +1479,10 @@ public:
     
     inline Strings* provideStrings() {
         return strings_pool.last?strings_pool.backpop():new Stringspool(this);
+    }
+
+    inline Strings* provideStrings(long nb, u_ustring v) {
+        return strings_pool.last?strings_pool.backpop()->set(nb, v):new Stringspool(this, nb, v);
     }
 
     inline Strings* provideStrings(Strings* n) {

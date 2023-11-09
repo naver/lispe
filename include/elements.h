@@ -35,6 +35,7 @@ class Integers;
 class Floats;
 class Shorts;
 class Strings;
+class Stringbytes;
 class ITEM;
 
 
@@ -58,11 +59,11 @@ typedef enum {
     //Default types
     t_emptystring, t_operator, t_atom,
     t_short, t_integer, t_float, t_number, t_complex,
-    t_string, t_plus_string, t_minus_string, t_minus_plus_string,
-    t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings,
-    t_list, t_llist, 
-    t_matrix_short, t_matrix_number, t_matrix_float, t_matrix_integer,
-    t_tensor_short, t_tensor_number, t_tensor_float, t_tensor_integer,
+    t_string, t_plus_string, t_minus_string, t_minus_plus_string, t_stringbyte,
+    t_set, t_setn, t_seti, t_sets, t_floats, t_shorts, t_integers, t_numbers, t_strings, t_stringbytes,
+    t_list, t_llist,
+    t_matrix_string, t_matrix_stringbyte, t_matrix_short, t_matrix_number, t_matrix_float, t_matrix_integer,
+    t_tensor_string, t_tensor_stringbyte, t_tensor_short, t_tensor_number, t_tensor_float, t_tensor_integer,
     t_dictionary, t_dictionaryi, t_dictionaryn, t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
@@ -72,7 +73,7 @@ typedef enum {
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, l_next, l_compose,
     
     //Default Lisp instructions
-    l_number, l_float, l_string, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary,
+    l_number, l_float, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes,
         
     //threads
     l_lock, l_waiton, l_trigger, l_threadstore, l_threadretrieve, l_threadclear, l_threadspace, l_thread,
@@ -105,8 +106,8 @@ typedef enum {
     l_equal, l_equalonezero, l_different, l_lower, l_greater, l_lowerorequal,l_greaterorequal, l_minmax, l_min, l_max, l_compare,
     
     l_innerproduct, 
-    l_matrix_short, l_matrix_number, l_tensor_number, l_matrix_integer,
-    l_tensor_short, l_tensor_integer, l_matrix_float, l_tensor_float,
+    l_matrix_string, l_matrix_stringbyte, l_matrix_short, l_matrix_number, l_tensor_number, l_matrix_integer,
+    l_tensor_string, l_tensor_stringbyte, l_tensor_short, l_tensor_integer, l_matrix_float, l_tensor_float,
     l_outerproduct, l_factorial, l_iota, l_iota0,
     l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank,
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
@@ -115,14 +116,14 @@ typedef enum {
     //Comparisons
         
     l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
-    l_fread, l_fwrite, l_fappend,
+    l_fread, l_fwrite, l_fappend, l_bread, l_bwrite, l_bappend,
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
     l_to_list, l_to_llist, l_to_tensor, l_list, l_llist, l_heap, l_cons, l_consb, l_conspoint, l_flatten, l_nconc, l_nconcn,
     l_pushtrue, l_push, l_pushfirst, l_pushlast, l_insert, l_extend,
     l_unique, l_clone, l_rotate,
-    l_numbers, l_floats, l_shorts, l_integers, l_strings,
+    l_numbers, l_floats, l_shorts, l_integers, l_strings, l_stringbytes,
     l_set, l_setn, l_seti, l_sets,
     l_dictionary, l_dictionaryi, l_dictionaryn,
     
@@ -133,7 +134,7 @@ typedef enum {
     l_while, l_loop, l_loopcount, l_range, l_rangein, l_irange, l_irangein, l_mloop, l_lloop,
     l_atoms, l_atomise, l_join, l_sort,
     l_compile, l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
-    l_apply, l_over, l_cutlist, l_maplist, l_filterlist, l_droplist, l_takelist, l_takenb,
+    l_apply, l_over, l_slice, l_maplist, l_filterlist, l_droplist, l_takelist, l_takenb,
     l_mapcar, l_filtercar, l_dropcar, l_takecar,
     l_checking, l_data, l_replicate,
     
@@ -276,7 +277,11 @@ public:
     virtual bool isArgumentFunction() {
         return false;
     }
-    
+
+    virtual bool isMultiple() {
+        return false;
+    }
+
     virtual Element* transformargument(LispE* lisp) {
         return this;
     }
@@ -314,6 +319,8 @@ public:
         status -= not_protected();
     }
 
+    virtual Element* bytes(LispE* lisp);
+    
     virtual void garbaging_values(LispE*) {}
     
     virtual char isPureList() {
@@ -321,6 +328,10 @@ public:
     }
 
     virtual bool isTensor() {
+        return false;
+    }
+
+    virtual bool isMatrix() {
         return false;
     }
 
@@ -386,7 +397,7 @@ public:
         return this;
     }
 
-    virtual Element* rotate(bool left) {
+    virtual Element* rotating(LispE* lisp, bool left) {
         return this;
     }
 
@@ -491,6 +502,8 @@ public:
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
     virtual void flatten(LispE*, Integers* l);
+    virtual void flatten(LispE*, Strings* l);
+    virtual void flatten(LispE*, Stringbytes* l);
     virtual void flatten(LispE*, Shorts* l);
     virtual void flatten(LispE*, Floats* l);
     
@@ -566,18 +579,8 @@ public:
     
     virtual void reserve(long sz) {}
     
-    virtual string toString(LispE* lisp) {
-        string s;
-        u_ustring w = asUString(lisp);
-        s_unicode_to_utf8(s, w);
-        return s;
-    }
-
-    virtual u_ustring asUString(LispE* lisp) {
-        return w_to_u(asString(lisp));
-    }
-
     virtual Element* loop(LispE* lisp, int16_t label,  List* code);
+
     virtual wstring stringInList(LispE* lisp) {
         return asString(lisp);
     }
@@ -590,6 +593,17 @@ public:
         return stringInList(lisp);
     }
     
+    virtual string toString(LispE* lisp) {
+        string s;
+        u_ustring w = asUString(lisp);
+        s_unicode_to_utf8(s, w);
+        return s;
+    }
+
+    virtual u_ustring asUString(LispE* lisp) {
+        return w_to_u(asString(lisp));
+    }
+
     virtual wstring asString(LispE* lisp) {
         return L"";
     }
@@ -624,6 +638,7 @@ public:
     virtual void setvalue(float v) {}
     virtual void setvalue(int16_t v) {}
     virtual void setvalue(u_ustring& v) {}
+    virtual void setvalue(string& v) {}
     
     virtual bool Boolean() {
         return true;
@@ -792,6 +807,7 @@ public:
     virtual Element* replace_in(LispE* lisp, List*);
     
     virtual Element* charge(LispE*,string chemin);
+    virtual Element* chargebin(LispE*,string chemin);
     
     virtual Element* join_in_list(LispE* lisp, u_ustring& sep);
     
@@ -890,6 +906,10 @@ public:
         return type;
     }
     
+    virtual int16_t label0() {
+        return label();
+    }
+
     virtual int16_t type_element() {
         return type;
     }
@@ -1081,6 +1101,18 @@ public:
         return value;
     }
     
+    u_ustring asUString(LispE* lisp) {
+        u_ustring v = U"'";
+        v += value->asUString(lisp);
+        return v;
+    }
+
+    wstring asString(LispE* lisp) {
+        wstring v = L"'";
+        v += value->asString(lisp);
+        return v;
+    }
+
     bool is_quote() {
         return true;
     }
@@ -1298,6 +1330,7 @@ public:
     int16_t label() {
         return type;
     }
+
     
     //Notice that we return t_atom
     //This function is used in Atomtype::check_match
@@ -2128,10 +2161,6 @@ public:
         return reel;
     }
 
-    bool isInteger() {
-        return true;
-    }
-
     bool isNumber() {
         return true;
     }
@@ -2505,6 +2534,7 @@ public:
         return true;
     }
     
+    Element* bytes(LispE* lisp);
     void push_element(LispE* lisp, List* l);
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);
@@ -2515,7 +2545,7 @@ public:
     }
         
     Element* cadr(LispE*, u_ustring& actions);
-    Element* rotate(bool left);
+    Element* rotating(LispE* lisp, bool left);
     Element* rotate(LispE*, long nb);
     
     bool compare_string(LispE*, u_ustring& u) {
@@ -2643,6 +2673,7 @@ public:
     }
 
     Element* charge(LispE* lisp, string chemin);
+    Element* chargebin(LispE* lisp, string chemin);
     
     bool Boolean() {
         return (content != U"");
@@ -2691,7 +2722,6 @@ public:
 
 };
 
-
 class Conststring : public Stringpool {
 public:
     bool provide;
@@ -2721,6 +2751,258 @@ public:
     Element* copying(bool duplicate = true);
     Element* duplicate_constant(LispE* lisp);
 };
+
+class Stringbyte : public Element {
+public:
+    string content;
+    
+    Stringbyte() : Element(t_stringbyte) {}
+    
+    Stringbyte(unsigned char c) : Element(t_stringbyte) {
+        content = c;
+    }
+    Stringbyte(string c) : Element(t_stringbyte), content(c) {}
+    Stringbyte(wstring c) : Element(t_stringbyte) {
+        s_unicode_to_utf8(content, c);
+    }
+    Stringbyte(wstring c, uint16_t s) : Element(t_stringbyte, s) {
+        s_unicode_to_utf8(content, c);
+    }
+    
+    Stringbyte(u_ustring c) : Element(t_stringbyte) {
+        s_unicode_to_utf8(content, c);
+    }
+    
+    Stringbyte(u_ustring c, uint16_t s) : Element(t_stringbyte, s) {
+        s_unicode_to_utf8(content, c);
+    }
+
+    Stringbyte(String* c) : Element(t_stringbyte) {
+        s_unicode_to_utf8(content, c->content);
+    }
+    
+    Element* duplicate_constant(LispE* lisp);
+
+    Element* replace(LispE* lisp, Element* i, Element* e) {
+        content = e->toString(lisp);
+        return this;
+    }
+
+    Element* charge(LispE* lisp, string chemin);
+    
+    Element* asList(LispE* lisp, List* l);
+    
+    void setvalue(string& v) {
+        content = v;
+    }
+
+    bool isString() {
+        return true;
+    }
+    
+    Element* bytes(LispE* lisp);
+    void push_element(LispE* lisp, List* l);
+    void push_element_true(LispE* lisp, List* l);
+    void push_element_front(LispE* lisp, List* l);
+    void push_element_back(LispE* lisp, List* l);
+
+    void append(Element* e) {
+        content += e->toString(NULL);
+    }
+        
+    Element* cadr(LispE*, u_ustring& actions);
+    Element* rotating(LispE* lisp, bool left);
+    Element* rotate(LispE*, long nb);
+    
+    bool compare_string(LispE*, u_ustring& u) {
+        string e;
+        s_unicode_to_utf8(e, u);
+        return (content == e);
+    }
+        
+    char check_match(LispE* lisp, Element* value) {
+        u_ustring u = asUString(lisp);
+        return check_ok*value->compare_string(lisp, u);
+    }
+    
+    bool unify(LispE* lisp, Element* value, bool record) {
+        u_ustring u = asUString(lisp);
+        return (value == this || value->compare_string(lisp, u));
+    }
+    
+    bool isequal(LispE* lisp, Element* value) {
+        u_ustring u = asUString(lisp);
+        return (value == this || value->compare_string(lisp, u));
+    }
+    
+    Element* loop(LispE* lisp, int16_t label,  List* code);
+    
+    bool isEmpty() {
+        return (content == "");
+    }
+        
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+
+    void clean_iter(void* it) {
+        delete (long*)it;
+    }
+
+    bool check_element(LispE* lisp, Element* element_value);
+    Element* search_element(LispE*, Element* element_value, long idx);
+    Element* search_all_elements(LispE*, Element* element_value, long idx);
+    Element* replace_all_elements(LispE*, Element* element_value, Element* remp);
+    Element* count_all_elements(LispE*, Element* element_value, long idx);
+    Element* search_reverse(LispE*, Element* element_value, long idx);
+    
+    Element* list_and(LispE*, Element* value);
+    Element* list_xor(LispE*, Element* value);
+    Element* list_or(LispE*, Element* value);
+
+    Element* insert(LispE* lisp, Element* e, long idx);
+    bool insertion(Element* e, long idx) {
+        if (idx >= content.size())
+            content += e->toString(NULL);
+        else
+            content.insert(idx, e->toString(NULL));
+        return true;
+    }
+            
+    Element* insert_with_compare(LispE*, Element* e, List& comparison);
+    
+    bool equalvalue(u_ustring& v) {
+        return (v == asUString(NULL));
+    }
+
+    Element* replace(LispE* lisp, long i, Element* e);
+    
+    bool egal(Element* e);
+    Element* equal(LispE* lisp, Element* e);
+    Element* less(LispE* lisp, Element* e);
+    Element* compare(LispE* lisp, Element* e);
+    Element* lessorequal(LispE* lisp, Element* e);
+    Element* more(LispE* lisp, Element* e);
+    Element* moreorequal(LispE* lisp, Element* e);
+    
+    Element* protected_index(LispE*,long i);
+    
+    Element* value_from_index(LispE*, long i);
+    
+    Element* value_on_index(LispE*, long i);
+    Element* value_on_index(LispE*, Element* idx);
+    Element* protected_index(LispE*, Element* k);
+    Element* reverse(LispE*, bool duplique = true);
+
+    Element* last_element(LispE* lisp);
+    
+    long size() {
+        return size_c(content);
+    }
+    
+    Element* extraction(LispE* lisp, List*);
+    Element* replace_in(LispE* lisp, List*);
+    
+    Element* car(LispE*);
+    Element* cdr(LispE*);
+    
+    
+    virtual wstring stringInList(LispE* lisp) {
+        return wjsonstring(asUString(lisp));
+    }
+    
+    virtual u_ustring stringInUList(LispE* lisp) {
+        return ujsonstring(asUString(lisp));
+    }
+    
+    virtual Element* copyatom(LispE* lisp, uint16_t s);
+    
+    virtual Element* fullcopy() {
+        return new String(content);
+    }
+
+    // There is a difference between the two copies
+    //The first one makes a final copy
+    virtual Element* copying(bool duplicate = true) {
+        if (!status)
+            return this;
+        
+        return new String(content);
+    }
+    
+    string toString(LispE* lisp) {
+        return content;
+    }
+    
+    wstring asString(LispE* lisp) {
+        return _u_to_w(content);
+    }
+
+    u_ustring asUString(LispE* lisp) {
+        u_ustring c;
+        s_utf8_to_unicode(c, content, content.size());
+        return c;
+    }
+
+    bool Boolean() {
+        return (content != "");
+    }
+    
+    double asNumber() {
+        return convertingfloathexa(content);
+    }
+    
+    float asFloat() {
+        return convertingfloathexa(content);
+    }
+
+    int16_t asShort() {
+        return (int16_t)convertingfloathexa(content);
+    }
+    
+    long asInteger() {
+        return (long)convertingfloathexa(content);
+    }
+    
+    Element* plus(LispE* l, Element* e);
+    Element* thekeys(LispE* lisp);
+};
+
+class Conststringbyte : public Stringbyte {
+public:
+    bool provide;
+    
+    Conststringbyte(string w) : Stringbyte(w) {
+        provide = false;
+        status = s_constant;
+    }
+
+    Conststringbyte(u_ustring w) : Stringbyte(w) {
+        provide = false;
+        status = s_constant;
+    }
+
+    bool garbageable() {
+        return false;
+    }
+    
+    void incrementstatus(uint16_t nb) {}
+    void decrementstatus(uint16_t nb) {}
+    void increment() {}
+    void decrement() {}
+    void release() {}
+
+    Element* fullcopy();
+    Element* copyatom(LispE* lisp, uint16_t s);
+    Element* copying(bool duplicate = true);
+    Element* duplicate_constant(LispE* lisp);
+};
+
 
 class Infiniterangenumber : public Element {
 public:

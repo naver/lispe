@@ -713,13 +713,15 @@ public:
 
     Element* quoted(LispE*);
     Element* unique(LispE* lisp);
-    Element* rotate(bool left);
+    Element* rotating(LispE* lisp, bool left);
 
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Strings* l);
     void flatten(LispE*, Shorts* l);
+    void flatten(LispE*, Stringbytes* l);
     
     Element* takenb(LispE* lisp, long nb, bool direction);
     

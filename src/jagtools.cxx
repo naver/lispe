@@ -483,7 +483,7 @@ u_ustring UTF8_Handler::u_insert_sep(u_ustring& s, u_ustring sep) {
     while (i < lg) {
         if (i)
             res += sep;
-        getandaddchar(s, res, i, lg);
+        getandaddchar(s, res, i);
     }
     return res;
 }
@@ -494,13 +494,13 @@ UWCHAR UTF8_Handler::getachar(u_ustring& s, long& i) {
     return res;
 }
 
-void UTF8_Handler::getchar(u_ustring& s, u_ustring& res,  long& i, long sz) {
+void UTF8_Handler::getchar(u_ustring& s, u_ustring& res,  long& i) {
     if (!get_emoji(s, res, i))
         res = s[i];
     i++;
 }
 
-void UTF8_Handler::getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz) {
+void UTF8_Handler::getandaddchar(u_ustring& s, u_ustring& res, long& i) {
     if (!store_emoji(s, res, i))
         res += s[i];
     i++;

@@ -521,6 +521,7 @@ public:
         u_ustring n;
         s_utf8_to_unicode(n, name, name.size());
         code_to_string[instruction_code] = n;
+        cln->multiple = (P_ATLEASTFIVE == (P_ATLEASTFIVE & arity));
     }
 
     inline void set_pure_instruction(lisp_code instruction_code, string name,  unsigned long arity) {

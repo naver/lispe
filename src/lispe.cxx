@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.11.3.11.7";
+static std::string version = "1.2023.11.9.16.53";
 string LispVersion() {
     return version;
 }
@@ -275,6 +275,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE, &List::evall_bitorequal);
     set_instruction(l_bitxor, "^", P_ATLEASTTWO, &List::evall_bitxor, new List_bitxor());
     set_instruction(l_bitxorequal, "^=", P_ATLEASTTHREE, &List::evall_bitxorequal);
+    set_instruction(l_bytes, "bytes", P_TWO, &List::evall_bytes, new List_bytes_eval());
     set_instruction(l_block, "block", P_ATLEASTONE, &List::evall_block, new List_block_eval());
     set_instruction(l_bodies, "bodies", P_TWO, &List::evall_bodies, new List_bodies_eval());
     set_instruction(l_break, "break", P_ONE, &List::evall_break);
@@ -290,7 +291,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp, new List_consp_eval());
     set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
     set_instruction(l_count, "count", P_THREE|P_FOUR, &List::evall_count, new List_count_eval());
-    set_instruction(l_cutlist, "cutlist", P_THREE, &List::evall_cutlist, new List_cutlist_eval());
+    set_instruction(l_slice, "slice", P_THREE, &List::evall_slice, new List_slice_eval());
     set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp, new List_cyclicp_eval());
     set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
@@ -300,6 +301,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_imaginary, "imaginary", P_TWO, &List::evall_imaginary, new List_imaginary_eval());
     set_instruction(l_number, "number", P_TWO, &List::evall_converttonumber, new List_number_eval());
     set_instruction(l_string, "string", P_TWO, &List::evall_converttostring, new List_string_eval());
+    set_instruction(l_stringbyte, "stringbyte", P_TWO, &List::evall_converttostringbyte, new List_stringbyte_eval());
     set_instruction(l_data, "data", P_ATLEASTTWO, &List::evall_data);
     set_instruction(l_deflib, "deflib", P_THREE, &List::evall_deflib);
     set_instruction(l_deflibpat, "deflibpat", P_THREE, &List::evall_deflibpat);
@@ -323,6 +325,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_extend, "extend", P_THREE, &List::evall_extend, new List_extend_eval());
     set_instruction(l_extract, "extract", P_THREE|P_FOUR|P_FIVE|P_SIX, &List::evall_extract, new List_extract_eval());
     set_instruction(l_factorial, "!", P_TWO, &List::evall_factorial, new List_factorial_eval());
+    set_instruction(l_bappend, "bappend", P_THREE, &List::evall_bappend, new List_bappend_eval());
     set_instruction(l_fappend, "fappend", P_THREE, &List::evall_fappend, new List_fappend_eval());
     set_instruction(l_stringf, "stringf", P_THREE, &List::evall_stringf, new List_stringf_eval());
     set_instruction(l_filterlist, "filterlist", P_THREE | P_FOUR, &List::evall_filterlist, new List_filterlist_eval());
@@ -334,6 +337,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_takecar, "takecar", P_THREE, &List::evall_takelist, new List_takelist_eval());
     set_instruction(l_flatten, "flatten", P_TWO, &List::evall_flatten, new List_flatten_eval());
     set_instruction(l_flip, "flip", P_TWO, &List::evall_flip, new List_flip_eval());
+    set_instruction(l_bread, "bread", P_TWO, &List::evall_bread, new List_bread_eval());
+    set_instruction(l_bwrite, "bwrite", P_THREE, &List::evall_bwrite, new List_bwrite_eval());
     set_instruction(l_fread, "fread", P_TWO, &List::evall_fread, new List_fread_eval());
     set_instruction(l_fwrite, "fwrite", P_THREE, &List::evall_fwrite, new List_fwrite_eval());
     set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater, new List_greater_eval());
@@ -384,6 +389,8 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_maplist, "↑", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mapcar, "mapcar", P_THREE, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark, new List_mark_eval());
+    set_instruction(l_matrix_stringbyte, "matrix_stringbyte", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_stringbyte, new List_matrix_stringbyte_eval());
+    set_instruction(l_matrix_string, "matrix_string", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_string, new List_matrix_string_eval());
     set_instruction(l_matrix_short, "matrix_short", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_short, new List_matrix_short_eval());
     set_instruction(l_matrix_integer, "matrix_integer", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_integer, new List_matrix_integer_eval());
     set_instruction(l_matrix_number, "matrix_number", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_number, new List_matrix_number_eval());
@@ -462,9 +469,12 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_space, "space", P_ATLEASTTHREE, &List::evall_space, new List_space_eval());
     set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp, new List_stringp_eval());
     set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings, new List_strings_eval());
+    set_instruction(l_stringbytes, "stringbytes", P_ATLEASTONE, &List::evall_stringbytes, new List_stringbytes_eval());
     set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
     set_instruction(l_sum, "∑", P_TWO, &List::evall_sum, new List_sum_eval());
     set_instruction(l_tally, "≢", P_TWO, &List::evall_tally, new List_tally_eval());
+    set_instruction(l_tensor_stringbyte, "tensor_stringbyte", P_ATLEASTTWO, &List::evall_tensor_stringbyte, new List_tensor_stringbyte_eval());
+    set_instruction(l_tensor_string, "tensor_string", P_ATLEASTTWO, &List::evall_tensor_string, new List_tensor_string_eval());
     set_instruction(l_tensor_short, "tensor_short", P_ATLEASTTWO, &List::evall_tensor_short, new List_tensor_short_eval());
     set_instruction(l_tensor_number, "tensor_number", P_ATLEASTTWO, &List::evall_tensor_number, new List_tensor_number_eval());
     set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO, &List::evall_tensor_float, new List_tensor_float_eval());
@@ -526,10 +536,10 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb, new List_lubksb_eval());
     set_instruction(l_iota0, "⍳0", P_ATLEASTTWO, &List::evall_iota0, new List_iota0_eval());
     set_instruction(l_irank, "irank", P_ATLEASTTHREE, &List::evall_irank, new List_irank_eval());
-    set_instruction(l_reduce, "↗", P_TWO | P_THREE, &List::evall_reduce, new List_reduce_eval());
-    set_instruction(l_scan, "↘", P_THREE, &List::evall_scan, new List_scan_eval());
-    set_instruction(l_backreduce, "⌿", P_TWO | P_THREE, &List::evall_backreduce, new List_backreduce_eval());
-    set_instruction(l_backscan, "⍀", P_THREE, &List::evall_backscan, new List_backscan_eval());
+    set_instruction(l_reduce, "↗", P_TWO | P_THREE | P_FOUR, &List::evall_reduce, new List_reduce_eval());
+    set_instruction(l_scan, "↘", P_THREE | P_FOUR, &List::evall_scan, new List_scan_eval());
+    set_instruction(l_backreduce, "⌿", P_TWO | P_THREE | P_FOUR, &List::evall_backreduce, new List_backreduce_eval());
+    set_instruction(l_backscan, "⍀", P_THREE | P_FOUR, &List::evall_backscan, new List_backscan_eval());
     set_instruction(l_rank, "⍤", P_ATLEASTTWO, &List::evall_rank, new List_rank_eval());
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero, new List_equalonezero_eval());
     set_instruction(l_rho, "⍴", P_ATLEASTTWO, &List::evall_rho, new List_rho_eval());
@@ -632,6 +642,7 @@ void Delegation::initialisation(LispE* lisp) {
     }
 
     code_to_string[t_string] = U"string_";
+    code_to_string[t_stringbyte] = U"stringbyte_";
     code_to_string[t_number] = U"number_";
     code_to_string[t_float] = U"float_";
     code_to_string[t_floats] = U"floats_";
@@ -641,6 +652,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_short] = U"short_";
     code_to_string[t_strings] = U"strings_";
     code_to_string[t_integers] = U"integers_";
+    code_to_string[t_stringbytes] = U"stringbytes_";
     code_to_string[t_shorts] = U"shorts_";
     code_to_string[t_list] = U"list_";
     code_to_string[t_llist] = U"llist_";
@@ -649,7 +661,11 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_matrix_float] = U"matrix_float_";
     code_to_string[t_matrix_integer] = U"matrix_integer_";
     code_to_string[t_matrix_short] = U"matrix_short_";
+    code_to_string[t_matrix_string] = U"matrix_string_";
+    code_to_string[t_matrix_stringbyte] = U"matrix_stringbyte_";
     code_to_string[t_tensor_number] = U"tensor_number_";
+    code_to_string[t_tensor_stringbyte] = U"tensor_stringbyte_";
+    code_to_string[t_tensor_string] = U"tensor_string_";
     code_to_string[t_tensor_float] = U"tensor_float_";
     code_to_string[t_tensor_integer] = U"tensor_integer_";
     code_to_string[t_tensor_short] = U"tensor_short_";
@@ -838,6 +854,9 @@ void Delegation::initialisation(LispE* lisp) {
 
     w = U"outer";
     string_to_code[w] = l_outerproduct;
+
+    w = U"cutlist";
+    string_to_code[w] = l_slice;
 
     //We introduce @ as a substitute to at
     w = U"@";
@@ -1078,6 +1097,10 @@ void LispE::cleaning() {
         delete a.second;
     }
 
+    for (const auto& a : const_stringbyte_pool) {
+        delete a.second;
+    }
+
     for (const auto& a : const_integer_pool) {
         delete a.second;
     }
@@ -1275,7 +1298,14 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
             case '\n': //Carriage return
                 continue;
             case '"': //a string
-                buffer = buffer.substr(1, buffer.size() - 2);
+                if (buffer[0] == 'b') {
+                    lc = t_stringbyte;
+                    buffer = buffer.substr(2, buffer.size() - 3);
+                }
+                else {
+                    lc = t_string;
+                    buffer = buffer.substr(1, buffer.size() - 2);
+                }
                 lg_value = buffer.find(U"\\");
                 if (lg_value != -1) {
                     u_ustring intermediate = buffer.substr(0, lg_value);
@@ -1307,15 +1337,22 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 if (buffer == U"")
                     infos.append(buffer, t_emptystring, line_number, left, right);
                 else
-                    infos.append(buffer, t_string, line_number, left, right);
+                    infos.append(buffer, (lisp_code)lc, line_number, left, right);
                 if (in_quote == 1) in_quote = 0;
                 break;
             case '`': //a long string
-                buffer = buffer.substr(1, buffer.size() - 2);
+                if (buffer[0] == 'b') {
+                    lc = t_stringbyte;
+                    buffer = buffer.substr(2, buffer.size() - 3);
+                }
+                else {
+                    lc = t_string;
+                    buffer = buffer.substr(1, buffer.size() - 2);
+                }
                 if (buffer == U"")
                     infos.append(buffer, t_emptystring, line_number, left, right);
                 else
-                    infos.append(buffer, t_string, line_number, left, right);
+                    infos.append(buffer, (lisp_code)lc, line_number, left, right);
                 if (in_quote == 1) in_quote = 0;
                 break;
             case '\'': //a quote
@@ -1545,6 +1582,24 @@ Element* LispE::tokenize(u_ustring& code, bool keepblanks, short decimalseparato
     tokenizer_result<u_ustring> tokres(&res->liste, false);
     
     segmenter.tokenize<u_ustring>(code, tokres);
+
+    return res;
+}
+
+Element* LispE::tokenize(string& code, bool keepblanks, short decimalseparator) {
+    if (!segmenter.loaded) {
+        segmenter.setrules();
+        segmenter.compile();
+    }
+    
+    segmenter.keepblanks(keepblanks);
+    segmenter.setdecimalmode(decimalseparator);
+    
+    Stringbytes* res = new Stringbytes();
+
+    tokenizer_result<string> tokres(&res->liste, false);
+    
+    segmenter.tokenize<string>(code, tokres);
 
     return res;
 }
@@ -2084,6 +2139,11 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 current_program->append(element);
                 index++;
                 break;
+            case t_stringbyte:
+                element = provideConststringbyte(parse.tokens[index]);
+                current_program->append(element);
+                index++;
+                break;
             case t_complex: {
                 //We need to extract it twice
                 double real = parse.numbers[index++];
@@ -2282,6 +2342,11 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                 break;
             case t_string:
                 e = provideConststring(parse.tokens[index]);
+                courant->append(e);
+                index++;
+                break;
+            case t_stringbyte:
+                e = provideConststringbyte(parse.tokens[index]);
                 courant->append(e);
                 index++;
                 break;
@@ -2897,6 +2962,10 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
+
+
 
 
 

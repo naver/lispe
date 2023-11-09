@@ -38,8 +38,8 @@
 static const double M_GOLDEN = 1.61803398874989484820458683436563811772030917980576286213544862270526046281890244970720720418939113748475;
 #define lmin(x,y) x<y?x:y
 //------------------------------------------------------------------------------------------
-Element* range(LispE* lisp, double init, double limit, double inc, bool int_eger) {
-    double d = (limit - init) / inc;
+Element* range(LispE* lisp, long init, long limit, long inc) {
+    long d = (limit - init) / inc;
     if (d<0)
         d *= -1;
     
@@ -51,20 +51,33 @@ Element* range(LispE* lisp, double init, double limit, double inc, bool int_eger
             return emptylist_;
         
         //Integers ?
-        if (int_eger) {
-            Integers* range_list = lisp->provideIntegers();
-            range_list->liste.reserve((long)d);
-            if (inc > 0) {
-                for (long i = init; i < limit; i += inc) {
-                    range_list->liste.push_back(i);
-                }
+        Integers* range_list = lisp->provideIntegers();
+        range_list->liste.reserve((long)d);
+        if (inc > 0) {
+            for (long i = init; i < limit; i += inc) {
+                range_list->liste.push_back(i);
             }
-            else {
-                for (long i = init; i > limit; i += inc)
-                    range_list->liste.push_back(i);
-            }
-            return range_list;
         }
+        else {
+            for (long i = init; i > limit; i += inc)
+                range_list->liste.push_back(i);
+        }
+        return range_list;
+    }
+    throw new Error("Error: Exceeding range");
+}
+
+Element* range(LispE* lisp, double init, double limit, double inc) {
+    double d = (limit - init) / inc;
+    if (d<0)
+        d *= -1;
+    
+    if (init > limit && inc > 0)
+        inc *= -1;
+    
+    if (d <= 100000) {
+        if (inc == 0)
+            return emptylist_;
         
         Numbers* range_list = lisp->provideNumbers();
         range_list->liste.reserve((long)d);
@@ -82,6 +95,45 @@ Element* range(LispE* lisp, double init, double limit, double inc, bool int_eger
     throw new Error("Error: Exceeding range");
 }
 
+Element* range(LispE* lisp, u_ustring& init, u_ustring& limit, long inc) {
+    u_uchar bc = init.back();
+    u_uchar ec = limit[0];
+
+    u_uchar d = ec - bc;
+    d /= inc;
+    if (d<0)
+        d *= -1;
+    
+    if (init > limit && inc > 0)
+        inc *= -1;
+    
+    if (d <= 100000) {
+        if (inc == 0)
+            return emptylist_;
+        
+        Strings* range_list = lisp->provideStrings();
+        range_list->liste.reserve((long)d);
+        init = init.substr(0, init.size() - 1);
+        limit = limit.substr(1, limit.size());
+        u_ustring v = init + U"_" + limit;
+        long pos = init.size();
+
+        if (inc > 0) {
+            for (u_uchar i = bc; i <= ec; i += inc) {
+                v[pos] = i;
+                range_list->liste.push_back(v);
+            }
+        }
+        else {
+            for (u_uchar i = bc; i >= ec; i += inc) {
+                v[pos] = i;
+                range_list->liste.push_back(v);
+            }
+        }
+        return range_list;
+    }
+    throw new Error("Error: Exceeding range");
+}
 
 Element* List::evall_range(LispE* lisp) {
     List_range_eval m(this);
@@ -5412,6 +5464,7 @@ Element* List::evall_divide(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     throw new Error("Error: cannot apply '/' to a string");
                 case t_floats:
                 case t_shorts:
@@ -5508,6 +5561,7 @@ Element* List_divide2::eval(LispE* lisp) {
     
     try {
         switch (lst->type) {
+            case t_stringbytes:
             case t_strings:
                 throw new Error("Error: cannot apply '/' to a string");
             case t_floats:
@@ -5600,6 +5654,7 @@ Element* List::evall_minus(LispE* lisp) {
                 throw new Error("Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '-' to a string");
                 case t_floats:
@@ -5696,6 +5751,7 @@ Element* List_minus2::eval(LispE* lisp) {
     
     try {
         switch (lst->type) {
+            case t_stringbytes:
             case t_strings:
                 throw new Error("Error: cannot apply '-' to a string");
             case t_floats:
@@ -5792,6 +5848,7 @@ Element* List::evall_multiply(LispE* lisp) {
                 throw new Error("Error: cannot apply '*' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '*' to a string");
                 case t_floats: {
@@ -5897,6 +5954,7 @@ Element* List_multiply2::eval(LispE* lisp) {
     
     try {
         switch (lst->type) {
+            case t_stringbytes:
             case t_strings:
                 throw new Error("Error: cannot apply '*' to a string");
             case t_floats: {
@@ -6018,6 +6076,7 @@ Element* List::evall_plus(LispE* lisp) {
                 throw new Error("Error: cannot apply '+' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings: {
                     u_ustring v = ((Strings*)lst)->liste.sum();
                     first_element->release();
@@ -6126,6 +6185,7 @@ Element* List_plus2::eval(LispE* lisp) {
     
     try {
         switch (lst->type) {
+            case t_stringbytes:
             case t_strings: {
                 u_ustring v = ((Strings*)lst)->liste.sum();
                 first_element->release();
@@ -6239,6 +6299,7 @@ Element* List::evall_power(LispE* lisp) {
                 throw new Error("Error: cannot apply '^^' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '^^' to a string");
                 case t_floats:
@@ -6371,6 +6432,7 @@ Element* List::evall_bitandequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '&' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '&' to a string");
                 case t_floats:
@@ -6490,6 +6552,7 @@ Element* List::evall_bitandnotequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '&~' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '&~' to a string");
                 case t_floats:
@@ -6609,6 +6672,7 @@ Element* List::evall_bitorequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '|' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '|' to a string");
                 case t_floats:
@@ -6730,6 +6794,7 @@ Element* List::evall_bitxorequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '^' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '^' to a string");
                 case t_floats:
@@ -6849,6 +6914,7 @@ Element* List::evall_divideequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '/' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '/' to a string");
                 case t_floats:
@@ -6955,6 +7021,7 @@ Element* List_divideequal_list::eval(LispE* lisp) {
                 throw new Error("Error: cannot apply '/' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '/' to a string");
                 case t_floats:
@@ -7038,6 +7105,7 @@ Element* List_divideequal_var::eval(LispE* lisp) {
                 throw new Error("Error: cannot apply '/' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '/' to a string");
                 case t_floats:
@@ -7146,6 +7214,7 @@ Element* List::evall_leftshiftequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '<<' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '<<' to a string");
                 case t_floats:
@@ -7265,6 +7334,7 @@ Element* List::evall_minusequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '-' to a string");
                 case t_floats:
@@ -7371,6 +7441,7 @@ Element* List_minusequal_list::eval(LispE* lisp) {
                 throw new Error("Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '-' to a string");
                 case t_floats:
@@ -7454,6 +7525,7 @@ Element* List_minusequal_var::eval(LispE* lisp) {
                 throw new Error("Error: cannot apply '-' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '-' to a string");
                 case t_floats:
@@ -7562,6 +7634,7 @@ Element* List::evall_modequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '%' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     throw new Error("Error: cannot apply '%' to a string");
                 case t_floats:
@@ -7683,6 +7756,7 @@ Element* List::evall_multiplyequal(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     throw new Error("Error: cannot apply '*' to a string");
                 case t_floats:
                 case t_shorts:
@@ -7789,6 +7863,7 @@ Element* List_multiplyequal_list::eval(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     throw new Error("Error: cannot apply '*' to a string");
                 case t_floats:
                 case t_shorts:
@@ -7872,6 +7947,7 @@ Element* List_multiplyequal_var::eval(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     throw new Error("Error: cannot apply '*' to a string");
                 case t_floats:
                 case t_shorts:
@@ -7980,6 +8056,7 @@ Element* List::evall_plusequal(LispE* lisp) {
                 throw new Error("Error: cannot apply '+' to one element");
             lst = first_element;
             switch (lst->type) {
+                case t_stringbytes:
                 case t_strings:
                     if (!lst->size()) {
                         first_element->release();
@@ -8093,6 +8170,7 @@ Element* List_plusequal_list::eval(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     if (!lst->size()) {
                         first_element->release();
                         return emptystring_;
@@ -8182,6 +8260,7 @@ Element* List_plusequal_var::eval(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     if (!lst->size()) {
                         first_element->release();
                         return emptystring_;
@@ -8296,6 +8375,7 @@ Element* List::evall_rightshiftequal(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     throw new Error("Error: cannot apply '>>' to a string");
                 case t_floats:
                 case t_shorts:
@@ -8415,6 +8495,7 @@ Element* List::evall_powerequal(LispE* lisp) {
             lst = first_element;
             switch (lst->type) {
                 case t_strings:
+                case t_stringbytes:
                     throw new Error("Error: cannot apply '^^' to a string");
                 case t_floats:
                 case t_shorts:
@@ -9428,6 +9509,14 @@ Element* Shorts::negate(LispE* lisp) {
 }
 
 Element* Strings::negate(LispE* lisp) {
+    List* n = lisp->provideList();
+    for (long i = 0; i < size(); i++) {
+        n->append(booleans_[!liste[i].size()]);
+    }
+    return n;
+}
+
+Element* Stringbytes::negate(LispE* lisp) {
     List* n = lisp->provideList();
     for (long i = 0; i < size(); i++) {
         n->append(booleans_[!liste[i].size()]);

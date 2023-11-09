@@ -53,6 +53,14 @@ Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Ele
 // Matrice template: Function instantiations
 //------------------------------------------------------------------------------------------
 
+Element* Stringbytes::newTensor(LispE* lisp, List* l) {
+    return new Matrice_stringbyte(l);
+}
+
+Element* Strings::newTensor(LispE* lisp, List* l) {
+    return new Matrice_string(l);
+}
+
 Element* Floats::newTensor(LispE* lisp, List* l) {
     return new Matrice_float(l);
 }
@@ -405,6 +413,30 @@ void LUBKSB(long n, vecte<long>& indexes, vecte<long>& b_values, Matrice_integer
 } // LUBKSB
 
 //------------------------------------------------------------
+template<> short Matrice_short::zeroValue() {
+    return 0;
+}
+
+template<> double Matrice_number::zeroValue() {
+    return 0;
+}
+
+template<> float Matrice_float::zeroValue() {
+    return 0;
+}
+
+template<> u_ustring Matrice_string::zeroValue() {
+    return U"";
+}
+
+template<> string Matrice_stringbyte::zeroValue() {
+    return "";
+}
+
+template<> long Matrice_integer::zeroValue() {
+    return 0;
+}
+//------------------------------------------------------------
 template<> short Matrice_short::asValue(Element* e) {
     return e->asShort();
 }
@@ -417,12 +449,52 @@ template<> float Matrice_float::asValue(Element* e) {
     return e->asFloat();
 }
 
+template<> u_ustring Matrice_string::asValue(Element* e) {
+    return e->asUString(NULL);
+}
+
+template<> string Matrice_stringbyte::asValue(Element* e) {
+    return e->toString(NULL);
+}
+
 template<> long Matrice_integer::asValue(Element* e) {
     return e->asInteger();
 }
 //------------------------------------------------------------
+template<> Element* Matrice_short::provideValue(LispE* lisp, short v) {
+    return new Short(v);
+}
+
+template<> Element* Matrice_number::provideValue(LispE* lisp, double v) {
+    return lisp->provideNumber(v);
+}
+
+template<> Element* Matrice_float::provideValue(LispE* lisp, float v) {
+    return lisp->provideFloat(v);
+}
+
+template<> Element* Matrice_string::provideValue(LispE* lisp, u_ustring v) {
+    return lisp->provideString(v);
+}
+
+template<> Element* Matrice_stringbyte::provideValue(LispE* lisp, string v) {
+    return new Stringbyte(v);
+}
+
+template<> Element* Matrice_integer::provideValue(LispE* lisp, long v) {
+    return lisp->provideInteger(v);
+}
+//------------------------------------------------------------
 template<> Shorts* Matrice_short::provide() {
     return new Shorts();
+}
+
+template<> Strings* Matrice_string::provide() {
+    return new Strings();
+}
+
+template<> Stringbytes* Matrice_stringbyte::provide() {
+    return new Stringbytes();
 }
 
 template<> Integers* Matrice_integer::provide() {
@@ -453,6 +525,14 @@ template<> Floats* Matrice_float::provide(long nb, float val) {
     return new Floats(nb, val);
 }
 
+template<> Strings* Matrice_string::provide(long nb, u_ustring val) {
+    return new Strings(nb, val);
+}
+
+template<> Stringbytes* Matrice_stringbyte::provide(long nb, string val) {
+    return new Stringbytes(nb, val);
+}
+
 //------------------------------------------------------------
 
 template<> Numbers* Matrice_number::provide(LispE* lisp) {
@@ -461,6 +541,14 @@ template<> Numbers* Matrice_number::provide(LispE* lisp) {
 
 template<> Floats* Matrice_float::provide(LispE* lisp) {
     return lisp->provideFloats();
+}
+
+template<> Strings* Matrice_string::provide(LispE* lisp) {
+    return lisp->provideStrings();
+}
+
+template<> Stringbytes* Matrice_stringbyte::provide(LispE* lisp) {
+    return new Stringbytes();
 }
 
 template<> Integers* Matrice_integer::provide(LispE* lisp) {
@@ -480,6 +568,14 @@ template<> Floats* Matrice_float::provide(LispE* lisp, long nb, float v) {
     return lisp->provideFloats(nb, v);
 }
 
+template<> Strings* Matrice_string::provide(LispE* lisp, long nb, u_ustring v) {
+    return lisp->provideStrings(nb, v);
+}
+
+template<> Stringbytes* Matrice_stringbyte::provide(LispE* lisp, long nb, string v) {
+    return new Stringbytes(nb, v);
+}
+
 template<> Integers* Matrice_integer::provide(LispE* lisp, long nb, long v) {
     return lisp->provideIntegers(nb, v);
 }
@@ -487,6 +583,33 @@ template<> Integers* Matrice_integer::provide(LispE* lisp, long nb, long v) {
 template<> Shorts* Matrice_short::provide(LispE* lisp, long nb, short v) {
     return new Shorts(nb, v);
 }
+//----------------------------------------------------------------------------
+
+template<> Numbers* Matrice_number::provide(LispE* lisp, Numbers* n) {
+    return lisp->provideNumbers(n);
+}
+
+
+template<> Floats* Matrice_float::provide(LispE* lisp, Floats* n) {
+    return lisp->provideFloats(n);
+}
+
+template<> Integers* Matrice_integer::provide(LispE* lisp, Integers* n) {
+    return lisp->provideIntegers(n);
+}
+
+template<> Shorts* Matrice_short::provide(LispE* lisp, Shorts* n) {
+    return new Shorts(n);
+}
+
+template<> Strings* Matrice_string::provide(LispE* lisp, Strings* n) {
+    return lisp->provideStrings(n);
+}
+
+template<> Stringbytes* Matrice_stringbyte::provide(LispE* lisp, Stringbytes* n) {
+    return new Stringbytes(n);
+}
+
 //------------------------------------------------------------
 template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::Matrice(long x, long y, Element* n) {
     type = T;
@@ -529,7 +652,7 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::
     }
 }
 
-template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::Matrice(LispE* lisp, Matrice_short* m) {
+template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::Matrice(LispE* lisp, Matrix* m) {
     type = T;
     size_x = m->size_x;
     size_y = m->size_y;
@@ -546,75 +669,10 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::
     for (long i = 0; i < size_x; i++) {
         l = provide(lisp);
         for (long j = 0; j < m->size_y; j++)
-            l->liste.push_back(((Shorts*)m->liste[i])->liste[j]);
+            l->liste.push_back(asValue(m->liste[i]->index(j)));
         append(l);
     }
 }
-
-template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::Matrice(LispE* lisp, Matrice_integer* m) {
-    type = T;
-    size_x = m->size_x;
-    size_y = m->size_y;
-    C l;
-    if (m->type == type) {
-        for (long i = 0; i < size_x; i++) {
-            l = provide(lisp);
-            l->liste = ((C)m->liste[i])->liste;
-            append(l);
-        }
-        return;
-    }
-
-    for (long i = 0; i < size_x; i++) {
-        l = provide(lisp);
-        for (long j = 0; j < m->size_y; j++)
-            l->liste.push_back(((Integers*)m->liste[i])->liste[j]);
-        append(l);
-    }
-}
-
-template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::Matrice(LispE* lisp, Matrice_float* m) {
-    type = T;
-    size_x = m->size_x;
-    size_y = m->size_y;
-    C l;
-    if (m->type == type) {
-        for (long i = 0; i < size_x; i++) {
-            l = provide(lisp);
-            l->liste = ((C)m->liste[i])->liste;
-            append(l);
-        }
-        return;
-    }
-    for (long i = 0; i < size_x; i++) {
-        l = provide(lisp);
-        for (long j = 0; j < m->size_y; j++)
-            l->liste.push_back(((Floats*)m->liste[i])->liste[j]);
-        append(l);
-    }
-}
-
-template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::Matrice(LispE* lisp, Matrice_number* m) {
-    type = T;
-    size_x = m->size_x;
-    size_y = m->size_y;
-    C l;
-    if (m->type == type) {
-        for (long i = 0; i < size_x; i++) {
-            l = provide(lisp);
-            l->liste = ((C)m->liste[i])->liste;
-            append(l);
-        }
-        return;
-    }
-    for (long i = 0; i < size_x; i++) {
-        l = provide(lisp);
-        for (long j = 0; j < m->size_y; j++)
-            l->liste.push_back(((Numbers*)m->liste[i])->liste[j]);
-        append(l);
-    }
-}
-
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::Matrice(LispE* lisp, long x, long y, A n) {
     type = T;
@@ -641,7 +699,7 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Matrice<A,T,TT,C>::
 }
 
 //------------------------------------------------------------
-template <typename A, lisp_code T, lisp_code TT, typename C> double Matrice<A, T, TT, C>::determinant(LispE* lisp) {
+template <> double Matrice_number::determinant(LispE* lisp) {
     if (size_x == 2 && size_y == 2) {
         //then in that case
         return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
@@ -657,7 +715,7 @@ template <typename A, lisp_code T, lisp_code TT, typename C> double Matrice<A, T
         if (val(i,j) == 0)
             continue;
         
-        Matrice<A,T,TT,C> sub(size_x - 1, size_y - 1, 0.0);
+        Matrice_number sub(size_x - 1, size_y - 1, 0.0);
         
         long pc = 0;
         long pr = 0;
@@ -677,6 +735,129 @@ template <typename A, lisp_code T, lisp_code TT, typename C> double Matrice<A, T
         det += val(i,j) * sg*sub.determinant(lisp);
     }
     return det;
+}
+
+
+template <> double Matrice_float::determinant(LispE* lisp) {
+    if (size_x == 2 && size_y == 2) {
+        //then in that case
+        return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
+    }
+
+    if (size_x != size_y)
+        sent_error_0("Error: we can only apply 'determinant' to square matrices");
+
+    long i;
+    i = 0;
+    float det = 0;
+    for (long j = 0; j < size_x; j++) {
+        if (val(i,j) == 0)
+            continue;
+        
+        Matrice_float sub(size_x - 1, size_y - 1, 0.0);
+        
+        long pc = 0;
+        long pr = 0;
+        for (long r = 0; r < size_x; r++) {
+            if (r == i)
+                continue;
+            pc = 0;
+            for (long c = 0; c < size_y; c++) {
+                if (c == j)
+                    continue;
+                sub.set(pr,pc, val(r,c));
+                pc++;
+            }
+            pr++;
+        }
+        double sg = pow(-1, (i + j + 2));
+        det += val(i,j) * sg*sub.determinant(lisp);
+    }
+    return det;
+}
+
+template <> double Matrice_integer::determinant(LispE* lisp) {
+    if (size_x == 2 && size_y == 2) {
+        //then in that case
+        return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
+    }
+
+    if (size_x != size_y)
+        sent_error_0("Error: we can only apply 'determinant' to square matrices");
+
+    long i;
+    i = 0;
+    float det = 0;
+    for (long j = 0; j < size_x; j++) {
+        if (val(i,j) == 0)
+            continue;
+        
+        Matrice_integer sub(size_x - 1, size_y - 1, 0.0);
+        
+        long pc = 0;
+        long pr = 0;
+        for (long r = 0; r < size_x; r++) {
+            if (r == i)
+                continue;
+            pc = 0;
+            for (long c = 0; c < size_y; c++) {
+                if (c == j)
+                    continue;
+                sub.set(pr,pc, val(r,c));
+                pc++;
+            }
+            pr++;
+        }
+        double sg = pow(-1, (i + j + 2));
+        det += val(i,j) * sg*sub.determinant(lisp);
+    }
+    return det;
+}
+
+template <> double Matrice_short::determinant(LispE* lisp) {
+    if (size_x == 2 && size_y == 2) {
+        //then in that case
+        return (val(0,0) * val(1,1) - val(1,0) * val(0,1));
+    }
+
+    if (size_x != size_y)
+        sent_error_0("Error: we can only apply 'determinant' to square matrices");
+
+    long i;
+    i = 0;
+    float det = 0;
+    for (long j = 0; j < size_x; j++) {
+        if (val(i,j) == 0)
+            continue;
+        
+        Matrice_short sub(size_x - 1, size_y - 1, 0.0);
+        
+        long pc = 0;
+        long pr = 0;
+        for (long r = 0; r < size_x; r++) {
+            if (r == i)
+                continue;
+            pc = 0;
+            for (long c = 0; c < size_y; c++) {
+                if (c == j)
+                    continue;
+                sub.set(pr,pc, val(r,c));
+                pc++;
+            }
+            pr++;
+        }
+        double sg = pow(-1, (i + j + 2));
+        det += val(i,j) * sg*sub.determinant(lisp);
+    }
+    return det;
+}
+
+template <> double Matrice_string::determinant(LispE* lisp) {
+    return 0;
+}
+
+template <> double Matrice_stringbyte::determinant(LispE* lisp) {
+    return 0;
 }
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::inversion(LispE* lisp) {
@@ -814,7 +995,7 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
 }
 
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::transposed(LispE* lisp) {
-    Matrice<A,T,TT,C>* transposed_matrix = new Matrice<A,T,TT,C>(lisp, size_y, size_x, 0.0);
+    Matrice<A,T,TT,C>* transposed_matrix = new Matrice<A,T,TT,C>(lisp, size_y, size_x, zeroValue());
     long i, j = 0;
     
     Element* e;
@@ -859,12 +1040,12 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
         if (sz == 2 && positions[1] != -1) {
             if (positions[1] >= size_y)
                 sent_error("Error: indexes out of bounds");
-            return lisp->provideNumber(val(positions[0], positions[1]));
+            return provideValue(lisp, val(positions[0], positions[1]));
         }
 
         if (positions[0] >= size_x)
             sent_error("Error: indexes out of bounds");
-        return lisp->provideNumbers(((Numbers*)liste[positions[0]]));
+        return provide(lisp, (C)liste[positions[0]]);
     }
 
     C result = provide(lisp);
@@ -896,12 +1077,12 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
     return e;
 }
 
-template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::rotate(bool left) {
+template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::rotating(LispE* lisp, bool left) {
     Matrice<A,T,TT,C>* revert_matrix = new Matrice<A,T,TT,C>;
     revert_matrix->size_x = size_x;
     revert_matrix->size_y = size_y;
     for (long i = 0; i < size_x; i++) {
-        revert_matrix->append(liste[i]->rotate(left));
+        revert_matrix->append(liste[i]->rotating(lisp, left));
     }
     
     return revert_matrix;
@@ -991,10 +1172,51 @@ template<> float Tenseur_float::asValue(Element* e) {
 template<> long Tenseur_integer::asValue(Element* e) {
     return e->asInteger();
 }
+
+template<> u_ustring Tenseur_string::asValue(Element* e) {
+    return e->asUString(NULL);
+}
+
+template<> string Tenseur_stringbyte::asValue(Element* e) {
+    return e->toString(NULL);
+}
+
+//------------------------------------------------------------
+template<> short Tenseur_short::zeroValue() {
+    return 0;
+}
+
+template<> double Tenseur_number::zeroValue() {
+    return 0;
+}
+
+template<> float Tenseur_float::zeroValue() {
+    return 0;
+}
+
+template<> u_ustring Tenseur_string::zeroValue() {
+    return U"";
+}
+
+template<> string Tenseur_stringbyte::zeroValue() {
+    return "";
+}
+
+template<> long Tenseur_integer::zeroValue() {
+    return 0;
+}
 //----------------------------------------------------------------------------
 
 template<> Numbers* Tenseur_number::provide() {
     return new Numbers();
+}
+
+template<> Strings* Tenseur_string::provide() {
+    return new Strings();
+}
+
+template<> Stringbytes* Tenseur_stringbyte::provide() {
+    return new Stringbytes();
 }
 
 template<> Floats* Tenseur_float::provide() {
@@ -1015,6 +1237,14 @@ template<> Shorts* Tenseur_short::provide(long nb, short val) {
     return new Shorts(nb, val);
 }
 
+template<> Strings* Tenseur_string::provide(long nb, u_ustring v) {
+    return new Strings(nb, v);
+}
+
+template<> Stringbytes* Tenseur_stringbyte::provide(long nb, string v) {
+    return new Stringbytes(nb, v);
+}
+
 template<> Integers* Tenseur_integer::provide(long nb, long val) {
     return new Integers(nb, val);
 }
@@ -1027,6 +1257,14 @@ template<> Floats* Tenseur_float::provide(long nb, float val) {
     return new Floats(nb, val);
 }
 //----------------------------------------------------------------------------
+
+template<> Strings* Tenseur_string::provide(LispE* lisp, long nb, u_ustring val) {
+    return lisp->provideStrings(nb, val);
+}
+
+template<> Stringbytes* Tenseur_stringbyte::provide(LispE* lisp, long nb, string val) {
+    return new Stringbytes(nb, val);
+}
 
 template<> Integers* Tenseur_integer::provide(LispE* lisp, long nb, long val) {
     return lisp->provideIntegers(nb, val);
@@ -1045,6 +1283,14 @@ template<> Shorts* Tenseur_short::provide(LispE* lisp, long nb, short val) {
 }
 
 //----------------------------------------------------------------------------
+
+template<> Strings* Tenseur_string::provide(LispE* lisp) {
+    return lisp->provideStrings();
+}
+
+template<> Stringbytes* Tenseur_stringbyte::provide(LispE* lisp) {
+    return new Stringbytes();
+}
 
 template<> Numbers* Tenseur_number::provide(LispE* lisp) {
     return lisp->provideNumbers();
@@ -1079,6 +1325,14 @@ template<> Integers* Tenseur_integer::provide(LispE* lisp, Integers* n) {
 
 template<> Shorts* Tenseur_short::provide(LispE* lisp, Shorts* n) {
     return new Shorts(n);
+}
+
+template<> Strings* Tenseur_string::provide(LispE* lisp, Strings* n) {
+    return lisp->provideStrings(n);
+}
+
+template<> Stringbytes* Tenseur_stringbyte::provide(LispE* lisp, Stringbytes* n) {
+    return new Stringbytes(n);
 }
 
 //----------------------------------------------------------------------------
@@ -1186,6 +1440,48 @@ template <> Element* Tenseur_integer::newTensor(bool nb, LispE* lisp, List* l) {
     }
 }
 
+template <> Element* Tenseur_string::newTensor(bool nb, LispE* lisp, List* l) {
+    if (nb) {
+        switch (shape.size()) {
+            case 2:
+                return new Strings();
+            case 3:
+                return new Matrice_string();
+            default:
+                return new Tenseur_string();
+        }
+    }
+    switch (shape.size()) {
+        case 2:
+            return new Strings();
+        case 3:
+            return new Matrice_string(l);
+        default:
+            return new Tenseur_string(lisp, l);
+    }
+}
+
+template <> Element* Tenseur_stringbyte::newTensor(bool nb, LispE* lisp, List* l) {
+    if (nb) {
+        switch (shape.size()) {
+            case 2:
+                return new Stringbytes();
+            case 3:
+                return new Matrice_stringbyte();
+            default:
+                return new Tenseur_stringbyte();
+        }
+    }
+    switch (shape.size()) {
+        case 2:
+            return new Stringbytes();
+        case 3:
+            return new Matrice_stringbyte(l);
+        default:
+            return new Tenseur_stringbyte(lisp, l);
+    }
+}
+
 template <> Element* Tenseur_float::newTensor(bool nb, LispE* lisp, List* l) {
     if (nb) {
         switch (shape.size()) {
@@ -1245,6 +1541,32 @@ template<> void Tenseur_short::setvalue(Element* res, Element* lst) {
 
 template<> void Tenseur_integer::setvalue(Element* res, Element* lst) {
     if (lst->type == t_integers) {
+        for (long i = 0; i < lst->size(); i++) {
+            res->replacing(i, lst->index(i));
+        }
+    }
+    else {
+        for (long i = 0; i < lst->size(); i++) {
+            setvalue(res->index(i), lst->index(i));
+        }
+    }
+}
+
+template<> void Tenseur_string::setvalue(Element* res, Element* lst) {
+    if (lst->type == t_strings) {
+        for (long i = 0; i < lst->size(); i++) {
+            res->replacing(i, lst->index(i));
+        }
+    }
+    else {
+        for (long i = 0; i < lst->size(); i++) {
+            setvalue(res->index(i), lst->index(i));
+        }
+    }
+}
+
+template<> void Tenseur_stringbyte::setvalue(Element* res, Element* lst) {
+    if (lst->type == t_stringbytes) {
         for (long i = 0; i < lst->size(); i++) {
             res->replacing(i, lst->index(i));
         }
@@ -1393,11 +1715,11 @@ template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::reversio
     return r;
 }
 
-template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::rotate(bool left) {
+template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::rotating(LispE* lisp, bool left) {
     Tenseur<A,T,C>* revert_matrix = new Tenseur<A,T,C>();
     revert_matrix->shape = shape;
     for (long i = 0; i < shape[0]; i++) {
-        revert_matrix->append(liste[i]->rotate(left));
+        revert_matrix->append(liste[i]->rotating(lisp, left));
     }
     return revert_matrix;
 }
@@ -1481,6 +1803,70 @@ template<> Element* Tenseur_integer::rank(LispE* lisp, vecte<long>& positions) {
         return m;
     }
     Tenseur_integer* ts = new Tenseur_integer(lisp, (List*)res);
+    res->release();
+    return ts;
+}
+
+template<> Element* Tenseur_string::rank(LispE* lisp, vecte<long>& positions) {
+    //We get rid of the final negative values (useless)
+    int16_t sz = positions.size();
+    if (!sz || sz > shape.size())
+        sent_error("Error: index mismatch");
+
+    //Check positions
+    for (long i = 0; i < sz; i++) {
+        if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
+            sent_error("Error: indexes out of bounds");
+    }
+    Element* result = lisp->provideList();
+    Element* res = storeRank(lisp, result, this, positions, 0);
+    if (res != result)
+        result->release();
+    
+    if (res->type == t_strings || res->type == t_string)
+        return res;
+    
+    //We steal the ITEM structure of res
+    //which is a very fast operation
+    //Since its internal values are not copied but borrowed
+    if (res->index(0)->type == t_strings) {
+        Matrice_string* m = new Matrice_string((List*)res);
+        res->release();
+        return m;
+    }
+    Tenseur_string* ts = new Tenseur_string(lisp, (List*)res);
+    res->release();
+    return ts;
+}
+
+template<> Element* Tenseur_stringbyte::rank(LispE* lisp, vecte<long>& positions) {
+    //We get rid of the final negative values (useless)
+    int16_t sz = positions.size();
+    if (!sz || sz > shape.size())
+        sent_error("Error: index mismatch");
+
+    //Check positions
+    for (long i = 0; i < sz; i++) {
+        if (positions[i] != -1 && (positions[i] < 0 || positions[i] >= shape[i]))
+            sent_error("Error: indexes out of bounds");
+    }
+    Element* result = lisp->provideList();
+    Element* res = storeRank(lisp, result, this, positions, 0);
+    if (res != result)
+        result->release();
+    
+    if (res->type == t_stringbytes || res->type == t_stringbyte)
+        return res;
+    
+    //We steal the ITEM structure of res
+    //which is a very fast operation
+    //Since its internal values are not copied but borrowed
+    if (res->index(0)->type == t_stringbytes) {
+        Matrice_stringbyte* m = new Matrice_stringbyte((List*)res);
+        res->release();
+        return m;
+    }
+    Tenseur_stringbyte* ts = new Tenseur_stringbyte(lisp, (List*)res);
     res->release();
     return ts;
 }
@@ -3450,6 +3836,12 @@ Element* List_innerproduct_eval::eval(LispE* lisp) {
         List* res;
         if (l1->type == l2->type && l1->type != l_list) {
             switch (l1->type) {
+                case t_matrix_string:
+                    res = new Matrice_string(lisp, sx_1, sy_2, U"");
+                    break;
+                case t_matrix_stringbyte:
+                    res = new Matrice_stringbyte(lisp, sx_1, sy_2, "");
+                    break;
                 case t_matrix_short:
                     res = new Matrice_short(lisp, sx_1, sy_2, 0.0);
                     break;
@@ -3523,6 +3915,33 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 return first_element;
             }
             switch (first_element->type) {
+                case t_matrix_string:
+                case t_tensor_string: {
+                    Strings* l = lisp->provideStrings();
+                    first_element->flatten(lisp, l);
+                    first_element->release();
+                    lisp->reset_to_true(sb);
+                    lisp->resetStack();
+                    return l;
+                }
+                case t_matrix_short:
+                case t_tensor_short: {
+                    Shorts* l = new Shorts();
+                    first_element->flatten(lisp, l);
+                    first_element->release();
+                    lisp->reset_to_true(sb);
+                    lisp->resetStack();
+                    return l;
+                }
+                case t_matrix_integer:
+                case t_tensor_integer: {
+                    Integers* l = lisp->provideIntegers();
+                    first_element->flatten(lisp, l);
+                    first_element->release();
+                    lisp->reset_to_true(sb);
+                    lisp->resetStack();
+                    return l;
+                }
                 case t_matrix_number:
                 case t_tensor_number: {
                     Numbers* l = lisp->provideNumbers();
@@ -3566,6 +3985,9 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 case t_string:
                     second_element = lisp->provideStrings();
                     break;
+                case t_stringbyte:
+                    second_element = new Stringbytes();
+                    break;
                 default:
                     second_element = lisp->provideList();
             }
@@ -3579,6 +4001,38 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
         vecte<long> sz1;
         vecte<long> sz2;
         switch (first_element->type) {
+            case t_matrix_string: {
+                first_element->getShape(sz1);
+                second_element->getShape(sz2);
+                if (sz1.size() < sz2.size())
+                    throw new Error("Error: Dimension error");
+                res = new Matrice_string(lisp, sz1[0], sz1[1], U"");
+                ((Matrice_string*)res)->setvalue((Matrice_string*)first_element);
+                res->concatenate(lisp,second_element);
+                if (sz2.size() == 2)
+                    sz1.vecteur[1] += sz2[1];
+                else
+                    sz1.vecteur[1] += 1;
+                ((Matrice_string*)res)->size_y = sz1[1];
+                first_element->release();
+                break;
+            }
+            case t_matrix_stringbyte: {
+                first_element->getShape(sz1);
+                second_element->getShape(sz2);
+                if (sz1.size() < sz2.size())
+                    throw new Error("Error: Dimension error");
+                res = new Matrice_stringbyte(lisp, sz1[0], sz1[1], "");
+                ((Matrice_stringbyte*)res)->setvalue((Matrice_stringbyte*)first_element);
+                res->concatenate(lisp,second_element);
+                if (sz2.size() == 2)
+                    sz1.vecteur[1] += sz2[1];
+                else
+                    sz1.vecteur[1] += 1;
+                ((Matrice_stringbyte*)res)->size_y = sz1[1];
+                first_element->release();
+                break;
+            }
             case t_matrix_short: {
                 first_element->getShape(sz1);
                 second_element->getShape(sz2);
@@ -3640,6 +4094,40 @@ Element* List_concatenate_eval::eval(LispE* lisp) {
                 else
                     sz1.vecteur[1] += 1;
                 ((Matrice_float*)res)->size_y = sz1[1];
+                first_element->release();
+                break;
+            }
+            case t_tensor_string: {
+                first_element->getShape(sz1);
+                second_element->getShape(sz2);
+                if (sz1.size() < sz2.size())
+                    throw new Error("Error: Dimension error");
+                res = new Tenseur_string(lisp, sz1, zero_);
+                ((Tenseur_string*)res)->setvalue((Tenseur_string*)first_element);
+                res->concatenate(lisp, second_element);
+                long i = 0;
+                while (i < sz2.size() && sz1[i] == sz2[i]) i++;
+                if (i == sz2.size())
+                    ((Tenseur_string*)res)->shape.vecteur[i] += 1;
+                else
+                    ((Tenseur_string*)res)->shape.vecteur[i] += sz2[i];
+                first_element->release();
+                break;
+            }
+            case t_tensor_stringbyte: {
+                first_element->getShape(sz1);
+                second_element->getShape(sz2);
+                if (sz1.size() < sz2.size())
+                    throw new Error("Error: Dimension error");
+                res = new Tenseur_stringbyte(lisp, sz1, zero_);
+                ((Tenseur_stringbyte*)res)->setvalue((Tenseur_stringbyte*)first_element);
+                res->concatenate(lisp, second_element);
+                long i = 0;
+                while (i < sz2.size() && sz1[i] == sz2[i]) i++;
+                if (i == sz2.size())
+                    ((Tenseur_stringbyte*)res)->shape.vecteur[i] += 1;
+                else
+                    ((Tenseur_stringbyte*)res)->shape.vecteur[i] += sz2[i];
                 first_element->release();
                 break;
             }
@@ -3751,7 +4239,7 @@ Element* List_tensor_number_eval::eval(LispE* lisp) {
             if (!e->isList())
                 throw new Error("Error: The first element should be a list");
 
-            if (e->type == t_tensor_float || e->type == t_tensor_integer || e->type == t_tensor_short)
+            if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
             else {
                 Element* c = e;
@@ -3802,7 +4290,7 @@ Element* List_tensor_short_eval::eval(LispE* lisp) {
             if (!e->isList())
                 throw new Error("Error: The first element should be a list");
 
-            if (e->type == t_tensor_float || e->type == t_tensor_number || e->type == t_tensor_integer)
+            if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
             else {
                 Element* c = e;
@@ -3835,6 +4323,109 @@ Element* List_tensor_short_eval::eval(LispE* lisp) {
     return new Tenseur_short(lisp, shape, zero_);
 }
 
+Element* List_tensor_string_eval::eval(LispE* lisp) {
+    long sz = size();
+    Element* e = zero_;
+    vecte<long> shape;
+    long s;
+    try {
+        lisp->checkState(this);
+        if (sz == 2) {
+            e = liste[1]->eval(lisp);
+            if (e->type == t_tensor_string) {
+                Tenseur_string* ts = new Tenseur_string(lisp, (List*)e);
+                e->release();
+                lisp->resetStack();
+                return ts;
+            }
+            if (!e->isList())
+                throw new Error("Error: The first element should be a list");
+
+            if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
+                e->getShape(shape);
+            else {
+                Element* c = e;
+                while (c->isList()) {
+                    shape.push_back(c->size());
+                    c = c->index(0);
+                }
+                if (!c->isString())
+                    throw new Error("Error: this list should contain strings");
+            }
+
+            Strings l;
+            e->flatten(lisp,&l);
+            Tenseur_string* ts = new Tenseur_string(lisp, &l, shape);
+            e->release();
+            lisp->resetStack();
+            return ts;
+        }
+
+        for (long i = 1; i < sz; i++) {
+            evalAsInteger(i, lisp, s);
+            shape.push_back(s);
+        }
+    }
+    catch (Error* err) {
+        e->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return new Tenseur_string(lisp, shape, emptystring_);
+}
+
+Element* List_tensor_stringbyte_eval::eval(LispE* lisp) {
+    long sz = size();
+    Element* e = zero_;
+    vecte<long> shape;
+    long s;
+    try {
+        lisp->checkState(this);
+        if (sz == 2) {
+            e = liste[1]->eval(lisp);
+            if (e->type == t_tensor_stringbyte) {
+                Tenseur_stringbyte* ts = new Tenseur_stringbyte(lisp, (List*)e);
+                e->release();
+                lisp->resetStack();
+                return ts;
+            }
+            if (!e->isList())
+                throw new Error("Error: The first element should be a list");
+
+            if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
+                e->getShape(shape);
+            else {
+                Element* c = e;
+                while (c->isList()) {
+                    shape.push_back(c->size());
+                    c = c->index(0);
+                }
+                if (!c->isString())
+                    throw new Error("Error: this list should contain strings");
+            }
+
+            Stringbytes l;
+            e->flatten(lisp,&l);
+            Tenseur_stringbyte* ts = new Tenseur_stringbyte(lisp, &l, shape);
+            e->release();
+            lisp->resetStack();
+            return ts;
+        }
+
+        for (long i = 1; i < sz; i++) {
+            evalAsInteger(i, lisp, s);
+            shape.push_back(s);
+        }
+    }
+    catch (Error* err) {
+        e->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return new Tenseur_stringbyte(lisp, shape, emptystring_);
+}
+
+
 Element* List_tensor_integer_eval::eval(LispE* lisp) {
     long sz = size();
     Element* e = zero_;
@@ -3853,7 +4444,7 @@ Element* List_tensor_integer_eval::eval(LispE* lisp) {
             if (!e->isList())
                 throw new Error("Error: The first element should be a list");
 
-            if (e->type == t_tensor_float || e->type == t_tensor_number || e->type == t_tensor_short)
+            if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
             else {
                 Element* c = e;
@@ -3903,7 +4494,7 @@ Element* List_tensor_float_eval::eval(LispE* lisp) {
             }
             if (!e->isList())
                 throw new Error("Error: The first element should be a list");
-            if (e->type == t_tensor_float || e->type == t_tensor_integer || e->type == t_tensor_short)
+            if (e->type >= t_tensor_string && e->type <= t_tensor_integer)
                 e->getShape(shape);
             else {
                 Element* c = e;
@@ -3951,15 +4542,15 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
         return values;
     
     //We check if all the elements in list are of the same type
-    Element* first = values->index(0);
-    char char_tensor = first->isPureList();
+    Element* result = values->index(0);
+    char char_tensor = result->isPureList();
     if (char_tensor == a_valuelist || char_tensor == a_tensor) {
         for (long i = 1; i < sz && (char_tensor == a_valuelist || char_tensor == a_tensor); i++) {
-            char_tensor |= !first->is_same_tensor(values->index(i));
+            char_tensor |= !result->is_same_tensor(values->index(i));
         }
         
         if (char_tensor == a_valuelist || char_tensor == a_tensor) {
-            Element* tensor = first->newTensor(lisp, (List*)values);
+            Element* tensor = result->newTensor(lisp, (List*)values);
             values->release();
             return tensor;
         }
@@ -3975,7 +4566,7 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
         switch (element_type) {
             case t_short: {
                 val = new Shorts();
-                values->flatten(lisp, (Integers*)val);
+                values->flatten(lisp, (Shorts*)val);
                 break;
             }
             case t_integer: {
@@ -3993,6 +4584,16 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
                 values->flatten(lisp, (Numbers*)val);
                 break;
             }
+            case t_string: {
+                val = lisp->provideStrings();
+                values->flatten(lisp, (Strings*)val);
+                break;
+            }
+            case t_stringbyte: {
+                val = new Stringbytes();
+                values->flatten(lisp, (Stringbytes*)val);
+                break;
+            }
             default:
                 values->release();
                 throw new Error("Error: cannot apply to_tensor to this object");
@@ -4004,19 +4605,27 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
             case 2:
                 switch (element_type) {
                     case t_short: {
-                        first = new Matrice_short(lisp, shape[0], (Shorts*)val, shape[1]);
+                        result = new Matrice_short(lisp, shape[0], (Shorts*)val, shape[1]);
                         break;
                     }
                     case t_integer: {
-                        first = new Matrice_integer(lisp, shape[0], (Integers*)val, shape[1]);
+                        result = new Matrice_integer(lisp, shape[0], (Integers*)val, shape[1]);
                         break;
                     }
                     case t_float: {
-                        first = new Matrice_float(lisp, shape[0], (Floats*)val, shape[1]);
+                        result = new Matrice_float(lisp, shape[0], (Floats*)val, shape[1]);
                         break;
                     }
                     case t_number: {
-                        first = new Matrice_number(lisp, shape[0], (Numbers*)val, shape[1]);
+                        result = new Matrice_number(lisp, shape[0], (Numbers*)val, shape[1]);
+                        break;
+                    }
+                    case t_string: {
+                        result = new Matrice_string(lisp, shape[0], (Strings*)val, shape[1]);
+                        break;
+                    }
+                    case t_stringbyte: {
+                        result = new Matrice_stringbyte(lisp, shape[0], (Stringbytes*)val, shape[1]);
                         break;
                     }
                 }
@@ -4024,27 +4633,121 @@ Element* List_to_tensor_eval::eval(LispE* lisp) {
             default:
                 switch (element_type) {
                     case t_short:
-                        first = new Tenseur_short(shape, (Shorts*)val);
+                        result = new Tenseur_short(shape, (Shorts*)val);
                         break;
                     case t_integer: {
-                        first = new Tenseur_integer(shape, (Integers*)val);
+                        result = new Tenseur_integer(shape, (Integers*)val);
                         break;
                     }
                     case t_float: {
-                        first = new Tenseur_float(shape, (Floats*)val);
+                        result = new Tenseur_float(shape, (Floats*)val);
                         break;
                     }
                     case t_number: {
-                        first = new Tenseur_number(shape, (Numbers*)val);
+                        result = new Tenseur_number(shape, (Numbers*)val);
+                        break;
+                    }
+                    case t_string: {
+                        result = new Tenseur_string(shape, (Strings*)val);
+                        break;
+                    }
+                    case t_stringbyte: {
+                        result = new Tenseur_stringbyte(shape, (Stringbytes*)val);
                         break;
                     }
                 }
         }
         val->release();
         values->release();
-        return first;
+        return result;
     }
     return values;
+}
+
+Element* List_matrix_string_eval::eval(LispE* lisp) {
+    long sz = size();
+    Element* e = zero_;
+    long sx, sy;
+    try {
+        lisp->checkState(this);
+        if (sz == 2) {
+            //then this is a list of lists
+            e = liste[1]->eval(lisp);
+            if (e->isMatrix()) {
+                Matrice_string* m = new Matrice_string(lisp, (Matrix*)e);
+                e->release();
+                lisp->resetStack();
+                return m;
+            }
+            
+            if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
+                throw new Error("Error: Cannot initialize a matrix with this value");
+
+            long size_x = e->size();
+            long size_y = e->index(0)->size();
+            Strings l;
+            e->flatten(lisp, &l);
+            Matrice_string* m = new Matrice_string(lisp, &l, size_x, size_y);
+            e->release();
+            lisp->resetStack();
+            return m;
+        }
+
+        evalAsInteger(1, lisp, sx);
+        evalAsInteger(2, lisp, sy);
+        if (sz == 4)
+            e = liste[3]->eval(lisp);
+
+    }
+    catch (Error* err) {
+        e->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return new Matrice_string(sx, sy, e);
+}
+
+Element* List_matrix_stringbyte_eval::eval(LispE* lisp) {
+    long sz = size();
+    Element* e = zero_;
+    long sx, sy;
+    try {
+        lisp->checkState(this);
+        if (sz == 2) {
+            //then this is a list of lists
+            e = liste[1]->eval(lisp);
+            if (e->isMatrix()) {
+                Matrice_stringbyte* m = new Matrice_stringbyte(lisp, (Matrix*)e);
+                e->release();
+                lisp->resetStack();
+                return m;
+            }
+            
+            if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
+                throw new Error("Error: Cannot initialize a matrix with this value");
+
+            long size_x = e->size();
+            long size_y = e->index(0)->size();
+            Stringbytes l;
+            e->flatten(lisp, &l);
+            Matrice_string* m = new Matrice_string(lisp, &l, size_x, size_y);
+            e->release();
+            lisp->resetStack();
+            return m;
+        }
+
+        evalAsInteger(1, lisp, sx);
+        evalAsInteger(2, lisp, sy);
+        if (sz == 4)
+            e = liste[3]->eval(lisp);
+
+    }
+    catch (Error* err) {
+        e->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return new Matrice_stringbyte(sx, sy, e);
 }
 
 Element* List_matrix_number_eval::eval(LispE* lisp) {
@@ -4056,31 +4759,11 @@ Element* List_matrix_number_eval::eval(LispE* lisp) {
         if (sz == 2) {
             //then this is a list of lists
             e = liste[1]->eval(lisp);
-            switch (e->type) {
-                case t_matrix_short: {
-                    Matrice_number* m = new Matrice_number(lisp, (Matrice_short*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_integer: {
-                    Matrice_number* m = new Matrice_number(lisp, (Matrice_integer*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_number: {
-                    Matrice_number* m = new Matrice_number(lisp, (Matrice_number*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_float: {
-                    Matrice_number* m = new Matrice_number(lisp, (Matrice_float*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
+            if (e->isMatrix()) {
+                Matrice_number* m = new Matrice_number(lisp, (Matrix*)e);
+                e->release();
+                lisp->resetStack();
+                return m;
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
@@ -4110,6 +4793,7 @@ Element* List_matrix_number_eval::eval(LispE* lisp) {
     return new Matrice_number(sx, sy, e);
 }
 
+
 Element* List_matrix_short_eval::eval(LispE* lisp) {
     long sz = size();
     Element* e = zero_;
@@ -4119,31 +4803,11 @@ Element* List_matrix_short_eval::eval(LispE* lisp) {
         if (sz == 2) {
             //then this is a list of lists
             e = liste[1]->eval(lisp);
-            switch (e->type) {
-                case t_matrix_short: {
-                    Matrice_short* m = new Matrice_short(lisp, (Matrice_short*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_integer: {
-                    Matrice_short* m = new Matrice_short(lisp, (Matrice_integer*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_number: {
-                    Matrice_short* m = new Matrice_short(lisp, (Matrice_number*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_float: {
-                    Matrice_short* m = new Matrice_short(lisp, (Matrice_float*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
+            if (e->isMatrix()) {
+                Matrice_short* m = new Matrice_short(lisp, (Matrix*)e);
+                e->release();
+                lisp->resetStack();
+                return m;
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
@@ -4182,31 +4846,11 @@ Element* List_matrix_integer_eval::eval(LispE* lisp) {
         if (sz == 2) {
             //then this is a list of lists
             e = liste[1]->eval(lisp);
-            switch (e->type) {
-                case t_matrix_short: {
-                    Matrice_integer* m = new Matrice_integer(lisp, (Matrice_short*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_integer: {
-                    Matrice_integer* m = new Matrice_integer(lisp, (Matrice_integer*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_number: {
-                    Matrice_integer* m = new Matrice_integer(lisp, (Matrice_number*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_float: {
-                    Matrice_integer* m = new Matrice_integer(lisp, (Matrice_float*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
+            if (e->isMatrix()) {
+                Matrice_integer* m = new Matrice_integer(lisp, (Matrix*)e);
+                e->release();
+                lisp->resetStack();
+                return m;
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
@@ -4245,25 +4889,11 @@ Element* List_matrix_float_eval::eval(LispE* lisp) {
         if (sz == 2) {
             //then this is a list of lists
             e = liste[1]->eval(lisp);
-            switch (e->type) {
-                case t_matrix_integer: {
-                    Matrice_float* m = new Matrice_float(lisp, (Matrice_integer*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_number: {
-                    Matrice_float* m = new Matrice_float(lisp, (Matrice_number*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
-                case t_matrix_float: {
-                    Matrice_float* m = new Matrice_float(lisp, (Matrice_float*)e);
-                    e->release();
-                    lisp->resetStack();
-                    return m;
-                }
+            if (e->isMatrix()) {
+                Matrice_float* m = new Matrice_float(lisp, (Matrix*)e);
+                e->release();
+                lisp->resetStack();
+                return m;
             }
             
             if (!e->isList() || !e->index(0)->isList() || !e->index(0)->index(0)->isNumber())
@@ -4305,61 +4935,18 @@ Element* List_rho_eval::eval(LispE* lisp) {
         if (listsize == 2) {
             //In this case we return the shape of our list
             e = liste[1]->eval(lisp);
-            switch (e->type) {
-                case t_matrix_short:
-                case t_matrix_integer:
-                case t_matrix_number:
-                case t_matrix_float:
-                case t_tensor_integer:
-                case t_tensor_short:
-                case t_tensor_float:
-                case t_tensor_number: {
-                    vecte<long> shape;
-                    res = lisp->provideIntegers();
-                    e->getShape(shape);
-                    ((Integers*)res)->liste = shape;
-                    e->release();
-                    lisp->reset_to_true(sb);
-                    lisp->resetStack();
-                    return res;
-                }
-                case t_strings:
-                case t_floats:
-                case t_numbers:
-                case t_shorts:
-                case t_integers:
-                    listsize = e->size();
-                    e->release();
-                    lisp->reset_to_true(sb);
-                    lisp->resetStack();
-                    return lisp->provideInteger(listsize);
-                case t_list:
-                case t_llist: {
-                    vecte<long> sizes;
-                    e->getShape(sizes);
-                    if (sizes.size() == 1) {
-                        lisp->reset_to_true(sb);
-                        lisp->resetStack();
-                        return lisp->provideInteger(sizes[0]);
-                    }
-                    if (e->checkShape(0, sizes)) {
-                        res = lisp->provideIntegers();
-                        for (long i = 0; i < sizes.size(); i++) {
-                            ((Integers*)res)->liste.push_back(sizes[i]);
-                        }
-                        lisp->reset_to_true(sb);
-                        lisp->resetStack();
-                        return res;
-                    }
-                    break;
-                }
-                default:
-                    listsize = e->size();
-                    e->release();
-                    lisp->reset_to_true(sb);
-                    lisp->resetStack();
-                    return lisp->provideInteger(listsize);
+            res = lisp->provideIntegers();
+            if (e->isList()) {
+                vecte<long> shape;
+                e->getShape(shape);
+                ((Integers*)res)->liste = shape;
             }
+            else
+                ((Integers*)res)->liste.push_back(e->size());
+            e->release();
+            lisp->reset_to_true(sb);
+            lisp->resetStack();
+            return res;
         }
         
         long ei = 0;
@@ -4496,6 +5083,27 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     }
                     break;
                 }
+                case t_stringbytes: {
+                    listsize = e->size();
+                    res = new Stringbytes();
+                    res->reserve(sz1);
+                    if (listsize <= 1) {
+                        string v;
+                        if (listsize == 1)
+                            v = e->index(0)->toString(lisp);
+                        for (long i = 0; i < sz1; i++) {
+                            ((Stringbytes*)res)->liste.push_back(v);
+                        }
+                        break;
+                    }
+                    
+                    for (long i = 0; i < sz1; i++) {
+                        if (ei == listsize)
+                            ei = 0;
+                        ((Stringbytes*)res)->liste.push_back(e->index(ei++)->toString(lisp));
+                    }
+                    break;
+                }
                 case t_list: {
                     listsize = e->size();
                     res = lisp->provideList();
@@ -4553,10 +5161,24 @@ Element* List_rho_eval::eval(LispE* lisp) {
             long sz2 = shape[1];
             
             switch (e->type) {
+                case t_strings:
+                    if (e->isEmpty()) {
+                        e->release();
+                        e = lisp->provideStrings(1, U"");
+                    }
+                    res = new Matrice_string(lisp, e, sz1, sz2);
+                    break;
+                case t_stringbytes:
+                    if (e->isEmpty()) {
+                        e->release();
+                        e = new Stringbytes(1, "");
+                    }
+                    res = new Matrice_stringbyte(lisp, e, sz1, sz2);
+                    break;
                 case t_shorts:
                     if (e->isEmpty()) {
                         e->release();
-                        e = lisp->provideIntegers(1, 0);
+                        e = new Shorts(1, 0);
                     }
                     res = new Matrice_short(lisp, e, sz1, sz2);
                     break;
@@ -4581,35 +5203,13 @@ Element* List_rho_eval::eval(LispE* lisp) {
                     }
                     res = new Matrice_number(lisp, e, sz1, sz2);
                     break;
-                case t_strings: {
-                    if (e->isEmpty()) {
-                        e->release();
-                        e = lisp->provideStrings();
-                        e->append(emptystring_);
-                    }
+                case t_list: {
                     vecte<long> shape;
                     shape.push_back(sz1);
                     shape.push_back(sz2);
                     res = new List;
                     sz1 = 0;
-                    ((List*)res)->build(lisp,shape, 0,res, e, sz1);
-                    break;
-                }
-                case t_list: {
-                    if (e->isEmpty()) {
-                        e->release();
-                        e = lisp->provideIntegers(1, 0);
-                        res = new Matrice_number(lisp, e, sz1, sz2);
-                        break;
-                    }
-                    else {
-                        vecte<long> shape;
-                        shape.push_back(sz1);
-                        shape.push_back(sz2);
-                        res = new List;
-                        sz1 = 0;
-                        ((List*)res)->build(lisp,shape, 0,res, e, sz1);
-                    }
+                    ((List*)res)->build(lisp,shape, 0, res, e, sz1);
                     break;
                 }
                 case t_llist: {
@@ -4667,14 +5267,16 @@ Element* List_rho_eval::eval(LispE* lisp) {
             case t_strings:
                 if (e->isEmpty()) {
                     e->release();
-                    e = lisp->provideStrings();
-                    e->append(emptystring_);
+                    e = lisp->provideStrings(1, U"");
                 }
-                else {
-                    res = new List;
-                    sz1 = 0;
-                    ((List*)res)->build(lisp,shape, 0,res, e, sz1);
+                res = new Tenseur_string(lisp, e, shape);
+                break;
+            case t_stringbytes:
+                if (e->isEmpty()) {
+                    e->release();
+                    e = new Stringbytes(1, "");
                 }
+                res = new Tenseur_stringbyte(lisp, e, shape);
                 break;
             case t_list: {
                 if (e->isEmpty()) {

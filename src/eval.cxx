@@ -140,6 +140,20 @@ char Strings::check_match(LispE* lisp, Element* value) {
     return check_ok;
 }
 
+char Stringbytes::check_match(LispE* lisp, Element* value) {
+    if (!value->isList() || liste.size() != value->size())
+        return check_mismatch;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    for (long i = 0; i < liste.size(); i++) {
+        //In this case, we skip it, no constraints...
+        if (liste[i] != value->index(i)->toString(lisp))
+            return i;
+    }
+    return check_ok;
+}
+
 
 //------------------------------------------------------------------------------------------
 
@@ -800,6 +814,9 @@ bool Listseparator::unify(LispE* lisp, Element* value, bool record) {
                     case t_strings:
                         sublist = new Strings((Strings*)value, ivalue);
                         break;
+                    case t_stringbytes:
+                        sublist = new Stringbytes((Stringbytes*)value, ivalue);
+                        break;
                     default:
                         sublist = value->newInstance();
                         for (; ivalue < szvalue; ivalue++)
@@ -1028,6 +1045,30 @@ bool Strings::unify(LispE* lisp, Element* value, bool record) {
     }
     return true;
 }
+
+bool Stringbytes::unify(LispE* lisp, Element* value, bool record) {
+    if (value == this)
+        return true;
+
+    long sz = liste.size();
+    long szvalue = value->size();
+    
+    if (szvalue != sz || !value->isList())
+        return false;
+
+    if (!sz)
+        return true;
+    
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] != value->index(i)->toString(lisp)) {
+            return false;
+        }
+    }
+    return true;
+}
 //------------------------------------------------------------------------------------------
 bool List::isequal(LispE* lisp, Element* value) {
     if (value == this)
@@ -1221,6 +1262,29 @@ bool Strings::isequal(LispE* lisp, Element* value) {
     //rec==false, if the first element is a data structure name...
     for (long i = 0; i < sz; i++) {
         if (liste[i] != value->index(i)->asUString(lisp)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Stringbytes::isequal(LispE* lisp, Element* value) {
+    if (value->type == type)
+        return (liste == ((Stringbytes*)value)->liste);
+
+    long sz = liste.size();
+    if (sz != value->size())
+        return false;
+
+    if (!sz)
+        return true;
+    
+
+    //this contains a data structure definition
+    //This method is used to check if value matches the data structure in 'this'
+    //rec==false, if the first element is a data structure name...
+    for (long i = 0; i < sz; i++) {
+        if (liste[i] != value->index(i)->toString(lisp)) {
             return false;
         }
     }
@@ -2497,6 +2561,10 @@ Element* List::evall_emptyp(LispE* lisp) {
     return booleans_[b];
 }
 
+Element* List::evall_bytes(LispE* lisp) {
+    List_bytes_eval m(this);
+    return m.eval(lisp);
+}
 
 Element* List::evall_cadr(LispE* lisp) {
     List_cadr_eval m(this);
@@ -2898,6 +2966,14 @@ Element* List::evall_converttostring(LispE* lisp) {
     return element;
 }
 
+Element* List::evall_converttostringbyte(LispE* lisp) {
+    Element* value = liste[1]->eval(lisp);
+    string strvalue = value->toString(lisp);
+    Element* element = new Stringbyte(strvalue);
+    value->release();
+    return element;
+}
+
 Element* List::evall_data(LispE* lisp) {
     //if the function was created on the fly, we need to store its contents
     //in the garbage
@@ -3107,6 +3183,11 @@ Element* List::evall_flatten(LispE* lisp) {
 }
 
 
+Element* List::evall_bappend(LispE* lisp) {
+     List_bappend_eval m(this);
+     return m.eval(lisp);
+}
+
 Element* List::evall_fappend(LispE* lisp) {
      List_fappend_eval m(this);
      return m.eval(lisp);
@@ -3116,6 +3197,16 @@ Element* List::evall_fappend(LispE* lisp) {
 Element* List::evall_flip(LispE* lisp) {
     List_flip_eval m(this);
     return m.eval(lisp);
+}
+
+Element* List::evall_bread(LispE* lisp) {
+     List_bread_eval m(this);
+     return m.eval(lisp);
+}
+
+Element* List::evall_bwrite(LispE* lisp) {
+     List_bwrite_eval m(this);
+     return m.eval(lisp);
 }
 
 Element* List::evall_fread(LispE* lisp) {
@@ -3575,6 +3666,16 @@ Element* List::evall_numberp(LispE* lisp) {
 }
 
 
+Element* List::evall_tensor_string(LispE* lisp) {
+     List_tensor_string_eval m(this);
+     return m.eval(lisp);
+}
+
+Element* List::evall_tensor_stringbyte(LispE* lisp) {
+     List_tensor_stringbyte_eval m(this);
+     return m.eval(lisp);
+}
+
 Element* List::evall_tensor_integer(LispE* lisp) {
      List_tensor_integer_eval m(this);
      return m.eval(lisp);
@@ -3604,6 +3705,16 @@ Element* List::evall_matrix_number(LispE* lisp) {
 
 Element* List::evall_matrix_short(LispE* lisp) {
      List_matrix_short_eval m(this);
+     return m.eval(lisp);
+}
+
+Element* List::evall_matrix_string(LispE* lisp) {
+     List_matrix_string_eval m(this);
+     return m.eval(lisp);
+}
+
+Element* List::evall_matrix_stringbyte(LispE* lisp) {
+     List_matrix_stringbyte_eval m(this);
      return m.eval(lisp);
 }
 
@@ -3663,6 +3774,11 @@ Element* List::evall_setn(LispE* lisp) {
 
 Element* List::evall_strings(LispE* lisp) {
     List_strings_eval m(this);
+    return m.eval(lisp);
+}
+
+Element* List::evall_stringbytes(LispE* lisp) {
+    List_stringbytes_eval m(this);
     return m.eval(lisp);
 }
 
@@ -3775,8 +3891,8 @@ Element* List::evall_count(LispE* lisp) {
     return m.eval(lisp);
 }
 
-Element* List::evall_cutlist(LispE* lisp) {
-    List_cutlist_eval m(this);
+Element* List::evall_slice(LispE* lisp) {
+    List_slice_eval m(this);
     return m.eval(lisp);
 }
 
