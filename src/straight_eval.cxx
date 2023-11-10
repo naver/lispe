@@ -1997,7 +1997,11 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
         //if there is already a variable with this name on the stack
         //we record it to restore it later...
         save_variable = lisp->record_or_replace(nxt, label);
-        char check_tensor = 0;
+        
+        //if choice == no, then it means that the output is always a List object
+        //So we cannot build a tensor as output
+        char check_tensor = !choice;
+        
         Element* e = op->eval_lambda_min(lisp);
         if (e->type == l_return)
             container = emptylist_;
@@ -2084,7 +2088,6 @@ Element* List_maplist_eval::eval(LispE* lisp) {
     bool sb = lisp->set_true_as_one();
     void* iter = NULL;
     List* call = NULL;
-    char check_tensor = 0;
     
     try {
         lisp->checkState(this);
@@ -2093,6 +2096,10 @@ Element* List_maplist_eval::eval(LispE* lisp) {
             choice = current_list->Boolean();
             current_list->release();
         }
+    
+        //if choice == no, then it means that the output is always a List object
+        //So we cannot build a tensor as output
+        char check_tensor = !choice;
         
         current_list = liste[2]->eval(lisp);
         long listsz = current_list->size();
@@ -2276,7 +2283,10 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
         
         op = liste[1];
         Element* e;
-        char check_tensor = 0;
+        //if choice == no, then it means that the output is always a List object
+        //So we cannot build a tensor as output
+        char check_tensor = !choice;
+        
         if (op->isLambda()) {
             if (!op->index(1)->size())
                 throw new Error("Error: Wrong number of arguments");
@@ -2465,7 +2475,10 @@ Element* List_takelist_eval::eval(LispE* lisp) {
         
         op = liste[1];
         Element* e;
-        char check_tensor = 0;
+        //if choice == no, then it means that the output is always a List object
+        //So we cannot build a tensor as output
+        char check_tensor = !choice;
+        
         if (op->isLambda()) {
             if (!op->index(1)->size())
                 throw new Error("Error: Wrong number of arguments");
@@ -2668,7 +2681,10 @@ Element* List_droplist_eval::eval(LispE* lisp) {
         
         Element* e;
         bool add = false;
-        char check_tensor = 0;
+
+        //if choice == no, then it means that the output is always a List object
+        //So we cannot build a tensor as output
+        char check_tensor = !choice;
         
         if (op->isLambda()) {
             if (!op->index(1)->size())

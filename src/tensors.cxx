@@ -1055,6 +1055,41 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
     return result;
 }
 
+template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::cdr(LispE* lisp) {
+    return new Matrice<A,T,TT,C>((List*)this, size_x, size_y, 1);
+}
+
+template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::cadr(LispE* lisp, u_ustring& action) {
+    long pos = 0;
+    long sz = size();
+    Element* e = this;
+    
+    for (long i = action.size() - 1; i>= 0; i--) {
+        if (action[i] == 'a') {
+            e = e->protected_index(lisp, pos);
+            if (e == null_)
+                sent_error("Error: No more elements to traverse with 'cad..r'");
+            
+            sz = e->size();
+            pos = 0;
+        }
+        else {
+            if (pos == sz)
+                sent_error("Error: No more elements to traverse with 'cad..r'");
+            pos++;
+        }
+    }
+    
+    if (pos) {
+        if (pos == sz)
+            return null_;
+        return new Matrice<A,T,TT,C>((List*)this, size_x, size_y, pos);
+    }
+    
+    return e;
+}
+
+
 template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,T,TT,C>::loop(LispE* lisp, int16_t label, List* code) {
     long i_loop;
     Element* e = null_;
@@ -1391,6 +1426,45 @@ template <typename A, lisp_code T, typename C> Tenseur<A,T,C>::Tenseur(LispE* li
     }
 }
 
+template <typename A, lisp_code T, typename C> Tenseur<A,T,C>::Tenseur(LispE* lisp, List* l, vecte<long>& sh, long pos) : List(l,pos) {
+    type = T;
+    shape = sh;
+    shape.vecteur[0] -= pos;
+}
+//------------------------------------------------------------------------------------------
+template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::cdr(LispE* lisp) {
+    return new Tenseur<A,T,C>(lisp, (List*)this, shape, 1);
+}
+
+template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::cadr(LispE* lisp, u_ustring& action) {
+    long pos = 0;
+    long sz = size();
+    Element* e = this;
+    
+    for (long i = action.size() - 1; i>= 0; i--) {
+        if (action[i] == 'a') {
+            e = e->protected_index(lisp, pos);
+            if (e == null_)
+                sent_error("Error: No more elements to traverse with 'cad..r'");
+            
+            sz = e->size();
+            pos = 0;
+        }
+        else {
+            if (pos == sz)
+                sent_error("Error: No more elements to traverse with 'cad..r'");
+            pos++;
+        }
+    }
+    
+    if (pos) {
+        if (pos == sz)
+            return null_;
+        return new Tenseur<A,T,C>(lisp, (List*)this, shape, pos);
+    }
+    
+    return e;
+}
 //------------------------------------------------------------------------------------------
 Element* List::newTensor(bool nb, LispE* lisp, List* l) {
     if (nb)

@@ -850,7 +850,7 @@ public:
     
     Element* car(LispE* lisp);
     virtual Element* cdr(LispE* lisp);
-    Element* cadr(LispE*, u_ustring& actions);
+    virtual Element* cadr(LispE*, u_ustring& actions);
     void garbaging_values(LispE*);
     
     virtual void protecting(bool protection, LispE* lisp) {
@@ -10421,7 +10421,6 @@ public:
 #define Tenseur_string Tenseur<u_ustring, t_tensor_string, Strings*>
 #define Tenseur_stringbyte Tenseur<string, t_tensor_stringbyte, Stringbytes*>
 
-
 template <typename A, lisp_code T, typename C> class Tenseur : public List {
 public:
     vecte<long> shape;
@@ -10446,7 +10445,8 @@ public:
     
     //We steal the ITEM structure of this list
     Tenseur<A,T,C>(LispE* lisp, List* l);
-    
+    Tenseur<A,T,C>(LispE* lisp, List* l, vecte<long>& sh, long pos);
+
     A zeroValue();
     A asValue(Element* e);
     C provide();
@@ -10454,6 +10454,9 @@ public:
     C provide(LispE* lisp);
     C provide(long nb, A v);
     C provide(LispE* lisp, long nb, A v);
+
+    Element* cdr(LispE* lisp);
+    Element* cadr(LispE*, u_ustring& actions);
 
     long shapesize() {
         return shape.size();
@@ -10698,6 +10701,10 @@ public:
 
     Matrix() {}
     Matrix(List* l) : List(l, 0) {}
+    Matrix(List* l, long xz, long yz, long pos) : List(l, pos) {
+        size_x = xz - pos;
+        size_y = yz;
+    }
     
     bool isTensor() {
         return true;
@@ -10744,6 +10751,10 @@ public:
         size_y = l->index(0)->size();
     }
 
+    Matrice<A,T,TT,C>(List* l, long xz, long yz, long pos) : Matrix(l, xz, yz, pos) {
+        type = T;
+    }
+
     Matrice<A,T,TT,C>(long x, long y, Element* n);
     Matrice<A,T,TT,C>(C n, long x, long y);
     Matrice<A,T,TT,C>(LispE* lisp, Element* lst, long x, long y);
@@ -10752,6 +10763,9 @@ public:
     Matrice<A,T,TT,C>(long x, long y, A n);
     Matrice<A,T,TT,C>(LispE* lisp, Matrix* m);
     
+    Element* cdr(LispE* lisp);
+    Element* cadr(LispE*, u_ustring& actions);
+
     long shapesize() {
         return 2;
     }
