@@ -2940,7 +2940,9 @@ public:
     }
     
     wstring asString(LispE* lisp) {
-        return _u_to_w(content);
+        wstring w;
+        s_utf8_to_unicode(w, content, content.size());
+        return w;        
     }
 
     u_ustring asUString(LispE* lisp) {
