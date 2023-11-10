@@ -2110,12 +2110,9 @@ Element* List_maplist_eval::eval(LispE* lisp) {
             return emptylist_;
         }
                 
-        op = eval_body_as_argument(lisp, op);
-        if (op->is_straight_eval())
-            call = (List*)op;
-        else
-            call = new List_eval(lisp, op);
-
+        if (op->is_quote())
+            op = op->eval(lisp);
+                    
         /*
          The first element is "quoted" to avoid it to be evaluated later
          otherwise we might have an error later.
@@ -2135,12 +2132,42 @@ Element* List_maplist_eval::eval(LispE* lisp) {
          Each argument is "quoted".
          We then use "in_quote" to replace the current element in the quote with a new one.
          */
-        call->append(lisp->quoted());
+
+        long ps;
+        if (op->isList() && op->size()) {
+            //(maplist '(- _ 10) (iota 10))
+            //(maplist '(- 10 _) (iota 10)) <=> (maplist '(- 10) (iota 10))
+            //where _ is the slot filling for our variable
+            long posvar = 0;
+            call = lisp->provideList();
+            for (ps = 0; ps < op->size(); ps++) {
+                if (op->index(ps) == null_) {
+                    //This is the position where the variable should be
+                    call->append(lisp->quoted());
+                    posvar = ps;
+                }
+                else
+                    call->append(op->index(ps));
+            }
+            if (posvar)
+                ps = posvar;
+            else
+                call->append(lisp->quoted());
+        }
+        else {
+            op = eval_body_as_argument(lisp, op);
+            if (op->is_straight_eval())
+                call = (List*)op;
+            else
+                call = new List_eval(lisp, op);
+            ps = 1;
+            call->append(lisp->quoted());
+        }
         
         iter = current_list->begin_iter();
         Element* nxt = current_list->next_iter_exchange(lisp, iter);
         //Replacing the element in position 1, which is quoted with nxt
-        call->in_quote(1, nxt);
+        call->in_quote(ps, nxt);
         //"met" is a List function, hence the weird call: call->*met, which consists of executing
         //this method within the current List object: call
         Element* e = call->eval(lisp);
@@ -2174,7 +2201,7 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         e->release();
         nxt = current_list->next_iter_exchange(lisp, iter);
         while (nxt != emptyatom_) {
-            call->in_quote(1, nxt);
+            call->in_quote(ps, nxt);
             e = call->eval(lisp)->copying(false);
             check_tensor |= e->isPureList();
             check_tensor |= !e->is_same_tensor(container->last());
@@ -2333,12 +2360,27 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
         else {
             if (op->is_quote())
                 op = op->eval(lisp);
-            
+                     
+            //(filterlist '(< _ 10) (iota 10))
+            //(filterlist '(< 10 _) (iota 10)) <=> (filterlist '(< 10) (iota 10))
+            //where _ is the slot filling for our variable
+
             if (op->isList() && op->size()) {
+                long posvar = 0;
                 call = lisp->provideList();
                 for (ps = 0; ps < op->size(); ps++) {
-                    call->append(op->index(ps));
+                    if (op->index(ps) == null_) {
+                        //This is the position where the variable should be
+                        call->append(lisp->quoted());
+                        posvar = ps;
+                    }
+                    else
+                        call->append(op->index(ps));
                 }
+                if (posvar)
+                    ps = posvar;
+                else
+                    call->append(lisp->quoted());
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2346,11 +2388,10 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                     call = (List*)op;
                 else
                     call = new List_eval(lisp, op);
-
                 ps = 1;
+                call->append(lisp->quoted());
             }
             
-            call->append(lisp->quoted());
             
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
@@ -2533,11 +2574,26 @@ Element* List_takelist_eval::eval(LispE* lisp) {
             if (op->is_quote())
                 op = op->eval(lisp);
 
+            //(takelist '(< _ 10) (iota 10))
+            //(takelist '(< 10 _) (iota 10)) <=> (takelist '(< 10) (iota 10))
+            //where _ is the slot filling for our variable
+
             if (op->isList() && op->size()) {
+                long posvar = 0;
                 call = lisp->provideList();
                 for (ps = 0; ps < op->size(); ps++) {
-                    call->append(op->index(ps));
+                    if (op->index(ps) == null_) {
+                        //This is the position where the variable should be
+                        call->append(lisp->quoted());
+                        posvar = ps;
+                    }
+                    else
+                        call->append(op->index(ps));
                 }
+                if (posvar)
+                    ps = posvar;
+                else
+                    call->append(lisp->quoted());
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2546,10 +2602,9 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 else
                     call = new List_eval(lisp, op);
                 ps = 1;
+                call->append(lisp->quoted());
             }
 
-            call->append(lisp->quoted());
-                        
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
@@ -2736,11 +2791,26 @@ Element* List_droplist_eval::eval(LispE* lisp) {
             if (op->is_quote())
                 op = op->eval(lisp);
 
+            //(droplist '(< _ 10) (iota 10))
+            //(droplist '(< 10 _) (iota 10)) <=> (droplist '(< 10) (iota 10))
+            //where _ is the slot filling for our variable
+
             if (op->isList() && op->size()) {
+                long posvar = 0;
                 call = lisp->provideList();
                 for (ps = 0; ps < op->size(); ps++) {
-                    call->append(op->index(ps));
+                    if (op->index(ps) == null_) {
+                        //This is the position where the variable should be
+                        call->append(lisp->quoted());
+                        posvar = ps;
+                    }
+                    else
+                        call->append(op->index(ps));
                 }
+                if (posvar)
+                    ps = posvar;
+                else
+                    call->append(lisp->quoted());
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2749,10 +2819,9 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 else
                     call = new List_eval(lisp, op);
                 ps = 1;
+                call->append(lisp->quoted());
             }
 
-            call->append(lisp->quoted());
-                        
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
 
