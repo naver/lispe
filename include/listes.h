@@ -10032,6 +10032,7 @@ public:
     void flatten(LispE*, Floats* l);
     void flatten(LispE*, Integers* l);
     void flatten(LispE*, Shorts* l);
+    void flatten(LispE*, Strings* l);
     void flatten(LispE*, Stringbytes* l);
     
     Element* protected_index(LispE*,long i);

@@ -4391,6 +4391,14 @@ void Stringbytes::flatten(LispE* lisp, Stringbytes* l) {
     }
 }
 
+void Stringbytes::flatten(LispE* lisp, Strings* l) {
+    u_ustring u;
+    for (long i = 0; i < size(); i++) {
+        s_utf8_to_unicode(u, liste[i], liste[i].size());
+        l->liste.push_back(u);
+    }
+}
+
 void Strings::flatten(LispE* lisp, Stringbytes* l) {
     string v;
     for (long i = 0; i < size(); i++) {
