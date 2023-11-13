@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.11.10.13.35";
+static std::string version = "1.2023.11.13.19.34";
 string LispVersion() {
     return version;
 }
@@ -1986,6 +1986,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 else
                     lm = new List_multiplyequal_var((List*)element);
                 break;
+            case l_mapcar:
             case l_maplist:
                 if (element->index(1)->isLambda())
                     lm = new List_maplist_lambda_eval((Listincode*)element);
@@ -2962,6 +2963,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
