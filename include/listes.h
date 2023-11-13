@@ -1262,8 +1262,13 @@ public:
     }
     
     void copyfrom(Element* x) {
-        liste.clean();
         List* l = (List*)x;
+        if (l == this || l->liste.item == liste.item) {
+            liste.home = l->liste.home;
+            return;
+        }
+        
+        liste.clean();
         for (long i = 0; i < l->size(); i++)
             append(l->liste[i]);
     }
