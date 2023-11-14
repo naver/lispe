@@ -3093,6 +3093,11 @@ Element* List::evall_space(LispE* lisp) {
      return m.eval(lisp);
 }
 
+Element* List::evall_mask(LispE* lisp) {
+     List_mask_eval m(this);
+     return m.eval(lisp);
+}
+
 Element* List::evall_defspace(LispE* lisp) {
     int16_t label = liste[1]->label();
     if (label == l_thread)

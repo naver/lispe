@@ -109,7 +109,7 @@ typedef enum {
     l_matrix_string, l_matrix_stringbyte, l_matrix_short, l_matrix_number, l_tensor_number, l_matrix_integer,
     l_tensor_string, l_tensor_stringbyte, l_tensor_short, l_tensor_integer, l_matrix_float, l_tensor_float,
     l_outerproduct, l_factorial, l_iota, l_iota0,
-    l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank,
+    l_reduce, l_scan, l_backreduce, l_backscan, l_rho, l_rank, l_irank, l_mask, 
     l_member, l_transpose, l_invert, l_determinant, l_solve, l_ludcmp, l_lubksb,
     l_plusmultiply,
     

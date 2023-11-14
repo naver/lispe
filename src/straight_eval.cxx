@@ -3158,6 +3158,74 @@ Element* List_lowerorequal_eval::eval(LispE* lisp) {
     return test;
 }
 
+Element* List_mask_eval::eval(LispE* lisp) {
+    //We have two parameters, one is a list of binary elements, the other one a list to generate
+    Element* binaries = liste[1]->eval(lisp);
+    Element* current_list = NULL;
+    
+    if (!binaries->isList())
+        throw new Error("Error: first element should be a list of 1 and 0");
+    
+    long sz = binaries->size();
+    Element* res = null_;
+    Element* zero = null_;
+    try {
+        lisp->checkState(this);
+        current_list = liste[2]->eval(lisp);
+        if (!current_list->isList())
+            throw new Error("Error: first element should be a list of 1 and 0");
+        
+        long bi = -1;
+        long basic_zero = -2;
+        if (size() == 4) {
+            bi = 0;
+            zero = liste[3]->eval(lisp);
+            basic_zero = zero->size();
+            if (!basic_zero)
+                throw new Error("Error: wrong third argument. Should be a non empty list");
+        }
+
+        long current_sz = current_list->size();
+        res = current_list->newInstance();
+        bool nb;
+        long j = 0;
+        long i;
+        
+        for (i = 0; i < sz; i++) {
+            nb = binaries->index(i)->Boolean();
+            if (!nb) {
+                if (basic_zero == -1)
+                    res->append(zero);
+                else {
+                    if (bi == basic_zero)
+                        break;
+                    res->append(zero->index(bi++));
+                }
+            }
+            else {
+                if (j == current_sz)
+                    break;
+                res->append(current_list->index(j++));
+            }
+        }
+        if (i != sz)
+            throw new Error("Error: size mismatch");
+    }
+    catch (Error* err) {
+        res->release();
+        zero->release();
+        binaries->release();
+        if (current_list != NULL)
+            current_list->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    zero->release();
+    current_list->release();
+    binaries->release();
+    lisp->resetStack();
+    return res;
+}
+
 Element* List_stringf_eval::eval(LispE* lisp) {
     char* buffer = NULL;
     Element* e = liste[2]->eval(lisp);
@@ -3516,10 +3584,9 @@ Element* List::scan(LispE* lisp, Element* current_list, long sz) {
             if (!nb)
                 res->append(zero_);
             else {
-                if (j == sz) {
-                    res->release();
+                if (j >= sz)
                     throw new Error("Error: List size mismatch");
-                }
+                
                 while (nb > 0) {
                     res->append(current_list->index(j));
                     nb--;
@@ -3527,10 +3594,8 @@ Element* List::scan(LispE* lisp, Element* current_list, long sz) {
                 j++;
             }
         }
-        if (j != sz) {
-            res->release();
+        if (j >= sz)
             throw new Error("Error: List size mismatch");
-        }
     }
     catch (Error* err) {
         res->release();
@@ -3771,10 +3836,9 @@ Element* List::backscan(LispE* lisp, Element* current_list, long sz) {
             if (!nb)
                 res->append(zero_);
             else {
-                if (j == -1) {
-                    res->release();
+                if (j <= -1)
                     throw new Error("Error: List size mismatch");
-                }
+
                 while (nb > 0) {
                     res->append(current_list->index(j));
                     nb--;
@@ -3782,10 +3846,8 @@ Element* List::backscan(LispE* lisp, Element* current_list, long sz) {
                 j--;
             }
         }
-        if (j != -1) {
-            res->release();
+        if (j <= -1)
             throw new Error("Error: List size mismatch");
-        }
     }
     catch (Error* err) {
         res->release();
@@ -4019,24 +4081,25 @@ Element* List::reduce(LispE* lisp, Element* current_list, long sz) {
     
     Element* res = current_list->newInstance();
 
-    if (size() == 0)
+    long lsz = size();
+    
+    if (lsz == 0)
         return res;
     
     try {
         long j = 0;
         long nb;
         
-        for (long i = 0; i < size(); i++) {
+        for (long i = 0; i < lsz; i++) {
             nb = liste[i]->asInteger();
             if (!nb) {
                 j++;
                 continue;
             }
             
-            if (j == sz) {
-                res->release();
+            if (j >= sz)
                 throw new Error("Error: List size mismatch");
-            }
+            
             while (nb > 0) {
                 res->append(current_list->index(j));
                 nb--;
@@ -4265,6 +4328,8 @@ Element* List_reduce_eval::eval(LispE* lisp) {
     catch (Error* err) {
         if (call != NULL)
             call->force_release();
+        else
+            op->release();
         res->release();
         current_list->release();
         lisp->reset_to_true(sb);
@@ -4296,10 +4361,8 @@ Element* List::backreduce(LispE* lisp, Element* current_list, long sz) {
                 j--;
                 continue;
             }
-            if (j == -1) {
-                res->release();
+            if (j <= -1)
                 throw new Error("Error: List size mismatch");
-            }
             while (nb > 0) {
                 res->append(current_list->index(j));
                 nb--;

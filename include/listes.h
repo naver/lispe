@@ -1263,7 +1263,7 @@ public:
     
     void copyfrom(Element* x) {
         List* l = (List*)x;
-        if (l == this || l->liste.item == liste.item) {
+        if (l->liste.item == liste.item) {
             liste.home = l->liste.home;
             return;
         }
@@ -1436,6 +1436,7 @@ public:
     Element* evall_matrix_number(LispE* lisp);
     Element* evall_matrix_float(LispE* lisp);
     Element* evall_minmax(LispE* lisp);
+    Element* evall_mask(LispE* lisp);
     Element* evall_max(LispE* lisp);
     Element* evall_maybe(LispE* lisp);
     Element* evall_member(LispE* lisp);
@@ -5082,6 +5083,27 @@ public:
     
     List* cloning() {
         return new List_equalonezero_eval(multiple);
+    }
+    Element* eval(LispE*);
+};
+
+class List_mask_eval : public Listincode {
+public:
+    List_mask_eval(Listincode* l) : Listincode(l) {}
+    List_mask_eval(List* l) : Listincode(l) {}
+    List_mask_eval() {}
+    List_mask_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_mask_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_mask_eval(multiple);
     }
     Element* eval(LispE*);
 };

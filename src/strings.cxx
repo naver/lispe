@@ -849,7 +849,7 @@ public:
     
     Element* method_split(LispE* lisp) {
         Element* vstr = lisp->get_variable(v_str);
-        if (vstr)
+        if (vstr->type == t_stringbyte)
             return method_split_byte(lisp, vstr);
         
         u_ustring strvalue =  vstr->asUString(lisp);
