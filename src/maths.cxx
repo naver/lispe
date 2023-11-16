@@ -135,30 +135,6 @@ Element* range(LispE* lisp, u_ustring& init, u_ustring& limit, long inc) {
     throw new Error("Error: Exceeding range");
 }
 
-Element* List::evall_range(LispE* lisp) {
-    List_range_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_rangein(LispE* lisp) {
-    List_rangein_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_irange(LispE* lisp) {
-    List_irange_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_irangein(LispE* lisp) {
-    List_irangein_eval m(this);
-    return m.eval(lisp);
-}
-
-
 
 //------ Matrix operations ------------------------
 union double32 {
@@ -5420,26 +5396,6 @@ Element* Set_n::rightshift(LispE* lisp, Element* e) {
 //---------------------------------------------------------------------------
 
 
-Element* List::evall_bitand(LispE* lisp) {
-    List_bitand m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_bitandnot(LispE* lisp) {
-    List_bitandnot m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_bitor(LispE* lisp) {
-    List_bitor m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_bitxor(LispE* lisp) {
-    List_bitxor m(this);
-    return m.eval(lisp);
-}
-
 Element* List::evall_divide(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     
@@ -5819,11 +5775,6 @@ Element* List_minus3::eval(LispE* lisp) {
     return first_element;
 }
 
-Element* List::evall_mod(LispE* lisp) {
-    List_mod_eval m(this);
-    return m.eval(lisp);
-}
-
 Element* List::evall_multiply(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     
@@ -6029,28 +5980,6 @@ Element* List_multiply3::eval(LispE* lisp) {
     }
     
     return first_element;
-}
-
-Element* List::evall_listand(LispE* lisp) {
-    List_listand_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_listor(LispE* lisp) {
-    List_listor_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_listxor(LispE* lisp) {
-    List_listxor_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_plusmultiply(LispE* lisp) {
-    List_plusmultiply m(this);
-    return m.eval(lisp);
 }
 
 Element* List::evall_plus(LispE* lisp) {
@@ -6265,16 +6194,6 @@ Element* List_plus3::eval(LispE* lisp) {
     return first_element;
 }
 
-
-Element* List::evall_leftshift(LispE* lisp) {
-    List_leftshift_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_rightshift(LispE* lisp) {
-    List_rightshift_eval m(this);
-    return m.eval(lisp);
-}
 
 Element* List::evall_power(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
@@ -8591,52 +8510,6 @@ Element* List::evall_powerequal2(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 
-
-Element* List::evall_sum(LispE* lisp) {
-    List_sum_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_product(LispE* lisp) {
-    List_product_eval m(this);
-    return m.eval(lisp);
-}
-
-//------------------------------------------------------------------------------------------
-
-Element* List::evall_invert(LispE* lisp) {
-    List_invert_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_solve(LispE* lisp) {
-    List_solve_eval m(this);
-    return m.eval(lisp);
-}
-
-
-
-Element* List::evall_determinant(LispE* lisp) {
-    List_determinant_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_ludcmp(LispE* lisp) {
-    List_ludcmp_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_lubksb(LispE* lisp) {
-    List_lubksb_eval m(this);
-    return m.eval(lisp);
-}
-
-//------------------------------------------------------------------------------------------
-
 typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf} math;
 
 
@@ -9532,3 +9405,302 @@ Element* List::negate(LispE* lisp) {
     return n;
 }
 
+
+Element* List::evall_equal(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    Element* second_element;
+    char test = true;
+
+    try {
+        lisp->setStack();
+        for (long i = 2; i < size(); i++) {
+            second_element = liste[i]->eval(lisp);
+            if (!first_element->isequal(lisp, second_element)) {
+                test = false;
+                break;
+            }
+            first_element->release();
+            first_element = second_element;
+        }
+        
+        first_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        lisp->resetStack();
+        throw err;
+    }
+
+    lisp->resetStack();
+    return booleans_[test];
+}
+
+Element* List::evall_equalonezero(LispE* lisp) {
+    Element* l1 = liste[1]->eval(lisp);
+    Element* l2 = null_;
+    Element* res = NULL;
+    
+    try {
+        lisp->setStack();
+        l2 = liste[2]->eval(lisp);
+        
+        res = l1->comparison(lisp, l2);
+        
+        l1->release();
+        l2->release();
+    }
+    catch (Error* err) {
+        l1->release();
+        l2->release();
+        if (res != NULL)
+            res->release();
+        lisp->resetStack();
+        throw err;
+    }
+    
+    lisp->resetStack();
+    return res;
+}
+
+Element* List::evall_different(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    char test;
+    
+    try {
+        lisp->setStack();
+        Element* second_element = liste[2]->eval(lisp);
+        test = first_element->isequal(lisp, second_element);
+        first_element->release();
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        lisp->resetStack();
+        throw err;
+    }
+    
+    lisp->resetStack();
+    return booleans_[!test];
+}
+
+Element* List::evall_lower(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    Element* second_element;
+    Integers* res = NULL;
+    Element* test;
+    int16_t listsize = size();
+    
+    try {
+        lisp->setStack();
+        if (listsize == 3) {
+            second_element = liste[2]->eval(lisp);
+            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
+                res = lisp->provideIntegers();
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    res->liste.push_back((first_element->index(i)->less(lisp, second_element->index(i))->Boolean()));
+                }
+                first_element->release();
+                second_element->release();
+                lisp->resetStack();
+                return res;
+            }
+            test = first_element->less(lisp, second_element);
+            first_element->release();
+            second_element->release();
+            lisp->resetStack();
+            return test;
+        }
+        
+        test = true_;
+        for (long i = 2; i < listsize && test->Boolean(); i++) {
+            second_element = liste[i]->eval(lisp);
+            test = first_element->less(lisp, second_element);
+            first_element->release();
+            first_element = second_element;
+        }
+        first_element->release();
+    }
+    catch (Error* err) {
+        if (res != NULL)
+            res->release();
+        first_element->release();
+        lisp->resetStack();
+        throw err;
+    }
+    
+    lisp->resetStack();
+    return test;
+}
+
+Element* List::evall_compare(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    Element* second_element;
+    Element* test;
+    
+    try {
+        lisp->setStack();
+        second_element = liste[2]->eval(lisp);
+        test = first_element->compare(lisp, second_element);
+        first_element->release();
+        second_element->release();
+    }
+    catch (Error* err) {
+        first_element->release();
+        lisp->resetStack();
+        throw err;
+    }
+    
+    lisp->resetStack();
+    return test;
+}
+
+Element* List::evall_greater(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    Integers* res = NULL;
+    Element* test;
+    
+    Element* second_element;
+    int16_t listsize = size();
+    
+    try {
+        lisp->setStack();
+        if (listsize == 3) {
+            second_element = liste[2]->eval(lisp);
+            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
+                res = lisp->provideIntegers();
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    res->liste.push_back((first_element->index(i)->more(lisp, second_element->index(i))->Boolean()));
+                }
+                first_element->release();
+                second_element->release();
+                lisp->resetStack();
+                return res;
+            }
+            test = first_element->more(lisp, second_element);
+            first_element->release();
+            second_element->release();
+            lisp->resetStack();
+            return test;
+        }
+        
+        test = true_;
+        for (long i = 2; i < listsize && test->Boolean() ; i++) {
+            second_element = liste[i]->eval(lisp);
+            test = first_element->more(lisp, second_element);
+            first_element->release();
+            first_element = second_element;
+        }
+        first_element->release();
+    }
+    catch (Error* err) {
+        if (res != NULL)
+            res->release();
+        first_element->release();
+        lisp->resetStack();
+        throw err;
+    }
+    
+    lisp->resetStack();
+    return test;
+}
+
+Element* List::evall_lowerorequal(LispE* lisp)  {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    Element* second_element;
+    Integers* res = NULL;
+    Element* test;
+    
+    int16_t listsize = size();
+    try {
+        lisp->setStack();
+        if (listsize == 3) {
+            second_element = liste[2]->eval(lisp);
+            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
+                res = lisp->provideIntegers();
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    res->liste.push_back((first_element->index(i)->lessorequal(lisp, second_element->index(i))->Boolean()));
+                }
+                first_element->release();
+                second_element->release();
+                lisp->resetStack();
+                return res;
+            }
+            test = first_element->lessorequal(lisp, second_element);
+            first_element->release();
+            second_element->release();
+            lisp->resetStack();
+            return test;
+        }
+        
+        test = true_;
+        for (long i = 2; i < listsize && test->Boolean() ; i++) {
+            second_element = liste[i]->eval(lisp);
+            test = first_element->lessorequal(lisp, second_element);
+            first_element->release();
+            first_element = second_element;
+        }
+        first_element->release();
+    }
+    catch (Error* err) {
+        if (res != NULL)
+            res->release();
+        first_element->release();
+        lisp->resetStack();
+        throw err;
+    }
+    
+    lisp->resetStack();
+    return test;
+}
+
+Element* List::evall_greaterorequal(LispE* lisp)  {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    Element* second_element;
+    Integers* res = NULL;
+    Element* test;
+    int16_t listsize = size();
+    
+    try {
+        lisp->setStack();
+        if (listsize == 3) {
+            second_element = liste[2]->eval(lisp);
+            if (booleans_[0] == zero_ && first_element->isList() && second_element->isList()) {
+                res = lisp->provideIntegers();
+                for (long i = 0; i < first_element->size() && i < second_element->size(); i++) {
+                    res->liste.push_back((first_element->index(i)->moreorequal(lisp, second_element->index(i))->Boolean()));
+                }
+                first_element->release();
+                second_element->release();
+                lisp->resetStack();
+                return res;
+            }
+            test = first_element->moreorequal(lisp, second_element);
+            first_element->release();
+            second_element->release();
+            lisp->resetStack();
+            return test;
+        }
+        
+        test = true_;
+        for (long i = 2; i < listsize && test->Boolean(); i++) {
+            second_element = liste[i]->eval(lisp);
+            test = first_element->moreorequal(lisp, second_element);
+            first_element->release();
+            first_element = second_element;
+        }
+        first_element->release();
+    }
+    catch (Error* err) {
+        if (res != NULL)
+            res->release();
+        first_element->release();
+        lisp->resetStack();
+        throw err;
+    }
+    
+    lisp->resetStack();
+    return test;
+}

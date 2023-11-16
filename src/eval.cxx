@@ -2334,6 +2334,23 @@ Element* List_eval::eval(LispE* lisp) {
     return (this->*met)(lisp);
 }
 
+//This the function that is called when an eval is done on a list of elements where a function is present
+//(eval '(cons 'a 'b)), we first create a List_cons_eval object that will "borrow" the current list content
+//We then evaluate.
+Element* List::eval_list_instruction(LispE* lisp) {
+    List* l = lisp->borrowing((Listincode*)this, size());
+    Element* e;
+    try {
+        e = l->eval(lisp);
+    }
+    catch(Error* err) {
+        delete l;
+        return lisp->check_error(this, err, 0);
+    }
+    delete l;
+    return e;
+}
+
 Element* LispE::check_error(List* l, Error* err, int idxinfo) {
     delegation->set_error_context(err, idxinfo);
     if (err != delegation->_THEEND) {
@@ -2413,25 +2430,6 @@ Element* List::evall_return(LispE* lisp) {
     return lisp->provideReturn(liste[1]->eval(lisp));
 }
 
-Element* List::evall_and(LispE* lisp) {
-    List_and_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_andvalue(LispE* lisp) {
-     List_andvalue_eval m(this);
-     return m.eval(lisp);
-}
-
-
-
-Element* List::evall_apply(LispE* lisp) {
-     List_apply_eval m(this);
-     return m.eval(lisp);
-}
-
-
 Element* List::evall_atomise(LispE* lisp) {
     Element* values = liste[1]->eval(lisp);
     Element* theatoms = lisp->atomise(values->asUString(lisp));
@@ -2449,11 +2447,6 @@ Element* List::evall_atomp(LispE* lisp) {
 
 Element* List::evall_atoms(LispE* lisp) {
     return lisp->atomes();
-}
-
-Element* List::evall_bitnot(LispE* lisp) {
-    List_bitnot m(this);
-    return m.eval(lisp);
 }
 
 Element* List::evall_addr_(LispE* lisp) {
@@ -2548,32 +2541,11 @@ Element* List::evall_block(LispE* lisp) {
 }
 
 
-
-Element* List::evall_elapse(LispE* lisp) {
-     List_elapse_eval m(this);
-     return m.eval(lisp);
-}
-
 Element* List::evall_emptyp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     bool b = element->isEmpty();
     element->release();
     return booleans_[b];
-}
-
-Element* List::evall_bytes(LispE* lisp) {
-    List_bytes_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_cadr(LispE* lisp) {
-    List_cadr_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_car(LispE* lisp) {
-    List_car_eval m(this);
-    return m.eval(lisp);
 }
 
 Element* List::evall_maplist(LispE* lisp) {
@@ -2587,45 +2559,6 @@ Element* List::evall_maplist(LispE* lisp) {
     }
 }
 
-Element* List::evall_filterlist(LispE* lisp) {
-    List_filterlist_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_takelist(LispE* lisp) {
-    List_takelist_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_droplist(LispE* lisp) {
-    List_droplist_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_takenb(LispE* lisp) {
-    List_takenb_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_factorial(LispE* lisp) {
-     List_factorial_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_stringf(LispE* lisp) {
-    List_stringf_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_iota(LispE* lisp) {
-    List_iota_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_iota0(LispE* lisp) {
-    List_iota0_eval m(this);
-    return m.eval(lisp);
-}
 
 Element* apply_op1_op2(LispE* lisp, Element* op1, Element* op2, Element* l1, Element* l2) {
     List* call = lisp->provideList();
@@ -2735,91 +2668,11 @@ Element* List::evall_transpose(LispE* lisp) {
     return transposed_matrix;
 }
 
-// (.  '((1 2) (5 4) (3 0)) '+ '* '((6 2 3 4) (7 0 1 8)))
-// (. (iota 10) '+ '* (iota 10.0))
-//(setq m1 (rho 3 2 '(1 2 5 4 3 0)))
-//(setq m2 (rho 2 4 '(6 2 3 4 7 0 1 8)))
-Element* List::evall_innerproduct(LispE* lisp) {
-    List_innerproduct_eval m(this);
-    return m.eval(lisp);
-}
-
-// (° '(2 3 4) '* '(1 2 3 4))
-// (° (rho 2 3 '(4 5 6 9)) '* (rho 3 3 (iota 10)))
-Element* List::evall_outerproduct(LispE* lisp) {
-    List_outerproduct_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_rank(LispE* lisp) {
-    List_rank_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_irank(LispE* lisp) {
-    List_irank_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_reduce(LispE* lisp) {
-    List_reduce_eval m(this);
-    return m.eval(lisp);
-}
 
 inline long mmin(long x, long y) {
     return (x <= y?x:y);
 }
 
-Element* List::evall_backreduce(LispE* lisp) {
-    List_backreduce_eval m(this);
-    return m.eval(lisp);
-}
-
-
-// (, (rho 2 3 '(4 5 6 9)) (rho 2 3 (iota 10)))
-// (, (rho 3 3 3 (iota 90)) -1)
-// (, (rho 3 3 3 (iota 90)) (* (iota 3) -1))
-// (, (rho 3 3 3 (iota 90)) (* (rho 3 3 (iota 10)) -1))
-
-Element* List::evall_concatenate(LispE* lisp) {
-    List_concatenate_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_member(LispE* lisp) {
-    List_member_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_rho(LispE* lisp) {
-    List_rho_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_equalonezero(LispE* lisp) {
-    List_equalonezero_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_scan(LispE* lisp) {
-    List_scan_eval m(this);
-    return m.eval(lisp);
-}
-
-
-
-Element* List::evall_backscan(LispE* lisp) {
-    List_backscan_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_catch(LispE* lisp) {
-     List_catch_eval m(this);
-     return m.eval(lisp);
-}
 
 Element* List::evall_cdr(LispE* lisp) {
     Element* lst = liste[1]->eval(lisp);
@@ -2843,16 +2696,6 @@ Element* List::evall_cdr(LispE* lisp) {
     return c;
 }
 
-Element* List::evall_cond(LispE* lisp) {
-    List_cond_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_check(LispE* lisp) {
-    List_check_eval m(this);
-    return m.eval(lisp);
-}
-
 Element* List::evall_conspoint(LispE* lisp) {
     LList* lst = new LList(&lisp->delegation->mark);
     long i;
@@ -2862,17 +2705,6 @@ Element* List::evall_conspoint(LispE* lisp) {
     lst->append_as_last(lisp, liste[i]);
     return lst;
     
-}
-
-Element* List::evall_cons(LispE* lisp) {
-    List_cons_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_consb(LispE* lisp) {
-    List_consb_eval m(this);
-    return m.eval(lisp);
 }
 
 Element* List::evall_consp(LispE* lisp) {
@@ -2895,12 +2727,6 @@ Element* List::evall_clone(LispE* lisp) {
     Element* copie = element->fullcopy();
     element->release();
     return copie;
-}
-
-
-Element* List::evall_converttoatom(LispE* lisp) {
-     List_converttoatom_eval m(this);
-     return m.eval(lisp);
 }
 
 
@@ -3087,17 +2913,6 @@ Element* List::evall_defpat(LispE* lisp) {
     return lisp->recordingMethod(this, label);
 }
 
-
-Element* List::evall_space(LispE* lisp) {
-     List_space_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_mask(LispE* lisp) {
-     List_mask_eval m(this);
-     return m.eval(lisp);
-}
-
 Element* List::evall_defspace(LispE* lisp) {
     int16_t label = liste[1]->label();
     if (label == l_thread)
@@ -3139,106 +2954,10 @@ Element* List::evall_defun(LispE* lisp) {
     return lisp->recordingunique(this, label);
 }
 
-
-Element* List::evall_bodies(LispE* lisp) {
-     List_bodies_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_different(LispE* lisp) {
-    List_different_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_eq(LispE* lisp) {
-    List_eq_eval m(this);
-    return m.eval(lisp);
-
-}
-
-
-Element* List::evall_equal(LispE* lisp) {
-    List_equal_eval m(this);
-    return m.eval(lisp);
-}
-
-
-
-Element* List::evall_eval(LispE* lisp) {
-     List_eval_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_extract(LispE* lisp) {
-    List_extract_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_set_range(LispE* lisp) {
-    List_range_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_flatten(LispE* lisp) {
-    List_flatten_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_bappend(LispE* lisp) {
-     List_bappend_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_fappend(LispE* lisp) {
-     List_fappend_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_flip(LispE* lisp) {
-    List_flip_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_bread(LispE* lisp) {
-     List_bread_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_bwrite(LispE* lisp) {
-     List_bwrite_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_fread(LispE* lisp) {
-     List_fread_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_fwrite(LispE* lisp) {
-     List_fwrite_eval m(this);
-     return m.eval(lisp);
-}
-
 Element* List::evall_getchar(LispE* lisp) {
     string code = get_char(lisp->delegation->input_handler);
     return lisp->provideString(code);
 }
-
-Element* List::evall_greater(LispE* lisp) {
-    List_greater_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_greaterorequal(LispE* lisp) {
-    List_greaterorequal_eval m(this);
-    return m.eval(lisp);
-}
-
 
 Element* List::evall_if(LispE* lisp) {
     Element* condition = liste[1]->eval(lisp);
@@ -3269,17 +2988,6 @@ Element* List::evall_ife(LispE* lisp) {
         element = liste[i]->eval(lisp);
     }
     return element;
-}
-
-
-Element* List::evall_in(LispE* lisp) {
-    List_in_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_at(LispE* lisp) {
-    List_at_eval m(this);
-    return m.eval(lisp);
 }
 
 Element* List::evall_index_zero(LispE* lisp) {
@@ -3329,24 +3037,8 @@ Element* List::evall_index_zero(LispE* lisp) {
     return result;
 }
 
-Element* List::evall_at_shape(LispE* lisp) {
-    List_at_shape_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_set_shape(LispE* lisp) {
-    List_set_shape_eval m(this);
-    return m.eval(lisp);
-}
-
 Element* List::evall_set_at(LispE* lisp) {
     List_set_at_eval m(this);
-    return m.eval(lisp);
-}
-
-//Infix Expressions: x op y op z op u
-Element* List::evall_infix(LispE* lisp) {
-    List_infix_eval m(this);
     return m.eval(lisp);
 }
 
@@ -3444,62 +3136,6 @@ Element* List::evall_input(LispE* lisp) {
 }
 
 
-Element* List::evall_insert(LispE* lisp) {
-    List_insert_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_over(LispE* lisp) {
-    List_over_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_join(LispE* lisp) {
-    List_join_eval m(this);
-    return m.eval(lisp);
-
-}
-
-Element* List::evall_key(LispE* lisp) {
-    List_key_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_keyi(LispE* lisp) {
-    List_keyi_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_keyn(LispE* lisp) {
-    List_keyn_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_dictionary(LispE* lisp) {
-    List_dictionary_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_dictionaryi(LispE* lisp) {
-    List_dictionaryi_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_dictionaryn(LispE* lisp) {
-    List_dictionaryn_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_keys(LispE* lisp) {
-    List_keys_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_label(LispE* lisp) {
-    List_label_eval m(this);
-    return m.eval(lisp);
-}
 
 Element* List::evall_lambda(LispE* lisp) {
     if (liste.size() < 3)
@@ -3517,47 +3153,6 @@ Element* List::evall_last(LispE* lisp) {
     Element* value = container->last_element(lisp);
     container->release();
     return value;
-}
-
-Element* List::evall_list(LispE* lisp) {
-    List_list_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_heap(LispE* lisp) {
-     List_heap_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_llist(LispE* lisp) {
-     List_llist_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_to_list(LispE* lisp) {
-     List_to_list_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_to_tensor(LispE* lisp) {
-     List_to_tensor_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_to_llist(LispE* lisp) {
-     List_to_llist_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_nconc(LispE* lisp) {
-    List_nconc_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_nconcn(LispE* lisp) {
-    List_nconcn_eval m(this);
-    return m.eval(lisp);
 }
 
 Element* List::evall_load(LispE* lisp) {
@@ -3580,69 +3175,6 @@ Element* List::evall_compile(LispE* lisp) {
     u_ustring code = the_code->asUString(lisp);
     the_code->release();
     return lisp->compile_eval(code);
-}
-
-Element* List::evall_lock(LispE* lisp) {
-     List_lock_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_loop(LispE* lisp) {
-    List_loop_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_loopcount(LispE* lisp) {
-    List_loopcount_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_compare(LispE* lisp) {
-    List_compare_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_lower(LispE* lisp) {
-    List_lower_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_lowerorequal(LispE* lisp) {
-    List_lowerorequal_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_minmax(LispE* lisp) {
-    List_minmax_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_max(LispE* lisp) {
-    List_max_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_maybe(LispE* lisp) {
-    List_maybe_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_min(LispE* lisp) {
-    List_min_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_ncheck(LispE* lisp) {
-    List_ncheck_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_neq(LispE* lisp) {
-    return booleans_[!evall_eq(lisp)->Boolean()];
 }
 
 Element* List::evall_next(LispE* lisp) {
@@ -3668,252 +3200,6 @@ Element* List::evall_numberp(LispE* lisp) {
     bool b = element->isNumber();
     element->release();
     return booleans_[b];
-}
-
-
-Element* List::evall_tensor_string(LispE* lisp) {
-     List_tensor_string_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_tensor_stringbyte(LispE* lisp) {
-     List_tensor_stringbyte_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_tensor_integer(LispE* lisp) {
-     List_tensor_integer_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_tensor_short(LispE* lisp) {
-     List_tensor_short_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_tensor_number(LispE* lisp) {
-     List_tensor_number_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_tensor_float(LispE* lisp) {
-     List_tensor_float_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_matrix_number(LispE* lisp) {
-     List_matrix_number_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_matrix_short(LispE* lisp) {
-     List_matrix_short_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_matrix_string(LispE* lisp) {
-     List_matrix_string_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_matrix_stringbyte(LispE* lisp) {
-     List_matrix_stringbyte_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_matrix_integer(LispE* lisp) {
-     List_matrix_integer_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_matrix_float(LispE* lisp) {
-     List_matrix_float_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_floats(LispE* lisp) {
-     List_floats_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_numbers(LispE* lisp) {
-    List_numbers_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_shorts(LispE* lisp) {
-     List_shorts_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_integers(LispE* lisp) {
-    List_integers_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_set(LispE* lisp) {
-    List_set_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_sets(LispE* lisp) {
-    List_sets_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_seti(LispE* lisp) {
-    List_seti_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_setn(LispE* lisp) {
-    List_setn_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_strings(LispE* lisp) {
-    List_strings_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_stringbytes(LispE* lisp) {
-    List_stringbytes_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_or(LispE* lisp) {
-    List_or_eval m(this);
-    return m.eval(lisp);
-}
-
-
-
-Element* List::evall_pipe(LispE* lisp) {
-     List_pipe_eval m(this);
-     return m.eval(lisp);
-}
-
-Element* List::evall_pop(LispE* lisp) {
-    List_pop_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_popfirst(LispE* lisp) {
-    List_popfirst_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_poplast(LispE* lisp) {
-    List_poplast_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_prettify(LispE* lisp) {
-     List_prettify_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::evall_print(LispE* lisp) {
-    List_print_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_printerr(LispE* lisp) {
-    List_printerr_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_printerrln(LispE* lisp) {
-    List_printerrln_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_println(LispE* lisp) {
-    List_println_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_extend(LispE* lisp) {
-    List_extend_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_push(LispE* lisp) {
-    List_push_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_pushtrue(LispE* lisp) {
-    List_pushtrue_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_pushfirst(LispE* lisp) {
-    List_pushfirst_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_pushlast(LispE* lisp) {
-    List_pushlast_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_replicate(LispE* lisp) {
-    List_replicate_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_reverse(LispE* lisp) {
-    List_reverse_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_revertsearch(LispE* lisp) {
-    List_revertsearch_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_search(LispE* lisp) {
-    List_search_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_count(LispE* lisp) {
-    List_count_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_slice(LispE* lisp) {
-    List_slice_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_searchall(LispE* lisp) {
-    List_searchall_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_replaceall(LispE* lisp) {
-    List_replaceall_eval m(this);
-    return m.eval(lisp);
-}
-
-Element* List::evall_select(LispE* lisp) {
-    List_select_eval m(this);
-    return m.eval(lisp);
 }
 
 #ifdef MAX_STACK_SIZE_ENABLED
@@ -3987,15 +3273,9 @@ Element* List::evall_seth(LispE* lisp) {
 }
 
 
-Element* List::evall_signp(LispE* lisp) {
-     List_signp_eval m(this);
-     return m.eval(lisp);
-}
-
 Element* List::evall_sign(LispE* lisp) {
     return liste[1]->eval(lisp)->invert_sign(lisp);
 }
-
 
 Element* List::evall_size(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -4018,11 +3298,6 @@ Element* List::evall_sleep(LispE* lisp) {
     return True_;
 }
 
-
-Element* List::evall_sort(LispE* lisp) {
-    List_sort_eval m(this);
-    return m.eval(lisp);
-}
 
 Element* List::evall_stringp(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
@@ -4165,11 +3440,6 @@ Element* List::evall_type(LispE* lisp) {
     return atom_type;
 }
 
-Element* List::evall_rotate(LispE* lisp) {
-    List_rotate_eval m(this);
-    return m.eval(lisp);
-}
-
 Element* List::evall_unique(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     Element* value = container->unique(lisp);
@@ -4215,23 +3485,6 @@ Element* List::evall_waiton(LispE* lisp) {
     return True_;
 }
 
-Element* List::evall_while(LispE* lisp) {
-    List_while_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_xor(LispE* lisp) {
-    List_xor_eval m(this);
-    return m.eval(lisp);
-}
-
-
-Element* List::evall_mark(LispE* lisp) {
-     List_mark_eval m(this);
-     return m.eval(lisp);
-}
-
 Element* List::evall_resetmark(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
     container->resetusermark();
@@ -4261,11 +3514,6 @@ Element* List::evall_link(LispE* lisp) {
     //The first atom is replaced with the second atom code...
     lisp->replaceAtom(identifier, atome->label());
     return True_;
-}
-
-Element* List::evall_zip(LispE* lisp) {
-    List_zip_eval m(this);
-    return m.eval(lisp);
 }
 
 Element* List::evall_zipwith(LispE* lisp) {
@@ -4431,7 +3679,7 @@ Element* List::evalt_list(LispE* lisp) {
 #ifdef MACDEBUG
 //This is a stub function, which is used to focus on specific function debugging
 Element* List::evall_debug_function(LispE* lisp) {
-    return evall_nconc(lisp);
+    return true_;
 }
 #endif
 

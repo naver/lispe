@@ -20,6 +20,17 @@ Element* range(LispE* lisp, double init, double limit, double inc);
 Element* range(LispE* lisp, u_ustring& init, u_ustring& limit, long inc);
 
 //------------------------------------------------------------------------------------------
+//We return one value less since, the arity comprises the function definition as first element of a list
+//For functions, it is one too many.
+long arity_value(unsigned long arity) {
+    long nb = 0;
+    while (arity != 2) {
+        nb++;
+        arity >>= 1;
+    }
+    return nb;
+}
+
 Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long arity) {
     if (function->isInstruction()) {
         lisp->arity_check(function->label(), arity);
@@ -38,10 +49,10 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
                 function = new List_pattern_eval((List*)function);
                 break;
             case l_deflib:
-                function = new List_library_eval((List*)function);
+                function = new List_library_eval((List*)function, arity_value(arity));
                 break;
             case l_defun:
-                function = new List_function_eval(lisp, (List*)function);
+                function = new List_function_eval(lisp, (List*)function, arity_value(arity));
                 break;
             case l_lambda:
                 function = new Atomefonction(function, t_lambda);
@@ -1148,7 +1159,6 @@ Element* List_not_eval::eval(LispE* lisp) {
     return negated;
 }
 
-
 Element* List_nullp_eval::eval(LispE* lisp) {
     Element* element = liste[1]->eval(lisp);
     bool test = element->isNULL();
@@ -1422,10 +1432,7 @@ Element* List_poplast_eval::eval(LispE* lisp) {
 }
 
 Element* List_last_eval::eval(LispE* lisp) {
-    Element* container = liste[1]->eval(lisp);
-    Element* value = container->last_element(lisp);
-    container->release();
-    return value;
+    return evall_last(lisp);
 }
 
 Element* List_push_eval::eval(LispE* lisp) {
@@ -2133,34 +2140,16 @@ Element* List_maplist_eval::eval(LispE* lisp) {
          We then use "in_quote" to replace the current element in the quote with a new one.
          */
 
-        long ps;
-        if (op->isList() && op->size()) {
-            //(maplist '(- _ 10) (iota 10))
-            //(maplist '(- 10 _) (iota 10)) <=> (maplist '(- 10) (iota 10))
-            //where _ is the slot filling for our variable
-            long posvar = 0;
-            call = lisp->provideList();
-            for (ps = 0; ps < op->size(); ps++) {
-                if (op->index(ps) == null_) {
-                    //This is the position where the variable should be
-                    call->append(lisp->quoted());
-                    posvar = ps;
-                }
-                else
-                    call->append(op->index(ps));
-            }
-            if (posvar)
-                ps = posvar;
-            else
-                call->append(lisp->quoted());
-        }
+        int16_t ps = 1;
+        Element* e;
+        if (op->isList() && op->size())
+            call = lisp->provideCallforTWO(op, ps);
         else {
             op = eval_body_as_argument(lisp, op);
             if (op->is_straight_eval())
                 call = (List*)op;
             else
                 call = new List_eval(lisp, op);
-            ps = 1;
             call->append(lisp->quoted());
         }
         
@@ -2170,7 +2159,7 @@ Element* List_maplist_eval::eval(LispE* lisp) {
         call->in_quote(ps, nxt);
         //"met" is a List function, hence the weird call: call->*met, which consists of executing
         //this method within the current List object: call
-        Element* e = call->eval(lisp);
+        e = call->eval(lisp);
         if (choice) {
             switch (e->type) {
                 case t_string:
@@ -2366,21 +2355,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
             //where _ is the slot filling for our variable
 
             if (op->isList() && op->size()) {
-                long posvar = 0;
-                call = lisp->provideList();
-                for (ps = 0; ps < op->size(); ps++) {
-                    if (op->index(ps) == null_) {
-                        //This is the position where the variable should be
-                        call->append(lisp->quoted());
-                        posvar = ps;
-                    }
-                    else
-                        call->append(op->index(ps));
-                }
-                if (posvar)
-                    ps = posvar;
-                else
-                    call->append(lisp->quoted());
+                call = lisp->provideCallforTWO(op, ps);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2579,21 +2554,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
             //where _ is the slot filling for our variable
 
             if (op->isList() && op->size()) {
-                long posvar = 0;
-                call = lisp->provideList();
-                for (ps = 0; ps < op->size(); ps++) {
-                    if (op->index(ps) == null_) {
-                        //This is the position where the variable should be
-                        call->append(lisp->quoted());
-                        posvar = ps;
-                    }
-                    else
-                        call->append(op->index(ps));
-                }
-                if (posvar)
-                    ps = posvar;
-                else
-                    call->append(lisp->quoted());
+                call = lisp->provideCallforTWO(op, ps);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2796,21 +2757,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
             //where _ is the slot filling for our variable
 
             if (op->isList() && op->size()) {
-                long posvar = 0;
-                call = lisp->provideList();
-                for (ps = 0; ps < op->size(); ps++) {
-                    if (op->index(ps) == null_) {
-                        //This is the position where the variable should be
-                        call->append(lisp->quoted());
-                        posvar = ps;
-                    }
-                    else
-                        call->append(op->index(ps));
-                }
-                if (posvar)
-                    ps = posvar;
-                else
-                    call->append(lisp->quoted());
+                call = lisp->provideCallforTWO(op, ps);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -5249,6 +5196,12 @@ Element* List_set_shape_eval::eval(LispE* lisp) {
 }
 
 //Infix Expressions: x op y op z op u
+Element* List::evall_infix(LispE* lisp) {
+    List_infix_eval m(this);
+    return m.eval(lisp);
+}
+
+//Infix Expressions: x op y op z op u
 Element* List_infix_eval::eval(LispE* lisp) {
     Element* expression = liste[1]->eval(lisp);
     long listsize = expression->size();
@@ -5770,8 +5723,7 @@ Element* List_zipwith_eval::eval(LispE* lisp) {
         
         ITEM& item = *lists->liste.item;
         
-        
-        function = eval_body_as_argument(lisp, function);
+        function = eval_body_as_argument(lisp, function, _arity(lsz+1));
         if (function->is_straight_eval())
             call = (List*)function;
         else {
@@ -5779,12 +5731,10 @@ Element* List_zipwith_eval::eval(LispE* lisp) {
             call->append(function);
         }
         
-        for (j = 0; j < lsz; j++)
-            call->append(lisp->quoted());
-        
         methodEval met = lisp->delegation->evals[function->type];
         for (i = 0; i < lsz; i++)
-            call->in_quote(i + 1, item[i]->index(0));
+            call->append(lisp->quoted(item[i]->index(0)));
+        
         Element* value = (call->*met)(lisp);
         if (choose) {
             switch (value->type) {
@@ -7117,7 +7067,7 @@ Element* List_apply_eval::eval(LispE* lisp) {
     List* call = NULL;
     Element* result = NULL;
     int16_t lab = function->label();
-    bool use_list = !lisp->delegation->straight_eval.check(lab);
+    bool use_list = !lisp->delegation->check_straight(lab);
 
     try {
         lisp->checkState(this);
@@ -7185,7 +7135,7 @@ Element* List_over_eval::eval(LispE* lisp) {
     List* call = NULL;
     Element* result = NULL;
     int16_t lab = function->label();
-    bool use_list = !lisp->delegation->straight_eval.check(lab);
+    bool use_list = !lisp->delegation->check_straight(lab);
 
     try {
         lisp->checkState(this);

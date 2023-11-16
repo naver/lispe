@@ -80,7 +80,7 @@ public:
     inline Element* operator[](long pos) {
         return buffer[pos];
     }
-
+    
     inline void swap(long left, long right) {
         //We use the fact that the last element exists
         //but cannot be accessed...
@@ -195,13 +195,13 @@ public:
             }
         }
     }
-
+    
     inline void clean(long i) {
         for (; i < last; i++) {
             buffer[i]->decrement();
         }
     }
-
+    
     inline void setAndQuote(long i, Element* v) {
         ((Quoted*)buffer[i])->requoting(v);
     }
@@ -275,7 +275,7 @@ public:
         item->buffer[item->last - 1] = val;
         return e;
     }
-        
+    
     uint16_t shared(uint16_t status) {
         return status + (item->status != 0);
     }
@@ -294,7 +294,7 @@ public:
         home--;
         return (home >= 0);
     }
-
+    
     inline void setusermark(bool v) {
         usermarking = v;
     }
@@ -605,7 +605,7 @@ public:
     void swap(long i, long j) {
         liste.swap(i, j);
     }
-        
+    
     bool insertion(Element* e, long idx) {
         liste.insert(idx, e);
         return true;
@@ -646,7 +646,7 @@ public:
         n[0] = 0;
         return n;
     }
-        
+    
     Element* next_iter(LispE* lisp, void* it);
     Element* next_iter_exchange(LispE* lisp, void* it);
     
@@ -1229,7 +1229,7 @@ public:
             l = l->index(0);
         }
     }
-            
+    
     virtual Element* check_member(LispE*, Element* the_set);
     
     Element* insert(LispE* lisp, Element* e, long idx);
@@ -1280,10 +1280,10 @@ public:
 #endif
     
     virtual Element* reduce(LispE* lisp, Element* l1, long sz);
-    virtual Element* backreduce(LispE* lisp, Element* l1, long sz);    
+    virtual Element* backreduce(LispE* lisp, Element* l1, long sz);
     virtual Element* scan(LispE* lisp, Element* l1, long sz);
     virtual Element* backscan(LispE* lisp, Element* l1, long sz);
-        
+    
     virtual Element* eval_call_function(LispE* lisp);
     
     virtual Element* eval_call_self(LispE* lisp);
@@ -1292,52 +1292,42 @@ public:
     
     Element* evalthreadspace(LispE* lisp, long listsize, long first);
     
+    Element* eval_list_instruction(LispE* lisp);
+    
+    Element* evall_maplist(LispE* lisp);
+    
+    Element* evall_equal(LispE* lisp);
+    Element* evall_equalonezero(LispE* lisp);
+    Element* evall_different(LispE* lisp);
+    Element* evall_lower(LispE* lisp);
+    Element* evall_compare(LispE* lisp);
+    Element* evall_greater(LispE* lisp);
+    Element* evall_lowerorequal(LispE* lisp);
+    Element* evall_greaterorequal(LispE* lisp);
+    
     Element* evall_addr_(LispE* lisp);
-    Element* evall_and(LispE* lisp);
-    Element* evall_andvalue(LispE* lisp);
-    Element* evall_apply(LispE* lisp);
     Element* evall_atomise(LispE* lisp);
     Element* evall_atomp(LispE* lisp);
     Element* evall_atoms(LispE* lisp);
-    Element* evall_backreduce(LispE* lisp);
-    Element* evall_backscan(LispE* lisp);
-    Element* evall_bitand(LispE* lisp);
     Element* evall_bitandequal(LispE* lisp);
-    Element* evall_bitandnot(LispE* lisp);
     Element* evall_bitandnotequal(LispE* lisp);
-    Element* evall_bitnot(LispE* lisp);
-    Element* evall_bitor(LispE* lisp);
     Element* evall_bitorequal(LispE* lisp);
-    Element* evall_bitxor(LispE* lisp);
     Element* evall_bitxorequal(LispE* lisp);
     Element* evall_block(LispE* lisp);
-    Element* evall_bodies(LispE* lisp);
     Element* evall_break(LispE* lisp);
-    Element* evall_bytes(LispE* lisp);
-    Element* evall_cadr(LispE* lisp);
-    Element* evall_car(LispE* lisp);
-    Element* evall_catch(LispE* lisp);
     Element* evall_cdr(LispE* lisp);
-    Element* evall_check(LispE* lisp);
     Element* evall_compile(LispE* lisp);
-    Element* evall_concatenate(LispE* lisp);
-    Element* evall_cond(LispE* lisp);
-    Element* evall_cons(LispE* lisp);
     Element* evall_conspoint(LispE* lisp);
-    Element* evall_consb(LispE* lisp);
     Element* evall_consp(LispE* lisp);
     Element* evall_complex(LispE* lisp);
     Element* evall_real(LispE* lisp);
     Element* evall_imaginary(LispE* lisp);
-    Element* evall_converttoatom(LispE* lisp);
     Element* evall_converttointeger(LispE* lisp);
     Element* evall_converttoshort(LispE* lisp);
     Element* evall_converttonumber(LispE* lisp);
     Element* evall_converttofloat(LispE* lisp);
     Element* evall_converttostring(LispE* lisp);
     Element* evall_converttostringbyte(LispE* lisp);
-    Element* evall_count(LispE* lisp);
-    Element* evall_slice(LispE* lisp);
     Element* evall_cyclicp(LispE* lisp);
     Element* evall_data(LispE* lisp);
     Element* evall_deflib(LispE* lisp);
@@ -1346,198 +1336,58 @@ public:
     Element* evall_defpat(LispE* lisp);
     Element* evall_defspace(LispE* lisp);
     Element* evall_defun(LispE* lisp);
-    Element* evall_determinant(LispE* lisp);
-    Element* evall_dictionary(LispE* lisp);
-    Element* evall_dictionaryi(LispE* lisp);
-    Element* evall_dictionaryn(LispE* lisp);
-    Element* evall_different(LispE* lisp);
     Element* evall_divide(LispE* lisp);
     Element* evall_divideequal(LispE* lisp);
     Element* evall_clone(LispE* lisp);
-    Element* evall_elapse(LispE* lisp);
     Element* evall_emptyp(LispE* lisp);
     Element* evall_emptylist(LispE* lisp);
-    Element* evall_eq(LispE* lisp);
-    Element* evall_equal(LispE* lisp);
-    Element* evall_equalonezero(LispE* lisp);
-    Element* evall_eval(LispE* lisp);
-    Element* evall_extend(LispE* lisp);
-    Element* evall_extract(LispE* lisp);
-    Element* evall_factorial(LispE* lisp);
-    Element* evall_bappend(LispE* lisp);
-    Element* evall_fappend(LispE* lisp);
-    Element* evall_filterlist(LispE* lisp);
-    Element* evall_droplist(LispE* lisp);
-    Element* evall_takelist(LispE* lisp);
-    Element* evall_takenb(LispE* lisp);
-    Element* evall_flatten(LispE* lisp);
-    Element* evall_flip(LispE* lisp);
-    Element* evall_stringf(LispE* lisp);
-    Element* evall_bread(LispE* lisp);
-    Element* evall_bwrite(LispE* lisp);
-    Element* evall_fread(LispE* lisp);
-    Element* evall_fwrite(LispE* lisp);
     Element* evall_getchar(LispE* lisp);
-    Element* evall_greater(LispE* lisp);
-    Element* evall_greaterorequal(LispE* lisp);
     Element* evall_if(LispE* lisp);
     Element* evall_ife(LispE* lisp);
-    Element* evall_in(LispE* lisp);
-    Element* evall_at_shape(LispE* lisp);
-    Element* evall_at(LispE* lisp);
     Element* evall_index_zero(LispE* lisp);
-    Element* evall_infix(LispE* lisp);
-    Element* evall_innerproduct(LispE* lisp);
     Element* evall_input(LispE* lisp);
-    Element* evall_irank(LispE* lisp);
-    Element* evall_insert(LispE* lisp);
-    Element* evall_integers(LispE* lisp);
-    Element* evall_shorts(LispE* lisp);
-    Element* evall_invert(LispE* lisp);
-    Element* evall_iota(LispE* lisp);
-    Element* evall_iota0(LispE* lisp);
-    Element* evall_irange(LispE* lisp);
-    Element* evall_irangein(LispE* lisp);
-    Element* evall_join(LispE* lisp);
-    Element* evall_key(LispE* lisp);
-    Element* evall_keyi(LispE* lisp);
-    Element* evall_keyn(LispE* lisp);
-    Element* evall_keys(LispE* lisp);
-    Element* evall_label(LispE* lisp);
     Element* evall_lambda(LispE* lisp);
     Element* evall_last(LispE* lisp);
-    Element* evall_leftshift(LispE* lisp);
     Element* evall_leftshiftequal(LispE* lisp);
     Element* evall_link(LispE* lisp);
-    Element* evall_list(LispE* lisp);
-    Element* evall_llist(LispE* lisp);
-    Element* evall_listand(LispE* lisp);
-    Element* evall_listor(LispE* lisp);
-    Element* evall_listxor(LispE* lisp);
-    Element* evall_to_list(LispE* lisp);
-    Element* evall_to_tensor(LispE* lisp);
-    Element* evall_to_llist(LispE* lisp);
     Element* evall_load(LispE* lisp);
     Element* evall_let(LispE* lisp);
-    Element* evall_lock(LispE* lisp);
-    Element* evall_loop(LispE* lisp);
-    Element* evall_loopcount(LispE* lisp);
-    Element* evall_compare(LispE* lisp);
-    Element* evall_lower(LispE* lisp);
-    Element* evall_lowerorequal(LispE* lisp);
-    Element* evall_lubksb(LispE* lisp);
-    Element* evall_ludcmp(LispE* lisp);
-    Element* evall_maplist(LispE* lisp);
-    Element* evall_mark(LispE* lisp);
-    Element* evall_matrix_string(LispE* lisp);
-    Element* evall_matrix_stringbyte(LispE* lisp);
-    Element* evall_matrix_short(LispE* lisp);
-    Element* evall_matrix_integer(LispE* lisp);
-    Element* evall_matrix_number(LispE* lisp);
-    Element* evall_matrix_float(LispE* lisp);
-    Element* evall_minmax(LispE* lisp);
-    Element* evall_mask(LispE* lisp);
-    Element* evall_max(LispE* lisp);
-    Element* evall_maybe(LispE* lisp);
-    Element* evall_member(LispE* lisp);
-    Element* evall_min(LispE* lisp);
     Element* evall_minus(LispE* lisp);
     Element* evall_minusequal(LispE* lisp);
-    Element* evall_mod(LispE* lisp);
     Element* evall_modequal(LispE* lisp);
     Element* evall_multiply(LispE* lisp);
     Element* evall_multiplyequal(LispE* lisp);
-    Element* evall_ncheck(LispE* lisp);
-    Element* evall_nconc(LispE* lisp);
-    Element* evall_nconcn(LispE* lisp);
-    Element* evall_neq(LispE* lisp);
     Element* evall_next(LispE* lisp);
     Element* evall_not(LispE* lisp);
     Element* evall_nullp(LispE* lisp);
     Element* evall_numberp(LispE* lisp);
-    Element* evall_numbers(LispE* lisp);
-    Element* evall_floats(LispE* lisp);
-    Element* evall_or(LispE* lisp);
-    Element* evall_outerproduct(LispE* lisp);
-    Element* evall_over(LispE* lisp);
-    Element* evall_pipe(LispE* lisp);
-    Element* evall_plus(LispE* lisp);
     Element* evall_plusequal(LispE* lisp);
-    Element* evall_plusmultiply(LispE* lisp);
-    Element* evall_pop(LispE* lisp);
-    Element* evall_popfirst(LispE* lisp);
-    Element* evall_poplast(LispE* lisp);
     Element* evall_power(LispE* lisp);
     Element* evall_powerequal(LispE* lisp);
     Element* evall_powerequal2(LispE* lisp);
-    Element* evall_prettify(LispE* lisp);
-    Element* evall_print(LispE* lisp);
-    Element* evall_printerr(LispE* lisp);
-    Element* evall_printerrln(LispE* lisp);
-    Element* evall_println(LispE* lisp);
-    Element* evall_product(LispE* lisp);
-    Element* evall_pushtrue(LispE* lisp);
-    Element* evall_push(LispE* lisp);
-    Element* evall_pushfirst(LispE* lisp);
-    Element* evall_pushlast(LispE* lisp);
     Element* evall_quote(LispE* lisp);
     Element* evall_quoted(LispE* lisp) {
         return this;
     }
-    Element* evall_range(LispE* lisp);
-    Element* evall_rangein(LispE* lisp);
-    Element* evall_rank(LispE* lisp);
-    Element* evall_reduce(LispE* lisp);
-    Element* evall_replaceall(LispE* lisp);
-    Element* evall_replicate(LispE*);
     Element* evall_resetmark(LispE* lisp);
     Element* evall_return(LispE* lisp);
-    Element* evall_reverse(LispE* lisp);
-    Element* evall_revertsearch(LispE* lisp);
-    Element* evall_rho(LispE* lisp);
-    Element* evall_rightshift(LispE* lisp);
     Element* evall_rightshiftequal(LispE* lisp);
     Element* evall_root(LispE* lisp);
-    Element* evall_rotate(LispE* lisp);
-    Element* evall_scan(LispE* lisp);
-    Element* evall_search(LispE* lisp);
-    Element* evall_searchall(LispE* lisp);
-    Element* evall_select(LispE* lisp);
-    Element* evall_sets(LispE* lisp);
-    Element* evall_set(LispE* lisp);
     Element* evall_set_at(LispE* lisp);
     Element* evall_set_const(LispE* lisp);
-    Element* evall_set_range(LispE* lisp);
-    Element* evall_set_shape(LispE* lisp);
     Element* evall_setg(LispE* lisp);
-    Element* evall_seti(LispE* lisp);
-    Element* evall_setn(LispE* lisp);
     Element* evall_setq(LispE* lisp);
     Element* evall_seth(LispE* lisp);
-    Element* evall_sign(LispE* lisp);
-    Element* evall_signp(LispE* lisp);
     Element* evall_size(LispE* lisp);
+    Element* evall_sign(LispE* lisp);
     Element* evall_sleep(LispE* lisp);
-    Element* evall_solve(LispE* lisp);
-    Element* evall_sort(LispE* lisp);
     Element* evall_stringp(LispE* lisp);
-    Element* evall_strings(LispE* lisp);
-    Element* evall_stringbytes(LispE* lisp);
-    Element* evall_space(LispE* lisp);
-    Element* evall_sum(LispE* lisp);
     Element* evall_switch(LispE* lisp);
     Element* evall_tally(LispE* lisp);
-    Element* evall_tensor_string(LispE* lisp);
-    Element* evall_tensor_stringbyte(LispE* lisp);
-    Element* evall_tensor_short(LispE* lisp);
-    Element* evall_tensor_integer(LispE* lisp);
-    Element* evall_tensor_number(LispE* lisp);
-    Element* evall_tensor_float(LispE* lisp);
     Element* evall_threadclear(LispE* lisp);
     Element* evall_threadretrieve(LispE* lisp);
     Element* evall_threadstore(LispE* lisp);
     Element* evall_threadspace(LispE* lisp);
-    Element* evall_heap(LispE* lisp);
     Element* evall_throw(LispE* lisp);
     Element* evall_trace(LispE* lisp);
     Element* evall_transpose(LispE* lisp);
@@ -1549,17 +1399,14 @@ public:
     Element* evall_void(LispE* lisp);
     Element* evall_wait(LispE* lisp);
     Element* evall_waiton(LispE* lisp);
-    Element* evall_while(LispE* lisp);
-    Element* evall_xor(LispE* lisp);
     Element* evall_zerop(LispE* lisp);
-    Element* evall_zip(LispE* lisp);
     Element* evall_zipwith(LispE* lisp);
     Element* evalt_list(LispE* lisp);
     
     Element* evalt_call(LispE* lisp) {
         return liste[0]->eval(lisp);
     }
-
+    
     Element* bit_not(LispE* l);
     Element* bit_and(LispE* l, Element* e);
     Element* bit_and_not(LispE* l, Element* e);
@@ -1574,6 +1421,8 @@ public:
     Element* leftshift(LispE* l, Element* e);
     Element* rightshift(LispE* l, Element* e);
     
+    Element* evall_plus(LispE* lisp);
+    Element* evall_infix(LispE* lisp);
     
     //Composable functions
     Element* evall_map_cps(LispE*);
@@ -1597,6 +1446,7 @@ public:
     
 #ifdef MACDEBUG
     Element* evall_debug_function(LispE* lisp);
+    Element* evall_nconc(LispE* lisp);
 #endif
     
     bool eval_Boolean(LispE* lisp, int16_t instruction);
@@ -1808,14 +1658,14 @@ public:
         idxinfo = l->idxinfo;
         multiple = l->multiple;
     }
-
+    
     Listincode(Listincode* l, long i) : List(l, i) {
         terminal = l->terminal;
         status = s_constant;
         idxinfo = l->idxinfo;
         multiple = l->multiple;
     }
-
+    
     Listincode(List* l) : List(l, 0) {
         terminal = l->terminal;
         status = s_constant;
@@ -1868,6 +1718,11 @@ public:
     bool incode() {
         return true;
     }
+    
+    virtual List* borrowing(List* e) {
+        return new Listincode(e);
+    }
+    
     virtual List* cloning(Listincode* e, methodEval m);
     virtual List* cloning() {
         return new Listincode();
@@ -1898,6 +1753,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_switch_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2018,6 +1877,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_at_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_at_eval(e);
     }
@@ -2039,6 +1902,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_over_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2065,6 +1932,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_join_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_join_eval(e);
     }
@@ -2086,6 +1957,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_insert_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2111,6 +1986,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_keys_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_keys_eval(e);
     }
@@ -2133,6 +2012,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_zip_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2161,6 +2044,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_label_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_label_eval(e);
     }
@@ -2185,6 +2072,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+
+    List* borrowing(List* e) {
+        return new List_infix_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2211,6 +2102,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_extract_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_extract_eval(e);
     }
@@ -2234,6 +2129,11 @@ public:
     bool is_straight_eval() {
         return true;
     }
+    
+    List* borrowing(List* e) {
+        return new List_set_shape_eval(e);
+    }
+    
     
     List* cloning(Listincode* e, methodEval m) {
         return new List_set_shape_eval(e);
@@ -2259,6 +2159,11 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_at_shape_eval(e);
+    }
+    
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_at_shape_eval(e);
     }
@@ -2282,6 +2187,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_set_range_eval(e);
+    }
+
     List* cloning(Listincode* e, methodEval m) {
         return new List_set_range_eval(e);
     }
@@ -2304,6 +2213,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_flatten_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2330,6 +2243,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_different_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_different_eval(e);
     }
@@ -2352,6 +2269,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_equal_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2378,6 +2299,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_flip_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_flip_eval(e);
     }
@@ -2397,6 +2322,10 @@ public:
     List_block_eval(bool m)  {multiple = m;}
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_block_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2420,6 +2349,10 @@ public:
     List_set_at_eval(bool m)  {multiple = m;}
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_set_at_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2446,6 +2379,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_car_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_car_eval(e);
     }
@@ -2467,6 +2404,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_cdr_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2492,6 +2433,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_cadr_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_cadr_eval(e);
     }
@@ -2515,6 +2460,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_bytes_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_bytes_eval(e);
     }
@@ -2534,6 +2483,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_atomp_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2557,6 +2510,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_numberp_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_numberp_eval(e);
     }
@@ -2576,6 +2533,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_consp_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2599,6 +2560,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_emptyp_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_emptyp_eval(e);
     }
@@ -2618,6 +2583,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_zerop_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2641,6 +2610,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_nullp_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_nullp_eval(e);
     }
@@ -2660,6 +2633,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_stringp_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2685,6 +2662,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_push_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_push_eval(e);
     }
@@ -2706,6 +2687,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_pushtrue_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2731,6 +2716,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_pushfirst_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_pushfirst_eval(e);
     }
@@ -2752,6 +2741,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_pushlast_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2777,6 +2770,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_print_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_print_eval(e);
     }
@@ -2798,6 +2795,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_printerr_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2823,6 +2824,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_println_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_println_eval(e);
     }
@@ -2844,6 +2849,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_printerrln_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2870,6 +2879,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_pop_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_pop_eval(e);
     }
@@ -2891,6 +2904,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_popfirst_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2916,6 +2933,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_poplast_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_poplast_eval(e);
     }
@@ -2936,6 +2957,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_last_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2960,6 +2985,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_in_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -2989,6 +3018,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_and_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_and_eval(e);
     }
@@ -3010,9 +3043,13 @@ public:
     }
     List_or_eval() {}
     List_or_eval(bool m) {multiple = m;}
-
+    
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_or_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3023,7 +3060,7 @@ public:
         return new List_or_eval(multiple);
     }
     
-
+    
     Element* eval(LispE* lisp);
 };
 
@@ -3037,6 +3074,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_set_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3062,6 +3103,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_sets_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_sets_eval(e);
     }
@@ -3085,6 +3130,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_seti_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_seti_eval(e);
     }
@@ -3106,6 +3155,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_setn_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3132,6 +3185,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_check_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_check_eval(e);
     }
@@ -3153,6 +3210,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_ncheck_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3178,6 +3239,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_cons_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_cons_eval(e);
     }
@@ -3201,6 +3266,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_consb_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_consb_eval(e);
     }
@@ -3221,6 +3290,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_clone_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3246,6 +3319,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_list_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_list_eval(e);
     }
@@ -3266,6 +3343,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_cond_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3290,6 +3371,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_integer_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_integer_eval(e);
     }
@@ -3310,6 +3395,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_complex_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3334,6 +3423,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_real_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_real_eval(e);
     }
@@ -3354,6 +3447,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_imaginary_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3378,6 +3475,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_number_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_number_eval(e);
     }
@@ -3400,6 +3501,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_string_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_string_eval(e);
     }
@@ -3420,6 +3525,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_stringbyte_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3445,6 +3554,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_nconc_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_nconc_eval(e);
     }
@@ -3466,6 +3579,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_nconcn_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3491,6 +3608,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_min_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_min_eval(e);
     }
@@ -3512,6 +3633,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_minmax_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3537,6 +3662,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_max_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_max_eval(e);
     }
@@ -3558,6 +3687,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_maybe_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3583,6 +3716,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_integers_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_integers_eval(e);
     }
@@ -3604,6 +3741,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_numbers_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3629,6 +3770,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_strings_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_strings_eval(e);
     }
@@ -3650,6 +3795,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_stringbytes_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3675,6 +3824,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_key_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_key_eval(e);
     }
@@ -3696,6 +3849,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_keyi_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3722,6 +3879,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_keyn_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_keyn_eval(e);
     }
@@ -3743,6 +3904,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_compare_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3768,6 +3933,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_sort_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_sort_eval(e);
     }
@@ -3791,6 +3960,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_xor_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_xor_eval(e);
     }
@@ -3812,6 +3985,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_type_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3838,6 +4015,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_rotate_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_rotate_eval(e);
     }
@@ -3860,6 +4041,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_unique_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3886,6 +4071,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_values_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_values_eval(e);
     }
@@ -3909,6 +4098,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_extend_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -3939,7 +4132,7 @@ public:
             labels.push_back(parameters->liste[i]->label());
         }
     }
-
+    
     List_lambda_eval(List* l) : Listincode(l) {
         type = t_call_lambda;
         status = s_constant;
@@ -3951,13 +4144,13 @@ public:
             labels.push_back(parameters->liste[i]->label());
         }
     }
-
+    
     Element* eval_lambda_min(LispE*);
     
     bool is_straight_eval() {
         return true;
     }
-
+    
     Element* duplicate_constant(LispE* lisp) {
         return this;
     }
@@ -3969,52 +4162,56 @@ public:
     List_lambda_eval() {
         parameters = NULL;
     }
-
+    
     List_lambda_eval(bool m) {
         parameters = NULL;
         multiple = m;
     }
-
+    
     int16_t label() {
         return t_call_lambda;
     }
-
+    
     List* cloning() {
         return new List_lambda_eval(multiple);
     }
-
+    
+    List* borrowing(List* e) {
+        return new List_lambda_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_lambda_eval(e);
     }
-
+    
     Element* reduce(LispE* lisp, Element* l1, long sz);
     Element* backreduce(LispE* lisp, Element* l1, long sz);
     Element* scan(LispE* lisp, Element* l1, long sz);
     Element* backscan(LispE* lisp, Element* l1, long sz);
-
-
+    
+    
 };
 
 class List_call_lambda : public Listincode {
 public:
     List_lambda_eval* body;
     long nbarguments;
-
+    
     List_call_lambda()  {
         body = NULL;
         nbarguments = 0;
     }
-
+    
     List_call_lambda(LispE* lisp, Listincode* l);
     
     bool is_straight_eval() {
         return true;
     }
-
+    
     List* cloning() {
         return new List_call_lambda();
     }
-
+    
     Element* eval(LispE*);
     
     //We define these methods to handle the creation of a full-fledge List_call_lambda
@@ -4059,7 +4256,7 @@ public:
             lambda_e = new List_lambda_eval((List*)function);
             del = true;
         }
-         params = lambda_e->labels;
+        params = lambda_e->labels;
     }
     
     List_zipwith_lambda_eval(List* l) : Listincode(l) {
@@ -4076,18 +4273,18 @@ public:
             lambda_e = new List_lambda_eval((List*)function);
             del = true;
         }
-         params = lambda_e->labels;
+        params = lambda_e->labels;
     }
     
     List_zipwith_lambda_eval() {
         del = false;
     }
-
+    
     List_zipwith_lambda_eval(bool m) {
         del = false;
         multiple = m;
     }
-
+    
     ~List_zipwith_lambda_eval() {
         if (del)
             delete lambda_e;
@@ -4099,6 +4296,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_zipwith_lambda_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_zipwith_lambda_eval(e);
     }
@@ -4106,8 +4307,8 @@ public:
     List* cloning() {
         return new List_zipwith_lambda_eval(multiple);
     }
-  
-
+    
+    
 };
 
 class List_zipwith_eval : public Listincode {
@@ -4136,6 +4337,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_zipwith_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_zipwith_eval(e);
     }
@@ -4144,7 +4349,7 @@ public:
         return new List_zipwith_eval(multiple);
     }
     
-
+    
 };
 
 class List_function_eval : public Listincode {
@@ -4155,14 +4360,14 @@ public:
     bool same;
     
     List_function_eval(LispE* lisp, Listincode* l, List* b);
-    List_function_eval(LispE* lisp, List* b);
+    List_function_eval(LispE* lisp, List* b, long nbarguments);
     
     Element* eval(LispE* lisp);
     
     bool is_straight_eval() {
         return true;
     }
-
+    
     int16_t label() {
         return t_call;
     }
@@ -4192,7 +4397,7 @@ public:
     bool is_straight_eval() {
         return true;
     }
-
+    
     int16_t label() {
         return t_call;
     }
@@ -4218,11 +4423,11 @@ public:
         same = (defaultarguments == parameters->size());
     }
     
-    List_library_eval(List* b) : body(b), Listincode() {
+    List_library_eval(List* b, long nb) : body(b), Listincode() {
         liste.push_element(b);
         type = t_eval;
         status = s_constant;
-        nbarguments = 1;
+        nbarguments = nb;
         parameters = (List*)body->liste[2];
         defaultarguments = parameters->argumentsize(nbarguments);
         same = (defaultarguments == parameters->size());
@@ -4233,7 +4438,7 @@ public:
     bool is_straight_eval() {
         return true;
     }
-
+    
     int16_t label() {
         return t_call;
     }
@@ -4250,6 +4455,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_not_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4274,6 +4483,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_setq_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_setq_eval(e);
     }
@@ -4294,6 +4507,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_setg_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4318,6 +4535,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_seth_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_seth_eval(e);
     }
@@ -4338,6 +4559,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_set_const_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4362,6 +4587,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_let_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_let_eval(e);
     }
@@ -4383,6 +4612,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_select_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4409,6 +4642,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_replicate_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_replicate_eval(e);
     }
@@ -4433,6 +4670,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_reverse_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_reverse_eval(e);
     }
@@ -4455,6 +4696,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_revertsearch_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4482,6 +4727,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_search_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_search_eval(e);
     }
@@ -4504,6 +4753,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_count_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4530,6 +4783,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_searchall_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_searchall_eval(e);
     }
@@ -4552,6 +4809,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_replaceall_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4577,6 +4838,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_if_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_if_eval(e);
     }
@@ -4597,6 +4862,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_ife_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4622,6 +4891,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_dictionary_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_dictionary_eval(e);
     }
@@ -4643,6 +4916,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_dictionaryi_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4668,6 +4945,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_dictionaryn_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_dictionaryn_eval(e);
     }
@@ -4689,6 +4970,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_loop_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4743,6 +5028,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_maplist_lambda_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_maplist_lambda_eval(e);
     }
@@ -4758,7 +5047,7 @@ class List_maplist_eval : public Listincode {
 public:
     long listesize;
     bool choice;
-
+    
     List_maplist_eval(Listincode* l) : Listincode(l) {
         listesize = size();
         choice = (liste[0]->label() == l_maplist);
@@ -4774,6 +5063,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_maplist_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4797,6 +5090,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_droplist_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4823,6 +5120,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_filterlist_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_filterlist_eval(e);
     }
@@ -4846,6 +5147,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_takelist_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_takelist_eval(e);
     }
@@ -4867,6 +5172,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_takenb_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4893,6 +5202,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_greater_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_greater_eval(e);
     }
@@ -4901,7 +5214,7 @@ public:
         return new List_greater_eval(multiple);
     }
     
-
+    
     Element* eval(LispE* lisp);
 };
 
@@ -4917,6 +5230,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_greaterorequal_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_greaterorequal_eval(e);
     }
@@ -4925,7 +5242,7 @@ public:
         return new List_greaterorequal_eval(multiple);
     }
     
-
+    
     Element* eval(LispE* lisp);
 };
 
@@ -4942,6 +5259,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_lower_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_lower_eval(e);
     }
@@ -4950,7 +5271,7 @@ public:
         return new List_lower_eval(multiple);
     }
     
-
+    
     Element* eval(LispE* lisp);
 };
 
@@ -4964,6 +5285,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_lowerorequal_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -4989,6 +5314,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_eq_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_eq_eval(e);
     }
@@ -5009,6 +5338,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_neq_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5034,6 +5367,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_while_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_while_eval(e);
     }
@@ -5054,6 +5391,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_loopcount_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5077,6 +5418,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_equalonezero_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_equalonezero_eval(e);
     }
@@ -5096,6 +5441,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_mask_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5119,6 +5468,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_scan_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_scan_eval(e);
     }
@@ -5138,6 +5491,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_backscan_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5161,6 +5518,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_rho_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_rho_eval(e);
     }
@@ -5180,6 +5541,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_member_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5203,6 +5568,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_backreduce_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_backreduce_eval(e);
     }
@@ -5222,6 +5591,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_concatenate_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5246,6 +5619,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_reduce_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_reduce_eval(e);
     }
@@ -5268,6 +5645,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_rank_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_rank_eval(e);
     }
@@ -5287,6 +5668,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_irank_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5311,6 +5696,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_innerproduct_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_innerproduct_eval(e);
     }
@@ -5330,6 +5719,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_outerproduct_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5354,6 +5747,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_stringf_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_stringf_eval(e);
     }
@@ -5375,6 +5772,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_iota_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_iota_eval(e);
     }
@@ -5394,6 +5795,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_iota0_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5420,6 +5825,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_andvalue_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_andvalue_eval(e);
     }
@@ -5442,6 +5851,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_apply_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5467,6 +5880,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_atomise_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_atomise_eval(e);
     }
@@ -5488,6 +5905,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_converttoatom_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5513,6 +5934,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_bodies_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_bodies_eval(e);
     }
@@ -5534,6 +5959,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_catch_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5559,6 +5988,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_cyclicp_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_cyclicp_eval(e);
     }
@@ -5580,6 +6013,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_converttoshort_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5605,6 +6042,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_converttofloat_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_converttofloat_eval(e);
     }
@@ -5626,6 +6067,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_elapse_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5651,6 +6096,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_eval_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_eval_eval(e);
     }
@@ -5671,6 +6120,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_slice_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5696,6 +6149,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_factorial_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_factorial_eval(e);
     }
@@ -5717,6 +6174,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_bappend_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5742,6 +6203,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_bread_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_bread_eval(e);
     }
@@ -5765,6 +6230,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_bwrite_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_bwrite_eval(e);
     }
@@ -5785,6 +6254,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fappend_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5810,6 +6283,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_fread_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_fread_eval(e);
     }
@@ -5831,6 +6308,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fwrite_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5856,6 +6337,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_shorts_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_shorts_eval(e);
     }
@@ -5877,6 +6362,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_irange_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5902,6 +6391,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_irangein_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_irangein_eval(e);
     }
@@ -5923,6 +6416,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_llist_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5948,6 +6445,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_to_list_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_to_list_eval(e);
     }
@@ -5968,6 +6469,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_to_tensor_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -5993,6 +6498,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_to_llist_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_to_llist_eval(e);
     }
@@ -6013,6 +6522,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_lock_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6038,6 +6551,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_mloop_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_mloop_eval(e);
     }
@@ -6059,6 +6576,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_lloop_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6084,6 +6605,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_mark_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_mark_eval(e);
     }
@@ -6105,6 +6630,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_resetmark_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6130,6 +6659,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_tensor_string_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_tensor_string_eval(e);
     }
@@ -6152,6 +6685,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_tensor_stringbyte_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_tensor_stringbyte_eval(e);
     }
@@ -6172,6 +6709,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_tensor_number_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6197,6 +6738,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_tensor_float_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_tensor_float_eval(e);
     }
@@ -6219,6 +6764,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_tensor_short_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_tensor_short_eval(e);
     }
@@ -6239,6 +6788,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_tensor_integer_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6264,6 +6817,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_matrix_number_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_matrix_number_eval(e);
     }
@@ -6284,6 +6841,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_matrix_string_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6308,6 +6869,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_matrix_stringbyte_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_matrix_stringbyte_eval(e);
     }
@@ -6328,6 +6893,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_matrix_short_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6353,6 +6922,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_matrix_integer_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_matrix_integer_eval(e);
     }
@@ -6374,6 +6947,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_matrix_float_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6399,6 +6976,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_floats_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_floats_eval(e);
     }
@@ -6420,6 +7001,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_pipe_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6445,6 +7030,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_prettify_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_prettify_eval(e);
     }
@@ -6466,6 +7055,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_range_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6491,6 +7084,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_rangein_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_rangein_eval(e);
     }
@@ -6512,6 +7109,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_sign_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6537,6 +7138,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_size_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_size_eval(e);
     }
@@ -6557,6 +7162,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_tally_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6582,6 +7191,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_signp_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_signp_eval(e);
     }
@@ -6603,6 +7216,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_sleep_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6628,6 +7245,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_space_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_space_eval(e);
     }
@@ -6649,6 +7270,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_sum_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6674,6 +7299,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_product_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_product_eval(e);
     }
@@ -6695,6 +7324,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_transpose_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6720,6 +7353,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_heap_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_heap_eval(e);
     }
@@ -6741,6 +7378,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_trigger_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6766,6 +7407,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_wait_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_wait_eval(e);
     }
@@ -6787,6 +7432,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_waiton_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6812,6 +7461,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_solve_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_solve_eval(e);
     }
@@ -6833,6 +7486,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_determinant_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6858,6 +7515,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_ludcmp_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_ludcmp_eval(e);
     }
@@ -6879,6 +7540,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_lubksb_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6903,6 +7568,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_invert_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_invert_eval(e);
     }
@@ -6923,6 +7592,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_listand_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -6948,6 +7621,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_listor_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_listor_eval(e);
     }
@@ -6971,6 +7648,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_listxor_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_listxor_eval(e);
     }
@@ -6990,6 +7671,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_plusmultiply(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -7078,6 +7763,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_dividen(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_dividen(e);
     }
@@ -7098,6 +7787,10 @@ public:
     List_plusn() {}
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_plusn(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -7121,6 +7814,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_minusn(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_minusn(e);
     }
@@ -7140,6 +7837,10 @@ public:
     List_multiplyn() {}
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_multiplyn(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -7162,6 +7863,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_mod_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -7187,6 +7892,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_leftshift_eval(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_leftshift_eval(e);
     }
@@ -7208,6 +7917,10 @@ public:
     
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_rightshift_eval(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -7252,7 +7965,7 @@ public:
 class List_plusequal_var : public List {
 public:
     int16_t label;
-
+    
     List_plusequal_var(List* l) : List(l, 0) {
         label = liste[1]->label();
         terminal = l->terminal;
@@ -7263,7 +7976,7 @@ public:
 class List_minusequal_var : public List {
 public:
     int16_t label;
-
+    
     List_minusequal_var(List* l) : List(l, 0) {
         label = liste[1]->label();
         terminal = l->terminal;
@@ -7274,7 +7987,7 @@ public:
 class List_multiplyequal_var : public List {
 public:
     int16_t label;
-
+    
     List_multiplyequal_var(List* l) : List(l, 0) {
         label = liste[1]->label();
         terminal = l->terminal;
@@ -7325,6 +8038,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_bitand(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_bitand(e);
     }
@@ -7344,6 +8061,10 @@ public:
     List_bitandnot() {}
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_bitandnot(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -7367,6 +8088,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_bitnot(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_bitnot(e);
     }
@@ -7388,6 +8113,10 @@ public:
         return true;
     }
     
+    List* borrowing(List* e) {
+        return new List_bitor(e);
+    }
+    
     List* cloning(Listincode* e, methodEval m) {
         return new List_bitor(e);
     }
@@ -7407,6 +8136,10 @@ public:
     List_bitxor() {}
     bool is_straight_eval() {
         return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_bitxor(e);
     }
     
     List* cloning(Listincode* e, methodEval m) {
@@ -7441,7 +8174,7 @@ public:
     bool is_same_tensor(Element* a) {
         return (a->type == type && liste.size() == a->size());
     }
-
+    
     Element* newTensor(LispE* lisp, List* l);
     
     Element* asList(LispE* lisp, List* l);
@@ -7453,11 +8186,11 @@ public:
     inline void reset() {
         liste.reset();
     }
-
+    
     virtual void copyfrom(Element* l) {
         liste = ((Floats*)l)->liste;
     }
-
+    
     Element* newInstance(Element* v) {
         return new Floats(liste.size(), v->asFloat());
     }
@@ -7941,7 +8674,7 @@ public:
     bool is_same_tensor(Element* a) {
         return (a->type == type && liste.size() == a->size());
     }
-
+    
     Element* newTensor(LispE* lisp, List* l);
     
     virtual Element* newInstance() {
@@ -7955,11 +8688,11 @@ public:
     inline void reset() {
         liste.reset();
     }
-
+    
     void copyfrom(Element* l) {
         liste = ((Numbers*)l)->liste;
     }
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -8451,11 +9184,11 @@ public:
     inline void reset() {
         liste.reset();
     }
-
+    
     void copyfrom(Element* l) {
         liste = ((Shorts*)l)->liste;
     }
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -8619,7 +9352,7 @@ public:
     bool is_same_tensor(Element* a) {
         return (a->type == type && liste.size() == a->size());
     }
-
+    
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
@@ -8748,7 +9481,7 @@ public:
         liste.at(i, e->asShort());
         e->release();
     }
-
+    
     Element* replace(LispE* lisp, long i, Element* e) {
         if (i < 0) {
             i += liste.size();
@@ -8896,7 +9629,7 @@ public:
     bool is_same_tensor(Element* a) {
         return (a->type == type && liste.size() == a->size());
     }
-
+    
     Element* newTensor(LispE* lisp, List* l);
     
     inline void reserve(long sz) {
@@ -8906,11 +9639,11 @@ public:
     inline void reset() {
         liste.reset();
     }
-
+    
     void copyfrom(Element* l) {
         liste = ((Integers*)l)->liste;
     }
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -9192,12 +9925,12 @@ public:
     void replacing(long i, Element* e) {
         liste.at(i, e->asInteger());
     }
-
+    
     void replacingandclean(long i, Element* e) {
         liste.at(i, e->asInteger());
         e->release();
     }
-
+    
     Element* replace(LispE* lisp, long i, Element* e) {
         if (i < 0) {
             i += liste.size();
@@ -9226,7 +9959,7 @@ public:
     Element* reverse(LispE*, bool duplique = true);
     
     Element* rotate(LispE* lisp, long nb);
-        
+    
     void storevalue(LispE*, double v);
     void storevalue(LispE*, long v);
     void storevalue(LispE*, u_ustring& v);
@@ -9397,7 +10130,7 @@ public:
     void copyfrom(Element* l) {
         liste = ((Strings*)l)->liste;
     }
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -9419,9 +10152,9 @@ public:
     bool is_same_tensor(Element* a) {
         return (a->type == type && liste.size() == a->size());
     }
-
+    
     Element* newTensor(LispE* lisp, List* l);
-
+    
     Element* newInstance(Element* v) {
         return new Strings(liste.size(), v->asString(NULL));
     }
@@ -9709,7 +10442,7 @@ public:
         liste.at(i, e->asUString(NULL));
         e->release();
     }
-
+    
     Element* replace(LispE* lisp, long i, Element* e) {
         if (i < 0) {
             i += liste.size();
@@ -9827,17 +10560,17 @@ public:
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     Stringspool(LispE* l, long nb, u_ustring v) : lisp(l), Strings(nb, v) {
         exchange_value.lisp = l;
         exchange_value.provide = true;
     }
-
+    
     inline Stringspool* set(Strings* i) {
         liste = i->liste;
         return this;
     }
-
+    
     inline Stringspool* set(long nb, u_ustring v) {
         liste.clear();
         while (nb != 0) {
@@ -9846,7 +10579,7 @@ public:
         }
         return this;
     }
-
+    
     Element* newInstance();
     
     void decrementstatus(uint16_t nb);
@@ -9886,7 +10619,7 @@ public:
     void copyfrom(Element* l) {
         liste = ((Stringbytes*)l)->liste;
     }
-
+    
     bool checkShape(long depth, vecte<long>& sz) {
         return (depth < sz.size() && sz[depth] == size());
     }
@@ -9908,9 +10641,9 @@ public:
     bool is_same_tensor(Element* a) {
         return (a->type == type && liste.size() == a->size());
     }
-
+    
     Element* newTensor(LispE* lisp, List* l);
-
+    
     Element* newInstance(Element* v) {
         return new Stringbytes(liste.size(), v->toString(NULL));
     }
@@ -10124,7 +10857,7 @@ public:
         sz -= 1;
         
         string buffer("(");
-
+        
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += " ";
@@ -10133,7 +10866,7 @@ public:
         buffer += ")";
         return buffer;
     }
-
+    
     wstring asString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
@@ -10153,7 +10886,7 @@ public:
         buffer += L")";
         return buffer;
     }
-
+    
     u_ustring asUString(LispE* lisp) {
         long sz = liste.size();
         if (!sz)
@@ -10222,7 +10955,7 @@ public:
         liste.at(i, e->toString(NULL));
         e->release();
     }
-
+    
     Element* replace(LispE* lisp, long i, Element* e) {
         if (i < 0) {
             i += liste.size();
@@ -10345,7 +11078,7 @@ public:
     bool isContainer() {
         return true;
     }
-        
+    
     bool isList() {
         return true;
     }
@@ -10462,7 +11195,7 @@ public:
         for (long i = 1; i < sz.size(); i++)
             shape.push_back(sz[i]);
     }
-
+    
     Tenseur<A,T,C>(vecte<long>& sz, Element* n);
     Tenseur<A,T,C>(vecte<long>& sz, A n);
     Tenseur<A,T,C>(vecte<long>& sz, C n);
@@ -10474,7 +11207,7 @@ public:
     //We steal the ITEM structure of this list
     Tenseur<A,T,C>(LispE* lisp, List* l);
     Tenseur<A,T,C>(LispE* lisp, List* l, vecte<long>& sh, long pos);
-
+    
     A zeroValue();
     A asValue(Element* e);
     C provide();
@@ -10482,10 +11215,10 @@ public:
     C provide(LispE* lisp);
     C provide(long nb, A v);
     C provide(LispE* lisp, long nb, A v);
-
+    
     Element* cdr(LispE* lisp);
     Element* cadr(LispE*, u_ustring& actions);
-
+    
     long shapesize() {
         return shape.size();
     }
@@ -10496,7 +11229,7 @@ public:
             nb *= shape[i];
         v += nb;
     }
-
+    
     Element* check_member(LispE*, Element* the_set);
     
     long nbelements() {
@@ -10525,7 +11258,7 @@ public:
             ta *= shape[i];
         return ta;
     }
-
+    
     void setShape() {
         shape.clear();
         Element* e = this;
@@ -10534,7 +11267,7 @@ public:
             e = e->index(0);
         }
     }
-
+    
     Element* storeRank(LispE* lisp, Element* result, Element* current, vecte<long>& positions, long idx);
     Element* rank(LispE* lisp, vecte<long>& positions);
     
@@ -10584,7 +11317,7 @@ public:
             }
         }
     }
-
+    
     void build(long isz, long& idx, Element* res, C lst) {
         if (isz == shape.size()-2) {
             C l;
@@ -10608,7 +11341,7 @@ public:
             }
         }
     }
-
+    
     void build(long isz, Element* res) {
         if (isz == shape.size()-2) {
             C l;
@@ -10708,13 +11441,13 @@ public:
         }
         return false;
     }
-
+    
     Element* newTensor(LispE* lisp, List* l) {
         return new Tenseur<A,T,C>(lisp, l);
     }
-
+    
     Element* newTensor(bool nb, LispE* lisp, List* l = NULL);
-
+    
 };
 
 //------------------------------------------------------------------------------------
@@ -10726,7 +11459,7 @@ public:
 class Matrix : public List {
 public:
     long size_x, size_y;
-
+    
     Matrix() {}
     Matrix(List* l) : List(l, 0) {}
     Matrix(List* l, long xz, long yz, long pos) : List(l, pos) {
@@ -10737,11 +11470,11 @@ public:
     bool isTensor() {
         return true;
     }
-
+    
     bool isMatrix() {
         return true;
     }
-
+    
     char isPureList() {
         return a_tensor;
     }
@@ -10771,18 +11504,18 @@ public:
         size_x = x;
         size_y = y;
     }
-
+    
     //We steal the ITEM structure of this list
     Matrice<A,T,TT,C>(List* l) : Matrix(l) {
         type = T;
         size_x = l->size();
         size_y = l->index(0)->size();
     }
-
+    
     Matrice<A,T,TT,C>(List* l, long xz, long yz, long pos) : Matrix(l, xz, yz, pos) {
         type = T;
     }
-
+    
     Matrice<A,T,TT,C>(long x, long y, Element* n);
     Matrice<A,T,TT,C>(C n, long x, long y);
     Matrice<A,T,TT,C>(LispE* lisp, Element* lst, long x, long y);
@@ -10793,7 +11526,7 @@ public:
     
     Element* cdr(LispE* lisp);
     Element* cadr(LispE*, u_ustring& actions);
-
+    
     long shapesize() {
         return 2;
     }
@@ -10801,21 +11534,21 @@ public:
     void dimensions(long& v) {
         v += size_x*size_y;
     }
-
+    
     void getShape(vecte<long>& sz) {
         sz.push_back(size_x);
         sz.push_back(size_y);
     }
-
+    
     void setShape() {
         size_x = size();
         size_y = index(0)->size();
     }
-
+    
     long tally() {
         return (size_x * size_y);
     }
-
+    
     Element* check_member(LispE*, Element* the_set);
     
     Element* loop(LispE* lisp, int16_t label,  List* code);
@@ -10844,7 +11577,7 @@ public:
     C provide(LispE* lisp);
     C provide(LispE* lisp, long nb, A v);
     C provide(LispE* lisp, C v);
-
+    
     Element* copying(bool duplicate = true) {
         //If it is a CDR, we need to copy it...
         if (!is_protected() && !duplicate)
@@ -10902,7 +11635,7 @@ public:
     Element* newInstance() {
         return new Matrice<A,T,TT,C>(size_x, size_y, zeroValue());
     }
-
+    
     Element* pureInstance() {
         return new Matrice<A,T,TT,C>(size_x, size_y);
     }
@@ -10915,11 +11648,11 @@ public:
         }
         return false;
     }
-
+    
     Element* newTensor(LispE* lisp, List* l) {
         return new Tenseur<A,TT,C>(lisp, l);
     }
-
+    
     Element* newTensor(bool nb, LispE* lisp, List* l) {
         if (l == NULL)
             return provide();
@@ -10932,3 +11665,5 @@ public:
 
 
 #endif
+
+

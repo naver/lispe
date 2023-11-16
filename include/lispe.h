@@ -811,6 +811,11 @@ public:
         }
     }
     
+    //We borrow from the class a copy that will share the same liste.item object
+    List* borrowing(List* l, long sz) {
+        return delegation->straight_eval[check_arity(l, sz)]->borrowing(l);
+    }
+    
     Element* check_error(List* l,Error* err, int idxinfo);
     
     inline void trace_and_context(Listincode* e) {
@@ -1076,7 +1081,7 @@ public:
         return checkDataStructure(e->label());
     }
     
-    Element* generate_macro(Element* code);
+    int16_t generate_macro(Element* code, int16_t lab);
 
     inline Element* recordingMacro(Element* e, int16_t label) {
         return delegation->recordingMacro(this, e, label);
@@ -1372,7 +1377,38 @@ public:
         }
         return call;
     }
-    
+
+    //(maplist '(- _ 10) (iota 10))
+    //(maplist '(- 10 _) (iota 10)) <=> (maplist '(- 10) (iota 10))
+    //where _ is the slot filling for our variable
+    inline List* provideCallforTWO(Element* op, int16_t& ps) {
+        List* call;
+        int16_t posvar = 0;
+        Element* e = op->index(0);
+        if (e->isInstruction()) {
+            call = cloning(e->label());
+            call->type = t_eval;
+        }
+        else
+            call = provideList();
+        call->append(e);
+        
+        for (ps = 1; ps < op->size(); ps++) {
+            if (op->index(ps) == n_null) {
+                //This is the position where the variable should be
+                call->append(quoted());
+                posvar = ps;
+            }
+            else
+                call->append(op->index(ps));
+        }
+        if (posvar)
+            ps = posvar;
+        else
+            call->append(quoted());
+        return call;
+    }
+
     inline List* provideList() {
         return list_pool.last?list_pool.backpop(): new Listpool(this);
     }

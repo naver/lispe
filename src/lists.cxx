@@ -160,11 +160,11 @@ List_function_eval::List_function_eval(LispE* lisp, Listincode* l, List* b) : bo
     same = (defaultarguments == parameters->size());
 }
 
-List_function_eval::List_function_eval(LispE* lisp, List* b) : body(b) {
+List_function_eval::List_function_eval(LispE* lisp, List* b, long nb) : body(b) {
     liste.push_element(b);
     type = t_eval;
     status = s_constant;
-    nbarguments = 1;
+    nbarguments = nb;
     //the third element is the argument list .
     //we need our body to be the same number
     parameters = body->liste[2];
@@ -965,18 +965,6 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
         }
     }
     return e;
-}
-
-
-Element* List::mloop(LispE* lisp) {
-     List_mloop_eval m(this);
-     return m.eval(lisp);
-}
-
-
-Element* List::lloop(LispE* lisp) {
-     List_lloop_eval m(this);
-     return m.eval(lisp);
 }
 
 Element* List::insert(LispE* lisp, Element* e, long ix) {

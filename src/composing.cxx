@@ -297,14 +297,14 @@ public:
                 Element* body = (*lisp->delegation->function_pool[0])[lab];
                 switch (body->index(0)->label()) {
                     case l_deflib: {
-                        List* a = new List_library_eval((List*)body);
+                        List* a = new List_library_eval((List*)body, 1);
                         lisp->garbaging(a);
                         a->append(var);
                         action = a;
                         return this;
                     }
                     case l_defun: {
-                        List* a = new List_function_eval(lisp, (List*)body);
+                        List* a = new List_function_eval(lisp, (List*)body, 1);
                         lisp->garbaging(a);
                         a->append(var);
                         action = a;

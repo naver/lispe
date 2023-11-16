@@ -98,11 +98,10 @@ public:
     ThreadLock lock;
 
     methodEval evals[l_final];
-
-
+    Listincode* straight_eval[l_final];
+    
     binHashe<u_ustring> code_to_string;
     binHashe<string> instructions;
-    binHash<Listincode*> straight_eval;
     
     binHash<int16_t> data_ancestor;
     vecte<binHash<Element*>* > function_pool;
@@ -279,6 +278,10 @@ public:
         idxinfos.push_back(line);
         idxinfos.push_back(i_current_file);
         return idx;
+    }
+    
+    bool check_straight(int16_t type) {
+        return (type < l_final && straight_eval[type] != NULL);
     }
     
     bool isComparator(int16_t type) {
@@ -518,6 +521,20 @@ public:
         instructions[instruction_code] = name;
         arities[instruction_code] = arity;
         evals[instruction_code] = m;
+        u_ustring n;
+        s_utf8_to_unicode(n, name, name.size());
+        code_to_string[instruction_code] = n;
+        cln->multiple = (P_ATLEASTFIVE == (P_ATLEASTFIVE & arity));
+    }
+
+    inline void set_instruction(lisp_code instruction_code,
+                                string name,
+                                unsigned long arity,
+                                Listincode* cln) {
+        straight_eval[instruction_code] = cln;
+        instructions[instruction_code] = name;
+        arities[instruction_code] = arity;
+        evals[instruction_code] = &List::eval_list_instruction;
         u_ustring n;
         s_utf8_to_unicode(n, name, name.size());
         code_to_string[instruction_code] = n;

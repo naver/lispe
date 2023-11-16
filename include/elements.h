@@ -182,6 +182,9 @@ const unsigned long P_ATLEASTTHIRTEEN = P_ATLEASTTWELVE^P_TWELVE;
 const unsigned long P_ATLEASTFOURTEEN = P_ATLEASTTHIRTEEN^P_THIRTEEN;
 const unsigned long P_ATLEASTFIFTEEN = P_ATLEASTFOURTEEN^P_FOURTEEN;
 
+inline const unsigned long _arity(long sz) {
+    return (sz > 15)?P_FULL:1<<sz;
+}
 //------------------------------------------------------------------------------------------
 //false_ is actually a bit misleading as it is an alias to null_
 #define false_ lisp->n_null
@@ -326,7 +329,7 @@ public:
     virtual char isPureList() {
         return 0;
     }
-
+    
     virtual bool isTensor() {
         return false;
     }
