@@ -99,6 +99,7 @@ void jag_get::initialisation() {
         return;
     initialized = true;
 #ifdef WIN32
+    set_window_control_codes();
 	Getscreensizes(mouse_status);
 #else
     tcgetattr(0, &oldterm);
