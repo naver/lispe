@@ -967,6 +967,31 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
     return e;
 }
 
+Element* Enumlist::loop(LispE* lisp, int16_t label, List* code) {
+    long i_loop;
+    Element* e = null_;
+    lisp->recording(null_, label);
+    Element* element;
+    long sz = code->liste.size();
+    long lsz = size();
+    for (long i = 0; i < lsz; i++) {
+        element = index(i);
+        lisp->replacingvalue(element, label);
+        _releasing(e);
+        //We then execute our instructions
+        for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
+            e->release();
+            e = code->liste[i_loop]->eval(lisp);
+        }
+        if (e->type == l_return) {
+            if (e->isBreak())
+                return null_;
+            return e;
+        }
+    }
+    return e;
+}
+
 Element* List::insert(LispE* lisp, Element* e, long ix) {
     if (ix < 0)
         throw new Error("Error: Wrong index in 'insert'");
@@ -1578,7 +1603,6 @@ Element* LList::last_element(LispE* lisp) {
         return null_;
     return liste.back();
 }
-
 
 Element* Infiniterangenumber::value_on_index(LispE* lisp, long i) {
     double v = initial_value + increment*i;

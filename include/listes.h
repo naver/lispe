@@ -1395,6 +1395,7 @@ public:
     Element* evall_type(LispE* lisp);
     Element* evall_unique(LispE* lisp);
     Element* evall_use(LispE* lisp);
+    Element* evall_keys(LispE* lisp);
     Element* evall_values(LispE* lisp);
     Element* evall_void(LispE* lisp);
     Element* evall_wait(LispE* lisp);
@@ -1980,7 +1981,9 @@ public:
     List_keys_eval() {}
     List_keys_eval(bool m)  {multiple = m;}
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_keys(lisp);
+    }
     
     bool is_straight_eval() {
         return true;
@@ -2237,7 +2240,9 @@ public:
     List_different_eval() {}
     List_different_eval(bool m)  {multiple = m;}
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_different(lisp);
+    }
     
     bool is_straight_eval() {
         return true;
@@ -2336,7 +2341,9 @@ public:
         return new List_block_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_block(lisp);
+    }
 };
 
 class List_set_at_eval : public Listincode {
@@ -2418,7 +2425,9 @@ public:
         return new List_cdr_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_cdr(lisp);
+    }
 };
 
 class List_cadr_eval : public Listincode {
@@ -2497,7 +2506,9 @@ public:
         return new List_atomp_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_atomp(lisp);
+    }
 };
 
 class List_numberp_eval : public Listincode {
@@ -2522,7 +2533,9 @@ public:
         return new List_numberp_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_numberp(lisp);
+    }
 };
 
 class List_consp_eval : public Listincode {
@@ -2547,7 +2560,9 @@ public:
         return new List_consp_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_consp(lisp);
+    }
 };
 
 class List_emptyp_eval : public Listincode {
@@ -2572,7 +2587,9 @@ public:
         return new List_emptyp_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_emptyp(lisp);
+    }
 };
 
 class List_zerop_eval : public Listincode {
@@ -2597,7 +2614,9 @@ public:
         return new List_zerop_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_zerop(lisp);
+    }
 };
 
 class List_nullp_eval : public Listincode {
@@ -2647,7 +2666,9 @@ public:
         return new List_stringp_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_stringp(lisp);
+    }
 };
 
 class List_push_eval : public Listincode {
@@ -2971,7 +2992,9 @@ public:
         return new List_last_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_last(lisp);
+    }
 };
 
 
@@ -3304,7 +3327,9 @@ public:
         return new List_clone_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_clone(lisp);
+    }
 };
 
 class List_list_eval : public Listincode {
@@ -3487,7 +3512,9 @@ public:
         return new List_number_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_converttonumber(lisp);
+    }
 };
 
 class List_string_eval : public Listincode {
@@ -3513,7 +3540,9 @@ public:
         return new List_string_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_converttostring(lisp);
+    }
 };
 
 class List_stringbyte_eval : public Listincode {
@@ -3539,7 +3568,9 @@ public:
         return new List_stringbyte_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_converttostringbyte(lisp);
+    }
 };
 
 class List_nconc_eval : public Listincode {
@@ -3918,7 +3949,9 @@ public:
         return new List_compare_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_compare(lisp);
+    }
 };
 
 class List_sort_eval : public Listincode {
@@ -4055,7 +4088,9 @@ public:
         return new List_unique_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_unique(lisp);
+    }
 };
 
 
@@ -4083,7 +4118,9 @@ public:
         return new List_values_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_values(lisp);
+    }
 };
 
 
@@ -4598,8 +4635,14 @@ public:
     List* cloning() {
         return new List_let_eval(multiple);
     }
-    
+
+#ifdef LISPE_WASM
     Element* eval(LispE* lisp);
+#else
+    Element* eval(LispE* lisp) {
+        return evall_let(lisp);
+    }
+#endif
 };
 
 class List_select_eval : public Listincode {
@@ -4850,7 +4893,9 @@ public:
         return new List_if_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_if(lisp);
+    }
 };
 
 class List_ife_eval : public Listincode {
@@ -4876,7 +4921,9 @@ public:
         return new List_ife_eval(multiple);
     }
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_ife(lisp);
+    }
 };
 
 class List_dictionary_eval : public Listincode {
@@ -4992,7 +5039,9 @@ public:
     
     List_quote_eval(int idx_info) : Listincode(idx_info) {}
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return liste[1];
+    }
 };
 
 class List_maplist_lambda_eval : public Listincode {
@@ -5189,6 +5238,108 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class Enumlist : public Element {
+public:
+    List element;
+    Integer idx;
+    Element* lst;
+
+    Enumlist(Element* l, Element* nul) : idx(0, s_constant), element(s_constant), Element(l_enumerate) {
+        element.append(&idx);
+        element.append(nul);
+        lst = l;
+    }
+
+    Element* index(long i) {
+        idx.content = i;
+        element.liste[1]->release();
+        element.liste[1] = lst->index(i);
+        return &element;
+    }
+
+    long size() {
+        return lst->size();
+    }
+    
+    Element* loop(LispE* lisp, int16_t label,  List* code);
+    Element* protected_index(LispE* lisp,long i) {
+        element.liste[1]->release();
+        element.liste[1] = lst->protected_index(lisp, i);
+        idx.content = i;
+        return &element;
+    }
+    
+    Element* value_from_index(LispE* lisp, long i)  {
+        element.liste[1]->release();
+        element.liste[1] = lst->protected_index(lisp, i);
+        idx.content = i;
+        return &element;
+    }
+    Element* value_on_index(LispE* lisp, long i)  {
+        element.liste[1]->release();
+        element.liste[1] = lst->value_on_index(lisp, i);
+        idx.content = i;
+        return &element;
+    }
+    
+    Element* value_on_index(LispE* lisp, Element* i)  {
+        element.liste[1]->release();
+        element.liste[1] = lst->value_on_index(lisp, i);
+        idx.content = i->asInteger();
+        return &element;
+    }
+    
+    Element* protected_index(LispE* lisp, Element* i)  {
+        element.liste[1]->release();
+        element.liste[1] = lst->protected_index(lisp, i);
+        idx.content = i->asInteger();
+        return &element;
+    }
+    
+    ~Enumlist() {
+        lst->release();
+    }
+    
+    wstring asString(LispE* lisp) {
+        return lst->asString(lisp);
+    }
+    
+    string toString(LispE* lisp) {
+        return lst->toString(lisp);
+    }
+    
+    u_ustring asUString(LispE* lisp) {
+        return lst->asUString(lisp);
+    }
+};
+
+
+class List_enumerate_eval : public Listincode {
+public:
+    
+    List_enumerate_eval(List* l) : Listincode(l) {}
+    List_enumerate_eval() {}
+    List_enumerate_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_enumerate_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_enumerate_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_enumerate_eval(multiple);
+    }
+    
+    
+    Element* eval(LispE* lisp);
+};
 
 class List_greater_eval : public Listincode {
 public:
@@ -5215,7 +5366,9 @@ public:
     }
     
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_greater(lisp);
+    }
 };
 
 class List_greaterorequal_eval : public Listincode {
@@ -5243,7 +5396,9 @@ public:
     }
     
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_greaterorequal(lisp);
+    }
 };
 
 class List_lower_eval : public Listincode {
@@ -5272,7 +5427,9 @@ public:
     }
     
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_lower(lisp);
+    }
 };
 
 class List_lowerorequal_eval : public Listincode {
@@ -5300,7 +5457,9 @@ public:
     }
     
     
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_lowerorequal(lisp);
+    }
 };
 
 class List_eq_eval : public Listincode {
@@ -5429,7 +5588,10 @@ public:
     List* cloning() {
         return new List_equalonezero_eval(multiple);
     }
-    Element* eval(LispE*);
+    
+    Element* eval(LispE* lisp) {
+        return evall_equalonezero(lisp);
+    }
 };
 
 class List_mask_eval : public Listincode {
@@ -7391,7 +7553,9 @@ public:
     List* cloning() {
         return new List_trigger_eval(multiple);
     }
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_trigger(lisp);
+    }
 };
 
 
@@ -7418,7 +7582,9 @@ public:
     List* cloning() {
         return new List_wait_eval(multiple);
     }
-    Element* eval(LispE* lisp);
+    Element* eval(LispE* lisp) {
+        return evall_wait(lisp);
+    }
 };
 
 

@@ -70,7 +70,8 @@ typedef enum {
     t_call, t_call_lambda, t_eval,
     
     //System instructions
-    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, l_next, l_compose,
+    l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
+    l_next, l_compose, l_enumerate,
     
     //Default Lisp instructions
     l_number, l_float, l_string, l_stringbyte, l_short, l_integer, l_atom, l_complex, l_real, l_imaginary, l_bytes,
@@ -3050,7 +3051,7 @@ public:
         return this;
     }
     
-    inline bool compare(char check, long value) {
+    inline bool compare(char check, double value) {
         return (!check || (check == -1 && value > bound) || (check == 1 && value < bound));
     }
 
@@ -3181,7 +3182,6 @@ public:
     void decrement();
 
 };
-
 
 class Infinitelist : public Element {
 public:

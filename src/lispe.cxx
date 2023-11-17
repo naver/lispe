@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.11.16.16.57";
+static std::string version = "1.2023.11.17.14.18";
 string LispVersion() {
     return version;
 }
@@ -297,6 +297,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp, new List_cyclicp_eval());
     set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
+    set_instruction(l_enumerate, "enum", P_TWO, new List_enumerate_eval());
     set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat, new List_converttofloat_eval());
     set_instruction(l_complex, "complex", P_THREE, &List::evall_complex, new List_complex_eval());
     set_instruction(l_real, "real", P_TWO, &List::evall_real, new List_real_eval());
@@ -364,7 +365,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE,  new List_key_eval());
     set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE,  new List_keyi_eval());
     set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE,  new List_keyn_eval());
-    set_instruction(l_keys, "keys@", P_TWO,  new List_keys_eval());
+    set_instruction(l_keys, "keys@", P_TWO,  &List::evall_keys, new List_keys_eval());
     set_instruction(l_label, "label", P_THREE,  new List_label_eval());
     set_instruction(l_lambda, "λ", P_ATLEASTTHREE, &List::evall_lambda, new List_lambda_eval());
     set_instruction(l_last, "last", P_TWO, &List::evall_last, new List_last_eval());
@@ -389,7 +390,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare, new List_compare_eval());
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower, new List_lower_eval());
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal, new List_lowerorequal_eval());
-    set_instruction(l_maplist, "↑", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
+    set_instruction(l_maplist, "↑↑", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mapcar, "mapcar", P_THREE,&List::evall_maplist, new List_maplist_eval());
     set_instruction(l_mark, "mark", P_THREE | P_TWO,  new List_mark_eval());
     set_instruction(l_matrix_stringbyte, "matrix_stringbyte", P_TWO | P_THREE | P_FOUR,  new List_matrix_stringbyte_eval());
@@ -2965,6 +2966,8 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
 
 
 

@@ -3463,6 +3463,12 @@ Element* List::evall_use(LispE* lisp) {
     return lib_name;
 }
 
+Element* List::evall_keys(LispE* lisp) {
+    Element* dictionary = liste[1]->eval(lisp);
+    Element* keys = dictionary->thekeys(lisp);
+    dictionary->release();
+    return keys;
+}
 
 Element* List::evall_values(LispE* lisp) {
     Element* container = liste[1]->eval(lisp);
