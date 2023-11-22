@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.11.17.14.18";
+static std::string version = "1.2023.11.22.12.2";
 string LispVersion() {
     return version;
 }
@@ -168,6 +168,9 @@ Delegation::~Delegation() {
 #ifndef LISPE_WASM
     clean_get_handler(input_handler);
 #endif
+    //In the case, some residual threads have left some data
+    clean_threads();
+
     reset_error();
     function_pool.cleaning();
     method_pool.cleaning();
@@ -194,6 +197,7 @@ Delegation::~Delegation() {
     delete _EMPTYDICTIONARY;
     delete _BREAK;
     delete _THEEND;
+    
 }
 
 //------------------------------------------------------------
@@ -2966,6 +2970,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

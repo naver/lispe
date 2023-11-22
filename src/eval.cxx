@@ -169,11 +169,14 @@ bool Atome::isExecutable(LispE* lisp) {
 
 Element* List::evalthreadspace(LispE* lisp, long listsize, long i) {
     lisp->delegation->lock.locking();
+    bool check = lisp->check_thread_stack;
     lisp->check_thread_stack = true;
     
     //We might need to mark the last element as being terminal
     //the block might belong to an if
     liste.back()->setterminal(terminal);
+    bool prev_prepare = lisp->preparingthread;
+    lisp->preparingthread = true;
         
     Element* element = null_;
     
@@ -184,11 +187,13 @@ Element* List::evalthreadspace(LispE* lisp, long listsize, long i) {
         }
     }
     catch (Error* err) {
+        lisp->preparingthread = prev_prepare;
         lisp->check_thread_stack = false;
         lisp->delegation->lock.unlocking();
         throw err;
     }
-    lisp->check_thread_stack = false;
+    lisp->preparingthread = prev_prepare;
+    lisp->check_thread_stack = check;
     lisp->delegation->lock.unlocking();
     return element;
 }
@@ -1496,13 +1501,62 @@ void List::evalthread(LispE* lisp, List* body) {
 }
 #endif
 
-void launchthread(LispE* call) {
-    call->current_thread->evalthread(call, call->current_body);
-    LispE* lisp = call->thread_ancestor;
-    delete call;
-    lisp->nbjoined--;
+void launchthread(ThreadElement* the) {
+    LispE* thread_lisp = the->thread_lisp;
+    thread_lisp->current_thread->evalthread(thread_lisp, thread_lisp->current_body);
+    thread_lisp->thread_ancestor->nbjoined--;
+    //We clean some trailing threads
+    thread_lisp->delegation->clean_threads();
+    the->cleaning = true;
+    delete thread_lisp;
 }
 
+//Execution of a function as well as the shift of parameters with arguments
+Element* List::eval_thread(LispE* lisp, List* body) {
+    //We are already running this thread, it is a recursive call
+    //we treat as a regular function
+    if (lisp->current_body == body)
+        return eval_function(lisp, body);
+
+    //We create a new lisp container for the thread
+    LispE* thread_lisp = new LispE(lisp, this, body);
+    Element* parameters;
+    
+    long nbarguments = liste.size()-1;
+    //the third element is the argument list .
+    //we need our body to be the same number
+    parameters = body->liste[2];
+    long defaultarguments = parameters->argumentsize(nbarguments);
+    if (defaultarguments == -1) {
+        wstring message = L"Error: Wrong number of arguments in call to: '(";
+        message += body->liste[1]->asString(lisp);
+        message += L" ";
+        message += body->liste[2]->asString(lisp);
+        message += L"...)'";
+        throw new Error(message);
+    }
+    
+    if (defaultarguments == parameters->size())
+        sameSizeNoTerminalArguments_thread(lisp, thread_lisp, body, (List*)parameters);
+    else
+        differentSizeNoTerminalArguments_thread(lisp, thread_lisp, body, (List*)parameters, nbarguments, defaultarguments);
+    
+    //The thread can be of course recursive, but we do not want this recursivity
+    //to trigger a new thread at each call...
+    //We only create a thread once... The next calls will be executed
+    //as regular functions
+    ThreadElement* the = new ThreadElement(thread_lisp);
+    the->thid = new std::thread(launchthread, the);
+    if (the->thid == NULL) {
+        delete the;
+        throw new Error("Error: Too many threads created. Cannot execute it...");
+    }
+    
+    lisp->delegation->clean_threads(the);
+    return True_;
+}
+
+//------------------------------------------------------------------------
 //This function is only used to compare the number of
 //parameters of a function and its arguments
 long List::argumentsize(long sz) {
@@ -1560,6 +1614,7 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
     //Note that if it is a new thread creation, the body is pushed onto the stack
     //of this new thread environment...
     thread_lisp->push(data);
+    bool preparethread = lisp->preparingthread;
     lisp->preparingthread = true;
     long sz = parameters->liste.size();
     // For each of the parameters we record in the stack
@@ -1573,11 +1628,11 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
         }
     }
     catch (Error* err) {
-        lisp->preparingthread = false;
+        lisp->preparingthread = preparethread;
         thread_lisp->pop();
         throw err;
     }
-    lisp->preparingthread = false;
+    lisp->preparingthread = preparethread;
 }
 
 void List::sameSizeTerminalArguments(LispE* lisp, List* parameters) {
@@ -1685,7 +1740,10 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
     
     //We create a new stage in the local stack for the new thread
     thread_lisp->push(data);
+    
+    bool preparethread = lisp->preparingthread;
     lisp->preparingthread = true;
+
     long i;
     List* l = NULL;
     long sz = parameters->liste.size();
@@ -1761,13 +1819,13 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
         }
     }
     catch (Error* err) {
-        lisp->preparingthread = false;
+        lisp->preparingthread = preparethread;
         if (l != NULL)
             l->release();
         thread_lisp->pop();
         throw err;
     }
-    lisp->preparingthread = false;
+    lisp->preparingthread = preparethread;
 }
 
 //In this case, we record in the current stack
@@ -1959,47 +2017,6 @@ Element* List::eval_library_function(LispE* lisp, List* body) {
     return lisp->pop(element);
 }
     
-//Execution of a function as well as the shift of parameters with arguments
-Element* List::eval_thread(LispE* lisp, List* body) {
-    //We are already running this thread, it is a recursive call
-    //we treat as a regular function
-    if (lisp->current_body == body)
-        return eval_function(lisp, body);
-
-    //We create a new lisp container for the thread
-    LispE* thread_lisp = new LispE(lisp, this, body);
-    Element* parameters;
-    
-    long nbarguments = liste.size()-1;
-    //the third element is the argument list .
-    //we need our body to be the same number
-    parameters = body->liste[2];
-    long defaultarguments = parameters->argumentsize(nbarguments);
-    if (defaultarguments == -1) {
-        wstring message = L"Error: Wrong number of arguments in call to: '(";
-        message += body->liste[1]->asString(lisp);
-        message += L" ";
-        message += body->liste[2]->asString(lisp);
-        message += L"...)'";
-        throw new Error(message);
-    }
-    
-    if (defaultarguments == parameters->size())
-        sameSizeNoTerminalArguments_thread(lisp, thread_lisp, body, (List*)parameters);
-    else
-        differentSizeNoTerminalArguments_thread(lisp, thread_lisp, body, (List*)parameters, nbarguments, defaultarguments);
-    
-    //The thread can be of course recursive, but we do not want this recursivity
-    //to trigger a new thread at each call...
-    //We only create a thread once... The next calls will be executed
-    //as regular functions
-    std::thread* tid = new std::thread(launchthread, thread_lisp);
-    if (tid == NULL) {
-        delete thread_lisp;
-        throw new Error("Error: Too many threads created. Cannot execute it...");
-    }
-    return True_;
-}
 
 //Execution of a function as well as the shift of parameters with arguments
 //For this specific lambda, we do not create a stack
@@ -3389,10 +3406,11 @@ Element* List::evall_threadstore(LispE* lisp) {
     evalAsUString(1, lisp, key);
     
     Element* value = liste[2]->eval(lisp);
-    
+
+    bool preparethread = lisp->preparingthread;
     lisp->preparingthread = true;
     lisp->delegation->thread_store(key, value);
-    lisp->preparingthread = false;
+    lisp->preparingthread = preparethread;
 
     value->release();
 

@@ -86,6 +86,25 @@ public:
 };
 
 //------------------------------------------------------------
+class ThreadElement {
+public:
+    std::atomic<bool> cleaning;
+    std::thread* thid;
+    LispE* thread_lisp;
+    
+    ThreadElement(LispE* l) {
+        thread_lisp = l;
+        cleaning = false;
+    }
+    ~ThreadElement() {
+        if (cleaning == true) {
+            thid->join();
+            delete thid;
+        }
+    }
+};
+
+//------------------------------------------------------------
 //Delegation is common to all threads
 //It basically stores everything that is common to all threads
 //and won't budge after loading or compilation
@@ -96,6 +115,7 @@ class Delegation {
 public:
     BlockThread trace_lock;
     ThreadLock lock;
+    ThreadLock lock_thread;
 
     methodEval evals[l_final];
     Listincode* straight_eval[l_final];
@@ -108,6 +128,8 @@ public:
     vecte<binHash<Element*>* > bodies;
     vecte<unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > >* > method_pool;
 
+    std::vector<ThreadElement*> currentthreads;
+    
     binHash<Element*> data_pool;
     vecte<long> idxinfos;
     
@@ -223,6 +245,26 @@ public:
     
     char checking() {
         return trace_lock.check();
+    }
+    
+    void clean_threads(ThreadElement* the = NULL) {
+        lock_thread.locking(true);
+        long sz = currentthreads.size() - 1;
+        for (long i = sz; i >= 0; i--) {
+            if (currentthreads[i] != NULL && currentthreads[i]->cleaning) {
+                ThreadElement* te =  currentthreads[i];
+                if (i == sz) {
+                    currentthreads.pop_back();
+                    sz--;
+                }
+                else
+                    currentthreads.erase(currentthreads.begin()+i);
+                delete te;
+            }
+        }
+        if (the != NULL)
+            currentthreads.push_back(the);
+        lock_thread.unlocking(true);
     }
     
     void toBeCleanedOnError(Element* e, bool tobelocked) {
