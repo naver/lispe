@@ -50,7 +50,7 @@ Element* Dictionarypool::fullcopy() {
     
     marking = true;
     Dictionary* d;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         d = new Dictionary;
     else
         d = lisp->provideDictionary();
@@ -84,11 +84,11 @@ Element* Dictionarypool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
     Dictionary* d;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         d = new Dictionary;
     else
         d = lisp->provideDictionary();
@@ -190,7 +190,7 @@ Element* Dictionary_npool::fullcopy() {
     
     marking = true;
     Dictionary_n* d;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         d = new Dictionary_n;
     else
         d = lisp->provideDictionary_n();
@@ -210,10 +210,10 @@ Element* Dictionary_npool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     Dictionary_n* d;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         d = new Dictionary_n;
     else
         d = lisp->provideDictionary_n();
@@ -293,7 +293,7 @@ Element* Dictionary_ipool::fullcopy() {
     
     marking = true;
     Dictionary_i* d;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         d = new Dictionary_i;
     else
         d = lisp->provideDictionary_i();
@@ -313,10 +313,10 @@ Element* Dictionary_ipool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     Dictionary_i* d;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         d = new Dictionary_i;
     else
         d = lisp->provideDictionary_i();

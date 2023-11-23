@@ -498,7 +498,7 @@ void Stringpool::release() {
 }
 
 Element* Floatpool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Number(content);
     return lisp->provideFloat(content);
 }
@@ -512,7 +512,7 @@ Element* Floatpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Float(content);
     
     if (!status)
@@ -521,7 +521,7 @@ Element* Floatpool::copying(bool duplicate) {
 }
 
 Element* Numberpool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Number(content);
     return lisp->provideNumber(content);
 }
@@ -535,7 +535,7 @@ Element* Numberpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Number(content);
     
     if (!status)
@@ -544,7 +544,7 @@ Element* Numberpool::copying(bool duplicate) {
 }
 
 Element* Integerpool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Integer(content);
     return lisp->provideInteger(content);
 }
@@ -558,7 +558,7 @@ Element* Integerpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Integer(content);
     
     if (!status)
@@ -568,7 +568,7 @@ Element* Integerpool::copying(bool duplicate) {
 }
 
 Element* Complexpool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Complex(content);
     return lisp->provideComplex(content);
 }
@@ -582,7 +582,7 @@ Element* Complexpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Complex(content);
     
     if (!status)
@@ -592,13 +592,13 @@ Element* Complexpool::copying(bool duplicate) {
 }
 
 Element* Constfloat::copying(bool duplicate) {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new Number(content);
     return lisp->provideFloat(content);
 }
 
 Element* Constfloat::fullcopy() {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new Number(content);
     return lisp->provideFloat(content);
 }
@@ -612,13 +612,13 @@ Element* Constfloat::duplicate_constant(LispE* lisp) {
 }
 
 Element* Constnumber::copying(bool duplicate) {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new Number(content);
     return lisp->provideNumber(content);
 }
 
 Element* Constnumber::fullcopy() {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new Number(content);
     return lisp->provideNumber(content);
 }
@@ -632,7 +632,7 @@ Element* Constnumber::duplicate_constant(LispE* lisp) {
 }
 
 Element* Constinteger::fullcopy() {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new Integer(content);
     return lisp->provideInteger(content);
 }
@@ -646,7 +646,7 @@ Element* Constinteger::duplicate_constant(LispE* lisp) {
 }
 
 Element* Constinteger::copying(bool duplicate) {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new Integer(content);
     return lisp->provideInteger(content);
 }
@@ -668,13 +668,13 @@ Element* Constshort::copying(bool duplicate) {
 }
 
 Element* Conststring::copying(bool duplicate) {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new String(content);
     return lisp->provideString(content);
 }
 
 Element* Conststring::fullcopy() {
-    if (!provide || lisp->preparingthread)
+    if (!provide || lisp->create_in_thread)
         return new String(content);
     return lisp->provideString(content);
 }
@@ -704,7 +704,7 @@ Element* Conststringbyte::duplicate_constant(LispE* lisp) {
 }
 
 Element* Stringpool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new String(content);
     return lisp->provideString(content);
 }
@@ -718,7 +718,7 @@ Element* Stringpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new String(content);
     
     if (!status)

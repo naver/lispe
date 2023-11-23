@@ -57,7 +57,7 @@ Element* Set_spool::newInstance() {
 }
 
 Element* Set_spool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_s(ensemble);
     else
         return lisp->provideSet_s(this);
@@ -68,10 +68,10 @@ Element* Set_spool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_s(ensemble);
     else
         return lisp->provideSet_s(this);
@@ -118,7 +118,7 @@ Element* Set_ipool::newInstance() {
 }
 
 Element* Set_ipool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_i(ensemble);
     else
         return lisp->provideSet_i(this);
@@ -129,10 +129,10 @@ Element* Set_ipool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_i(ensemble);
     else
         return lisp->provideSet_i(this);
@@ -179,7 +179,7 @@ Element* Set_npool::newInstance() {
 }
 
 Element* Set_npool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_n(ensemble);
     else
         return lisp->provideSet_n(this);
@@ -190,10 +190,10 @@ Element* Set_npool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_n(ensemble);
     else
         return lisp->provideSet_n(this);
@@ -233,7 +233,7 @@ Element* Set_s::fullcopy() {
 }
 
 Element* Set_s::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->preparingthread)
+    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
         return new Set_s(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -803,7 +803,7 @@ Element* Set_i::fullcopy() {
 }
 
 Element* Set_i::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->preparingthread)
+    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
         return new Set_i(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -1038,7 +1038,7 @@ Element* Set_n::fullcopy() {
 }
 
 Element* Set_n::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->preparingthread)
+    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
         return new Set_n(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -1797,7 +1797,7 @@ Element* Setpool::newInstance() {
 }
 
 Element* Setpool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set(dictionary, true);
     else
         return lisp->provideSet(this);
@@ -1808,10 +1808,10 @@ Element* Setpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set(dictionary, true);
     else
         return lisp->provideSet(this);

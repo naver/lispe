@@ -175,8 +175,8 @@ Element* List::evalthreadspace(LispE* lisp, long listsize, long i) {
     //We might need to mark the last element as being terminal
     //the block might belong to an if
     liste.back()->setterminal(terminal);
-    bool prev_prepare = lisp->preparingthread;
-    lisp->preparingthread = true;
+    bool previous_context = lisp->create_in_thread;
+    lisp->create_in_thread = true;
         
     Element* element = null_;
     
@@ -187,12 +187,12 @@ Element* List::evalthreadspace(LispE* lisp, long listsize, long i) {
         }
     }
     catch (Error* err) {
-        lisp->preparingthread = prev_prepare;
+        lisp->create_in_thread = previous_context;
         lisp->check_thread_stack = false;
         lisp->delegation->lock.unlocking();
         throw err;
     }
-    lisp->preparingthread = prev_prepare;
+    lisp->create_in_thread = previous_context;
     lisp->check_thread_stack = check;
     lisp->delegation->lock.unlocking();
     return element;
@@ -1614,8 +1614,8 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
     //Note that if it is a new thread creation, the body is pushed onto the stack
     //of this new thread environment...
     thread_lisp->push(data);
-    bool preparethread = lisp->preparingthread;
-    lisp->preparingthread = true;
+    bool previous_context = lisp->create_in_thread;
+    lisp->create_in_thread = true;
     long sz = parameters->liste.size();
     // For each of the parameters we record in the stack
     try {
@@ -1628,11 +1628,11 @@ void List::sameSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_lisp, E
         }
     }
     catch (Error* err) {
-        lisp->preparingthread = preparethread;
+        lisp->create_in_thread = previous_context;
         thread_lisp->pop();
         throw err;
     }
-    lisp->preparingthread = preparethread;
+    lisp->create_in_thread = previous_context;
 }
 
 void List::sameSizeTerminalArguments(LispE* lisp, List* parameters) {
@@ -1741,8 +1741,8 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
     //We create a new stage in the local stack for the new thread
     thread_lisp->push(data);
     
-    bool preparethread = lisp->preparingthread;
-    lisp->preparingthread = true;
+    bool previous_context = lisp->create_in_thread;
+    lisp->create_in_thread = true;
 
     long i;
     List* l = NULL;
@@ -1819,13 +1819,13 @@ void List::differentSizeNoTerminalArguments_thread(LispE* lisp, LispE* thread_li
         }
     }
     catch (Error* err) {
-        lisp->preparingthread = preparethread;
+        lisp->create_in_thread = previous_context;
         if (l != NULL)
             l->release();
         thread_lisp->pop();
         throw err;
     }
-    lisp->preparingthread = preparethread;
+    lisp->create_in_thread = previous_context;
 }
 
 //In this case, we record in the current stack
@@ -3407,10 +3407,10 @@ Element* List::evall_threadstore(LispE* lisp) {
     
     Element* value = liste[2]->eval(lisp);
 
-    bool preparethread = lisp->preparingthread;
-    lisp->preparingthread = true;
+    bool previous_context = lisp->create_in_thread;
+    lisp->create_in_thread = true;
     lisp->delegation->thread_store(key, value);
-    lisp->preparingthread = preparethread;
+    lisp->create_in_thread = previous_context;
 
     value->release();
 

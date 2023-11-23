@@ -127,7 +127,7 @@ public:
     bool isThread;
     bool hasThread;
     bool check_arity_on_fly;
-    bool preparingthread;
+    bool create_in_thread;
     bool clean_utf8;
     bool check_thread_stack;
 	bool current_path_set;
@@ -141,7 +141,7 @@ public:
         current_space = 0;
         initpoolsize();
         initpools();
-        preparingthread = false;
+        create_in_thread = false;
         check_arity_on_fly = false;
         id_thread = 0;
         max_stack_size = 10000;

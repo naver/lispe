@@ -232,7 +232,7 @@ Element* Listpool::fullcopy() {
     if (liste.marking)
         return liste.object;
     liste.marking = true;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         liste.object = new List;
     else
         liste.object = lisp->provideList();
@@ -260,7 +260,7 @@ Element* Listpool::copying(bool duplicate) {
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
     List* l;
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         l = new List;
     else {
         if (!is_protected() && !duplicate)
@@ -314,7 +314,7 @@ Element* Floatspool::newInstance(Element* v) {
 }
 
 Element* Floatspool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Floats(this);
     
     return lisp->provideFloats(this);
@@ -325,7 +325,7 @@ Element* Floatspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Floats(this);
     
     if (!is_protected() && !duplicate)
@@ -365,7 +365,7 @@ Element* Numberspool::newInstance(Element* v) {
 }
 
 Element* Numberspool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Numbers(this);
     
     return lisp->provideNumbers(this);
@@ -376,7 +376,7 @@ Element* Numberspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Numbers(this);
     
     if (!is_protected() && !duplicate)
@@ -424,7 +424,7 @@ Element* Integerspool::newInstance(Element* v) {
 }
 
 Element* Integerspool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Integers(this);
     
     return lisp->provideIntegers(this);
@@ -435,7 +435,7 @@ Element* Integerspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Integers(this);
     
     //If it is a CDR, we need to copy it...
@@ -480,7 +480,7 @@ Element* Stringspool::newInstance() {
 }
 
 Element* Stringspool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Strings(this);
     
     return lisp->provideStrings(this);
@@ -491,7 +491,7 @@ Element* Stringspool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Strings(this);
     
     //If it is a CDR, we need to copy it...

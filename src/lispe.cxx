@@ -1151,7 +1151,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) : segmenter(lisp->handling
     depth_stack = 0;
     current_space = 0;
     void_function = lisp->void_function;
-    preparingthread = false;
+    create_in_thread = false;
     check_arity_on_fly = false;
     delegation = lisp->delegation;
     
