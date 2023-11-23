@@ -265,8 +265,8 @@
       )
    )
 
-   (setq dialog (+ (upper (at dialog 0)) (lower (extract dialog 1 (size dialog)))))
-   (setq commands (maplist (\ (x) (select (key synonyms x) x)) (split dialog " ")))
+   (setq dialog (+ (upper (at dialog 0)) . lower . cdr dialog))
+   (setq commands (maplist (\(x) (select (key synonyms x) x)) (split dialog " ")))
    ; we transform each of our strings into atoms, for match sake
    ;we remove useless words: the, a etc..
    (setq commands (filterlist (\ (x) (not (key stopwords x))) (maplist 'atom commands)))
@@ -289,5 +289,6 @@
 )
 
 (print "The end")
+
 
 
