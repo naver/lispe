@@ -1940,9 +1940,10 @@ Element* List_maplist_eval::eval(LispE* lisp) {
             lisp->resetStack();
             return emptylist_;
         }
-                
+         
+        Element* e = op;
         if (op->is_quote())
-            op = op->eval(lisp);
+            e = op->eval(lisp);
                     
         /*
          The first element is "quoted" to avoid it to be evaluated later
@@ -1965,9 +1966,8 @@ Element* List_maplist_eval::eval(LispE* lisp) {
          */
 
         int16_t ps = 1;
-        Element* e;
-        if (op->isList() && op->size())
-            call = lisp->provideCallforTWO(op, ps);
+        if (e->isList() && e->size())
+            call = lisp->provideCallforTWO(e, ps);
         else {
             op = eval_body_as_argument(lisp, op);
             if (op->is_straight_eval())
@@ -2171,15 +2171,16 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
             lisp->reset_in_stack(save_variable, label);
         }
         else {
+            e = op;
             if (op->is_quote())
-                op = op->eval(lisp);
-                     
+                e = op->eval(lisp);
+
             //(filterlist '(< _ 10) (iota 10))
             //(filterlist '(< 10 _) (iota 10)) <=> (filterlist '(< 10) (iota 10))
             //where _ is the slot filling for our variable
 
-            if (op->isList() && op->size()) {
-                call = lisp->provideCallforTWO(op, ps);
+            if (e->isList() && e->size()) {
+                call = lisp->provideCallforTWO(e, ps);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2190,8 +2191,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                 ps = 1;
                 call->append(lisp->quoted());
             }
-            
-            
+                        
             iter = current_list->begin_iter();
             Element* nxt = current_list->next_iter_exchange(lisp, iter);
             while (nxt != emptyatom_) {
@@ -2370,15 +2370,16 @@ Element* List_takelist_eval::eval(LispE* lisp) {
             lisp->reset_in_stack(save_variable, label);
         }
         else {
+            e = op;
             if (op->is_quote())
-                op = op->eval(lisp);
+                e = op->eval(lisp);
 
             //(takelist '(< _ 10) (iota 10))
             //(takelist '(< 10 _) (iota 10)) <=> (takelist '(< 10) (iota 10))
             //where _ is the slot filling for our variable
 
-            if (op->isList() && op->size()) {
-                call = lisp->provideCallforTWO(op, ps);
+            if (e->isList() && e->size()) {
+                call = lisp->provideCallforTWO(e, ps);
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2573,15 +2574,16 @@ Element* List_droplist_eval::eval(LispE* lisp) {
             lisp->reset_in_stack(save_variable, label);
         }
         else {
+            e = op;
             if (op->is_quote())
-                op = op->eval(lisp);
+                e = op->eval(lisp);
 
             //(droplist '(< _ 10) (iota 10))
             //(droplist '(< 10 _) (iota 10)) <=> (droplist '(< 10) (iota 10))
             //where _ is the slot filling for our variable
 
-            if (op->isList() && op->size()) {
-                call = lisp->provideCallforTWO(op, ps);
+            if (e->isList() && e->size()) {
+                call = lisp->provideCallforTWO(e, ps);
             }
             else {
                 op = eval_body_as_argument(lisp, op);

@@ -266,10 +266,10 @@
    )
 
    (setq dialog (+ (upper (at dialog 0)) (lower (extract dialog 1 (size dialog)))))
-   (setq commands (map (\ (x) (select (key synonyms x) x)) (split dialog " ")))
+   (setq commands (maplist (\ (x) (select (key synonyms x) x)) (split dialog " ")))
    ; we transform each of our strings into atoms, for match sake
    ;we remove useless words: the, a etc..
-   (setq commands (filter (\ (x) (not (key stopwords x))) (map 'atom commands)))
+   (setq commands (filterlist (\ (x) (not (key stopwords x))) (maplist 'atom commands)))
 
    ; our commands is now a list of atoms that should match a data structure
    ; if we cannot evaluate it, then we display a random error message
