@@ -1966,8 +1966,12 @@ Element* List_maplist_eval::eval(LispE* lisp) {
          */
 
         int16_t ps = 1;
-        if (e->isList() && e->size())
-            call = lisp->provideCallforTWO(e, ps);
+        if (e->isList()) {
+            if (e->size())
+                call = lisp->provideCallforTWO(e, ps);
+            else
+                throw new Error("Error: empty list not accepted here");
+        }
         else {
             op = eval_body_as_argument(lisp, op);
             if (op->is_straight_eval())
@@ -2179,8 +2183,11 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
             //(filterlist '(< 10 _) (iota 10)) <=> (filterlist '(< 10) (iota 10))
             //where _ is the slot filling for our variable
 
-            if (e->isList() && e->size()) {
-                call = lisp->provideCallforTWO(e, ps);
+            if (e->isList()) {
+                if (e->size())
+                    call = lisp->provideCallforTWO(e, ps);
+                else
+                    throw new Error("Error: empty list not accepted here");
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2378,8 +2385,11 @@ Element* List_takelist_eval::eval(LispE* lisp) {
             //(takelist '(< 10 _) (iota 10)) <=> (takelist '(< 10) (iota 10))
             //where _ is the slot filling for our variable
 
-            if (e->isList() && e->size()) {
-                call = lisp->provideCallforTWO(e, ps);
+            if (e->isList()) {
+                if (e->size())
+                    call = lisp->provideCallforTWO(e, ps);
+                else
+                    throw new Error("Error: empty list not accepted here");
             }
             else {
                 op = eval_body_as_argument(lisp, op);
@@ -2582,8 +2592,11 @@ Element* List_droplist_eval::eval(LispE* lisp) {
             //(droplist '(< 10 _) (iota 10)) <=> (droplist '(< 10) (iota 10))
             //where _ is the slot filling for our variable
 
-            if (e->isList() && e->size()) {
-                call = lisp->provideCallforTWO(e, ps);
+            if (e->isList()) {
+                if (e->size())
+                    call = lisp->provideCallforTWO(e, ps);
+                else
+                    throw new Error("Error: empty list not accepted here");
             }
             else {
                 op = eval_body_as_argument(lisp, op);
