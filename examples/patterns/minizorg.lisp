@@ -2,87 +2,127 @@
 
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
+(defmacro remove(o k v) (pop (key o k) v))
 
-(data
-   [Move atom_]
-   [Break atom_ atom_]
-   [Open atom_ atom_]
-   [Kill atom_ atom_]
-   [Pick atom_ atom_]
-   [Take atom_]
-   [Drop atom_]
-)
+(data (Move _) (Break _ _) (Open _ _) (Kill _ _) (Pick _ _) (Take _) (Drop _))
 
 ; pick up is the same as take with one more parameter
-(defpat action ( [Pick 'up x] )
+(defpat action ( (Pick 'up x))
    (action (Take x))
 )
 
 ; take an object on the ground
-(defpat action ( [Take x] )
-   (ncheck (check_object position x)
-      (println "Cannot pick up the" x)
-      (push belongings x)
-      (println "Ok we have picked up" x)
+(defpat action ( (Take x) )
+   (if
+      (check_object position x)
+      (block
+         (push belongings x)
+         (println "Ok we have picked up:" x)
+      )
+      (println "Cannot pick up the:" x)
    )
 )
 
 ; drop it at current position
-(defpat action ( [Drop x] )
-   (check (check_belongings x)
-      (key objects (keystr position) x)
-      (pop belongings (find belongings x))
-      (println "Ok! We have dropped" x " on the ground")
-      (display_position position)
+(defpat action ( (Drop x))
+   (if
+      (check_belongings x)
+      (block
+         (key objects (keystr position) x)
+         (pop belongings (find belongings x))
+         (println "Ok! We have dropped" x " on the ground")
+         (display_position position)
+      )
    )
 )
 
 ; break a window with an object: it has to be a stone
-(defpat action( [Break 'window x] )
-   (ncheck (= position '(1 2))
-      (println "Get a sight check. There is no window over here")
-      (ncheck (and (check_belongings x) (eq x 'stone))
+(defpat action( (Break w x))
+   (if (check_object position w)
+      (if (and
+            (check_belongings x)
+            (eq x 'stone))
+         (block
+            (update_direction (keystr position) "0:2")
+            (key castlemap "1:2" "You are standing in front of a broken window")
+            (println "Window is broken")
+         )
          (println "Cannot break a window with that" x)
-         (update_direction (keystr position) "0:2")
-         (key castlemap "1:2" "You are standing in front of a broken window")
-         (println "Window is broken")
       )
+      (println "Get a sight check. There is no window over here")
    )
 )
 
 ; open door with a key
 ; It triggers new potential move to other positions
-(defpat action ( [Open 'door 'key] )
-   (ncheck (= position '(1 1))
-      (println "A door here??? Really!!!")
-      (ncheck (check_belongings 'key)
-         (println "You do not own a key")
-         (update_direction (keystr position) "0:1")
-         (update_direction "0:1" "0:0")
-         (key castlemap "1:1" "You are standing in front of an open gate")
-         (println "The door opens")
+(defpat action ((Open 'door x))
+   (if (= position '(1 1))
+      (if (and (check_belongings x) (eq x 'key))
+         (block
+            (update_direction (keystr position) "0:1")
+            (update_direction "0:1" "0:0")
+            (key castlemap "1:1" "You are standing in front of an open gate")
+            (println "The door opens")
+         )
+         (println "Cannot open a door with that" x)
       )
+      (println "A door here??? Really!!!")
    )
 )
 
 ; kill the ogre with a sword or you'll get into trouble
-(defpat action ( [Kill 'ogre x] )
-   (ncheck (= position '(1 0))
-      (println "There is no ogre here")
-      (ncheck (and (check_belongings x) (eq x 'sword))
+(defpat action ((Kill 'ogre x))
+   (if (= position '(1 0))
+      (if (and (check_belongings x) (eq x 'sword))
+         (block
+            (setg theend true)
+            (println "You kill the ogre. He was guarding an wonderfull treasure. You are now rich beyond measure. Congratulation!!!")
+         )
          (block
             (push dangers "1:0")
             (println "This is not a very efficient weapon. The ogre attacks you...")
          )
-         (setg theend true)
-         (println "You kill the ogre. He was guarding an wonderfull treasure. You are now rich beyond measure. Congratulation!!!")
       )
+      (println "There is no ogre here")
    )
 )
 
 ; Moving from one position to another
-(defpat action ( [Move direction] )
-   (setq p (checkposition (zipwith '+ position (key directions direction))))
+(defpat action ( (Move 'north))
+   (setq p (checkposition (- (car position) 1) (cadr position)))
+   (if (= p position)
+      (println "Cannot go in this direction")
+      (block
+         (setg position p)
+         (display_position position)
+      )
+   )
+)
+
+(defpat action ( (Move 'south))
+   (setg p (checkposition (+ (car position) 1) (cadr position)))
+   (if (= p position)
+      (println "Cannot go in this direction")
+      (block
+         (setg position p)
+         (display_position position)
+      )
+   )
+)
+
+(defpat action ( (Move 'west))
+   (setg p (checkposition (car position) (- (cadr position) 1)))
+   (if (= p position)
+      (println "Cannot go in this direction")
+      (block
+         (setg position p)
+         (display_position position)
+      )
+   )
+)
+
+(defpat action ( (Move 'east))
+   (setg p (checkposition (car position) (+ (cadr position) 1)))
    (if (= p position)
       (println "Cannot go in this direction")
       (block
@@ -95,11 +135,10 @@
 ; Default action
 (defpat action(_) (random_choice 1 msgs 10))
 
-; Primitives
 ; Data for the game and basic instructions
 ; build the key string
 (defun keystr(p)
-   (+ (string (car p)) ":" (string (cadr p)))
+   (join p ":")
 )
 
 ; check if a path is within the description in 'moving'
@@ -110,8 +149,21 @@
    )
 )
 
+; update valid directions in both ways
+(defun update_direction (current_position direction)
+   (key moving current_position (cons direction (key moving current_position)))
+   (cond
+      ((key moving direction)
+         (key moving direction (cons current_position (key moving direction)))
+      )
+      (true
+         (key moving direction (cons current_position ()))
+      )
+   )
+)
+
 ; check if we are within the confines of the game: 3x3 square map.
-(defpat checkposition( [x y] )
+(defun checkposition(x y)
    (check_valid_path
       (cond
          ((< x 0) (list 0 y))
@@ -123,6 +175,7 @@
    )
 )
 
+
 ; check if the object is available on the ground and pick it up
 ; we also remove it from objects
 ; the last 'true' is actually a hack. pop returns the dictionary as output,
@@ -130,7 +183,11 @@
 
 (defun check_object(p x)
    (setq k (keystr p))
-   (cond ((eq (key objects k) x) (pop objects k) true))
+   (check
+      (in (key objects k) x)
+      (remove objects k x)
+      true
+   )
 )
 
 ; check if we own the object x
@@ -148,20 +205,14 @@
 (defun display_position(p)
    (setq k (keystr p))
    (println k (select (key castlemap k) "Nothing to see"))
-   (check (key objects k)
-      (println (+ "There is a " (key objects k) " on the ground"))
-   )
+   (println (if (key objects k) (+ "There is a " (key objects k)) ""))
    (println "You own: " belongings)
 )
-
 
 ; check if the position is a dangerous one
 (defun check_danger (position)
    (belong position dangers)
 )
-
-; each direction is associated with some values to add position with
-(setq directions { "north": '(-1 0) "south":'(1 0) "west":'(0 -1) "east":'(0 1)})
 
 ; some synonyms
 (setq synonyms
@@ -191,20 +242,7 @@
 (setq stopwords {"to":true "a":true "the":true "with":true "your":true "his":true "her":true})
 
 
-; update valid directions in both ways
-(defun update_direction (current_position direction)
-   (key moving current_position (cons direction (key moving current_position)))
-   (cond
-      ((key moving direction)
-         (key moving direction (cons current_position (key moving direction)))
-      )
-      (true
-         (key moving direction (cons current_position ()))
-      )
-   )
-)
-
-; these are the valid moves from one position to another
+; these are the valid move from one position to another
 (setq moving (key))
 
 (update_direction "1:1" "1:0")
@@ -221,7 +259,7 @@
       "1:1":"You are standing in front of a gate."
       "1:2":"You are standing in front of a large window"
       "1:0":"You are standing in front of a Ogre"
-      "2:1":"You wake up an angry venomous snake. It bites you. The pain is terrible..."
+      "2:1":"You wake up an angry venominous snake. It bites you. The pain is terrible..."
       "0:0":"Your are in a large dark room"
       "0:2":"You are on in small room"
       "2:0":"You are in the middle of a forest"
@@ -230,21 +268,11 @@
 )
 
 (setq objects {
-      "1:1": 'stone
-      "0:2": 'key
-      "0:0": 'sword
+      "1:1": '(stone door)
+      "1:2": '(window)
+      "0:2": '(key)
+      "0:0": '(sword)
    }
-)
-
-(setq msgs '(
-      "Not sure what you want to do!!!"
-      "Do not know what to do here"
-      "Sorry, I did not understand..."
-      "You want to do what?"
-      "Sorry, I took a walk. What did you say?"
-      "Please... Don't say it again"
-      "Nice try... But no"
-   )
 )
 
 ; initialisation
@@ -257,14 +285,23 @@
 ; We display our initial psoition
 (display_position position)
 
+(setq msgs '(
+      "Not sure what you want to do!!!"
+      "Do not know what to do here"
+      "Sorry, I did not understand..."
+      "You want to do what?"
+      "Sorry, I took a walk. What did you say?"
+      "Please... Don't say it again"
+      "Nice try... But no"
+   )
+)
+
 (while (neq (car commands) 'End)
    (print "Your order sire? ")
    (setq dialog (input))
-   (if (eq dialog "end")
-      (block
-         (println "Ok... Bye...")
-         (break)
-      )
+   (check (eq dialog "end")
+      (println "Ok... Bye...")
+      (break)
    )
 
    (setq dialog (lower dialog))
@@ -273,9 +310,8 @@
    ; we transform each of our strings into atoms, for match sake
    ;we remove useless words: the, a etc..
    (setq commands (filter (\ (x) (not (key stopwords x))) (map 'atom commands)))
-
    ; our commands is now a list of atoms that should match a data structure
-   ; if we cannot evaluate it, then we display a random error message
+
    (maybe
       (println (action commands))
       (println (random_choice 1 msgs 10))
@@ -283,7 +319,7 @@
 
    (check (check_danger position)
       (println "you are dead!!!")
-      (setq commands '(End))
+      (setq theend true)
    )
 
    (if theend
@@ -292,9 +328,4 @@
 )
 
 (print "The end")
-
-
-
-
-
 
