@@ -5,7 +5,7 @@
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
 
-(data
+(data Command   
    [Move atom_]
    [Break atom_ atom_]
    [Open atom_ atom_]
@@ -289,4 +289,5 @@
 )
 
 (print "The end")
+
 
