@@ -1,5 +1,7 @@
 #!/usr/local/bin/lispe
 
+; build the key string
+(defmacro keystr(p) (join p ":"))
 ; Actions on data structures
 (defmacro belong (x l) (in l (keystr x)))
 
@@ -97,10 +99,6 @@
 
 ; Primitives
 ; Data for the game and basic instructions
-; build the key string
-(defun keystr(p)
-   (join p ":")
-)
 
 ; check if a path is within the description in 'moving'
 (defun check_valid_path(p)
@@ -291,6 +289,4 @@
 )
 
 (print "The end")
-
-
 
