@@ -161,8 +161,9 @@
 ; each direction is associated with some values to add position with
 (setq directions { "north": '(-1 0) "south":'(1 0) "west":'(0 -1) "east":'(0 1)})
 
-; some synonyms
-(setq synonyms
+; some filterwords synonyms and stopwords
+; stopwords are replaced with a ~
+(setq filterwords
    {"rock":"stone"
       "pebble":"stone"
       "Head":"Move"
@@ -183,10 +184,16 @@
       "forward":"north"
       "backward":"south"
       "back":"south"
+      "to":"~"
+      "a":"~"
+      "the":"~"
+      "with":"~"
+      "your":"~"
+      "his":"~"
+      "her":"~"
+      "its": "~"
    }
 )
-
-(setq stopwords {"to":true "a":true "the":true "with":true "your":true "his":true "her":true})
 
 
 ; update valid directions in both ways
@@ -227,6 +234,7 @@
    }
 )
 
+; Each object is at a specific location
 (setq objects {
       "1:1": 'stone
       "0:2": 'key
@@ -234,6 +242,7 @@
    }
 )
 
+; Error messages that are chosen randomly
 (setq msgs '(
       "Not sure what you want to do!!!"
       "Do not know what to do here"
@@ -257,24 +266,33 @@
 
 (while (neq (car commands) 'End)
    (print "Your order sire? ")
+   ; We read the input from the keyboard
+   ; Note that on GUI version, we display a small window
    (setq dialog (input))
-   (if (eq dialog "end")
-      (block
+   (check (eq dialog "end")
          (println "Ok... Bye...")
          (break)
-      )
    )
+   
+   ; car and cdr have also been repurposed for strings
+   ; GET THE SWORD is transformed into: Get the sword
+   (setq dialog (+ (upper . car dialog) . lower . cdr dialog))
 
-   (setq dialog (+ (upper (at dialog 0)) . lower . cdr dialog))
-   (setq commands (maplist (\(x) (select (key synonyms x) x)) (split dialog " ")))
-   ; we transform each of our strings into atoms, for match sake
-   ;we remove useless words: the, a etc..
-   (setq commands (filterlist (\ (x) (not (key stopwords x))) (maplist 'atom commands)))
+   ; We replace synonyms with their official value: Get --> Take
+   ; We transform each of our strings into atoms. Note that select returns the first non null value
+   ; We remove stopwords (replaced with "~")
+   ; We eventually obtain: (Take sword)
+   (setq commands 
+      (filterlist '(neq '~) 
+         (maplist 
+         (λ(x) (atom . select (key filterwords x) x)) . 
+         split dialog " ")))
 
    ; our commands is now a list of atoms that should match a data structure
    ; if we cannot evaluate it, then we display a random error message
    (maybe
       (println (action commands))
+      ; otherwise, we display a random error message
       (println (random_choice 1 msgs 10))
    )
 
