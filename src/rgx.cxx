@@ -1112,7 +1112,13 @@ public:
     wstring strvalue;
  
     LispEPosixRegularExpression(wstring str, int16_t l_rgx) : strvalue(str), Element(l_rgx) {
-        au = new wregex(strvalue);
+        try {
+            au = new wregex(strvalue);
+        }
+        catch (const std::regex_error& e) {
+            au = NULL;
+            throw new Error(e.what());
+        }
     }
     
     ~LispEPosixRegularExpression() {

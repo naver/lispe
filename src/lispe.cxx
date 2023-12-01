@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.11.23.16.6";
+static std::string version = "1.2023.12.1.15.49";
 string LispVersion() {
     return version;
 }
@@ -2929,6 +2929,8 @@ void LispE::current_path() {
 		return;
 
     u_ustring nom = U"_current";
+    u_ustring sep = U"_sep";
+    
     string spath;
     Element* e;
     
@@ -2961,6 +2963,11 @@ void LispE::current_path() {
         e = provideString(spath);
         execution_stack.back()->storing_variable(e, encode(nom));
         e->release();
+        
+        nom = U"_sep";
+        e = provideString(end_path);
+        execution_stack.back()->storing_variable(e, encode(nom));
+        e->release();
     }
     
     nom = U"_version";
@@ -2970,6 +2977,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
