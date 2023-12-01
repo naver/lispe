@@ -2850,12 +2850,16 @@ Element* String::extraction(LispE* lisp, List* liste) {
     Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = liste->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == liste->size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = liste->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -2920,15 +2924,19 @@ Element* String::extraction(LispE* lisp, List* liste) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = content.size();
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = content.size() + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = content.size() + upto;
+                    }
                 }
             }
             break;
@@ -3051,12 +3059,16 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
     Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = liste->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == liste->size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = liste->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -3121,15 +3133,19 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = content.size();
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = content.size() + upto;
+                upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = content.size() + upto;
+                    }
                 }
             }
             break;
@@ -3262,12 +3278,16 @@ Element* String::replace_in(LispE* lisp, List* liste) {
     Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = liste->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == liste->size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = liste->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -3332,15 +3352,19 @@ Element* String::replace_in(LispE* lisp, List* liste) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = content.size();
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = content.size() + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = content.size() + upto;
+                    }
                 }
             }
             break;
@@ -3471,12 +3495,16 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
     Element* e_upto = liste->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = liste->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == liste->size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = liste->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = liste->liste[nxt+1]->eval(lisp);
@@ -3541,15 +3569,19 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = content.size();
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = content.size() + upto;
+                upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = content.size() + upto;
+                    }
                 }
             }
             break;

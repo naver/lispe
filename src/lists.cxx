@@ -1912,12 +1912,16 @@ Element* List::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = l->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == l->liste.size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = l->liste[nxt+1]->eval(lisp);
@@ -1979,15 +1983,19 @@ Element* List::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = sz;
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = sz + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = sz + upto;
+                    }
                 }
             }
             break;
@@ -2119,12 +2127,16 @@ Element* LList::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = l->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == l->liste.size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = l->liste[nxt+1]->eval(lisp);
@@ -2187,15 +2199,19 @@ Element* LList::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = sz;
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = sz + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = sz + upto;
+                    }
                 }
             }
             break;
@@ -2348,12 +2364,16 @@ Element* List::replace_in(LispE* lisp, List* l) {
         e_upto = l->liste[nxt];
         switch (e_upto->label()) {
             case l_minus:
-                e_upto = l->liste[nxt+1]->eval(lisp);
-                ty = e_upto->type;
-                if (ty == t_string)
-                    ty = t_minus_string;
-                else
-                    throw new Error("Error: Wrong value after second operator: '-'");
+                if (nxt == l->liste.size() - 1)
+                    e_upto = terminal_;
+                else {
+                    e_upto = l->liste[nxt+1]->eval(lisp);
+                    ty = e_upto->type;
+                    if (ty == t_string)
+                        ty = t_minus_string;
+                    else
+                        throw new Error("Error: Wrong value after second operator: '-'");
+                }
                 break;
             case l_plus:
                 e_upto = l->liste[nxt+1]->eval(lisp);
@@ -2422,15 +2442,19 @@ Element* List::replace_in(LispE* lisp, List* l) {
             case t_short:
             case t_integer:
             case t_number:
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto > 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
+                if (e_upto == terminal_)
+                    upto = size();
                 else {
-                    if (upto <= 0) {
-                        //We start from the end...
-                        upto = size() + upto;
+                    upto = e_upto->asInteger();
+                    if (firstisString != -1 && upto >= 0) {
+                        //in this case upto is a number of characters, not a position
+                        upto += from + firstisString;
+                    }
+                    else {
+                        if (upto < 0) {
+                            //We start from the end...
+                            upto = size() + upto;
+                        }
                     }
                 }
                 break;
@@ -2586,12 +2610,16 @@ Element* LList::replace_in(LispE* lisp, List* l) {
         e_upto = l->liste[nxt];
         switch (e_upto->label()) {
             case l_minus:
-                e_upto = l->liste[nxt+1]->eval(lisp);
-                ty = e_upto->type;
-                if (ty == t_string)
-                    ty = t_minus_string;
-                else
-                    throw new Error("Error: Wrong value after second operator: '-'");
+                if (nxt == l->liste.size() - 1)
+                    e_upto = terminal_;
+                else {
+                    e_upto = l->liste[nxt+1]->eval(lisp);
+                    ty = e_upto->type;
+                    if (ty == t_string)
+                        ty = t_minus_string;
+                    else
+                        throw new Error("Error: Wrong value after second operator: '-'");
+                }
                 break;
             case l_plus:
                 e_upto = l->liste[nxt+1]->eval(lisp);
@@ -2660,15 +2688,19 @@ Element* LList::replace_in(LispE* lisp, List* l) {
             case t_short:
             case t_integer:
             case t_number:
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto > 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
+                if (e_upto == terminal_)
+                    upto = sz;
                 else {
-                    if (upto <= 0) {
-                        //We start from the end...
-                        upto = sz + upto;
+                    upto = e_upto->asInteger();
+                    if (firstisString != -1 && upto >= 0) {
+                        //in this case upto is a number of characters, not a position
+                        upto += from + firstisString;
+                    }
+                    else {
+                        if (upto < 0) {
+                            //We start from the end...
+                            upto = sz + upto;
+                        }
                     }
                 }
                 break;
@@ -4940,12 +4972,16 @@ Element* Strings::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = l->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == l->liste.size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = l->liste[nxt+1]->eval(lisp);
@@ -5007,15 +5043,19 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = sz;
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = sz + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = sz + upto;
+                    }
                 }
             }
             break;
@@ -5150,12 +5190,16 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = l->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == l->liste.size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = l->liste[nxt+1]->eval(lisp);
@@ -5217,15 +5261,19 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = size();
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = size() + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = size() + upto;
+                    }
                 }
             }
             break;
@@ -5919,12 +5967,16 @@ Element* Stringbytes::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = l->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == l->liste.size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = l->liste[nxt+1]->eval(lisp);
@@ -5986,15 +6038,19 @@ Element* Stringbytes::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = sz;
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = sz + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = sz + upto;
+                    }
                 }
             }
             break;
@@ -6129,12 +6185,16 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            e_upto = l->liste[nxt+1]->eval(lisp);
-            ty = e_upto->type;
-            if (ty == t_string)
-                ty = t_minus_string;
-            else
-                throw new Error("Error: Wrong value after second operator: '-'");
+            if (nxt == l->liste.size() - 1)
+                e_upto = terminal_;
+            else {
+                e_upto = l->liste[nxt+1]->eval(lisp);
+                ty = e_upto->type;
+                if (ty == t_string)
+                    ty = t_minus_string;
+                else
+                    throw new Error("Error: Wrong value after second operator: '-'");
+            }
             break;
         case l_plus:
             e_upto = l->liste[nxt+1]->eval(lisp);
@@ -6196,15 +6256,19 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            upto = e_upto->asInteger();
-            if (firstisString != -1 && upto > 0) {
-                //in this case upto is a number of characters, not a position
-                upto += from + firstisString;
-            }
+            if (e_upto == terminal_)
+                upto = size();
             else {
-                if (upto <= 0) {
-                    //We start from the end...
-                    upto = size() + upto;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
+                else {
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = size() + upto;
+                    }
                 }
             }
             break;
