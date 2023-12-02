@@ -35,6 +35,7 @@
          (@ i 1)
       )
    )
+   (println res)
    (setq tst (sum (, res)))
    (if (not tst)
       (+= resultat (+ 1 (@ i 0)))
@@ -43,8 +44,9 @@
 
 (println resultat)
 
+(setq resultat 0)
 (loop i (enum parties)
-   (setq res {"blue":(integers) "red":(integers) "green":(integers)})
+   (setq res {"blue":[] "red":[] "green":[]})
    (maplist 
       (\(e) 
          (maplist 
@@ -57,6 +59,9 @@
       )
       (@ i 1)
    )
-   (println res)
+   (set@ res "blue" (max (@ res "blue")))
+   (set@ res "red" (max (@ res "red")))
+   (set@ res "green" (max (@ res "green")))
+   (+= resultat (* (values@ res)))
 )
 
