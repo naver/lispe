@@ -6,38 +6,46 @@
 
 (println (+ (maplist (\(x) ( (\(l) (integer . join (cons (car l) (last l)) "")) (rgx_findall (rgx "%d") x))) données)))
 
+;;
+(setq données `two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen
+`
+)
 
-(setq words "(one|two|three|four|five|six|seven|eight|nine)")
+(setq données (split données "\n"))
+;;
 
+(setq nombres  (strings "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"))
 
-(setq equivalence {
-      "one" : "1"
-      "two" : "2"
-      "three": "3"
-      "four": "4"
-      "five": "5"
-      "six": "6"
-      "seven": "7"
-      "eight": "8"
-      "nine": "9"
-   }
+(defmacro startwith (s i w)
+   (if (>= (- (size s) i) (size w))
+      (= (@@ s i (+ i (size w))) w)
+      false
+   )
 )
 
 (defun remplace(line)
-   (setq l line)
-   (setq pos 0)
-   (loop w (prgx_findall (prgx words) line)
-      (setq d (find line w pos))
-      (println 1 (@@ line pos d) pos d)
-      (println 2 (@ equivalence w))
-      (println 3 (@@ line (+ 1 d (size w)) 0))
-      (setq line (+ (@@ line pos d) (@ equivalence w) (@@ line (+ 1 d (size w)) 0)))
-      (setq pos d)
+   (setq v (strings))
+   (loop i (enum (split line ""))
+      (if (digitp (@ line (@ i 0)))
+         (push v (@ i 1))
+         (loop u (enum nombres)
+            (check (startwith line (@ i 0)  (@ u 1))
+               (push v (+ 1 (@ u 0)))
+               (break)
+            )
+         )
+      )     
    )
-   (println l line ((\(x) (list (car x) (last x))) (rgx_findall (rgx "%d") line)))
-   line
+  (integer (+ (car v) (last v)))
 )
 
+(+ (maplist 'remplace données))
 
-(+ (maplist (\(x) ( (\(l) (integer . join (cons (car l) (last l)) "")) (rgx_findall (rgx "%d") (remplace x)))) données))
+
 

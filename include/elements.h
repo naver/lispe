@@ -2623,10 +2623,14 @@ public:
     Element* more(LispE* lisp, Element* e);
     Element* moreorequal(LispE* lisp, Element* e);
     
+    virtual Element* index(long i) {
+        return new String(content[i]);
+    }
+
     Element* protected_index(LispE*,long i);
     
     Element* value_from_index(LispE*, long i);
-    
+        
     Element* value_on_index(LispE*, long i);
     Element* value_on_index(LispE*, Element* idx);
     Element* protected_index(LispE*, Element* k);
@@ -2701,6 +2705,7 @@ public:
     
     Element* plus(LispE* l, Element* e);
     Element* thekeys(LispE* lisp);
+    
 };
 
 class Stringpool : public String {
@@ -2724,6 +2729,7 @@ public:
     virtual Element* copyatom(LispE* lisp, uint16_t s);
     virtual Element* copying(bool duplicate = true);
 
+    Element* index(long i);
 };
 
 class Conststring : public Stringpool {

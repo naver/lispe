@@ -5261,6 +5261,20 @@ public:
         return lst->size();
     }
     
+    void* begin_iter() {
+        long* n = new long[1];
+        n[0] = 0;
+        return n;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+    
+    virtual void clean_iter(void* it) {
+        delete (long*)it;
+    }
+
+    Element* eval(LispE* lisp);
     Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* protected_index(LispE* lisp,long i) {
         element.liste[1]->release();
@@ -5301,15 +5315,24 @@ public:
     }
     
     wstring asString(LispE* lisp) {
-        return lst->asString(lisp);
+        Element* e = eval(lisp);
+        wstring w = e->asString(lisp);
+        e->release();
+        return w;
     }
     
     string toString(LispE* lisp) {
-        return lst->toString(lisp);
+        Element* e = eval(lisp);
+        string w = e->toString(lisp);
+        e->release();
+        return w;
     }
     
     u_ustring asUString(LispE* lisp) {
-        return lst->asUString(lisp);
+        Element* e = eval(lisp);
+        u_ustring w = e->asUString(lisp);
+        e->release();
+        return w;
     }
 };
 

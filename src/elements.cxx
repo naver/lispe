@@ -473,6 +473,9 @@ void Infiniterangeinteger::decrementstatus(uint16_t nb) {
     }
 }
 
+Element* Stringpool::index(long i) {
+    return lisp->provideString(content[i]);
+}
 
 void Stringpool::decrement() {
     status -= not_protected();

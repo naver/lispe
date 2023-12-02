@@ -3700,6 +3700,29 @@ Element* List::evalt_list(LispE* lisp) {
     return second_element;
 }
 
+Element* Enumlist::eval(LispE* lisp) {
+    if (lisp != NULL) {
+        List* l = lisp->provideList();
+        List* sub;
+        for (long  i = 0; i < lst->size(); i++) {
+            sub = lisp->provideList();
+            sub->append(lisp->provideInteger(i));
+            sub->append(lst->index(i)->copying(true));
+            l->append(sub);
+        }
+        return l;
+    }
+    List* l = new List();
+    List* sub;
+    for (long  i = 0; i < lst->size(); i++) {
+        sub = new List();
+        sub->append(new Integer(i));
+        sub->append(lst->index(i)->copying(true));
+        l->append(sub);
+    }
+    return l;
+}
+
 #ifdef MACDEBUG
 //This is a stub function, which is used to focus on specific function debugging
 Element* List::evall_debug_function(LispE* lisp) {

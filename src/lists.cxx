@@ -7831,6 +7831,25 @@ Element* List::next_iter_exchange(LispE* lisp, void* it) {
     return e;
 }
 
+Element* Enumlist::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == lst->size())
+        return emptyatom_;
+    Element* e = index(n[0]);
+    n[0]++;
+    return e;
+}
+
+Element* Enumlist::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if (n[0] == lst->size())
+        return emptyatom_;
+    Element* e = index(n[0]);
+    n[0]++;
+    return e;
+}
+
+
 Element* Shorts::next_iter(LispE* lisp, void* it) {
     long* n = (long*)it;
     if (n[0] == liste.size())
