@@ -7,12 +7,14 @@
 
 (setq données (split données "\n"))
 
-(mapcar 
-   (\(line)
-      (@@ line ":" -)
+(setq r
+   (mapcar
+      (\(line)
+         (setq v (split (@@ line ":" -) ";"))
+         (setq u (mapcar  (\(x) (split x ",")) v))
+         u
+      )
+      données
    )
-   données
 )
-
-
 

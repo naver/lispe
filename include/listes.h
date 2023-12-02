@@ -11088,6 +11088,7 @@ public:
         for (long i = 0; i <= sz; i++) {
             if (i && i <= sz)
                 buffer += U" ";
+            u = U"";
             s_utf8_to_unicode(u, liste[i], liste[i].size());
             buffer += ujsonstring(u);
         }
