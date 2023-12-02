@@ -1310,7 +1310,7 @@ Element* Rankloop::loop(LispE* lisp, int16_t label, List* code) {
             ranks = lst->rank(lisp, positions);
             positions.pop_back();
         }
-        lisp->replacingvalue(ranks, label);
+        lisp->replacestackvalue(ranks, label);
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -1438,7 +1438,7 @@ Element* Cyclelist::loop(LispE* lisp, int16_t label, List* code) {
     //We then execute our instructions
     while (!lisp->hasStopped()) {
         element = values->liste[i]->copying(false);
-        lisp->replacingvalue(element, label);
+        lisp->replacestackvalue(element, label);
         _releasing(e);
         if ((++i) >= sze)
             i = 0;

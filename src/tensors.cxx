@@ -1096,7 +1096,7 @@ template <typename A, lisp_code T, lisp_code TT, typename C> Element* Matrice<A,
     lisp->recording(null_, label);
     long sz = code->liste.size();
     for (long i = 0; i < size_x; i++) {
-        lisp->replacingvalue(liste[i], label);
+        lisp->replacestackvalue(liste[i], label);
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -1750,7 +1750,7 @@ template <typename A, lisp_code T, typename C> Element* Tenseur<A,T,C>::loop(Lis
     lisp->recording(null_, label);
     long sz = code->liste.size();
     for (long i = 0; i < shape[0]; i++) {
-        lisp->replacingvalue(liste[i], label);
+        lisp->replacestackvalue(liste[i], label);
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {

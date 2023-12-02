@@ -1120,8 +1120,8 @@ public:
         execution_stack.back()->record_argument(e, label);
     }
 
-    inline void replacingvalue(Element* e, int16_t label) {
-        execution_stack.back()->replacingvalue(e->duplicate_constant(this), label);
+    inline void replacestackvalue(Element* e, int16_t label) {
+        execution_stack.back()->replace_stack_value(e->duplicate_constant(this), label);
     }
 
     inline Element* recording_variable(Element* e, int16_t label) {

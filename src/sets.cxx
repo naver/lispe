@@ -1485,7 +1485,7 @@ Element* Set::loop(LispE* lisp, int16_t label, List* code) {
     long sz = code->liste.size();
     for (const auto& a: dictionary) {
         element = a.second;
-        lisp->replacingvalue(element, label);
+        lisp->replacestackvalue(element, label);
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -2278,7 +2278,7 @@ void Avl::insertion(LispE* lisp, Avl** courant, Element* ajout, List* compare, s
     if (*courant==NULL)
         *courant= new Avl(ajout);
     else {
-        lisp->replacingvalue((*courant)->value, label);
+        lisp->replacestackvalue((*courant)->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             Avl* dernier=*courant;
@@ -2301,7 +2301,7 @@ Element* Avl::search(LispE* lisp, Element* element, List* compare, short label) 
     Avl* e = this;
     int16_t test;
     while (e != NULL) {
-        lisp->replacingvalue(e->value, label);
+        lisp->replacestackvalue(e->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             while (e != NULL) {
@@ -2324,7 +2324,7 @@ bool Avl::check(LispE* lisp, Element* element, List* compare, short label) {
     Avl* e = this;
     int16_t test;
     while (e != NULL) {
-        lisp->replacingvalue(e->value, label);
+        lisp->replacestackvalue(e->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             while (e != NULL) {
@@ -2349,7 +2349,7 @@ bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare, short 
     int16_t test;
     char origin = 0;
     while (e != NULL) {
-        lisp->replacingvalue(e->value, label);
+        lisp->replacestackvalue(e->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             Avl* clean = e;
@@ -2932,7 +2932,7 @@ Element* Heap::loop(LispE* lisp, int16_t label, List* code) {
     long sz = code->liste.size();
     Element* element = iter.next();
     while (element != NULL) {
-        lisp->replacingvalue(element, label);
+        lisp->replacestackvalue(element, label);
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {

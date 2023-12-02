@@ -1867,7 +1867,7 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
             e->release();
             nxt = current_list->next_iter_exchange(lisp, iter);
             while (nxt != emptyatom_) {
-                lisp->replacingvalue(nxt, label);
+                lisp->replacestackvalue(nxt, label);
                 e = op->eval_lambda_min(lisp);
                 if (e->type == l_return)
                     break;
@@ -2156,7 +2156,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                 e->release();
                 nxt = current_list->next_iter_exchange(lisp, iter);
                 while (nxt != emptyatom_) {
-                    lisp->replacingvalue(nxt, label);
+                    lisp->replacestackvalue(nxt, label);
                     e = op->eval_lambda_min(lisp);
                     if (e->type == l_return)
                         break;
@@ -2354,7 +2354,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                 e->release();
                 nxt = current_list->next_iter_exchange(lisp, iter);
                 while (nxt != emptyatom_) {
-                    lisp->replacingvalue(nxt, label);
+                    lisp->replacestackvalue(nxt, label);
                     e = op->eval_lambda_min(lisp);
                     if (e->type == l_return)
                         break;
@@ -2564,7 +2564,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 nxt = current_list->next_iter_exchange(lisp, iter);
                 
                 while (nxt != emptyatom_) {
-                    lisp->replacingvalue(nxt, label);
+                    lisp->replacestackvalue(nxt, label);
                     e = op->eval_lambda_min(lisp);
                     if (e->type == l_return)
                         break;
@@ -3213,13 +3213,13 @@ Element* List_lambda_eval::scan(LispE* lisp, Element* current_list, long sz) {
         res->append(e);
         
         for (long i = 1; i < sz; i++) {
-            lisp->replacingvalue(current_list->index(i), arg2);
+            lisp->replacestackvalue(current_list->index(i), arg2);
             e = eval_lambda_min(lisp);
             if (e->type == l_return)
                 break;
             e = e->copying(false);
             res->append(e);
-            lisp->replacingvalue(e, arg1);
+            lisp->replacestackvalue(e, arg1);
         }
         
         lisp->reset_in_stack(rarg2, arg2);
@@ -3468,13 +3468,13 @@ Element* List_lambda_eval::backscan(LispE* lisp, Element* current_list, long sz)
         res->append(e);
         
         for (long i = sz-1; i >= 0; i--) {
-            lisp->replacingvalue(current_list->index(i), arg2);
+            lisp->replacestackvalue(current_list->index(i), arg2);
             e = eval_lambda_min(lisp);
             if (e->type == l_return)
                 break;
             e = e->copying(false);
             res->append(e);
-            lisp->replacingvalue(e, arg1);
+            lisp->replacestackvalue(e, arg1);
         }
         
         lisp->reset_in_stack(rarg2, arg2);
@@ -3722,14 +3722,14 @@ Element* List_lambda_eval::reduce(LispE* lisp, Element* current_list, long sz) {
         
         element = eval_lambda_min(lisp);
         if (element->type != l_return) {
-            lisp->replacingvalue(element, arg1);
+            lisp->replacestackvalue(element, arg1);
             
             for (long i = 2; i < sz; i++) {
-                lisp->replacingvalue(current_list->index(i), arg2);
+                lisp->replacestackvalue(current_list->index(i), arg2);
                 element = eval_lambda_min(lisp);
                 if (element->type == l_return)
                     break;
-                lisp->replacingvalue(element, arg1);
+                lisp->replacestackvalue(element, arg1);
             }
         }
         element->increment();
@@ -3989,14 +3989,14 @@ Element* List_lambda_eval::backreduce(LispE* lisp, Element* current_list, long s
         
         element = eval_lambda_min(lisp);
         if (element->type != l_return) {
-            lisp->replacingvalue(element, arg1);
+            lisp->replacestackvalue(element, arg1);
             
             for (long i = 2; i < sz; i++) {
-                lisp->replacingvalue(current_list->index(i), arg2);
+                lisp->replacestackvalue(current_list->index(i), arg2);
                 element = eval_lambda_min(lisp);
                 if (element->type == l_return)
                     break;
-                lisp->replacingvalue(element, arg1);
+                lisp->replacestackvalue(element, arg1);
             }
         }
         
@@ -5222,7 +5222,7 @@ Element* List_zipwith_lambda_eval::eval(LispE* lisp) {
             
             for (j = 1; j < szl; j++) {
                 for (i = 0; i < lsz; i++)
-                    lisp->replacingvalue(item[i]->index(j), params[i]);
+                    lisp->replacestackvalue(item[i]->index(j), params[i]);
                 value = lambda_e->eval_lambda_min(lisp);
                 if (value->type == l_return)
                     break;
@@ -7310,7 +7310,7 @@ Element* List_mloop_eval::eval(LispE* lisp) {
                 ix = indexes->liste[var]->index(indexe);
                 e = values->liste[var]->value_on_index(lisp, ix);
                 label = liste[1]->index(var)->label();
-                lisp->replacingvalue(e, label);
+                lisp->replacestackvalue(e, label);
             }
             //We then execute our instructions
             e = null_;
@@ -7374,7 +7374,7 @@ Element* List_lloop_eval::eval(LispE* lisp) {
             for (var = 0; var < nbvars; var++) {
                 e = values->liste[var]->index(indexe);
                 label = liste[1]->index(var)->label();
-                lisp->replacingvalue(e, label);
+                lisp->replacestackvalue(e, label);
             }
             e = null_;
             //We then execute our instructions

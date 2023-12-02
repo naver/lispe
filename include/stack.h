@@ -236,7 +236,7 @@ public:
         return NULL;
     }
 
-    void replacingvalue(Element* e, int16_t label) {
+    void replace_stack_value(Element* e, int16_t label) {
         if (names.check(label)) {
             Element* v = variables.at(label);
             if (v == e)

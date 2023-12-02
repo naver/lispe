@@ -1644,7 +1644,7 @@ void List::sameSizeTerminalArguments(LispE* lisp, List* parameters) {
             data = liste[i+1]->eval(lisp);
             //if we are dealing with a new thread, variables will be stored onto
             //the stack of this new thread environment
-            lisp->replacingvalue(data, parameters->liste[i]->label());
+            lisp->replacestackvalue(data, parameters->liste[i]->label());
         }
     }
     catch (Error* err) {
@@ -1888,7 +1888,7 @@ void List::differentSizeTerminalArguments(LispE* lisp, List* parameters, long nb
             if (label == v_null || data == NULL)
                 throw new Error(L"Error: Wrong parameter description");
             
-            lisp->replacingvalue(data, label);
+            lisp->replacestackvalue(data, label);
         }
     }
     catch (Error* err) {

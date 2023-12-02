@@ -188,7 +188,7 @@ public:
                 getline(myfile, localvalue);
                 localvalue += "\n";
                 element = lisp->provideString(localvalue);
-                lisp->replacingvalue(element, label);
+                lisp->replacestackvalue(element, label);
                 _releasing(e);
                 //We then execute our instructions
                 for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {

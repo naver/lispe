@@ -25,7 +25,7 @@
 
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
     str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
-    str_format, str_padding, str_fill, str_getstruct,
+    str_format, str_padding, str_fill, str_getstruct, str_startwith,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
     str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
     str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter, str_indent
@@ -846,6 +846,21 @@ public:
         
         return result;
     }
+
+    Element* method_startwith(LispE* lisp) {
+        Element* vstr = lisp->get_variable(v_str);
+        Element* vfnd = lisp->get_variable(v_fnd);
+        
+        if (vstr->type == t_stringbyte) {
+            string str = vstr->toString(lisp);
+            string fnd = vfnd->toString(lisp);
+            return (fnd.size() <= str.size())?booleans_[(str.substr(0, fnd.size()) == fnd)]:null_;
+        }
+        
+        u_ustring str = vstr->asUString(lisp);
+        u_ustring fnd = vfnd->asUString(lisp);
+        return (fnd.size() <= str.size())?booleans_[(str.substr(0, fnd.size()) == fnd)]:null_;
+    }
     
     Element* method_split(LispE* lisp) {
         Element* vstr = lisp->get_variable(v_str);
@@ -1214,6 +1229,8 @@ public:
                 return getstruct(lisp);
             case str_split:
                 return method_split(lisp);
+            case str_startwith:
+                return method_startwith(lisp);
             case str_ord: {
                 u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 if (strvalue.size() == 0)
@@ -1538,7 +1555,8 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib vowelp (str)", new Stringmethod(lisp, str_is_vowel));
     lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
-    
+    lisp->extension("deflib startwith (str fnd)", new Stringmethod(lisp, str_startwith));
+
     lisp->extension("deflib indent (str lispmode)", new Stringmethod(lisp, str_indent));
 
     //Tokenization methods
