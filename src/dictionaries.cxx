@@ -682,7 +682,7 @@ Element* Dictionary::duplicate_constant(LispE* lisp) {
         Dictionary* d = lisp->provideDictionary();
         Element* e;
         for (const auto& a: dictionary) {
-            e = a.second->copying(false);
+            e = a.second->copying(true);
             d->dictionary[a.first] = e;
             e->increment();
         }
@@ -697,7 +697,7 @@ Element* Dictionary_i::duplicate_constant(LispE* lisp) {
         Dictionary_i* d = lisp->provideDictionary_i();
         Element* e;
         for (const auto& a: dictionary) {
-            e = a.second->copying(false);
+            e = a.second->copying(true);
             d->dictionary[a.first] = e;
             e->increment();
         }
@@ -711,7 +711,7 @@ Element* Dictionary_n::duplicate_constant(LispE* lisp) {
         Dictionary_n* d = lisp->provideDictionary_n();
         Element* e;
         for (const auto& a: dictionary) {
-            e = a.second->copying(false);
+            e = a.second->copying(true);
             d->dictionary[a.first] = e;
             e->increment();
         }

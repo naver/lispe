@@ -2750,7 +2750,7 @@ Element* List::duplicate_constant(LispE* lisp) {
         List* l;
         l = lisp->provideList();
         for (long i = 0; i < liste.size(); i++) {
-            l->append(liste[i]->copying(false));
+            l->append(liste[i]->copying(true));
         }
         return l;
     }

@@ -689,7 +689,7 @@ public:
         u_link* tail = NULL;
 
         for (; a != NULL; a = a->previous()) {
-            l->push_front(a->value->copying(false), a->isFinal());
+            l->push_front(a->value->copying(true), a->isFinal());
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
