@@ -1912,8 +1912,10 @@ Element* List::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            if (nxt == l->liste.size() - 1)
+            if (nxt == l->liste.size() - 1) {
                 e_upto = terminal_;
+                ty = l_terminal;
+            }
             else {
                 e_upto = l->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
@@ -1983,21 +1985,20 @@ Element* List::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            if (e_upto == terminal_)
-                upto = sz;
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto >= 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
             else {
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
-                else {
-                    if (upto < 0) {
-                        //We start from the end...
-                        upto = sz + upto;
-                    }
+                if (upto < 0) {
+                    //We start from the end...
+                    upto = sz + upto;
                 }
             }
+            break;
+        case l_terminal:
+            upto = sz;
             break;
         default:
             e->release();
@@ -2127,8 +2128,10 @@ Element* LList::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            if (nxt == l->liste.size() - 1)
+            if (nxt == l->liste.size() - 1) {
                 e_upto = terminal_;
+                ty = l_terminal;
+            }
             else {
                 e_upto = l->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
@@ -2199,21 +2202,20 @@ Element* LList::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            if (e_upto == terminal_)
-                upto = sz;
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto >= 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
             else {
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
-                else {
-                    if (upto < 0) {
-                        //We start from the end...
-                        upto = sz + upto;
-                    }
+                if (upto < 0) {
+                    //We start from the end...
+                    upto = sz + upto;
                 }
             }
+            break;
+        case l_terminal:
+            upto = sz;
             break;
         default:
             e->release();
@@ -2364,8 +2366,10 @@ Element* List::replace_in(LispE* lisp, List* l) {
         e_upto = l->liste[nxt];
         switch (e_upto->label()) {
             case l_minus:
-                if (nxt == l->liste.size() - 1)
+                if (nxt == l->liste.size() - 1) {
                     e_upto = terminal_;
+                    ty = l_terminal;
+                }
                 else {
                     e_upto = l->liste[nxt+1]->eval(lisp);
                     ty = e_upto->type;
@@ -2442,21 +2446,20 @@ Element* List::replace_in(LispE* lisp, List* l) {
             case t_short:
             case t_integer:
             case t_number:
-                if (e_upto == terminal_)
-                    upto = size();
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
                 else {
-                    upto = e_upto->asInteger();
-                    if (firstisString != -1 && upto >= 0) {
-                        //in this case upto is a number of characters, not a position
-                        upto += from + firstisString;
-                    }
-                    else {
-                        if (upto < 0) {
-                            //We start from the end...
-                            upto = size() + upto;
-                        }
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = size() + upto;
                     }
                 }
+                break;
+            case l_terminal:
+                upto = size();
                 break;
             default:
                 e->release();
@@ -2610,8 +2613,10 @@ Element* LList::replace_in(LispE* lisp, List* l) {
         e_upto = l->liste[nxt];
         switch (e_upto->label()) {
             case l_minus:
-                if (nxt == l->liste.size() - 1)
+                if (nxt == l->liste.size() - 1) {
                     e_upto = terminal_;
+                    ty = l_terminal;
+                }
                 else {
                     e_upto = l->liste[nxt+1]->eval(lisp);
                     ty = e_upto->type;
@@ -2688,21 +2693,20 @@ Element* LList::replace_in(LispE* lisp, List* l) {
             case t_short:
             case t_integer:
             case t_number:
-                if (e_upto == terminal_)
-                    upto = sz;
+                upto = e_upto->asInteger();
+                if (firstisString != -1 && upto >= 0) {
+                    //in this case upto is a number of characters, not a position
+                    upto += from + firstisString;
+                }
                 else {
-                    upto = e_upto->asInteger();
-                    if (firstisString != -1 && upto >= 0) {
-                        //in this case upto is a number of characters, not a position
-                        upto += from + firstisString;
-                    }
-                    else {
-                        if (upto < 0) {
-                            //We start from the end...
-                            upto = sz + upto;
-                        }
+                    if (upto < 0) {
+                        //We start from the end...
+                        upto = sz + upto;
                     }
                 }
+                break;
+            case l_terminal:
+                upto = sz;
                 break;
             default:
                 e->release();
@@ -4972,8 +4976,10 @@ Element* Strings::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            if (nxt == l->liste.size() - 1)
+            if (nxt == l->liste.size() - 1) {
                 e_upto = terminal_;
+                ty = l_terminal;
+            }
             else {
                 e_upto = l->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
@@ -5043,21 +5049,20 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            if (e_upto == terminal_)
-                upto = sz;
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto >= 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
             else {
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
-                else {
-                    if (upto < 0) {
-                        //We start from the end...
-                        upto = sz + upto;
-                    }
+                if (upto < 0) {
+                    //We start from the end...
+                    upto = sz + upto;
                 }
             }
+            break;
+        case l_terminal:
+            upto = sz;
             break;
         default:
             e->release();
@@ -5190,8 +5195,10 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            if (nxt == l->liste.size() - 1)
+            if (nxt == l->liste.size() - 1) {
                 e_upto = terminal_;
+                ty = l_terminal;
+            }
             else {
                 e_upto = l->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
@@ -5261,21 +5268,20 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            if (e_upto == terminal_)
-                upto = size();
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto >= 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
             else {
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
-                else {
-                    if (upto < 0) {
-                        //We start from the end...
-                        upto = size() + upto;
-                    }
+                if (upto < 0) {
+                    //We start from the end...
+                    upto = size() + upto;
                 }
             }
+            break;
+        case l_terminal:
+            upto = size();
             break;
         default:
             e->release();
@@ -5967,8 +5973,10 @@ Element* Stringbytes::extraction(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            if (nxt == l->liste.size() - 1)
+            if (nxt == l->liste.size() - 1) {
                 e_upto = terminal_;
+                ty = l_terminal;
+            }
             else {
                 e_upto = l->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
@@ -6038,21 +6046,20 @@ Element* Stringbytes::extraction(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            if (e_upto == terminal_)
-                upto = sz;
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto >= 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
             else {
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
-                else {
-                    if (upto < 0) {
-                        //We start from the end...
-                        upto = sz + upto;
-                    }
+                if (upto < 0) {
+                    //We start from the end...
+                    upto = sz + upto;
                 }
             }
+            break;
+        case l_terminal:
+            upto = sz;
             break;
         default:
             e->release();
@@ -6185,8 +6192,10 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
     Element* e_upto = l->liste[nxt];
     switch (e_upto->label()) {
         case l_minus:
-            if (nxt == l->liste.size() - 1)
+            if (nxt == l->liste.size() - 1) {
                 e_upto = terminal_;
+                ty = l_terminal;
+            }
             else {
                 e_upto = l->liste[nxt+1]->eval(lisp);
                 ty = e_upto->type;
@@ -6256,21 +6265,20 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
         case t_short:
         case t_integer:
         case t_number:
-            if (e_upto == terminal_)
-                upto = size();
+            upto = e_upto->asInteger();
+            if (firstisString != -1 && upto >= 0) {
+                //in this case upto is a number of characters, not a position
+                upto += from + firstisString;
+            }
             else {
-                upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
-                    //in this case upto is a number of characters, not a position
-                    upto += from + firstisString;
-                }
-                else {
-                    if (upto < 0) {
-                        //We start from the end...
-                        upto = size() + upto;
-                    }
+                if (upto < 0) {
+                    //We start from the end...
+                    upto = size() + upto;
                 }
             }
+            break;
+        case l_terminal:
+            upto = size();
             break;
         default:
             e->release();
