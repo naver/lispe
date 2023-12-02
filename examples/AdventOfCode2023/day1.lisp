@@ -22,12 +22,6 @@ zoneight234
 
 (setq nombres  (strings "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"))
 
-(defmacro startwith (s i w)
-   (if (>= (- (size s) i) (size w))
-      (= (@@ s i (+ i (size w))) w)
-      false
-   )
-)
 
 (defun remplace(line)
    (setq v (strings))
@@ -35,7 +29,7 @@ zoneight234
       (if (digitp (@ i 1))
          (push v (@ i 1))
          (loop u (enum nombres)
-            (check (startwith line (@ i 0)  (@ u 1))
+            (check (startwith (@@ line (@ i 0) -) (@ u 1))
                (push v (+ 1 (@ u 0)))
                (break)
             )
@@ -46,6 +40,7 @@ zoneight234
 )
 
 (+ (maplist 'remplace données))
+
 
 
 
