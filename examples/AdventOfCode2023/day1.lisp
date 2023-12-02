@@ -31,8 +31,8 @@ zoneight234
 
 (defun remplace(line)
    (setq v (strings))
-   (loop i (enum (split line ""))
-      (if (digitp (@ line (@ i 0)))
+   (loop i (enum line)
+      (if (digitp (@ i 1))
          (push v (@ i 1))
          (loop u (enum nombres)
             (check (startwith line (@ i 0)  (@ u 1))
@@ -46,6 +46,8 @@ zoneight234
 )
 
 (+ (maplist 'remplace données))
+
+
 
 
 

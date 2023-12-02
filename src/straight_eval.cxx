@@ -7111,7 +7111,13 @@ Element* List_shorts_eval::eval(LispE* lisp) {
 }
 
 Element* List_enumerate_eval::eval(LispE* lisp) {
-    return new Enumlist(liste[1]->eval(lisp), null_);
+    Element* e = liste[1]->eval(lisp);
+    Element* lstr = e->to_strings(lisp);
+    if (lstr != e) {
+        e->release();
+        e = lstr;
+    }
+    return new Enumlist(e, null_);
 }
 
 Element* List_irange_eval::eval(LispE* lisp) {

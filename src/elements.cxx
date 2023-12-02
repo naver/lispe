@@ -156,6 +156,32 @@ Element* Stringbyte::duplicate_constant(LispE* lisp) {
 }
 
 //------------------------------------------------------------------------------------------
+Element* String::to_strings(LispE* lisp) {
+    Strings* result = lisp->provideStrings();
+    u_ustring localvalue;
+    long sz = content.size();
+    long pos = 0;
+    //we split the string into an array of characters
+    while (pos < sz) {
+        lisp->handlingutf8->getchar(content, localvalue, pos);
+        result->liste.push_back(localvalue);
+    }
+    return result;
+}
+
+Element* Stringbyte::to_strings(LispE* lisp) {
+    Stringbytes* result = new Stringbytes();
+    string localvalue;
+    long sz = content.size();
+    long pos = 0;
+    //we split the string into an array of characters
+    while (pos < sz) {
+        lisp->handlingutf8->getchar(content, localvalue, pos);
+        result->liste.push_back(localvalue);
+    }
+    return result;
+}
+//------------------------------------------------------------------------------------------
 
 Element* Float::copyatom(LispE* lisp, uint16_t s) {
     return (status < s)?this:lisp->provideFloat(content);
@@ -473,9 +499,6 @@ void Infiniterangeinteger::decrementstatus(uint16_t nb) {
     }
 }
 
-Element* Stringpool::index(long i) {
-    return lisp->provideString(content[i]);
-}
 
 void Stringpool::decrement() {
     status -= not_protected();
