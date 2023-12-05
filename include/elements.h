@@ -2527,11 +2527,6 @@ public:
 
     Element* duplicate_constant(LispE* lisp);
 
-    Element* replace(LispE* lisp, Element* i, Element* e) {
-        content = e->asUString(lisp);
-        return this;
-    }
-
     Element* asList(LispE* lisp, List* l);
     
     void setvalue(u_ustring& v) {
@@ -2791,11 +2786,6 @@ public:
     }
     
     Element* duplicate_constant(LispE* lisp);
-
-    Element* replace(LispE* lisp, Element* i, Element* e) {
-        content = e->toString(lisp);
-        return this;
-    }
 
     Element* charge(LispE* lisp, string chemin);
     

@@ -2314,13 +2314,16 @@ Element* String::replace(LispE* lisp, long i, Element* e) {
             throw new Error("Error: index out of bounds");
     }
     
-    if (i >= content.size())
-        throw new Error("Error: index out of bounds");
-    
-    u_ustring c = content.substr(0, i);
-    c += e->asUString(lisp);
-    c += content.substr(i+1, content.size());
-    return lisp->provideString(c);
+    if (i >= content.size()) {
+        content += e->asUString(lisp);
+    }
+    else {
+        u_ustring c = content.substr(0, i);
+        c += e->asUString(lisp);
+        c += content.substr(i+1, content.size());
+        content = c;
+    }
+    return this;
 }
 
 Element* Stringbyte::replace(LispE* lisp, long i, Element* e) {
@@ -2329,14 +2332,17 @@ Element* Stringbyte::replace(LispE* lisp, long i, Element* e) {
         if (i < 0)
             throw new Error("Error: index out of bounds");
     }
-    
-    if (i >= content.size())
-        throw new Error("Error: index out of bounds");
-    
-    string c = content.substr(0, i);
-    c += e->toString(lisp);
-    c += content.substr(i+1, content.size());
-    return new Stringbyte(c);
+
+    if (i >= content.size()) {
+        content += e->toString(lisp);
+    }
+    else {
+        string c = content.substr(0, i);
+        c += e->toString(lisp);
+        c += content.substr(i+1, content.size());
+        content = c;
+    }
+    return this;
 }
 
 //------------------------------------------------------------------------------------------
