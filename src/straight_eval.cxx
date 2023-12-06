@@ -5623,7 +5623,6 @@ Element* List_sort_eval::eval(LispE* lisp) {
     Element* comparator = liste[1]->eval(lisp);
     Element* container = null_;
 
-
     comparator = eval_body_as_argument_min(lisp, comparator, P_THREE);
 
     try {
@@ -5640,105 +5639,100 @@ Element* List_sort_eval::eval(LispE* lisp) {
     }
 
     
+    List* complist;
     switch (container->type) {
         case t_floats: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
             try {
-                ((Floats*)container)->sorting(lisp, &complist);
-                comparator->decrement();
+                complist = (List*)comparator;
+                complist->append(null_);
+                complist->append(null_);
+                ((Floats*)container)->sorting(lisp, complist);
+                complist->release();
                 lisp->resetStack();
                 return container;
             }
             catch (Error* err) {
-                comparator->decrement();
+                complist->release();
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_numbers: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
             try {
-                ((Numbers*)container)->sorting(lisp, &complist);
-                comparator->decrement();
+                complist = (List*)comparator;
+                complist->append(null_);
+                complist->append(null_);
+                ((Numbers*)container)->sorting(lisp, complist);
+                complist->release();
                 lisp->resetStack();
                 return container;
             }
             catch (Error* err) {
-                comparator->decrement();
+                complist->release();
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_shorts: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
             try {
-                ((Shorts*)container)->sorting(lisp, &complist);
-                comparator->decrement();
+                complist = (List*)comparator;
+                complist->append(null_);
+                complist->append(null_);
+                ((Shorts*)container)->sorting(lisp, complist);
+                complist->release();
                 lisp->resetStack();
                 return container;
             }
             catch (Error* err) {
-                comparator->decrement();
+                complist->release();
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_integers: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
             try {
-                ((Integers*)container)->sorting(lisp, &complist);
-                comparator->decrement();
+                complist = (List*)comparator;
+                complist->append(null_);
+                complist->append(null_);
+                ((Integers*)container)->sorting(lisp, complist);
+                complist->release();
                 lisp->resetStack();
                 return container;
             }
             catch (Error* err) {
-                comparator->decrement();
+                complist->release();
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_strings: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
             try {
-                ((Strings*)container)->sorting(lisp, &complist);
-                comparator->decrement();
+                complist = (List*)comparator;
+                complist->append(null_);
+                complist->append(null_);
+                ((Strings*)container)->sorting(lisp, complist);
+                complist->release();
                 lisp->resetStack();
                 return container;
             }
             catch (Error* err) {
-                comparator->decrement();
+                complist->release();
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }
         }
         case t_stringbytes: {
-            List complist;
-            complist.append(comparator);
-            complist.append(null_);
-            complist.append(null_);
             try {
-                ((Stringbytes*)container)->sorting(lisp, &complist);
-                comparator->decrement();
+                complist = (List*)comparator;
+                complist->append(null_);
+                complist->append(null_);
+                ((Stringbytes*)container)->sorting(lisp, complist);
+                complist->release();
                 lisp->resetStack();
                 return container;
             }
             catch (Error* err) {
-                comparator->decrement();
+                complist->release();
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }
@@ -5752,7 +5746,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
                 return container;
             }
             
-            List* complist = lisp->provideCall(comparator, 2);
+            complist = lisp->provideCall(comparator, 2);
 
             complist->in_quote(1, l->index(0));
             complist->in_quote(2, l->index(0));
@@ -5787,7 +5781,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
                 return container;
             }
             
-            List* complist = lisp->provideCall(comparator, 2);
+            complist = lisp->provideCall(comparator, 2);
 
             complist->in_quote(1, l->index(0));
             complist->in_quote(2, l->index(0));

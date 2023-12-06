@@ -2316,6 +2316,34 @@ bool List::eval_Boolean(LispE* lisp, int16_t instruction) {
     return (this->*lisp->delegation->evals[instruction])(lisp)->Boolean();
 }
 
+bool List_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
+    Element* e = eval(lisp);
+    bool b = e->Boolean();
+    e->release();
+    return b;
+}
+
+bool List_function_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
+    Element* e = eval(lisp);
+    bool b = e->Boolean();
+    e->release();
+    return b;
+}
+
+bool List_pattern_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
+    Element* e = eval(lisp);
+    bool b = e->Boolean();
+    e->release();
+    return b;
+}
+
+bool List_library_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
+    Element* e = eval(lisp);
+    bool b = e->Boolean();
+    e->release();
+    return b;
+}
+
 Element* List::evall_void(LispE* lisp) {
     return null_;
 }

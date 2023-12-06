@@ -1450,7 +1450,7 @@ public:
     Element* evall_nconc(LispE* lisp);
 #endif
     
-    bool eval_Boolean(LispE* lisp, int16_t instruction);
+    virtual bool eval_Boolean(LispE* lisp, int16_t instruction);
     
     inline Element* evalt_function(LispE* lisp) {
         //In this case, it must be a function call (t_function)
@@ -1862,6 +1862,7 @@ public:
     List_eval(LispE* lisp, Element* a);
     
     Element* eval(LispE* lisp);
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
 };
 
 class List_at_eval : public Listincode {
@@ -4399,6 +4400,7 @@ public:
     List_function_eval(LispE* lisp, Listincode* l, List* b);
     List_function_eval(LispE* lisp, List* b, long nbarguments);
     
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
     Element* eval(LispE* lisp);
     
     bool is_straight_eval() {
@@ -4429,6 +4431,7 @@ public:
         function_label = body->liste[1]->label();
     }
     
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
     Element* eval(LispE* lisp);
     
     bool is_straight_eval() {
@@ -4470,6 +4473,7 @@ public:
         same = (defaultarguments == parameters->size());
     }
     
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
     Element* eval(LispE* lisp);
     
     bool is_straight_eval() {
