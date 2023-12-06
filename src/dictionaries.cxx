@@ -482,8 +482,20 @@ Element* Dictionary::loop(LispE* lisp, int16_t label, List* code) {
         _keys->liste.push_back(a.first);
     try {
         for (long i = 0; i < _keys->size(); i++) {
-            _releasing(e);
-            element->content = _keys->liste[i];
+            e->release();
+            e = lisp->get_variable(label);
+            if (e != element) {
+                if (e->type != t_string) {
+                    e = lisp->provideString(_keys->liste[i]);
+                    lisp->recording(e, label);
+                }
+                else
+                    ((String*)e)->content = _keys->liste[i];
+                element = (String*)e;
+            }
+            else
+                element->content = _keys->liste[i];
+            e = null_;
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();
@@ -816,8 +828,20 @@ Element* Dictionary_i::loop(LispE* lisp, int16_t label, List* code) {
         _keys->liste.push_back(a.first);
     try {
         for (long a_key = 0; a_key < _keys->liste.size(); a_key++) {
-            _releasing(e);
-            element->content = _keys->liste[a_key];
+            e->release();
+            e = lisp->get_variable(label);
+            if (e != element) {
+                if (e->type != t_integer) {
+                    e = lisp->provideInteger(_keys->liste[a_key]);
+                    lisp->recording(e, label);
+                }
+                else
+                    ((Integer*)e)->content = _keys->liste[a_key];
+                element = (Integer*)e;
+            }
+            else
+                element->content = _keys->liste[a_key];
+            e = null_;
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();
@@ -1087,8 +1111,20 @@ Element* Dictionary_n::loop(LispE* lisp, int16_t label, List* code) {
         _keys->liste.push_back(a.first);
     try {
         for (long a_key = 0; a_key < _keys->liste.size(); a_key++) {
-            _releasing(e);
-            element->content = _keys->liste[a_key];
+            e->release();
+            e = lisp->get_variable(label);
+            if (e != element) {
+                if (e->type != t_number) {
+                    e = lisp->provideNumber(_keys->liste[a_key]);
+                    lisp->recording(e, label);
+                }
+                else
+                    ((Number*)e)->content = _keys->liste[a_key];
+                element = (Number*)e;
+            }
+            else
+                element->content = _keys->liste[a_key];
+            e = null_;
             //We then execute our instructions
             for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
                 e->release();

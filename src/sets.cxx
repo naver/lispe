@@ -329,8 +329,19 @@ Element* Set_s::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (auto & a: ensemble) {
-        element->content = a;
-        _releasing(e);
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_string) {
+                e = lisp->provideString();
+                lisp->recording(e, label);
+            }
+            ((String*)e)->content = a;
+            element = (String*)e;
+        }
+        else
+            element->content = a;
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -890,8 +901,20 @@ Element* Set_i::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (auto & a: ensemble) {
-        element->content = a;
-        _releasing(e);
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_integer) {
+                e = lisp->provideInteger(a);
+                lisp->recording(e, label);
+            }
+            else
+                ((Integer*)e)->content = a;
+            element = (Integer*)e;
+        }
+        else
+            element->content = a;
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -1125,8 +1148,20 @@ Element* Set_n::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (auto & a: ensemble) {
-        _releasing(e);
-        element->content = a;
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_number) {
+                e = lisp->provideNumber(a);
+                lisp->recording(e, label);
+            }
+            else
+                ((Number*)e)->content = a;
+            element = (Number*)e;
+        }
+        else
+            element->content = a;
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();

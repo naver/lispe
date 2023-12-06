@@ -3191,8 +3191,20 @@ Element* Numbers::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        _releasing(e);
-        element->content = liste[i];
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_number) {
+                e = lisp->provideNumber(liste[i]);
+                lisp->recording(e, label);
+            }
+            else
+                ((Number*)e)->content = liste[i];
+            element = (Number*)e;
+        }
+        else
+            element->content = liste[i];
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -3839,8 +3851,20 @@ Element* Integers::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        _releasing(e);
-        element->content = liste[i];
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_integer) {
+                e = lisp->provideInteger(liste[i]);
+                lisp->recording(e, label);
+            }
+            else
+                ((Integer*)e)->content = liste[i];
+            element = (Integer*)e;
+        }
+        else
+            element->content = liste[i];
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -4499,8 +4523,20 @@ Element* Strings::loop(LispE* lisp, int16_t label, List* code) {
     
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        _releasing(e);
-        element->content = liste[i];
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_string) {
+                e = lisp->provideString(liste[i]);
+                lisp->recording(e, label);
+            }
+            else
+                ((String*)e)->content = liste[i];
+            element = (String*)e;
+        }
+        else
+            element->content = liste[i];
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -5494,8 +5530,20 @@ Element* Stringbytes::loop(LispE* lisp, int16_t label, List* code) {
     
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        _releasing(e);
-        element->content = liste[i];
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_stringbyte) {
+                e = new Stringbyte(liste[i]);
+                lisp->recording(e, label);
+            }
+            else
+                ((Stringbyte*)e)->content = liste[i];
+            element = (Stringbyte*)e;
+        }
+        else
+            element->content = liste[i];
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -6635,8 +6683,20 @@ Element* Shorts::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        _releasing(e);
-        element->content = liste[i];
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_short) {
+                e = new Short(liste[i]);
+                lisp->recording(e, label);
+            }
+            else
+                ((Short*)e)->content = liste[i];
+            element = (Short*)e;
+        }
+        else
+            element->content = liste[i];
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -7303,8 +7363,20 @@ Element* Floats::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        _releasing(e);
-        element->content = liste[i];
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_float) {
+                e = lisp->provideFloat(liste[i]);
+                lisp->recording(e, label);
+            }
+            else
+                ((Float*)e)->content = liste[i];
+            element = (Float*)e;
+        }
+        else
+            element->content = liste[i];
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();

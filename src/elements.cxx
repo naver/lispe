@@ -1211,8 +1211,20 @@ Element* String::loop(LispE* lisp, int16_t label, List* code) {
     long szc = content.size();
     while (i < szc) {
         lisp->handlingutf8->getchar(content, localvalue, i);
-        _releasing(e);
-        element->content = localvalue;
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_string) {
+                e = lisp->provideString(localvalue);
+                lisp->recording(e, label);
+            }
+            else
+                ((String*)e)->content = localvalue;
+            element = (String*)e;
+        }
+        else
+            element->content = localvalue;
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -1240,8 +1252,20 @@ Element* Stringbyte::loop(LispE* lisp, int16_t label, List* code) {
     long szc = content.size();
     while (i < szc) {
         lisp->handlingutf8->getchar(content, localvalue, i);
-        _releasing(e);
-        element->content = localvalue;
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_stringbyte) {
+                e = new Stringbyte(localvalue);
+                lisp->recording(e, label);
+            }
+            else
+                ((Stringbyte*)e)->content = localvalue;
+            element = (Stringbyte*)e;
+        }
+        else
+            element->content = localvalue;
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
             e->release();
@@ -1346,8 +1370,20 @@ Element* Infiniterangenumber::loop(LispE* lisp, int16_t label, List* code) {
     }
     
     while (!lisp->hasStopped() && compare(check, value)) {
-        _releasing(e);
-        element->content = value;
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_number) {
+                e = lisp->provideNumber(value);
+                lisp->recording(e, label);
+            }
+            else
+                ((Number*)e)->content = value;
+            element = (Number*)e;
+        }
+        else
+            element->content = value;
+        e = null_;
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
             e->release();
@@ -1382,9 +1418,20 @@ Element* Infiniterangeinteger::loop(LispE* lisp, int16_t label, List* code) {
     lisp->recording(element, label);
 
     while (!lisp->hasStopped() && compare(check, value)) {
-        _releasing(e);
-        //We then execute our instructions
-        element->content = value;
+        e->release();
+        e = lisp->get_variable(label);
+        if (e != element) {
+            if (e->type != t_integer) {
+                e = lisp->provideInteger(value);
+                lisp->recording(e, label);
+            }
+            else
+                ((Integer*)e)->content = value;
+            element = (Integer*)e;
+        }
+        else
+            element->content = value;
+        e = null_;
         for (i_loop = 3; i_loop < sz  && e->type != l_return; i_loop++) {
             e->release();
             e = code->liste[i_loop]->eval(lisp);
