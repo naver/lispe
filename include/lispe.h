@@ -968,7 +968,7 @@ public:
             if (label == l_key || label == l_keyn) {
                 if (*dico == NULL) {
                     *dico = new Dictionary_as_list;
-                    garbaging(*dico);
+                    storeforgarbage(*dico);
                     if (label == l_key)
                         (*dico)->type = t_dictionary;
                     else
@@ -1247,7 +1247,7 @@ public:
 
     // In this way, we keep elements that we want to destroy at the end of execution.
     //such as for example, the objects corresponding to the compilation of a code
-    inline void garbaging(Element* e) {
+    inline void storeforgarbage(Element* e) {
         //This status is used to avoid the destruction of the objects out of the garbage .
         e->status = s_constant;
         garbages.push_back(e);

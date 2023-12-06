@@ -2449,6 +2449,11 @@ Element* List_execute::eval(LispE* lisp) {
 //--------------------------------------------------------------------------------
 
 Element* List::evall_break(LispE* lisp) {
+    int idx = infoIdx();
+    if (idx) {
+        lisp->checkState((Listincode*)this);
+        lisp->resetStack();
+    }
     return break_;
 }
 
@@ -2857,7 +2862,7 @@ Element* List::evall_data(LispE* lisp) {
     //if the function was created on the fly, we need to store its contents
     //in the garbage
     if (!is_protected()) {
-        lisp->garbaging(this);
+        lisp->storeforgarbage(this);
         garbaging_values(lisp);
     }
 
@@ -2947,7 +2952,7 @@ Element* List::evall_defpat(LispE* lisp) {
     //if the function was created on the fly, we need to store its contents
     //in the garbage
     if (!is_protected()) {
-        lisp->garbaging(this);
+        lisp->storeforgarbage(this);
         garbaging_values(lisp);
     }
 
@@ -2979,7 +2984,7 @@ Element* List::evall_defun(LispE* lisp) {
     //if the function was created on the fly, we need to store its contents
     //in the garbage
     if (!is_protected()) {
-        lisp->garbaging(this);
+        lisp->storeforgarbage(this);
         garbaging_values(lisp);
     }
 
@@ -3111,7 +3116,7 @@ Element* Listincode::eval_infix(LispE* lisp) {
     Listincode* inter;
     Element* op;
 
-    lisp->garbaging(operations);
+    lisp->storeforgarbage(operations);
     
     long iop = 4;
     long ival = 1;
@@ -3147,7 +3152,7 @@ Element* Listincode::eval_infix(LispE* lisp) {
             
             if (comp) {
                 inter = new Listincode(idxinfo);
-                lisp->garbaging(inter);
+                lisp->storeforgarbage(inter);
                 inter->append(op);
                 inter->append(root);
                 root = inter;
@@ -3158,7 +3163,7 @@ Element* Listincode::eval_infix(LispE* lisp) {
                 //We create one level down.
                 //We feed this new List with the last element of the current list
                 inter = new Listincode(idxinfo);
-                lisp->garbaging(inter);
+                lisp->storeforgarbage(inter);
                 inter->append(op);
                 Element* last = operations->liste.back();
                 inter->append(last);
@@ -3274,7 +3279,7 @@ Element* List::evall_set_const(LispE* lisp) {
     lisp->delegation->const_values[label] = true;
     lisp->storing_global(element, label);
     if (element->status != s_constant)
-        lisp->garbaging(element);
+        lisp->storeforgarbage(element);
     return True_;
 }
 
@@ -3652,26 +3657,26 @@ Element* Listincode::eval_call_function(LispE* lisp) {
     switch(label) {
         case l_defpat:
             liste[0] = new List_pattern_eval(this, (List*)body);
-            lisp->garbaging(liste[0]);
+            lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_defun:
             liste[0] = new List_function_eval(lisp, this, (List*)body);
-            lisp->garbaging(liste[0]);
+            lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_deflib:
             liste[0] = new List_library_eval(this, (List*)body);
-            lisp->garbaging(liste[0]);
+            lisp->storeforgarbage(liste[0]);
             return liste[0]->eval(lisp);
         case l_dethread:
             return eval_thread(lisp, (List*)body);
         case l_lambda:
             liste[0] = new Atomefonction(body, t_lambda);
-            lisp->garbaging(liste[0]);
+            lisp->storeforgarbage(liste[0]);
             return eval_lambda(lisp, (List*)body);
         default:
             body = lisp->getDataStructure(label);
             liste[0] = new Atomefonction(body, t_data);
-            lisp->garbaging(liste[0]);
+            lisp->storeforgarbage(liste[0]);
             return eval_data(lisp, body);
     }
 }

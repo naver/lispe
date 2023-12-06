@@ -5819,7 +5819,10 @@ Element* List_let_eval::eval(LispE* lisp) {
 }
 #else
 Element* List_setq_eval::eval(LispE* lisp) {
-    lisp->storing_variable(liste[2]->eval(lisp), liste[1]->label());
+    Element* element = liste[2]->eval(lisp);
+    lisp->checkState(this);
+    lisp->storing_variable(element, liste[1]->label());
+    lisp->resetStack();
     return True_;
 }
 
@@ -5829,24 +5832,30 @@ Element* List_set_const_eval::eval(LispE* lisp) {
     int16_t label = liste[1]->label();
     Element* element = liste[2]->eval(lisp);
     lisp->delegation->const_values[label] = true;
+    lisp->checkState(this);
     lisp->storing_global(element, label);
+    lisp->resetStack();
     if (element->status != s_constant)
-        lisp->garbaging(element);
+        lisp->storeforgarbage(element);
     return True_;
 }
 
 Element* List_setg_eval::eval(LispE* lisp) {
     int16_t label = liste[1]->label();
     Element* element = liste[2]->eval(lisp);
+    lisp->checkState(this);
     if (!lisp->delegation->replaceFunction(element, label, lisp->current_space))
         lisp->storing_global(element, label);
+    lisp->resetStack();
     return True_;
 }
 
 Element* List_seth_eval::eval(LispE* lisp) {
     if (lisp->check_thread_stack) {
         Element* element = liste[2]->eval(lisp);
+        lisp->checkState(this);
         lisp->delegation->thread_stack.storing_variable(element->duplicate_constant(lisp), liste[1]->label());
+        lisp->resetStack();
         return True_;
     }
     throw new Error("Error: this instruction can only be used in a 'threadspace' block");
@@ -8527,5 +8536,47 @@ Element* List_plusmultiply::eval(LispE* lisp) {
     m2->release();
     shape1->release();
     shape2->release();
+    return res;
+}
+
+Element* List_if_eval::eval(LispE* lisp) {
+    Element* res;
+    try {
+        lisp->checkState(this);
+        res = evall_if(lisp);
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
+    lisp->resetStack();
+    return res;
+}
+
+Element* List_ife_eval::eval(LispE* lisp) {
+    Element* res;
+    try {
+        lisp->checkState(this);
+        res = evall_ife(lisp);
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
+    lisp->resetStack();
+    return res;
+}
+
+Element* List_unique_eval::eval(LispE* lisp) {
+    Element* res;
+    try {
+        lisp->checkState(this);
+        res = evall_unique(lisp);
+    }
+    catch(Error* err) {
+        lisp->resetStack();
+        throw err;
+    }
+    lisp->resetStack();
     return res;
 }

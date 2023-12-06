@@ -248,7 +248,7 @@ public:
             if (action->isLambda()) {
                 if (action->type != t_call_lambda) {
                     action = new List_lambda_eval((Listincode*)action);
-                    lisp->garbaging(action);
+                    lisp->storeforgarbage(action);
                 }
                 if (((List_lambda_eval*)action)->parameters->size() != 1) {
                     wstring err = L"Error: Wrong number of arguments for: '";
@@ -258,7 +258,7 @@ public:
                 }
 
                 List_call_lambda* a = new List_call_lambda();
-                lisp->garbaging(a);
+                lisp->storeforgarbage(a);
                 a->append(action);
                 a->append(var);
                 action = a;
@@ -269,7 +269,7 @@ public:
                 long i;
                 if (action->index(0)->isOperator()) {
                     List* a = create_instruction_class(lisp, action->index(0)->label());
-                    lisp->garbaging(a);
+                    lisp->storeforgarbage(a);
                     a->append(action->index(0));
                     a->append(var);
                     for (i = 1; i < sz; i++)
@@ -284,7 +284,7 @@ public:
                         a->append(action->index(i));
                     a->append(var);
                     action = a;
-                    lisp->garbaging(action);
+                    lisp->storeforgarbage(action);
                     return this;
                 }
             }
@@ -298,21 +298,21 @@ public:
                 switch (body->index(0)->label()) {
                     case l_deflib: {
                         List* a = new List_library_eval((List*)body, 1);
-                        lisp->garbaging(a);
+                        lisp->storeforgarbage(a);
                         a->append(var);
                         action = a;
                         return this;
                     }
                     case l_defun: {
                         List* a = new List_function_eval(lisp, (List*)body, 1);
-                        lisp->garbaging(a);
+                        lisp->storeforgarbage(a);
                         a->append(var);
                         action = a;
                         return this;
                     }
                     case l_defpat: {
                         List* a = new List_pattern_eval((List*)body);
-                        lisp->garbaging(a);
+                        lisp->storeforgarbage(a);
                         a->append(var);
                         action = a;
                         return this;
@@ -334,7 +334,7 @@ public:
         else
             action = a;
         
-        lisp->garbaging(action);
+        lisp->storeforgarbage(action);
         return this;
     }
 
@@ -382,7 +382,7 @@ public:
             if (condition->isLambda()) {
                 if (condition->type != t_call_lambda) {
                     condition = new List_lambda_eval((Listincode*)condition);
-                    lisp->garbaging(condition);
+                    lisp->storeforgarbage(condition);
                 }
                 if (((List_lambda_eval*)condition)->parameters->size() != 1) {
                     wstring err = L"Error: Wrong number of arguments for: '";
@@ -392,7 +392,7 @@ public:
                 }
                 
                 List_call_lambda* a = new List_call_lambda();
-                lisp->garbaging(a);
+                lisp->storeforgarbage(a);
                 a->append(condition);
                 a->append(var);
                 c = a;
@@ -409,7 +409,7 @@ public:
                             a->append(condition->index(i));
                         
                         c = a;
-                        lisp->garbaging(c);
+                        lisp->storeforgarbage(c);
                     }
                     else {
                         if (lisp->isComparator(condition->index(sz - 1))) {
@@ -419,7 +419,7 @@ public:
                                 a->append(condition->index(i));
                             a->append(var);
                             c = a;
-                            lisp->garbaging(c);
+                            lisp->storeforgarbage(c);
                         }
                         else
                             throw new Error("Error: missing operator");
@@ -437,7 +437,7 @@ public:
             }
             else
                 c = a;
-            lisp->garbaging(c);
+            lisp->storeforgarbage(c);
         }
         
         
@@ -594,7 +594,7 @@ public:
         counter = c;
         recipient = rec_var;
         List* a = new Listincode;
-        lisp->garbaging(a);
+        lisp->storeforgarbage(a);
         a->append(action);
         switch (type) {
             case l_foldl:
@@ -632,7 +632,7 @@ Element* List::evall_repeat_cps(LispE* lisp) {
     
     Element* e = new Infinitelist(lisp);
     e->append(liste[1]);
-    lisp->garbaging(e);
+    lisp->storeforgarbage(e);
     lisp->composition_stack.push_back(e);
     return e;
 }
@@ -645,7 +645,7 @@ Element* List::evall_cycle_cps(LispE* lisp) {
          throw new Error("Error: cannot apply 'cycle' with a context");
     Element* c = new Cyclelist(lisp);
     c->append(liste[1]);
-    lisp->garbaging(c);
+    lisp->storeforgarbage(c);
     lisp->composition_stack.push_back(c);
     return c;
 }
@@ -1028,7 +1028,7 @@ Element* LispE::compose(Element* fin) {
 
     Element* return_result = content;
     Element* current = new Listincode;
-    garbaging(current);
+    storeforgarbage(current);
     Element* base = current;
     Element* root = NULL;
     Fold* fold;
@@ -1235,7 +1235,7 @@ Element* List::transformargument(LispE* lisp) {
             if (liste[i-1]->argumentvalue() != NULL) {
                 sz--;
                 element = new Listkleene(liste[i-1], liste[i-1]->argumentvalue(), element->label());
-                lisp->garbaging(element);
+                lisp->storeforgarbage(element);
                 liste[i-1] = element;
                 liste.erase(i--);
             }
@@ -1321,7 +1321,7 @@ Element* List::transformargument(LispE* lisp) {
             throw new Error("Error: The Kleene operators (*+%) can only apply to a function call");
         sz--;
         element = new Listkleene(element, element->argumentvalue(), element->label());
-        lisp->garbaging(element);
+        lisp->storeforgarbage(element);
         liste[0] = element;
         liste.erase(1);
     }
@@ -1433,7 +1433,7 @@ Element* LispE::for_composition(Element* current_program,Element* current_elemen
                     lic->append(stack->liste[last]->index(x));
                 if (element != NULL)
                     lic->append(element);
-                garbaging(lic);
+                storeforgarbage(lic);
                 element = compileLocalStructure(current_program, lic, parse, check_composition_depth, currentspace, cont);
             }
             last--;

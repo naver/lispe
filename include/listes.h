@@ -4089,9 +4089,7 @@ public:
         return new List_unique_eval(multiple);
     }
     
-    Element* eval(LispE* lisp) {
-        return evall_unique(lisp);
-    }
+    Element* eval(LispE* lisp);
 };
 
 
@@ -4902,9 +4900,7 @@ public:
         return new List_if_eval(multiple);
     }
     
-    Element* eval(LispE* lisp) {
-        return evall_if(lisp);
-    }
+    Element* eval(LispE* lisp);
 };
 
 class List_ife_eval : public Listincode {
@@ -4930,9 +4926,7 @@ public:
         return new List_ife_eval(multiple);
     }
     
-    Element* eval(LispE* lisp) {
-        return evall_ife(lisp);
-    }
+    Element* eval(LispE* lisp);
 };
 
 class List_dictionary_eval : public Listincode {
@@ -5376,8 +5370,8 @@ public:
 class List_greater_eval : public Listincode {
 public:
     
-    List_greater_eval(List* l) : Listincode(l) {
-    }
+    List_greater_eval(Listincode* l) : Listincode(l) {}
+    List_greater_eval(List* l) : Listincode(l) {}
     List_greater_eval() {}
     List_greater_eval(bool m)  {multiple = m;}
     
@@ -5405,9 +5399,9 @@ public:
 
 class List_greaterorequal_eval : public Listincode {
 public:
-    
-    List_greaterorequal_eval(List* l): Listincode(l) {
-    }
+
+    List_greaterorequal_eval(Listincode* l): Listincode(l) {}
+    List_greaterorequal_eval(List* l): Listincode(l) {}
     List_greaterorequal_eval() {}
     List_greaterorequal_eval(bool m)  {multiple = m;}
     
@@ -5436,8 +5430,8 @@ public:
 class List_lower_eval : public Listincode {
 public:
     
-    List_lower_eval(List* l) : Listincode(l) {
-    }
+    List_lower_eval(Listincode* l) : Listincode(l) {}
+    List_lower_eval(List* l) : Listincode(l) {}
     
     List_lower_eval() {}
     List_lower_eval(bool m)  {multiple = m;}
@@ -5467,8 +5461,8 @@ public:
 class List_lowerorequal_eval : public Listincode {
 public:
     
-    List_lowerorequal_eval(List* l): Listincode(l) {
-    }
+    List_lowerorequal_eval(Listincode* l): Listincode(l) {}
+    List_lowerorequal_eval(List* l): Listincode(l) {}
     List_lowerorequal_eval() {}
     List_lowerorequal_eval(bool m)  {multiple = m;}
     
@@ -5497,6 +5491,7 @@ public:
 class List_eq_eval : public Listincode {
 public:
     
+    List_eq_eval(Listincode* l): Listincode(l) {}
     List_eq_eval(List* l): Listincode(l) {}
     List_eq_eval() {}
     List_eq_eval(bool m)  {multiple = m;}
@@ -5523,6 +5518,7 @@ public:
 class List_neq_eval : public Listincode {
 public:
     
+    List_neq_eval(Listincode* l) : Listincode(l) {}
     List_neq_eval(List* l) : Listincode(l) {}
     List_neq_eval() {}
     List_neq_eval(bool m)  {multiple = m;}

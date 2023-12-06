@@ -560,7 +560,7 @@ void Delegation::initialisation(LispE* lisp) {
     //The void function
     lisp->void_function = new Listincode;
     lisp->void_function->liste.push_raw(provideAtomOrInstruction(l_void));
-    lisp->garbaging(lisp->void_function);
+    lisp->storeforgarbage(lisp->void_function);
 
     //Operators
     operators[l_bitnot] = true;
@@ -1743,7 +1743,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 //This is a lambda call with arguments
                 Element* lm = new List_call_lambda(this, (Listincode*)element);
                 removefromgarbage(element);
-                garbaging(lm);
+                storeforgarbage(lm);
                 element = lm;
                 break;
             }
@@ -1882,7 +1882,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             else
                 body = new List_pattern_eval((Listincode*)element, (List*)body);
             
-            garbaging(body);
+            storeforgarbage(body);
             removefromgarbage(element);
             element = body;
         }
@@ -1891,7 +1891,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 Element* body = (*delegation->function_pool[current_space])[lab];
                 if (body->index(0)->label() == l_deflib) {
                     body = new List_library_eval((Listincode*)element, (List*)body);
-                    garbaging(body);
+                    storeforgarbage(body);
                     removefromgarbage(element);
                     element = body;
                 }
@@ -2011,7 +2011,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
         }
         
         if (lm != NULL) {
-            garbaging(lm);
+            storeforgarbage(lm);
             if (!delegation->checkArity(lab, nbarguments)) {
                 wstring err = L"Error: Wrong number of arguments for: '";
                 err += delegation->asString(lab);
@@ -2066,12 +2066,12 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     
                     check_composition_depth = NULL;
                     element = new Listincode(delegation->set_idx_info(parse.lines[index]));
-                    garbaging(element);
+                    storeforgarbage(element);
                     abstractSyntaxTree(element, parse, index, quoting);
                     if (quoting) {
                         if (element->size() && element->index(0)->label() == l_conspoint) {
                             Element* a = element->eval(this);
-                            garbaging(a);
+                            storeforgarbage(a);
                             removefromgarbage(element);
                             current_program->append(a);
                             quoting--;
@@ -2109,7 +2109,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     Dictionary_as_list dico;
                     abstractSyntaxTree(&dico, parse, index, quoting);
                     element = dico.dictionary(this);
-                    garbaging(element);
+                    storeforgarbage(element);
                     if (element->isList()) {
                         //Then in that case, we need to provide a protection
                         //for each of its elements...
@@ -2130,7 +2130,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     Dictionary_as_buffer dico(this);
                     abstractSyntaxTree(&dico, parse, index, quoting);
                     element = dico.dictionary(this);
-                    garbaging(element);
+                    storeforgarbage(element);
                 }
                 current_program->append(element);
                 break;
@@ -2157,7 +2157,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                 double real = parse.numbers[index++];
                 double imag = parse.numbers[index++];
                 element = provideComplex(real, imag);
-                garbaging(element);
+                storeforgarbage(element);
                 current_program->append(element);
                 break;
             }
@@ -2258,7 +2258,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
             case l_quote:
                 element = new List_quote_eval(delegation->set_idx_info(parse.lines[index]));
                 index++;
-                garbaging(element);
+                storeforgarbage(element);
                 element->append(provideAtom(l_quote));
                 current_program->append(element);
                 abstractSyntaxTree(element, parse, index, true);
@@ -2298,7 +2298,7 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                     if (quoting) {
                         if (e->size() && e->index(0)->label() == l_conspoint) {
                             Element* a = e->eval(this);
-                            garbaging(a);
+                            storeforgarbage(a);
                             removefromgarbage(e);
                             e = a;
                         }
@@ -2489,7 +2489,7 @@ List* LispE::create_instruction(int16_t label,Element* e1,Element* e2,Element* e
             l = provideList();
     }
     
-    garbaging(l);
+    storeforgarbage(l);
     l->append(provideAtom(label));
     if (!l->append_not_null(e1))
         return l;
@@ -2702,7 +2702,7 @@ Element* LispE::extension(string code, Element* etendre) {
             throw new Error("Error: missing end of string");
         default:
             current_list = new Listincode;
-            garbaging(current_list);
+            storeforgarbage(current_list);
     }
 
     try {
@@ -2711,7 +2711,7 @@ Element* LispE::extension(string code, Element* etendre) {
         Element* body = current_list->eval(this);
         if (etendre != NULL) {
             body->append(etendre);
-            garbaging(etendre);
+            storeforgarbage(etendre);
         }
         return body;
     }
@@ -2795,7 +2795,7 @@ void Element::generate_body_from_macro(LispE* lisp, Listincode* code, binHash<El
         else {
             if (e->isList()) {
                 Listincode* lcode = new Listincode(s_constant);
-                lisp->garbaging(lcode);
+                lisp->storeforgarbage(lcode);
                 lcode->idxinfo = ((Listincode*)code)->idxinfo;
                 code->append(lcode);
                 e->generate_body_from_macro(lisp, lcode, dico_variables);

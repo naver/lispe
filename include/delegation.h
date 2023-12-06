@@ -131,7 +131,7 @@ public:
     std::vector<ThreadElement*> currentthreads;
     
     binHash<Element*> data_pool;
-    vecte<long> idxinfos;
+    vector<long> idxinfos;
     
     binSet assignors;
     binSet operators;
@@ -314,7 +314,7 @@ public:
         int idx = (int)idxinfos.size();
         if (idx) {
             if (idxinfos[idx - 2] == line && idxinfos[idx - 1] == i_current_file)
-                return idx;
+                return idx - 2;
         }
         
         idxinfos.push_back(line);
@@ -957,7 +957,7 @@ public:
     
     
     inline void set_context(int idxinfo) {
-        if (!current_error && idxinfo < idxinfos.size()) {
+        if (!current_error && idxinfo >= 0 && idxinfo < idxinfos.size()) {
             i_current_line = idxinfos[idxinfo];
             i_current_file = idxinfos[idxinfo + 1];
         }
