@@ -4241,6 +4241,10 @@ public:
     }
     
     List_call_lambda(LispE* lisp, Listincode* l);
+    List_call_lambda(List_lambda_eval* l) {        
+        body = l;
+        nbarguments = 0;
+    }
     
     bool is_straight_eval() {
         return true;
@@ -4250,6 +4254,7 @@ public:
         return new List_call_lambda();
     }
     
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
     Element* eval(LispE*);
     
     //We define these methods to handle the creation of a full-fledge List_call_lambda

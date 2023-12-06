@@ -31,7 +31,7 @@ long arity_value(unsigned long arity) {
     return nb;
 }
 
-Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long arity) {
+Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long arity, bool lmbd = false) {
     if (function->isInstruction()) {
         lisp->arity_check(function->label(), arity);
         Element* value = lisp->cloning(function->label());
@@ -55,7 +55,10 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
                 function = new List_function_eval(lisp, (List*)function, arity_value(arity));
                 break;
             case l_lambda:
-                function = new Atomefonction(function, t_lambda);
+                if (lmbd)
+                    function = new List_call_lambda((List_lambda_eval*)function);
+                else
+                    function = new Atomefonction(function, t_lambda);
                 break;
             default:
                 throw new Error("Error: wrong function call");
@@ -5623,7 +5626,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
     Element* comparator = liste[1]->eval(lisp);
     Element* container = null_;
 
-    comparator = eval_body_as_argument_min(lisp, comparator, P_THREE);
+    comparator = eval_body_as_argument_min(lisp, comparator, P_THREE, true);
 
     try {
         lisp->checkState(this);
@@ -5641,98 +5644,27 @@ Element* List_sort_eval::eval(LispE* lisp) {
     
     List* complist;
     switch (container->type) {
-        case t_floats: {
+        case t_floats:
+        case t_numbers:
+        case t_shorts:
+        case t_integers:
+        case t_strings:
+        case t_stringbytes: { // (sort (\(x y) (< y x)) (iota 10))
             try {
                 complist = (List*)comparator;
                 complist->append(null_);
                 complist->append(null_);
-                ((Floats*)container)->sorting(lisp, complist);
-                complist->release();
+                
+                container->sorting(lisp, complist);
+                
+                complist->force_release();
                 lisp->resetStack();
                 return container;
             }
             catch (Error* err) {
-                complist->release();
-                container->release();
-                return lisp->check_error(this, err, idxinfo);
-            }
-        }
-        case t_numbers: {
-            try {
-                complist = (List*)comparator;
-                complist->append(null_);
-                complist->append(null_);
-                ((Numbers*)container)->sorting(lisp, complist);
-                complist->release();
-                lisp->resetStack();
-                return container;
-            }
-            catch (Error* err) {
-                complist->release();
-                container->release();
-                return lisp->check_error(this, err, idxinfo);
-            }
-        }
-        case t_shorts: {
-            try {
-                complist = (List*)comparator;
-                complist->append(null_);
-                complist->append(null_);
-                ((Shorts*)container)->sorting(lisp, complist);
-                complist->release();
-                lisp->resetStack();
-                return container;
-            }
-            catch (Error* err) {
-                complist->release();
-                container->release();
-                return lisp->check_error(this, err, idxinfo);
-            }
-        }
-        case t_integers: {
-            try {
-                complist = (List*)comparator;
-                complist->append(null_);
-                complist->append(null_);
-                ((Integers*)container)->sorting(lisp, complist);
-                complist->release();
-                lisp->resetStack();
-                return container;
-            }
-            catch (Error* err) {
-                complist->release();
-                container->release();
-                return lisp->check_error(this, err, idxinfo);
-            }
-        }
-        case t_strings: {
-            try {
-                complist = (List*)comparator;
-                complist->append(null_);
-                complist->append(null_);
-                ((Strings*)container)->sorting(lisp, complist);
-                complist->release();
-                lisp->resetStack();
-                return container;
-            }
-            catch (Error* err) {
-                complist->release();
-                container->release();
-                return lisp->check_error(this, err, idxinfo);
-            }
-        }
-        case t_stringbytes: {
-            try {
-                complist = (List*)comparator;
-                complist->append(null_);
-                complist->append(null_);
-                ((Stringbytes*)container)->sorting(lisp, complist);
-                complist->release();
-                lisp->resetStack();
-                return container;
-            }
-            catch (Error* err) {
-                complist->release();
+                complist->liste[1] = null_;
+                complist->liste[2] = null_;
+                complist->force_release();
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }

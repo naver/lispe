@@ -3072,10 +3072,13 @@ void Numbers::sorting(LispE* lisp, List* comparison) {
     
     n1.content = liste[0];
     n2.content = liste[0];
-    if (comparison->eval(lisp)->Boolean())
+    if (comparison->eval_Boolean(lisp, comparison->liste[0]->type))
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
     liste.values_sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+
+    comparison->liste[1] = null_;
+    comparison->liste[2] = null_;
 }
 
 Element* Numbers::minimum(LispE* lisp) {
@@ -3736,10 +3739,13 @@ void Integers::sorting(LispE* lisp, List* comparison) {
     comparison->liste[2] = &n2;
     n1.content = liste[0];
     n2.content = liste[0];
-    if (comparison->eval(lisp)->Boolean())
+    if (comparison->eval_Boolean(lisp, comparison->liste[0]->type))
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
     liste.values_sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+    
+    comparison->liste[1] = null_;
+    comparison->liste[2] = null_;
 }
 
 Element* Integers::minimum(LispE* lisp) {
@@ -4401,10 +4407,14 @@ void Strings::sorting(LispE* lisp, List* comparison) {
     comparison->liste[2] = &n2;
     n1.content = liste[0];
     n2.content = liste[0];
-    if (comparison->eval(lisp)->Boolean())
+    if (comparison->eval_Boolean(lisp, comparison->liste[0]->type))
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
     liste.values_sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+    
+    comparison->liste[1] = null_;
+    comparison->liste[2] = null_;
+
 }
 
 Element* Strings::minimum(LispE* lisp) {
@@ -5432,10 +5442,13 @@ void Stringbytes::sorting(LispE* lisp, List* comparison) {
     comparison->liste[2] = &n2;
     n1.content = liste[0];
     n2.content = liste[0];
-    if (comparison->eval(lisp)->Boolean())
+    if (comparison->eval_Boolean(lisp, comparison->liste[0]->type))
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
     liste.values_sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+    
+    comparison->liste[1] = null_;
+    comparison->liste[2] = null_;
 }
 
 Element* Stringbytes::minimum(LispE* lisp) {
@@ -6568,10 +6581,13 @@ void Shorts::sorting(LispE* lisp, List* comparison) {
     comparison->liste[2] = &n2;
     n1.content = liste[0];
     n2.content = liste[0];
-    if (comparison->eval(lisp)->Boolean())
+    if (comparison->eval_Boolean(lisp, comparison->liste[0]->type))
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
     liste.values_sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+
+    comparison->liste[1] = null_;
+    comparison->liste[2] = null_;
 }
 
 Element* Shorts::minimum(LispE* lisp) {
@@ -7233,10 +7249,12 @@ void Floats::sorting(LispE* lisp, List* comparison) {
     
     n1.content = liste[0];
     n2.content = liste[0];
-    if (comparison->eval(lisp)->Boolean())
+    if (comparison->eval_Boolean(lisp, comparison->liste[0]->type))
         throw new Error(L"Error: The comparison must be strict for a 'sort': (comp a a) must return 'nil'.");
     
     liste.values_sorting(lisp, comparison, comparison->liste[0]->type, 0, sz-1);
+    comparison->liste[1] = null_;
+    comparison->liste[2] = null_;
 }
 
 Element* Floats::minimum(LispE* lisp) {

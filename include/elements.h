@@ -368,6 +368,7 @@ public:
         return this;
     }
 
+    virtual void sorting(LispE*, List* f) {}    
     virtual Element* transposed(LispE* lisp) {
         return this;
     }

@@ -942,9 +942,9 @@ public:
         return liste.atleast2();
     }
     
-    bool compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax);
-    void sorting(LispE* lisp, List* comparison);
+    //bool compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j);
+    //void sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax);
+    //void sorting(LispE* lisp, List* comparison);
 
     void push_element(LispE* lisp, List* l);
     void push_element_true(LispE* lisp, List* l);

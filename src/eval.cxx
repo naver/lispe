@@ -2330,6 +2330,14 @@ bool List_function_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
     return b;
 }
 
+bool List_call_lambda::eval_Boolean(LispE* lisp, int16_t instruction) {
+    Element* e = eval(lisp);
+    bool b = e->Boolean();
+    e->release();
+    return b;
+}
+
+
 bool List_pattern_eval::eval_Boolean(LispE* lisp, int16_t instruction) {
     Element* e = eval(lisp);
     bool b = e->Boolean();
