@@ -1604,6 +1604,50 @@ Element* LList::last_element(LispE* lisp) {
     return liste.back();
 }
 
+Element* Infiniterangenumber::next_iter(LispE* lisp, void* it) {
+    double* n = (double*)it;
+    if ((increment < 0 && n[0] <= bound) ||
+        (increment > 0 && n[0] >= bound))
+        return emptyatom_;
+    
+    Element* e = lisp->provideNumber(n[0]);
+    n[0] += increment;
+    return e;
+}
+
+Element* Infiniterangenumber::next_iter_exchange(LispE* lisp, void* it) {
+    double* n = (double*)it;
+    if ((increment < 0 && n[0] <= bound) ||
+        (increment > 0 && n[0] >= bound))
+        return emptyatom_;
+    
+    exchange_value.content = n[0];
+    n[0] += increment;
+    return &exchange_value;
+}
+
+Element* Infiniterangeinteger::next_iter(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if ((increment < 0 && n[0] <= bound) ||
+        (increment > 0 && n[0] >= bound))
+        return emptyatom_;
+    
+    Element* e = lisp->provideInteger(n[0]);
+    n[0] += increment;
+    return e;
+}
+
+Element* Infiniterangeinteger::next_iter_exchange(LispE* lisp, void* it) {
+    long* n = (long*)it;
+    if ((increment < 0 && n[0] <= bound) ||
+        (increment > 0 && n[0] >= bound))
+        return emptyatom_;
+    
+    exchange_value.content = n[0];
+    n[0] += increment;
+    return &exchange_value;
+}
+
 Element* Infiniterangenumber::value_on_index(LispE* lisp, long i) {
     double v = initial_value + increment*i;
     if (infinite_loop) {
@@ -9010,3 +9054,7 @@ Element* Short::newTensor(LispE* lisp, List* l) {
     
     return f;
 }
+
+
+
+

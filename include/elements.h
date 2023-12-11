@@ -517,11 +517,10 @@ public:
     virtual void* begin_iter() {
         return NULL;
     }
-    
     virtual Element* next_iter(LispE* lisp, void* it);
     virtual Element* next_iter_exchange(LispE* lisp, void* it);
-    
     virtual void clean_iter(void* it) {}
+    
     virtual bool check_element(LispE* lisp, Element* element_value);
     virtual Element* search_element(LispE*, Element* element_value, long idx);
     virtual Element* search_all_elements(LispE*, Element* element_value, long idx);
@@ -3048,6 +3047,18 @@ public:
         return this;
     }
     
+    void* begin_iter() {
+        double* iter = new double[1];
+        iter[0] = initial_value;
+        return iter;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+    void clean_iter(void* it) {
+        delete[] (double*)it;
+    }
+
     inline bool compare(char check, double value) {
         return (!check || (check == -1 && value > bound) || (check == 1 && value < bound));
     }
@@ -3145,6 +3156,18 @@ public:
         infinite_loop = false;
         bound = b;
         return this;
+    }
+
+    void* begin_iter() {
+        long* iter = new long[1];
+        iter[0] = initial_value;
+        return iter;
+    }
+    
+    Element* next_iter(LispE* lisp, void* it);
+    Element* next_iter_exchange(LispE* lisp, void* it);
+    void clean_iter(void* it) {
+        delete[] (long*)it;
     }
 
     bool isContainer() {
