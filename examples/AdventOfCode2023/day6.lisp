@@ -34,12 +34,12 @@
 
 ; We look for the first value to break the record
 (loop x (irange 0 tmps 1)
-   (setq y (* x (- tmps x)))
-   (if (>= y dst)
+   (if (>= (* x (- tmps x)) dst)
       (break)
    )
 )
 
 ; since values are symetrical, we can now compute our final value
-(setq res (+ 1 (- (- tmps x) x)))
+(setq res (• 1 + tmps - (* 2  x)))
 (println res)
+
