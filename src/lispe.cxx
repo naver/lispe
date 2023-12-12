@@ -859,9 +859,15 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U"inner";
     string_to_code[w] = l_innerproduct;
-
+    
     w = U"outer";
     string_to_code[w] = l_outerproduct;
+
+    w = U"**";
+    string_to_code[w] = l_power;
+
+    w = U"**=";
+    string_to_code[w] = l_powerequal;
 
     w = U"cutlist";
     string_to_code[w] = l_slice;
