@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.12.11.23.40";
+static std::string version = "1.2023.12.12.11.1";
 string LispVersion() {
     return version;
 }
@@ -503,6 +503,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_wait, "wait", P_ONE, &List::evall_wait, new List_wait_eval());
     set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton, new List_waiton_eval());
     set_instruction(l_while, "while", P_ATLEASTTHREE,  new List_while_eval());
+    set_instruction(l_whilein, "whilein", P_ATLEASTFIVE,  new List_whilein_eval());
     set_instruction(l_xor, "xor", P_ATLEASTTHREE,  new List_xor_eval());
     set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop, new List_zerop_eval());
     set_instruction(l_zip, "zip", P_ATLEASTTHREE,  new List_zip_eval());
@@ -2977,112 +2978,4 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

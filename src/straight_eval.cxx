@@ -963,11 +963,68 @@ Element* List_loopcount_eval::eval(LispE* lisp) {
             if (label)
                 element->content = counter;
         }
-        lisp->removefromstack(label);
     }
     catch (Error* err) {
-        if (label)
-            lisp->removefromstack(label);
+        return lisp->check_error(this, err, idxinfo);
+    }
+    lisp->resetStack();
+    return result;
+}
+
+//(whilein iterator list condition instructions)
+Element* List_whilein_eval::eval(LispE* lisp) {
+    long listsize = liste.size();
+    Element* element = null_;
+
+    int16_t label = liste[1]->label();
+    lisp->storing_variable(element, label);
+    Element* current_list = liste[2]->eval(lisp);
+    void* iter = NULL;
+
+    Element* result = null_;
+    Element* condition;
+    bool test;
+
+    try {
+        lisp->checkState(this);
+        //(whilein i (iota 10) (< i 100) (print i))
+        
+        iter = current_list->begin_iter();
+        element = current_list->next_iter_exchange(lisp, iter);
+        lisp->storing_variable(element, label);
+        
+        condition = liste[3]->eval(lisp);
+        test = condition->Boolean();
+        condition->release();
+        
+        while (test && element != emptyatom_) {
+            for (long i = 4; i < listsize && result->type != l_return; i++) {
+                result->release();
+                result = liste[i]->eval(lisp);
+            }
+            //If a 'return' or a 'break' has been placed in the code
+            if (result->type == l_return) {
+                current_list->clean_iter(iter);
+                current_list->release();
+                lisp->resetStack();
+                if (result->isBreak())
+                    return null_;
+                //this is a return, it goes back to the function call
+                return result;
+            }
+            
+            element = current_list->next_iter_exchange(lisp, iter);
+            lisp->storing_variable(element, label);
+            condition = liste[3]->eval(lisp);
+            test = condition->Boolean();
+            condition->release();
+        }
+        current_list->clean_iter(iter);
+        current_list->release();
+     }
+    catch (Error* err) {
+        current_list->clean_iter(iter);
+        current_list->release();
         return lisp->check_error(this, err, idxinfo);
     }
     lisp->resetStack();

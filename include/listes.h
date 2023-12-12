@@ -5568,6 +5568,33 @@ public:
     Element* eval(LispE* lisp);
 };
 
+
+class List_whilein_eval : public Listincode {
+public:
+    
+    List_whilein_eval(Listincode* l) : Listincode(l) {}
+    List_whilein_eval(List* l) : Listincode(l) {}
+    List_whilein_eval() {}
+    List_whilein_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_whilein_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_whilein_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_whilein_eval(multiple);
+    }
+    Element* eval(LispE* lisp);
+};
+
 class List_loopcount_eval : public Listincode {
 public:
     
