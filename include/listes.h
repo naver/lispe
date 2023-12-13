@@ -5245,9 +5245,10 @@ class Enumlist : public Element {
 public:
     List element;
     Integer idx;
+    long init;
     Element* lst;
 
-    Enumlist(Element* l, Element* nul) : idx(0, s_constant), element(s_constant), Element(l_enumerate) {
+    Enumlist(Element* l, long i, Element* nul) : idx(0, s_constant), init(i), element(s_constant), Element(l_enumerate) {
         element.append(&idx);
         element.append(nul);
         lst = l;
@@ -5266,7 +5267,7 @@ public:
     
     void* begin_iter() {
         long* n = new long[1];
-        n[0] = 0;
+        n[0] = init;
         return n;
     }
     

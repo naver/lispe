@@ -5693,7 +5693,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             throw new Error(L"Error: the second argument should be a list for 'sort'");
     }
     catch (Error* err) {
-        comparator->release();
+        comparator->force_release();
         container->release();
         return lisp->check_error(this, err, idxinfo);
     }
@@ -5730,7 +5730,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
             List* l = (List*)container->asList(lisp, lisp->provideList());
             if (l->size() <= 1) {
                 l->release();
-                comparator->release();
+                comparator->force_release();
                 lisp->resetStack();
                 return container;
             }
@@ -5765,7 +5765,7 @@ Element* List_sort_eval::eval(LispE* lisp) {
         default: {
             List* l = (List*)container;
             if (l->size() <= 1) {
-                comparator->release();
+                comparator->force_release();
                 lisp->resetStack();
                 return container;
             }
@@ -7105,11 +7105,14 @@ Element* List_shorts_eval::eval(LispE* lisp) {
 Element* List_enumerate_eval::eval(LispE* lisp) {
     Element* e = liste[1]->eval(lisp);
     Element* lstr = e->to_strings(lisp);
+    long i = 0;
+    if (liste.size() == 3)
+        evalAsInteger(2, lisp, i);
     if (lstr != e) {
         e->release();
         e = lstr;
     }
-    return new Enumlist(e, null_);
+    return new Enumlist(e, i, null_);
 }
 
 Element* List_irange_eval::eval(LispE* lisp) {
