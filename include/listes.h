@@ -4239,7 +4239,8 @@ public:
     }
     
     List_call_lambda(LispE* lisp, Listincode* l);
-    List_call_lambda(List_lambda_eval* l) {        
+    List_call_lambda(List_lambda_eval* l) {     
+        List::append(l);
         body = l;
         nbarguments = 0;
     }
