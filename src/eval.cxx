@@ -3747,7 +3747,7 @@ Element* Enumlist::eval(LispE* lisp) {
         List* sub;
         for (long  i = 0; i < lst->size(); i++) {
             sub = lisp->provideList();
-            sub->append(lisp->provideInteger(i));
+            sub->append(lisp->provideInteger(i + init));
             sub->append(lst->index(i)->copying(true));
             l->append(sub);
         }
@@ -3757,7 +3757,7 @@ Element* Enumlist::eval(LispE* lisp) {
     List* sub;
     for (long  i = 0; i < lst->size(); i++) {
         sub = new List();
-        sub->append(new Integer(i));
+        sub->append(new Integer(i + init));
         sub->append(lst->index(i)->copying(true));
         l->append(sub);
     }

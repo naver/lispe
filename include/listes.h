@@ -5255,7 +5255,7 @@ public:
     }
 
     Element* index(long i) {
-        idx.content = i;
+        idx.content = i + init;
         element.liste[1]->release();
         element.liste[1] = lst->index(i);
         return &element;
@@ -5283,34 +5283,34 @@ public:
     Element* protected_index(LispE* lisp,long i) {
         element.liste[1]->release();
         element.liste[1] = lst->protected_index(lisp, i);
-        idx.content = i;
+        idx.content = i + init;
         return &element;
     }
     
     Element* value_from_index(LispE* lisp, long i)  {
         element.liste[1]->release();
         element.liste[1] = lst->protected_index(lisp, i);
-        idx.content = i;
+        idx.content = i + init;
         return &element;
     }
     Element* value_on_index(LispE* lisp, long i)  {
         element.liste[1]->release();
         element.liste[1] = lst->value_on_index(lisp, i);
-        idx.content = i;
+        idx.content = i + init;
         return &element;
     }
     
     Element* value_on_index(LispE* lisp, Element* i)  {
         element.liste[1]->release();
         element.liste[1] = lst->value_on_index(lisp, i);
-        idx.content = i->asInteger();
+        idx.content = i->asInteger() + init;
         return &element;
     }
     
     Element* protected_index(LispE* lisp, Element* i)  {
         element.liste[1]->release();
         element.liste[1] = lst->protected_index(lisp, i);
-        idx.content = i->asInteger();
+        idx.content = i->asInteger() + init;
         return &element;
     }
     
