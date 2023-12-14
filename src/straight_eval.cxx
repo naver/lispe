@@ -564,6 +564,7 @@ Element* List_key_eval::eval(LispE* lisp) {
         if (listsize == 3 && first_element->isDictionary()) {
             //The second element is an a_key
             switch (first_element->type) {
+                case t_tree:
                 case t_dictionary: {
                     u_ustring a_key;
                     evalAsUString(2, lisp, a_key);
@@ -572,6 +573,7 @@ Element* List_key_eval::eval(LispE* lisp) {
                     lisp->resetStack();
                     return second_element;
                 }
+                case t_treei:
                 case t_dictionaryi: {
                     long a_key;
                     evalAsInteger(2, lisp, a_key);
@@ -580,6 +582,7 @@ Element* List_key_eval::eval(LispE* lisp) {
                     lisp->resetStack();
                     return second_element;
                 }
+                case t_treen:
                 case t_dictionaryn: {
                     double a_key;
                     evalAsNumber(2, lisp, a_key);
@@ -611,6 +614,7 @@ Element* List_key_eval::eval(LispE* lisp) {
 
         //We store values
         switch (first_element->type) {
+            case t_tree:
             case t_dictionary: {
                 u_ustring a_key;
                 for (long i = first; i < listsize; i+=2) {
@@ -620,6 +624,7 @@ Element* List_key_eval::eval(LispE* lisp) {
                 }
                 break;
             }
+            case t_treei:
             case t_dictionaryi: {
                 long a_key;
                 for (long i = 2; i < listsize; i+=2) {
@@ -629,6 +634,7 @@ Element* List_key_eval::eval(LispE* lisp) {
                 }
                 break;
             }
+            case t_treen:
             case t_dictionaryn: {
                 double a_key;
                 for (long i = 2; i < listsize; i+=2) {
@@ -664,7 +670,7 @@ Element* List_keyi_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         long a_key;
         if (listsize == 3 && first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryi)
+            if (first_element->type != t_dictionaryi && first_element->type != t_treei)
                 throw new Error("Error: wrong dictionary type for 'keyi'");
 
             evalAsInteger(2, lisp, a_key);
@@ -676,7 +682,7 @@ Element* List_keyi_eval::eval(LispE* lisp) {
 
         long first;
         if (first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryi)
+            if (first_element->type != t_dictionaryi && first_element->type != t_treei)
                 throw new Error("Error: wrong dictionary type for 'keyi'");
 
             if ((listsize % 2 ))
@@ -726,7 +732,7 @@ Element* List_keyn_eval::eval(LispE* lisp) {
         lisp->checkState(this);
         double a_key;
         if (listsize == 3 && first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryn)
+            if (first_element->type != t_dictionaryn && first_element->type != t_treen)
                 throw new Error("Error: wrong dictionary type for 'keyn'");
 
             evalAsNumber(2, lisp, a_key);
@@ -738,7 +744,7 @@ Element* List_keyn_eval::eval(LispE* lisp) {
 
         long first;
         if (first_element->isDictionary()) {
-            if (first_element->type != t_dictionaryn)
+            if (first_element->type != t_dictionaryn && first_element->type != t_treen)
                 throw new Error("Error: wrong dictionary type for 'keyn'");
 
             if ((listsize % 2 ))
@@ -781,6 +787,31 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
         return lisp->provideDictionary();
     }
 
+    if (listsize == 2) {
+        Element* d = liste[1]->eval(lisp);
+        if (!d->isDictionary())
+            throw new Error("Error: wrong arguments for 'dictionary'");
+        if (d->type == t_dictionary)
+            return d->copying(true);
+        void* iter = d->begin_iter();
+        Element* nxt  = d->next_iter(lisp, iter);
+        Element* e;
+        Dictionary* dico = lisp->provideDictionary();
+        Element* u;
+        while (nxt != emptyatom_) {
+            e = d->value_on_index(lisp, nxt);
+            u = e->copying(false);
+            u->increment();
+            dico->dictionary[nxt->asUString(lisp)] = u;
+            e->release();
+            nxt->release();
+            nxt = d->next_iter(lisp, iter);
+        }
+        d->clean_iter(iter);
+        d->release();
+        return dico;
+    }
+
     if (!(listsize % 2 ))
         throw new Error("Error: wrong number of arguments for 'dictionary'");
 
@@ -817,6 +848,31 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
         return lisp->provideDictionary_i();
     }
     
+    if (listsize == 2) {
+        Element* d = liste[1]->eval(lisp);
+        if (!d->isDictionary())
+            throw new Error("Error: wrong arguments for 'dictionaryi'");
+        if (d->type == t_dictionaryi)
+            return d->copying(true);
+        void* iter = d->begin_iter();
+        Element* nxt  = d->next_iter(lisp, iter);
+        Element* e;
+        Dictionary_i* dico = lisp->provideDictionary_i();
+        Element* u;
+        while (nxt != emptyatom_) {
+            e = d->value_on_index(lisp, nxt);
+            u = e->copying(false);
+            u->increment();
+            dico->dictionary[nxt->asInteger()] = u;
+            e->release();
+            nxt->release();
+            nxt = d->next_iter(lisp, iter);
+        }
+        d->clean_iter(iter);
+        d->release();
+        return dico;
+    }
+
     if (!(listsize % 2 ))
         throw new Error("Error: wrong number of arguments for 'dictionary'");
 
@@ -852,6 +908,31 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
         return lisp->provideDictionary_n();
     }
     
+    if (listsize == 2) {
+        Element* d = liste[1]->eval(lisp);
+        if (!d->isDictionary())
+            throw new Error("Error: wrong arguments for 'dictionaryn'");
+        if (d->type == t_dictionaryn)
+            return d->copying(true);
+        void* iter = d->begin_iter();
+        Element* nxt  = d->next_iter(lisp, iter);
+        Element* e;
+        Dictionary_n* dico = lisp->provideDictionary_n();
+        Element* u;
+        while (nxt != emptyatom_) {
+            e = d->value_on_index(lisp, nxt);
+            u = e->copying(false);
+            u->increment();
+            dico->dictionary[nxt->asNumber()] = u;
+            e->release();
+            nxt->release();
+            nxt = d->next_iter(lisp, iter);
+        }
+        d->clean_iter(iter);
+        d->release();
+        return dico;
+    }
+
     if (!(listsize % 2 ))
         throw new Error("Error: wrong number of arguments for 'dictionary'");
 
@@ -879,6 +960,188 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
     lisp->resetStack();
     return dico;
 }
+
+Element* List_tree_eval::eval(LispE* lisp) {
+    long listsize = liste.size();
+    if (listsize == 1) {
+        //We create an empty tree
+        return lisp->provideTree();
+    }
+    
+    if (listsize == 2) {
+        Element* d = liste[1]->eval(lisp);
+        if (!d->isDictionary())
+            throw new Error("Error: wrong arguments for 'tree'");
+        if (d->type == t_tree)
+            return d->copying(true);
+        void* iter = d->begin_iter();
+        Element* nxt  = d->next_iter(lisp, iter);
+        Element* e;
+        Tree* dico = lisp->provideTree();
+        Element* u;
+        while (nxt != emptyatom_) {
+            e = d->value_on_index(lisp, nxt);
+            u = e->copying(false);
+            u->increment();
+            dico->tree[nxt->asUString(lisp)] = u;
+            e->release();
+            nxt->release();
+            nxt = d->next_iter(lisp, iter);
+        }
+        d->clean_iter(iter);
+        d->release();
+        return dico;
+    }
+    
+    if (!(listsize % 2 ))
+        throw new Error("Error: wrong number of arguments for 'tree'");
+
+    Tree* dico = lisp->provideTree();
+    Element* element;
+
+    
+    try {
+        lisp->checkState(this);
+        u_ustring a_key;
+        //We store values
+        for (long i = 1; i < listsize; i+=2) {
+            element = liste[i]->eval(lisp);
+            a_key = element->asUString(lisp);
+            element->release();
+            element = liste[i+1]->eval(lisp);
+            dico->recording(a_key, element->copying(false));
+        }
+    }
+    catch (Error* err) {
+        dico->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    
+    lisp->resetStack();
+    return dico;
+}
+
+
+Element* List_treei_eval::eval(LispE* lisp) {
+    long listsize = liste.size();
+    if (listsize == 1) {
+        //We create an empty tree
+        return lisp->provideTree_i();
+    }
+    
+    if (listsize == 2) {
+        Element* d = liste[1]->eval(lisp);
+        if (!d->isDictionary())
+            throw new Error("Error: wrong arguments for 'treei'");
+        if (d->type == t_treei)
+            return d->copying(true);
+        void* iter = d->begin_iter();
+        Element* nxt  = d->next_iter(lisp, iter);
+        Element* e;
+        Tree_i* dico = lisp->provideTree_i();
+        Element* u;
+        while (nxt != emptyatom_) {
+            e = d->value_on_index(lisp, nxt);
+            u = e->copying(false);
+            u->increment();
+            dico->tree[nxt->asInteger()] = u;
+            e->release();
+            nxt->release();
+            nxt = d->next_iter(lisp, iter);
+        }
+        d->clean_iter(iter);
+        d->release();
+        return dico;
+    }
+
+    if (!(listsize % 2 ))
+        throw new Error("Error: wrong number of arguments for 'tree'");
+
+    Tree_i* dico = lisp->provideTree_i();
+    Element* element;
+
+    
+    try {
+        lisp->checkState(this);
+        long a_key;
+        //We store values
+        for (long i = 1; i < listsize; i+=2) {
+            element = liste[i]->eval(lisp);
+            a_key = element->asInteger();
+            element->release();
+            element = liste[i+1]->eval(lisp);
+            dico->recording(a_key, element->copying(false));
+        }
+    }
+    catch (Error* err) {
+        dico->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    
+    lisp->resetStack();
+    return dico;
+}
+
+Element* List_treen_eval::eval(LispE* lisp) {
+    long listsize = liste.size();
+    if (listsize == 1) {
+        //We create an empty tree
+        return lisp->provideTree_n();
+    }
+    
+    if (listsize == 2) {
+        Element* d = liste[1]->eval(lisp);
+        if (!d->isDictionary())
+            throw new Error("Error: wrong arguments for 'treen'");
+        if (d->type == t_treen)
+            return d->copying(true);
+        void* iter = d->begin_iter();
+        Element* nxt  = d->next_iter(lisp, iter);
+        Element* e;
+        Tree_n* dico = lisp->provideTree_n();
+        Element* u;
+        while (nxt != emptyatom_) {
+            e = d->value_on_index(lisp, nxt);
+            u = e->copying(false);
+            u->increment();
+            dico->tree[nxt->asNumber()] = u;
+            e->release();
+            nxt->release();
+            nxt = d->next_iter(lisp, iter);
+        }
+        d->clean_iter(iter);
+        d->release();
+        return dico;
+    }
+
+    if (!(listsize % 2 ))
+        throw new Error("Error: wrong number of arguments for 'tree'");
+
+    Tree_n* dico = lisp->provideTree_n();
+    Element* element;
+
+    
+    try {
+        lisp->checkState(this);
+        double a_key;
+        //We store values
+        for (long i = 1; i < listsize; i+=2) {
+            element = liste[i]->eval(lisp);
+            a_key = element->asNumber();
+            element->release();
+            element = liste[i+1]->eval(lisp);
+            dico->recording(a_key, element->copying(false));
+        }
+    }
+    catch (Error* err) {
+        dico->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    
+    lisp->resetStack();
+    return dico;
+}
+
 
 Element* List_list_eval::eval(LispE* lisp) {
     long listsize = liste.size();

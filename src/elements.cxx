@@ -246,6 +246,49 @@ Element* Dictionary_i::copyatom(LispE* lisp, uint16_t s) {
     return d;
 }
 
+Element* Tree::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    
+    Tree* d = lisp->provideTree();
+    Element* e;
+    for (const auto& a: tree) {
+        e = a.second->copying(false);
+        d->tree[a.first] = e;
+        e->increment();
+    }
+    return d;
+}
+
+Element* Tree_n::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    
+    Tree_n* d = lisp->provideTree_n();
+    Element* e;
+    for (const auto& a: tree) {
+        e = a.second->copying(false);
+        d->tree[a.first] = e;
+        e->increment();
+    }
+    return d;
+}
+
+Element* Tree_i::copyatom(LispE* lisp, uint16_t s) {
+    if (status < s)
+        return this;
+    
+    Tree_i* d = lisp->provideTree_i();
+    Element* e;
+    for (const auto& a: tree) {
+        e = a.second->copying(false);
+        d->tree[a.first] = e;
+        e->increment();
+    }
+    return d;
+}
+
+
 Element* Set_s::copyatom(LispE* lisp, uint16_t s) {
     if (status < s)
         return this;
@@ -982,7 +1025,7 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
             }
             code += "{\n";
             if (type == t_dictionary) {
-                map<u_ustring, Element*>& dico = ((Dictionary*)this)->dictionary;
+                std::unordered_map<u_ustring, Element*>& dico = ((Dictionary*)this)->dictionary;
                 u_ustring key;
                 for (const auto& a: dico) {
                     local = "";

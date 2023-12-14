@@ -9320,6 +9320,30 @@ Element* Dictionary_n::negate(LispE* lisp) {
     return n;
 }
 
+Element* Tree::negate(LispE* lisp) {
+    Tree* n = lisp->provideTree();
+    for (const auto& a: tree) {
+        n->tree[a.first] = a.second->negate(lisp);
+    }
+    return n;
+}
+
+Element* Tree_i::negate(LispE* lisp) {
+    Tree_i* n = lisp->provideTree_i();
+    for (const auto& a: tree) {
+        n->tree[a.first] = a.second->negate(lisp);
+    }
+    return n;
+}
+
+Element* Tree_n::negate(LispE* lisp) {
+    Tree_n* n = lisp->provideTree_n();
+    for (const auto& a: tree) {
+        n->tree[a.first] = a.second->negate(lisp);
+    }
+    return n;
+}
+
 Element* LList::negate(LispE* lisp) {
     LList* l = new LList(liste.mark);
     

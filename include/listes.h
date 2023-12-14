@@ -5011,6 +5011,88 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_tree_eval : public Listincode {
+public:
+    
+    List_tree_eval(Listincode* l) : Listincode(l) {}
+    List_tree_eval(List* l) : Listincode(l) {}
+    List_tree_eval() {}
+    List_tree_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_tree_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_tree_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_tree_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_treei_eval : public Listincode {
+public:
+    
+    List_treei_eval(Listincode* l) : Listincode(l) {}
+    List_treei_eval(List* l) : Listincode(l) {}
+    List_treei_eval() {}
+    List_treei_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_treei_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_treei_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_treei_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_treen_eval : public Listincode {
+public:
+    
+    List_treen_eval(Listincode* l) : Listincode(l) {}
+    List_treen_eval(List* l) : Listincode(l) {}
+    List_treen_eval() {}
+    List_treen_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_treen_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_treen_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_treen_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+
 class List_loop_eval : public Listincode {
 public:
     

@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.12.13.12.17";
+static std::string version = "1.2023.12.14.14.46";
 string LispVersion() {
     return version;
 }
@@ -318,9 +318,12 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_defspace, "defspace", P_TWO, &List::evall_defspace);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
-    set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTHREE,  new List_dictionary_eval());
-    set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTHREE,  new List_dictionaryi_eval());
-    set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTHREE,  new List_dictionaryn_eval());
+    set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTWO,  new List_dictionary_eval());
+    set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTWO,  new List_dictionaryi_eval());
+    set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTWO,  new List_dictionaryn_eval());
+    set_instruction(l_tree, "tree", P_ONE | P_ATLEASTTWO,  new List_tree_eval());
+    set_instruction(l_treei, "treei", P_ONE | P_ATLEASTTWO,  new List_treei_eval());
+    set_instruction(l_treen, "treen", P_ONE | P_ATLEASTTWO,  new List_treen_eval());
     set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different, new List_different_eval());
     set_instruction(l_divide, "/", P_ATLEASTTWO, &List::evall_divide, new List_dividen());
     set_instruction(l_divideequal, "/=", P_ATLEASTTHREE, &List::evall_divideequal);
@@ -682,6 +685,9 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_dictionary] = U"dictionary_";
     code_to_string[t_dictionaryn] = U"dictionary_n_";
     code_to_string[t_dictionaryi] = U"dictionary_i_";
+    code_to_string[t_tree] = U"tree_";
+    code_to_string[t_treen] = U"tree_n_";
+    code_to_string[t_treei] = U"tree_i_";
     code_to_string[t_sets] = U"set_s_";
     code_to_string[t_setn] = U"set_n_";
     code_to_string[t_seti] = U"set_i_";
@@ -813,6 +819,9 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_dictionary);
     provideAtomType(t_dictionaryn);
     provideAtomType(t_dictionaryi);
+    provideAtomType(t_tree);
+    provideAtomType(t_treen);
+    provideAtomType(t_treei);
     provideAtomType(t_set);
     provideAtomType(t_seti);
     provideAtomType(t_sets);
@@ -846,6 +855,9 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
     recordingData(lisp->create_instruction(t_dictionaryn, _NULL), t_dictionaryn, v_null);
     recordingData(lisp->create_instruction(t_dictionaryi, _NULL), t_dictionaryi, v_null);
+    recordingData(lisp->create_instruction(t_tree, _NULL), t_tree, v_null);
+    recordingData(lisp->create_instruction(t_treen, _NULL), t_treen, v_null);
+    recordingData(lisp->create_instruction(t_treei, _NULL), t_treei, v_null);
     recordingData(lisp->create_instruction(t_set, _NULL), t_set, v_null);
     recordingData(lisp->create_instruction(t_seti, _NULL), t_seti, v_null);
     recordingData(lisp->create_instruction(t_sets, _NULL), t_sets, v_null);
@@ -1101,6 +1113,10 @@ void LispE::cleaning() {
     dictionary_pool.cleaning();
     dictionaryi_pool.cleaning();
     dictionaryn_pool.cleaning();
+
+    tree_pool.cleaning();
+    treei_pool.cleaning();
+    treen_pool.cleaning();
 
     sets_pool.cleaning();
     setn_pool.cleaning();
@@ -2984,6 +3000,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

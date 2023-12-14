@@ -73,7 +73,11 @@ public:
     vecte<Dictionarypool*> dictionary_pool;
     vecte<Dictionary_npool*> dictionaryn_pool;
     vecte<Dictionary_ipool*> dictionaryi_pool;
-    
+
+    vecte<Treepool*> tree_pool;
+    vecte<Tree_npool*> treen_pool;
+    vecte<Tree_ipool*> treei_pool;
+
     vecte<Listpool*> list_pool;
     
     vecte<Quotedpool*> quoted_pool;
@@ -186,6 +190,9 @@ public:
         dictionary_pool.setsize(max_size + 1);
         dictionaryn_pool.setsize(max_size + 1);
         dictionaryi_pool.setsize(max_size + 1);
+        tree_pool.setsize(max_size + 1);
+        treen_pool.setsize(max_size + 1);
+        treei_pool.setsize(max_size + 1);
         quoted_pool.setsize(max_size + 1);
         rangenumber_pool.setsize(max_size + 1);
         rangeinteger_pool.setsize(max_size + 1);
@@ -1423,6 +1430,18 @@ public:
 
     inline Dictionary_i* provideDictionary_i() {
         return dictionaryi_pool.last?dictionaryi_pool.backpop(): new Dictionary_ipool(this);
+    }
+
+    inline Tree* provideTree() {
+        return tree_pool.last?tree_pool.backpop(): new Treepool(this);
+    }
+
+    inline Tree_n* provideTree_n() {
+        return treen_pool.last?treen_pool.backpop(): new Tree_npool(this);
+    }
+
+    inline Tree_i* provideTree_i() {
+        return treei_pool.last?treei_pool.backpop(): new Tree_ipool(this);
     }
 
     inline Set_s* provideSet_s() {
