@@ -36,16 +36,16 @@
 
 (setq res ())
 (setq limits (integers))
+; The first value is the one with which the circuit repeats...
 (loop etat apath
-   (setq p true)
    (setq nb 0)
-   (while p
+   (while (!= (last etat) "Z")
       (loop a actions
          (setq etat (@ plan etat a))
          (+= nb 1)
          (check  (== (last etat) "Z")
             (push limits nb)
-            (setq p false)
+            (break)
          )
       )
    )
@@ -57,7 +57,7 @@
    ml
    (maplist 
       (\(v)
-         (filterlist (\(x) (zerop . % v x)) (iota (integer (/ v 2))))
+         (filterlist (\(x) (zerop . % v x)) (iota . integer (/ v 2)))
       )
       limits
    )
@@ -65,4 +65,5 @@
 
 ; We then multiply these values together: (1 47 293 71 79 67 59 61)
 (* . unique . flatten ml)
+
 
