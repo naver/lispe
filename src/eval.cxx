@@ -2634,7 +2634,7 @@ Element* List::eval(LispE* lisp) {
         return e;
     }
     catch (Error* err) {
-        return lisp->check_error(this, err, 0);
+        return lisp->check_error(this, err, -1);
     }
 }
 
@@ -2653,7 +2653,7 @@ Element* List::eval_list_instruction(LispE* lisp) {
     }
     catch(Error* err) {
         delete l;
-        return lisp->check_error(this, err, 0);
+        return lisp->check_error(this, err, -1);
     }
     delete l;
     return e;
