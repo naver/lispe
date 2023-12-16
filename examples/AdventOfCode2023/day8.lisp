@@ -10,7 +10,7 @@
 
 (setq actions (car données))
 
-(setq plan (tree))
+(setq plan (dictionarytree))
 (setq apath ())
 (loop c (cdr données)
    (setq x (rgx_findall (rgx "%C+") c))
@@ -57,7 +57,7 @@
    ml
    (maplist 
       (\(v)
-         (filterlist (\(x) (zerop . % v x)) (iota . integer (/ v 2)))
+         (filterlist (\(x) (zerop . % v x)) (irange 1 (integer (/ v 2)) 1))
       )
       limits
    )
@@ -65,5 +65,4 @@
 
 ; We then multiply these values together: (1 47 293 71 79 67 59 61)
 (* . unique . flatten ml)
-
 

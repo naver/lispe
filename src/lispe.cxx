@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.12.15.18.13";
+static std::string version = "1.2023.12.15.22.38";
 string LispVersion() {
     return version;
 }
@@ -321,9 +321,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTWO,  new List_dictionary_eval());
     set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTWO,  new List_dictionaryi_eval());
     set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTWO,  new List_dictionaryn_eval());
-    set_instruction(l_tree, "tree", P_ONE | P_ATLEASTTWO,  new List_tree_eval());
-    set_instruction(l_treei, "treei", P_ONE | P_ATLEASTTWO,  new List_treei_eval());
-    set_instruction(l_treen, "treen", P_ONE | P_ATLEASTTWO,  new List_treen_eval());
+    set_instruction(l_tree, "dictionarytree", P_ONE | P_ATLEASTTWO,  new List_tree_eval());
+    set_instruction(l_treei, "dictionarytreei", P_ONE | P_ATLEASTTWO,  new List_treei_eval());
+    set_instruction(l_treen, "dictionarytreen", P_ONE | P_ATLEASTTWO,  new List_treen_eval());
     set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different, new List_different_eval());
     set_instruction(l_divide, "/", P_ATLEASTTWO, &List::evall_divide, new List_dividen());
     set_instruction(l_divideequal, "/=", P_ATLEASTTHREE, &List::evall_divideequal);
@@ -685,9 +685,9 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_dictionary] = U"dictionary_";
     code_to_string[t_dictionaryn] = U"dictionary_n_";
     code_to_string[t_dictionaryi] = U"dictionary_i_";
-    code_to_string[t_tree] = U"tree_";
-    code_to_string[t_treen] = U"tree_n_";
-    code_to_string[t_treei] = U"tree_i_";
+    code_to_string[t_tree] = U"dictionarytree_";
+    code_to_string[t_treen] = U"dictionarytree_n_";
+    code_to_string[t_treei] = U"dictionarytree_i_";
     code_to_string[t_sets] = U"set_s_";
     code_to_string[t_setn] = U"set_n_";
     code_to_string[t_seti] = U"set_i_";
@@ -1952,69 +1952,69 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 break;
             case l_power:
                 if (nbarguments == 3 && element->index(2)->equalvalue((long)2))
-                    lm = new List_power2((List*)element);
+                    lm = new List_power2((Listincode*)element);
                 else
-                    lm = new List_execute((Listincode*)element, delegation->evals[lab]);
+                    lm = new List_powern((Listincode*)element);
                 break;
             case l_divide:
                 if (nbarguments == 2)
-                    lm = new List_divide2((List*)element);
+                    lm = new List_divide2((Listincode*)element);
                 else
                     if (nbarguments == 3)
-                        lm = new List_divide3((List*)element);
+                        lm = new List_divide3((Listincode*)element);
                     else
-                        lm = new List_dividen((List*)element);
+                        lm = new List_dividen((Listincode*)element);
                 break;
             case l_plus:
                 if (nbarguments == 2)
-                    lm = new List_plus2((List*)element);
+                    lm = new List_plus2((Listincode*)element);
                 else
                     if (nbarguments == 3)
-                        lm = new List_plus3((List*)element);
+                        lm = new List_plus3((Listincode*)element);
                     else
-                        lm = new List_plusn((List*)element);
+                        lm = new List_plusn((Listincode*)element);
                 break;
             case l_minus:
                 if (nbarguments == 2)
-                    lm = new List_minus2((List*)element);
+                    lm = new List_minus2((Listincode*)element);
                 else
                     if (nbarguments == 3)
-                        lm = new List_minus3((List*)element);
+                        lm = new List_minus3((Listincode*)element);
                     else
-                        lm = new List_minusn((List*)element);
+                        lm = new List_minusn((Listincode*)element);
                 break;
             case l_multiply:
                 if (nbarguments == 2)
-                    lm = new List_multiply2((List*)element);
+                    lm = new List_multiply2((Listincode*)element);
                 else
                     if (nbarguments == 3)
-                        lm = new List_multiply3((List*)element);
+                        lm = new List_multiply3((Listincode*)element);
                     else
-                        lm = new List_multiplyn((List*)element);
+                        lm = new List_multiplyn((Listincode*)element);
                 break;
             case l_divideequal:
                 if (equal_op_list)
-                    lm = new List_divideequal_list((List*)element);
+                    lm = new List_divideequal_list((Listincode*)element);
                 else
-                    lm = new List_divideequal_var((List*)element);
+                    lm = new List_divideequal_var((Listincode*)element);
                 break;
             case l_plusequal:
                 if (equal_op_list)
-                    lm = new List_plusequal_list((List*)element);
+                    lm = new List_plusequal_list((Listincode*)element);
                 else
-                    lm = new List_plusequal_var((List*)element);
+                    lm = new List_plusequal_var((Listincode*)element);
                 break;
             case l_minusequal:
                 if (equal_op_list)
-                    lm = new List_minusequal_list((List*)element);
+                    lm = new List_minusequal_list((Listincode*)element);
                 else
-                    lm = new List_minusequal_var((List*)element);
+                    lm = new List_minusequal_var((Listincode*)element);
                 break;
             case l_multiplyequal:
                 if (equal_op_list)
-                    lm = new List_multiplyequal_list((List*)element);
+                    lm = new List_multiplyequal_list((Listincode*)element);
                 else
-                    lm = new List_multiplyequal_var((List*)element);
+                    lm = new List_multiplyequal_var((Listincode*)element);
                 break;
             case l_mapcar:
             case l_maplist:
@@ -3000,6 +3000,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

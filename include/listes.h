@@ -7993,69 +7993,96 @@ public:
     Element* eval(LispE* lisp);
 };
 
-class List_divide2 : public List {
+class List_divide2 : public Listincode {
 public:
-    List_divide2(List* l) : List(l, 0) {
+    List_divide2(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_plus2 : public List {
+class List_plus2 : public Listincode {
 public:
-    List_plus2(List* l) : List(l, 0) {
+    List_plus2(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_minus2 : public List {
+class List_minus2 : public Listincode {
 public:
-    List_minus2(List* l) : List(l, 0) {
+    List_minus2(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_multiply2 : public List {
+class List_multiply2 : public Listincode {
 public:
-    List_multiply2(List* l) : List(l, 0) {
+    List_multiply2(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_divide3 : public List {
+class List_divide3 : public Listincode {
 public:
-    List_divide3(List* l) : List(l, 0) {
+    List_divide3(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_plus3 : public List {
+class List_plus3 : public Listincode {
 public:
-    List_plus3(List* l) : List(l, 0) {
+    List_plus3(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_minus3 : public List {
+class List_minus3 : public Listincode {
 public:
-    List_minus3(List* l) : List(l, 0) {
+    List_minus3(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_multiply3 : public List {
+class List_multiply3 : public Listincode {
 public:
-    List_multiply3(List* l) : List(l, 0) {
+    List_multiply3(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
+
+class List_powern : public Listincode {
+public:
+    List_powern(Listincode* l) : Listincode(l) {}
+    List_powern(List* l) : Listincode(l) {
+        terminal = l->terminal;
+    }
+    List_powern() {}
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_powern(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_powern(e);
+    }
+    
+    List* cloning() {
+        return new List_powern();
+    }
+    
+    Element* eval(LispE*);
+};
+
 
 class List_dividen : public Listincode {
 public:
@@ -8240,93 +8267,85 @@ public:
 };
 
 
-class List_power2 : public List {
+class List_power2 : public Listincode {
 public:
-    List_power2(List* l) : List(l, 0) {
+    List_power2(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_powern : public List {
-public:
-    Element* eval(LispE* lisp) {
-        return evall_power(lisp);
-    }
-};
-
-
-class List_divideequal_var : public List {
+class List_divideequal_var : public Listincode {
 public:
     int16_t label;
     
-    List_divideequal_var(List* l) : List(l, 0) {
+    List_divideequal_var(Listincode* l) : Listincode(l, 0) {
         label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_plusequal_var : public List {
+class List_plusequal_var : public Listincode {
 public:
     int16_t label;
     
-    List_plusequal_var(List* l) : List(l, 0) {
+    List_plusequal_var(Listincode* l) : Listincode(l, 0) {
         label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_minusequal_var : public List {
+class List_minusequal_var : public Listincode {
 public:
     int16_t label;
     
-    List_minusequal_var(List* l) : List(l, 0) {
+    List_minusequal_var(Listincode* l) : Listincode(l, 0) {
         label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_multiplyequal_var : public List {
+class List_multiplyequal_var : public Listincode {
 public:
     int16_t label;
     
-    List_multiplyequal_var(List* l) : List(l, 0) {
+    List_multiplyequal_var(Listincode* l) : Listincode(l, 0) {
         label = liste[1]->label();
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_divideequal_list : public List {
+class List_divideequal_list : public Listincode {
 public:
-    List_divideequal_list(List* l) : List(l, 0) {
+    List_divideequal_list(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_plusequal_list : public List {
+class List_plusequal_list : public Listincode {
 public:
-    List_plusequal_list(List* l) : List(l, 0) {
+    List_plusequal_list(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_minusequal_list : public List {
+class List_minusequal_list : public Listincode {
 public:
-    List_minusequal_list(List* l) : List(l, 0) {
+    List_minusequal_list(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);
 };
 
-class List_multiplyequal_list : public List {
+class List_multiplyequal_list : public Listincode {
 public:
-    List_multiplyequal_list(List* l) : List(l, 0) {
+    List_multiplyequal_list(Listincode* l) : Listincode(l, 0) {
         terminal = l->terminal;
     }
     Element* eval(LispE*);

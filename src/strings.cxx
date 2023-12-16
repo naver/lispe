@@ -25,7 +25,7 @@
 
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
     str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
-    str_format, str_padding, str_fill, str_getstruct, str_startwith,
+    str_format, str_padding, str_fill, str_getstruct, str_startwith, str_endwith,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
     str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
     str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter, str_indent
@@ -850,18 +850,48 @@ public:
     Element* method_startwith(LispE* lisp) {
         Element* vstr = lisp->get_variable(v_str);
         Element* vfnd = lisp->get_variable(v_fnd);
-        
+        long v_size;
+        long f_size;
+
         if (vstr->type == t_stringbyte) {
             string str = vstr->toString(lisp);
             string fnd = vfnd->toString(lisp);
-            return (fnd.size() <= str.size())?booleans_[(str.substr(0, fnd.size()) == fnd)]:null_;
+            v_size = str.size();
+            f_size = fnd.size();
+            return (f_size && f_size <= v_size)?booleans_[str.substr(0, f_size) == fnd]:null_;
         }
         
         u_ustring str = vstr->asUString(lisp);
         u_ustring fnd = vfnd->asUString(lisp);
-        return (fnd.size() <= str.size())?booleans_[(str.substr(0, fnd.size()) == fnd)]:null_;
+
+        v_size = str.size();
+        f_size = fnd.size();
+        return (f_size && f_size <= v_size)?booleans_[str.substr(0, f_size) == fnd]:null_;
     }
-    
+
+    Element* method_endwith(LispE* lisp) {
+        Element* vstr = lisp->get_variable(v_str);
+        Element* vfnd = lisp->get_variable(v_fnd);
+        long v_size;
+        long f_size;
+
+        if (vstr->type == t_stringbyte) {
+            string str = vstr->toString(lisp);
+            string fnd = vfnd->toString(lisp);
+            
+            v_size = str.size();
+            f_size = fnd.size();
+            return (f_size && f_size <= v_size)?booleans_[str.substr(v_size - f_size, f_size) == fnd]:null_;
+        }
+        
+        u_ustring str = vstr->asUString(lisp);
+        u_ustring fnd = vfnd->asUString(lisp);
+        v_size = str.size();
+        f_size = fnd.size();
+
+        return (f_size && f_size <= v_size)?booleans_[str.substr(v_size - f_size, f_size) == fnd]:null_;
+    }
+
     Element* method_split(LispE* lisp) {
         Element* vstr = lisp->get_variable(v_str);
         if (vstr->type == t_stringbyte)
@@ -1231,6 +1261,8 @@ public:
                 return method_split(lisp);
             case str_startwith:
                 return method_startwith(lisp);
+            case str_endwith:
+                return method_endwith(lisp);
             case str_ord: {
                 u_ustring strvalue =  lisp->get_variable(v_str)->asUString(lisp);
                 if (strvalue.size() == 0)
@@ -1516,6 +1548,10 @@ public:
                 return L"Returns the segmenter object: (segmenter keepblanks point). point == 0 is regular decimal point. point == 1 uses comma as decimal point. point == 2 enables both point and comma.";
             case str_indent:
                 return L"Indent a string containing code";
+            case str_startwith:
+                return L"Check if a string starts with a given string";
+            case str_endwith:
+                return L"Check if a string ends with a given string";
         }
 		return L"";
     }
@@ -1556,6 +1592,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
     lisp->extension("deflib startwith (str fnd)", new Stringmethod(lisp, str_startwith));
+    lisp->extension("deflib endwith (str fnd)", new Stringmethod(lisp, str_endwith));
 
     lisp->extension("deflib indent (str lispmode)", new Stringmethod(lisp, str_indent));
 
