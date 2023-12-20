@@ -3037,12 +3037,12 @@ bool Heaplambda::check_element(LispE* lisp, Element* element_value) {
     }
     catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
-        lisp->reset_in_stack(e1, lab1);
+        lisp->reset_in_stack(e1, lab1, element_value);
         throw err;
     }
 
     lisp->reset_in_stack(e2, lab2);
-    lisp->reset_in_stack(e1, lab1);
+    lisp->reset_in_stack(e1, lab1, element_value);
     
     return res;
 }
@@ -3063,12 +3063,12 @@ Element* Heaplambda::search_element(LispE* lisp, Element* element_value, long id
     }
     catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
-        lisp->reset_in_stack(e1, lab1);
+        lisp->reset_in_stack(e1, lab1, element_value);
         throw err;
     }
     
     lisp->reset_in_stack(e2, lab2);
-    lisp->reset_in_stack(e1, lab1);
+    lisp->reset_in_stack(e1, lab1, element_value);
 
     return (res == NULL)?null_:res;
 }
@@ -3090,12 +3090,12 @@ Element* Heaplambda::insert(LispE* lisp, Element* element, long idx) {
     }
     catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
-        lisp->reset_in_stack(e1, lab1);
+        lisp->reset_in_stack(e1, lab1, element);
         throw err;
     }
 
     lisp->reset_in_stack(e2, lab2);
-    lisp->reset_in_stack(e1, lab1);
+    lisp->reset_in_stack(e1, lab1, element);
     return this;
 }
 
@@ -3116,12 +3116,12 @@ Element* Heaplambda::insert(LispE* lisp, Element* element) {
     }
     catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
-        lisp->reset_in_stack(e1, lab1);
+        lisp->reset_in_stack(e1, lab1, element);
         throw err;
     }
 
     lisp->reset_in_stack(e2, lab2);
-    lisp->reset_in_stack(e1, lab1);
+    lisp->reset_in_stack(e1, lab1, element);
     return this;
 }
 
@@ -3142,12 +3142,12 @@ bool Heaplambda::remove(LispE* lisp, Element* element) {
     }
     catch (Error* err) {
         lisp->reset_in_stack(e2, lab2);
-        lisp->reset_in_stack(e1, lab1);
+        lisp->reset_in_stack(e1, lab1, element);
         throw err;
     }
 
     lisp->reset_in_stack(e2, lab2);
-    lisp->reset_in_stack(e1, lab1);
+    lisp->reset_in_stack(e1, lab1, element);
 
     return del;
 }
