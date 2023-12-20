@@ -2821,6 +2821,7 @@ Element* Heap::car(LispE* lisp) {
     return root->front(lisp);
 }
 
+
 Element* Heap::index(long i) {
     if (root == NULL)
         return NULL;

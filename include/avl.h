@@ -229,6 +229,7 @@ public:
     
     Element* asList(LispE* lisp, List* l);
     Element* asLList(LispE* lisp);
+    
     void flatten(LispE*, List* l) {
         if (root == NULL)
             return;
@@ -296,6 +297,10 @@ public:
     
     Element* car(LispE*);
     
+    Element* last_element(LispE* lisp) {
+        return root->back(NULL);
+    }
+
     Element* index(long i);
     Element* protected_index(LispE*,long i);
     Element* value_from_index(LispE*, long i);

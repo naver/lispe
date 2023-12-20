@@ -148,7 +148,7 @@ public:
         create_in_thread = false;
         check_arity_on_fly = false;
         id_thread = 0;
-        max_stack_size = 10000;
+        max_stack_size = 20000;
         trace = debug_none;
         delegation = new Delegation;
         isThread = false;
