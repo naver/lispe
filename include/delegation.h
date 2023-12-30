@@ -223,6 +223,8 @@ public:
     long i_current_line;
     long i_current_file;
     int16_t stop_execution;
+    
+    bool* windowmode;
 
     bool next_stop;
     char add_to_listing;

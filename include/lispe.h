@@ -148,7 +148,11 @@ public:
         create_in_thread = false;
         check_arity_on_fly = false;
         id_thread = 0;
-        max_stack_size = 20000;
+#ifdef LISPE_WASM
+        max_stack_size = 10000;
+#else
+        max_stack_size = 50000;
+#endif
         trace = debug_none;
         delegation = new Delegation;
         isThread = false;
@@ -520,6 +524,7 @@ public:
     Element* compile_eval(u_ustring& code);
 
     Element* load(string chemin);
+    void precompile(string chemin);
     lisp_code segmenting(string& code, Tokenizer& s);
     lisp_code segmenting(u_ustring& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
@@ -590,6 +595,11 @@ public:
         return (depth_stack >= max_stack_size?0x200:delegation->stop_execution);
     }
 
+    inline void setwindowmode(bool* wnd) {
+        *wnd = false;
+        delegation->windowmode = wnd;
+    }
+    
 #ifdef LISPE_WASM
     inline bool sendError() {
         delegation->set_end();
@@ -681,7 +691,7 @@ public:
     inline void sendEnd() {
         throw delegation->_THEEND;
     }
-    
+
     inline bool sendError(u_ustring msg) {
         throw new Error(msg);
     }

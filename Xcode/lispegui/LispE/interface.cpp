@@ -146,13 +146,12 @@ int Compilecode(const char* cde, const char* filename, char console) {
         lispe = new LispE(&special_characters);
         lispe->delegation->display_string_function = sendresult;
         lispe->delegation->reading_string_function = &ProcMacEditor;
-        windowmode = false;
     }
     current_path_name = filename;
     lispe->set_pathname(current_path_name);
     current_code = cde;
-    if (current_code.find("fltk_") != -1)
-        windowmode = true;
+    lispe->setwindowmode(&windowmode);
+    lispe->precompile(current_path_name);
     return 0;
 }
 
@@ -341,7 +340,7 @@ char Run(short idcode) {
         lispe = new LispE(&special_characters);
         lispe->delegation->display_string_function = sendresult;
         lispe->delegation->reading_string_function = &ProcMacEditor;
-        windowmode = false;
+        lispe->setwindowmode(&windowmode);
     }
     bool eval_code = false;
     if (current_code.find("(") == -1 && current_code.find(")") == -1) {

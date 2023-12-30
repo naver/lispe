@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.12.20.11.21";
+static std::string version = "1.2023.12.30.17.2";
 string LispVersion() {
     return version;
 }
@@ -113,6 +113,7 @@ static u_ustring U(string x) {
 Delegation::Delegation() : main_tokenizer(NULL) {
     mark = 0;
     current_error = NULL;
+    windowmode = NULL;
     
 #ifdef LISPE_WASM
     input_handler = NULL;
@@ -1437,8 +1438,11 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
             case 'A': // a simple token
                 if (checkcadr(buffer, buffer.size()))
                     infos.append(buffer, l_cadr, line_number, left, right);
-                else
+                else {
                     infos.append(buffer, t_atom, line_number, left, right);
+                    if (delegation->windowmode != NULL && buffer.find(U"fltk_") != -1)
+                        *delegation->windowmode = true;
+                }
                 if (in_quote == 1) in_quote = 0;
                 break;
             case '.':
@@ -2616,6 +2620,36 @@ Element* LispE::load(string pathname) {
     }
 }
 
+#ifdef LISPE_WASM
+void LispE::precompile(string pathname) {
+}
+#else
+void LispE::precompile(string pathname) {
+    pathname = NormalizePathname(pathname);
+    delegation->i_current_line = 0;
+    std::ifstream f(pathname.c_str(),std::ios::in|std::ios::binary);
+    if (f.fail()) {
+        string err = "Unknown file: ";
+        err += pathname;
+        throw new Error(err);
+    }
+
+    string code_base;
+    string ln;
+    while (!f.eof()) {
+        getline(f, ln);
+        code_base += ln + "\n";
+    }
+
+    u_ustring code;
+    s_utf8_to_unicode(code, code_base, code_base.size());
+
+    code = U"(__root__ " + code + U")";
+    Tokenizer parse;
+    segmenting(code, parse);
+}
+#endif
+
 Element* LispE::compile_eval(u_ustring& code) {
     try {
         Element* tree = compile_lisp_code(code);
@@ -3000,6 +3034,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
