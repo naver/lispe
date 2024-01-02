@@ -1568,12 +1568,6 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib lower (str)", new Stringmethod(lisp, str_lowercase));
     lisp->extension("deflib format (str n1 (n2) (n3) (n4) (n5) (n6) (n7) (n8) (n9))", new Stringmethod(lisp, str_format));
     lisp->extension("deflib upper (str)", new Stringmethod(lisp, str_uppercase));
-    lisp->extension("deflib lowerp (str)", new Stringmethod(lisp, str_is_lowercase));
-    lisp->extension("deflib upperp (str)", new Stringmethod(lisp, str_is_uppercase));
-    lisp->extension("deflib alphap (str)", new Stringmethod(lisp, str_is_alpha));
-    lisp->extension("deflib digitp (str)", new Stringmethod(lisp, str_is_digit));
-    lisp->extension("deflib emojip (str)", new Stringmethod(lisp, str_is_emoji));
-    lisp->extension("deflib punctuationp (str)", new Stringmethod(lisp, str_is_punctuation));
     lisp->extension("deflib replace (str fnd rep (index))", new Stringmethod(lisp, str_remplace));
     lisp->extension("deflib convert_in_base (str b (convert))", new Stringmethod(lisp, str_base));
     lisp->extension("deflib left (str nb)", new Stringmethod(lisp, str_left));
@@ -1588,11 +1582,27 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib padding (str c nb)", new Stringmethod(lisp, str_padding));
     lisp->extension("deflib fill (str nb)", new Stringmethod(lisp, str_fill));
     lisp->extension("deflib editdistance (str strbis)", new Stringmethod(lisp, str_edit_distance));
-    lisp->extension("deflib vowelp (str)", new Stringmethod(lisp, str_is_vowel));
-    lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
     lisp->extension("deflib deaccentuate (str)", new Stringmethod(lisp, str_deaccentuate));
     lisp->extension("deflib startwith (str fnd)", new Stringmethod(lisp, str_startwith));
     lisp->extension("deflib endwith (str fnd)", new Stringmethod(lisp, str_endwith));
+
+    lisp->extension("deflib lowerp (str)", new Stringmethod(lisp, str_is_lowercase));
+    lisp->extension("deflib upperp (str)", new Stringmethod(lisp, str_is_uppercase));
+    lisp->extension("deflib alphap (str)", new Stringmethod(lisp, str_is_alpha));
+    lisp->extension("deflib digitp (str)", new Stringmethod(lisp, str_is_digit));
+    lisp->extension("deflib emojip (str)", new Stringmethod(lisp, str_is_emoji));
+    lisp->extension("deflib punctuationp (str)", new Stringmethod(lisp, str_is_punctuation));
+    lisp->extension("deflib vowelp (str)", new Stringmethod(lisp, str_is_vowel));
+    lisp->extension("deflib consonantp (str)", new Stringmethod(lisp, str_is_consonant));
+
+    lisp->extension("deflib lower? (str)", new Stringmethod(lisp, str_is_lowercase));
+    lisp->extension("deflib upper? (str)", new Stringmethod(lisp, str_is_uppercase));
+    lisp->extension("deflib alpha? (str)", new Stringmethod(lisp, str_is_alpha));
+    lisp->extension("deflib digit? (str)", new Stringmethod(lisp, str_is_digit));
+    lisp->extension("deflib emoji? (str)", new Stringmethod(lisp, str_is_emoji));
+    lisp->extension("deflib punctuation? (str)", new Stringmethod(lisp, str_is_punctuation));
+    lisp->extension("deflib vowel? (str)", new Stringmethod(lisp, str_is_vowel));
+    lisp->extension("deflib consonant? (str)", new Stringmethod(lisp, str_is_consonant));
 
     lisp->extension("deflib indent (str lispmode)", new Stringmethod(lisp, str_indent));
 

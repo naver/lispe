@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2023.12.30.17.2";
+static std::string version = "1.2024.1.2.12.9";
 string LispVersion() {
     return version;
 }
@@ -265,13 +265,22 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_root, "__root__", P_ATLEASTONE, &List::evall_root);
     code_to_string[l_code] = U"_root";
 
+    set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp, new List_atomp_eval());
+    set_instruction(l_consp, "consp", P_TWO, &List::evall_consp, new List_consp_eval());
+    set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp, new List_cyclicp_eval());
+    set_instruction(l_emptyp, "emptyp", P_TWO, &List::evall_emptyp, new List_emptyp_eval());
+    set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp, new List_nullp_eval());
+    set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp, new List_numberp_eval());
+    set_instruction(l_signp, "signp", P_TWO,  new List_signp_eval());
+    set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp, new List_stringp_eval());
+    set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop, new List_zerop_eval());
+
     set_instruction(l_and, "and", P_ATLEASTTHREE,  new List_and_eval());
     set_instruction(l_andvalue, "andvalue", P_ATLEASTTHREE,  new List_andvalue_eval());
     set_instruction(l_apply, "apply", P_THREE,  new List_apply_eval());
     set_instruction(l_at, "at", P_ATLEASTTHREE, new List_at_eval());
     set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR,  new List_at_shape_eval());
     set_instruction(l_atom, "atom", P_TWO,  new List_converttoatom_eval());
-    set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp, new List_atomp_eval());
     set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
     set_instruction(l_bitand, "&", P_ATLEASTTWO,  new List_bitand());
     set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
@@ -295,11 +304,9 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_cond, "cond", P_ATLEASTTWO,  new List_cond_eval());
     set_instruction(l_cons, "cons", P_THREE, new List_cons_eval());
     set_instruction(l_consb, "consb", P_THREE,  new List_consb_eval());
-    set_instruction(l_consp, "consp", P_TWO, &List::evall_consp, new List_consp_eval());
     set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
     set_instruction(l_count, "count", P_THREE|P_FOUR,  new List_count_eval());
     set_instruction(l_slice, "slice", P_THREE,  new List_slice_eval());
-    set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp, new List_cyclicp_eval());
     set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
     set_instruction(l_enumerate, "enum", P_TWO | P_THREE, new List_enumerate_eval());
@@ -330,7 +337,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_divideequal, "/=", P_ATLEASTTHREE, &List::evall_divideequal);
     set_instruction(l_clone, "clone", P_TWO, &List::evall_clone, new List_clone_eval());
     set_instruction(l_elapse, "elapse", P_ATLEASTONE,  new List_elapse_eval());
-    set_instruction(l_emptyp, "emptyp", P_TWO, &List::evall_emptyp, new List_emptyp_eval());
     set_instruction(l_eq, "eq", P_ATLEASTTHREE,  new List_eq_eval());
     set_instruction(l_equal, "=", P_ATLEASTTHREE,  &List::evall_equal, new List_equal_eval());
     set_instruction(l_eval, "eval", P_TWO,  new List_eval_eval());
@@ -422,8 +428,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_nconcn, "nconcn", P_ATLEASTONE,  new List_nconcn_eval());
     set_instruction(l_neq, "neq", P_ATLEASTTHREE, new List_neq_eval());
     set_instruction(l_not, "¬", P_TWO, &List::evall_not, new List_not_eval());
-    set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp, new List_nullp_eval());
-    set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp, new List_numberp_eval());
     set_instruction(l_floats, "floats", P_ATLEASTONE,  new List_floats_eval());
     set_instruction(l_numbers, "numbers", P_ATLEASTONE,  new List_numbers_eval());
     set_instruction(l_or, "or", P_ATLEASTTHREE,  new List_or_eval());
@@ -474,12 +478,10 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq, new List_setq_eval());
     set_instruction(l_seth, "seth", P_THREE, &List::evall_seth, new List_seth_eval());
     set_instruction(l_sign, "sign", P_TWO, &List::evall_sign, new List_sign_eval());
-    set_instruction(l_signp, "signp", P_TWO,  new List_signp_eval());
     set_instruction(l_size, "size", P_TWO, &List::evall_size, new List_size_eval());
     set_instruction(l_sleep, "sleep", P_TWO, &List::evall_sleep, new List_sleep_eval());
     set_instruction(l_sort, "sort", P_THREE,  new List_sort_eval());
     set_instruction(l_space, "space", P_ATLEASTTHREE,  new List_space_eval());
-    set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp, new List_stringp_eval());
     set_instruction(l_strings, "strings", P_ATLEASTONE,  new List_strings_eval());
     set_instruction(l_stringbytes, "stringbytes", P_ATLEASTONE,  new List_stringbytes_eval());
     set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
@@ -509,7 +511,6 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_while, "while", P_ATLEASTTHREE,  new List_while_eval());
     set_instruction(l_whilein, "whilein", P_ATLEASTFIVE,  new List_whilein_eval());
     set_instruction(l_xor, "xor", P_ATLEASTTHREE,  new List_xor_eval());
-    set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop, new List_zerop_eval());
     set_instruction(l_zip, "zip", P_ATLEASTTHREE,  new List_zip_eval());
     set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR,  &List::evall_zipwith, new List_zipwith_eval());
 
@@ -1012,6 +1013,25 @@ void Delegation::initialisation(LispE* lisp) {
 
     w = U("tally");
     string_to_code[w] = l_tally;
+
+    w = U("atom?");
+    string_to_code[w] =  l_atomp;
+    w = U("cons?");
+    string_to_code[w] =  l_consp;
+    w = U("cyclic?");
+    string_to_code[w] =  l_cyclic;
+    w = U("empty?");
+    string_to_code[w] =  l_emptyp;
+    w = U("null?");
+    string_to_code[w] =  l_nullp;
+    w = U("number?");
+    string_to_code[w] =  l_numberp;
+    w = U("sign?");
+    string_to_code[w] =  l_signp;
+    w = U("string?");
+    string_to_code[w] =  l_stringp;
+    w = U("zero?");
+    string_to_code[w] =  l_zerop;
 
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
@@ -2628,11 +2648,8 @@ void LispE::precompile(string pathname) {
     pathname = NormalizePathname(pathname);
     delegation->i_current_line = 0;
     std::ifstream f(pathname.c_str(),std::ios::in|std::ios::binary);
-    if (f.fail()) {
-        string err = "Unknown file: ";
-        err += pathname;
-        throw new Error(err);
-    }
+    if (f.fail())
+        return;
 
     string code_base;
     string ln;
@@ -3034,6 +3051,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
