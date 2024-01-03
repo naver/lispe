@@ -39,9 +39,13 @@ if ostype == b"Darwin":
        f.write("PLATFORM = macarm\n")
        f.write("FLTKVERSION=-DFLTK14\n")
        f.write("COPTION = -Ofast -DAPPLE\n")
+       f.write("BLAS = -Llib/M1 -lblaspp\n")
+       f.write("BLASLIB = lib/M1/libblaspp.dylib\n")
     else:
        f.write("PLATFORM = macos\n")
        f.write("COPTION = -Ofast -DAPPLE\n")
+       f.write("BLAS = -Llib/mac -lblaspp\n")
+       f.write("BLASLIB = lib/mac/libblaspp.so\n")
     f.write("LIBFLTK = -Llibs/$(PLATFORM) -lfltk -lfltk_images -framework Cocoa")
     exit(-1)
 
@@ -105,13 +109,14 @@ def cherchelib(lalib):
                     namelib = "-l"+lalib
                     return [pathlib, libincludes[ilib], namelib, version]
         ilib += 1
+    return ["#","#","#","#"]
 
 def selectionBoost():
     os.system("cd check; rm -f lib*.so")
     f=open("Makefile.in", "w")
     f.write("COMPPLUSPLUS = g++\n")
     f.write("COPTION = -O3\n")
-    f.write("PLATFORM=linux\n")
+    f.write("PLATFORM = linux\n")
     f.write("# If mouse does not work, decomment next line and recompile\n")
     f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100\n")
     [pathlib, includepath, namelib, vide] = cherchelib("libcurl")
@@ -125,8 +130,9 @@ def selectionBoost():
     f.write("INCLUDEPYTHON = -I/usr/include/python"+pythonversion+"\n")
     f.write("PYTHONLIB = "+pathlibpython+" " + namelibpython+"\n")
     [pathlib, includepath, namelib, vide] = cherchelib("fltk")
-    [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
-    f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
+    if pathlib != "#":
+        [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
+        f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
     f.close()
 
 def selectionNoRegex():
@@ -134,9 +140,9 @@ def selectionNoRegex():
     f=open("Makefile.in", "w")
     f.write("COMPPLUSPLUS = g++\n")
     f.write("COPTION = -O3\n")
-    f.write("PLATFORM=linux\n")
+    f.write("PLATFORM = linux\n")
     f.write("# If mouse does not work, decomment next line and recompile")
-    f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100")
+    f.write("# VTERM_MOUSE = -DXTERM_MOUSE_VT100")
     [pathlib, includepath, namelib, vide] = cherchelib("libcurl")
     f.write("CURLLIB = "+pathlib+" "+namelib+"\n")
     [pathlib, includepath, namelib, vide] = cherchelib("xml2")
@@ -148,8 +154,9 @@ def selectionNoRegex():
     f.write("INCLUDEPYTHON = -I/usr/include/python"+pythonversion+"\n")
     f.write("PYTHONLIB = "+pathlibpython+" " + namelibpython+"\n")
     [pathlib, includepath, namelib, vide] = cherchelib("fltk")
-    [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
-    f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
+    if pathlib != "#":
+        [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
+        f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
     f.close()
 
 
@@ -157,10 +164,11 @@ def selectionNoRegex():
 def reinitialisation():
     os.system("cd check; rm -f lib*.so")
     f=open("Makefile.in", "w")
+    f.write("COMPPLUSPLUS = g++\n")
     f.write("COPTION = -O3\n")
-    f.write("PLATFORM=linux\n")
+    f.write("PLATFORM = linux\n")
     f.write("# If mouse does not work, decomment next line and recompile")
-    f.write("# VTERM_MOUSE=-DXTERM_MOUSE_VT100")
+    f.write("# VTERM_MOUSE = -DXTERM_MOUSE_VT100")
     [pathlib, includepath, namelib, vide] = cherchelib("libcurl")
     f.write("CURLLIB = "+pathlib+" "+namelib+"\n")
     [pathlib, includepath, namelib, vide] = cherchelib("xml2")
@@ -172,8 +180,9 @@ def reinitialisation():
     f.write("INCLUDEPYTHON = -I/usr/include/python"+pythonversion+"\n")
     f.write("PYTHONLIB = "+pathlibpython+" " + namelibpython+"\n")
     [pathlib, includepath, namelib, vide] = cherchelib("fltk")
-    [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
-    f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
+    if pathlib != "#":
+        [pathlib, includepath, namelib, vide] = cherchelib("fltk_images")
+        f.write("LIBFLTK = "+pathlib+" -lfltk -lfltk_images"+"\n")
     f.close()
 
 regex = 0
