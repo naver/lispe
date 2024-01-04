@@ -146,6 +146,7 @@ const char u_c_down[] = { 27, 91, 49, 59, 53, 66, 0 }; //\033[1;5B
 const char enablemouse100[] = {27,91,'?','1','0','0','3','h',0};
 const char enablemouse[] = {27,91,'?','1','0','0','3','h',27,91,'?','1','0','1','5','h',27,91,'?','1','0','1','6','h',0};
 
+const char disablemouse100[] = {27,91,'?','1','0','0','3','l',0};
 const char disablemouse[] = {27,91,'?','1','0','0','0','l',0};
 const char showcursor[] = {27,91,'?','2','5','h',0};
 const char hidecursor[] = {27,91,'?','2','5','l',0};
@@ -307,7 +308,10 @@ public:
     }
     
     void mouseoff() {
-        sendcommand(disablemouse);
+        if (vt100)
+            sendcommand(disablemouse100);
+        else
+            sendcommand(disablemouse);
         mouse_status = false;
     }
     
@@ -321,7 +325,10 @@ public:
             activate_mouse = true;
         }
         else {
-            sendcommand(disablemouse);
+            if (vt100)
+                sendcommand(disablemouse100);
+            else
+                sendcommand(disablemouse);
             mouse_status = false;
         }
     }
