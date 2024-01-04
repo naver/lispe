@@ -132,8 +132,12 @@ jag_get::jag_get(bool inside) {
     mouse_status = false;
     activate_mouse = false;
 	nbclicks = 0;
-    
+
+#ifdef XTERM_MOUSE_VT100
+    vt100 = true;
+#else
     vt100 = false;
+#endif
 
 }
 
