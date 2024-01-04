@@ -301,7 +301,7 @@ Element* Float::plus_direct(LispE* lisp, Element* e) {
             content += ((Integer*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content += content;
             release();
             return c;
@@ -326,7 +326,7 @@ Element* Float::minus_direct(LispE* lisp, Element* e) {
             content -= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = (double)content - c->content;
             release();
             return c;
@@ -351,7 +351,7 @@ Element* Float::multiply_direct(LispE* lisp, Element* e) {
             content *= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content *= content;
             release();
             return c;
@@ -387,7 +387,7 @@ Element* Float::divide_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = (double)content / c->content;
             release();
             return c;
@@ -651,7 +651,7 @@ Element* Number::plus_direct(LispE* lisp, Element* e) {
             content += ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content += content;
             release();
             return c;
@@ -676,7 +676,7 @@ Element* Number::minus_direct(LispE* lisp, Element* e) {
             content -= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = content - c->content;
             release();
             return c;
@@ -701,7 +701,7 @@ Element* Number::multiply_direct(LispE* lisp, Element* e) {
             content *= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content *= content;
             release();
             return c;
@@ -737,7 +737,7 @@ Element* Number::divide_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = content / c->content;
             release();
             return c;
@@ -1000,7 +1000,7 @@ Element* Integer::plus_direct(LispE* lisp, Element* e) {
             content += ((Integer*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content += content;
             release();
             return c;
@@ -1025,7 +1025,7 @@ Element* Integer::minus_direct(LispE* lisp, Element* e) {
             content -= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = (double)content - c->content;
             release();
             return c;
@@ -1050,7 +1050,7 @@ Element* Integer::multiply_direct(LispE* lisp, Element* e) {
             content *= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content *= content;
             release();
             return c;
@@ -1090,7 +1090,7 @@ Element* Integer::divide_direct(LispE* lisp, Element* e) {
             return lisp->provideNumber(d);
         }
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = (double)content / c->content;
             release();
             return c;
@@ -1291,7 +1291,7 @@ Element* Short::plus_direct(LispE* lisp, Element* e) {
             content += ((Integer*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content += content;
             release();
             return c;
@@ -1316,7 +1316,7 @@ Element* Short::minus_direct(LispE* lisp, Element* e) {
             content -= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = (double)content - c->content;
             release();
             return c;
@@ -1341,7 +1341,7 @@ Element* Short::multiply_direct(LispE* lisp, Element* e) {
             content *= ((Short*)e)->content;
             return this;
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content *= content;
             release();
             return c;
@@ -1381,7 +1381,7 @@ Element* Short::divide_direct(LispE* lisp, Element* e) {
             return lisp->provideNumber(d);
         }
         case t_complex: {
-            Complex* c = lisp->provideComplex(((Complex*)e)->content);
+            Complexe* c = lisp->provideComplex(((Complexe*)e)->content);
             c->content = (double)content / c->content;
             release();
             return c;
@@ -1569,7 +1569,7 @@ Element* Short::rightshift(LispE* lisp, Element* e)  {
     return new Short(content>>e->checkShort(lisp));
 }
 
-Element* Complex::plus(LispE* lisp, Element* e) {
+Element* Complexe::plus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->copyatom(lisp, 1);
         n = n->plus(lisp, this);
@@ -1580,12 +1580,12 @@ Element* Complex::plus(LispE* lisp, Element* e) {
         content += e->asNumber();
         return this;
     }
-    Complex* c = lisp->provideComplex(content);
+    Complexe* c = lisp->provideComplex(content);
     c->content += e->asNumber();
     return c;
 }
 
-Element* Complex::minus(LispE* lisp, Element* e) {
+Element* Complexe::minus(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
         release();
@@ -1595,12 +1595,12 @@ Element* Complex::minus(LispE* lisp, Element* e) {
         content -= e->asNumber();
         return this;
     }
-    Complex* c = lisp->provideComplex(content);
+    Complexe* c = lisp->provideComplex(content);
     c->content -= e->asNumber();
     return c;
 }
 
-Element* Complex::multiply(LispE* lisp, Element* e) {
+Element* Complexe::multiply(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->copyatom(lisp, 1);
         n = n->multiply(lisp, this);
@@ -1611,12 +1611,12 @@ Element* Complex::multiply(LispE* lisp, Element* e) {
         content *= e->asNumber();
         return this;
     }
-    Complex* c = lisp->provideComplex(content);
+    Complexe* c = lisp->provideComplex(content);
     c->content *= e->asNumber();
     return c;
 }
 
-Element* Complex::plus_direct(LispE* lisp, Element* e) {
+Element* Complexe::plus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
             content += ((Float*)e)->content;
@@ -1631,7 +1631,7 @@ Element* Complex::plus_direct(LispE* lisp, Element* e) {
             content += ((Integer*)e)->content;
             return this;
         case t_complex: {
-            content += ((Complex*)e)->content;
+            content += ((Complexe*)e)->content;
             return this;
         }
         default:
@@ -1639,7 +1639,7 @@ Element* Complex::plus_direct(LispE* lisp, Element* e) {
     }
 }
 
-Element* Complex::minus_direct(LispE* lisp, Element* e) {
+Element* Complexe::minus_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
             content -= ((Float*)e)->content;
@@ -1654,7 +1654,7 @@ Element* Complex::minus_direct(LispE* lisp, Element* e) {
             content -= ((Short*)e)->content;
             return this;
         case t_complex: {
-            content -= ((Complex*)e)->content;
+            content -= ((Complexe*)e)->content;
             return this;
         }
         default:
@@ -1662,7 +1662,7 @@ Element* Complex::minus_direct(LispE* lisp, Element* e) {
     }
 }
 
-Element* Complex::multiply_direct(LispE* lisp, Element* e) {
+Element* Complexe::multiply_direct(LispE* lisp, Element* e) {
     switch (e->type) {
         case t_float:
             content *= ((Float*)e)->content;
@@ -1677,7 +1677,7 @@ Element* Complex::multiply_direct(LispE* lisp, Element* e) {
             content *= ((Short*)e)->content;
             return this;
         case t_complex: {
-            content *= ((Complex*)e)->content;
+            content *= ((Complexe*)e)->content;
             return this;
         }
         default:
@@ -1685,7 +1685,7 @@ Element* Complex::multiply_direct(LispE* lisp, Element* e) {
     }
 }
 
-Element* Complex::divide_direct(LispE* lisp, Element* e) {
+Element* Complexe::divide_direct(LispE* lisp, Element* e) {
     if (e->isEmpty())
         throw new Error("Error: division by zero");
     
@@ -1702,7 +1702,7 @@ Element* Complex::divide_direct(LispE* lisp, Element* e) {
             return this;
         }
         case t_complex: {
-            content /= ((Complex*)e)->content;
+            content /= ((Complexe*)e)->content;
             return this;
         }
         default:
@@ -1710,7 +1710,7 @@ Element* Complex::divide_direct(LispE* lisp, Element* e) {
     }
 }
 
-Element* Complex::divide(LispE* lisp, Element* e) {
+Element* Complexe::divide(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
         release();
@@ -1725,25 +1725,25 @@ Element* Complex::divide(LispE* lisp, Element* e) {
         content /= v;
         return this;
     }
-    Complex* c = lisp->provideComplex(content);
+    Complexe* c = lisp->provideComplex(content);
     c->content /= v;
     return c;
 }
 
-Element* Complex::power(LispE* lisp, Element* e) {
+Element* Complexe::power(LispE* lisp, Element* e) {
     if (e->isList()) {
         Element* n = e->newInstance(this);
         return n->power(lisp, e);
     }
     
     if (e->type == t_complex) {
-        std::complex<double>& v = ((Complex*)e)->content;
+        std::complex<double>& v = ((Complexe*)e)->content;
         if (status != s_constant) {
             content = pow(content, v);
             return this;
         }
         
-        Complex* c = lisp->provideComplex(0,1);
+        Complexe* c = lisp->provideComplex(0,1);
         c->content = pow(content, v);
         return c;
     }
@@ -1753,7 +1753,7 @@ Element* Complex::power(LispE* lisp, Element* e) {
         return this;
     }
     
-    Complex* c = lisp->provideComplex(0,1);
+    Complexe* c = lisp->provideComplex(0,1);
     c->content = pow(content, e->asNumber());
     return c;
 }
@@ -6442,7 +6442,7 @@ Element* List_power2::eval(LispE* lisp) {
                 lisp->resetStack();
                 return e;
             case t_complex:
-                ((Complex*)e)->content *= ((Complex*)e)->content;
+                ((Complexe*)e)->content *= ((Complexe*)e)->content;
                 lisp->resetStack();
                 return e;
             default:
@@ -8741,7 +8741,7 @@ public:
         v_val = lisp->encode(val);
     }
     
-    Element* complex_math(Complex* c) {
+    Element* complex_math(Complexe* c) {
         std::complex<double>& v = c->content;
         switch (m) {
             case math_fabs: {
@@ -8898,7 +8898,7 @@ public:
         //eval is either: command, setenv or getenv...
         Element* val_v = lisp->get_variable(v_val);
         if (val_v->type == t_complex) {
-            Complex* c = new Complex(((Complex*)val_v)->content);
+            Complexe* c = new Complexe(((Complexe*)val_v)->content);
             return complex_math(c);
         }
         double v;
@@ -9452,7 +9452,7 @@ Element* Short::negate(LispE* lisp) {
     return booleans_[!content];
 }
 
-Element* Complex::negate(LispE* lisp) {
+Element* Complexe::negate(LispE* lisp) {
     return booleans_[!Boolean()];
 }
 

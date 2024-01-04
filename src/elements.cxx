@@ -140,7 +140,7 @@ Element* Short::duplicate_constant(LispE* lisp) {
     return !status?this:new Short(content);
 }
 
-Element* Complex::duplicate_constant(LispE* lisp) {
+Element* Complexe::duplicate_constant(LispE* lisp) {
     return !status?this:lisp->provideComplex(content);
 }
 
@@ -482,21 +482,21 @@ void Integerpool::release() {
     }
 }
 
-void Complexpool::decrement() {
+void Complexepool::decrement() {
     status -= not_protected();
     if (!status) {
         lisp->complex_pool.push_max(lisp->max_size, this);
     }
 }
 
-void Complexpool::decrementstatus(uint16_t nb) {
+void Complexepool::decrementstatus(uint16_t nb) {
     status -= nb * not_protected();
     if (!status) {
         lisp->complex_pool.push_max(lisp->max_size, this);
     }
 }
 
-void Complexpool::release() {
+void Complexepool::release() {
     if (!status) {
         lisp->complex_pool.push_max(lisp->max_size, this);
     }
@@ -636,23 +636,23 @@ Element* Integerpool::copying(bool duplicate) {
     return lisp->provideInteger(content);
 }
 
-Element* Complexpool::fullcopy() {
+Element* Complexepool::fullcopy() {
     if (lisp->create_in_thread)
-        return new Complex(content);
+        return new Complexe(content);
     return lisp->provideComplex(content);
 }
 
-Element* Complexpool::copyatom(LispE* lsp, uint16_t s) {
+Element* Complexepool::copyatom(LispE* lsp, uint16_t s) {
     return (status < s)?this:lsp->provideComplex(content);
 }
 
-Element* Complexpool::copying(bool duplicate) {
+Element* Complexepool::copying(bool duplicate) {
     //If we are in a thread preparation, then we
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
     if (lisp->create_in_thread)
-        return new Complex(content);
+        return new Complexe(content);
     
     if (!status)
         return this;
@@ -1107,12 +1107,12 @@ Element* Short::invert_sign(LispE* lisp) {
     return new Short(content * -1);
 }
 
-Element* Complex::invert_sign(LispE* lisp) {
+Element* Complexe::invert_sign(LispE* lisp) {
     if (!status) {
         content *= -1;
         return this;
     }
-    Complex* c = lisp->provideComplex(content);
+    Complexe* c = lisp->provideComplex(content);
     c->content *= -1;
     return c;
 }
@@ -2178,8 +2178,8 @@ Element* Short::reverse(LispE* lisp, bool duplicate) {
     return new Short(content*-1);
 }
 
-Element* Complex::reverse(LispE* lisp, bool duplicate) {
-    Complex* c = lisp->provideComplex(content);
+Element* Complexe::reverse(LispE* lisp, bool duplicate) {
+    Complexe* c = lisp->provideComplex(content);
     c->content *= -1;
     return c;
 }
@@ -2538,8 +2538,8 @@ Element* Short::equal(LispE* lisp, Element* e) {
     return booleans_[(e->isNumber() && content == e->asShort())];
 }
 
-Element* Complex::equal(LispE* lisp, Element* e) {
-    return booleans_[(e->type == t_complex && content == ((Complex*)e)->content)];
+Element* Complexe::equal(LispE* lisp, Element* e) {
+    return booleans_[(e->type == t_complex && content == ((Complexe*)e)->content)];
 }
 
 Element* Integer::equal(LispE* lisp, Element* e) {
@@ -2578,8 +2578,8 @@ bool Short::egal(Element* e) {
     return (e->isNumber() && content == e->asShort());
 }
 
-bool Complex::egal(Element* e) {
-   return (e->type == t_complex && content == ((Complex*)e)->content);
+bool Complexe::egal(Element* e) {
+   return (e->type == t_complex && content == ((Complexe*)e)->content);
 }
 
                       
@@ -2726,8 +2726,8 @@ char compare_complex(std::complex<double>& c, std::complex<double>& v, char cmp)
     }
 }
 
-Element* Complex::less(LispE* lisp, Element* e) {
-    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 0) == -1];
+Element* Complexe::less(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complexe*)e)->content, 0) == -1];
 }
 
 Element* Short::compare(LispE* lisp, Element* e) {
@@ -2736,9 +2736,9 @@ Element* Short::compare(LispE* lisp, Element* e) {
     return lisp->delegation->_COMPARE_BOOLEANS[test];
 }
 
-Element* Complex::compare(LispE* lisp, Element* e) {
+Element* Complexe::compare(LispE* lisp, Element* e) {
     if (e->type == t_complex) {
-        int16_t test = compare_complex(content, ((Complex*)e)->content, 4);
+        int16_t test = compare_complex(content, ((Complexe*)e)->content, 4);
         return lisp->delegation->_COMPARE_BOOLEANS[test];
     }
     else
@@ -2749,8 +2749,8 @@ Element* Short::lessorequal(LispE* lisp, Element* e) {
     return booleans_[content <= e->asShort()];
 }
 
-Element* Complex::lessorequal(LispE* lisp, Element* e) {
-    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 1) == -1];
+Element* Complexe::lessorequal(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complexe*)e)->content, 1) == -1];
 }
 
 Element* Integer::lessorequal(LispE* lisp, Element* e){
@@ -2769,16 +2769,16 @@ Element* Short::more(LispE* lisp, Element* e) {
     return booleans_[content > e->asShort()];
 }
 
-Element* Complex::more(LispE* lisp, Element* e) {
-    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 2) == -1];
+Element* Complexe::more(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complexe*)e)->content, 2) == -1];
 }
 
 Element* Short::moreorequal(LispE* lisp, Element* e) {
     return booleans_[content >= e->asShort()];
 }
 
-Element* Complex::moreorequal(LispE* lisp, Element* e) {
-    return booleans_[e->type == t_complex && compare_complex(content, ((Complex*)e)->content, 3) == -1];
+Element* Complexe::moreorequal(LispE* lisp, Element* e) {
+    return booleans_[e->type == t_complex && compare_complex(content, ((Complexe*)e)->content, 3) == -1];
 }
 
 //------------------------------------------------------------------------------------------

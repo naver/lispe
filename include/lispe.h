@@ -56,7 +56,7 @@ public:
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
     vecte<Integerpool*> integer_pool;
-    vecte<Complexpool*> complex_pool;
+    vecte<Complexepool*> complex_pool;
     vecte<Infiniterangenumber*> rangenumber_pool;
     vecte<Infiniterangeinteger*> rangeinteger_pool;
     vecte<Stringpool*> string_pool;
@@ -219,7 +219,7 @@ public:
             quoted_pool.push_raw(new Quotedpool(this));
             rangenumber_pool.push_raw(new Infiniterangenumber(this, 0,0));
             rangeinteger_pool.push_raw(new Infiniterangeinteger(this, 0,0));
-            complex_pool.push_raw(new Complexpool(this, 0, 0));
+            complex_pool.push_raw(new Complexepool(this, 0, 0));
             strings_pool.push_raw(new Stringspool(this));
             numbers_pool.push_raw(new Numberspool(this));
             floats_pool.push_raw(new Floatspool(this));
@@ -1567,12 +1567,12 @@ public:
         return integer_pool.last?integer_pool.backpop()->set(d):new Integerpool(this, d);
     }
 
-    inline Complex* provideComplex(double d, double imaginary) {
-        return complex_pool.last?complex_pool.backpop()->set(d, imaginary):new Complexpool(this, d, imaginary);
+    inline Complexe* provideComplex(double d, double imaginary) {
+        return complex_pool.last?complex_pool.backpop()->set(d, imaginary):new Complexepool(this, d, imaginary);
     }
 
-    inline Complex* provideComplex(std::complex<double>& d) {
-        return complex_pool.last?complex_pool.backpop()->set(d):new Complexpool(this, d);
+    inline Complexe* provideComplex(std::complex<double>& d) {
+        return complex_pool.last?complex_pool.backpop()->set(d):new Complexepool(this, d);
     }
 
     inline Infiniterangenumber* providerange_Number(double v, double i) {

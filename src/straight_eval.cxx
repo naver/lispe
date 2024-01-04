@@ -432,7 +432,7 @@ Element* List_real_eval::eval(LispE* lisp) {
 Element* List_imaginary_eval::eval(LispE* lisp) {
     Element* e = liste[1]->eval(lisp);
     if (e->type == t_complex) {
-        double d = ((Complex*)e)->content.imag();
+        double d = ((Complexe*)e)->content.imag();
         e->release();
         return lisp->provideNumber(d);
     }
