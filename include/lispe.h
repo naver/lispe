@@ -12,6 +12,7 @@
 #ifndef lispe_h
 #define lispe_h
 
+#include <cstdint>
 #include "segmentation.h"
 #include "listes.h"
 #include "llistes.h"

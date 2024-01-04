@@ -16,6 +16,7 @@
 #include <set>
 #include <complex>
 #include <cmath>
+#include <cstdint>
 
 #ifdef MACDEBUG
 extern vector<Element*> __indexes;

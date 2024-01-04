@@ -9,6 +9,8 @@
 
 #ifndef Avl_h
 #define Avl_h
+#include <cstdint>
+
 class Heap;
 
 class Avl {

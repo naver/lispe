@@ -11,6 +11,8 @@
 #ifndef vecte_h
 #define vecte_h
 
+#include <cstdint>
+
 class List;
 
 template <class Z> class vecte {

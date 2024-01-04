@@ -10,6 +10,7 @@
 #ifndef i_mapbin
 #define i_mapbin
 
+#include <cstdint>
 
 const uint16_t binBits = 6;
 const uint16_t binSize = 1 << binBits;
