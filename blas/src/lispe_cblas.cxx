@@ -145,7 +145,7 @@ Element *Lispe_blas::axpy(LispE *lisp)
         int16_t *ybuff = ((Shorts *)result)->liste.items->buffer;
         int16_t v = 1;
         
-        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
+        axpy(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
@@ -155,7 +155,7 @@ Element *Lispe_blas::axpy(LispE *lisp)
         Integers *result = new Integers((Integers *)argument2);
         long *ybuff = ((Integers *)result)->liste.items->buffer;
         long v = 1;
-        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
+        axpy(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
@@ -165,7 +165,7 @@ Element *Lispe_blas::axpy(LispE *lisp)
         Floats *result = new Floats((Floats *)argument2);
         float *ybuff = ((Floats *)result)->liste.items->buffer;
         float v = 1;
-        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
+        axpy(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
@@ -175,7 +175,7 @@ Element *Lispe_blas::axpy(LispE *lisp)
         Numbers *result = new Numbers((Numbers *)argument2);
         double *ybuff = ((Numbers *)result)->liste.items->buffer;
         double v = 1;
-        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
+        axpy(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
