@@ -1,287 +1,113 @@
+mkdir -p ../objs/blas
 g++ -std=c++11 -fPIC -w -c -O3 -DUNIX -I../include -Iinclude src/lispe_cblas.cxx -o ../objs/blas/lispe_cblas.o
-src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::asum(LispE*)’:
-src/lispe_cblas.cxx:37:23: error: ‘cblas_isasum’ was not declared in this scope; did you mean ‘cblas_sasum’?
-   37 |         int16_t val = cblas_isasum(argument->size(), v, incx);
-      |                       ^~~~~~~~~~~~
-      |                       cblas_sasum
-src/lispe_cblas.cxx:43:20: error: ‘cblas_isasum’ was not declared in this scope; did you mean ‘cblas_sasum’?
-   43 |         long val = cblas_isasum(argument->size(), v, incx);
-      |                    ^~~~~~~~~~~~
-      |                    cblas_sasum
-src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::iamax(LispE*)’:
-src/lispe_cblas.cxx:73:51: error: cannot convert ‘int16_t*’ {aka ‘short int*’} to ‘const float*’
-   73 |         long val = cblas_isamax(argument->size(), v, incx);
-      |                                                   ^
-      |                                                   |
-      |                                                   int16_t* {aka short int*}
-In file included from src/lispe_cblas.cxx:17:
-/usr/include/x86_64-linux-gnu/cblas.h:80:61: note:   initializing argument 2 of ‘int cblas_isamax(int, const float*, int)’
-   80 | CBLAS_INDEX cblas_isamax(const CBLAS_INDEX N, const float  *X, const CBLAS_INDEX incX);
-      |                                               ~~~~~~~~~~~~~~^
-src/lispe_cblas.cxx:79:20: error: ‘cblas_iamax’ was not declared in this scope; did you mean ‘cblas_izamax’?
-   79 |         long val = cblas_iamax(argument->size(), v, incx);
-      |                    ^~~~~~~~~~~
-      |                    cblas_izamax
-src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::nrm2(LispE*)’:
-src/lispe_cblas.cxx:109:43: error: ‘class Element’ has no member named ‘liste’
-  109 |         float val = cblas_snrm2(argument->liste.list.size(), v, incx);
-      |                                           ^~~~~
-src/lispe_cblas.cxx:115:44: error: ‘class Element’ has no member named ‘liste’
-  115 |         double val = cblas_dnrm2(argument->liste.list.size(), v, incx);
-      |                                            ^~~~~
 src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::axpy(LispE*)’:
-src/lispe_cblas.cxx:171:30: error: taking address of rvalue [-fpermissive]
-  171 |         axpy_(&sz, &(int16_t){1}, xbuff, &incx, ybuff, &incy);
-      |                              ^~~
-src/lispe_cblas.cxx:171:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
-  171 |         axpy_(&sz, &(int16_t){1}, xbuff, &incx, ybuff, &incy);
+src/lispe_cblas.cxx:148:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
+  148 |         axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
       |         ^~~~~
       |         axpy
-src/lispe_cblas.cxx:181:27: error: taking address of rvalue [-fpermissive]
-  181 |         axpy_(&sz, &(long){1}, xbuff, &incx, ybuff, &incy);
-      |                           ^~~
-src/lispe_cblas.cxx:181:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
-  181 |         axpy_(&sz, &(long){1}, xbuff, &incx, ybuff, &incy);
+src/lispe_cblas.cxx:158:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
+  158 |         axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
       |         ^~~~~
       |         axpy
-src/lispe_cblas.cxx:191:28: error: taking address of rvalue [-fpermissive]
-  191 |         axpy_(&sz, &(float){1}, xbuff, &incx, ybuff, &incy);
-      |                            ^~~
-src/lispe_cblas.cxx:191:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
-  191 |         axpy_(&sz, &(float){1}, xbuff, &incx, ybuff, &incy);
+src/lispe_cblas.cxx:168:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
+  168 |         axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
       |         ^~~~~
       |         axpy
-src/lispe_cblas.cxx:201:29: error: taking address of rvalue [-fpermissive]
-  201 |         axpy_(&sz, &(double){1}, xbuff, &incx, ybuff, &incy);
-      |                             ^~~
-src/lispe_cblas.cxx:201:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
-  201 |         axpy_(&sz, &(double){1}, xbuff, &incx, ybuff, &incy);
+src/lispe_cblas.cxx:178:9: error: ‘axpy_’ was not declared in this scope; did you mean ‘axpy’?
+  178 |         axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
       |         ^~~~~
       |         axpy
 src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::ger(LispE*)’:
-src/lispe_cblas.cxx:373:5: error: ‘blas_order_t’ was not declared in this scope
-  373 |     blas_order_t order;
-      |     ^~~~~~~~~~~~
-src/lispe_cblas.cxx:375:9: error: ‘order’ was not declared in this scope
-  375 |         order = BLAS_ORDER_COL;
-      |         ^~~~~
-src/lispe_cblas.cxx:375:17: error: ‘BLAS_ORDER_COL’ was not declared in this scope; did you mean ‘CBLAS_ORDER’?
-  375 |         order = BLAS_ORDER_COL;
+src/lispe_cblas.cxx:352:17: error: ‘BLAS_ORDER_COL’ was not declared in this scope; did you mean ‘CBLAS_ORDER’?
+  352 |         order = BLAS_ORDER_COL;
       |                 ^~~~~~~~~~~~~~
       |                 CBLAS_ORDER
-src/lispe_cblas.cxx:377:9: error: ‘order’ was not declared in this scope
-  377 |         order = BLAS_ORDER_ROW;
-      |         ^~~~~
-src/lispe_cblas.cxx:377:17: error: ‘BLAS_ORDER_ROW’ was not declared in this scope; did you mean ‘CBLAS_ORDER’?
-  377 |         order = BLAS_ORDER_ROW;
+src/lispe_cblas.cxx:354:17: error: ‘BLAS_ORDER_ROW’ was not declared in this scope; did you mean ‘CBLAS_ORDER’?
+  354 |         order = BLAS_ORDER_ROW;
       |                 ^~~~~~~~~~~~~~
       |                 CBLAS_ORDER
-src/lispe_cblas.cxx:393:20: error: ‘order’ was not declared in this scope
-  393 |         cblas_sger(order, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
-      |                    ^~~~~
-src/lispe_cblas.cxx:403:20: error: ‘order’ was not declared in this scope
-  403 |         cblas_dger(order, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
-      |                    ^~~~~
-src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::syr(LispE*)’:
-src/lispe_cblas.cxx:623:9: error: ‘cblas_syr’ was not declared in this scope; did you mean ‘cblas_ssyr’?
-  623 |         cblas_syr(order, up, n, alpha, xbuff, incx, a, lda);
-      |         ^~~~~~~~~
-      |         cblas_ssyr
-src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::syr2(LispE*)’:
-src/lispe_cblas.cxx:791:51: error: cannot convert ‘float*’ to ‘float’
-  791 |         cblas_ssyr2(CblasColMajor, CblasUpper, n, &alpha, xbuff, incx, ybuff, incy, a, lda);
-      |                                                   ^~~~~~
-      |                                                   |
-      |                                                   float*
-In file included from src/lispe_cblas.cxx:17:
-/usr/include/x86_64-linux-gnu/cblas.h:318:50: note:   initializing argument 4 of ‘void cblas_ssyr2(CBLAS_LAYOUT, CBLAS_UPLO, int, float, const float*, int, const float*, int, float*, int)’
-  318 |                 const CBLAS_INDEX N, const float alpha, const float *X,
-      |                                      ~~~~~~~~~~~~^~~~~
-src/lispe_cblas.cxx:801:51: error: cannot convert ‘double*’ to ‘double’
-  801 |         cblas_dsyr2(CblasColMajor, CblasUpper, n, &alpha, xbuff, incx, ybuff, incy, a, lda);
-      |                                                   ^~~~~~
-      |                                                   |
-      |                                                   double*
-In file included from src/lispe_cblas.cxx:17:
-/usr/include/x86_64-linux-gnu/cblas.h:347:51: note:   initializing argument 4 of ‘void cblas_dsyr2(CBLAS_LAYOUT, CBLAS_UPLO, int, double, const double*, int, const double*, int, double*, int)’
-  347 |                 const CBLAS_INDEX N, const double alpha, const double *X,
-      |                                      ~~~~~~~~~~~~~^~~~~
 src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::trsv(LispE*)’:
-src/lispe_cblas.cxx:924:9: error: ‘sblas_strsv_’ was not declared in this scope; did you mean ‘cblas_strsv’?
-  924 |         sblas_strsv_(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
-      |         ^~~~~~~~~~~~
-      |         cblas_strsv
-src/lispe_cblas.cxx:933:9: error: ‘dblas_dtrsv_’ was not declared in this scope; did you mean ‘cblas_dtrsv’?
-  933 |         dblas_dtrsv_(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
-      |         ^~~~~~~~~~~~
-      |         cblas_dtrsv
-src/lispe_cblas.cxx: In function ‘void lispe_blas_hemm(Element*, Element*, Element*, long int, long int, long int, long int, long int, bool, long int, long int, float, float)’:
-src/lispe_cblas.cxx:1040:5: error: ‘blas’ has not been declared
- 1040 |     blas::Layout lay = (layout ? blas::Layout::ColMajor : blas::Layout::RowMajor);
-      |     ^~~~
-src/lispe_cblas.cxx:1041:5: error: ‘blas’ has not been declared
- 1041 |     blas::Side sd = (side ? blas::Side::Left : blas::Side::Right);
-      |     ^~~~
-src/lispe_cblas.cxx:1042:5: error: ‘blas’ has not been declared
- 1042 |     blas::Uplo up = (uplo ? blas::Uplo::Upper : blas::Uplo::Lower);
-      |     ^~~~
-src/lispe_cblas.cxx:1052:20: error: ‘lay’ was not declared in this scope
- 1052 |         blas_sgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |                    ^~~
-src/lispe_cblas.cxx:1052:25: error: ‘sd’ was not declared in this scope; did you mean ‘std’?
- 1052 |         blas_sgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |                         ^~
-      |                         std
-src/lispe_cblas.cxx:1052:29: error: ‘up’ was not declared in this scope
- 1052 |         blas_sgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |                             ^~
-src/lispe_cblas.cxx:1052:9: error: ‘blas_sgemm’ was not declared in this scope; did you mean ‘cblas_sgemm’?
- 1052 |         blas_sgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |         ^~~~~~~~~~
-      |         cblas_sgemm
-src/lispe_cblas.cxx:1061:20: error: ‘lay’ was not declared in this scope
- 1061 |         blas_dgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |                    ^~~
-src/lispe_cblas.cxx:1061:25: error: ‘sd’ was not declared in this scope; did you mean ‘std’?
- 1061 |         blas_dgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |                         ^~
-      |                         std
-src/lispe_cblas.cxx:1061:29: error: ‘up’ was not declared in this scope
- 1061 |         blas_dgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |                             ^~
-src/lispe_cblas.cxx:1061:9: error: ‘blas_dgemm’ was not declared in this scope; did you mean ‘cblas_dgemm’?
- 1061 |         blas_dgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-      |         ^~~~~~~~~~
-      |         cblas_dgemm
-src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::symm(LispE*)’:
-src/lispe_cblas.cxx:1087:5: error: ‘blas’ has not been declared
- 1087 |     blas::Side sd = blas::Side::Left;
-      |     ^~~~
-src/lispe_cblas.cxx:1089:9: error: ‘sd’ was not declared in this scope; did you mean ‘std’?
- 1089 |         sd = blas::Side::Right;
-      |         ^~
-      |         std
-src/lispe_cblas.cxx:1089:14: error: ‘blas’ has not been declared
- 1089 |         sd = blas::Side::Right;
-      |              ^~~~
-src/lispe_cblas.cxx:1103:5: error: ‘blas’ has not been declared
- 1103 |     blas::Layout lay = blas::Layout::ColMajor;
-      |     ^~~~
-src/lispe_cblas.cxx:1105:9: error: ‘lay’ was not declared in this scope
- 1105 |         lay = blas::Layout::RowMajor;
-      |         ^~~
-src/lispe_cblas.cxx:1105:15: error: ‘blas’ has not been declared
- 1105 |         lay = blas::Layout::RowMajor;
-      |               ^~~~
-src/lispe_cblas.cxx:1107:5: error: ‘blas’ has not been declared
- 1107 |     blas::Uplo up = blas::Uplo::Upper;
-      |     ^~~~
-src/lispe_cblas.cxx:1109:9: error: ‘up’ was not declared in this scope
- 1109 |         up = blas::Uplo::Lower;
-      |         ^~
-src/lispe_cblas.cxx:1109:14: error: ‘blas’ has not been declared
- 1109 |         up = blas::Uplo::Lower;
-      |              ^~~~
-src/lispe_cblas.cxx:1122:27: error: ‘lay’ was not declared in this scope
- 1122 |             to_blas_order(lay),
-      |                           ^~~
-src/lispe_cblas.cxx:1122:13: error: ‘to_blas_order’ was not declared in this scope; did you mean ‘totalorder’?
- 1122 |             to_blas_order(lay),
-      |             ^~~~~~~~~~~~~
-      |             totalorder
-src/lispe_cblas.cxx:1123:21: error: ‘sd’ was not declared in this scope; did you mean ‘std’?
- 1123 |             (char*)&sd,
-      |                     ^~
-      |                     std
-src/lispe_cblas.cxx:1124:21: error: ‘up’ was not declared in this scope
- 1124 |             (char*)&up,
-      |                     ^~
-src/lispe_cblas.cxx:1121:9: error: ‘blas_ssymm’ was not declared in this scope; did you mean ‘cblas_ssymm’?
- 1121 |         blas_ssymm(
-          |         ^~~~~~~~~~
-          |         cblas_ssymm
-    src/lispe_cblas.cxx:1146:27: error: ‘lay’ was not declared in this scope
-     1146 |             to_blas_order(lay),
-          |                           ^~~
-    src/lispe_cblas.cxx:1146:13: error: ‘to_blas_order’ was not declared in this scope; did you mean ‘totalorder’?
-     1146 |             to_blas_order(lay),
-          |             ^~~~~~~~~~~~~
-          |             totalorder
-    src/lispe_cblas.cxx:1147:21: error: ‘sd’ was not declared in this scope; did you mean ‘std’?
-     1147 |             (char*)&sd,
-          |                     ^~
-          |                     std
-    src/lispe_cblas.cxx:1148:21: error: ‘up’ was not declared in this scope
-     1148 |             (char*)&up,
-          |                     ^~
-    src/lispe_cblas.cxx:1145:9: error: ‘blas_dsymm’ was not declared in this scope; did you mean ‘cblas_dsymm’?
-     1145 |         blas_dsymm(
-              |         ^~~~~~~~~~
-              |         cblas_dsymm
-        src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::herk(LispE*)’:
-        src/lispe_cblas.cxx:1208:26: error: cannot convert ‘CBLAS_UPLO’ to ‘CBLAS_SIDE’
-         1208 |         cblas_ssymm(lay, up, op, n, k, alpha_float, a, lda, c, ldc);
-              |                          ^~
-              |                          |
-              |                          CBLAS_UPLO
-        In file included from src/lispe_cblas.cxx:17:
-        /usr/include/x86_64-linux-gnu/cblas.h:434:50: note:   initializing argument 2 of ‘void cblas_ssymm(CBLAS_LAYOUT, CBLAS_SIDE, CBLAS_UPLO, int, int, float, const float*, int, const float*, int, float, float*, int)’
+src/lispe_cblas.cxx:901:21: error: cannot convert ‘char*’ to ‘CBLAS_LAYOUT’
+  901 |         cblas_strsv(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
+      |                     ^~~~
+      |                     |
+      |                     char*
+In file included from src/lispe_cblas.cxx:17:
+/usr/include/x86_64-linux-gnu/cblas.h:181:31: note:   initializing argument 1 of ‘void cblas_strsv(CBLAS_LAYOUT, CBLAS_UPLO, CBLAS_TRANSPOSE, CBLAS_DIAG, int, const float*, int, float*, int)’
+  181 | void cblas_strsv(CBLAS_LAYOUT layout, CBLAS_UPLO Uplo,
+      |                  ~~~~~~~~~~~~~^~~~~~
+src/lispe_cblas.cxx:910:21: error: cannot convert ‘char*’ to ‘CBLAS_LAYOUT’
+  910 |         cblas_dtrsv(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
+      |                     ^~~~
+      |                     |
+      |                     char*
+In file included from src/lispe_cblas.cxx:17:
+/usr/include/x86_64-linux-gnu/cblas.h:214:31: note:   initializing argument 1 of ‘void cblas_dtrsv(CBLAS_LAYOUT, CBLAS_UPLO, CBLAS_TRANSPOSE, CBLAS_DIAG, int, const double*, int, double*, int)’
+  214 | void cblas_dtrsv(CBLAS_LAYOUT layout, CBLAS_UPLO Uplo,
+      |                  ~~~~~~~~~~~~~^~~~~~
+src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::herk(LispE*)’:
+src/lispe_cblas.cxx:1059:26: error: cannot convert ‘CBLAS_UPLO’ to ‘CBLAS_SIDE’
+ 1059 |         cblas_ssymm(lay, up, op, n, k, alpha_float, a, lda, c, ldc);
+      |                          ^~
+      |                          |
+      |                          CBLAS_UPLO
+In file included from src/lispe_cblas.cxx:17:
+/usr/include/x86_64-linux-gnu/cblas.h:434:50: note:   initializing argument 2 of ‘void cblas_ssymm(CBLAS_LAYOUT, CBLAS_SIDE, CBLAS_UPLO, int, int, float, const float*, int, const float*, int, float, float*, int)’
   434 | void cblas_ssymm(CBLAS_LAYOUT layout, CBLAS_SIDE Side,
-          |                                       ~~~~~~~~~~~^~~~
-    src/lispe_cblas.cxx:1216:26: error: cannot convert ‘CBLAS_UPLO’ to ‘CBLAS_SIDE’
-     1216 |         cblas_dsymm(lay, up, op, n, k, alpha_double, a, lda, c, ldc);
-          |                          ^~
-          |                          |
-          |                          CBLAS_UPLO
-    In file included from src/lispe_cblas.cxx:17:
-    /usr/include/x86_64-linux-gnu/cblas.h:464:50: note:   initializing argument 2 of ‘void cblas_dsymm(CBLAS_LAYOUT, CBLAS_SIDE, CBLAS_UPLO, int, int, double, const double*, int, const double*, int, double, double*, int)’
+      |                                       ~~~~~~~~~~~^~~~
+src/lispe_cblas.cxx:1067:26: error: cannot convert ‘CBLAS_UPLO’ to ‘CBLAS_SIDE’
+ 1067 |         cblas_dsymm(lay, up, op, n, k, alpha_double, a, lda, c, ldc);
+      |                          ^~
+      |                          |
+      |                          CBLAS_UPLO
+In file included from src/lispe_cblas.cxx:17:
+/usr/include/x86_64-linux-gnu/cblas.h:464:50: note:   initializing argument 2 of ‘void cblas_dsymm(CBLAS_LAYOUT, CBLAS_SIDE, CBLAS_UPLO, int, int, double, const double*, int, const double*, int, double, double*, int)’
   464 | void cblas_dsymm(CBLAS_LAYOUT layout, CBLAS_SIDE Side,
-          |                                       ~~~~~~~~~~~^~~~
-    src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::her2k(LispE*)’:
-    src/lispe_cblas.cxx:1319:22: error: conflicting declaration ‘CBLAS_LAYOUT layout’
-     1319 |     enum CBLAS_ORDER layout = CblasColMajor;
-          |                      ^~~~~~
-    src/lispe_cblas.cxx:1309:10: note: previous declaration as ‘bool layout’
-     1309 |     bool layout = lisp->get_variable(L"layout")->Boolean();
-          |          ^~~~~~
-    src/lispe_cblas.cxx:1323:21: error: conflicting declaration ‘CBLAS_UPLO uplo’
-     1323 |     enum CBLAS_UPLO uplo = CblasUpper;
-          |                     ^~~~
-    src/lispe_cblas.cxx:1311:10: note: previous declaration as ‘long int uplo’
-     1311 |     long uplo = lisp->get_variable(L"uplo")->asInteger();
-          |          ^~~~
-    src/lispe_cblas.cxx:1327:26: error: conflicting declaration ‘CBLAS_TRANSPOSE trans’
-     1327 |     enum CBLAS_TRANSPOSE trans;
-          |                          ^~~~~
-    src/lispe_cblas.cxx:1310:10: note: previous declaration as ‘long int trans’
-     1310 |     long trans = lisp->get_variable(L"trans")->asInteger();
-          |          ^~~~~
-    src/lispe_cblas.cxx:1352:22: error: cannot convert ‘bool’ to ‘CBLAS_LAYOUT’
-     1352 |         cblas_cher2k(layout, uplo, trans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-          |                      ^~~~~~
-          |                      |
-          |                      bool
-    In file included from src/lispe_cblas.cxx:17:
-    /usr/include/x86_64-linux-gnu/cblas.h:562:32: note:   initializing argument 1 of ‘void cblas_cher2k(CBLAS_LAYOUT, CBLAS_UPLO, CBLAS_TRANSPOSE, int, int, const void*, const void*, int, const void*, int, float, void*, int)’
+      |                                       ~~~~~~~~~~~^~~~
+src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::her2k(LispE*)’:
+src/lispe_cblas.cxx:1170:22: error: conflicting declaration ‘CBLAS_LAYOUT layout’
+ 1170 |     enum CBLAS_ORDER layout = CblasColMajor;
+      |                      ^~~~~~
+src/lispe_cblas.cxx:1160:10: note: previous declaration as ‘bool layout’
+ 1160 |     bool layout = lisp->get_variable(L"layout")->Boolean();
+      |          ^~~~~~
+src/lispe_cblas.cxx:1174:21: error: conflicting declaration ‘CBLAS_UPLO uplo’
+ 1174 |     enum CBLAS_UPLO uplo = CblasUpper;
+      |                     ^~~~
+src/lispe_cblas.cxx:1162:10: note: previous declaration as ‘long int uplo’
+ 1162 |     long uplo = lisp->get_variable(L"uplo")->asInteger();
+      |          ^~~~
+src/lispe_cblas.cxx:1178:26: error: conflicting declaration ‘CBLAS_TRANSPOSE trans’
+ 1178 |     enum CBLAS_TRANSPOSE trans;
+      |                          ^~~~~
+src/lispe_cblas.cxx:1161:10: note: previous declaration as ‘long int trans’
+ 1161 |     long trans = lisp->get_variable(L"trans")->asInteger();
+      |          ^~~~~
+src/lispe_cblas.cxx:1203:22: error: cannot convert ‘bool’ to ‘CBLAS_LAYOUT’
+ 1203 |         cblas_cher2k(layout, uplo, trans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+      |                      ^~~~~~
+      |                      |
+      |                      bool
+In file included from src/lispe_cblas.cxx:17:
+/usr/include/x86_64-linux-gnu/cblas.h:562:32: note:   initializing argument 1 of ‘void cblas_cher2k(CBLAS_LAYOUT, CBLAS_UPLO, CBLAS_TRANSPOSE, int, int, const void*, const void*, int, const void*, int, float, void*, int)’
   562 | void cblas_cher2k(CBLAS_LAYOUT layout, CBLAS_UPLO Uplo,
-          |                   ~~~~~~~~~~~~~^~~~~~
-    src/lispe_cblas.cxx:1364:22: error: cannot convert ‘bool’ to ‘CBLAS_LAYOUT’
-     1364 |         cblas_zher2k(layout, uplo, trans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-          |                      ^~~~~~
-          |                      |
-          |                      bool
-    In file included from src/lispe_cblas.cxx:17:
-    /usr/include/x86_64-linux-gnu/cblas.h:577:32: note:   initializing argument 1 of ‘void cblas_zher2k(CBLAS_LAYOUT, CBLAS_UPLO, CBLAS_TRANSPOSE, int, int, const void*, const void*, int, const void*, int, double, void*, int)’
+      |                   ~~~~~~~~~~~~~^~~~~~
+src/lispe_cblas.cxx:1215:22: error: cannot convert ‘bool’ to ‘CBLAS_LAYOUT’
+ 1215 |         cblas_zher2k(layout, uplo, trans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+      |                      ^~~~~~
+      |                      |
+      |                      bool
+In file included from src/lispe_cblas.cxx:17:
+/usr/include/x86_64-linux-gnu/cblas.h:577:32: note:   initializing argument 1 of ‘void cblas_zher2k(CBLAS_LAYOUT, CBLAS_UPLO, CBLAS_TRANSPOSE, int, int, const void*, const void*, int, const void*, int, double, void*, int)’
   577 | void cblas_zher2k(CBLAS_LAYOUT layout, CBLAS_UPLO Uplo,
-          |                   ~~~~~~~~~~~~~^~~~~~
-    src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::syr2k(LispE*)’:
-    src/lispe_cblas.cxx:1425:9: error: ‘cblas_syr2k’ was not declared in this scope; did you mean ‘cblas_zsyr2k’?
-     1425 |         cblas_syr2k(lay, up, op, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-          |         ^~~~~~~~~~~
-          |         cblas_zsyr2k
-    src/lispe_cblas.cxx:1438:9: error: ‘cblas_syr2k’ was not declared in this scope; did you mean ‘cblas_zsyr2k’?
-     1438 |         cblas_syr2k(lay, up, op, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-          |         ^~~~~~~~~~~
-          |         cblas_zsyr2k
-    make: *** [Makefile:16 : ../objs/blas/lispe_cblas.o] Erreur 1
-    
+      |                   ~~~~~~~~~~~~~^~~~~~
+src/lispe_cblas.cxx: In member function ‘Element* Lispe_blas::syr2k(LispE*)’:
+src/lispe_cblas.cxx:1276:9: error: ‘cblas_syr2k’ was not declared in this scope; did you mean ‘cblas_zsyr2k’?
+ 1276 |         cblas_syr2k(lay, up, op, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+      |         ^~~~~~~~~~~
+      |         cblas_zsyr2k
+src/lispe_cblas.cxx:1289:9: error: ‘cblas_syr2k’ was not declared in this scope; did you mean ‘cblas_zsyr2k’?
+ 1289 |         cblas_syr2k(lay, up, op, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+      |         ^~~~~~~~~~~
+      |         cblas_zsyr2k
+make: *** [Makefile:16 : ../objs/blas/lispe_cblas.o] Erreur 1
