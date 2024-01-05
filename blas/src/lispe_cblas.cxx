@@ -31,18 +31,6 @@ Element *Lispe_blas::asum(LispE *lisp)
 
     switch (argument->type)
     {
-    case t_shorts:
-    {
-        int16_t *v = ((Shorts *)argument)->liste.items->buffer;
-        int16_t val = cblas_isasum(argument->size(), v, incx);
-        return new Short(val);
-    }
-    case t_integers:
-    {
-        long *v = ((Integers *)argument)->liste.items->buffer;
-        long val = cblas_isasum(argument->size(), v, incx);
-        return lisp->provideInteger(val);
-    }
     case t_floats:
     {
         float *v = ((Floats *)argument)->liste.items->buffer;
@@ -67,18 +55,6 @@ Element *Lispe_blas::iamax(LispE *lisp)
 
     switch (argument->type)
     {
-    case t_shorts:
-    {
-        int16_t *v = ((Shorts *)argument)->liste.items->buffer;
-        long val = cblas_isamax(argument->size(), v, incx);
-        return lisp->provideInteger(val);
-    }
-    case t_integers:
-    {
-        long *v = ((Integers *)argument)->liste.items->buffer;
-        long val = cblas_iamax(argument->size(), v, incx);
-        return lisp->provideInteger(val);
-    }
     case t_floats:
     {
         float *v = ((Floats *)argument)->liste.items->buffer;
@@ -106,13 +82,13 @@ Element *Lispe_blas::nrm2(LispE *lisp)
     case t_floats:
     {
         float *v = ((Floats *)argument)->liste.items->buffer;
-        float val = cblas_snrm2(argument->liste.list.size(), v, incx);
+        float val = cblas_snrm2(argument->size(), v, incx);
         return lisp->provideFloat(val);
     }
     case t_numbers:
     {
         double *v = ((Numbers *)argument)->liste.items->buffer;
-        double val = cblas_dnrm2(argument->liste.list.size(), v, incx);
+        double val = cblas_dnrm2(argument->size(), v, incx);
         return lisp->provideNumber(val);
     }
     default:
@@ -167,8 +143,9 @@ Element *Lispe_blas::axpy(LispE *lisp)
         int16_t *xbuff = ((Shorts *)argument1)->liste.items->buffer;
         Shorts *result = new Shorts((Shorts *)argument2);
         int16_t *ybuff = ((Shorts *)result)->liste.items->buffer;
+        int16_t v = 1;
         
-        axpy_(&sz, &(int16_t){1}, xbuff, &incx, ybuff, &incy);
+        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
@@ -177,8 +154,8 @@ Element *Lispe_blas::axpy(LispE *lisp)
         long *xbuff = ((Integers *)argument1)->liste.items->buffer;
         Integers *result = new Integers((Integers *)argument2);
         long *ybuff = ((Integers *)result)->liste.items->buffer;
-        
-        axpy_(&sz, &(long){1}, xbuff, &incx, ybuff, &incy);
+        long v = 1;
+        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
@@ -187,8 +164,8 @@ Element *Lispe_blas::axpy(LispE *lisp)
         float *xbuff = ((Floats *)argument1)->liste.items->buffer;
         Floats *result = new Floats((Floats *)argument2);
         float *ybuff = ((Floats *)result)->liste.items->buffer;
-        
-        axpy_(&sz, &(float){1}, xbuff, &incx, ybuff, &incy);
+        float v = 1;
+        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
@@ -197,8 +174,8 @@ Element *Lispe_blas::axpy(LispE *lisp)
         double *xbuff = ((Numbers *)argument1)->liste.items->buffer;
         Numbers *result = new Numbers((Numbers *)argument2);
         double *ybuff = ((Numbers *)result)->liste.items->buffer;
-        
-        axpy_(&sz, &(double){1}, xbuff, &incx, ybuff, &incy);
+        double v = 1;
+        axpy_(&sz, &v, xbuff, &incx, ybuff, &incy);
         
         return result;
     }
@@ -370,7 +347,7 @@ Element *Lispe_blas::ger(LispE *lisp)
     if (A->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    blas_order_t order;
+    CBLAS_LAYOUT order;
     if (layout)
         order = BLAS_ORDER_COL;
     else
@@ -620,7 +597,7 @@ Element *Lispe_blas::syr(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
 
         // Call cblas_syr
-        cblas_syr(order, up, n, alpha, xbuff, incx, a, lda);
+        cblas_ssyr(order, up, n, alpha, xbuff, incx, a, lda);
 
         return A;
     }
@@ -788,7 +765,7 @@ Element *Lispe_blas::syr2(LispE *lisp)
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
 
-        cblas_ssyr2(CblasColMajor, CblasUpper, n, &alpha, xbuff, incx, ybuff, incy, a, lda);
+        cblas_ssyr2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     case t_numbers:
@@ -798,7 +775,7 @@ Element *Lispe_blas::syr2(LispE *lisp)
         double *ybuff = ((Numbers *)y)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
 
-        cblas_dsyr2(CblasColMajor, CblasUpper, n, &alpha, xbuff, incx, ybuff, incy, a, lda);
+        cblas_dsyr2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     default:
@@ -921,7 +898,7 @@ Element *Lispe_blas::trsv(LispE *lisp)
         float *a = ((Floats *)A)->liste.items->buffer;
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         
-        sblas_strsv_(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
+        cblas_strsv(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
         
         return x;
     }
@@ -930,7 +907,7 @@ Element *Lispe_blas::trsv(LispE *lisp)
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
         
-        dblas_dtrsv_(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
+        cblas_dtrsv(&lay, &up, &op, &unit, &n, a, &lda, xbuff, &incx);
         
         return x;
     }
@@ -1028,139 +1005,13 @@ Element *Lispe_blas::gemm(LispE *lisp)
 }
 
 void lispe_blas_hemm(Element *A, Element *B, Element *C, long m, long n, long lda, long ldb, long ldc, bool layout, long side, long uplo, float alpha, float beta) {
-    if (A->type != B->type || A->type != C->type)
-        throw new Error("Error: Matrices should be of the same type");
-
-    if (A->size() != (layout ? m * m : n * n))
-        throw new Error("Error: the size of A does not match mxn");
-
-    if (B->size() != m * n)
-        throw new Error("Error: the size of A does not match mxn");
-
-    blas::Layout lay = (layout ? blas::Layout::ColMajor : blas::Layout::RowMajor);
-    blas::Side sd = (side ? blas::Side::Left : blas::Side::Right);
-    blas::Uplo up = (uplo ? blas::Uplo::Upper : blas::Uplo::Lower);
-
-    switch (A->type)
-    {
-    case t_floats:
-    {
-        float *a = ((Floats *)A)->liste.items->buffer;
-        float *b = ((Floats *)B)->liste.items->buffer;
-        float *c = ((Floats *)C)->liste.items->buffer;
-
-        blas_sgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-        return;
-    }
-    case t_numbers:
-    {
-        double *a = ((Numbers *)A)->liste.items->buffer;
-        double *b = ((Numbers *)B)->liste.items->buffer;
-        double *c = ((Numbers *)C)->liste.items->buffer;
-
-        blas_dgemm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-        return;
-    }
-    default:
-        throw new Error("Error: 'blas_hemm' only apply to floats_ and numbers_");
-    }
+    throw new Error("Error: 'blas_hemm' not implemented");
 }
 
 //deflib blas_symm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))
 Element *Lispe_blas::symm(LispE *lisp)
 {
-    Element *A = lisp->get_variable(L"A");
-    Element *B = lisp->get_variable(L"B");
-    Element *C = lisp->get_variable(L"C");
-    if (A->type != B->type || A->type != C->type)
-        throw new Error("Error: Matrices should be of the same type");
-
-    long m = lisp->get_variable(L"m")->asInteger();
-    long n = lisp->get_variable(L"n")->asInteger();
-    long lda = lisp->get_variable(L"lda")->asInteger();
-    long ldb = lisp->get_variable(L"ldb")->asInteger();
-    long ldc = lisp->get_variable(L"ldc")->asInteger();
-    bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
-
-    blas::Side sd = blas::Side::Left;
-    if (!side)
-        sd = blas::Side::Right;
-
-    if (side) {   
-        if (A->size() != m * m)
-            throw new Error("Error: the size of A does not match mxn");
-    }
-    else {
-        if (A->size() != n * n)
-            throw new Error("Error: the size of A does not match mxn");
-    }
-
-    if (B->size() != m * n)
-        throw new Error("Error: the size of A does not match mxn");
-
-    blas::Layout lay = blas::Layout::ColMajor;
-    if (!layout)
-        lay = blas::Layout::RowMajor;
-
-    blas::Uplo up = blas::Uplo::Upper;
-    if (!uplo)
-        up = blas::Uplo::Lower;
-
-    switch (A->type)
-    {
-    case t_floats:
-    {
-        float *a = ((Floats *)A)->liste.items->buffer;
-        float *b = ((Floats *)B)->liste.items->buffer;
-        ((Floats*)C)->reserve(m*m);
-        float *c = ((Floats *)C)->liste.items->buffer;
-        float alpha = lisp->get_variable(L"alpha")->asFloat();
-        float beta = lisp->get_variable(L"beta")->asFloat();
-        blas_ssymm(
-            to_blas_order(lay),
-            (char*)&sd,
-            (char*)&up,
-            (int*)&m,
-            (int*)&n,
-            (float*)&alpha,
-            a,
-            (int*)&lda,
-            b,
-            (int*)&ldb,
-            (float*)&beta,
-            c,
-            (int*)&ldc);
-        return C;
-    }
-    case t_numbers:
-    {
-        double *a = ((Numbers *)A)->liste.items->buffer;
-        double *b = ((Numbers *)B)->liste.items->buffer;
-        ((Numbers*)C)->reserve(m*m);
-        double *c = ((Numbers *)C)->liste.items->buffer;
-        double alpha = lisp->get_variable(L"alpha")->asNumber();
-        double beta = lisp->get_variable(L"beta")->asNumber();
-        blas_dsymm(
-            to_blas_order(lay),
-            (char*)&sd,
-            (char*)&up,
-            (int*)&m,
-            (int*)&n,
-            &alpha,
-            a,
-            (int*)&lda,
-            b,
-            (int*)&ldb,
-            &beta,
-            c,
-            (int*)&ldc);
-        return C;
-    }
-    default:
-        throw new Error("Error: 'blas_symm' only apply to floats_ and numbers_");
-    }
+    throw new Error("Error: 'blas_symm' not implemented");
 }
 
 Element* Lispe_blas::herk(LispE* lisp) {
@@ -1528,8 +1379,6 @@ Element *Lispe_blas::trmm(LispE *lisp)
         throw new Error("Error: 'blas_trmm' only apply to floats_ and numbers_");
     }
 }
-
-#include <cblas.h>
 
 Element *Lispe_blas::trsm(LispE *lisp) {
     Element *A = lisp->get_variable(L"A");
