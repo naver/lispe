@@ -1529,8 +1529,9 @@ Element *Lispe_blas::trmm(LispE *lisp)
     }
 }
 
-Element *Lispe_blas::trsm(LispE *lisp)
-{
+#include <cblas.h>
+
+Element *Lispe_blas::trsm(LispE *lisp) {
     Element *A = lisp->get_variable(L"A");
     Element *B = lisp->get_variable(L"B");
     if (A->type != B->type)
@@ -1544,15 +1545,15 @@ Element *Lispe_blas::trsm(LispE *lisp)
     long side = lisp->get_variable(L"side")->asInteger();
     long uplo = lisp->get_variable(L"uplo")->asInteger();
     bool diag = lisp->get_variable(L"diag")->Boolean();
-    long trans = lisp->get_variable(L"trans")->asInteger();    
-
-    blas::Side sd = blas::Side::Left;
+    long trans = lisp->get_variable(L"trans")->asInteger();
+    
+    CBLAS_SIDE sd = CblasLeft;
     if (!side)
-        sd = blas::Side::Right;
+        sd = CblasRight;
 
-    blas::Diag unit = blas::Diag::Unit;
+    CBLAS_DIAG unit = CblasUnit;
     if (!diag)
-        unit = blas::Diag::NonUnit;
+        unit = CblasNonUnit;
 
     if (side) {   
         if (A->size() != m * m)
@@ -1566,142 +1567,47 @@ Element *Lispe_blas::trsm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    blas::Layout lay = blas::Layout::ColMajor;
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = blas::Layout::RowMajor;
+        lay = CblasRowMajor;
 
-    blas::Uplo up = blas::Uplo::Upper;
+    CBLAS_UPLO up = CblasUpper;
     if (!uplo)
-        up = blas::Uplo::Lower;
+        up = CblasLower;
 
-    blas::Op op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
-        op = blas::Op::NoTrans;
+        op = CblasNoTrans;
         break;
     case 1:
-        op = blas::Op::Trans;
+        op = CblasTrans;
         break;
     default:
-        op = blas::Op::ConjTrans;
+        op = CblasConjTrans;
     }
 
-    // Convert A and B to C arrays
-    float *a = nullptr;
-    float *b = nullptr;
-    double *A_double = nullptr;
-    double *B_double = nullptr;
-    long strideA = 1;
-    long strideB = 1;
-  
     switch (A->type)
     {
     case t_floats:
     {
-        a = new float[lda * m]; 
-        b = new float[ldb * n]; 
-
-        Floats *a_float = (Floats *)A; 
-        Floats *b_float = (Floats *)B;
-
-        float *a_data = a_float->liste.items->buffer;
-        float *b_data = b_float->liste.items->buffer;
-
-        if (!layout) {
-          // Convert to column-major order
-          strideA = m;
-          strideB = m;
-        }
-        
-        for (int i = 0; i < m * lda; i++) {
-          a[i] = a_data[i * strideA];
-        }
-        for (int i = 0; i < n * ldb; i++) {
-          b[i] = b_data[i * strideB];
-        }
-        break;
-    }
-    case t_numbers:
-    {
-        A_double = new double[lda * m]; 
-        B_double = new double[ldb * n]; 
-
-        Numbers *A_numbers = (Numbers *)A; 
-        Numbers *B_numbers = (Numbers *)B;
-
-        double *A_data = A_numbers->liste.items->buffer;
-        double *B_data = B_numbers->liste.items->buffer;
-
-        if (!layout) {
-          // Convert to column-major order
-          strideA = m;
-          strideB = m;
-        }
-        
-        for (int i = 0; i < m * lda; i++) {
-          A_double[i] = A_data[i * strideA];
-        }
-        for (int i = 0; i < n * ldb; i++) {
-          B_double[i] = B_data[i * strideB];
-        }
-        break;
-    }
-    default:
-        throw new Error("Error: 'blas_trsm' only apply to floats_ and numbers_");
-    }
-
-    // Call the C function
-    switch (A->type)
-    {
-    case t_floats:
-    {
+        float *a = ((Floats *)A)->liste.items->buffer;
+        float *b = ((Floats *)B)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         
-        cblas_strsm(
-          CblasColMajor,
-          sd == blas::Side::Left ? CblasLeft : CblasRight,
-          up == blas::Uplo::Upper ? CblasUpper : CblasLower,
-          op == blas::Op::NoTrans ? CblasNoTrans : CblasTrans,
-          unit == blas::Diag::Unit ? CblasUnit : CblasNonUnit,
-          m, n, alpha,
-          a, lda,
-          b, ldb
-        );
-
-        // Copy the result back to B_float
-        Floats *B_float = (Floats *)B; 
-        float *b_data = B_float->liste.items->buffer;
-        int n2 = B->size();
-        for (int i = 0; i < ldb * n; i++) {
-          b_data[i * strideB] = b[i];
-        }
-
+        cblas_strsm(lay, sd, up, op, unit, m, n, alpha, a, lda, b, ldb);
+        
         return B;
     }
     case t_numbers:
     {
+        double *a = ((Numbers *)A)->liste.items->buffer;
+        double *b = ((Numbers *)B)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         
-        cblas_dtrsm(
-          CblasColMajor,
-          sd == blas::Side::Left ? CblasLeft : CblasRight,
-          up == blas::Uplo::Upper ? CblasUpper : CblasLower,
-          op == blas::Op::NoTrans ? CblasNoTrans : CblasTrans,
-          unit == blas::Diag::Unit ? CblasUnit : CblasNonUnit,
-          m, n, alpha,
-          A_double, lda,
-          B_double, ldb
-        );
-
-        // Copy the result back to B_numbers
-        Numbers *B_numbers = (Numbers *)B; 
-        double *B_data = B_numbers->liste.items->buffer;
-        int n2 = B->size();
-        for (int i = 0; i < ldb * n; i++) {
-          B_data[i * strideB] = B_double[i];
-        }
-
+        cblas_dtrsm(lay, sd, up, op, unit, m, n, alpha, a, lda, b, ldb);
+        
         return B;
     }
     default:
