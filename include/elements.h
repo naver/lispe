@@ -196,8 +196,8 @@ inline const unsigned long _arity(long sz) {
 #define true_ lisp->n_true
 #define null_ lisp->n_null
 
-#define True_ lisp->True()
-#define False_ lisp->False()
+#define True_ lisp->isTrue()
+#define False_ lisp->isFalse()
 
 #define quote_ lisp->delegation->_QUOTE
 
@@ -2084,14 +2084,14 @@ public:
 
 };
 
-class Complex : public Element {
+class Complexe : public Element {
 public:
  
     std::complex<double> content;
     
-    Complex(std::complex<double>& cmp) : Element(t_complex), content(cmp) {}
-    Complex(double d, double imaginary) : Element(t_complex), content(d, imaginary) {}
-    Complex(double d, double imaginary, uint16_t s) : content(d, imaginary), Element(t_short, s) {}
+    Complexe(std::complex<double>& cmp) : Element(t_complex), content(cmp) {}
+    Complexe(double d, double imaginary) : Element(t_complex), content(d, imaginary) {}
+    Complexe(double d, double imaginary, uint16_t s) : content(d, imaginary), Element(t_short, s) {}
 
     Element* duplicate_constant(LispE* lisp);
     
@@ -2108,15 +2108,15 @@ public:
 
     
     char check_match(LispE* lisp, Element* value) {
-        return check_ok*(value->type == t_complex && content == ((Complex*)value)->content);
+        return check_ok*(value->type == t_complex && content == ((Complexe*)value)->content);
     }
     
     bool unify(LispE* lisp, Element* value, bool record) {
-        return (value == this || (value->type == t_complex && content == ((Complex*)value)->content));
+        return (value == this || (value->type == t_complex && content == ((Complexe*)value)->content));
     }
 
     bool isequal(LispE* lisp, Element* value) {
-        return (value == this || (value->type == t_complex && content == ((Complex*)value)->content));
+        return (value == this || (value->type == t_complex && content == ((Complexe*)value)->content));
     }
 
     Element* reverse(LispE*, bool duplique = true);
@@ -2216,13 +2216,13 @@ public:
     }
     
     virtual Element* fullcopy() {
-        return new Complex(content);
+        return new Complexe(content);
     }
 
     virtual Element* copyatom(LispE* lisp, uint16_t s) {
         if (status < s)
             return this;
-        return new Complex(content);
+        return new Complexe(content);
     }
 
     // There is a difference between the two copies
@@ -2231,7 +2231,7 @@ public:
         if (!status)
             return this;
         
-        return new Complex(content);
+        return new Complexe(content);
     }
     
     Element* plus(LispE* l, Element* e);
@@ -2253,20 +2253,20 @@ Complex(double d, double imaginary) : Element(t_complex), content(d, imaginary) 
 Complex(double d, double imaginary, uint16_t s) : content(d, imaginary), Element(t_short, s) {}
 */
  
-class Complexpool : public Complex {
+class Complexepool : public Complexe {
 public:
     LispE* lisp;
     
-    Complexpool(LispE* l, std::complex<double>& cmp) : lisp(l), Complex(cmp) {}
-    Complexpool(LispE* l, double d, double imaginary) : lisp(l), Complex(d, imaginary) {}
-    Complexpool(double d, double imaginary) : lisp(NULL), Complex(d, imaginary, s_constant) {}
+    Complexepool(LispE* l, std::complex<double>& cmp) : lisp(l), Complexe(cmp) {}
+    Complexepool(LispE* l, double d, double imaginary) : lisp(l), Complexe(d, imaginary) {}
+    Complexepool(double d, double imaginary) : lisp(NULL), Complexe(d, imaginary, s_constant) {}
 
-    inline Complexpool* set(double d, double imaginary) {
+    inline Complexepool* set(double d, double imaginary) {
         content = std::complex<double>(d, imaginary);
         return this;
     }
 
-    inline Complexpool* set(std::complex<double>& d) {
+    inline Complexepool* set(std::complex<double>& d) {
         content = d;
         return this;
     }
