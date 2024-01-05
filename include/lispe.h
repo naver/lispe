@@ -248,11 +248,11 @@ public:
         return s;
     }
     
-    inline Element* True() {
+    inline Element* isTrue() {
         return _BOOLEANS[select_bool_as_one][1];
     }
     
-    inline Element* False() {
+    inline Element* isFalse() {
         return _BOOLEANS[select_bool_as_one][0];
     }
 

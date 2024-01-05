@@ -196,8 +196,8 @@ inline const unsigned long _arity(long sz) {
 #define true_ lisp->n_true
 #define null_ lisp->n_null
 
-#define True_ lisp->True()
-#define False_ lisp->False()
+#define True_ lisp->isTrue()
+#define False_ lisp->isFalse()
 
 #define quote_ lisp->delegation->_QUOTE
 
