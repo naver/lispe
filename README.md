@@ -10,6 +10,7 @@ The real strength of the Lisp language, of which _LispE_ is a dialect, is its ve
 I based a large part of this work on the following article: [The Root of Lisp](http://www.paulgraham.com/rootsoflisp.html).
 
 * The description of the language is available here: [Introduction to LispE](https://github.com/naver/lispe/wiki/1.-Introduction)
+* LispE provides a large set of functions, see the [index here](https://github.com/naver/lispe/wiki/Index-of-functions).
 * A help to the available functions is here: [LispE Language Description](https://github.com/naver/lispe/wiki/5.-Description-of-Functions,-Operators-and-Libraries)
 * The wiki index is here: [HOME](https://github.com/naver/lispe/wiki)
 
