@@ -1018,9 +1018,7 @@ Element *Lispe_blas::hemm(LispE *lisp)
     long side = lisp->get_variable(L"side")->asInteger();
     long uplo = lisp->get_variable(L"uplo")->asInteger();
 
-    int sd = CblasLeft;
-    if (!side)
-        sd = CblasRight;
+    CBLAS_SIDE sd = side ? CblasLeft : CblasRight;
 
     if (side) {   
         if (A->size() != m * m)
@@ -1035,10 +1033,7 @@ Element *Lispe_blas::hemm(LispE *lisp)
         throw new Error("Error: the size of A does not match mxn");
 
     CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
-
-    int up = CblasUpper;
-    if (!uplo)
-        up = CblasLower;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     switch (A->type)
     {
