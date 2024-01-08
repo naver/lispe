@@ -331,11 +331,11 @@ Element *Lispe_blas::gemv(LispE *lisp)
     if (A->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
-    char op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
@@ -733,7 +733,7 @@ Element *Lispe_blas::her2(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -789,7 +789,7 @@ Element *Lispe_blas::syr2(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -850,7 +850,7 @@ Element *Lispe_blas::trmv(LispE *lisp)
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -858,7 +858,7 @@ Element *Lispe_blas::trmv(LispE *lisp)
     if (!uplo)
         up = 'L';
 
-    char op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
@@ -987,7 +987,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
     if (B->size() != n * k)
         throw new Error("Error: the size of A does not match mxn");
 
-    char op1 = 'N';
+    CBLAS_TRANSPOSE op1 = 'N';
     switch (transA)
     {
     case 0:
@@ -1000,7 +1000,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
         op1 = 'C';
     }
 
-    char op2 = 'N';
+    CBLAS_TRANSPOSE op2 = 'N';
     switch (transB)
     {
     case 0:
@@ -1149,7 +1149,7 @@ Element *Lispe_blas::symm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -1204,7 +1204,7 @@ Element *Lispe_blas::herk(LispE *lisp)
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -1212,7 +1212,7 @@ Element *Lispe_blas::herk(LispE *lisp)
     if (!uplo)
         up = 'L';
 
-    char op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
@@ -1343,7 +1343,7 @@ Element *Lispe_blas::her2k(LispE *lisp)
     if (B->size() != k * n)
         throw new Error("Error: the size of B does not match mxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -1351,7 +1351,7 @@ Element *Lispe_blas::her2k(LispE *lisp)
     if (!uplo)
         up = 'L';
 
-    char op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
@@ -1419,7 +1419,7 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     if (B->size() != k * n)
         throw new Error("Error: the size of B does not match mxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -1427,7 +1427,7 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     if (!uplo)
         up = 'L';
 
-    char op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
@@ -1502,10 +1502,10 @@ Element *Lispe_blas::trmm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    char lay = layout ? 'C' : 'R';
+    CBLAS_LAYOUT lay = layout ? 'C' : 'R';
     char up = uplo ? 'U' : 'L';
 
-    char op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
@@ -1578,7 +1578,7 @@ Element *Lispe_blas::trsm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    char lay = 'C';
+    CBLAS_LAYOUT lay = 'C';
     if (!layout)
         lay = 'R';
 
@@ -1586,7 +1586,7 @@ Element *Lispe_blas::trsm(LispE *lisp)
     if (!uplo)
         up = 'L';
 
-    char op;
+    CBLAS_TRANSPOSE op;
     switch (trans)
     {
     case 0:
