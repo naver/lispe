@@ -14,7 +14,7 @@
 #include "lispe.h"
 #include "lispe_blas.h"
 #include "listes.h"
-#include <nvblas.h>
+#include "nvblas.h"
 
 #ifdef WIN32
 #if (_MSC_VER >= 1900)
