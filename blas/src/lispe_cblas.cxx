@@ -717,7 +717,7 @@ Element *Lispe_blas::her2(LispE *lisp)
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-        cblas_scher2(lay, up, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        cblas_cher2(lay, up, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     default:
