@@ -331,9 +331,9 @@ Element *Lispe_blas::gemv(LispE *lisp)
     if (A->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -343,21 +343,21 @@ Element *Lispe_blas::gemv(LispE *lisp)
             throw new Error("Error: size of x should be n");
         if (y->size() != m)
             throw new Error("Error: size of y should be m");
-        op = 'N';
+        op = CblasNoTrans;
         break;
     case 1:
         if (x->size() != m)
             throw new Error("Error: size of x should be m");
         if (y->size() != n)
             throw new Error("Error: size of y should be n");
-        op = 'T';
+        op = CblasTrans;
         break;
     default:
         if (x->size() != m)
             throw new Error("Error: size of x should be m");
         if (y->size() != n)
             throw new Error("Error: size of y should be n");
-        op = 'C';
+        op = CblasConjTrans;
     }
 
     switch (x->type)
@@ -733,9 +733,9 @@ Element *Lispe_blas::her2(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -789,9 +789,9 @@ Element *Lispe_blas::syr2(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -850,9 +850,9 @@ Element *Lispe_blas::trmv(LispE *lisp)
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -862,13 +862,13 @@ Element *Lispe_blas::trmv(LispE *lisp)
     switch (trans)
     {
     case 0:
-        op = 'N';
+        op = CblasNoTrans;
         break;
     case 1:
-        op = 'T';
+        op = CblasTrans;
         break;
     default:
-        op = 'C';
+        op = CblasConjTrans;
     }
 
     char unit = 'U';
@@ -997,7 +997,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
         op1 = 'T';
         break;
     default:
-        op1 = 'C';
+        op1 = CblasColMajor;
     }
 
     CBLAS_TRANSPOSE op2 = 'N';
@@ -1010,7 +1010,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
         op2 = 'T';
         break;
     default:
-        op2 = 'C';
+        op2 = CblasColMajor;
     }
 
     switch (A->type)
@@ -1135,7 +1135,7 @@ Element *Lispe_blas::symm(LispE *lisp)
 
     char sd = 'L';
     if (!side)
-        sd = 'R';
+        sd = CblasRowMajor;
 
     if (side) {   
         if (A->size() != m * m)
@@ -1149,9 +1149,9 @@ Element *Lispe_blas::symm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -1204,9 +1204,9 @@ Element *Lispe_blas::herk(LispE *lisp)
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -1216,13 +1216,13 @@ Element *Lispe_blas::herk(LispE *lisp)
     switch (trans)
     {
     case 0:
-        op = 'N';
+        op = CblasNoTrans;
         break;
     case 1:
-        op = 'T';
+        op = CblasTrans;
         break;
     default:
-        op = 'C';
+        op = CblasConjTrans;
     }
 
     switch (A->type)
@@ -1343,9 +1343,9 @@ Element *Lispe_blas::her2k(LispE *lisp)
     if (B->size() != k * n)
         throw new Error("Error: the size of B does not match mxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -1355,13 +1355,13 @@ Element *Lispe_blas::her2k(LispE *lisp)
     switch (trans)
     {
     case 0:
-        op = 'N';
+        op = CblasNoTrans;
         break;
     case 1:
-        op = 'T';
+        op = CblasTrans;
         break;
     default:
-        op = 'C';
+        op = CblasConjTrans;
     }
 
     switch (A->type)
@@ -1419,9 +1419,9 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     if (B->size() != k * n)
         throw new Error("Error: the size of B does not match mxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -1431,13 +1431,13 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     switch (trans)
     {
     case 0:
-        op = 'N';
+        op = CblasNoTrans;
         break;
     case 1:
-        op = 'T';
+        op = CblasTrans;
         break;
     default:
-        op = 'C';
+        op = CblasConjTrans;
     }
 
     switch (A->type)
@@ -1509,13 +1509,13 @@ Element *Lispe_blas::trmm(LispE *lisp)
     switch (trans)
     {
     case 0:
-        op = 'N';
+        op = CblasNoTrans;
         break;
     case 1:
-        op = 'T';
+        op = CblasTrans;
         break;
     default:
-        op = 'C';
+        op = CblasConjTrans;
     }
 
     switch (A->type)
@@ -1560,7 +1560,7 @@ Element *Lispe_blas::trsm(LispE *lisp)
 
     char sd = 'L';
     if (!side)
-        sd = 'R';
+        sd = CblasRowMajor;
 
     char unit = 'U';
     if (!diag)
@@ -1578,9 +1578,9 @@ Element *Lispe_blas::trsm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = 'C';
+    CBLAS_LAYOUT lay = CblasColMajor;
     if (!layout)
-        lay = 'R';
+        lay = CblasRowMajor;
 
     char up = 'U';
     if (!uplo)
@@ -1590,13 +1590,13 @@ Element *Lispe_blas::trsm(LispE *lisp)
     switch (trans)
     {
     case 0:
-        op = 'N';
+        op = CblasNoTrans;
         break;
     case 1:
-        op = 'T';
+        op = CblasTrans;
         break;
     default:
-        op = 'C';
+        op = CblasConjTrans;
     }
 
     switch (A->type)
