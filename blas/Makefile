@@ -1,7 +1,7 @@
 include ../Makefile.in
 include Makefile.loc
 #------------------------------------------------------------
-sourceblas = lispe_blas.cxx
+sourceblas = $(FILE_BLAS)
 #------------------------------------------------------------
 LBINPATH = ../bin
 LOBJPATH = ../objs
