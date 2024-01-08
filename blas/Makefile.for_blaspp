@@ -1,3 +1,4 @@
+### This version compiles with BLAS++ (see https://icl.bitbucket.io/blaspp/index.html)
 include ../Makefile.in
 #------------------------------------------------------------
 sourceblas = lispe_blaspp.cxx
