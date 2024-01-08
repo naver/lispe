@@ -1,6 +1,6 @@
 include ../Makefile.in
 #------------------------------------------------------------
-sourceblas = lispe_blas.cxx
+sourceblas = lispe_blaspp.cxx
 #------------------------------------------------------------
 LBINPATH = ../bin
 LOBJPATH = ../objs
