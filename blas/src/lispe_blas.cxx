@@ -38,12 +38,12 @@ Element *Lispe_blas::asum(LispE *lisp)
     case t_shorts:
     {
         // There's no equivalent C BLAS API for int16_t type
-        throw new Error("Error: 'blas_asum' does not apply to shorts_");
+        throw new Error("Error: 'asum' does not apply to shorts_");
     }
     case t_integers:
     {
         // There's no equivalent C BLAS API for long type
-        throw new Error("Error: 'blas_asum' does not apply to integers_");
+        throw new Error("Error: 'asum' does not apply to integers_");
     }
     case t_floats:
     {
@@ -52,7 +52,7 @@ Element *Lispe_blas::asum(LispE *lisp)
         if(n <= 0) {
             throw new Error("Error: 'n' should be greater than 0");
         }
-        float val = blas_sasum(n, v, incx);
+        float val = sasum(n, v, incx);
         return lisp->provideFloat(val);
     }
     case t_numbers:
@@ -62,11 +62,11 @@ Element *Lispe_blas::asum(LispE *lisp)
         if(n <= 0) {
             throw new Error("Error: 'n' should be greater than 0");
         }
-        double val = blas_dasum(n, v, incx);
+        double val = dasum(n, v, incx);
         return lisp->provideNumber(val);
     }
     default:
-        throw new Error("Error: 'blas_asum' only apply to floats_ and numbers_");
+        throw new Error("Error: 'asum' only apply to floats_ and numbers_");
     }
 }
 
@@ -83,7 +83,7 @@ Element *Lispe_blas::iamax(LispE *lisp)
     {
     case t_shorts:
     case t_integers:
-        throw new Error("Error: 'blas_iamax' does not apply to shorts_ and integers_");
+        throw new Error("Error: 'iamax' does not apply to shorts_ and integers_");
     case t_floats:
     {
         float *v = ((Floats *)argument)->liste.items->buffer;
@@ -91,7 +91,7 @@ Element *Lispe_blas::iamax(LispE *lisp)
         if (size <= 0) {
             throw new Error("Error: 'x' should be a non-empty array");
         }
-        long val = blas_isamax(size, v, incx);
+        long val = isamax(size, v, incx);
         return lisp->provideInteger(val);
     }
     case t_numbers:
@@ -101,11 +101,11 @@ Element *Lispe_blas::iamax(LispE *lisp)
         if (size <= 0) {
             throw new Error("Error: 'x' should be a non-empty array");
         }
-        long val = blas_idamax(size, v, incx);
+        long val = idamax(size, v, incx);
         return lisp->provideInteger(val);
     }
     default:
-        throw new Error("Error: 'blas_iamax' only apply to floats_ and numbers_");
+        throw new Error("Error: 'iamax' only apply to floats_ and numbers_");
     }
 }
 
@@ -128,7 +128,7 @@ Element *Lispe_blas::nrm2(LispE *lisp)
         {
             throw new Error("Error: Null pointer encountered in input array");
         }
-        float val = blas_snrm2(argument->size(), v, incx);
+        float val = snrm2(argument->size(), v, incx);
         return lisp->provideFloat(val);
     }
     case t_numbers:
@@ -138,11 +138,11 @@ Element *Lispe_blas::nrm2(LispE *lisp)
         {
             throw new Error("Error: Null pointer encountered in input array");
         }
-        double val = blas_dnrm2(argument->size(), v, incx);
+        double val = dnrm2(argument->size(), v, incx);
         return lisp->provideNumber(val);
     }
     default:
-        throw new Error("Error: 'blas_nrm2' only apply to floats_ and numbers_");
+        throw new Error("Error: 'nrm2' only apply to floats_ and numbers_");
     }
 }
 
@@ -168,7 +168,7 @@ Element *Lispe_blas::scale(LispE *lisp)
             throw new Error("Error: 'alpha' should be a positive float");
         }
 
-        blas_sscal(argument->size(), alpha, v, incx);
+        sscal(argument->size(), alpha, v, incx);
         return argument;
     }
     case t_numbers:
@@ -181,11 +181,11 @@ Element *Lispe_blas::scale(LispE *lisp)
             throw new Error("Error: 'alpha' should be a positive number");
         }
 
-        blas_dscal(argument->size(), alpha, v, incx);
+        dscal(argument->size(), alpha, v, incx);
         return argument;
     }
     default:
-        throw new Error("Error: 'blas_scal' only apply to floats_ and numbers_");
+        throw new Error("Error: 'scal' only apply to floats_ and numbers_");
     }
 }
 
@@ -211,7 +211,7 @@ Element *Lispe_blas::axpy(LispE *lisp)
         Floats *result = new Floats((Floats *)argument2);
         float *ybuff = ((Floats *)result)->liste.items->buffer;
         float alpha = 1.0;
-        blas_saxpy(sz, alpha, xbuff, incx, ybuff, incy);
+        saxpy(sz, alpha, xbuff, incx, ybuff, incy);
         return result;
     }
     case t_numbers:
@@ -220,11 +220,11 @@ Element *Lispe_blas::axpy(LispE *lisp)
         Numbers *result = new Numbers((Numbers *)argument2);
         double *ybuff = ((Numbers *)result)->liste.items->buffer;
         double alpha = 1.0;
-        blas_daxpy(sz, alpha, xbuff, incx, ybuff, incy);
+        daxpy(sz, alpha, xbuff, incx, ybuff, incy);
         return result;
     }
     default:
-        throw new Error("Error: 'blas_axpy' only apply to floats_ and numbers_");
+        throw new Error("Error: 'axpy' only apply to floats_ and numbers_");
     }
 }
 
@@ -249,10 +249,10 @@ Element *Lispe_blas::dot(LispE *lisp)
         float *xbuff = ((Floats *)argument1)->liste.items->buffer;
         float *ybuff = ((Floats *)argument2)->liste.items->buffer;
 
-        float val = blas_sdot(sz, xbuff, incx, ybuff, incy);
+        float val = sdot(sz, xbuff, incx, ybuff, incy);
         if (val == 0)
         {
-            throw new Error("Error: blas_sdot failed");
+            throw new Error("Error: sdot failed");
         }
         return lisp->provideFloat(val);
     }
@@ -261,15 +261,15 @@ Element *Lispe_blas::dot(LispE *lisp)
         double *xbuff = ((Numbers *)argument1)->liste.items->buffer;
         double *ybuff = ((Numbers *)argument2)->liste.items->buffer;
 
-        double val = blas_ddot(sz, xbuff, incx, ybuff, incy);
+        double val = ddot(sz, xbuff, incx, ybuff, incy);
         if (val == 0)
         {
-            throw new Error("Error: blas_ddot failed");
+            throw new Error("Error: ddot failed");
         }
         return lisp->provideNumber(val);
     }
     default:
-        throw new Error("Error: 'blas_dot' only apply to floats_ and numbers_");
+        throw new Error("Error: 'dot' only apply to floats_ and numbers_");
     }
 }
 
@@ -295,7 +295,7 @@ Element *Lispe_blas::dotu(LispE *lisp)
         float *ybuff = ((Floats *)argument2)->liste.items->buffer;
         if (xbuff == NULL || ybuff == NULL)
             throw new Error("Error: Null pointer exception");
-        float val = blas_sdot(sz, xbuff, incx, ybuff, incy);
+        float val = sdot(sz, xbuff, incx, ybuff, incy);
         return lisp->provideFloat(val);
     }
     case t_numbers:
@@ -304,11 +304,11 @@ Element *Lispe_blas::dotu(LispE *lisp)
         double *ybuff = ((Numbers *)argument2)->liste.items->buffer;
         if (xbuff == NULL || ybuff == NULL)
             throw new Error("Error: Null pointer exception");
-        double val = blas_ddot(sz, xbuff, incx, ybuff, incy);
+        double val = ddot(sz, xbuff, incx, ybuff, incy);
         return lisp->provideNumber(val);
     }
     default:
-        throw new Error("Error: 'blas_dotu' only apply to floats_ and numbers_");
+        throw new Error("Error: 'dotu' only apply to floats_ and numbers_");
     }
 }
 
@@ -370,7 +370,7 @@ Element *Lispe_blas::gemv(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
 
-        blas_sgemv(lay, op, m, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
+        sgemv(lay, op, m, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
         return y;
     }
     case t_numbers:
@@ -381,11 +381,11 @@ Element *Lispe_blas::gemv(LispE *lisp)
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
 
-        blas_dgemv(lay, op, m, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
+        dgemv(lay, op, m, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
         return y;
     }
     default:
-        throw new Error("Error: 'blas_gemv' only apply to floats_ and numbers_");
+        throw new Error("Error: 'gemv' only apply to floats_ and numbers_");
     }
 }
 
@@ -424,7 +424,7 @@ Element *Lispe_blas::ger(LispE *lisp)
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-        blas_sger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        sger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     case t_numbers:
@@ -433,11 +433,11 @@ Element *Lispe_blas::ger(LispE *lisp)
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
         double *ybuff = ((Numbers *)y)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
-        blas_dger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        dger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_ger' only apply to floats_ and numbers_");
+        throw new Error("Error: 'ger' only apply to floats_ and numbers_");
     }
 }
 
@@ -476,7 +476,7 @@ Element *Lispe_blas::geru(LispE *lisp)
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-        blas_sger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        sger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     case t_numbers:
@@ -485,11 +485,11 @@ Element *Lispe_blas::geru(LispE *lisp)
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
         double *ybuff = ((Numbers *)y)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
-        blas_dger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        dger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_geru' only apply to floats_ and numbers_");
+        throw new Error("Error: 'geru' only apply to floats_ and numbers_");
     }
 }
 
@@ -534,7 +534,7 @@ Element *Lispe_blas::hemv(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
 
-        blas_ssymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
+        ssymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
         return y;
     }
     case t_numbers:
@@ -545,11 +545,11 @@ Element *Lispe_blas::hemv(LispE *lisp)
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
 
-        blas_dsymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
+        dsymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
         return y;
     }
     default:
-        throw new Error("Error: 'blas_hemv' only apply to floats_ and numbers_");
+        throw new Error("Error: 'hemv' only apply to floats_ and numbers_");
     }
 }
 
@@ -593,7 +593,7 @@ Element *Lispe_blas::symv(LispE *lisp)
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
-        blas_ssymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
+        ssymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
         return y;
     }
     case t_numbers:
@@ -603,11 +603,11 @@ Element *Lispe_blas::symv(LispE *lisp)
         double *ybuff = ((Numbers *)y)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
-        blas_dsymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
+        dsymv(lay, up, n, alpha, a, lda, xbuff, incx, beta, ybuff, incy);
         return y;
     }
     default:
-        throw new Error("Error: 'blas_symv' only apply to floats_ and numbers_");
+        throw new Error("Error: 'symv' only apply to floats_ and numbers_");
     }
 }
 
@@ -645,7 +645,7 @@ Element *Lispe_blas::syr(LispE *lisp)
         float *a = ((Floats *)A)->liste.items->buffer;
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-        blas_ssyr(lay, up, n, alpha, xbuff, incx, a, lda);
+        ssyr(lay, up, n, alpha, xbuff, incx, a, lda);
         return A;
     }
     case t_numbers:
@@ -653,11 +653,11 @@ Element *Lispe_blas::syr(LispE *lisp)
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
-        blas_dsyr(lay, up, n, alpha, xbuff, incx, a, lda);
+        dsyr(lay, up, n, alpha, xbuff, incx, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_syr' only apply to floats_ and numbers_");
+        throw new Error("Error: 'syr' only apply to floats_ and numbers_");
     }
 }
 
@@ -697,7 +697,7 @@ Element *Lispe_blas::her(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         if(a == NULL || xbuff == NULL)
             throw new Error("Error: Null pointer exception");
-        blas_sher(lay, up, n, alpha, xbuff, incx, a, lda);
+        sher(lay, up, n, alpha, xbuff, incx, a, lda);
         return A;
     }
     case t_numbers:
@@ -707,11 +707,11 @@ Element *Lispe_blas::her(LispE *lisp)
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         if(a == NULL || xbuff == NULL)
             throw new Error("Error: Null pointer exception");
-        blas_dher(lay, up, n, alpha, xbuff, incx, a, lda);
+        dher(lay, up, n, alpha, xbuff, incx, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_her' only apply to floats_ and numbers_");
+        throw new Error("Error: 'her' only apply to floats_ and numbers_");
     }
 }
 
@@ -754,7 +754,7 @@ Element *Lispe_blas::her2(LispE *lisp)
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-        blas_sher2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        sher2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     case t_numbers:
@@ -763,11 +763,11 @@ Element *Lispe_blas::her2(LispE *lisp)
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
         double *ybuff = ((Numbers *)y)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
-        blas_dher2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        dher2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_her2' only apply to floats_ and numbers_");
+        throw new Error("Error: 'her2' only apply to floats_ and numbers_");
     }
 }
 
@@ -811,7 +811,7 @@ Element *Lispe_blas::syr2(LispE *lisp)
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
 
-        blas_ssyr2(CblasColMajor, up, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        ssyr2(CblasColMajor, up, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     case t_numbers:
@@ -821,11 +821,11 @@ Element *Lispe_blas::syr2(LispE *lisp)
         double *ybuff = ((Numbers *)y)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
 
-        blas_dsyr2(CblasColMajor, up, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        dsyr2(CblasColMajor, up, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_syr2' only apply to floats_ and numbers_");
+        throw new Error("Error: 'syr2' only apply to floats_ and numbers_");
     }
 }
 
@@ -881,18 +881,18 @@ Element *Lispe_blas::trmv(LispE *lisp)
     {
         float *a = ((Floats *)A)->liste.items->buffer;
         float *xbuff = ((Floats *)x)->liste.items->buffer;
-        blas_strmv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, n, a, lda, xbuff, incx);
+        strmv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, n, a, lda, xbuff, incx);
         return x;
     }
     case t_numbers:
     {
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
-        blas_dtrmv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, n, a, lda, xbuff, incx);
+        dtrmv(CblasRowMajor, CblasUpper, CblasNoTrans, CblasNonUnit, n, a, lda, xbuff, incx);
         return x;
     }
     default:
-        throw new Error("Error: 'blas_trmv' only apply to floats_ and numbers_");
+        throw new Error("Error: 'trmv' only apply to floats_ and numbers_");
     }
 }
 
@@ -948,18 +948,18 @@ Element *Lispe_blas::trsv(LispE *lisp)
     {
         float *a = ((Floats *)A)->liste.items->buffer;
         float *xbuff = ((Floats *)x)->liste.items->buffer;
-        blas_strsv(lay, up, op, unit, n, a, lda, xbuff, incx);
+        strsv(lay, up, op, unit, n, a, lda, xbuff, incx);
         return x;
     }
     case t_numbers:
     {
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
-        blas_dtrsv(lay, up, op, unit, n, a, lda, xbuff, incx);
+        dtrsv(lay, up, op, unit, n, a, lda, xbuff, incx);
         return x;
     }
     default:
-        throw new Error("Error: 'blas_trsv' only apply to floats_ and numbers_");
+        throw new Error("Error: 'trsv' only apply to floats_ and numbers_");
     }
 }
 
@@ -1024,7 +1024,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
 
-        blas_sgemm(CblasRowMajor, op1, op2, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+        sgemm(CblasRowMajor, op1, op2, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
 
         return C;
     }
@@ -1037,12 +1037,12 @@ Element *Lispe_blas::gemm(LispE *lisp)
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
 
-        blas_dgemm(CblasRowMajor, op1, op2, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+        dgemm(CblasRowMajor, op1, op2, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
 
         return C;
     }
     default:
-        throw new Error("Error: 'blas_gemm' only apply to floats_ and numbers_");
+        throw new Error("Error: 'gemm' only apply to floats_ and numbers_");
     }
 }
 
@@ -1097,7 +1097,7 @@ Element *Lispe_blas::hemm(LispE *lisp)
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
-        blas_ssymm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
+        ssymm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     case t_numbers:
@@ -1108,11 +1108,11 @@ Element *Lispe_blas::hemm(LispE *lisp)
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
-        blas_dsymm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
+        dsymm(lay, sd, up, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     default:
-        throw new Error("Error: 'blas_hemm' only apply to floats_ and numbers_");
+        throw new Error("Error: 'hemm' only apply to floats_ and numbers_");
     }
 }
 
@@ -1167,7 +1167,7 @@ Element *Lispe_blas::symm(LispE *lisp)
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
-        blas_ssymm(CblasRowMajor, CblasLeft, CblasUpper, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
+        ssymm(CblasRowMajor, CblasLeft, CblasUpper, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     case t_numbers:
@@ -1178,11 +1178,11 @@ Element *Lispe_blas::symm(LispE *lisp)
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
-        blas_dsymm(CblasRowMajor, CblasLeft, CblasUpper, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
+        dsymm(CblasRowMajor, CblasLeft, CblasUpper, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     default:
-        throw new Error("Error: 'blas_symm' only apply to floats_ and numbers_");
+        throw new Error("Error: 'symm' only apply to floats_ and numbers_");
     }
 }
 
@@ -1248,7 +1248,7 @@ Element *Lispe_blas::herk(LispE *lisp)
         return C;
     }
     default:
-        throw new Error("Error: 'blas_herk' only apply to floats_ and numbers_");
+        throw new Error("Error: 'herk' only apply to floats_ and numbers_");
     }
 }
 
@@ -1301,7 +1301,7 @@ Element *Lispe_blas::syrk(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
         
-        blas_ssyrk(lay, up, op, n, k, alpha, a, lda, beta, c, ldc);
+        ssyrk(lay, up, op, n, k, alpha, a, lda, beta, c, ldc);
         return C;
     }
     case t_numbers:
@@ -1312,11 +1312,11 @@ Element *Lispe_blas::syrk(LispE *lisp)
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
         
-        blas_dsyrk(lay, up, op, n, k, alpha, a, lda, beta, c, ldc);
+        dsyrk(lay, up, op, n, k, alpha, a, lda, beta, c, ldc);
         return C;
     }
     default:
-        throw new Error("Error: 'blas_syrk' only apply to floats_ and numbers_");
+        throw new Error("Error: 'syrk' only apply to floats_ and numbers_");
     }
 }
 
@@ -1376,7 +1376,7 @@ Element *Lispe_blas::her2k(LispE *lisp)
         ((Floats*)C)->reserve(n*n);
         float *c = ((Floats *)C)->liste.items->buffer;
 
-        blas_ssyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+        ssyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     case t_numbers:
@@ -1388,11 +1388,11 @@ Element *Lispe_blas::her2k(LispE *lisp)
         ((Numbers*)C)->reserve(n*n);
         double *c = ((Numbers *)C)->liste.items->buffer;
 
-        blas_dsyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+        dsyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     default:
-        throw new Error("Error: 'blas_her2k' only apply to floats_ and numbers_");
+        throw new Error("Error: 'her2k' only apply to floats_ and numbers_");
     }
 }
 
@@ -1451,7 +1451,7 @@ Element *Lispe_blas::syr2k(LispE *lisp)
 
         ((Floats*)C)->reserve(n*n);
         float *c = ((Floats *)C)->liste.items->buffer;
-        blas_ssyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+        ssyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     case t_numbers:
@@ -1462,11 +1462,11 @@ Element *Lispe_blas::syr2k(LispE *lisp)
         double beta = lisp->get_variable(L"beta")->asNumber();
         ((Numbers*)C)->reserve(n*n);
         double *c = ((Numbers *)C)->liste.items->buffer;
-        blas_dsyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+        dsyr2k(CblasColMajor, CblasUpper, CblasNoTrans, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
         return C;
     }
     default:
-        throw new Error("Error: 'blas_syr2k' only apply to floats_ and numbers_");
+        throw new Error("Error: 'syr2k' only apply to floats_ and numbers_");
     }
 }
 
@@ -1537,7 +1537,7 @@ Element *Lispe_blas::trmm(LispE *lisp)
         return B;
     }
     default:
-        throw new Error("Error: 'blas_trmm' only apply to floats_ and numbers_");
+        throw new Error("Error: 'trmm' only apply to floats_ and numbers_");
     }
 }
 
@@ -1622,7 +1622,7 @@ Element *Lispe_blas::trsm(LispE *lisp)
         return B;
     }
     default:
-        throw new Error("Error: 'blas_trsm' only apply to floats_ and numbers_");
+        throw new Error("Error: 'trsm' only apply to floats_ and numbers_");
     }
 }
 
@@ -1631,118 +1631,118 @@ Element *Lispe_blas::eval(LispE *lisp)
     // The name defined in the extension is not insignificant, it is used to retrieve our arguments.
     switch (action)
     {
-    case blas_asum:
+    case asum:
     {
         return asum(lisp);
     }
-    case blas_axpy:
+    case axpy:
     {
         return axpy(lisp);
     }
-    case blas_dot:
+    case dot:
     {
         return dot(lisp);
     }
-    case blas_dotu:
+    case dotu:
     {
         return dotu(lisp);
     }
-    case blas_iamax:
+    case iamax:
     {
         return iamax(lisp);
     }
-    case blas_nrm2:
+    case nrm2:
     {
         return nrm2(lisp);
     }
-    case blas_scale:
+    case scale:
     {
         return scale(lisp);
     }
-    case blas_gemv:
+    case gemv:
     {
         return gemv(lisp);
     }
-    case blas_ger:
+    case ger:
     {
         return ger(lisp);
     }
-    case blas_geru:
+    case geru:
     {
         return geru(lisp);
     }
-    case blas_hemv:
+    case hemv:
     {
         return hemv(lisp);
     }
-    case blas_her:
+    case her:
     {
         return her(lisp);
     }
-    case blas_her2:
+    case her2:
     {
         return her2(lisp);
     }
-    case blas_symv:
+    case symv:
     {
         return symv(lisp);
     }
-    case blas_syr:
+    case syr:
     {
         return syr(lisp);
     }
-    case blas_syr2:
+    case syr2:
     {
         return syr(lisp);
     }
-    case blas_trmv:
+    case trmv:
     {
         return trmv(lisp);
     }
-    case blas_trsv:
+    case trsv:
     {
         return trsv(lisp);
     }
-    case blas_gemm:
+    case gemm:
     {
         return gemm(lisp);
     }
-    case blas_hemm:
+    case hemm:
     {
         return hemm(lisp);
     }
 
-    case blas_symm:
+    case symm:
     {
         return symm(lisp);
     }
 
-    case blas_herk:
+    case herk:
     {
         return herk(lisp);
     }
 
-    case blas_syrk:
+    case syrk:
     {
         return syrk(lisp);
     }
 
-    case blas_her2k:
+    case her2k:
     {
         return her2k(lisp);
     }
 
-    case blas_syr2k:
+    case syr2k:
     {
         return syr2k(lisp);
     }
 
-    case blas_trmm:
+    case trmm:
     {
         return trmm(lisp);
     }
 
-    case blas_trsm:
+    case trsm:
     {
         return trsm(lisp);
     }
@@ -1750,124 +1750,124 @@ Element *Lispe_blas::eval(LispE *lisp)
 }
 
 // We use this instruction to return a description of the instruction
-// Indeed, just do: (print blas_example) to get this information
+// Indeed, just do: (print example) to get this information
 wstring Lispe_blas::asString(LispE *lisp)
 {
     // The name defined in the extension is not insignificant, it is used to retrieve our arguments.
     switch (action)
     {
-    case blas_asum:
+    case asum:
     {
         return L"Compute the sum of absolute values of vector x.";
     }
-    case blas_axpy:
+    case axpy:
     {
         return L"Compute a vector scaling and a sum: y = a*x + y.";
     }
-    case blas_dot:
+    case dot:
     {
         return L"Compute the dot product of vectors x and y.";
     }
-    case blas_dotu:
+    case dotu:
     {
         return L"Compute the dot product of vectors x and y with conjugation of complex numbers disabled.";
     }
-    case blas_iamax:
+    case iamax:
     {
         return L"Find the index of the element with the maximum absolute value in vector x.";
     }
-    case blas_nrm2:
+    case nrm2:
     {
         return L"Compute the Euclidean norm of vector x.";
     }
-    case blas_scale:
+    case scale:
     {
         return L"Scale a vector by a constant value: x = a*x.";
     }
-    case blas_gemv:
+    case gemv:
     {
         return L"Compute matrix-vector product: y = alpha*A*x + beta*y.";
     }
-    case blas_ger:
+    case ger:
     {
         return L"Perform a rank-1 update of matrix A with a vector: A = alpha*x*y' + A.";
     }
-    case blas_geru:
+    case geru:
     {
         return L"Perform a rank-1 update of matrix A with a vector, without conjugation of the elements of vector y: A = alpha*x*y' + A.";
     }
-    case blas_hemv:
+    case hemv:
     {
         return L"Compute Hermitian matrix-vector product: y = alpha*A*x + beta*y, where A is a Hermitian matrix.";
     }
-    case blas_her:
+    case her:
     {
         return L"Perform a rank-1 update of Hermitian matrix A with a vector: A = alpha*x*x' + A.";
     }
-    case blas_her2:
+    case her2:
     {
         return L"Perform a rank-2 update of Hermitian matrix A with two vectors: A = alpha*x*y' + conj(alpha)*y*x' + A.";
     }
-    case blas_symv:
+    case symv:
     {
         return L"Compute symmetric matrix-vector product: y = alpha*A*x + beta*y, where A is a symmetric matrix.";
     }
-    case blas_syr:
+    case syr:
     {
         return L"Perform a rank-1 update of symmetric matrix A with a vector: A = alpha*x*x' + A.";
     }
-    case blas_syr2:
+    case syr2:
     {
         return L"Perform a rank-2 update of symmetric matrix A with two vectors: A = alpha*x*y' + alpha*y*x' + A.";
     }
-    case blas_trmv:
+    case trmv:
     {
         return L"Compute matrix-vector product with a triangular matrix: x = A*x.";
     }
-    case blas_trsv:
+    case trsv:
     {
         return L"Solve a system of linear equations with a triangular matrix: x = A^(-1)*x.";
     }
-    case blas_gemm:
+    case gemm:
     {
         return L"Compute matrix-matrix product: C = alpha*A*B + beta*C.";
     }
-    case blas_hemm:
+    case hemm:
     {
         return L"Compute Hermitian matrix-matrix product: C = alpha*A*B + beta*C, where A is a Hermitian matrix.";
     }
 
-    case blas_symm:
+    case symm:
     {
         return L"Compute symmetric matrix-matrix product: C = alpha*A*B + beta*C, where A is a symmetric matrix.";
     }
 
-    case blas_herk:
+    case herk:
     {
         return L"Perform a rank-k update of a Hermitian matrix: C = alpha*A*A^H + beta*C, where A is a Hermitian matrix.";
     }
 
-    case blas_syrk:
+    case syrk:
     {
         return L"Perform a rank-k update of a symmetric matrix: C = alpha*A*A^T + beta*C, where A is a symmetric matrix.";
     }
 
-    case blas_her2k:
+    case her2k:
     {
         return L"Perform a rank-2k update of a Hermitian matrix: C = alpha*A*B^H + conj(alpha)*B*A^H + beta*C, where A and B are Hermitian matrices.";
     }
 
-    case blas_syr2k:
+    case syr2k:
     {
         return L"Perform a rank-2k update of a symmetric matrix: C = alpha*A*B^T + alpha*B*A^T + beta*C, where A and B are symmetric matrices.";
     }
 
-    case blas_trmm:
+    case trmm:
     {
         return L"Compute matrix-matrix product with a triangular matrix: B = alpha*A*B.";
     }
 
-    case blas_trsm:
+    case trsm:
     {
         return L"Solve a system of linear equations with a triangular matrix: B = alpha*A^(-1)*B.";
     }
@@ -1881,37 +1881,37 @@ extern "C"
         // We first create the body of the function
         Element *body;
         // Level 1: vectors operations, O(n) work
-        body = lisp->extension("deflib blas_asum(x (incx 1))", new Lispe_blas(blas_asum));
-        body = lisp->extension("deflib blas_axpy(x y (incx 1) (incy 1))", new Lispe_blas(blas_axpy));
-        body = lisp->extension("deflib blas_dot(x y (incx 1) (incy 1))", new Lispe_blas(blas_dot));
-        body = lisp->extension("deflib blas_dotu(x y (incx 1) (incy 1))", new Lispe_blas(blas_dotu));
-        body = lisp->extension("deflib blas_iamax(x (incx 1))", new Lispe_blas(blas_iamax));
-        body = lisp->extension("deflib blas_nrm2(x (incx 1))", new Lispe_blas(blas_nrm2));
-        body = lisp->extension("deflib blas_scal(x scale (incx 1))", new Lispe_blas(blas_scale));
+        body = lisp->extension("deflib asum(x (incx 1))", new Lispe_blas(asum));
+        body = lisp->extension("deflib axpy(x y (incx 1) (incy 1))", new Lispe_blas(axpy));
+        body = lisp->extension("deflib dot(x y (incx 1) (incy 1))", new Lispe_blas(dot));
+        body = lisp->extension("deflib dotu(x y (incx 1) (incy 1))", new Lispe_blas(dotu));
+        body = lisp->extension("deflib iamax(x (incx 1))", new Lispe_blas(iamax));
+        body = lisp->extension("deflib nrm2(x (incx 1))", new Lispe_blas(nrm2));
+        body = lisp->extension("deflib scal(x scale (incx 1))", new Lispe_blas(scale));
 
         // Level 2: matrix-vector operations, O(n^2) work
-        body = lisp->extension("deflib blas_gemv(A m n lda x incx y incy (alpha 1) (beta 1) (layout true) (trans 0))", new Lispe_blas(blas_gemv));
-        body = lisp->extension("deflib blas_ger(A m n lda x incx y incy (alpha 1) (layout true))", new Lispe_blas(blas_ger));
-        body = lisp->extension("deflib blas_geru(A m n lda x incx y incy (alpha 1) (layout true))", new Lispe_blas(blas_geru));
-        body = lisp->extension("deflib blas_hemv(A n lda x incx y incy (alpha 1) (beta 1) (layout true) (uplo true))", new Lispe_blas(blas_hemv));
-        body = lisp->extension("deflib blas_symv(A n lda x incx y incy (alpha 1) (beta 1) (layout true) (uplo true))", new Lispe_blas(blas_symv));
-        body = lisp->extension("deflib blas_her(A n lda x incx (alpha 1) (layout true) (uplo true))", new Lispe_blas(blas_her));
-        body = lisp->extension("deflib blas_syr(A n lda x incx (alpha 1) (layout true) (uplo true))", new Lispe_blas(blas_syr));
-        body = lisp->extension("deflib blas_her2(A n lda x incx y incy (alpha 1) (layout true) (uplo true))", new Lispe_blas(blas_her2));
-        body = lisp->extension("deflib blas_syr2(A n lda x incx y incy (alpha 1) (layout true) (uplo true))", new Lispe_blas(blas_syr2));
-        body = lisp->extension("deflib blas_trmv(A n lda x incx (layout true) (uplo true) (trans 0) (diag true))", new Lispe_blas(blas_trmv));
-        body = lisp->extension("deflib blas_trsv(A n lda x incx (layout true) (uplo true) (trans 0) (diag true))", new Lispe_blas(blas_trsv));
+        body = lisp->extension("deflib gemv(A m n lda x incx y incy (alpha 1) (beta 1) (layout true) (trans 0))", new Lispe_blas(gemv));
+        body = lisp->extension("deflib ger(A m n lda x incx y incy (alpha 1) (layout true))", new Lispe_blas(ger));
+        body = lisp->extension("deflib geru(A m n lda x incx y incy (alpha 1) (layout true))", new Lispe_blas(geru));
+        body = lisp->extension("deflib hemv(A n lda x incx y incy (alpha 1) (beta 1) (layout true) (uplo true))", new Lispe_blas(hemv));
+        body = lisp->extension("deflib symv(A n lda x incx y incy (alpha 1) (beta 1) (layout true) (uplo true))", new Lispe_blas(symv));
+        body = lisp->extension("deflib her(A n lda x incx (alpha 1) (layout true) (uplo true))", new Lispe_blas(her));
+        body = lisp->extension("deflib syr(A n lda x incx (alpha 1) (layout true) (uplo true))", new Lispe_blas(syr));
+        body = lisp->extension("deflib her2(A n lda x incx y incy (alpha 1) (layout true) (uplo true))", new Lispe_blas(her2));
+        body = lisp->extension("deflib syr2(A n lda x incx y incy (alpha 1) (layout true) (uplo true))", new Lispe_blas(syr2));
+        body = lisp->extension("deflib trmv(A n lda x incx (layout true) (uplo true) (trans 0) (diag true))", new Lispe_blas(trmv));
+        body = lisp->extension("deflib trsv(A n lda x incx (layout true) (uplo true) (trans 0) (diag true))", new Lispe_blas(trsv));
 
         // Level 3: matrix-matrix operations, O(n^3) work
-        body = lisp->extension("deflib blas_gemm(A m n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (transA 0) (transB 0))", new Lispe_blas(blas_gemm));
-        body = lisp->extension("deflib blas_hemm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))", new Lispe_blas(blas_hemm));
-        body = lisp->extension("deflib blas_symm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))", new Lispe_blas(blas_symm));
-        body = lisp->extension("deflib blas_herk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(blas_herk));
-        body = lisp->extension("deflib blas_syrk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(blas_syrk));
-        body = lisp->extension("deflib blas_her2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(blas_her2k));
-        body = lisp->extension("deflib blas_syr2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(blas_syr2k));
-        body = lisp->extension("deflib blas_trmm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))", new Lispe_blas(blas_trmm));
-        body = lisp->extension("deflib blas_trsm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))", new Lispe_blas(blas_trsm));
+        body = lisp->extension("deflib gemm(A m n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (transA 0) (transB 0))", new Lispe_blas(gemm));
+        body = lisp->extension("deflib hemm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))", new Lispe_blas(hemm));
+        body = lisp->extension("deflib symm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))", new Lispe_blas(symm));
+        body = lisp->extension("deflib herk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(herk));
+        body = lisp->extension("deflib syrk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(syrk));
+        body = lisp->extension("deflib her2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(her2k));
+        body = lisp->extension("deflib syr2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))", new Lispe_blas(syr2k));
+        body = lisp->extension("deflib trmm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))", new Lispe_blas(trmm));
+        body = lisp->extension("deflib trsm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))", new Lispe_blas(trsm));
 
         return true;
     }
