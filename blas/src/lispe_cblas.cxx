@@ -1450,7 +1450,7 @@ Element *Lispe_blas::trmm(LispE *lisp)
         float *a = ((Floats *)A)->liste.items->buffer;
         float *b = ((Floats *)B)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-        blas_strmm(lay, sd, up, op, unit, m, n, alpha, a, lda, b, ldb);
+        cblas_strmm(lay, sd, up, op, unit, m, n, alpha, a, lda, b, ldb);
         return B;
     }
     case t_numbers:
@@ -1458,7 +1458,7 @@ Element *Lispe_blas::trmm(LispE *lisp)
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *b = ((Numbers *)B)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
-        blas_dtrmm_(lay, sd, up, op, unit, m, n, alpha, a, lda, b, ldb);
+        cblas_dtrmm_(lay, sd, up, op, unit, m, n, alpha, a, lda, b, ldb);
         return B;
     }
     default:
