@@ -1172,7 +1172,7 @@ Element *Lispe_blas::herk(LispE *lisp)
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
-        cblas_ssyrk(up, op, n, k, alpha, a, lda, beta, c, ldc);
+        cblas_ssyrk(lay, up, op, n, k, alpha, a, lda, beta, c, ldc);
         return C;
     }
     case t_numbers:
@@ -1182,7 +1182,7 @@ Element *Lispe_blas::herk(LispE *lisp)
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
-        cblas_dsyrk(up, op, n, k, alpha, a, lda, beta, c, ldc);
+        cblas_dsyrk(lay, up, op, n, k, alpha, a, lda, beta, c, ldc);
         return C;
     }
     default:
