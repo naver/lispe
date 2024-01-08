@@ -331,9 +331,7 @@ Element *Lispe_blas::gemv(LispE *lisp)
     if (A->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -407,9 +405,7 @@ Element *Lispe_blas::ger(LispE *lisp)
     if (A->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
     if (x->size() != m)
         throw new Error("Error: size of x should be m");
@@ -459,9 +455,7 @@ Element *Lispe_blas::geru(LispE *lisp)
     if (A->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
     if (x->size() != m)
         throw new Error("Error: size of x should be m");
@@ -511,13 +505,9 @@ Element *Lispe_blas::hemv(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    CBLAS_UPLO up = CblasUpper;
-    if (!uplo)
-        up = CblasLower;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
@@ -571,13 +561,8 @@ Element *Lispe_blas::symv(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
-
-    CBLAS_UPLO up = CblasUpper;
-    if (!uplo)
-        up = CblasLower;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
@@ -627,13 +612,9 @@ Element *Lispe_blas::syr(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    CBLAS_UPLO up = CblasUpper;
-    if (!uplo)
-        up = CblasLower;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
@@ -677,13 +658,9 @@ Element *Lispe_blas::her(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    CBLAS_UPLO up = CblasUpper;
-    if (!uplo)
-        up = CblasLower;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
@@ -733,13 +710,9 @@ Element *Lispe_blas::her2(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
@@ -789,13 +762,9 @@ Element *Lispe_blas::syr2(LispE *lisp)
     if (A->size() != n * n)
         throw new Error("Error: the size of A does not match nxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
@@ -850,13 +819,8 @@ Element *Lispe_blas::trmv(LispE *lisp)
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
-
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -871,10 +835,8 @@ Element *Lispe_blas::trmv(LispE *lisp)
         op = CblasConjTrans;
     }
 
-    char unit = 'U';
-    if (!diag)
-        unit = 'N';
-
+    CBLAS_DIAG unit = diag ? CblasUnit : CblasNonUnit;
+    
     switch (x->type)
     {
     case t_floats:
@@ -917,13 +879,8 @@ Element *Lispe_blas::trsv(LispE *lisp)
     if (x->size() != n)
         throw new Error("Error: size of x should be m");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
-
-    CBLAS_UPLO up = CblasUpper;
-    if (!uplo)
-        up = CblasLower;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor; 
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -938,9 +895,7 @@ Element *Lispe_blas::trsv(LispE *lisp)
         op = CblasConjTrans;
     }
 
-    CBLAS_DIAG unit = CblasUnit;
-    if (!diag)
-        unit = CblasNonUnit;
+    CBLAS_DIAG unit = diag ? CblasUnit : CblasNonUnit;
 
     switch (x->type)
     {
@@ -1079,9 +1034,7 @@ Element *Lispe_blas::hemm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    int lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
     int up = CblasUpper;
     if (!uplo)
@@ -1133,9 +1086,7 @@ Element *Lispe_blas::symm(LispE *lisp)
     long side = lisp->get_variable(L"side")->asInteger();
     long uplo = lisp->get_variable(L"uplo")->asInteger();
 
-    char sd = 'L';
-    if (!side)
-        sd = CblasRowMajor;
+    CBLAS_SIDE sd = side ? CblasLeft : CblasRight;
 
     if (side) {   
         if (A->size() != m * m)
@@ -1149,13 +1100,9 @@ Element *Lispe_blas::symm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     switch (A->type)
     {
@@ -1204,13 +1151,9 @@ Element *Lispe_blas::herk(LispE *lisp)
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -1270,13 +1213,8 @@ Element *Lispe_blas::syrk(LispE *lisp)
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
-
-    CBLAS_UPLO up = CblasUpper;
-    if (!uplo)
-        up = CblasLower;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -1343,13 +1281,9 @@ Element *Lispe_blas::her2k(LispE *lisp)
     if (B->size() != k * n)
         throw new Error("Error: the size of B does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -1419,13 +1353,9 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     if (B->size() != k * n)
         throw new Error("Error: the size of B does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
 
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -1487,8 +1417,8 @@ Element *Lispe_blas::trmm(LispE *lisp)
     bool diag = lisp->get_variable(L"diag")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();    
 
-    char sd = side ? 'L' : 'R';
-    char unit = diag ? 'U' : 'N';
+    CBLAS_SIDE sd = side ? CblasLeft : CblasRight;
+    CBLAS_DIAG unit = diag ? CblasUnit : CblasNonUnit;
 
     if (side) {   
         if (A->size() != m * m)
@@ -1502,8 +1432,8 @@ Element *Lispe_blas::trmm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = layout ? 'C' : 'R';
-    char up = uplo ? 'U' : 'L';
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
@@ -1558,14 +1488,9 @@ Element *Lispe_blas::trsm(LispE *lisp)
     bool diag = lisp->get_variable(L"diag")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
 
-    char sd = 'L';
-    if (!side)
-        sd = CblasRowMajor;
-
-    char unit = 'U';
-    if (!diag)
-        unit = 'N';
-
+    CBLAS_SIDE sd = side ? CblasLeft : CblasRight;
+    CBLAS_DIAG unit = diag ? CblasUnit : CblasNonUnit;
+    
     if (side) {   
         if (A->size() != m * m)
             throw new Error("Error: the size of A does not match mxn");
@@ -1578,13 +1503,8 @@ Element *Lispe_blas::trsm(LispE *lisp)
     if (B->size() != m * n)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_LAYOUT lay = CblasColMajor;
-    if (!layout)
-        lay = CblasRowMajor;
-
-    char up = 'U';
-    if (!uplo)
-        up = 'L';
+    CBLAS_LAYOUT lay = layout ? CblasColMajor : CblasRowMajor;
+    CBLAS_UPLO up = uplo ? CblasUpper : CblasLower;
 
     CBLAS_TRANSPOSE op;
     switch (trans)
