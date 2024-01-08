@@ -674,21 +674,11 @@ Element *Lispe_blas::her(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         if(a == NULL || xbuff == NULL)
             throw new Error("Error: Null pointer exception");
-        cblas_sher(lay, up, n, alpha, xbuff, incx, a, lda);
-        return A;
-    }
-    case t_numbers:
-    {
-        double *a = ((Numbers *)A)->liste.items->buffer;
-        double *xbuff = ((Numbers *)x)->liste.items->buffer;
-        double alpha = lisp->get_variable(L"alpha")->asNumber();
-        if(a == NULL || xbuff == NULL)
-            throw new Error("Error: Null pointer exception");
-        cblas_dher(lay, up, n, alpha, xbuff, incx, a, lda);
+        cblas_cher(lay, up, n, alpha, xbuff, incx, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_her' only apply to floats_ and numbers_");
+        throw new Error("Error: 'blas_her' only apply to floats_");
     }
 }
 
@@ -727,20 +717,11 @@ Element *Lispe_blas::her2(LispE *lisp)
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-        cblas_sher2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
-        return A;
-    }
-    case t_numbers:
-    {
-        double *a = ((Numbers *)A)->liste.items->buffer;
-        double *xbuff = ((Numbers *)x)->liste.items->buffer;
-        double *ybuff = ((Numbers *)y)->liste.items->buffer;
-        double alpha = lisp->get_variable(L"alpha")->asNumber();
-        cblas_dher2(CblasColMajor, CblasUpper, n, alpha, xbuff, incx, ybuff, incy, a, lda);
+        cblas_scher2(lay, up, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         return A;
     }
     default:
-        throw new Error("Error: 'blas_her2' only apply to floats_ and numbers_");
+        throw new Error("Error: 'blas_her2' only apply to floats_");
     }
 }
 
