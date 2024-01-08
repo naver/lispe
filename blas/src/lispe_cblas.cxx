@@ -942,30 +942,30 @@ Element *Lispe_blas::gemm(LispE *lisp)
     if (B->size() != n * k)
         throw new Error("Error: the size of A does not match mxn");
 
-    CBLAS_TRANSPOSE op1 = 'N';
+    CBLAS_TRANSPOSE op1;
     switch (transA)
     {
     case 0:
-        op1 = 'N';
+        op1 = CblasNoTrans;
         break;
     case 1:
-        op1 = 'T';
+        op1 = CblasTrans;
         break;
     default:
-        op1 = CblasColMajor;
+        op1 = CblasConjTrans;
     }
 
-    CBLAS_TRANSPOSE op2 = 'N';
+    CBLAS_TRANSPOSE op2;
     switch (transB)
     {
     case 0:
-        op2 = 'N';
+        op2 = CblasNoTrans;
         break;
     case 1:
-        op2 = 'T';
+        op2 = CblasTrans;
         break;
     default:
-        op2 = CblasColMajor;
+        op2 = CblasConjTrans;
     }
 
     switch (A->type)
