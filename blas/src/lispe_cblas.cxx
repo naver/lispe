@@ -1522,7 +1522,7 @@ Element *Lispe_blas::trsm(LispE *lisp)
         float *b = ((Floats *)B)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
 
-        cblas_strsm(lay, sd, up, op, unit, &m, &n, &alpha, a, &lda, b, &ldb);
+        cblas_strsm(lay, sd, up, op, unit, m, n, alpha, a, &lda, b, &ldb);
         
         return B;
     }
@@ -1532,7 +1532,7 @@ Element *Lispe_blas::trsm(LispE *lisp)
         double *b = ((Numbers *)B)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
 
-        cblas_dtrsm(lay, sd, up, op, unit, &m, &n, &alpha, a, &lda, b, &ldb);
+        cblas_dtrsm(lay, sd, up, op, unit, m, n, alpha, a, &lda, b, &ldb);
         
         return B;
     }
