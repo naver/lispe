@@ -6120,8 +6120,10 @@ Element* List_let_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     if (thrown_error)
         return element;
-    lisp->storing_variable(element, liste[1]->label());
-    
+
+    int16_t label = liste[1]->label();
+    Element* current = lisp->record_or_replace(element, label);
+
     long sz = size();
     if (sz > 3) {
         Element* e = null_;
@@ -6129,10 +6131,8 @@ Element* List_let_eval::eval(LispE* lisp) {
             e->release();
             e = liste[i]->eval(lisp);
         }
-        if (thrown_error)
-            lisp->removefromstack(liste[1]->label());
-        else
-            lisp->removefromstack(liste[1]->label(), e);
+        
+        lisp->put_and_keep(current, label);
         return e;
     }
     return True_;

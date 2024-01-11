@@ -3548,7 +3548,8 @@ Element* List::evall_setg(LispE* lisp) {
 
 Element* List::evall_let(LispE* lisp) {
     Element* e = liste[2]->eval(lisp);
-    lisp->storing_variable(e, liste[1]->label());
+    int16_t label = liste[1]->label();
+    Element* current = lisp->record_or_replace(e, label);
     
     long sz = size();
     if (sz > 3) {
@@ -3558,11 +3559,11 @@ Element* List::evall_let(LispE* lisp) {
                 e->release();
                 e = liste[i]->eval(lisp);
             }
-            lisp->removefromstack(liste[1]->label(), e);
+            lisp->put_and_keep(current, label);
             return e;
         }
         catch (Error* err) {
-            lisp->removefromstack(liste[1]->label());
+            lisp->put_and_keep(current, label);
             throw err;
         }
     }

@@ -258,6 +258,19 @@ public:
         variables.put(label, e);
     }
 
+    void put_and_keep(Element* v, int16_t label) {
+        Element* e = variables.at(label);
+        e->decrementkeep();
+        if (v == NULL) {
+            names.erase(label);
+            variables.erase(label);
+        }
+        else {
+            v->decrement();
+            variables.put(label, v);
+        }
+    }
+    
     inline Element* get(int16_t label) {
         return variables.search(label);
     }
