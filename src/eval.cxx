@@ -3546,30 +3546,89 @@ Element* List::evall_setg(LispE* lisp) {
     return True_;
 }
 
+#ifdef LISPE_WASM
 Element* List::evall_let(LispE* lisp) {
-    Element* e = liste[2]->eval(lisp);
-    int16_t label = liste[1]->label();
-    Element* current = lisp->record_or_replace(e, label);
-    
+    long i_atom = 1;
+    long i;
+    vector<Element*> values;
     long sz = size();
-    if (sz > 3) {
+    Element* e;
+    Element* current;
+    while (liste[i_atom]->isAtom()) {
+        if (i_atom == sz) {
+            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
+                lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
+            return lisp->delegation->set_error(new Error("Error: unbalanced list of variables"));
+        }
+        e = liste[i_atom+1]->eval(lisp);
+        if (thrown_error) {
+            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
+                lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
+            return e;
+        }
+        current = lisp->record_or_replace(e, liste[i_atom]->label());
+        values.push_back(current);
+        i_atom += 2;
+    }
+    
+    if (i_atom < sz) {
+        e = null_;
+        for (i = i_atom; i < sz && !thrown_error; i++) {
+            e->release();
+            e = liste[i]->eval(lisp);
+        }
+        for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i+= 2)
+            lisp->put_and_keep(values[i_atom], e, liste[i]->label());
+        return e;
+    }
+    
+    return True_;
+}
+#else
+Element* List::evall_let(LispE* lisp) {
+    long i_atom = 1;
+    long i;
+    vector<Element*> values;
+    long sz = size();
+    Element* e;
+    Element* current;
+    try {
+        while (liste[i_atom]->isAtom()) {
+            if (i_atom == sz)
+                throw new Error("Error: unbalanced list of variables");
+            e = liste[i_atom+1]->eval(lisp);
+            current = lisp->record_or_replace(e, liste[i_atom]->label());
+            values.push_back(current);
+            i_atom += 2;
+        }
+    }
+    catch(Error* err) {
+        for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
+            lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
+        throw err;
+    }
+        
+    if (i_atom < sz) {
         e = null_;
         try {
-            for (long i = 3; i < sz; i++) {
+            for (i = i_atom; i < sz; i++) {
                 e->release();
                 e = liste[i]->eval(lisp);
             }
-            lisp->put_and_keep(current, label);
+            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i+= 2)
+                lisp->put_and_keep(values[i_atom], e, liste[i]->label());
             return e;
         }
         catch (Error* err) {
-            lisp->put_and_keep(current, label);
+            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
+                lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
             throw err;
         }
     }
 
     return True_;
 }
+#endif
 
 Element* List::evall_setq(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);

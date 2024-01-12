@@ -6115,28 +6115,6 @@ Element* List_setq_eval::eval(LispE* lisp) {
     lisp->storing_variable(e, liste[1]->label());
     return True_;
 }
-
-Element* List_let_eval::eval(LispE* lisp) {
-    Element* element = liste[2]->eval(lisp);
-    if (thrown_error)
-        return element;
-
-    int16_t label = liste[1]->label();
-    Element* current = lisp->record_or_replace(element, label);
-
-    long sz = size();
-    if (sz > 3) {
-        Element* e = null_;
-        for (long i = 3; i < sz && !thrown_error; i++) {
-            e->release();
-            e = liste[i]->eval(lisp);
-        }
-        
-        lisp->put_and_keep(current, label);
-        return e;
-    }
-    return True_;
-}
 #else
 Element* List_setq_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);

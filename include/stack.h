@@ -258,9 +258,12 @@ public:
         variables.put(label, e);
     }
 
-    void put_and_keep(Element* v, int16_t label) {
+    void put_and_keep(Element* v, Element* keep, int16_t label) {
         Element* e = variables.at(label);
-        e->decrementkeep();
+        if (e == keep)
+            e->decrementkeep();
+        else
+            e->decrement();
         if (v == NULL) {
             names.erase(label);
             variables.erase(label);

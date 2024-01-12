@@ -4644,13 +4644,9 @@ public:
         return new List_let_eval(multiple);
     }
 
-#ifdef LISPE_WASM
-    Element* eval(LispE* lisp);
-#else
     Element* eval(LispE* lisp) {
         return evall_let(lisp);
     }
-#endif
 };
 
 class List_select_eval : public Listincode {
