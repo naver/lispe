@@ -1142,6 +1142,10 @@ public:
         execution_stack.back()->replace_stack_value(e->duplicate_constant(this), label);
     }
 
+    inline void put_and_keep(Element* e, Element* keep, int16_t label) {
+        execution_stack.back()->put_and_keep(e, keep, label);
+    }
+
     inline Element* recording_variable(Element* e, int16_t label) {
         return execution_stack.back()->recording_variable(e->duplicate_constant(this), label);
     }

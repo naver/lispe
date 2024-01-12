@@ -1,3 +1,4 @@
+### This version compiles with the C BLAS library (apt-get install libblas-dev)
 include ../Makefile.in
 include Makefile.loc
 #------------------------------------------------------------
@@ -24,7 +25,6 @@ install:
 
 all: install blas
 	$(blas)
-	cp $(BLASLIB) $(LBINPATH)
 
 clean:
 	rm -f $(LOBJPATH)/blas/*.o
