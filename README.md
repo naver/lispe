@@ -97,7 +97,7 @@ __LispE__ provides an alternative to parentheses with the [composition operator:
 (sum (numbers 1 2 3)) can be written (sum . numbers 1 2 3)
 ```
 
-__LispE__ provides a powerfull built-in pattern matching mechanism:
+__LispE__ provides a powerfull built-in [pattern matching](https://github.com/naver/lispe/wiki/6.1-Pattern-Functions) mechanism:
 
 ```Lisp
 ; You can call a function in the pattern definition of the function
