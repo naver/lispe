@@ -103,6 +103,8 @@ __LispE__ provides a powerfull built-in pattern matching mechanism:
 ; You can call a function in the pattern definition of the function
 (defun checking (x y) (eq 0 (% y x)))
 
+; the argument should be an integer, whose value is a multiple of 15
+; The argument is stored in x
 (defpat fizzbuzz ((integer_ (checking 15 x))) 'fizzbuzz)
 (defpat fizzbuzz ((integer_ (checking 3 x))) 'fizz)
 (defpat fizzbuzz ((integer_ (checking 5 x))) 'buzz)
