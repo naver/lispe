@@ -111,10 +111,6 @@ __LispE__ provides also some interesting properties such as: [Data Structures](h
 (dimension (Square 20))
 ```
 
-Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/naver/lispe/wiki/7.-Shell)
-
-Come and discover __LispE__: the __Lisp Elémentaire__.
-
 ## But also array language capabilities
 
 Thanks to an internal structure implemented with [arrays](https://github.com/naver/lispe/wiki/2.3-Lists), we also provide some array operators.
@@ -135,6 +131,10 @@ For instance, here is how [Game of life](https://github.com/naver/lispe/wiki/6.2
 See: [Array Operators](https://github.com/naver/lispe/wiki/5.3-A-la-APL)
 
 ## Play with it
+
+Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/naver/lispe/wiki/7.-Shell)
+
+Come and discover __LispE__: the __Lisp Elémentaire__.
 
 We provide a fun little program to discover some of the most interesting aspects of LispE: [minzork](https://github.com/naver/lispe/blob/master/examples/patterns/minizork_en.lisp)
 
