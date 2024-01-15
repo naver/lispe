@@ -65,6 +65,7 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
    (seth toto (rho 2 10 '(0)))
 )
 
+; You declare a thread with the keyword: dethread
 (dethread tst(x y)
    (threadspace
       (+= titi x)
