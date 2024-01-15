@@ -72,16 +72,18 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
    )
 )
 
+; We launch 10 threads
 (loop i (range 1 10 1)
-   (tst 10 i)
+   (tst (+ i 10) i)
 )
 
+; We wait for the threads to terminate
 (wait)
 
 (space thread
-   (println titi) ; 100
+   (println titi) ; 145
    ; Note that the order of values is random, due to thread execution
-   (println toto) ; ((0 20 40 30 50 60 70 80 90 100) (0 0 0 0 0 0 0 0 0 0))
+   (println toto) ; ((0 21 46 34 60 75 108 92 126 145) (0 0 0 0 0 0 0 0 0 0))
 )
 
 ```
