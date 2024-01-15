@@ -80,7 +80,7 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
 ; We wait for the threads to terminate
 (wait)
 
-; threadspace is a actually a specific space name
+; threadspace is actually a specific space name
 (space thread
    (println titi) ; 145
    ; Note that the order of values is random, due to thread execution
