@@ -55,6 +55,39 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
 (for i s1 (println i))
 ```
 
+### You can easily run threads
+
+```Lisp
+; Variables in threadspace are protected against
+; value concurrencies.
+(threadspace
+   (seth titi 10)
+   (seth toto (rho 4 4 '(0)))
+)
+
+; We declare a thread that modifies the variables
+; in threadspace
+(dethread tst(x y)
+   (threadspace
+      (+= titi x)
+      (set@ toto 0 y titi)
+   )
+)
+
+(tst 10 0)
+(tst 20 1)
+(tst 30 2)
+(tst 40 3)
+
+; We wait for all threads to end
+(wait)
+
+(space thread
+   (println titi)
+   (println toto)
+)
+```
+
 ## Modern Functional Properties
 
 __LispE__ provides an alternative to parentheses with the [composition operator: "."](https://github.com/naver/lispe/wiki/5.-Description-of-Functions,-Operators-and-Libraries#composition-):
