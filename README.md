@@ -26,7 +26,7 @@ __LispE__ provides an alternative to parentheses with the [composition operator:
 (sum (numbers 1 2 3)) can be written (sum . numbers 1 2 3)
 ```
 
-For instance, here is how the game of life can be solved in one single instruction:
+For instance, here is how the [game of life](https://github.com/naver/lispe/wiki/6.20-Conway-Game-of-Life-in-LispE) can be solved in one single instruction:
 
 ```Lisp
 (defmacro ⊖(l n) (rotate l n true))
