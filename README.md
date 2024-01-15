@@ -83,8 +83,8 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
 (wait)
 
 (space thread
-   (println titi)
-   (println toto)
+   (println titi) ; 110
+   (println toto) ; ((20 40 70 110) (0 0 0 0) (0 0 0 0) (0 0 0 0))
 )
 ```
 
