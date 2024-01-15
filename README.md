@@ -119,7 +119,7 @@ Come and discover __LispE__: the __Lisp Elémentaire__.
 
 Thanks to an internal structure implemented with [arrays](https://github.com/naver/lispe/wiki/2.3-Lists), we also provide some array operators.
 
-For instance, here is how the [game of life](https://github.com/naver/lispe/wiki/6.20-Conway-Game-of-Life-in-LispE) can be solved in one single instruction:
+For instance, here is how [Game of life](https://github.com/naver/lispe/wiki/6.20-Conway-Game-of-Life-in-LispE) can be solved in one single instruction:
 
 ```Lisp
 (defmacro ⊖(l n) (rotate l n true))
