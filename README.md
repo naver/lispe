@@ -62,11 +62,9 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
 ; value concurrencies.
 (threadspace
    (seth titi 10)
-   (seth toto (rho 4 4 '(0)))
+   (seth toto (rho 2 10 '(0)))
 )
 
-; We declare a thread that modifies the variables
-; in threadspace
 (dethread tst(x y)
    (threadspace
       (+= titi x)
@@ -74,18 +72,18 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
    )
 )
 
-(tst 10 0)
-(tst 20 1)
-(tst 30 2)
-(tst 40 3)
+(loop i (range 1 10 1)
+   (tst 10 i)
+)
 
-; We wait for all threads to end
 (wait)
 
 (space thread
-   (println titi) ; 110
-   (println toto) ; ((20 40 70 110) (0 0 0 0) (0 0 0 0) (0 0 0 0))
+   (println titi) ; 100
+   ; Note that the order of values is random, due to thread execution
+   (println toto) ; ((0 20 40 30 50 60 70 80 90 100) (0 0 0 0 0 0 0 0 0 0))
 )
+
 ```
 
 ## Modern Functional Properties
