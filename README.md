@@ -18,25 +18,49 @@ I based a large part of this work on the following article: [The Root of Lisp](h
 
 We have stashed [here](https://github.com/naver/lispe/tree/master/binaries) precompiled versions for Window and Mac OS (including M1)...
 
+## A Lisp with all the bells and whistles
+__LispE__ is a true Lisp with all the traditional operators that one can expect from such a language:
+
+```Lisp
+(cons 'a '(b c)) ; (a b c)
+(cdr '(a b c d e)) ; '(b c d e)
+(car '(a b c d e)) ; 'a
+
+(+ 10 20 (* 3 4)) ; 42
+
+(list 'a 'b 'c 'd 'e) ; (a b c d e)
+
+; It also provides some built-in types to handle numbers
+
+(setq l1 (integers 1 2 3))
+(setq l2 (integers 4 5 6))
+
+; We can then add these lists together
+(+ l1 l2) ; 5 7 9
+
+; or strings
+
+(setq s1 (strings "a" "b" "c"))
+(setq s2 (strings "d" "e" "f"))
+
+; We can then add these lists together
+(+ s1 s2) ; ("ad" "be" "cf")
+
+; Lists are treated as vectors
+
+(@ s1 1) ; "b"
+(@ l1 2) ; 3
+
+; You can loop in a list
+(for i s1 (println i))
+```
+
 ## Modern Functional Properties
 
 __LispE__ provides an alternative to parentheses with the [composition operator: "."](https://github.com/naver/lispe/wiki/5.-Description-of-Functions,-Operators-and-Libraries#composition-):
 
 ```Lisp
 (sum (numbers 1 2 3)) can be written (sum . numbers 1 2 3)
-```
-
-For instance, here is how the [game of life](https://github.com/naver/lispe/wiki/6.20-Conway-Game-of-Life-in-LispE) can be solved in one single instruction:
-
-```Lisp
-(defmacro ⊖(l n) (rotate l n true))
-
-(defun lifeinit(x y) (rho x y . random_choice (* x y) (integers 0 1) 17))
-
-(setq r (lifeinit 20 40))
-(defun gol8(⍵) ((λ(⍺) (| (& (== ⍺ 4) r) (== ⍺ 3))) (⌿ '+ (⌿  '+ (° (λ (x ⍺) (⊖ ⍺ x)) '(1 0 -1) (↑ (λ (x) (⌽ ⍵ x)) '(1 0 -1)))))))
-
-(println . prettify (gol8 r) 20)
 ```
 
 __LispE__ provides a powerfull built-in pattern matching mechanism:
@@ -51,7 +75,6 @@ __LispE__ provides a powerfull built-in pattern matching mechanism:
 (defpat fizzbuzz (x) x)
 (mapcar 'fizzbuzz (range 1 100 1))
 ```
-
 
 __LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.7-Data-Structures)
 
@@ -95,6 +118,19 @@ Come and discover __LispE__: the __Lisp Elémentaire__.
 ## But also array language capabilities
 
 Thanks to an internal structure implemented with [arrays](https://github.com/naver/lispe/wiki/2.3-Lists), we also provide some array operators.
+
+For instance, here is how the [game of life](https://github.com/naver/lispe/wiki/6.20-Conway-Game-of-Life-in-LispE) can be solved in one single instruction:
+
+```Lisp
+(defmacro ⊖(l n) (rotate l n true))
+
+(defun lifeinit(x y) (rho x y . random_choice (* x y) (integers 0 1) 17))
+
+(setq r (lifeinit 20 40))
+(defun gol8(⍵) ((λ(⍺) (| (& (== ⍺ 4) r) (== ⍺ 3))) (⌿ '+ (⌿  '+ (° (λ (x ⍺) (⊖ ⍺ x)) '(1 0 -1) (↑ (λ (x) (⌽ ⍵ x)) '(1 0 -1)))))))
+
+(println . prettify (gol8 r) 20)
+```
 
 See: [Array Operators](https://github.com/naver/lispe/wiki/5.3-A-la-APL)
 
