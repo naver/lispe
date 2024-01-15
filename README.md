@@ -28,7 +28,7 @@ __LispE__ provides an alternative to parentheses with the [composition operator:
 
 For instance, here is how the game of life can be solved in one single instruction:
 
-```LispE
+```Lisp
 (defmacro ⊖(l n) (rotate l n true))
 
 (defun lifeinit(x y) (rho x y . random_choice (* x y) (integers 0 1) 17))
@@ -39,9 +39,9 @@ For instance, here is how the game of life can be solved in one single instructi
 (println . prettify (gol8 r) 20)
 ```
 
-__LispE___ provides a powerfull built-in pattern matching mechanism:
+__LispE__ provides a powerfull built-in pattern matching mechanism:
 
-```LispE
+```Lisp
 ; You can call a function in the pattern definition of the function
 (defun checking (x y) (eq 0 (% y x)))
 
@@ -55,7 +55,7 @@ __LispE___ provides a powerfull built-in pattern matching mechanism:
 
 __LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.7-Data-Structures)
 
-```LispE
+```Lisp
 ; First we define some data structures
 ; nil or _ this is the same value
 
