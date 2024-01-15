@@ -1974,6 +1974,34 @@ public:
     }
 };
 
+class List_data_eval : public Listincode {
+public:
+    
+    List_data_eval(Listincode* l) : Listincode(l) {}
+    List_data_eval(List* l) : Listincode(l) {}
+    List_data_eval() {}
+    List_data_eval(bool m)  {multiple = m;}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_data_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_data_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_data_eval(multiple);
+    }
+};
+
+
 class List_keys_eval : public Listincode {
 public:
     

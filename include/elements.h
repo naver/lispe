@@ -141,7 +141,7 @@ typedef enum {
     l_compile, l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
     l_apply, l_over, l_slice, l_maplist, l_filterlist, l_droplist, l_takelist, l_takenb,
     l_mapcar, l_filtercar, l_dropcar, l_takecar,
-    l_checking, l_data, l_replicate,
+    l_checking, l_data, l_replicate, l_data_eval,
     
     l_map, l_filter, l_take, l_repeat, l_cycle, l_drop, l_takewhile, l_dropwhile,
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,

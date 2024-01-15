@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2024.1.12.10.57";
+static std::string version = "1.2024.1.15.13.49";
 string LispVersion() {
     return version;
 }
@@ -319,6 +319,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_string, "string", P_TWO, &List::evall_converttostring, new List_string_eval());
     set_instruction(l_stringbyte, "stringbyte", P_TWO, &List::evall_converttostringbyte, new List_stringbyte_eval());
     set_instruction(l_data, "data", P_ATLEASTTWO, &List::evall_data);
+    set_instruction(l_data_eval, "%data", P_ATLEASTTWO, new List_data_eval());
     set_instruction(l_deflib, "deflib", P_THREE, &List::evall_deflib);
     set_instruction(l_deflibpat, "deflibpat", P_THREE, &List::evall_deflibpat);
     set_instruction(l_defmacro, "defmacro", P_FOUR, &List::evall_defmacro);
@@ -1914,6 +1915,13 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                     cont = true;
                     return element;
                 }
+                if (lab > l_final && checkDataStructure(lab)) {
+                    Element* inter = new List_data_eval((Listincode*)element);
+                    removefromgarbage(element);
+                    element = inter;
+                    storeforgarbage(element);
+                    return element;
+                }
             }
         }
     }
@@ -3051,6 +3059,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

@@ -1960,6 +1960,44 @@ Element* List_library_eval::eval(LispE* lisp) {
     return lisp->pop(element);
 }
 
+Element* List_data_eval::eval(LispE* lisp) {
+    Element* first = liste[0];
+    if (first->isList())
+        first = first->eval(lisp);
+    Element* data = lisp->getDataStructure(first->label());
+    List* values = lisp->provideList();
+    values->append(first);
+    Element* element;
+    long nbarguments = liste.size()-1;
+    try {
+        for (long i = 1; i <= nbarguments; i++) {
+            element = liste[i]->eval(lisp);
+            values->append(element->duplicate_constant(lisp));
+        }
+    }
+    catch (Error* err) {
+        values->clear();
+        delete values;
+        throw err;
+    }
+    
+    char res = data->check_match(lisp,values);
+    if (res != check_ok) {
+        values->clear();
+        delete values;
+        if (res == check_mismatch)
+            throw new Error(L"Error: Size mismatch between argument list and data structure definition");
+        else {
+            std::wstringstream message;
+            message << L"Error: Mismatch on argument: " << (int)res;
+            message << " (" << lisp->asString(data->index((int)res)->label()) << " required)";
+            throw new Error(message.str());
+        }
+    }
+    values->type = t_data;
+    return values;
+}
+
 Element* List_pattern_eval::eval(LispE* lisp) {
     List* arguments = lisp->provideList();
     Element* element;

@@ -3988,11 +3988,10 @@ Element* Listincode::eval_call_function(LispE* lisp) {
             liste[0] = new Atomefonction(body, t_lambda);
             lisp->storeforgarbage(liste[0]);
             return eval_lambda(lisp, (List*)body);
-        default:
-            body = lisp->getDataStructure(label);
-            liste[0] = new Atomefonction(body, t_data);
-            lisp->storeforgarbage(liste[0]);
-            return eval_data(lisp, body);
+        default: {
+            List_data_eval lst(this);
+            return lst.eval(lisp);
+        }
     }
 }
 
@@ -4041,8 +4040,13 @@ Element* List::evalt_list(LispE* lisp) {
             return eval(lisp);
         
         first_element = first_element->eval(lisp);
-        if (!first_element->size())
+        if (!first_element->size()) {
+            if (lisp->checkDataStructure(first_element->label())) {
+                List_data_eval lst(this);
+                return lst.eval(lisp);
+            }
             return first_element;
+        }
         
         //Execution of a lambda a priori, otherwise it's an error
         second_element = evalfunction(lisp, first_element);

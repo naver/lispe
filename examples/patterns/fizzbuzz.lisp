@@ -19,7 +19,8 @@
 )
 
 
-(map 'fizzbuzz (range 1 100 1))
+(mapcar 'fizzbuzz (range 1 100 1))
+
 
 
 

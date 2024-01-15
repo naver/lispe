@@ -133,6 +133,14 @@ public:
         current_code = convert(c);
     }
     
+    bool isInstruction(u_ustring n);
+    bool execute_code(wstring& c);
+    void load_code(string& n);
+    void init_interpreter(bool init, bool setpath);
+    void store_path(string n);
+    void initialize_breakpoints();
+    bool check_debug_command(string& buff);
+
     wstring WListing() {
         return wconvert(current_code);
     }
@@ -149,8 +157,6 @@ public:
         string line = convert(l);
         return coloringline(line, i, false);
     }
-    
-    void initlisp(bool init, bool setpath);
     
     //long splitline(wstring& l, long linenumber, vector<wstring>& subs);
 
@@ -564,9 +570,7 @@ public:
         tobesaved = false;
         return true;
     }
-
     
-    bool evallocalcode(string code, bool disp=false);
     long handlingcommands(long pos, bool& dsp);
     
     void init() {
@@ -813,8 +817,6 @@ public:
         pos = lines.size();
     }
     
-    bool Executesomecode(wstring& c);
-
     bool runcode() {
         cout << m_red;
         Element* e = lispe->execute(current_code, thecurrentfilename);
