@@ -26,7 +26,67 @@ __LispE__ provides an alternative to parentheses with the [composition operator:
 (sum (numbers 1 2 3)) can be written (sum . numbers 1 2 3)
 ```
 
+For instance, here is how the game of life can be solved in one single instruction:
+
+```LispE
+(defmacro ⊖(l n) (rotate l n true))
+
+(defun lifeinit(x y) (rho x y . random_choice (* x y) (integers 0 1) 17))
+
+(setq r (lifeinit 20 40))
+(defun gol8(⍵) ((λ(⍺) (| (& (== ⍺ 4) r) (== ⍺ 3))) (⌿ '+ (⌿  '+ (° (λ (x ⍺) (⊖ ⍺ x)) '(1 0 -1) (↑ (λ (x) (⌽ ⍵ x)) '(1 0 -1)))))))
+
+(println . prettify (gol8 r) 20)
+```
+
+__LispE___ provides a powerfull built-in pattern matching mechanism:
+
+```LispE
+; You can call a function in the pattern definition of the function
+(defun checking (x y) (eq 0 (% y x)))
+
+(defpat fizzbuzz ((integer_ (checking 15 x))) 'fizzbuzz)
+(defpat fizzbuzz ((integer_ (checking 3 x))) 'fizz)
+(defpat fizzbuzz ((integer_ (checking 5 x))) 'buzz)
+(defpat fizzbuzz (x) x)
+(mapcar 'fizzbuzz (range 1 100 1))
+```
+
+
 __LispE__ provides also some interesting properties such as: [Data Structures](https://github.com/naver/lispe/wiki/6.7-Data-Structures)
+
+```LispE
+; First we define some data structures
+; nil or _ this is the same value
+
+(data (Point integer_ integer_) (Pixel _ _) (Circle (Point _ _)  _) (Rectangle (Point _ _)  _ nil))
+
+; Then some pattern methods
+(defpat Surface ((Circle (Point x y) r)) (* _pi r r))
+(defpat Surface ((Rectangle _ h w)) (* h w))
+(defpat Surface (true) 'wrong)
+
+(println "Circle:" (Surface (Circle (Point 12 32) 10)))
+(println "Rectangle:" (Surface (Rectangle (Point 21 20) 10 20)))
+
+(setq x 10)
+(setq y 20)
+(setq r 12)
+
+(setq cercle (Circle (Point x y) r))
+
+(println "Circle:" (Surface cercle))
+(println "Point:" (Surface (Point 10 20)))
+(println "Circle:" (Surface ((atom "Circle") (Point 20 30) 3)))
+
+(data Shape (Triangle _) (Square _))
+
+(defpat dimension ( (Shape x))
+   (println 'Dimension x)
+)
+(dimension (Triangle 10))
+(dimension (Square 20))
+```
 
 Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/naver/lispe/wiki/7.-Shell)
 
