@@ -52,7 +52,7 @@ __LispE__ is a true Lisp with all the traditional operators that one can expect 
 (@ l1 2) ; 3
 
 ; You can loop in a list
-(for i s1 (println i))
+(loop i s1 (println i))
 ```
 
 ### You can easily run threads
