@@ -19,7 +19,63 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 //-------------------------------------------------------------------------------------------
 extern UTF8_Handler special_characters;
 //-------------------------------------------------------------------------------------------
-//Version avec éditeur jag intégré
+//Change the class name my_editor to what you fancy most...
+class my_editor : public interpreter_editor {
+    public:
+
+    my_editor() {
+        // do  you initialisatio here
+    }
+
+
+    //Return true if the interpreter exists
+    bool interpreter_active() {
+        //return true if it is active
+        return true;
+    }
+
+    //Stop the execution of your interpreter    
+    void stopExecution() {
+        //Code here
+        cout << m_red << "Execution Stops" << endl;
+    }
+
+    //Initialisation of your interpreter
+    void init_interpreter(bool reinitialize, bool setpath) {
+        if (reinitialize)
+            cout << m_red << "Reinitializing your interpreter" << endl;
+        else
+            cout << m_red << "Creating your interpreter ONLY if it is not available yet" << endl;
+    }
+
+    //Run a program
+    bool runcode() {
+        cout << m_red;
+        cout << "Running your code here" << endl;
+        cout << m_current;
+        return true;
+    }
+
+    //Run a line of code
+    bool execute_code(wstring& c) {
+        init_interpreter(false, true);
+        string code = convert(c);
+        cout << m_red;
+        cout << "Executing your line of code here:" << code << endl;
+        cout << m_current;
+        return true;
+    }
+
+    //Load code from a file name
+    void load_code(string& n) {
+        cout << m_red;
+        cout << "Loading your code here" << endl;
+        cout << m_current;
+
+    }
+};
+
+//Main
 
 int main(int argc, char *argv[]) {
     vector<string> arguments;
@@ -168,7 +224,7 @@ int main(int argc, char *argv[]) {
         }
                 
         if (args == "-e") {
-            JAGEDITOR = new interpreter_editor();
+            JAGEDITOR = new my_editor();
             JAGEDITOR->setnoprefix();
             JAGEDITOR->vt100 = vt100;
             JAGEDITOR->activate_mouse = mouse_on;
@@ -203,7 +259,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     
-    JAGEDITOR = new interpreter_editor();
+    JAGEDITOR = new my_editor();
     JAGEDITOR->setnoprefix();
     JAGEDITOR->vt100 = vt100;
     JAGEDITOR->launchterminal(darkmode, 2, arguments, newcolors);
