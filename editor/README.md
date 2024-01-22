@@ -15,19 +15,19 @@ The documentation on how to use the editor is here: [Jag Editor](https://github.
 
 We propose two files to show how to proceed.
 
-1. [editormain.cxx](https://github.com/naver/lispe/tree/master/editor/src/editormain.cxx) contains a generic stub that you modify to implement your own custom editor.
+1. [editormain.cxx](https://github.com/naver/lispe/tree/master/editor/src/editormain.cxx) contains a generic stub that you can modify to implement your own custom editor.
 1. [lispemain.cxx](https://github.com/naver/lispe/tree/master/editor/src/lispemain.cxx) contains a specific implementation to execute LispE command. This is given as an example to help you better understand how to proceed.
 
 ## Deriving your own class
 
-The creating of a custom editor is very simple.
+Creating a custom editor is very simple.
 
 You derive a class from _interpreter_editor_ and then you overload the following methods:
 
 
 ### The constructor
 
-We will use the class that is described in [editormain.cxx](https://github.com/naver/lispe/tree/master/editor/src/editormain.cxx) as examples: _my_editor_.
+We will use the class that is described in [editormain.cxx](https://github.com/naver/lispe/tree/master/editor/src/editormain.cxx) as an example: _my_editor_.
 
 In this class, you need first to provide all the details that are necessary to run your programming language. For instance, in [lispemain.cxx](https://github.com/naver/lispe/tree/master/editor/src/lispemain.cxx), you can see that you need a pointer to _LispE*_ in order to execute some LispE code. 
 
@@ -65,9 +65,9 @@ You need to overload the following method:
 
 ```
 
-The first argument tells the system whether or not a new version of the interpreter is needed. If the _reinitialize_ is _false_ and your interpreter already exists don't do anything. It simply means that you are executing your code line by line.
+The first argument tells the system whether or not a new instance of the interpreter is needed. If _reinitialize_ is _false_ and there is already an instance of your interpreter, don't do anything. It simply means that you are executing your code line by line.
 
-_filename_ is the current programm that is being executed.
+_filename_ is the current programm that is being executed. It could be an empty string is your executing your instruction in _prompt mode_.
 
 ### Loading your code
 
@@ -79,7 +79,6 @@ This function should load the content of a file and compile it. Note that when t
         cout << m_red;
         cout << "Loading your code here:" << filename << endl;
         cout << m_current;
-
     }
 
 ```
