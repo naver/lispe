@@ -8,6 +8,9 @@ However before starting, you need to launch _configure.py_, which is in the top 
 This _python_ programm will analyze your environment to initialize the proper parameters to compile your editor.
 This program will then create the proper _Makefile.in_ that is requested to properly compile your interpreter.
 
+## Documentation
+The documentation on how to use the editor is here: https://github.com/naver/lispe/wiki/1.2-Jag:-Terminal-Editor-With-Mouse-Support-and-Colour-Highlighting
+
 ## Files
 
 We propose two files to show how to proceed.
