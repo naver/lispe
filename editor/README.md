@@ -5,8 +5,8 @@ This directory contains the code to implement an editor to edit and run your own
 ## Detecting your compiling environment
 However before starting, you need to launch _configure.py_, which is in the top directory.
 
-This _python_ programm will analyze your environment to initialize the proper parameters to compile your editor.
-This program will then create the proper _Makefile.in_ that is requested to properly compile your interpreter.
+This _python_ program will analyze your environment to initialize the proper parameters to compile your editor.
+This program will then create _Makefile.in_ that is requested to properly compile your interpreter.
 
 ## Documentation
 The documentation on how to use the editor is here: [Jag Editor](https://github.com/naver/lispe/wiki/1.2-Jag:-Terminal-Editor-With-Mouse-Support-and-Colour-Highlighting)
