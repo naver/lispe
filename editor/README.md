@@ -209,7 +209,7 @@ These informations are then used to select the right colors in your documents.
 You can modify this function for your needs of course.
 
 
-### The different available colors on your terminal
+### The colors available on your terminal
 
 Execute:
 
