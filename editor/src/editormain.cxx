@@ -24,32 +24,30 @@ class my_editor : public interpreter_editor {
     public:
 
     my_editor() {
-        // do  you initialisatio here
-    }
-
-
-    //Return true if the interpreter exists
-    bool interpreter_active() {
-        //return true if it is active
-        return true;
-    }
-
-    //Stop the execution of your interpreter    
-    void stopExecution() {
-        //Code here
-        cout << m_red << "Execution Stops" << endl;
+        //Change the message that is displayed when launching the editor
+        title_string = "This is myeditor";
+        // do  you initialisation here
     }
 
     //Initialisation of your interpreter
-    void init_interpreter(bool reinitialize, bool setpath) {
+    void init_interpreter(bool reinitialize, string filename) {
+        //See lispemain.cxx for an example of how to set this method
         if (reinitialize)
             cout << m_red << "Reinitializing your interpreter" << endl;
         else
             cout << m_red << "Creating your interpreter ONLY if it is not available yet" << endl;
     }
 
+    //Load code from a file name
+    void load_code(string& filename) {
+        cout << m_red;
+        cout << "Loading your code here:" << filename << endl;
+        cout << m_current;
+
+    }
+
     //Run a program
-    bool runcode() {
+    bool run_code() {
         cout << m_red;
         cout << "Running your code here" << endl;
         cout << m_current;
@@ -58,7 +56,9 @@ class my_editor : public interpreter_editor {
 
     //Run a line of code
     bool execute_code(wstring& c) {
-        init_interpreter(false, true);
+        //If no interpreter exists, we create one
+        //The second parameter records in history this line of code
+        init_interpreter(false, thecurrentfilename);
         string code = convert(c);
         cout << m_red;
         cout << "Executing your line of code here:" << code << endl;
@@ -66,17 +66,59 @@ class my_editor : public interpreter_editor {
         return true;
     }
 
-    //Load code from a file name
-    void load_code(string& n) {
-        cout << m_red;
-        cout << "Loading your code here" << endl;
-        cout << m_current;
+    //If you want to interpret unix commands, preceded with a "!"
+    //The editor executes this method
+    wstring unix_command(wstring line) {
+        //We remove the "!"
+        wstring code = line.substr(1, line.size() - 1);
 
+        //We then generate the code corresponding to a system call in your language
+        long doublequotes = line.find(L"\"");        
+        if (doublequotes != -1) {
+            //The we add a "\" in front of each of these double quotes
+            //To avoid producing an unbalanced string
+            line = s_wreplacestring(line, L"\"", L"\\\"");
+        }
+
+        long iequal = line.find(L"=");
+        if (iequal != -1) {
+            //This is a case such as: !v = ls
+            code = line.substr(iequal + 1, line.size() - iequal);
+            code = s_trim(code);
+            line = line.substr(1, iequal - 1);
+            //We generate here: v = system_command("ls")
+            line = line + L" = ";
+            line += L"system_command(\"";
+            line += code;
+            line += L"\")";
+        }
+        else {
+            //we generate from !ls --> system_command("ls")
+            line = L"system_command(\"";
+            line += code;
+            line += L"\")";
+        }
+        
+        execute_code(line);    
+        return line;
     }
+
+    //Return true if the interpreter exists
+    bool interpreter_active() {
+        //return true if it is active
+        return true;
+    }
+
+    //Stop the execution of your interpreter    
+    void stop_execution() {
+        //Code here
+        cout << m_red << "Execution Stops" << endl;
+    }
+
+
 };
 
 //Main
-
 int main(int argc, char *argv[]) {
     vector<string> arguments;
     vector<string> newcolors;
@@ -204,25 +246,7 @@ int main(int argc, char *argv[]) {
             coloring = m_blueblack;
             continue;
         }
-        
-        if (args == "-pb") {
-            if (i >= argc - 1) {
-                cerr << "Missing code for option '-pb'" << endl;
-                exit(-1);
-            }
-            codeinitial = argv[++i];
-            continue;
-        }
-        
-        if (args == "-pe") {
-            if (i >= argc - 1) {
-                cerr << "Missing code for option '-pe'" << endl;
-                exit(-1);
-            }
-            codefinal = argv[++i];
-            continue;
-        }
-                
+                        
         if (args == "-e") {
             JAGEDITOR = new my_editor();
             JAGEDITOR->setnoprefix();

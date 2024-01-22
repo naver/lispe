@@ -31,6 +31,7 @@ class lispe_editor : public interpreter_editor {
     //--------------------------------------------------
 
     lispe_editor() {
+        title_string = "A version of the editor to handle LispE";
         lispe = NULL;
         //see enum file_types in jag.h
         filetype = lisp_type;
@@ -48,19 +49,19 @@ class lispe_editor : public interpreter_editor {
     }
 
     //Stop the execution of your interpreter    
-    void stopExecution() {
+    void stop_execution() {
         if (lispe != NULL) {
             lispe->stop();
         }
     }
 
     //Initialisation of your interpreter
-    void init_interpreter(bool reinitialize, bool setpath) {
+    void init_interpreter(bool reinitialize, string filename) {
         if (lispe == NULL) {
             lispe = new LispE(&special_characters);
             lispe->arguments(arguments);
-            if (setpath)
-                lispe->set_pathname(thecurrentfilename);
+            if (filename !="")
+                lispe->set_pathname(filename);
             return;
         }
         
@@ -69,13 +70,13 @@ class lispe_editor : public interpreter_editor {
                 delete lispe;
             lispe = new LispE(&special_characters);
             lispe->arguments(arguments);
-            if (setpath)
-                lispe->set_pathname(thecurrentfilename);
+            if (filename !="")
+                lispe->set_pathname(filename);
         }
     }
 
     //Run a program
-    bool runcode() {
+    bool run_code() {
         cout << m_red;
         Element* e = lispe->execute(current_code, thecurrentfilename);
         std::cout << e->toString(lispe) << std::endl;
@@ -88,7 +89,7 @@ class lispe_editor : public interpreter_editor {
     bool execute_code(wstring& c) {
         string code = convert(c);
         
-        init_interpreter(false, true);
+        init_interpreter(false, thecurrentfilename);
         bool storecode = true;
         //Seulement un nom de variable
         if (code.find("(") == -1 && code.find(")") == -1) {
@@ -119,6 +120,29 @@ class lispe_editor : public interpreter_editor {
     //Load code from a file name
     void load_code(string& n) {
         lispe->load(thecurrentfilename);
+    }
+
+    wstring unix_command(wstring line) {
+        //We launch a Unix command...
+        wstring code = line.substr(1, line.size() - 1);
+        long iquote = line.find(L"\"");
+        long iequal = line.find(L"=");
+        if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
+            code = line.substr(iequal + 1, line.size() - iequal);
+            line = line.substr(1, iequal - 1);
+            line = L"(setq " + line + L" ";
+            line += L"(command \"";
+            line += code;
+            line += L"\"))";
+        }
+        else {
+            line = L"(command \"";
+            line += code;
+            line += L"\")";
+        }
+        
+        execute_code(line);    
+        return line;
     }
 };
 

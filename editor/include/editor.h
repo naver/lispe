@@ -77,6 +77,7 @@ public:
     unordered_map<string, unordered_map<long, bool> > editor_breakpoints;    
     
     string current_code;
+    string title_string;
     long current_thread_id;
     
     std::atomic<bool> reading;
@@ -87,6 +88,7 @@ public:
     bool displaying_local_variables;
 
     interpreter_editor() {
+        title_string = "Editor";
         selected_x = -1;
         selected_y = -1;
         selected_pos = -1;
@@ -123,7 +125,7 @@ public:
         return false;
     }
 
-    virtual bool runcode() {
+    virtual bool run_code() {
         cout << m_red;
         //Execution here and display
         cout << "Run Output" << endl;
@@ -131,7 +133,7 @@ public:
         return true;
     }
 
-    virtual void stopExecution() {}
+    virtual void stop_execution() {}
 
     virtual bool execute_code(wstring& c) {
         cout << m_red;
@@ -142,8 +144,10 @@ public:
     }
 
     virtual void load_code(string& n) {}
-    virtual void init_interpreter(bool init, bool setpath) {}
+    virtual void init_interpreter(bool init, string filename) {}
     virtual void initialize_breakpoints() {}
+
+    virtual wstring unix_command(wstring);
 
     wstring WListing() {
         return wconvert(current_code);
@@ -661,7 +665,7 @@ public:
             printline(pos+1);
         }
 
-        stopExecution();
+        stop_execution();
         
         fflush(stdout);
         line = L"";

@@ -199,6 +199,12 @@ bool interpreter_editor::checkcommand(char c) {
     return false;
 }
 
+wstring interpreter_editor::unix_command(wstring line) {
+    //We launch a Unix command...
+    //We remove the "!"
+    return line.substr(1, line.size() - 1);
+}
+
 long interpreter_editor::handlingcommands(long pos, bool& dsp) {
     
     typedef enum {cmd_none, cmd_filename, cmd_spaces, cmd_select, cmd_edit, cmd_run, cmd_cls, cmd_help, cmd_list, cmd_syntax, cmd_colors,
@@ -249,37 +255,15 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
     }
     else {
         if (line.size()) {
-            if (line[0] == '!' || line[0] == '?') {
-                if (line[0] == '!') {
-                    addcommandline(line);
-                    
-                    //We launch a Unix command...
-                    code = line.substr(1, line.size() - 1);
-                    long iquote = line.find(L"\"");
-                    long iequal = line.find(L"=");
-                    if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
-                        code = line.substr(iequal + 1, line.size() - iequal);
-                        line = line.substr(1, iequal - 1);
-                        line = L"(setq " + line + L" ";
-                        line += L"(command \"";
-                        line += code;
-                        line += L"\"))";
-                    }
-                    else {
-                        line = L"(command \"";
-                        line += code;
-                        line += L"\")";
-                    }
-                    
-                    execute_code(line);
-                    
-                    code = WListing();
-                    lines.setcode(code, false);
-                    lines.pop_back();
-                    code = lines.code();
-                    SetCurrentCode(code);
-                    return lines.size();
-                }
+            if (line[0] == '!') {
+                addcommandline(line);
+                line = unix_command(line);
+                code = WListing();
+                lines.setcode(code, false);
+                lines.pop_back();
+                code = lines.code();
+                SetCurrentCode(code);
+                return lines.size();
             }
         }
     }
@@ -401,17 +385,17 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
                 if (isempty(current_code))
                     return pos;
                 
-                init_interpreter(true, true);
+                init_interpreter(true, thecurrentfilename);
                 
                 line = L"";
                 editmode = false;
                 
-                runcode();
+                run_code();
                 return pos;
             }
             
             if (loadfile(v[1])) {
-                init_interpreter(true, false);
+                init_interpreter(true, "");
                 cout << m_red;
                 load_code(thecurrentfilename);
                 cout << m_current;
@@ -796,7 +780,7 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
             if (loadfile(v[1]))
                 cerr << m_red << "ok." << m_current << endl;
             
-            init_interpreter(false, true);
+            init_interpreter(false, thecurrentfilename);
             return pos;
         case cmd_create:
             addcommandline(line);
@@ -831,7 +815,7 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
             
             //if this is a first saving of this code...
             if (filenames.find(thecurrentfilename) == filenames.end()) {
-                init_interpreter(false, true);
+                init_interpreter(false, thecurrentfilename);
                 currentfileid = ifilenames.size();
                 ifilenames.push_back(thecurrentfilename);
                 filenames[thecurrentfilename] = currentfileid;
@@ -902,7 +886,7 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
             
             line = L"";
             posinstring = 0;
-            init_interpreter(true, true);
+            init_interpreter(true, thecurrentfilename);
             pos = 0;
             return pos;
         case cmd_reinit:
@@ -912,7 +896,7 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
             lines.clear();
             line = L"";
             posinstring = 0;
-            init_interpreter(true, true);
+            init_interpreter(true, thecurrentfilename);
             editor_breakpoints.clear();
             pos = 0;
             return pos;
@@ -950,11 +934,12 @@ void interpreter_editor::launchterminal(bool darkmode, char noinit, vector<strin
     
     option = x_none;
     prefix = ">";
+    
+    cerr << endl << m_redbold << title_string << m_current << endl;
+
 #ifdef WIN32
-    cerr << endl << m_redbold << "Editor" << m_current << endl;
     SetConsoleCtrlHandler(handle_ctrl_c, TRUE);
 #else
-    cerr << endl << m_redbold << "Editor" << m_current << endl;
     signal(SIGINT,handle_ctrl_c);
 #endif
     
@@ -981,7 +966,7 @@ void interpreter_editor::launchterminal(bool darkmode, char noinit, vector<strin
         case 2:
             prefix = "<>";
             cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
-            init_interpreter(false, false);
+            init_interpreter(false, "");
             lines.push(L"");
             poslines.push_back(0);
             line = L"";

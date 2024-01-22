@@ -1294,7 +1294,7 @@ public:
     //This section handles combined commands introduced with Ctrl-x
     virtual bool checkcommand(char);
     void handlecommands();
-    virtual void stopExecution() {}
+    virtual void stop_execution() {}
 
     //This a case of copy/paste within the editor, we need to remove the prefixes
     //This is the main method that launches the terminal
