@@ -9,7 +9,7 @@ This _python_ programm will analyze your environment to initialize the proper pa
 This program will then create the proper _Makefile.in_ that is requested to properly compile your interpreter.
 
 ## Documentation
-The documentation on how to use the editor is here: https://github.com/naver/lispe/wiki/1.2-Jag:-Terminal-Editor-With-Mouse-Support-and-Colour-Highlighting
+The documentation on how to use the editor is here: [Jag Editor](https://github.com/naver/lispe/wiki/1.2-Jag:-Terminal-Editor-With-Mouse-Support-and-Colour-Highlighting)
 
 ## Files
 
