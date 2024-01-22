@@ -202,7 +202,7 @@ For instance, a C comment such as _//_ will be stored with the definition *jt_co
 infos.append(jt_finalcomment, posbeg, posend); 
 ```
 
-*posbeg, posend* are the actual position in characters of this comment in the code.
+*posbeg, posend* are the position range of this comment in the code.
 
 These informations are then used to select the right colors in your documents.
 
