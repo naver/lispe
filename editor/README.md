@@ -8,6 +8,13 @@ However before starting, you need to launch _configure.py_, which is in the top 
 This _python_ program will analyze your environment to initialize the proper parameters to compile your editor.
 This program will then create _Makefile.in_ that is requested to properly compile your interpreter.
 
+### Compiling
+
+You can then compile two different versions:
+
+* Your customizable editor: `make myeditor`
+* A demonstrator based on LispE: `make lispeditor`
+
 ## Documentation
 The documentation on how to use the editor is here: [Jag Editor](https://github.com/naver/lispe/wiki/1.2-Jag:-Terminal-Editor-With-Mouse-Support-and-Colour-Highlighting)
 
