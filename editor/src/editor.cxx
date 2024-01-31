@@ -358,7 +358,8 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
             }
             
             addcommandline(line);
-            prefix = ">>";
+            prefix = editor_prefix;
+            wprefix = editor_wprefix;
             
             if (lines.size() == 0) {
                 lines.push(L"");
@@ -954,7 +955,7 @@ void interpreter_editor::launchterminal(bool darkmode, char noinit, vector<strin
     
     switch (noinit) {
         case 1:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             pos = 1;
             line = L"";
             lines.push_back(line);
@@ -964,7 +965,7 @@ void interpreter_editor::launchterminal(bool darkmode, char noinit, vector<strin
             printline(pos+1);
             break;
         case 2:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
             init_interpreter(false, "");
             lines.push(L"");
@@ -979,7 +980,7 @@ void interpreter_editor::launchterminal(bool darkmode, char noinit, vector<strin
             pos = handlingcommands(pos, dsp);
             break;
         default:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
             printline(pos+1);
     }

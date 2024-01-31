@@ -80,6 +80,10 @@ bool evaluate_quotes(wstring& l);
 
 const string colordenomination[] = {"string", "definition", "instruction", "quote", "comment", "call", "selection"};
 const int16_t nbdenomination = 7;
+//##### Prefix taht are displayed on top #####
+const char editor_prefix[] = "";
+const wchar_t editor_wprefix[] = L"";
+const char cmd_line_prefix[] = "<>";
 
 class wstring_controlled : public wstring {
 public:
@@ -881,8 +885,8 @@ public:
         }
         else {
             margin = margin_value_reference;
-            prefix = ">>";
-            wprefix = L">>";
+            prefix = editor_prefix;
+            wprefix = editor_wprefix;
             setprefixesize(lines.size());
         }
         resetscreen();
@@ -1009,13 +1013,13 @@ public:
             prefixsize = 0;
             return;
         }
-        prefixsize = sz > 9999 ? 5 : sz > 999 ? 4: sz > 99 ? 3 : 2;
+        prefixsize = sz > 9999 ? 5 : sz > 999 ? 4: sz > 99 ? 3 : sz > 9 ? 2 : 1;
     }
 
 	long prefixe() {
 		if (noprefix)
 			return 0;
-		return (4 + prefixsize);
+		return (2 + prefix.size() + prefixsize);
 	}
 
     virtual long prefixego() {
