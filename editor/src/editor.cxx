@@ -356,7 +356,11 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
                     modified = true;
                 }
             }
-            
+            kbuffer = L"";
+            for (long i = 0; i< commandlines.size(); i++)
+                kbuffer += commandlines[i] + L"\n";
+            kbuffer += L"\n";
+
             addcommandline(line);
             prefix = editor_prefix;
             wprefix = editor_wprefix;

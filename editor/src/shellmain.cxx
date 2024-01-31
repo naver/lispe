@@ -105,6 +105,8 @@ class my_editor : public interpreter_editor {
     void stop_execution() {
         //Code here
         cout << m_red << "ctrl-c: stop" << m_current << endl;
+        pos = commandlines.size() + 1;
+        printline(pos);
     }
 
 
