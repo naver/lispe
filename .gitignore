@@ -1,2 +1,12 @@
 
 .DS_Store
+editor/bin/shelleditor
+Makefile.in
+editor/objs/shell/editor.o
+editor/objs/shell/jag.o
+editor/objs/shell/jagget.o
+editor/objs/shell/jagrgx.o
+editor/objs/shell/jagtools.o
+editor/objs/shell/shellmain.o
+editor/objs/shell/tokenize.o
+Makefile.in

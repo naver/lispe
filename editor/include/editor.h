@@ -135,6 +135,11 @@ public:
 
     virtual void stop_execution() {}
 
+    bool execute_code_with_history(wstring& c) {
+        addcommandline(c);
+        return execute_code(c);
+    }
+
     virtual bool execute_code(wstring& c) {
         cout << m_red;
         //Execution here and display

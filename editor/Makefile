@@ -3,21 +3,26 @@ include ../Makefile.in
 ################ Compiler LispE #################################
 SOURCEWITHLISPE = lispemain.cxx jag.cxx editor.cxx tokenize.cxx
 SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx jagtools.cxx tokenize.cxx
+SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx jagtools.cxx tokenize.cxx
 #------------------------------------------------------------
 OBJECTWITHLISPE = $(SOURCEWITHLISPE:%.cxx=objs/%.o)
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
+OBJECTSHELL = $(SOURCESHELL:%.cxx=objs/shell/%.o)
 #------------------------------------------------------------
 INCLUDES = -Iinclude -I../include
 # Selon les compilateurs, il faudra peut-être choisir l'un des flags suivants
 #C++11Flag = -std=c++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
 #C++11Flag = -std=gnu++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
 LIBPATH = ../bin
-C++11Flag = -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
+C++11Flag = -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE) -g
 #------------------------------------------------------------
 objs/%.o: src/%.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
 
 objs/myeditor/%.o: src/%.cxx
+	$(COMPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+
+objs/shell/%.o: src/%.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
 #------------------------------------------------------------
 
@@ -28,10 +33,14 @@ lispeditor: install $(OBJECTWITHLISPE)
 myeditor: install $(OBJECTMYEDITOR)
 	$(COMPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
 
+shell: install $(OBJECTSHELL)
+	$(COMPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
+
 install:
 	mkdir -p bin
 	mkdir -p objs
 	mkdir -p objs/myeditor
+	mkdir -p objs/shell
 
 clean:
 	rm -Rf objs

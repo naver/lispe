@@ -905,7 +905,7 @@ long interpreter_editor::handlingcommands(long pos, bool& dsp) {
     
     //Adding a line into the code
     if (line.size()) {
-        execute_code(line);
+        execute_code_with_history(line);
         code = WListing();
         
         lines.setcode(code,false);
