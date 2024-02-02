@@ -1094,7 +1094,6 @@ public:
     }
 
     Element* eval(LispE* lisp) {
-        //eval is either: command, setenv or getenv...
         switch (sys) {
             case sys_ls:
                 return listeDirectory(lisp);

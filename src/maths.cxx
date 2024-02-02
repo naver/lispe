@@ -8895,7 +8895,6 @@ public:
     }
     
     Element* eval(LispE* lisp) {
-        //eval is either: command, setenv or getenv...
         Element* val_v = lisp->get_variable(v_val);
         if (val_v->type == t_complex) {
             Complexe* c = new Complexe(((Complexe*)val_v)->content);

@@ -13,6 +13,7 @@ This program will then create _Makefile.in_ that is requested to properly compil
 You can then compile two different versions:
 
 * Your customizable editor: `make myeditor` (in that case, this directory is enough)
+* A demonstrator based on the shell interpreter: `make shell`
 * A demonstrator based on LispE: `make lispeditor` (you need to have compiled LispE beforehand)
 
 ## Documentation
@@ -23,6 +24,7 @@ The documentation on how to use the editor is here: [Jag Editor](https://github.
 We propose two files to show how to proceed.
 
 1. [editormain.cxx](https://github.com/naver/lispe/tree/master/editor/src/editormain.cxx) contains a generic stub that you can modify to implement your own custom editor (use `make myeditor`)
+1. [shellmain.cxx](https://github.com/naver/lispe/tree/master/editor/src/shellmain.cxx) contains a simple example of the integration of a shell interpreter (use `make shell`)
 1. [lispemain.cxx](https://github.com/naver/lispe/tree/master/editor/src/lispemain.cxx) contains a specific implementation to execute LispE command. This is given as an example to help you better understand how to proceed (use `make lispeditor`).
 
 ## Deriving your own class

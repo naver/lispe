@@ -22,10 +22,11 @@ extern UTF8_Handler special_characters;
 //Change the class name my_editor to what you fancy most...
 class my_editor : public interpreter_editor {
     public:
+    string current_directory;
 
     my_editor() {
         //Change the message that is displayed when launching the editor
-        title_string = "This is myeditor";
+        title_string = "Shell";
         // do  you initialisation here
     }
 
@@ -40,15 +41,26 @@ class my_editor : public interpreter_editor {
         int status;
         
         char res[PATH_MAX];
-        
+
+        bool get_current = false;
+        if (cmd[0] == 'c' && cmd[1] == 'd' && (!cmd[2] || cmd[2] == ' ')) {
+            //In this case we do a fwrite to force the completion
+            get_current = true;
+            cmd += ";pwd";
+        }
+
+        if (current_directory != "") {
+            chdir(STR(current_directory));
+        }
+
 #ifdef WIN32
         fp = _popen(STR(cmd), "r");
 #else
         fp = popen(STR(cmd), "r");
 #endif                
         if (fp == NULL)
-            return "Error: the pipe did not open properly";
-        
+            return "Error: the pipe did not open properly\n";
+
         string result;
         while (fgets(res, PATH_MAX, fp) != NULL) {
             cmd  = res;
@@ -61,9 +73,15 @@ class my_editor : public interpreter_editor {
         status = pclose(fp);
 #endif
         if (status == -1) {
-            result = "Error: when closing the pipe";
+            result = "Error: when closing the pipe\n";
         }
-        
+        else {
+            if (get_current) {
+                current_directory = result;
+                s_trim(current_directory);  
+                result = "true\n";
+            }
+        }
         return result;
     }
 

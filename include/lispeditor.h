@@ -98,6 +98,7 @@ public:
     long current_thread_id;
     
     std::atomic<bool> reading;
+    string current_directory;
     string input_string;
     string output_string;
     bool debugmode;
@@ -146,12 +147,13 @@ public:
     }
     
     bool emode() {
-        if (editmode && option == x_none)
-            return true;
+        if (editmode)
+            return (option == x_none);
+
         noprefix = false;
         return false;
     }
-    
+
     
     string coloringline(wstring& l, long i) {
         string line = convert(l);

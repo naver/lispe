@@ -496,24 +496,41 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                     
                     //We launch a Unix command...
                     code = line.substr(1, line.size() - 1);
-                    long iquote = line.find(L"\"");
-                    long iequal = line.find(L"=");
-                    if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
-                        code = line.substr(iequal + 1, line.size() - iequal);
-                        line = line.substr(1, iequal - 1);
-                        line = L"(setq " + line + L" ";
+                    if (code[0] == 'c' && code[1] == 'd' && (!code[2] || code[2] == '/' || code[2]==' ')) {
+                        code += L";pwd";
+                        line = L"(setq _pwd_ ";
                         line += L"(command \"";
                         line += code;
                         line += L"\"))";
+                        execute_code(line);
+                        string cd = "(at _pwd_ 0)";
+                        Element* dirt = lispe->execute(cd);
+                        current_directory = dirt->toString(lispe);
+                        s_trim(current_directory);
+                        dirt->release();
                     }
                     else {
-                        line = L"(command \"";
-                        line += code;
-                        line += L"\")";
+                        long iquote = line.find(L"\"");
+                        long iequal = line.find(L"=");
+                        if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
+                            code = line.substr(iequal + 1, line.size() - iequal);
+                            line = line.substr(1, iequal - 1);
+                            line = L"(setq " + line + L" ";
+                            line += L"(command \"";
+                            line += code;
+                            line += L"\"))";
+                        }
+                        else {
+                            line = L"(command \"";
+                            line += code;
+                            line += L"\")";
+                        }
+
+                        if (current_directory != "")
+                            chdir(STR(current_directory));
+
+                        execute_code(line);
                     }
-                    
-                    execute_code(line);
-                    
                     code = WListing();
                     lines.setcode(code, false);
                     lines.pop_back();
