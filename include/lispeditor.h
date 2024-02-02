@@ -290,7 +290,8 @@ public:
                         printline(lines.numeros[pos], line, pos);
                     else {
                         string prf = prefix;
-                        prefix = ">>";
+                        prefix = editor_prefix;
+                        wprefix = editor_wprefix;
                         printline(lines.numeros[pos], line, pos);
                         prefix = prf;
                     }
@@ -632,7 +633,7 @@ public:
         string l = m_red;
         l += "console";
         l += m_current;
-        prefix = "<>";
+        prefix = cmd_line_prefix;
         printline(pos+1, l);
         cout << endl;
         clearline();
@@ -662,7 +663,7 @@ public:
             string l = m_red;
             l += "console";
             l += m_current;
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             printline(pos+1, l);
             cout << endl;
             clearline();

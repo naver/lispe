@@ -73,6 +73,10 @@ using std::ofstream;
 #define hmap std::unordered_map
 #define uchar unsigned char
 
+const char editor_prefix[] = "";
+const wchar_t editor_wprefix[] = L"";
+const char cmd_line_prefix[] = "<>";
+
 class jag_editor;
 
 extern jag_editor* JAGEDITOR;
@@ -880,8 +884,8 @@ public:
         }
         else {
             margin = margin_value_reference;
-            prefix = ">>";
-            wprefix = L">>";
+            prefix = editor_prefix;
+            wprefix = editor_wprefix;
             setprefixesize(lines.size());
         }
         resetscreen();
@@ -1013,7 +1017,7 @@ public:
 	long prefixe() {
 		if (noprefix)
 			return 0;
-		return (4 + prefixsize);
+		return (2 + prefix.size() + prefixsize);
 	}
 
     virtual long prefixego() {

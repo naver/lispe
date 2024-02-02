@@ -632,7 +632,8 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             }
             
             addcommandline(line);
-            prefix = ">>";
+            prefix = editor_prefix;
+            wprefix = editor_wprefix;
             
             if (lines.size() == 0) {
                 lines.push(L"");
@@ -1266,7 +1267,7 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
     
     switch (noinit) {
         case 1:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             pos = 1;
             line = L"";
             lines.push_back(line);
@@ -1276,7 +1277,7 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             printline(pos+1);
             break;
         case 2:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
             init_interpreter(false, false);
             lines.push(L"");
@@ -1295,13 +1296,13 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             //launch debug
             line = L"debug";
             pos = handlingcommands(pos, dsp);
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             pos = 0;
             line = L"";
             printline(pos+1);
             break;
         default:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
             printline(pos+1);
     }
