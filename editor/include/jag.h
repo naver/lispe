@@ -100,7 +100,7 @@ public:
     }
 };
 
-typedef enum {no_type, clike_type, lisp_type, python_type, tamgu_type} file_types;
+typedef enum {no_type, c_like_type, lisp_type, python_type, tamgu_type} file_types;
 
 class editor_lines {
 public:
@@ -332,7 +332,7 @@ public:
             case tamgu_type:
                 detecttamgu();
                 break;
-            case clike_type:
+            case c_like_type:
                 detectclike();
                 break;
             default:
@@ -778,7 +778,7 @@ public:
                         thecurrentfilename.find(".cxx") != -1 ||
                         thecurrentfilename.find(".hpp") != -1 ||
                         thecurrentfilename.find(".h") != -1)
-                        filetype = clike_type;
+                        filetype = c_like_type;
                     else
                         filetype = no_type;
             }

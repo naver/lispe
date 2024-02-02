@@ -3977,7 +3977,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                         }
                     }
                     else {
-                        if (filetype == clike_type && code[idx] == '/') {
+                        if (filetype == c_like_type && code[idx] == '/') {
                             idx++;
                             infos.append(jt_finalcomment, last_i, idx);
                             i = idx;
@@ -3987,7 +3987,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 break;
             case '/':
                 point = false;
-                if (filetype == clike_type) {
+                if (filetype == c_like_type) {
                     idx = i + 1;
                     if (code[idx] == '/' || code[idx] == '*') {
                         idx++;
@@ -4014,7 +4014,7 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
                 break;
             case '*':
                 point = false;
-                if (filetype == clike_type) {
+                if (filetype == c_like_type) {
                     idx = i + 1;
                     if (code[idx] == '/') {
                         idx++;
