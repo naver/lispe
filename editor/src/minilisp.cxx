@@ -324,10 +324,37 @@ error_tokenize code_segmenting(string &code, Segmentingtype &infos)
 //-------------------------------------------------------------------------------------
 lisp_element::lisp_element(lisp_mini *l, uint16_t c) : code(c)
 {
-    constant = false;
+    status = 0;
     lisp = l;
+    lisp->count();
     lisp->garbages.back().insert(this);
 }
+
+void lisp_element::mark()
+{
+    if (!status)
+        lisp->decount();
+    status += (status != s_constant);
+}
+
+void lisp_element::unmark()
+{
+    status -= (status && status != s_constant);
+    if (!status)
+    {
+        lisp->remove(this);
+    }
+}
+
+void lisp_list::unmark() {
+    status -= (status && status != s_constant);
+    if (!status) {
+        for (long i = 0; i <list_of_elements.size(); i++)
+            list_of_elements[i]->unmark();
+        lisp->remove(this);
+    }
+}
+
 
 lisp_element *lisp_atom::eval()
 {
@@ -385,6 +412,8 @@ uint16_t get_code(string &w)
 lisp_mini::lisp_mini()
 {
     initialisation_static_values();
+    stop_execution = false;
+    count_data = 0;
     std::set<lisp_element*> g;
     std::map<uint16_t, lisp_element*> v;
     garbages.push_back(g);
@@ -474,7 +503,7 @@ bool lisp_mini::compile(lisp_element *program, long &pos, bool first)
         default:
             cerr << infos.types[pos] << endl;
         }
-    }
+    }    
 }
 //-------------------------------------------------------------------------------------
 lisp_element *lisp_list::eval()
@@ -485,6 +514,8 @@ lisp_element *lisp_list::eval()
 
     lisp_element *e = list_of_elements[0];
     lisp_element *r;
+
+    lisp->garbage_collector();
 
     switch (e->code)
     {
@@ -803,7 +834,7 @@ lisp_element *lisp_list::eval()
         if (!e->is_atom())
             return lispunknownatom->eval();
         r = list_of_elements[2]->eval();
-        lisp->variables.back()[e->code] = r;
+        lisp->insert(e->code, r);
         return r;
     case l_quote:
         return list_of_elements[1];
@@ -817,7 +848,7 @@ lisp_element *lisp_list::eval()
         return l;
     }
     case l_clean:
-        lisp->garbage_clean();
+        lisp->garbage_clean(true);
         throw lisp_end->eval();
     case l_eval:
     {
@@ -839,7 +870,7 @@ lisp_element *lisp_list::eval()
         e = list_of_elements[1];
         if (!e->is_atom())
             return lispunknownatom->eval();
-        lisp->variables.back()[e->code] = this;
+        lisp->insert(e->code,this);
         return e;
     case v_list:
     {
@@ -966,7 +997,9 @@ lisp_element *lisp_mini::run(string code)
 
     long pos = 0;
     lisp_list *program = new lisp_list(this);
+    program->mark();    
     compile(program, pos, true);
+    stop_execution = false;
     return program->eval();
 }
 
@@ -992,11 +1025,14 @@ string execute_some_lisp(lisp_mini *lisp, string &code)
     }
 
     lisp_list *program = new lisp_list(lisp);
+    program->mark();
     long pos = 0;
     lisp->compile(program, pos, true);
+    lisp_element *res = lisp_nil;
     try
     {
-        lisp_element *res = program->eval();
+        lisp->stop_execution = false;
+        res = program->eval();
         res->asstring(os);
     }
     catch (lisp_error *l)

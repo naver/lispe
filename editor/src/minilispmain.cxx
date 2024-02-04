@@ -130,9 +130,9 @@ class minilisp_editor : public interpreter_editor {
         string codes = "(block ";
         codes += readfile();
         codes += ")";
-                
+        
         cout << m_red;
-        cout << execute_some_lisp(lisp, codes);
+        cout << execute_some_lisp(lisp, codes) << endl;
         cout << m_current;
 
         return true;
@@ -168,7 +168,7 @@ class minilisp_editor : public interpreter_editor {
     //Stop the execution of your interpreter    
     void stop_execution() {
         //Code here
-        cout << m_red << "ctrl-c: stop" << m_current << endl;
+        lisp->stop();
         pos = commandlines.size() + 1;
         printline(pos);
     }
