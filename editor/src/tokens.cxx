@@ -1251,7 +1251,7 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"#13=#");                      //lf (not kept)
 
     //Quoted ;
-    rules.push_back(U"'%#+=59");                       //quote #
+    rules.push_back(U"';+=59");                       //quote ;
 
     //Single quote
     rules.push_back(U"'=39");                       //quote
@@ -1269,7 +1269,7 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"%}=125");
     
     //Comments
-    rules.push_back(U"%#?+%r=67");                      //comments starting with # up to the end of the line
+    rules.push_back(U";?+%r=67");                      //comments starting with ; up to the end of the line
     rules.push_back(U"%#!?+%r=67");                      //specific to Linux, calling function integrated in file
 
     //Strings

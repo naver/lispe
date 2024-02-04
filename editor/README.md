@@ -27,6 +27,16 @@ We propose two files to show how to proceed.
 1. [shellmain.cxx](https://github.com/naver/lispe/tree/master/editor/src/shellmain.cxx) contains a simple example of the integration of a shell interpreter (use `make shell`)
 1. [lispemain.cxx](https://github.com/naver/lispe/tree/master/editor/src/lispemain.cxx) contains a specific implementation to execute LispE command. This is given as an example to help you better understand how to proceed (use `make lispeditor`).
 
+
+### Lisp Mini
+
+_Lisp Mini_ is a very simple lisp interpreter with very minimal garbage collecting capabilities. You can test it in two different ways:
+
+1. `make mini` includes the jag editor to test _lisp mini_
+1. `make libmin lispmin` compiles the _lisp mini_ library and a very simple line by line interpreter.
+
+You can read the document: [lisp mini](https://github.com/naver/lispe/tree/master/editor/lisp_mini.md) for more information.
+
 ## Deriving your own class
 
 Creating a custom editor is very simple.

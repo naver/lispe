@@ -2,6 +2,88 @@
 
 // We want lists, numbers and dictionary
 extern UTF8_Handler special_characters;
+//------------------------------------------------------------------------
+static void initialisation_static_values()
+{
+    if (lisp_nil == NULL)
+    {
+        lisp_nil = new lisp_list(true);
+        lisp_true = new lisp_boolean(true);
+
+        lisp_emptystring = new lisp_string(true);
+        lisperror = new lisp_error("Error: wrong method for this element");
+        lispargnbserror = new lisp_error("Error: wrong number of arguments");
+        lisptokenizeerror = new lisp_error("Error: tokenization error");
+        lisperrorrange = new lisp_error("Error: out of range");
+        lisperrordivided0 = new lisp_error("Error: divided by 0");
+        lispunknownatom = new lisp_error("Error: unknown atom");
+        lispunknownmethod = new lisp_error("Error: unknown method");
+        lispstackerror = new lisp_error("Stack error");
+        lisplambdaerror = new lisp_error("Lambda error");        
+        lisp_end = new lisp_error("reset al");
+
+        code_dictionary["nil"] = v_nil;
+        code_dictionary["atom_"] = v_atom;
+        code_dictionary["error_"] = v_error;
+        code_dictionary["string_"] = v_string;
+        code_dictionary["list_"] = v_list;
+        code_dictionary["number_"] = v_number;
+        code_dictionary["unix_"] = v_unix;
+        code_dictionary["bool_"] = v_boolean;
+
+        code_dictionary["lambda"] = l_lambda;
+        code_dictionary["defun"] = l_defun;
+        code_dictionary["eval"] = l_eval;
+        code_dictionary["+"] = l_plus;
+        code_dictionary["-"] = l_minus;
+        code_dictionary["*"] = l_multiply;
+        code_dictionary["/"] = l_divide;
+        code_dictionary["%"] = l_mod;
+        code_dictionary["car"] = l_car;
+        code_dictionary["cdr"] = l_cdr;
+        code_dictionary["cons"] = l_cons;
+        code_dictionary["split"] = l_split;
+        code_dictionary["print"] = l_print;
+        code_dictionary["at"] = l_at;
+        code_dictionary["list"] = l_list;
+        code_dictionary["loop"] = l_loop;
+        code_dictionary["cond"] = l_cond;
+        code_dictionary["if"] = l_if;
+        code_dictionary["eq"] = l_eq;
+        code_dictionary["neq"] = l_neq;
+        code_dictionary["<"] = l_inf;
+        code_dictionary[">"] = l_sup;
+        code_dictionary["<="] = l_infeq;
+        code_dictionary[">="] = l_supeq;
+        code_dictionary["setq"] = l_setq;
+        code_dictionary["'"] = l_quote;
+        code_dictionary["command"] = l_command;
+        code_dictionary["size"] = l_size;
+        code_dictionary["block"] = l_block;
+        code_dictionary["clean"] = l_clean;
+        code_dictionary["type"] = l_type;
+        code_dictionary["cons?"] = l_consp;
+        code_dictionary["zero?"] = l_zerop;
+        code_dictionary["null?"] = l_nullp;
+        code_dictionary["string?"] = l_stringp;
+        code_dictionary["number?"] = l_numberp;
+        code_dictionary["number"] = l_number;
+        code_dictionary["string"] = l_string;
+        code_dictionary["stats"] = l_stats;
+        code_dictionary["push"] = l_push;
+        code_dictionary["pop"] = l_pop;
+
+        code_dictionary["€"] = l_final;
+
+        for (const auto &a : code_dictionary)
+            string_dictionary[a.second] = a.first;
+
+        code_dictionary["quote"] = l_quote;
+        code_dictionary["true"] = v_boolean;
+    }
+}
+//------------------------------------------------------------------------
+
 
 typedef enum
 {
@@ -300,88 +382,9 @@ uint16_t get_code(string &w)
     return c;
 }
 //------------------------------------------------------------------------
-static void initialisation_dictionaries()
-{
-    if (lisp_nil == NULL)
-    {
-        lisp_nil = new lisp_list(true);
-        lisp_true = new lisp_boolean(true);
-
-        lisp_emptystring = new lisp_string(true);
-        lisperror = new lisp_error("Error: wrong method for this element");
-        lispargnbserror = new lisp_error("Error: wrong number of arguments");
-        lisptokenizeerror = new lisp_error("Error: tokenization error");
-        lisperrorrange = new lisp_error("Error: out of range");
-        lisperrordivided0 = new lisp_error("Error: divided by 0");
-        lispunknownatom = new lisp_error("Error: unknown atom");
-        lispunknownmethod = new lisp_error("Error: unknown method");
-        lispstackerror = new lisp_error("Stack error");
-        lisplambdaerror = new lisp_error("Lambda error");        
-        lisp_end = new lisp_error("reset al");
-
-        code_dictionary["nil"] = v_nil;
-        code_dictionary["atom_"] = v_atom;
-        code_dictionary["error_"] = v_error;
-        code_dictionary["string_"] = v_string;
-        code_dictionary["list_"] = v_list;
-        code_dictionary["number_"] = v_number;
-        code_dictionary["unix_"] = v_unix;
-        code_dictionary["bool_"] = v_boolean;
-        code_dictionary["lambda"] = l_lambda;
-        code_dictionary["defun"] = l_defun;
-        code_dictionary["eval"] = l_eval;
-        code_dictionary["+"] = l_plus;
-        code_dictionary["-"] = l_minus;
-        code_dictionary["*"] = l_multiply;
-        code_dictionary["/"] = l_divide;
-        code_dictionary["%"] = l_mod;
-        code_dictionary["car"] = l_car;
-        code_dictionary["cdr"] = l_cdr;
-        code_dictionary["cons"] = l_cons;
-        code_dictionary["split"] = l_split;
-        code_dictionary["print"] = l_print;
-        code_dictionary["at"] = l_at;
-        code_dictionary["list"] = l_list;
-        code_dictionary["loop"] = l_loop;
-        code_dictionary["cond"] = l_cond;
-        code_dictionary["if"] = l_if;
-        code_dictionary["eq"] = l_eq;
-        code_dictionary["neq"] = l_neq;
-        code_dictionary["<"] = l_inf;
-        code_dictionary[">"] = l_sup;
-        code_dictionary["<="] = l_infeq;
-        code_dictionary[">="] = l_supeq;
-        code_dictionary["setq"] = l_setq;
-        code_dictionary["'"] = l_quote;
-        code_dictionary["command"] = l_command;
-        code_dictionary["size"] = l_size;
-        code_dictionary["block"] = l_block;
-        code_dictionary["clean"] = l_clean;
-        code_dictionary["type"] = l_type;
-        code_dictionary["cons?"] = l_consp;
-        code_dictionary["zero?"] = l_zerop;
-        code_dictionary["null?"] = l_nullp;
-        code_dictionary["string?"] = l_stringp;
-        code_dictionary["number?"] = l_numberp;
-        code_dictionary["number"] = l_number;
-        code_dictionary["string"] = l_string;
-        code_dictionary["stats"] = l_stats;
-        code_dictionary["push"] = l_push;
-        code_dictionary["pop"] = l_pop;
-
-        code_dictionary["€"] = l_final;
-
-        for (const auto &a : code_dictionary)
-            string_dictionary[a.second] = a.first;
-
-        code_dictionary["quote"] = l_quote;
-        code_dictionary["true"] = v_boolean;
-    }
-}
-//------------------------------------------------------------------------
 lisp_mini::lisp_mini()
 {
-    initialisation_dictionaries();
+    initialisation_static_values();
     std::set<lisp_element*> g;
     std::map<uint16_t, lisp_element*> v;
     garbages.push_back(g);
@@ -977,6 +980,7 @@ string execute_some_lisp(lisp_mini *lisp, string &code)
     if (lisp == NULL)
         return "Error: lisp not initialized";
 
+    cerr << code << endl;
     lisp->infos.clear();
     error_tokenize e = code_segmenting(code, lisp->infos);
     std::stringstream os;
