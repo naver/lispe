@@ -980,7 +980,6 @@ string execute_some_lisp(lisp_mini *lisp, string &code)
     if (lisp == NULL)
         return "Error: lisp not initialized";
 
-    cerr << code << endl;
     lisp->infos.clear();
     error_tokenize e = code_segmenting(code, lisp->infos);
     std::stringstream os;

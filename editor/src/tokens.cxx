@@ -1269,8 +1269,8 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"%}=125");
     
     //Comments
-    rules.push_back(U";?+%r=67");                      //comments starting with ; up to the end of the line
-    rules.push_back(U"%#!?+%r=67");                      //specific to Linux, calling function integrated in file
+    rules.push_back(U";?+%r=#");                      //comments starting with ; up to the end of the line
+    rules.push_back(U"%#!?+%r=#");                      //specific to Linux, calling function integrated in file
 
     //Strings
     rules.push_back(U"\"\"\"?*\"\"\"=:96");         //long strings Python way """.."""

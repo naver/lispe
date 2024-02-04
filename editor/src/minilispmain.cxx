@@ -113,8 +113,6 @@ class minilisp_editor : public interpreter_editor {
         string codes;
         while (!f.eof()) {
             getline(f,line);
-            if (line[0] == ';')
-                continue;
             codes += line + "\n";            
         }
         return s_trim(codes);
@@ -129,7 +127,9 @@ class minilisp_editor : public interpreter_editor {
             return false;
         }
 
+        string codes = "(block ";
         codes += readfile();
+        codes += ")";
                 
         cout << m_red;
         cout << execute_some_lisp(lisp, codes);
