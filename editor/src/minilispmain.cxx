@@ -10,6 +10,7 @@
 //
 
 #include "editor.h"
+#include "minilisp.h"
 
 #if (_MSC_VER >= 1900)
 FILE _iob[] = { *stdin, *stdout, *stderr };
@@ -17,21 +18,39 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 #endif
 
 //-------------------------------------------------------------------------------------------
+string execute_some_lisp(lisp_mini* lisp, string& code);
+//-------------------------------------------------------------------------------------------
 extern UTF8_Handler special_characters;
 //-------------------------------------------------------------------------------------------
-//Change the class name shell_editor to what you fancy most...
-class shell_editor : public interpreter_editor {
+//Change the class name minilisp_editor to what you fancy most...
+class minilisp_editor : public interpreter_editor {
     public:
+    lisp_mini* lisp;
     string current_directory;
 
-    shell_editor() {
+    minilisp_editor() {
         //Change the message that is displayed when launching the editor
-        title_string = "Shell";
+        title_string = "MINILISP";
+        lisp = NULL;
         // do  you initialisation here
     }
 
+    ~minilisp_editor() {
+        if (lisp != NULL)
+            delete lisp;
+    }
+
     //Initialisation of your interpreter
-    void init_interpreter(bool reinitialize, string filename) {}
+    void init_interpreter(bool reinitialize, string filename) {
+        if (lisp == NULL)
+            lisp = create_mini_lisp_instance();
+        else {
+            if (reinitialize) {
+                delete lisp;
+                lisp = create_mini_lisp_instance();
+            }
+        }
+    }
         
     //Load code from a file name
     void load_code(string& filename) {}
@@ -85,6 +104,19 @@ class shell_editor : public interpreter_editor {
         return result;
     }
 
+    string readfile() {
+        std::ifstream f(thecurrentfilename, std::ios::in|std::ios::binary);
+        if (f.fail())
+            return "";
+
+        string line;
+        string codes;
+        while (!f.eof()) {
+            getline(f,line);
+            codes += line + "\n";            
+        }
+    }
+
     //Run a program
     bool run_code() {
         if (thecurrentfilename == "") {
@@ -94,11 +126,14 @@ class shell_editor : public interpreter_editor {
             return false;
         }
 
-        string cmd = "sh ";
-        cmd += thecurrentfilename;
+        string codes = "(block ";
+        codes += readfile();
+        codes += ")";
+                
         cout << m_red;
-        cout << execute_command(cmd);
+        cout << execute_some_lisp(lisp, codes);
         cout << m_current;
+
         return true;
     }
 
@@ -107,8 +142,18 @@ class shell_editor : public interpreter_editor {
         //If no interpreter exists, we create one
         //The second parameter records in history this line of code
         string cmd = convert(c);
+        s_trim(cmd);
+        if (cmd[0] != '(') {
+            string code = "(print ";
+            code += cmd;
+            code += ")";
+            cmd = code;
+        }
+
+        init_interpreter(false, "");
+
         cout << m_red;
-        cout << execute_command(cmd);
+        cout << execute_some_lisp(lisp, cmd) << endl;
         cout << m_current;
         return true;
     }
@@ -127,6 +172,13 @@ class shell_editor : public interpreter_editor {
         printline(pos);
     }
 };
+
+//------------------------------------------------------------------------------------
+// We export this method so that minilisp can execute unix commands
+string execute_unix_command(string cmd) {
+    return ((minilisp_editor*)JAGEDITOR)->execute_command(cmd);
+}
+//------------------------------------------------------------------------------------
 
 //Main
 int main(int argc, char *argv[]) {
@@ -258,7 +310,7 @@ int main(int argc, char *argv[]) {
         }
                         
         if (args == "-e") {
-            JAGEDITOR = new shell_editor();
+            JAGEDITOR = new minilisp_editor();
             JAGEDITOR->setnoprefix();
             JAGEDITOR->vt100 = vt100;
             JAGEDITOR->activate_mouse = mouse_on;
@@ -293,7 +345,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     
-    JAGEDITOR = new shell_editor();
+    JAGEDITOR = new minilisp_editor();
     JAGEDITOR->setnoprefix();
     JAGEDITOR->vt100 = vt100;
     JAGEDITOR->launchterminal(darkmode, 2, arguments, newcolors);

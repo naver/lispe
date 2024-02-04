@@ -36,6 +36,7 @@
 #include "emojis.h"
 #include "jag.h"
 #include "jagrgx.h"
+#include "tokenize.h"
 
 #include <algorithm>
 
@@ -58,9 +59,7 @@ bool evaluate_quotes(wstring& l);
 
 extern UTF8_Handler special_characters;
 
-
-
-static const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#mapping","%","%=","&","&=",
+const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#mapping","%","%=","&","&=",
     "*","*=","+","+=","-","-=","/","/=","<","<<",
     "<<=","<=","=",">",">=",">>",">>=","False","GPSdistance","Maybe",
     "None","Nothing","True","^","^=","^^","^^=","_breakpoint","_dependencies","_erroronkey",
@@ -152,11 +151,6 @@ static const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#
     "xmldoc","xmlstring","xmltype","xor","xpath","year","yearday","zerop","zip","zipWith",
     "zipwith","|","|=","∏","∑","√","∛", "" };
 
-typedef enum {
-    jt_emptystring = 0, jt_word = 1, jt_keyword = 2, jt_number = 3, jt_string = 4, jt_method = 5, jt_comment = 6, jt_finalcomment = 7, jt_longstring = 8
-} jag_code;
-
-
 static bool is_keyword(string s) {
     static std::unordered_map<string, bool> words;
     bool initial = true;
@@ -172,24 +166,6 @@ static bool is_keyword(string s) {
         return false;
     }
 }
-
-class Segmentingtype {
-public:
-    vector<jag_code> types;
-    vector<long> positions;
-
-    void clear() {
-        types.clear();
-        positions.clear();
-    }
-
-    void append(jag_code t, long posbeg, long posend) {
-        types.push_back(t);
-        positions.push_back(posbeg);
-        positions.push_back(posend);
-    }
-};
-
 
 void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
     long idx;
@@ -499,32 +475,6 @@ void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {
     }
 }
 
-//static const char m_current[] = {27, '[', '0', 'm', 0};
-
-bool check_string(editor_lines& lines, string& line, long currentline, wstring op, wstring cl, string color) {
-    long pos = currentline;
-    //We check if we are in a long comment
-    while (pos >= 0 && lines[pos].find(op) ==-1) {
-        wstring l = lines[pos];
-        if (lines[pos].find(cl) != -1) {
-            pos = -1;
-            break;
-        }
-        pos--;
-    }
-
-    //We are in a long comment
-    if (pos != -1) {
-        while (pos < lines.size() && lines[pos].find(cl) == -1)
-            pos++;
-        if (pos >= currentline) {
-            line = color + line + m_current;
-            return true;
-        }
-    }
-    return false;
-}
-
 string coloring_line(editor_lines& lines, long currentline,
                      string& line, vector<string>& colors,
                      file_types filetype) {
@@ -661,3 +611,4 @@ string coloring_line(editor_lines& lines, long currentline,
         line = root + line;
     return line;
 }
+//---------------------------------------------------------------------------

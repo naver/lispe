@@ -3788,3 +3788,27 @@ bool editor_lines::updatesize() {
 
 //------------------------------------------------------------------------------------
 
+//static const char m_current[] = {27, '[', '0', 'm', 0};
+bool check_string(editor_lines& lines, string& line, long currentline, wstring op, wstring cl, string color) {
+    long pos = currentline;
+    //We check if we are in a long comment
+    while (pos >= 0 && lines[pos].find(op) ==-1) {
+        wstring l = lines[pos];
+        if (lines[pos].find(cl) != -1) {
+            pos = -1;
+            break;
+        }
+        pos--;
+    }
+
+    //We are in a long comment
+    if (pos != -1) {
+        while (pos < lines.size() && lines[pos].find(cl) == -1)
+            pos++;
+        if (pos >= currentline) {
+            line = color + line + m_current;
+            return true;
+        }
+    }
+    return false;
+}
