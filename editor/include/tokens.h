@@ -94,6 +94,9 @@ public:
     }
 
     vecte_n<STRNG> stack;
+#ifdef DEBUGGER    
+    vector<STRNG> string_stack;
+#endif
     
     STRNG* buffer;
     vecte_n<STRNG>* stack_ptr;
@@ -165,6 +168,9 @@ public:
         start = 0;
         position = 0;
         sz_read = 0;
+#ifdef DEBUGGER        
+        string_stack.clear();
+#endif
         stack_ptr->clear();
         stacktype.clear();
         stackln.clear();
@@ -180,6 +186,9 @@ public:
         start = 0;
         position = 0;
         sz_read = 0;
+#ifdef DEBUGGER        
+        string_stack.clear();
+#endif
         stack_ptr->clear();
         stacktype.clear();
         stackln.clear();

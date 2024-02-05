@@ -129,9 +129,9 @@ class minilisp_editor : public interpreter_editor {
             return false;
         }
 
-        string codes = "(block ";
+        string codes = "(block\n";
         codes += readfile();
-        codes += ")";
+        codes += "\n)\n\n";
         
         executing_code = true;
         cout << m_red;

@@ -90,10 +90,14 @@ extern lisp_error *lisp_end;
 
 extern std::map<std::string, uint16_t> code_dictionary;
 extern std::map<uint16_t, std::string> string_dictionary;
+extern std::map<uint16_t, lisp_element*> instructions_dictionary;
+
 uint16_t get_code(string &w);
 
 const uint16_t s_constant = 65535;
 const uint16_t s_protect = 32768;
+const uint16_t s_protected = 16384;
+const uint16_t s_protection = 49152;
 
 class lisp_element
 {
@@ -101,9 +105,14 @@ public:
     uint16_t code;
     uint16_t status;
 
-    lisp_element(bool cst, uint16_t c) : status(s_constant), code(c) {}
+    lisp_element(uint16_t cst, uint16_t c) : status(cst), code(c) {}
     lisp_element(uint16_t c);
     ~lisp_element();
+
+    inline uint16_t s_status() 
+    {
+        return ((status & s_protection) != s_protection);
+    }
 
     void mark();
 
@@ -115,7 +124,7 @@ public:
 
     void demark()
     {
-        status -= (status && status != s_constant);
+        status -= (status && s_status());
     }
 
     virtual long size()
@@ -187,12 +196,17 @@ public:
         return false;
     }
 
+    virtual bool is_list()
+    {
+        return false;
+    }
+
     virtual lisp_element *eval(lisp_mini *)
     {
         return this;
     }
 
-    virtual lisp_element *clone()
+    virtual lisp_element *clone(bool cst)
     {
         return this;
     }
@@ -213,7 +227,7 @@ class lisp_error : public lisp_element
 public:
     string message;
 
-    lisp_error(string m) : message(m), lisp_element(true, v_error) {}
+    lisp_error(string m) : message(m), lisp_element(s_constant, v_error) {}
 
     lisp_element *eval(lisp_mini *)
     {
@@ -236,7 +250,7 @@ class lisp_boolean : public lisp_element
 public:
     bool value;
 
-    lisp_boolean(bool v) : value(v), lisp_element(true, v_boolean) {}
+    lisp_boolean(bool v) : value(v), lisp_element(s_constant, v_boolean) {}
 
     bool boolean()
     {
@@ -273,7 +287,7 @@ public:
 class lisp_atom : public lisp_element
 {
 public:
-    lisp_atom(uint16_t c) : lisp_element(c) {}
+    lisp_atom(uint16_t c) : lisp_element(s_constant, c) {}
 
     lisp_element *eval(lisp_mini *);
 
@@ -286,7 +300,7 @@ public:
 class lisp_instruction : public lisp_element
 {
 public:
-    lisp_instruction(uint16_t c) : lisp_element(c) {}
+    lisp_instruction(uint16_t c) : lisp_element(s_constant, c) {}
 
     bool is_instruction()
     {
@@ -300,6 +314,7 @@ class lisp_number : public lisp_element
 public:
     double value;
 
+    lisp_number(uint16_t c, double v) : value(v), lisp_element(c, v_number) {}
     lisp_number(double v) : value(v), lisp_element(v_number) {}
 
     lisp_element *plus(lisp_element *v)
@@ -308,8 +323,11 @@ public:
         return this;
     }
 
-    lisp_element *clone()
+    lisp_element *clone(bool cst)
     {
+        if (cst)        
+            return this;
+
         if (status)
             return new lisp_number(value);
         else
@@ -405,22 +423,27 @@ class lisp_list : public lisp_element
 public:
     vector<lisp_element *> list_of_elements;
     lisp_list() : lisp_element(v_list) {}
-    lisp_list(bool c) : lisp_element(c, v_nil) {}
+    lisp_list(uint16_t c) : lisp_element(c, v_list) {}
 
-    lisp_element *append(lisp_element *e)
+    bool is_list()
+    {
+        return true;
+    }
+
+    virtual lisp_element *append(lisp_element *e)
     {
         e->mark();
         list_of_elements.push_back(e);
         return this;
     }
 
-    void unmark();
-    void clean(std::set<lisp_element *> &garbage);
-    void protect();
-    void unprotect();
-    lisp_element *release();
+    virtual void unmark();
+    virtual void clean(std::set<lisp_element *> &garbage);
+    virtual void protect();
+    virtual void unprotect();
 
-    void pop()
+    virtual lisp_element *release();
+    virtual void pop()
     {
         if (list_of_elements.size())
         {
@@ -438,29 +461,29 @@ public:
         return this;
     }
 
-    long size()
+    virtual long size()
     {
         return list_of_elements.size();
     }
 
-    bool boolean()
+    virtual bool boolean()
     {
         return list_of_elements.size();
     }
 
-    lisp_element *execute_lambda(lisp_mini *, lisp_element *lmbd);
-    lisp_element *execute_function(lisp_mini *, lisp_element *function);
+    virtual lisp_element *execute_lambda(lisp_mini *, lisp_element *lmbd);
+    virtual lisp_element *execute_function(lisp_mini *, lisp_element *function);
 
-    lisp_element *eval(lisp_mini *);
+    virtual lisp_element *eval(lisp_mini *);
 
-    lisp_element *car()
+    virtual lisp_element *car()
     {
         if (list_of_elements.size())
             return list_of_elements[0];
         return lisp_nil;
     }
 
-    lisp_element *cdr()
+    virtual lisp_element *cdr()
     {
         if (!list_of_elements.size())
             return lisp_nil;
@@ -471,14 +494,14 @@ public:
         return l;
     }
 
-    lisp_element *at(long i)
+    virtual lisp_element *at(long i)
     {
         if (i >= 0 && i < list_of_elements.size())
             return list_of_elements[i];
         return lisperrorrange->eval(NULL);
     }
 
-    void stringvalue(string &v)
+    virtual void stringvalue(string &v)
     {
         v += "(";
         bool first = true;
@@ -492,7 +515,7 @@ public:
         v += ")";
     }
 
-    void asstring(std::stringstream &os)
+    virtual void asstring(std::stringstream &os)
     {
         os << "(";
         bool first = true;
@@ -506,7 +529,7 @@ public:
         os << ")";
     }
 
-    lisp_element *clone()
+    virtual lisp_element *clone(bool cst)
     {
         if (!status || lisp_nil == this)
             return this;
@@ -514,7 +537,7 @@ public:
         lisp_list *l = new lisp_list();
         for (long i = 0; i < list_of_elements.size(); i++)
         {
-            l->append(list_of_elements[i]->clone());
+            l->append(list_of_elements[i]->clone(cst));
         }
         return l;
     }
@@ -530,12 +553,91 @@ public:
     }
 };
 
+class lisp_nil : public lisp_list {
+public:
+    lisp_nil() : lisp_list(s_constant) {
+        code = v_nil;
+    }
+
+    lisp_element *append(lisp_element *e) {
+        lisp_list* l = new lisp_list();
+        l->append(e);
+        return l;
+    }
+
+    void unmark() {}
+    void clean(std::set<lisp_element *> &garbage) {}
+    void protect() {}
+    void unprotect() {}
+    lisp_element *release() {}
+
+    void pop() {
+        lisperrorrange->eval(NULL);
+    }
+
+    lisp_element *push_first(lisp_element *e) {
+        lisp_list* l = new lisp_list();
+        l->append(e);
+        return l;
+    }
+
+    long size()
+    {
+        return 0;
+    }
+
+    bool boolean()
+    {
+        return false;
+    }
+
+    lisp_element *execute_lambda(lisp_mini *, lisp_element *lmbd) {
+        lisperror->eval(NULL);
+    }
+
+    lisp_element *execute_function(lisp_mini *, lisp_element *function) {
+        lisperror->eval(NULL);
+    }
+
+    lisp_element *eval(lisp_mini *) {
+        return this;
+    }
+
+    lisp_element *car() {
+        return this;
+    }
+
+    lisp_element *cdr() {
+        return this;
+    }
+
+    lisp_element *at(long i)
+    {
+        return lisperrorrange->eval(NULL);
+    }
+
+    void stringvalue(string &v)
+    {
+        v += "()";
+    }
+
+    void asstring(std::stringstream &os)
+    {
+        os << "()";
+    }
+
+    lisp_element *clone(bool cst) {
+        return this;
+    }
+
+};
+
 class lisp_string : public lisp_element
 {
 public:
     string value;
 
-    lisp_string(bool constant) : lisp_element(constant, v_string) {}
+    lisp_string(uint16_t constant, string v) : value(v), lisp_element(constant, v_string) {}
     lisp_string(string v) : value(v), lisp_element(v_string) {}
     lisp_string(char v) : lisp_element(v_string)
     {
@@ -554,8 +656,11 @@ public:
         return value.size();
     }
 
-    lisp_element *clone()
+    lisp_element *clone(bool cst)
     {
+        if (cst)
+            return this;
+
         if (status)
             return new lisp_string(value);
         return this;
@@ -644,6 +749,7 @@ class lisp_unix : public lisp_element
 public:
     string value;
 
+    lisp_unix(uint16_t c, string v) : value(v), lisp_element(c, v_unix) {}
     lisp_unix(string v) : value(v), lisp_element(v_unix) {}
 
     lisp_element *command()
@@ -667,6 +773,8 @@ class lisp_mini
 {
 public:
     vector<std::map<uint16_t, lisp_element *>> variables;
+    std::map<uint16_t, lisp_atom*> atoms;
+
     Segmentingtype infos;
     double count_data;
     bool stop_execution;
@@ -676,6 +784,15 @@ public:
     void stack_variables_on(std::map<uint16_t, lisp_element *> &local_vars)
     {
         variables.push_back(local_vars);
+    }
+
+    lisp_atom* get_atom(uint16_t a) {
+        lisp_atom* la = atoms[a];
+        if (la == NULL) {
+            la = new lisp_atom(a);
+            atoms[a] = la;
+        }
+        return la;
     }
 
     void stack_off(lisp_element *e)

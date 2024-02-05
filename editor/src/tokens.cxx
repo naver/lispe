@@ -484,6 +484,9 @@ template<> void tokenizer_result<std::u16string>::store_currentchr() {
 template<> void tokenizer_result<string>::store_currentchr() {
     string w = c_unicode_to_utf8(currentchr);
     stack_ptr->push_back(w);
+#ifdef DEBUGGER    
+    string_stack.push_back(w);    
+#endif
     if (store_all) {
         stacktype.push_back(0);
         stackln.push_back(line);
@@ -553,6 +556,9 @@ template<> void tokenizer_result<string>::store(int32_t label) {
         string w;
         s_unicode_to_utf8(w, token);
         stack_ptr->push_back(w);
+#ifdef DEBUGGER        
+        string_stack.push_back(w);
+#endif
         if (store_all) {
             stacktype.push_back((unsigned char)label);
             stackln.push_back(line);
@@ -1246,30 +1252,21 @@ void tokenizer_automaton::setrules() {
      */
     
     //Spaces, skipped in the parsing string
-    rules.push_back(U"%s+=#");                    //space (kept)
-    rules.push_back(U"#10+=#");                    //cr (kept)
-    rules.push_back(U"#13=#");                      //lf (not kept)
+    rules.push_back(U"%S+=#");                    //space (skip)
 
     //Quoted ;
     rules.push_back(U"';+=59");                       //quote ;
-
     //Single quote
     rules.push_back(U"'=39");                       //quote
-
-    rules.push_back(U".=46");                       //The list internal separator: '(a b . c)
-    rules.push_back(U":=58");                       //Separator in dictionaries
     
     //The opening and closing characters in LispE
     rules.push_back(U"%(=40");
     rules.push_back(U"%)=41");
     
     rules.push_back(U"%[~%r+%]=:91");     //Unix expression
-    
-    rules.push_back(U"%{=123");
-    rules.push_back(U"%}=125");
-    
+        
     //Comments
-    rules.push_back(U";?+%r=#");                      //comments starting with ; up to the end of the line
+    rules.push_back(U";?+%r=:#");                      //comments starting with ; up to the end of the line
     rules.push_back(U"%#!?+%r=#");                      //specific to Linux, calling function integrated in file
 
     //Strings
