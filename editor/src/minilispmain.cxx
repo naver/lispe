@@ -27,11 +27,13 @@ class minilisp_editor : public interpreter_editor {
     public:
     lisp_mini* lisp;
     string current_directory;
+    bool executing_code;
 
     minilisp_editor() {
         //Change the message that is displayed when launching the editor
         title_string = "MINILISP";
         lisp = NULL;
+        executing_code = false;
         // do  you initialisation here
     }
 
@@ -131,10 +133,11 @@ class minilisp_editor : public interpreter_editor {
         codes += readfile();
         codes += ")";
         
+        executing_code = true;
         cout << m_red;
         cout << execute_some_lisp(lisp, codes) << endl;
         cout << m_current;
-
+        executing_code = false;
         return true;
     }
 
@@ -153,22 +156,25 @@ class minilisp_editor : public interpreter_editor {
 
         init_interpreter(false, "");
 
+        executing_code = true;
         cout << m_red;
         cout << execute_some_lisp(lisp, cmd) << endl;
         cout << m_current;
+        executing_code = false;
         return true;
     }
 
     //Return true if the interpreter exists
     bool interpreter_active() {
         //return true if it is active
-        return true;
+        return executing_code;
     }
 
     //Stop the execution of your interpreter    
     void stop_execution() {
         //Code here
-        lisp->stop();
+        if (executing_code)
+            lisp->stop();
         pos = commandlines.size() + 1;
         printline(pos);
     }

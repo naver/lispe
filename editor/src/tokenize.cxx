@@ -159,12 +159,9 @@ static bool is_keyword(string s) {
         words[_keywords[i]]=true;
         initial = false;
     }
-    try {
-        return words.at(s);
-    }
-    catch(...) {
-        return false;
-    }
+    if (words.find(s) != words.end())
+        return words[s];
+    return false;
 }
 
 void tokenize_line(string& code, Segmentingtype& infos, file_types filetype) {

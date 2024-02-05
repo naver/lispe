@@ -20,7 +20,8 @@ INCLUDES = -Iinclude -I../include
 #C++11Flag = -std=c++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
 #C++11Flag = -std=gnu++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
 LIBPATH = ../bin
-C++11Flag = -Ofast -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
+DEBUGMODE = -g -DDEBUGGER
+C++11Flag = $(DEBUGMODE) -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
 #------------------------------------------------------------
 objs/%.o: src/%.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@

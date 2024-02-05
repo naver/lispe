@@ -5,7 +5,7 @@
 typedef enum {
     jt_emptystring = 0, jt_word = 1, jt_keyword = 2, jt_number = 3, 
     jt_string = 4, jt_method = 5, jt_comment = 6, jt_finalcomment = 7, jt_longstring = 8,
-    jt_colon = 9, jt_opening_p = 10, jt_closing_p = 11, jt_opening_bk = 12, jt_closing_bk = 13, jt_opening_br = 14, jt_closing_br = 15
+    jt_quote = 9, jt_opening_p = 10, jt_closing_p = 11, jt_opening_bk = 12, jt_closing_bk = 13, jt_quote_list = 14,
 } jag_code;
 
 
