@@ -5,7 +5,7 @@
 
 //-------------------------------------------------------------------------------------
 typedef enum {
-    next_action = 0, first_action = 1, one_action = 2
+    next_action = 0, first_action = 1, one_action = 2, parenthetic_action = 3
 } compile_action;
 
 
@@ -63,6 +63,7 @@ typedef enum
     l_pop,
     l_type,
     l_sub,
+    l_apply,
     l_final
 } lisp_instruction_code;
 
@@ -161,6 +162,7 @@ public:
     virtual bool sup(lisp_element *v);
     virtual bool infeq(lisp_element *v);
     virtual bool supeq(lisp_element *v);
+    virtual lisp_element* cons_apply(lisp_element* op);
 
     virtual bool eq(lisp_element *v)
     {
@@ -302,12 +304,21 @@ public:
     {
         return true;
     }
+
+    bool eq(lisp_element *v) {
+        return (v == this);
+    }
+
+    bool neq(lisp_element *v) {
+        return (v != this);
+    }
+
 };
 
-class lisp_instruction : public lisp_element
+class lisp_instruction : public lisp_atom
 {
 public:
-    lisp_instruction(uint16_t c) : lisp_element(s_constant, c) {}
+    lisp_instruction(uint16_t c) : lisp_atom(c) {}
 
     bool is_instruction()
     {
@@ -440,6 +451,14 @@ public:
         return true;
     }
 
+    lisp_element* cons_apply(lisp_element* op) {
+        lisp_list* l = new lisp_list();
+        l->append(op);
+        for (long i = 0; i < size(); i++)
+            l->append(values[i]);
+        return l;
+    }
+
     virtual lisp_element *append(lisp_element *e)
     {
         e->mark();
@@ -570,8 +589,9 @@ public:
     bool equal(lisp_element *v) {
         if (v->code != v_list || v->size() != size())
             return false;
+        lisp_list* val = (lisp_list*)v;
         for (long i = 0; i < values.size(); i++) {
-            if (!values[i]->equal(v->at(i)))
+            if (!values[i]->equal(val->values[i]))
                 return false;
         }
         return true;

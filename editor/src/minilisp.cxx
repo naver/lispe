@@ -54,7 +54,7 @@ static void initialisation_static_values()
         code_dictionary["cond"] = l_cond;
         code_dictionary["if"] = l_if;
         code_dictionary["not"] = l_not;
-        code_dictionary["equal"] = l_equal;
+        code_dictionary["="] = l_equal;
         code_dictionary["!="] = l_different;
         code_dictionary["eq"] = l_eq;
         code_dictionary["neq"] = l_neq;
@@ -79,6 +79,7 @@ static void initialisation_static_values()
         code_dictionary["push"] = l_push;
         code_dictionary["pop"] = l_pop;
         code_dictionary["sub"] = l_sub;
+        code_dictionary["apply"] = l_apply;
 
         code_dictionary["€"] = l_final;
 
@@ -342,6 +343,10 @@ lisp_element::~lisp_element() {}
 #endif
 
 lisp_element *lisp_element::sub(double b, double e) {
+    return lisperror->eval(NULL);
+}
+
+lisp_element* lisp_element::cons_apply(lisp_element* op) {
     return lisperror->eval(NULL);
 }
 
@@ -697,8 +702,7 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
             e->append(instructions_dictionary[l_quote]);
             program->append(e);
             pos++;
-            compile(e, storage, pos, next_action);
-            pos--;
+            compile(e, storage, pos, parenthetic_action);
             break;
         }
         case jt_number:
@@ -710,13 +714,14 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
             if (action != first_action || program->size()) {
                 e = new lisp_list(storage);
                 program->append(e);
-                action = next_action;
             }
             else
                 e = program;
             pos++;
             if (!compile(e,storage, pos, next_action))
                 return false;
+            if (action == parenthetic_action)
+                return true;
             break;
         }
         case jt_closing_p:
@@ -893,6 +898,21 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 return l;
             }
             r->push_first(e);
+            return r;
+        }
+        case l_apply: {
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            if (!e->is_atom())
+                throw new lisp_error(this, "Error: first element shoud be an atom");
+            r = values[2]->eval(lisp);
+            if (!r->is_list())
+                throw new lisp_error(this, "Error: second element shoud be a list");
+            e = r->cons_apply(e);
+            r = r->release();
+            r = e->eval(lisp);
+            e->release();
             return r;
         }
         case l_type:

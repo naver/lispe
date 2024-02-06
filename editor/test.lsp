@@ -1,4 +1,4 @@
-(equal '(a b) '(a b))
+(= '(a b) '(a b))
 (setq n 10000)
 
 (loop n
@@ -32,4 +32,6 @@
 
 (print (tst 10 20))
 (print (tst (car v) 13))
+(print (apply '+ '(1 2 3 4 5)))
+
 
