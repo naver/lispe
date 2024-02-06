@@ -320,7 +320,6 @@ lisp_element::lisp_element(std::vector<lisp_element*>& storage, uint16_t c) : st
     idx = garbages.size();
     garbages.insert(this);
     storage.push_back(this);
-    status = 0;
 }
 
 lisp_element::~lisp_element()
@@ -336,7 +335,6 @@ lisp_element::lisp_element(uint16_t c) : code(c)
 lisp_element::lisp_element(std::vector<lisp_element*>& storage, uint16_t c) : status(s_protected), code(c)
 {
     storage.push_back(this);
-    status = 0;
 }
 
 lisp_element::~lisp_element() {}
@@ -451,10 +449,11 @@ void lisp_element::unmark()
 
 void lisp_element::remove()
 {
-    if (status != s_constant)
-    {
-        delete this;
-    }
+    if (status == s_constant)
+        return;
+
+    status &= ~s_protected;
+    unmark();
 }
 
 void lisp_element::protect()
@@ -540,7 +539,12 @@ void lisp_list::unmark()
 
 void lisp_list::remove()
 {    
-    if (status != s_constant)
+    if (status == s_constant)
+        return;
+
+    status &= ~s_protected;
+    status -= (status && s_status());
+    if (!status)
     {
         for (long i = 0; i < values.size(); i++)
             values[i]->remove();
@@ -1202,7 +1206,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1];
             if (!e->is_atom())
-                return lispunknownatom->eval(lisp);
+                throw new lisp_error(this, lispunknownatom->message);
             r = values[2]->eval(lisp);
             lisp->insert(e->code, r);
             return r;

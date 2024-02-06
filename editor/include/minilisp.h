@@ -123,7 +123,7 @@ public:
 
     inline uint16_t s_status() 
     {
-        return ((status & s_protection) != s_protection);
+        return ((status & s_protection) == 0);
     }
 
     void mark();
@@ -344,7 +344,7 @@ public:
 
     lisp_element *clone(bool cst)
     {
-        if (cst)        
+        if (cst && status != s_constant)        
             return this;
 
         if (status)
@@ -575,9 +575,9 @@ public:
 
     virtual lisp_element *clone(bool cst)
     {
-        if (!status || lisp_nil == this)
+        if (!status || (cst && s_status()))
             return this;
-
+        
         lisp_list *l = new lisp_list();
         for (long i = 0; i < values.size(); i++)
         {
@@ -912,7 +912,7 @@ public:
                 return;
             previous->unmark();
         }
-        l = l->clone(false);
+        l = l->clone(true);
         l->mark();
         variables.back()[c] = l;
     }

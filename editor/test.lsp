@@ -12,7 +12,9 @@
 (setq r ())
 (setq l ())
 
-(setq v (list 1 2 3 'a "b"))
+(setq v (list 1.1 2.2 3.3 'a "xwz"))
+(setq b v)
+
 (print "Lambda:" ((lambda (x y) (- x y)) 12 -21.4))
 
 (setq r 4)
