@@ -98,10 +98,10 @@ extern std::map<uint16_t, lisp_element*> instructions_dictionary;
 
 uint16_t get_code(string &w);
 
-const uint16_t s_constant = 65535;
-const uint16_t s_protect = 32768;
-const uint16_t s_protected = 16384;
-const uint16_t s_protection = 49152;
+const uint16_t s_constant = 65535; //all bits set to 1
+const uint16_t s_protect = 32768; //bit 15 set to 1
+const uint16_t s_protected = 16384; //bit 14 set to 1
+const uint16_t s_check = 49152; //bit 15 and 14 set to 1
 
 class lisp_element
 {
@@ -123,7 +123,7 @@ public:
 
     inline uint16_t s_status() 
     {
-        return ((status & s_protection) == 0);
+        return ((status & s_check) == 0);
     }
 
     void mark();
