@@ -528,6 +528,83 @@ UWCHAR getonechar(unsigned char* s, long& i) {
 }
 #endif
 
+void get_one_char(string& utf, string& res, long& i) {
+    res = utf[i];
+    
+    unsigned char check = utf[i] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            if ((utf[i + 1] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                i += 1;
+            }
+            break;
+        case 0xE0:
+            if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                i += 2;
+            }
+            break;
+        case 0xF0:
+            if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                res += utf[i + 3];
+                i += 3;
+            }
+            break;
+    }
+}
+
+void add_one_char(string& utf, string& res, long& i) {
+    res += utf[i];
+    
+    unsigned char check = utf[i] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            if ((utf[i + 1] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                i += 1;
+            }
+            break;
+        case 0xE0:
+            if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                i += 2;
+            }
+            break;
+        case 0xF0:
+            if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                res += utf[i + 3];
+                i += 3;
+            }
+            break;
+    }
+}
+
+Exporting char c_test_utf8(string& utf, long i) {
+    if (i == utf.size())
+        return 0;
+    
+    unsigned char check = utf[i] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            return bool((utf[i + 1] & 0x80)== 0x80)*1;
+        case 0xE0:
+            return bool(((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80))*2;
+        case 0xF0:
+            return bool(((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80))*3;
+    }
+    return 0;
+}
+
 u_ustring UTF8_Handler::u_insert_sep(u_ustring& s, u_ustring sep) {
     u_ustring res;
     long lg = s.size();
@@ -556,6 +633,40 @@ void UTF8_Handler::getandaddchar(u_ustring& s, u_ustring& res, long& i) {
     if (!store_emoji(s, res, i))
         res += s[i];
     i++;
+}
+
+Exporting string UTF8_Handler::getachar(string& s, long& i) {
+    string res;
+    if (!get_emoji(s, res, i))
+        get_one_char(s, res, i);
+    return res;
+}
+
+Exporting void UTF8_Handler::getchar(string& s, string& res,  long& i) {
+    if (!get_emoji(s, res, i))
+        get_one_char(s, res, i);
+    i++;
+}
+
+Exporting void UTF8_Handler::getandaddchar(string& s, string& res, long& i) {
+    if (!store_emoji(s, res, i))
+        add_one_char(s, res, i);
+    i++;
+}
+
+bool UTF8_Handler::getAtchar(string& s, string& res, long nb) {
+    long i = 0;
+    long sz = s.size();
+    while (nb && i < sz) {
+        if (!scan_emoji(s, i))
+            i += c_test_utf8(s, i);
+        i++;
+        nb--;
+    }
+    if (i == sz)
+        return false;
+    get_one_char(s, res, i);
+    return true;
 }
 
 //------------------------------------------------------------------------

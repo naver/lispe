@@ -314,7 +314,7 @@ public:
     void getchar(u_ustring& s, u_ustring& res, long& i);
     void getandaddchar(u_ustring& s, u_ustring& res, long& i);
     void getandaddchar(string& s, string& res, long& i);
-    void getAtchar(string& s, string& res, long i);
+    bool getAtchar(string& s, string& res, long i);
     long charTobyte(string& s, long i);
     long byteTochar(string& s, long i);
     UWCHAR getachar(u_ustring& s, long& i);

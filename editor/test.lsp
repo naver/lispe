@@ -1,3 +1,4 @@
+(equal '(a b) '(a b))
 (setq n 10000)
 
 (loop n
@@ -12,6 +13,18 @@
 (setq l ())
 
 (setq v (list 1 2 3 'a "b"))
+(print "Lambda:" ((lambda (x y) (- x y)) 12 -21.4))
+
+(setq r 4)
+
+(print "COND:"
+    (cond
+        ((eq r 10) (+ 200 100))
+        ((eq r 3) (+ 12 r))
+        ((> r 5) (* 2 r))
+        (true 'ok)
+    )
+)
 
 (defun tst(x y)
     (* x y)

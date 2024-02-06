@@ -4,9 +4,9 @@ include ../Makefile.in
 SOURCEWITHLISPE = lispemain.cxx jag.cxx editor.cxx tokenize.cxx
 SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
-SOURCEMINI = editor.cxx minilispmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx tokens.cxx minilisp.cxx
+SOURCEMINI = editor.cxx minilispmain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
 SOURCELISP = minimain.cxx
-SOURCELIB = tokens.cxx minilisp.cxx tokenize.cxx tools.cxx
+SOURCELIB = tokens.cxx minilisp.cxx tools.cxx
 #------------------------------------------------------------
 OBJECTWITHLISPE = $(SOURCEWITHLISPE:%.cxx=objs/%.o)
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
@@ -49,10 +49,10 @@ myeditor: install $(OBJECTMYEDITOR)
 shell: install $(OBJECTSHELL)
 	$(COMPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
 
-mini: install $(OBJECTMINI)
-	$(COMPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
+mini: install libmini $(OBJECTMINI)
+	$(COMPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread  -Lbin -lminilisp
 
-lispmini: install $(OBJECTLISP)
+lispmini: install libmini $(OBJECTLISP)
 	$(COMPPLUSPLUS) -o bin/lisp $(OBJECTLISP) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread -Lbin -lminilisp
 
 libmini: install $(OBJECTLIB)
