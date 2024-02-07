@@ -48,6 +48,7 @@ static void initialisation_static_values()
         code_dictionary["cdr"] = l_cdr;
         code_dictionary["cons"] = l_cons;
         code_dictionary["split"] = l_split;
+        code_dictionary["replace"] = l_replace;
         code_dictionary["print"] = l_print;
         code_dictionary["at"] = l_at;
         code_dictionary["list"] = l_list;
@@ -89,7 +90,8 @@ static void initialisation_static_values()
 
         code_dictionary["€"] = l_final;
 
-        for (const auto &a : code_dictionary) {
+        for (const auto &a : code_dictionary)
+        {
             string_dictionary[a.second] = a.first;
             if (a.second == v_nil || a.second == v_boolean)
                 continue;
@@ -258,7 +260,8 @@ error_tokenize code_segmenting(string &code, Segmentingtype &infos)
             break;
         case '(': // (
             nb_parentheses++;
-            if (in_quote == 1 && infos.types.back() == jt_quote) {
+            if (in_quote == 1 && infos.types.back() == jt_quote)
+            {
                 infos.types.pop_back();
                 infos.types.push_back(jt_quote_list);
             }
@@ -287,7 +290,8 @@ error_tokenize code_segmenting(string &code, Segmentingtype &infos)
             break;
         case '{': // (
             nb_braces++;
-            if (in_quote == 1 && infos.types.back() == jt_quote) {
+            if (in_quote == 1 && infos.types.back() == jt_quote)
+            {
                 infos.types.pop_back();
                 infos.types.push_back(jt_quote_list);
             }
@@ -351,7 +355,7 @@ lisp_element::lisp_element(uint16_t c) : code(c)
     status = 0;
 }
 
-lisp_element::lisp_element(std::vector<lisp_element*>& storage, uint16_t c) : status(s_protected), code(c)
+lisp_element::lisp_element(std::vector<lisp_element *> &storage, uint16_t c) : status(s_protected), code(c)
 {
     idx = garbages.size();
     if (idx == 109)
@@ -370,7 +374,7 @@ lisp_element::lisp_element(uint16_t c) : code(c)
     status = 0;
 }
 
-lisp_element::lisp_element(std::vector<lisp_element*>& storage, uint16_t c) : status(s_protected), code(c)
+lisp_element::lisp_element(std::vector<lisp_element *> &storage, uint16_t c) : status(s_protected), code(c)
 {
     storage.push_back(this);
 }
@@ -378,16 +382,24 @@ lisp_element::lisp_element(std::vector<lisp_element*>& storage, uint16_t c) : st
 lisp_element::~lisp_element() {}
 #endif
 
-lisp_element *lisp_element::sub(double b, double e) {
+lisp_element* lisp_element::replace(lisp_element* a, lisp_element* v) {
+        return lisp_emptystring;
+}
+
+lisp_element *lisp_element::sub(double b, double e)
+{
     return lisperror->eval(NULL);
 }
 
-lisp_element* lisp_element::cons_apply(lisp_element* op) {
+lisp_element *lisp_element::cons_apply(lisp_element *op)
+{
     return lisperror->eval(NULL);
 }
 
-compile_action lisp_element::store(string& current_key, lisp_element* e, compile_action action) {
-    if (action == map_value) {
+compile_action lisp_element::store(string &current_key, lisp_element *e, compile_action action)
+{
+    if (action == map_value)
+    {
         append(current_key, e);
         return map_key;
     }
@@ -404,19 +416,14 @@ lisp_element *lisp_element::append(lisp_element *e)
     return lisperror->eval(NULL);
 }
 
-void lisp_element::pop()
+void lisp_element::pop(lisp_element *)
 {
     lisperror->eval(NULL);
 }
 
-lisp_element *lisp_element::append(string& k, lisp_element *e)
+lisp_element *lisp_element::append(string &k, lisp_element *e)
 {
     return lisperror->eval(NULL);
-}
-
-void lisp_element::pop(string& k)
-{
-    lisperror->eval(NULL);
 }
 
 lisp_element *lisp_element::push_first(lisp_element *e)
@@ -464,19 +471,34 @@ lisp_element *lisp_element::mod(lisp_element *v)
     return lisperror->eval(NULL);
 }
 
+lisp_element* lisp_string::replace(lisp_element* a, lisp_element* v) {
+    string to_be_replaced;
+    string with;
 
-lisp_element* lisp_string::split(lisp_element* search) {
+    a->stringvalue(to_be_replaced);
+    v->stringvalue(with);
+
+    with = s_replacingstring(value, to_be_replaced, with);
+    return new lisp_string(with);
+}
+
+lisp_element *lisp_string::split(lisp_element *search)
+{
     string search_string;
-    lisp_list* result = new lisp_list();
+    lisp_list *result = new lisp_list();
 
-    if (search == lisp_nil) {
-        //split on space/cr characters
+    if (search == lisp_nil)
+    {
+        // split on space/cr characters
         u_uchar c;
         long sz = value.size();
-        for (long i = 0; i < sz; i++) {
+        for (long i = 0; i < sz; i++)
+        {
             c = value[i];
-            if (c <= 32) {
-                if (search_string != "") {
+            if (c <= 32)
+            {
+                if (search_string != "")
+                {
                     result->append(new lisp_string(search_string));
                     search_string = "";
                 }
@@ -488,16 +510,18 @@ lisp_element* lisp_string::split(lisp_element* search) {
             result->append(new lisp_string(search_string));
         return result;
     }
-    
+
     search->stringvalue(search_string);
 
     string localvalue;
     long pos = 0;
-    
-    if (search_string == "") {
+
+    if (search_string == "")
+    {
         long sz = value.size();
-        //we split the string into an array of characters
-        while (pos < sz) {
+        // we split the string into an array of characters
+        while (pos < sz)
+        {
             special_characters.getchar(value, localvalue, pos);
             result->append(new lisp_string(localvalue));
         }
@@ -505,11 +529,14 @@ lisp_element* lisp_string::split(lisp_element* search) {
     }
 
     size_t found = 0;
-    while (pos != string::npos) {
+    while (pos != string::npos)
+    {
         found = value.find(search_string, pos);
-        if (found != string::npos) {
+        if (found != string::npos)
+        {
             localvalue = value.substr(pos, found - pos);
-            if (localvalue != "") {
+            if (localvalue != "")
+            {
                 result->append(new lisp_string(localvalue));
             }
             pos = found + search_string.size();
@@ -517,16 +544,32 @@ lisp_element* lisp_string::split(lisp_element* search) {
         else
             break;
     }
-    
+
     localvalue = value.substr(pos, value.size() - pos);
     if (localvalue != "")
         result->append(new lisp_string(localvalue));
-    
+
     return result;
 }
 
-lisp_element* lisp_string::at_position(lisp_element* e)
-{        
+void lisp_string::pop(lisp_element *e)
+{
+    long sz = size();
+    long i = sz - 1;
+    if (e != lisp_nil) {
+        i = e->longvalue();
+        if (i < 0 || i >= sz)
+            lisperrorrange->eval(NULL);
+    }
+
+    if (i == sz - 1)
+        value = s_left(value, i);
+    else
+        value = s_left(value, i) + s_right(value, sz - i - 1);
+}
+
+lisp_element *lisp_string::at_position(lisp_element *e)
+{
     long i = e->doublevalue();
     string v;
     if (!special_characters.getAtchar(value, v, i))
@@ -534,15 +577,16 @@ lisp_element* lisp_string::at_position(lisp_element* e)
     return new lisp_string(v);
 }
 
-lisp_element* lisp_string::at(long i)
-{        
+lisp_element *lisp_string::at(long i)
+{
     string v;
     if (!special_characters.getAtchar(value, v, i))
         return lisp_nil;
     return new lisp_string(v);
 }
 
-lisp_element* lisp_string::sub(double b, double e) {
+lisp_element *lisp_string::sub(double b, double e)
+{
     long lg = size_c(value);
     if (e <= 0)
         e = lg + e;
@@ -553,18 +597,20 @@ lisp_element* lisp_string::sub(double b, double e) {
     return new lisp_string(s_middle(value, b, e - b));
 }
 
-lisp_element* lisp_string::car() {
+lisp_element *lisp_string::car()
+{
     string v;
-    long i  = 0;
+    long i = 0;
     if (!special_characters.getAtchar(value, v, i))
         return lisp_emptystring;
     return new lisp_string(v);
 }
 
-lisp_element* lisp_string::cdr() {
+lisp_element *lisp_string::cdr()
+{
     if (!value.size())
         return lisp_emptystring;
-    
+
     long lg = size_c(value);
     return new lisp_string(s_right(value, lg - 1));
 }
@@ -617,7 +663,7 @@ void lisp_list::unmark()
 }
 
 void lisp_list::remove()
-{    
+{
     if (status == s_constant)
         return;
 
@@ -635,7 +681,7 @@ lisp_element *lisp_map::release()
 {
     if (!status)
     {
-        for (const auto& a: values)
+        for (const auto &a : values)
             a.second->unmark();
         delete this;
         return lisp_nil;
@@ -649,7 +695,7 @@ void lisp_map::protect()
         return;
 
     status |= s_protect;
-    for (const auto& a: values)
+    for (const auto &a : values)
         a.second->protect();
 }
 
@@ -662,7 +708,7 @@ void lisp_map::unprotect()
         return;
 
     status &= ~s_protect;
-    for (const auto& a: values)
+    for (const auto &a : values)
         a.second->unprotect();
 }
 
@@ -671,14 +717,14 @@ void lisp_map::unmark()
     status -= (status && s_status());
     if (!status)
     {
-        for (const auto& a: values)
+        for (const auto &a : values)
             a.second->unmark();
         delete this;
     }
 }
 
 void lisp_map::remove()
-{    
+{
     if (status == s_constant)
         return;
 
@@ -686,7 +732,7 @@ void lisp_map::remove()
     status -= (status && s_status());
     if (!status)
     {
-        for (const auto& a: values)
+        for (const auto &a : values)
             a.second->remove();
         delete this;
     }
@@ -707,10 +753,14 @@ lisp_element *lisp_atom::eval(lisp_mini *lisp)
     throw new lisp_error(lisp->atoms[code], lispunknownatom->message);
 }
 //------------------------------------------------------------------------
-lisp_element* lisp_list::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+lisp_element *lisp_list::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var)
 {
+    if (!var->is_atom())
+        throw new lisp_error(var, lispunknownatom->message);
+    uint16_t variable = var->code;
+
     long sz = code->size();
-    lisp_element* r = lisp_nil;
+    lisp_element *r = lisp_nil;
     for (long i = 0; i < values.size(); i++)
     {
         lisp->insert(variable, values[i]);
@@ -726,18 +776,23 @@ lisp_element* lisp_list::loop(lisp_mini* lisp, lisp_list* code, uint16_t variabl
     return r;
 }
 
-lisp_element* lisp_string::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+lisp_element *lisp_string::loop(lisp_mini *lisp, lisp_list *code, lisp_element* var)
 {
-    lisp_element* r = lisp_nil;
-    lisp_string* v = new lisp_string("");
+    if (!var->is_atom())
+        throw new lisp_error(var, lispunknownatom->message);
+    uint16_t variable = var->code;
+
+    lisp_element *r = lisp_nil;
+    lisp_string *v = new lisp_string("");
     lisp->insert(variable, v);
 
     long pos = 0;
     long sz = value.size();
     string localvalue;
     long szc = code->size();
-    //we split the string into an array of characters
-    while (pos < sz) {
+    // we split the string into an array of characters
+    while (pos < sz)
+    {
         special_characters.getchar(value, localvalue, pos);
         v->value = localvalue;
         for (long j = 3; j < szc && r != lisp_break; j++)
@@ -751,14 +806,27 @@ lisp_element* lisp_string::loop(lisp_mini* lisp, lisp_list* code, uint16_t varia
     return r;
 }
 
-lisp_element* lisp_map::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+lisp_element *lisp_map::loop(lisp_mini *lisp, lisp_list *code, lisp_element* var)
 {
+    if (!var->is_list() || var->size() != 2)
+        throw new lisp_error(var, "Expecting a list of two atoms");
+    
+    if (!var->at(0)->is_atom() || !var->at(1)->is_atom())
+        throw new lisp_error(var, "Elements should be atoms");
+
+    uint16_t key = var->at(0)->code;
+    uint16_t val = var->at(1)->code;
+
+    lisp_element *r = lisp_nil;
+
     long sz = code->size();
-    lisp_element* r = lisp_nil;
-    lisp_string* str = new lisp_string("");
-    lisp->insert(variable, str);
-    for (const auto& a : values) {
+    lisp_string *str = new lisp_string("");
+    lisp->insert(key, str);
+    lisp->insert(val, lisp_nil);
+    for (const auto &a : values)
+    {
         str->value = a.first;
+        lisp->insert(val, a.second);
         for (long j = 3; j < sz && r != lisp_break; j++)
         {
             r = r->release();
@@ -770,72 +838,105 @@ lisp_element* lisp_map::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable
     return r;
 }
 
-lisp_element* lisp_list::mapcar(lisp_mini* lisp, lisp_element* op)
+lisp_element *lisp_list::mapcar(lisp_mini *lisp, lisp_element *op)
 {
-    lisp_element* r = lisp_nil;
+    lisp_list *result = new lisp_list();
+
     lisp_list l(s_constant);
 
     l.append(op);
     l.append(lisp_nil);
-    for (long i = 0; i < values.size(); i++)
+    try
     {
-        r = r->release();
-        values[i]->mark();
-        l.values[1] = values[i];
-        r = l.eval(lisp);
-        values[i]->unmark();
+        for (long i = 0; i < values.size(); i++)
+        {
+            values[i]->mark();
+            l.values[1] = values[i];
+            result->append(l.eval(lisp));
+            values[i]->unmark();
+        }
     }
+    catch (lisp_error *err)
+    {
+        l.values[1] = lisp_nil;
+        l.clear();
+        result->release();
+        throw err;
+    }
+    l.values[1] = lisp_nil;
     l.clear();
-    return r;
+    return result;
 }
 
-lisp_element* lisp_string::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+lisp_element *lisp_string::mapcar(lisp_mini *lisp, lisp_element *op)
 {
-    lisp_element* r = lisp_nil;
     lisp_list l(s_constant);
 
-    lisp_string* v new lisp_string("");
+    lisp_string *v = new lisp_string("");
 
     l.append(op);
     l.append(v);
 
+    lisp_list *result = new lisp_list();
     long pos = 0;
     long sz = value.size();
     string localvalue;
-    //we split the string into an array of characters
-    while (pos < sz) {
-        special_characters.getchar(value, localvalue, pos);
-        v.value = localvalue;
-        r = r->release();
-        r = l.eval(lisp);        
+    // we split the string into an array of characters
+    try
+    {
+        while (pos < sz)
+        {
+            special_characters.getchar(value, localvalue, pos);
+            v->value = localvalue;
+            result->append(l.eval(lisp));
+        }
     }
-
+    catch (lisp_error *err)
+    {
+        l.clear();
+        result->release();
+        throw err;
+    }
     l.clear();
-    return r;
+    return result;
 }
 
-lisp_element* lisp_map::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+lisp_element *lisp_map::mapcar(lisp_mini *lisp, lisp_element *op)
 {
-    lisp_element* r = lisp_nil;
+    lisp_list *result = new lisp_list();
     lisp_list l(s_constant);
     l.append(op);
     l.append(lisp_nil);
 
-    for (const auto& a : values) {
-        r->release();
-        a.second->mark();
-        r = l.values[1] = a.second;
-        a.second->unmark();
+    try
+    {
+        for (const auto &a : values)
+        {
+            a.second->mark();
+            l.values[1] = a.second;
+            result->append(l.eval(lisp));
+            a.second->unmark();
+        }
     }
-    return r;
+    catch (lisp_error *err)
+    {
+        l.values[1] = lisp_nil;
+        l.clear();
+        result->release();
+        throw err;
+    }
+
+    l.values[1] = lisp_nil;
+    l.clear();
+    return result;
 }
 //------------------------------------------------------------------------
 // These are elements, which are never deleted and common to all lisps
 //------------------------------------------------------------------------
-lisp_element* lisp_nil = NULL;
-lisp_element* lisp_true = NULL;
-lisp_string* lisp_emptystring = NULL;
-lisp_atom* lisp_break = NULL;
+lisp_element *lisp_nil = NULL;
+lisp_element *lisp_true = NULL;
+lisp_string *lisp_emptystring = NULL;
+lisp_atom *lisp_break = NULL;
 
 lisp_error *lisperror = NULL;
 lisp_error *lispargnbserror = NULL;
@@ -849,7 +950,7 @@ lisp_error *lispstackerror = NULL;
 lisp_error *lisplambdaerror = NULL;
 
 std::map<std::string, uint16_t> code_dictionary;
-std::map<uint16_t, lisp_element*> instructions_dictionary;
+std::map<uint16_t, lisp_element *> instructions_dictionary;
 std::map<uint16_t, std::string> string_dictionary;
 //------------------------------------------------------------------------
 uint16_t get_code(string &w)
@@ -890,7 +991,8 @@ void lisp_mini::garbage_clean()
     }
 
     variables.clear();
-    for (auto& a: atoms) {
+    for (auto &a : atoms)
+    {
         delete a.second;
     }
 #ifdef DEBUGGER
@@ -899,7 +1001,7 @@ void lisp_mini::garbage_clean()
 }
 
 //------------------------------------------------------------------------
-bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, long &pos, compile_action action)
+bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, long &pos, compile_action action)
 {
     lisp_element *e;
     string current_key;
@@ -909,7 +1011,8 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
 
     for (; pos < sz; pos++)
     {
-        if (action == error_action) {
+        if (action == error_action)
+        {
             cerr << infos.types[pos] << endl;
             return false;
         }
@@ -920,7 +1023,8 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
         {
             if (action == map_key)
                 current_key = infos.strings[pos];
-            else {
+            else
+            {
                 e = new lisp_string(storage, infos.strings[pos]);
                 action = program->store(current_key, e, action);
             }
@@ -942,7 +1046,8 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
             action = program->store(current_key, e, action);
             break;
         }
-        case jt_quote: {
+        case jt_quote:
+        {
             e = new lisp_list(storage);
             e->append(instructions_dictionary[l_quote]);
             action = program->store(current_key, e, action);
@@ -951,7 +1056,8 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
             pos--;
             break;
         }
-        case jt_quote_list: {
+        case jt_quote_list:
+        {
             e = new lisp_list(storage);
             e->append(instructions_dictionary[l_quote]);
             action = program->store(current_key, e, action);
@@ -962,24 +1068,26 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
         case jt_number:
             if (action == map_key)
                 current_key = infos.strings[pos];
-            else {
+            else
+            {
                 if (infos.strings[pos].find(".") != -1)
                     e = new lisp_float(storage, infos.numbers[pos]);
                 else
                     e = new lisp_integer(storage, convertinginteger(infos.strings[pos]));
-                action = program->store(current_key, e, action);                
+                action = program->store(current_key, e, action);
             }
             break;
         case jt_o_parenthesis:
         {
-            if (action != first_action || program->size()) {
+            if (action != first_action || program->size())
+            {
                 e = new lisp_list(storage);
                 action = program->store(current_key, e, action);
             }
             else
                 e = program;
             pos++;
-            if (!compile(e,storage, pos, next_action))
+            if (!compile(e, storage, pos, next_action))
                 return false;
             if (action == parenthetic_action)
                 return true;
@@ -995,8 +1103,9 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element*>& storage, l
             action = program->store(current_key, l, action);
             break;
         }
-        case jt_o_brace: {
-            lisp_map* m = new lisp_map(storage);
+        case jt_o_brace:
+        {
+            lisp_map *m = new lisp_map(storage);
             action = program->store(current_key, m, action);
             pos++;
             if (!compile(m, storage, pos, map_key))
@@ -1041,12 +1150,19 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (sz < 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
-            if (!e->is_list())
-                throw new lisp_error(this, lisperror->message);
-            e->pop();
+            if (sz == 2)
+                e->pop(lisp_nil);
+            else
+            {
+                r = values[2]->eval(lisp);
+                e->pop(r);
+                r->release();
+            }
+
             return e;
         }
-        case l_sub: {
+        case l_sub:
+        {
             if (sz < 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -1054,7 +1170,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             double beg = r->doublevalue();
             r = r->release();
             double end = 0;
-            if (sz == 4) {
+            if (sz == 4)
+            {
                 r = values[3]->eval(lisp);
                 end = r->doublevalue();
                 r = r->release();
@@ -1169,7 +1286,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->push_first(e);
             return r;
         }
-        case l_apply: { //(apply 'operator list)
+        case l_apply:
+        { //(apply 'operator list)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -1184,7 +1302,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             return r;
         }
-        case l_mapcar: { //(mapcar 'operator list)
+        case l_mapcar:
+        { //(mapcar 'operator list)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -1298,13 +1417,25 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             }
             return r;
         }
+        case l_replace: {//(replace s a v) replace a in s with v
+            if (sz != 4)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            lisp_element* w = values[3]->eval(lisp);
+            lisp_element* res = e->replace(r, w);
+            e->release();
+            r->release();
+            w->release();
+            return res;
+        }
         case l_split:
         {
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
             r = values[2]->eval(lisp);
-            lisp_element* s = e->split(r);
+            lisp_element *s = e->split(r);
             r->release();
             e->release();
             return s;
@@ -1315,7 +1446,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
             r = values[2]->eval(lisp);
-            lisp_element* v = e->at_position(r);
+            lisp_element *v = e->at_position(r);
             r->release();
             v->protect();
             e->release();
@@ -1332,11 +1463,13 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             }
             return r;
         }
-        case l_map: { //(map (key value) (key value) ..)
+        case l_map:
+        { //(map (key value) (key value) ..)
             e = new lisp_map();
             string k;
-            for (long i = 1 ; i < sz; i++) {
-                if (values[i]->code != v_list || values[i]->size() != 2) 
+            for (long i = 1; i < sz; i++)
+            {
+                if (values[i]->code != v_list || values[i]->size() != 2)
                     throw new lisp_error(this, lispargnbserror->message);
                 r = values[i]->at(0)->eval(lisp);
                 k = "";
@@ -1348,7 +1481,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             }
             return e;
         }
-        case l_key: { //(key map key value)
+        case l_key:
+        { //(key map key value)
             if (sz != 4)
                 throw new lisp_error(this, lispargnbserror->message);
 
@@ -1359,7 +1493,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             string k;
             r->stringvalue(k);
             r = r->release();
-            lisp_element* v = values[3]->eval(lisp);
+            lisp_element *v = values[3]->eval(lisp);
             e->append(k, v);
             v->release();
             return e;
@@ -1368,13 +1502,9 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         {
             if (sz < 4)
                 throw new lisp_error(this, lispargnbserror->message);
-                
-            e = values[1];
-            if (!e->is_atom())
-                throw new lisp_error(e, lispunknownatom->message);
-            uint16_t variable = e->code;
+
             e = values[2]->eval(lisp);
-            r = e->loop(lisp, this, variable);
+            r = e->loop(lisp, this, values[1]);
             e->release();
             return r;
         }
@@ -1614,7 +1744,8 @@ lisp_element *lisp_list::cdr()
     return l;
 }
 
-lisp_element* lisp_list::sub(double b, double e) {        
+lisp_element *lisp_list::sub(double b, double e)
+{
     if (e <= 0)
         e = values.size() + e;
     if (b < 0)
@@ -1623,7 +1754,7 @@ lisp_element* lisp_list::sub(double b, double e) {
     if (e <= b)
         return lisp_nil;
 
-    lisp_list* l = new lisp_list();
+    lisp_list *l = new lisp_list();
     for (; b < e; b++)
         l->append(values[b]);
     return l;
@@ -1741,21 +1872,23 @@ lisp_element *lisp_mini::run(string code)
     if (e != e_no_error)
         return lisptokenizeerror->eval(this);
 
-    vector<lisp_element*> storage;
+    vector<lisp_element *> storage;
     long pos = 0;
     lisp_list *program = new lisp_list(storage);
     compile(program, storage, pos, first_action);
     stop_execution = false;
-    lisp_element *res; 
-    try {
+    lisp_element *res;
+    try
+    {
         res = program->eval(this);
         res->protect();
         clean(storage);
         res->unprotect();
         return res;
     }
-    catch(lisp_error* err) {        
-        for (auto& a : storage)
+    catch (lisp_error *err)
+    {
+        for (auto &a : storage)
             delete a;
         throw err;
     }
@@ -1782,7 +1915,7 @@ string execute_some_lisp(lisp_mini *lisp, string &code)
         return os.str();
     }
 
-    vector<lisp_element*> storage; 
+    vector<lisp_element *> storage;
     lisp_list *program = new lisp_list(storage);
     long pos = 0;
     lisp->compile(program, storage, pos, first_action);

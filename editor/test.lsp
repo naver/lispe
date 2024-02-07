@@ -36,4 +36,5 @@
 (print (tst 10 20))
 (print (tst (car v) 13))
 (print (apply '+ '(1 2 3 4 5)))
+(print (mapcar '(lambda (x) (+ x 20)) '(1 2 3 4 5)))
 

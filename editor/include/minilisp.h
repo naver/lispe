@@ -73,6 +73,7 @@ typedef enum
     l_type,
     l_sub,
     l_apply,
+    l_replace,
     l_final
 } lisp_instruction_code;
 
@@ -160,7 +161,7 @@ public:
     }
 
     virtual void clear() {}
-    virtual lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable) {
+    virtual lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable) {
         return lisp_nil;
     }
 
@@ -204,6 +205,7 @@ public:
         return 0;
     }
 
+    virtual lisp_element* replace(lisp_element* a, lisp_element* v);
     virtual lisp_element* sub(double b, double e);
     virtual lisp_element *append(lisp_element *e);
     virtual lisp_element *append(string&, lisp_element *e);
@@ -673,7 +675,7 @@ public:
         return true;
     }
 
-    lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable);
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
 
     lisp_element* cons_apply(lisp_element* op) {
@@ -927,7 +929,7 @@ public:
         return this;
     }
 
-    lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable);
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
 
     void unmark();
@@ -1074,7 +1076,7 @@ public:
         return new lisp_string(value);
     }
 
-    lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable);
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
 
     lisp_element *at_position(lisp_element* i);
@@ -1084,23 +1086,8 @@ public:
     lisp_element* car();
     lisp_element* cdr();
 
-    void pop(lisp_element* e)
-    {
-        long sz = value.size();
-        long  i = sz - 1;
-        if (e != lisp_nil)
-            i = e->longvalue();
-        if (i < 0 || i >= sz)
-            lisperrorrange->eval(NULL);
-
-        if (i == sz - 1)
-        {            
-            value.pop_back();
-            return;
-        }
-        
-    }
-
+    void pop(lisp_element* e);
+    lisp_element* replace(lisp_element* a, lisp_element* v);
 
     long size()
     {
