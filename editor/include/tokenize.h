@@ -5,7 +5,8 @@
 typedef enum {
     jt_emptystring = 0, jt_word = 1, jt_keyword = 2, jt_number = 3, 
     jt_string = 4, jt_method = 5, jt_comment = 6, jt_finalcomment = 7, jt_longstring = 8,
-    jt_quote = 9, jt_opening_p = 10, jt_closing_p = 11, jt_opening_bk = 12, jt_closing_bk = 13, jt_quote_list = 14,
+    jt_quote = 9, jt_o_parenthesis = 10, jt_c_parenthesis = 11, jt_bracket = 12, jt_quote_list = 13, 
+    jt_o_brace = 14, jt_c_brace = 15, jt_colon = 16
 } jag_code;
 
 
@@ -41,20 +42,12 @@ public:
         positions.push_back(posend);
     }
 
-    void append(double d, jag_code t, long posbeg, long posend) {
-        strings.push_back("");
+    void append(double d, std::string& s, jag_code t, long posbeg, long posend) {
+        strings.push_back(s);
         numbers.push_back(d);
         types.push_back(t);
         positions.push_back(posbeg);
         positions.push_back(posend);
-    }
-
-    void insertclosing(long pos) {
-        strings.insert(strings.begin()+pos, ")");
-        numbers.insert(numbers.begin()+pos, 0);
-        types.insert(types.begin()+pos, jt_closing_p);        
-        positions.insert(positions.begin()+pos, 0);
-        positions.insert(positions.begin()+pos, 0);
     }
 };
 

@@ -1263,6 +1263,11 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"%(=40");
     rules.push_back(U"%)=41");
     
+    rules.push_back(U"%{=123");
+    rules.push_back(U"%}=125");
+
+    rules.push_back(U":=58");              //Separator in dictionaries
+
     rules.push_back(U"%[~%r+%]=:91");     //Unix expression
         
     //Comments

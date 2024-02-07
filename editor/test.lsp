@@ -1,7 +1,8 @@
+(setq m {"a":"b" 12:14})
 (= '(a b) '(a b))
 (setq n 10000)
 
-(loop n
+(while n
     (setq n (- n 1))
     (+ n (* 2 n) 3 n)
     (print n)
@@ -35,5 +36,4 @@
 (print (tst 10 20))
 (print (tst (car v) 13))
 (print (apply '+ '(1 2 3 4 5)))
-
 
