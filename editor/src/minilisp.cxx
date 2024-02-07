@@ -54,6 +54,7 @@ static void initialisation_static_values()
         code_dictionary["list"] = l_list;
         code_dictionary["map"] = l_map;
         code_dictionary["mapcar"] = l_mapcar;
+        code_dictionary["filtercar"] = l_filtercar;
         code_dictionary["key"] = l_key;
         code_dictionary["loop"] = l_loop;
         code_dictionary["while"] = l_while;
@@ -87,6 +88,7 @@ static void initialisation_static_values()
         code_dictionary["pop"] = l_pop;
         code_dictionary["sub"] = l_sub;
         code_dictionary["apply"] = l_apply;
+        code_dictionary["join"] = l_join;
 
         code_dictionary["€"] = l_final;
 
@@ -394,6 +396,10 @@ lisp_element *lisp_element::sub(double b, double e)
 lisp_element *lisp_element::cons_apply(lisp_element *op)
 {
     return lisperror->eval(NULL);
+}
+
+lisp_element* lisp_element::join(lisp_element* sep) {
+    return lisp_emptystring;
 }
 
 compile_action lisp_element::store(string &current_key, lisp_element *e, compile_action action)
@@ -753,6 +759,20 @@ lisp_element *lisp_atom::eval(lisp_mini *lisp)
     throw new lisp_error(lisp->atoms[code], lispunknownatom->message);
 }
 //------------------------------------------------------------------------
+lisp_element *lisp_list::join(lisp_element *sep) {
+    string ssep;
+    sep->stringvalue(ssep);
+
+    string value;
+    for (long i = 0; i < values.size(); i++)
+    {
+        if (i)
+            value += ssep;
+        values[i]->stringvalue(value);
+    }
+    return new lisp_string(value);
+}
+
 lisp_element *lisp_list::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var)
 {
     if (!var->is_atom())
@@ -915,6 +935,109 @@ lisp_element *lisp_map::mapcar(lisp_mini *lisp, lisp_element *op)
             a.second->mark();
             l.values[1] = a.second;
             result->append(l.eval(lisp));
+            a.second->unmark();
+        }
+    }
+    catch (lisp_error *err)
+    {
+        l.values[1] = lisp_nil;
+        l.clear();
+        result->release();
+        throw err;
+    }
+
+    l.values[1] = lisp_nil;
+    l.clear();
+    return result;
+}
+
+lisp_element *lisp_list::filtercar(lisp_mini *lisp, lisp_element *op)
+{
+    lisp_list *result = new lisp_list();
+    lisp_list l(s_constant);
+    lisp_element* r;
+
+    l.append(op);
+    l.append(lisp_nil);
+    try
+    {
+        for (long i = 0; i < values.size(); i++)
+        {
+            values[i]->mark();
+            l.values[1] = values[i];
+            r = l.eval(lisp);
+            if (r->boolean())
+                result->append(values[i]);
+            r->release();
+            values[i]->unmark();
+        }
+    }
+    catch (lisp_error *err)
+    {
+        l.values[1] = lisp_nil;
+        l.clear();
+        result->release();
+        throw err;
+    }
+    l.values[1] = lisp_nil;
+    l.clear();
+    return result;
+}
+
+lisp_element *lisp_string::filtercar(lisp_mini *lisp, lisp_element *op)
+{
+    lisp_list l(s_constant);
+
+    lisp_string *v = new lisp_string("");
+
+    l.append(op);
+    l.append(v);
+
+    lisp_element* r;
+    lisp_list *result = new lisp_list();
+    long pos = 0;
+    long sz = value.size();
+    string localvalue;
+    // we split the string into an array of characters
+    try
+    {
+        while (pos < sz)
+        {
+            special_characters.getchar(value, localvalue, pos);
+            v->value = localvalue;
+            r = l.eval(lisp);
+            if (r->boolean())
+                result->append(v->clone(false));
+            r->release();
+        }
+    }
+    catch (lisp_error *err)
+    {
+        l.clear();
+        result->release();
+        throw err;
+    }
+    l.clear();
+    return result;
+}
+
+lisp_element *lisp_map::filtercar(lisp_mini *lisp, lisp_element *op)
+{
+    lisp_element* r;
+    lisp_list *result = new lisp_list();
+    lisp_list l(s_constant);
+    l.append(op);
+    l.append(lisp_nil);
+
+    try
+    {
+        for (const auto &a : values)
+        {
+            a.second->mark();
+            l.values[1] = a.second;
+            r = l.eval(lisp);
+            if (r->boolean())
+                result->append(a.second);
             a.second->unmark();
         }
     }
@@ -1286,6 +1409,16 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->push_first(e);
             return r;
         }
+        case l_join: { //(join lst sep)
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            lisp_element* res = e->join(r);
+            e->release();
+            r->release();
+            return res;
+        }
         case l_apply:
         { //(apply 'operator list)
             if (sz != 3)
@@ -1309,6 +1442,16 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             r = values[2]->eval(lisp);
             e = r->mapcar(lisp, e);
+            r->release();
+            return e;
+        }
+        case l_filtercar:
+        { //(filter 'operator list)
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            e = r->filtercar(lisp, e);
             r->release();
             return e;
         }

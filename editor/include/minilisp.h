@@ -44,6 +44,7 @@ typedef enum
     l_block,
     l_map,
     l_mapcar,
+    l_filtercar,
     l_key,
     l_defun,
     l_equal,
@@ -74,6 +75,7 @@ typedef enum
     l_sub,
     l_apply,
     l_replace,
+    l_join,
     l_final
 } lisp_instruction_code;
 
@@ -165,7 +167,12 @@ public:
         return lisp_nil;
     }
 
+    virtual lisp_element* join(lisp_element* sep);
     virtual lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper) {
+        return lisp_nil;
+    }
+
+    virtual lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper) {
         return lisp_nil;
     }
 
@@ -677,6 +684,8 @@ public:
 
     lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+    lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
+    lisp_element* join(lisp_element* sep);
 
     lisp_element* cons_apply(lisp_element* op) {
         lisp_list* l = new lisp_list();
@@ -931,6 +940,7 @@ public:
 
     lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+    lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
 
     void unmark();
     void remove();
@@ -1078,6 +1088,7 @@ public:
 
     lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+    lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
 
     lisp_element *at_position(lisp_element* i);
     lisp_element *at(long i);
