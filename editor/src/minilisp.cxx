@@ -52,6 +52,7 @@ static void initialisation_static_values()
         code_dictionary["at"] = l_at;
         code_dictionary["list"] = l_list;
         code_dictionary["map"] = l_map;
+        code_dictionary["mapcar"] = l_mapcar;
         code_dictionary["key"] = l_key;
         code_dictionary["loop"] = l_loop;
         code_dictionary["while"] = l_while;
@@ -705,10 +706,129 @@ lisp_element *lisp_atom::eval(lisp_mini *lisp)
 
     throw new lisp_error(lisp->atoms[code], lispunknownatom->message);
 }
+//------------------------------------------------------------------------
+lisp_element* lisp_list::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+{
+    long sz = code->size();
+    lisp_element* r = lisp_nil;
+    for (long i = 0; i < values.size(); i++)
+    {
+        lisp->insert(variable, values[i]);
 
-class lisp_element;
-class lisp_error;
+        for (long j = 3; j < sz && r != lisp_break; j++)
+        {
+            r = r->release();
+            r = code->values[j]->eval(lisp);
+        }
+        if (r == lisp_break)
+            break;
+    }
+    return r;
+}
 
+lisp_element* lisp_string::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+{
+    lisp_element* r = lisp_nil;
+    lisp_string* v = new lisp_string("");
+    lisp->insert(variable, v);
+
+    long pos = 0;
+    long sz = value.size();
+    string localvalue;
+    long szc = code->size();
+    //we split the string into an array of characters
+    while (pos < sz) {
+        special_characters.getchar(value, localvalue, pos);
+        v->value = localvalue;
+        for (long j = 3; j < szc && r != lisp_break; j++)
+        {
+            r = r->release();
+            r = code->values[j]->eval(lisp);
+        }
+        if (r == lisp_break)
+            break;
+    }
+    return r;
+}
+
+lisp_element* lisp_map::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+{
+    long sz = code->size();
+    lisp_element* r = lisp_nil;
+    lisp_string* str = new lisp_string("");
+    lisp->insert(variable, str);
+    for (const auto& a : values) {
+        str->value = a.first;
+        for (long j = 3; j < sz && r != lisp_break; j++)
+        {
+            r = r->release();
+            r = code->values[j]->eval(lisp);
+        }
+        if (r == lisp_break)
+            break;
+    }
+    return r;
+}
+
+lisp_element* lisp_list::mapcar(lisp_mini* lisp, lisp_element* op)
+{
+    lisp_element* r = lisp_nil;
+    lisp_list l(s_constant);
+
+    l.append(op);
+    l.append(lisp_nil);
+    for (long i = 0; i < values.size(); i++)
+    {
+        r = r->release();
+        values[i]->mark();
+        l.values[1] = values[i];
+        r = l.eval(lisp);
+        values[i]->unmark();
+    }
+    l.clear();
+    return r;
+}
+
+lisp_element* lisp_string::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+{
+    lisp_element* r = lisp_nil;
+    lisp_list l(s_constant);
+
+    lisp_string* v new lisp_string("");
+
+    l.append(op);
+    l.append(v);
+
+    long pos = 0;
+    long sz = value.size();
+    string localvalue;
+    //we split the string into an array of characters
+    while (pos < sz) {
+        special_characters.getchar(value, localvalue, pos);
+        v.value = localvalue;
+        r = r->release();
+        r = l.eval(lisp);        
+    }
+
+    l.clear();
+    return r;
+}
+
+lisp_element* lisp_map::loop(lisp_mini* lisp, lisp_list* code, uint16_t variable)
+{
+    lisp_element* r = lisp_nil;
+    lisp_list l(s_constant);
+    l.append(op);
+    l.append(lisp_nil);
+
+    for (const auto& a : values) {
+        r->release();
+        a.second->mark();
+        r = l.values[1] = a.second;
+        a.second->unmark();
+    }
+    return r;
+}
 //------------------------------------------------------------------------
 // These are elements, which are never deleted and common to all lisps
 //------------------------------------------------------------------------
@@ -1049,7 +1169,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->push_first(e);
             return r;
         }
-        case l_apply: {
+        case l_apply: { //(apply 'operator list)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -1063,6 +1183,15 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r = e->eval(lisp);
             e->release();
             return r;
+        }
+        case l_mapcar: { //(mapcar 'operator list)
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            e = r->mapcar(lisp, e);
+            r->release();
+            return e;
         }
         case l_type:
         {
@@ -1245,19 +1374,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(e, lispunknownatom->message);
             uint16_t variable = e->code;
             e = values[2]->eval(lisp);
-            if (!e->is_list())
-                throw new lisp_error(r, "Error: expecting a list");
-
-            for (long i = 0; i < e->size(); i++) {
-                lisp->insert(variable, e->at(i));
-
-                for (long j =  3; j < sz && r != lisp_break; j++) {
-                    r = r->release();
-                    r = values[j]->eval(lisp);
-                }
-                if (r == lisp_break)
-                    break;
-            }
+            r = e->loop(lisp, this, variable);
             e->release();
             return r;
         }

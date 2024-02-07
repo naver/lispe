@@ -43,6 +43,7 @@ typedef enum
     l_cond,
     l_block,
     l_map,
+    l_mapcar,
     l_key,
     l_defun,
     l_equal,
@@ -79,7 +80,7 @@ typedef enum
 // Some specific values
 // Note that nil cannot be stored in the garbage;
 class lisp_element;
-class lisp_list_nil;
+class lisp_list;
 class lisp_string;
 class lisp_error;
 class lisp_atom;
@@ -158,6 +159,15 @@ public:
         }
     }
 
+    virtual void clear() {}
+    virtual lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable) {
+        return lisp_nil;
+    }
+
+    virtual lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper) {
+        return lisp_nil;
+    }
+
     virtual void remove()
     {
         if (status == s_constant)
@@ -198,8 +208,7 @@ public:
     virtual lisp_element *append(lisp_element *e);
     virtual lisp_element *append(string&, lisp_element *e);
     compile_action store(string& , lisp_element* e, compile_action a);
-    virtual void pop();
-    virtual void pop(string&);
+    virtual void pop(lisp_element*);
     virtual lisp_element *push_first(lisp_element *e);
     virtual lisp_element *car();
     virtual lisp_element *cdr();
@@ -419,6 +428,10 @@ public:
     lisp_integer(vector<lisp_element*>& storage, long v) : value(v), lisp_element(storage, v_integer) {}    
     lisp_integer(long v) : value(v), lisp_element(v_integer) {}
 
+    void clear() {
+        value = 0;
+    }
+
     lisp_element *plus(lisp_element *v)
     {
         value += v->longvalue();
@@ -534,6 +547,10 @@ public:
     lisp_float(uint16_t c, double v) : value(v), lisp_element(c, v_float) {}
     lisp_float(vector<lisp_element*>& storage, double v) : value(v), lisp_element(storage, v_float) {}    
     lisp_float(double v) : value(v), lisp_element(v_float) {}
+
+    void clear() {
+        value = 0;
+    }
 
     lisp_element *plus(lisp_element *v)
     {
@@ -656,6 +673,9 @@ public:
         return true;
     }
 
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable);
+    lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+
     lisp_element* cons_apply(lisp_element* op) {
         lisp_list* l = new lisp_list();
         l->append(op);
@@ -678,15 +698,23 @@ public:
     virtual void unprotect();
 
     virtual lisp_element *release();
-    virtual void pop()
+    virtual void pop(lisp_element* e)
     {
-        if (values.size())
+        long sz = values.size();
+        long  i = sz - 1;
+        if (e != lisp_nil)
+            i = e->longvalue();
+        if (i < 0 || i >= sz)
+            lisperrorrange->eval(NULL);
+
+        if (i == sz - 1)
         {
             values.back()->unmark();
             values.pop_back();
+            return;
         }
-        else
-            lisperror->eval(NULL);
+        values[i]->unmark();
+        values.erase(values.begin()+i);
     }
 
     virtual lisp_element *push_first(lisp_element *e)
@@ -704,6 +732,13 @@ public:
     virtual bool boolean()
     {
         return values.size();
+    }
+
+    void clear() {
+        for (long i = 0; i < values.size(); i++) {
+            values[i]->unmark();
+        }
+        values.clear();
     }
 
     virtual lisp_element *execute_lambda(lisp_mini *, lisp_element *lmbd);
@@ -810,7 +845,7 @@ public:
     void unprotect() {}
     lisp_element *release() {}
 
-    void pop() {
+    void pop(lisp_element*) {
         lisperrorrange->eval(NULL);
     }
 
@@ -892,21 +927,34 @@ public:
         return this;
     }
 
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable);
+    lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+
     void unmark();
     void remove();
     void protect();
     void unprotect();
     lisp_element *release();
 
-    void pop(string& key)
+    void pop(lisp_element* e)
     {
+        string key;
+        e->stringvalue(key);
+
         if (values.find(key) != values.end())
         {
             values[key]->unmark();
             values.erase(key);
         }
         else
-            lisperror->eval(NULL);
+            lisperrorrange->eval(NULL);
+    }
+
+    void clear() {
+        for (const auto& a:values) {
+            a.second->unmark();
+        }
+        values.clear();
     }
 
     long size()
@@ -1015,6 +1063,10 @@ public:
     }
 
 
+    void clear() {
+        value = "";
+    }
+
     lisp_element* clone(bool cst) {
         if (!status || (cst && s_status()))
             return this;
@@ -1022,12 +1074,33 @@ public:
         return new lisp_string(value);
     }
 
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, uint16_t variable);
+    lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+
     lisp_element *at_position(lisp_element* i);
     lisp_element *at(long i);
     
     lisp_element* sub(double b, double e);
     lisp_element* car();
     lisp_element* cdr();
+
+    void pop(lisp_element* e)
+    {
+        long sz = value.size();
+        long  i = sz - 1;
+        if (e != lisp_nil)
+            i = e->longvalue();
+        if (i < 0 || i >= sz)
+            lisperrorrange->eval(NULL);
+
+        if (i == sz - 1)
+        {            
+            value.pop_back();
+            return;
+        }
+        
+    }
+
 
     long size()
     {
