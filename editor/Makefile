@@ -6,7 +6,7 @@ SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.c
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 SOURCEMINI = editor.cxx minilispmain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
 SOURCELISP = minimain.cxx
-SOURCELIB = tokens.cxx minilisp.cxx tools.cxx
+SOURCELIB = tokens.cxx minilisp.cxx tools.cxx eval.cxx segment.cxx
 #------------------------------------------------------------
 OBJECTWITHLISPE = $(SOURCEWITHLISPE:%.cxx=objs/%.o)
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
@@ -21,7 +21,7 @@ INCLUDES = -Iinclude -I../include
 #C++11Flag = -std=gnu++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
 LIBPATH = ../bin
 DEBUGMODE = -g -DDEBUGGER
-C++11Flag = -Ofast -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
+C++11Flag = $(DEBUGMODE) -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
 #------------------------------------------------------------
 objs/%.o: src/%.cxx
 	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@

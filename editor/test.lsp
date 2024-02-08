@@ -1,3 +1,14 @@
+(defun fct(x)
+    (setq l '(a b c))
+    (push l x)
+    (print l)
+)
+
+(fct 10)
+(fct 11)
+(fct 12)
+(fct 13)
+
 (setq m {"a":"b" 12:14})
 (= '(a b) '(a b))
 (setq n 10000)
@@ -37,4 +48,5 @@
 (print (tst (car v) 13))
 (print (apply '+ '(1 2 3 4 5)))
 (print (mapcar '(lambda (x) (+ x 20)) '(1 2 3 4 5)))
+
 

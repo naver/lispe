@@ -11,6 +11,18 @@ typedef enum {
 
 typedef enum
 {
+    e_no_error,
+    e_error_segmenting,
+    e_error_bracket,
+    e_error_parenthesis,
+    e_error_brace,
+    e_execution_error
+} error_tokenize;
+
+error_tokenize code_segmenting(string &code, Segmentingtype &infos, UTF8_Handler* special_characters);
+
+typedef enum
+{
     v_nil,
     v_atom,
     v_error,
@@ -29,6 +41,8 @@ typedef enum
     l_divide,
     l_mod,
     l_size,
+    l_chr,
+    l_ord,
     l_car,
     l_cdr,
     l_cons,
@@ -42,10 +56,12 @@ typedef enum
     l_if,
     l_cond,
     l_block,
+    l_base,
     l_map,
     l_mapcar,
     l_filtercar,
     l_key,
+    l_range,
     l_defun,
     l_equal,
     l_different,
@@ -161,6 +177,11 @@ public:
             delete this;
         }
     }
+
+    lisp_element* range(lisp_mini* lisp) {
+        return lisp_nil;
+    }
+    lisp_element *methodBase(lisp_mini* lisp, lisp_element* v_base, bool toconvert);
 
     virtual void clear() {}
     virtual lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable) {
@@ -290,7 +311,22 @@ public:
         return false;
     }
 
+    virtual bool is_string()
+    {
+        return false;
+    }
+
     virtual bool is_number()
+    {
+        return false;
+    }
+
+    virtual bool is_integer()
+    {
+        return false;
+    }
+
+    virtual bool is_float()
     {
         return false;
     }
@@ -490,6 +526,11 @@ public:
         return true;
     }
 
+    bool is_integer()
+    {
+        return true;
+    }
+
     bool boolean()
     {
         return value != 0;
@@ -610,6 +651,11 @@ public:
         return true;
     }
 
+    bool is_float()
+    {
+        return true;
+    }
+
     bool boolean()
     {
         return value != 0;
@@ -682,6 +728,7 @@ public:
         return true;
     }
 
+    lisp_element* range(lisp_mini* lisp);
     lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
     lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
@@ -1079,6 +1126,10 @@ public:
         value = "";
     }
 
+    bool is_string() {
+        return true;
+    }
+
     lisp_element* clone(bool cst) {
         if (!status || (cst && s_status()))
             return this;
@@ -1288,6 +1339,19 @@ public:
             previous->unmark();
         }
         l = l->clone(true);
+        l->mark();
+        variables.back()[c] = l;
+    }
+
+    void keep(uint16_t c, lisp_element *l)
+    {
+        lisp_element *previous = variables.back()[c];
+        if (previous != NULL)
+        {
+            if (previous == l)
+                return;
+            previous->unmark();
+        }
         l->mark();
         variables.back()[c] = l;
     }

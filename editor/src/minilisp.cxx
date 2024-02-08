@@ -74,6 +74,9 @@ static void initialisation_static_values()
         code_dictionary["command"] = l_command;
         code_dictionary["size"] = l_size;
         code_dictionary["block"] = l_block;
+        code_dictionary["base"] = l_base;
+        code_dictionary["chr"] = l_chr;
+        code_dictionary["ord"] = l_ord;
         code_dictionary["type"] = l_type;
         code_dictionary["cons?"] = l_consp;
         code_dictionary["zero?"] = l_zerop;
@@ -88,6 +91,7 @@ static void initialisation_static_values()
         code_dictionary["pop"] = l_pop;
         code_dictionary["sub"] = l_sub;
         code_dictionary["apply"] = l_apply;
+        code_dictionary["range"] = l_range;
         code_dictionary["join"] = l_join;
 
         code_dictionary["€"] = l_final;
@@ -107,241 +111,86 @@ static void initialisation_static_values()
         code_dictionary["true"] = v_boolean;
     }
 }
-//------------------------------------------------------------------------
-
-typedef enum
+//-------------------------------------------------------------------------------------
+lisp_element *lisp_element::methodBase(lisp_mini* lisp, lisp_element* v_base, bool toconvert)
 {
-    e_no_error,
-    e_error_segmenting,
-    e_error_bracket,
-    e_error_parenthesis,
-    e_error_brace,
-    e_execution_error
-} error_tokenize;
+    static vector<string> caracs;
+    static std::unordered_map<unsigned char, long> mcaracs;
+    string w;
+    long n, b;
 
-error_tokenize code_segmenting(string &code, Segmentingtype &infos)
-{
-    static tokenizer_automaton tok(&special_characters);
+    b = v_base->longvalue();
+    if (b <= 1)
+        throw new lisp_error(this, "Error: cannot convert to this base");
 
-    tokenizer_result<string> r_parse;
-    string buffer;
-
-    long line_number = 1;
-
-    long nb_parentheses = 0;
-    long nb_braces = 0;
-    long nb_brackets = 0;
-    long culprit;
-
-    int16_t lc = 0;
-    int in_quote = 0;
-    double d;
-    long lg_value = 0;
-    long left = 0;
-    long right = 0;
-
-    // We then tokenize our code
-    // r_parse.stack contains the substrings
-    // r_parse.stacktype contains their type
-    // r_parse.stackln contains their line number
-    long sz;
-    try
+    if (caracs.size() == 0)
     {
-        sz = tok.tokenize<string>(code, r_parse);
-    }
-    catch (Token_error *err)
-    {
-        string m;
-        s_unicode_to_utf8(m, err->msg);
-        delete err;
-        return e_error_segmenting;
-    }
-
-    culprit = -1;
-    long i;
-    long ipos = 0;
-
-    for (i = 0; i < sz; i++)
-    {
-        line_number = r_parse.stackln[i] + 1;
-        left = r_parse.positions[ipos++];
-        right = r_parse.positions[ipos++];
-
-        buffer = r_parse.stack[i];
-        // Note that the code in lc are also characters
-        // that mimic the type of the element that was identified
-        // They do not always correspond to a specific character in the buffer
-        lc = r_parse.stacktype[i];
-        switch (lc)
+        w = "0";
+        for (n = 0; n < 10; n++)
         {
-        case '\n': // Carriage return
-            continue;
-        case '"': // a string
-            lc = jt_string;
-            buffer = buffer.substr(1, buffer.size() - 2);
-            lg_value = buffer.find("\\");
-            if (lg_value != -1)
-            {
-                string intermediate = buffer.substr(0, lg_value);
-                for (long j = lg_value; j < buffer.size(); j++)
-                {
-                    if (buffer[j] == '\\')
-                    {
-                        switch (buffer[j + 1])
-                        {
-                        case 'n':
-                            intermediate += "\n";
-                            j++;
-                            break;
-                        case 'r':
-                            intermediate += "\r";
-                            j++;
-                            break;
-                        case 't':
-                            intermediate += "\t";
-                            j++;
-                            break;
-                        default:
-                            intermediate += buffer[j + 1];
-                            j++;
-                        }
-                        continue;
-                    }
-                    intermediate += buffer[j];
-                }
-                buffer = intermediate;
-            }
-            if (buffer == "")
-                infos.append(buffer, jt_emptystring, left, right);
-            else
-                infos.append(buffer, (jag_code)lc, left, right);
-            if (in_quote == 1)
-                in_quote = 0;
-            break;
-        case '`': // a long string
-            lc = jt_string;
-            buffer = buffer.substr(1, buffer.size() - 2);
-            if (buffer == "")
-                infos.append(buffer, jt_emptystring, left, right);
-            else
-                infos.append(buffer, (jag_code)lc, left, right);
-            if (in_quote == 1)
-                in_quote = 0;
-            break;
-        case '\'': // a quote
-            if (in_quote)
-                infos.append(buffer, jt_keyword, left, right);
-            else
-                infos.append(buffer, jt_quote, left, right);
-            if (!in_quote)
-                in_quote = 1;
-            break;
-        case ';':
-        { // a quoted #, we have a specific rule for this character to handle potential comments
-            string q = "'";
-            infos.append(q, jt_quote, left, left + 1);
-            buffer = buffer.substr(1, buffer.size());
-            infos.append(buffer, jt_keyword, left + 1, right);
-            break;
+            mcaracs[w[0]] = caracs.size();
+            caracs.push_back(w);
+            w[0]++;
         }
-        case '9': // a float: contains a '.'
-            d = convertingfloathexa((char *)buffer.c_str(), lg_value);
-            infos.append(d, buffer, jt_number, left, right);
-            if (in_quote == 1)
-                in_quote = 0;
-            break;
-        case '?': // operators and comparators
-            infos.append(buffer, jt_keyword, left, right);
-            if (in_quote)
-                in_quote--;
-            break;
-        case 'A': // a simple token
-            infos.append(buffer, jt_keyword, left, right);
-            if (in_quote == 1)
-                in_quote = 0;
-            break;
-        case '(': // (
-            nb_parentheses++;
-            if (in_quote == 1 && infos.types.back() == jt_quote)
-            {
-                infos.types.pop_back();
-                infos.types.push_back(jt_quote_list);
-            }
-            infos.append(buffer, jt_o_parenthesis, left, right);
-            if (in_quote)
-                in_quote++;
-            break;
-        case ')': // )
-            nb_parentheses--;
-            if (nb_parentheses <= 0)
-            {
-                if (culprit == -1)
-                    culprit = line_number;
-            }
-            infos.append(buffer, jt_c_parenthesis, left, right);
-            if (in_quote < 3)
-                in_quote = 0;
-            else
-                in_quote--;
-            break;
-        case '[': // [
-            buffer = buffer.substr(1, buffer.size() - 2);
-            infos.append(buffer, jt_bracket, left, right);
-            if (in_quote == 1)
-                in_quote = 0;
-            break;
-        case '{': // (
-            nb_braces++;
-            if (in_quote == 1 && infos.types.back() == jt_quote)
-            {
-                infos.types.pop_back();
-                infos.types.push_back(jt_quote_list);
-            }
-            infos.append(buffer, jt_o_brace, left, right);
-            if (in_quote)
-                in_quote++;
-            break;
-        case '}': // )
-            nb_braces--;
-            if (nb_braces <= 0)
-            {
-                if (culprit == -1)
-                    culprit = line_number;
-            }
-            infos.append(buffer, jt_c_brace, left, right);
-            if (in_quote < 3)
-                in_quote = 0;
-            else
-                in_quote--;
-            break;
-        case ':':
-            infos.append(buffer, jt_colon, left, right);
-            if (in_quote == 1)
-                in_quote = 0;
-            break;
-        default:
-            infos.append(buffer, jt_keyword, left, right);
-            if (in_quote == 1)
-                in_quote = 0;
+        w = "A";
+        for (n = 10; n < 36; n++)
+        {
+            mcaracs[w[0]] = caracs.size();
+            caracs.push_back(w);
+            w[0]++;
         }
+        w = "a";
+        for (n = 36; n < 62; n++)
+        {
+            mcaracs[w[0]] = caracs.size();
+            caracs.push_back(w);
+            w[0]++;
+        }
+        w = "#";
+        mcaracs[w[0]] = caracs.size();
+        caracs.push_back(w);
+        w = "@";
+        mcaracs[w[0]] = caracs.size();
+        caracs.push_back(w);
+        w = "";
+        if (!b)
+            return lisp_true;
     }
 
-    if (nb_brackets)
+    if (b > caracs.size())
     {
-        return e_error_bracket;
+        return new lisp_error(this, "Error: Base too large");
     }
 
-    if (nb_parentheses)
+    unsigned long v = 0;
+    if (!toconvert)
     {
-        return e_error_parenthesis;
+        // we convert a base 10 number into the local base
+        v = longvalue();
+        long rest;
+        string res = "";
+        while (v)
+        {
+            rest = v % b;
+            v /= b;
+            res = caracs[rest] + res;
+        }
+        return new lisp_string(res);
     }
 
-    if (nb_braces)
+    w = "";
+    stringvalue(w);
+    unsigned char wc;
+    for (n = 0; n < w.size(); n++)
     {
-        return e_error_brace;
-    }
+        wc = w[n];
+        if (!mcaracs.count(wc) || mcaracs[wc] >= b)
+            throw new lisp_error(this, "Error: Cannot analyze this string in this base.");
 
-    return e_no_error;
+        v *= b;
+        v += mcaracs[wc];
+    }
+    return new lisp_integer(v);
 }
 
 //-------------------------------------------------------------------------------------
@@ -351,8 +200,6 @@ static std::set<lisp_element *> garbages;
 lisp_element::lisp_element(uint16_t c) : code(c)
 {
     idx = garbages.size();
-    if (idx == 109)
-        cerr << "";
     garbages.insert(this);
     status = 0;
 }
@@ -360,8 +207,6 @@ lisp_element::lisp_element(uint16_t c) : code(c)
 lisp_element::lisp_element(std::vector<lisp_element *> &storage, uint16_t c) : status(s_protected), code(c)
 {
     idx = garbages.size();
-    if (idx == 109)
-        cerr << "";
     garbages.insert(this);
     storage.push_back(this);
 }
@@ -384,8 +229,11 @@ lisp_element::lisp_element(std::vector<lisp_element *> &storage, uint16_t c) : s
 lisp_element::~lisp_element() {}
 #endif
 
-lisp_element* lisp_element::replace(lisp_element* a, lisp_element* v) {
-        return lisp_emptystring;
+//-------------------------------------------------------------------------------------
+
+lisp_element *lisp_element::replace(lisp_element *a, lisp_element *v)
+{
+    return lisp_emptystring;
 }
 
 lisp_element *lisp_element::sub(double b, double e)
@@ -398,23 +246,9 @@ lisp_element *lisp_element::cons_apply(lisp_element *op)
     return lisperror->eval(NULL);
 }
 
-lisp_element* lisp_element::join(lisp_element* sep) {
-    return lisp_emptystring;
-}
-
-compile_action lisp_element::store(string &current_key, lisp_element *e, compile_action action)
+lisp_element *lisp_element::join(lisp_element *sep)
 {
-    if (action == map_value)
-    {
-        append(current_key, e);
-        return map_key;
-    }
-
-    if (action == map_key)
-        return error_action;
-
-    append(e);
-    return action;
+    return lisp_emptystring;
 }
 
 lisp_element *lisp_element::append(lisp_element *e)
@@ -476,8 +310,25 @@ lisp_element *lisp_element::mod(lisp_element *v)
 {
     return lisperror->eval(NULL);
 }
+//-------------------------------------------------------------------------------------
+compile_action lisp_element::store(string &current_key, lisp_element *e, compile_action action)
+{
+    if (action == map_value)
+    {
+        append(current_key, e);
+        return map_key;
+    }
 
-lisp_element* lisp_string::replace(lisp_element* a, lisp_element* v) {
+    if (action == map_key)
+        return error_action;
+
+    append(e);
+    return action;
+}
+//-------------------------------------------------------------------------------------
+
+lisp_element *lisp_string::replace(lisp_element *a, lisp_element *v)
+{
     string to_be_replaced;
     string with;
 
@@ -562,7 +413,8 @@ void lisp_string::pop(lisp_element *e)
 {
     long sz = size();
     long i = sz - 1;
-    if (e != lisp_nil) {
+    if (e != lisp_nil)
+    {
         i = e->longvalue();
         if (i < 0 || i >= sz)
             lisperrorrange->eval(NULL);
@@ -619,6 +471,90 @@ lisp_element *lisp_string::cdr()
 
     long lg = size_c(value);
     return new lisp_string(s_right(value, lg - 1));
+}
+
+//--------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------
+lisp_element* long_range(lisp_mini* lisp, long init, long limit, long inc) {
+    long d = (limit - init) / inc;
+    if (d<0)
+        d *= -1;
+    
+    if (init > limit && inc > 0)
+        inc *= -1;
+    
+    if (d <= 100000) {
+        if (inc == 0)
+            return lisp_nil;
+        
+        //Integers ?
+        lisp_list* range_list = new lisp_list();
+        range_list->values.reserve((long)d);
+        if (inc > 0) {
+            for (long i = init; i < limit; i += inc) {
+                range_list->values.push_back(new lisp_integer(i));
+            }
+        }
+        else {
+            for (long i = init; i > limit; i += inc)
+                range_list->values.push_back(new lisp_integer(i));
+        }
+        return range_list;
+    }
+    throw new lisp_error(lisp_nil, "Error: Exceeding range");
+}
+
+lisp_element* double_range(lisp_mini* lisp, double init, double limit, double inc) {
+    double d = (limit - init) / inc;
+    if (d<0)
+        d *= -1;
+    
+    if (init > limit && inc > 0)
+        inc *= -1;
+    
+    if (d <= 100000) {
+        if (inc == 0)
+            return lisp_nil;
+        
+        lisp_list* range_list = new lisp_list();
+        range_list->values.reserve((long)d);
+        if (inc > 0) {
+            for (double i = init; i < limit; i += inc) {
+                range_list->values.push_back(new lisp_float(i));
+            }
+        }
+        else {
+            for (double i = init; i > limit; i += inc)
+                range_list->values.push_back(new lisp_float(i));
+        }
+        return range_list;
+    }
+    throw new lisp_error(lisp_nil, "Error: Exceeding range");
+}
+
+lisp_element* lisp_list::range(lisp_mini* lisp) {
+    
+    lisp_element* e1 = values[1]->eval(lisp);
+    lisp_element* e2 = values[2]->eval(lisp);
+    lisp_element* e3 = values[3]->eval(lisp);
+    lisp_element* e;
+    
+    try {
+        if (e1->is_integer() && e2->is_integer() && e3->is_integer())
+            e = long_range(lisp, e1->longvalue(), e2->longvalue(), e3->longvalue());
+        else
+            e = double_range(lisp, e1->doublevalue(), e2->doublevalue(), e3->doublevalue());
+    }
+    catch(lisp_error* err) {
+        e1->release();
+        e2->release();
+        e3->release();
+        throw err;
+    }
+    e1->release();
+    e2->release();
+    e3->release();
+    return e;
 }
 
 //--------------------------------------------------------------------------------
@@ -759,7 +695,8 @@ lisp_element *lisp_atom::eval(lisp_mini *lisp)
     throw new lisp_error(lisp->atoms[code], lispunknownatom->message);
 }
 //------------------------------------------------------------------------
-lisp_element *lisp_list::join(lisp_element *sep) {
+lisp_element *lisp_list::join(lisp_element *sep)
+{
     string ssep;
     sep->stringvalue(ssep);
 
@@ -796,7 +733,7 @@ lisp_element *lisp_list::loop(lisp_mini *lisp, lisp_list *code, lisp_element *va
     return r;
 }
 
-lisp_element *lisp_string::loop(lisp_mini *lisp, lisp_list *code, lisp_element* var)
+lisp_element *lisp_string::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var)
 {
     if (!var->is_atom())
         throw new lisp_error(var, lispunknownatom->message);
@@ -826,11 +763,11 @@ lisp_element *lisp_string::loop(lisp_mini *lisp, lisp_list *code, lisp_element* 
     return r;
 }
 
-lisp_element *lisp_map::loop(lisp_mini *lisp, lisp_list *code, lisp_element* var)
+lisp_element *lisp_map::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var)
 {
     if (!var->is_list() || var->size() != 2)
         throw new lisp_error(var, "Expecting a list of two atoms");
-    
+
     if (!var->at(0)->is_atom() || !var->at(1)->is_atom())
         throw new lisp_error(var, "Elements should be atoms");
 
@@ -925,28 +862,31 @@ lisp_element *lisp_map::mapcar(lisp_mini *lisp, lisp_element *op)
 {
     lisp_list *result = new lisp_list();
     lisp_list l(s_constant);
+    lisp_string* v = new lisp_string("");
     l.append(op);
+    l.append(v);
     l.append(lisp_nil);
 
     try
     {
         for (const auto &a : values)
         {
+            v->value = a.first;
             a.second->mark();
-            l.values[1] = a.second;
+            l.values[2] = a.second;
             result->append(l.eval(lisp));
             a.second->unmark();
         }
     }
     catch (lisp_error *err)
     {
-        l.values[1] = lisp_nil;
+        l.values[2] = lisp_nil;
         l.clear();
         result->release();
         throw err;
     }
 
-    l.values[1] = lisp_nil;
+    l.values[2] = lisp_nil;
     l.clear();
     return result;
 }
@@ -955,7 +895,7 @@ lisp_element *lisp_list::filtercar(lisp_mini *lisp, lisp_element *op)
 {
     lisp_list *result = new lisp_list();
     lisp_list l(s_constant);
-    lisp_element* r;
+    lisp_element *r;
 
     l.append(op);
     l.append(lisp_nil);
@@ -993,7 +933,7 @@ lisp_element *lisp_string::filtercar(lisp_mini *lisp, lisp_element *op)
     l.append(op);
     l.append(v);
 
-    lisp_element* r;
+    lisp_element *r;
     lisp_list *result = new lisp_list();
     long pos = 0;
     long sz = value.size();
@@ -1023,18 +963,21 @@ lisp_element *lisp_string::filtercar(lisp_mini *lisp, lisp_element *op)
 
 lisp_element *lisp_map::filtercar(lisp_mini *lisp, lisp_element *op)
 {
-    lisp_element* r;
+    lisp_element *r;
     lisp_list *result = new lisp_list();
     lisp_list l(s_constant);
+    lisp_string* v = new lisp_string("");
     l.append(op);
+    l.append(v);
     l.append(lisp_nil);
 
     try
     {
         for (const auto &a : values)
         {
+            v->value = a.first;
             a.second->mark();
-            l.values[1] = a.second;
+            l.values[2] = a.second;
             r = l.eval(lisp);
             if (r->boolean())
                 result->append(a.second);
@@ -1043,13 +986,13 @@ lisp_element *lisp_map::filtercar(lisp_mini *lisp, lisp_element *op)
     }
     catch (lisp_error *err)
     {
-        l.values[1] = lisp_nil;
+        l.values[2] = lisp_nil;
         l.clear();
         result->release();
         throw err;
     }
 
-    l.values[1] = lisp_nil;
+    l.values[2] = lisp_nil;
     l.clear();
     return result;
 }
@@ -1243,631 +1186,6 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, 
     }
 }
 //-------------------------------------------------------------------------------------
-lisp_element *lisp_list::eval(lisp_mini *lisp)
-{
-    lisp->check_stop();
-    long sz = values.size();
-    if (!sz)
-        return this;
-
-    lisp_element *e = values[0];
-    lisp_element *r = lisp_nil;
-
-    try
-    {
-        switch (e->code)
-        {
-        case l_push:
-        {
-            if (sz < 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            if (!e->is_list())
-                throw new lisp_error(this, lisperror->message);
-            r = values[2]->eval(lisp);
-            e = e->append(r);
-            return e;
-        }
-        case l_pop:
-        {
-            if (sz < 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            if (sz == 2)
-                e->pop(lisp_nil);
-            else
-            {
-                r = values[2]->eval(lisp);
-                e->pop(r);
-                r->release();
-            }
-
-            return e;
-        }
-        case l_sub:
-        {
-            if (sz < 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            double beg = r->doublevalue();
-            r = r->release();
-            double end = 0;
-            if (sz == 4)
-            {
-                r = values[3]->eval(lisp);
-                end = r->doublevalue();
-                r = r->release();
-            }
-            r = e->sub(beg, end);
-            e->release();
-            return r;
-        }
-        case l_plus:
-        {
-            if (sz < 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp)->clone(false);
-            for (long i = 2; i < sz; i++)
-            {
-                r = values[i]->eval(lisp);
-                e->plus(r);
-                r = r->release();
-            }
-            return e;
-        }
-        case l_minus:
-        {
-            if (sz < 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp)->clone(false);
-            for (long i = 2; i < sz; i++)
-            {
-                r = values[i]->eval(lisp);
-                e->minus(r);
-                r = r->release();
-            }
-            return e;
-        }
-        case l_multiply:
-        {
-            if (sz < 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp)->clone(false);
-            for (long i = 2; i < sz; i++)
-            {
-                r = values[i]->eval(lisp);
-                e->multiply(r);
-                r = r->release();
-            }
-            return e;
-        }
-        case l_divide:
-        {
-            if (sz < 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp)->clone(false);
-            for (long i = 2; i < sz; i++)
-            {
-                r = values[i]->eval(lisp);
-                e->divide(r);
-                r = r->release();
-            }
-            return e;
-        }
-        case l_mod:
-        {
-            if (sz < 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp)->clone(false);
-            for (long i = 2; i < sz; i++)
-            {
-                r = values[i]->eval(lisp);
-                e->mod(r);
-                r = r->release();
-            }
-            return e;
-        }
-        case l_size:
-            if (sz < 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = new lisp_float(e->size());
-            e->release();
-            return r;
-        case l_car:
-            if (sz < 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = e->car();
-            r->mark();
-            e->release();
-            r->demark();
-            return r;
-        case l_cdr:
-            if (sz < 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = e->cdr();
-            r->mark();
-            e->release();
-            r->demark();
-            return r;
-        case l_cons:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            if (!r->is_list())
-            {
-                lisp_list *l = new lisp_list();
-                l->append(e);
-                l->append(r);
-                return l;
-            }
-            r->push_first(e);
-            return r;
-        }
-        case l_join: { //(join lst sep)
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element* res = e->join(r);
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_apply:
-        { //(apply 'operator list)
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            if (!e->is_atom())
-                throw new lisp_error(this, "Error: first element shoud be an atom");
-            r = values[2]->eval(lisp);
-            if (!r->is_list())
-                throw new lisp_error(this, "Error: second element shoud be a list");
-            e = r->cons_apply(e);
-            r = r->release();
-            r = e->eval(lisp);
-            e->release();
-            return r;
-        }
-        case l_mapcar:
-        { //(mapcar 'operator list)
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            e = r->mapcar(lisp, e);
-            r->release();
-            return e;
-        }
-        case l_filtercar:
-        { //(filter 'operator list)
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            e = r->filtercar(lisp, e);
-            r->release();
-            return e;
-        }
-        case l_type:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double d = e->code;
-            e->release();
-            return new lisp_float(d);
-        }
-        case l_consp:
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = (e->is_list() ? lisp_true : lisp_nil);
-            e->release();
-            return r;
-        case l_zerop:
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = (e->doublevalue() == 0 ? lisp_true : lisp_nil);
-            e->release();
-            return r;
-        case l_nullp:
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = (e == lisp_nil ? lisp_true : lisp_nil);
-            e->release();
-            return r;
-        case l_stringp:
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = (e->code == v_string ? lisp_true : lisp_nil);
-            e->release();
-            return r;
-        case l_numberp:
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = (e->is_number() ? lisp_true : lisp_nil);
-            e->release();
-            return r;
-        case l_float:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            if (e->is_number())
-                return e;
-            string v;
-            long lg_value = 0;
-            e->stringvalue(v);
-            double d = convertingfloathexa(STR(v), lg_value);
-            e->release();
-            return new lisp_float(d);
-        }
-        case l_integer:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            if (e->is_number())
-                return e;
-            string v;
-            long lg_value = 0;
-            e->stringvalue(v);
-            long d = convertinginteger(v);
-            e->release();
-            return new lisp_integer(d);
-        }
-        case l_string:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            if (e->code == v_string)
-                return e;
-            string v;
-            e->stringvalue(v);
-            e->release();
-            return new lisp_string(v);
-        }
-        case l_print:
-        {
-            stringstream os;
-            for (long i = 1; i < sz; i++)
-            {
-                e = values[i]->eval(lisp);
-                e->asstring(os);
-                e = e->release();
-            }
-            cerr << os.str() << endl;
-            return lisp_emptystring;
-        }
-        case l_block:
-        {
-            for (long i = 1; i < sz; i++)
-            {
-                r = r->release();
-                r = values[i]->eval(lisp);
-            }
-            return r;
-        }
-        case l_replace: {//(replace s a v) replace a in s with v
-            if (sz != 4)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element* w = values[3]->eval(lisp);
-            lisp_element* res = e->replace(r, w);
-            e->release();
-            r->release();
-            w->release();
-            return res;
-        }
-        case l_split:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *s = e->split(r);
-            r->release();
-            e->release();
-            return s;
-        }
-        case l_at:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *v = e->at_position(r);
-            r->release();
-            v->protect();
-            e->release();
-            v->unprotect();
-            return v;
-        }
-        case l_list:
-        {
-            r = new lisp_list();
-            for (long i = 1; i < sz; i++)
-            {
-                e = values[i]->eval(lisp)->clone(false);
-                r->append(e);
-            }
-            return r;
-        }
-        case l_map:
-        { //(map (key value) (key value) ..)
-            e = new lisp_map();
-            string k;
-            for (long i = 1; i < sz; i++)
-            {
-                if (values[i]->code != v_list || values[i]->size() != 2)
-                    throw new lisp_error(this, lispargnbserror->message);
-                r = values[i]->at(0)->eval(lisp);
-                k = "";
-                r->stringvalue(k);
-                r = r->release();
-                r = values[i]->at(1)->eval(lisp)->clone(false);
-                e->append(k, r);
-                r = r->release();
-            }
-            return e;
-        }
-        case l_key:
-        { //(key map key value)
-            if (sz != 4)
-                throw new lisp_error(this, lispargnbserror->message);
-
-            e = values[1]->eval(lisp);
-            if (!e->is_map())
-                throw new lisp_error(this, "Expecting a map");
-            r = values[2]->eval(lisp);
-            string k;
-            r->stringvalue(k);
-            r = r->release();
-            lisp_element *v = values[3]->eval(lisp);
-            e->append(k, v);
-            v->release();
-            return e;
-        }
-        case l_loop: // (loop a lst code)
-        {
-            if (sz < 4)
-                throw new lisp_error(this, lispargnbserror->message);
-
-            e = values[2]->eval(lisp);
-            r = e->loop(lisp, this, values[1]);
-            e->release();
-            return r;
-        }
-        case l_while: //(while condition code)
-        {
-            lisp_element *cond = values[1]->eval(lisp);
-            while (cond->boolean())
-            {
-                cond->release();
-                for (long i = 2; i < sz && r != lisp_break; i++)
-                {
-                    r = r->release();
-                    r = values[i]->eval(lisp);
-                }
-                if (r == lisp_break)
-                    break;
-                cond = values[1]->eval(lisp);
-            }
-            cond->release();
-            return r;
-        }
-        case l_if:
-        {
-            if (sz != 3 && sz != 4)
-                throw new lisp_error(this, lispargnbserror->message);
-
-            e = values[1]->eval(lisp);
-            if (e->boolean())
-            {
-                e = e->release();
-                if (sz < 3)
-                    throw new lisp_error(this, lispargnbserror->message);
-                return values[2]->eval(lisp);
-            }
-            else
-            {
-                e = e->release();
-                if (sz != 4)
-                    throw new lisp_error(this, lispargnbserror->message);
-                return values[3]->eval(lisp);
-            }
-        }
-        case l_not:
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = e->boolean() ? lisp_nil : lisp_true;
-            e->release();
-            return r;
-        case l_equal:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->equal(r) ? lisp_true : lisp_nil;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_different:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->equal(r) ? lisp_nil : lisp_true;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_eq:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->eq(r) ? lisp_true : lisp_nil;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_neq:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->neq(r) ? lisp_true : lisp_nil;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_inf:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->inf(r) ? lisp_true : lisp_nil;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_infeq:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->infeq(r) ? lisp_true : lisp_nil;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_sup:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->sup(r) ? lisp_true : lisp_nil;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_supeq:
-        {
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = values[2]->eval(lisp);
-            lisp_element *res = e->supeq(r) ? lisp_true : lisp_nil;
-            e->release();
-            r->release();
-            return res;
-        }
-        case l_cond:
-        {
-            for (long i = 1; i < sz; i++)
-            {
-                e = values[i];
-                if (e->is_list() && e->size() == 2)
-                {
-                    r = e->at(0)->eval(lisp);
-                    bool b = r->boolean();
-                    r = r->release();
-                    if (b)
-                        return e->at(1)->eval(lisp);
-                }
-            }
-            return lisp_nil;
-        }
-        case l_command:
-            if (sz < 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            r = e->command();
-            e->release();
-            return r;
-        case l_setq:
-            if (sz != 3)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1];
-            if (!e->is_atom())
-                throw new lisp_error(this, lispunknownatom->message);
-            r = values[2]->eval(lisp);
-            lisp->insert(e->code, r);
-            return r;
-        case l_quote:
-            return values[1]->clone(true);
-        case l_eval:
-        {
-            if (sz < 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            if (e->code == v_string)
-            {
-                // We need to compile it...
-                r = lisp->run(((lisp_string *)e)->value);
-                e->release();
-                return r;
-            }
-            // this is a list
-            r = e->eval(lisp);
-            e->release();
-            return r;
-        }
-        case l_defun:
-            // We record a function name
-            if (sz < 4)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1];
-            if (!e->is_atom())
-                return lispunknownatom->eval(lisp);
-            lisp->insert(e->code, this);
-            return e;
-        case v_list:
-        {
-            // in this case, it might be a lambda function
-            // It is a list of lists
-            return execute_lambda(lisp, e);
-        }
-        default:
-            // it could be a function name
-            if (lisp->variables.back().find(e->code) != lisp->variables.back().end())
-            {
-                return execute_function(lisp, lisp->variables.back()[e->code]);
-            }
-            throw new lisp_error(this, lispunknownmethod->message);
-        }
-    }
-    catch (lisp_error *err)
-    {
-        e->release();
-        if (r != e)
-            r->release();
-        throw err;
-    }
-}
 
 lisp_element *lisp_list::car()
 {
@@ -2011,7 +1329,7 @@ lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *functio
 lisp_element *lisp_mini::run(string code)
 {
     infos.clear();
-    error_tokenize e = code_segmenting(code, infos);
+    error_tokenize e = code_segmenting(code, infos, &special_characters);
     if (e != e_no_error)
         return lisptokenizeerror->eval(this);
 
@@ -2048,7 +1366,7 @@ string execute_some_lisp(lisp_mini *lisp, string &code)
         return "Error: lisp not initialized";
 
     lisp->infos.clear();
-    error_tokenize e = code_segmenting(code, lisp->infos);
+    error_tokenize e = code_segmenting(code, lisp->infos, &special_characters);
     std::stringstream os;
 
     if (e != e_no_error)
