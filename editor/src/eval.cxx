@@ -357,7 +357,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             for (long i = 1; i < sz; i++)
             {
                 e = values[i]->eval(lisp);
-                e->asstring(os);
+                e->string_to_os(os);
                 e = e->release();
             }
             cerr << os.str() << endl;

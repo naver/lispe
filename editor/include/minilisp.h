@@ -301,7 +301,7 @@ public:
         v += string_dictionary[code];
     }
 
-    virtual void asstring(std::stringstream &os)
+    virtual void string_to_os(std::stringstream &os)
     {
         os << string_dictionary[code];
     }
@@ -385,7 +385,7 @@ public:
         v += message;
     }
 
-    void asstring(std::stringstream &os)
+    void string_to_os(std::stringstream &os)
     {
         os << message;
     }
@@ -411,7 +411,7 @@ public:
             v += "false";
     }
 
-    void asstring(std::stringstream &os)
+    void string_to_os(std::stringstream &os)
     {
         if (value)
             os << "true";
@@ -553,7 +553,7 @@ public:
         v += os.str();
     }
 
-    void asstring(std::stringstream &os)
+    void string_to_os(std::stringstream &os)
     {
         os << value;
     }
@@ -678,7 +678,7 @@ public:
         v += os.str();
     }
 
-    void asstring(std::stringstream &os)
+    void string_to_os(std::stringstream &os)
     {
         os << value;
     }
@@ -732,6 +732,18 @@ public:
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
     lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
 
+    void stringvalue(string &v)
+    {
+        stringstream os;
+        os << "(range " << init << " " << limit << " " << inc << ")";
+        v += os.str();
+    }
+
+    void string_to_os(std::stringstream &os)
+    {
+        os << "(range " << init << " " << limit << " " << inc << ")";
+    }
+
 };
 
 class lisp_double_range : public lisp_element {
@@ -750,6 +762,18 @@ public:
     lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
     lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
     lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
+
+    void stringvalue(string &v)
+    {
+        stringstream os;
+        os << "(range " << init << " " << limit << " " << inc << ")";
+        v += os.str();
+    }
+
+    void string_to_os(std::stringstream &os)
+    {
+        os << "(range " << init << " " << limit << " " << inc << ")";
+    }
 
 };
 
@@ -876,7 +900,7 @@ public:
         v += ")";
     }
 
-    virtual void asstring(std::stringstream &os)
+    virtual void string_to_os(std::stringstream &os)
     {
         os << "(";
         bool first = true;
@@ -885,7 +909,7 @@ public:
             if (!first)
                 os << " ";
             first = false;
-            a->asstring(os);
+            a->string_to_os(os);
         }
         os << ")";
     }
@@ -993,7 +1017,7 @@ public:
         v += "()";
     }
 
-    void asstring(std::stringstream &os)
+    void string_to_os(std::stringstream &os)
     {
         os << "()";
     }
@@ -1091,7 +1115,7 @@ public:
         v += "}";
     }
 
-    virtual void asstring(std::stringstream &os)
+    virtual void string_to_os(std::stringstream &os)
     {
         os << "{";
         bool first = true;
@@ -1101,7 +1125,7 @@ public:
                 os << " ";
             first = false;
             os << a.first << ":";
-            a.second->asstring(os);
+            a.second->string_to_os(os);
         }
         os << "}";
     }
@@ -1216,7 +1240,7 @@ public:
         v += value;
     }
 
-    void asstring(std::stringstream &os)
+    void string_to_os(std::stringstream &os)
     {
         os << value;
     }
@@ -1284,7 +1308,7 @@ public:
         v += value;
     }
 
-    void asstring(std::stringstream &os)
+    void string_to_os(std::stringstream &os)
     {
         os << value;
     }

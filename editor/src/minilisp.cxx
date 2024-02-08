@@ -1668,7 +1668,7 @@ string execute_some_lisp(lisp_mini *lisp, string &code)
 
     if (e != e_no_error)
     {
-        lisptokenizeerror->asstring(os);
+        lisptokenizeerror->string_to_os(os);
         os << ":" << e;
         return os.str();
     }
@@ -1682,12 +1682,12 @@ string execute_some_lisp(lisp_mini *lisp, string &code)
     {
         lisp->stop_execution = false;
         res = program->eval(lisp);
-        res->asstring(os);
+        res->string_to_os(os);
         res->release();
     }
     catch (lisp_error *l)
     {
-        l->asstring(os);
+        l->string_to_os(os);
         l->release();
     }
 
