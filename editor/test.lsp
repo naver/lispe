@@ -50,4 +50,5 @@
 (print (mapcar '(lambda (x) (+ x 20)) '(1 2 3 4 5)))
 
 (print (mapcar 'chr (range 97 120 1)))
+(print _args _current)
 

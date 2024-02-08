@@ -44,8 +44,11 @@ class minilisp_editor : public interpreter_editor {
 
     //Initialisation of your interpreter
     void init_interpreter(bool reinitialize, string filename) {
-        if (lisp == NULL)
+        if (lisp == NULL) {
             lisp = create_mini_lisp_instance();
+            if (thecurrentfilename == "")
+                thecurrentfilename = filename;
+        }
         else {
             if (reinitialize) {
                 delete lisp;
@@ -349,6 +352,10 @@ int main(int argc, char *argv[]) {
     
     if (file_name != "") {
         //Execute your file here
+        minilisp_editor editor;
+        editor.arguments = arguments;
+        editor.init_interpreter(true, file_name);
+        editor.run_code();    
         return 0;
     }
     
