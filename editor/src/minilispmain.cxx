@@ -18,8 +18,6 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 #endif
 
 //-------------------------------------------------------------------------------------------
-string execute_some_lisp(lisp_mini* lisp, string& code, string& filename, vector<string>& args);
-//-------------------------------------------------------------------------------------------
 extern UTF8_Handler special_characters;
 //-------------------------------------------------------------------------------------------
 //Change the class name minilisp_editor to what you fancy most...
@@ -131,14 +129,10 @@ class minilisp_editor : public interpreter_editor {
             cout << m_current;
             return false;
         }
-
-        string codes = "(block\n";
-        codes += readfile();
-        codes += "\n)\n\n";
         
         executing_code = true;
         cout << m_red;
-        cout << execute_some_lisp(lisp, codes, thecurrentfilename, arguments) << endl;
+        cout << lisp->execute_file(thecurrentfilename, arguments) << endl;
         cout << m_current;
         executing_code = false;
         return true;
@@ -161,7 +155,7 @@ class minilisp_editor : public interpreter_editor {
 
         executing_code = true;
         cout << m_red;
-        cout << execute_some_lisp(lisp, cmd, thecurrentfilename, arguments) << endl;
+        cout << lisp->execute_some_code(cmd) << endl;
         cout << m_current;
         executing_code = false;
         return true;
@@ -352,10 +346,10 @@ int main(int argc, char *argv[]) {
     
     if (file_name != "") {
         //Execute your file here
-        minilisp_editor editor;
-        editor.arguments = arguments;
-        editor.init_interpreter(true, file_name);
-        editor.run_code();    
+        lisp_mini lisp;
+        cout << m_red;
+        cout << lisp.execute_file(file_name, arguments) << endl;
+        cout << m_current;
         return 0;
     }
     

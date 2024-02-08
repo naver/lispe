@@ -1333,6 +1333,18 @@ uint16_t get_code(string &w)
         c = code_dictionary[w];
     return c;
 }
+
+string get_label(uint16_t c)
+{
+
+    if (string_dictionary.find(c) != string_dictionary.end()) {
+        if (c < l_final)
+            return string_dictionary[c];
+        return "atom_";
+    }
+    return "unknown!!!";
+}
+
 //------------------------------------------------------------------------
 lisp_mini::lisp_mini()
 {
@@ -1571,42 +1583,42 @@ void lisp_mini::set_file_name(string &spath)
     current_directory = spath;
 }
 
-void lisp_mini::write_file(lisp_element *e, lisp_element* txt)
+void lisp_mini::write_file(lisp_element *e, lisp_element *txt)
 {
-    string path;    
+    string path;
     e->stringvalue(path);
 
-   std::ofstream f(path, std::ios::out | std::ios::binary);
-   if (f.fail())
+    std::ofstream f(path, std::ios::out | std::ios::binary);
+    if (f.fail())
         throw new lisp_error(e, "Error: writing");
     path = "";
     txt->stringvalue(path);
 
-    f<< txt;
+    f << txt;
     f.close();
 }
 
-void lisp_mini::append_file(lisp_element *e, lisp_element* txt)
+void lisp_mini::append_file(lisp_element *e, lisp_element *txt)
 {
-    string path;    
+    string path;
     e->stringvalue(path);
 
-   std::ofstream f(path, std::ios::app | std::ios::binary);
-   if (f.fail())
+    std::ofstream f(path, std::ios::app | std::ios::binary);
+    if (f.fail())
         throw new lisp_error(e, "Error: appending");
     path = "";
     txt->stringvalue(path);
 
-    f<< txt;
+    f << txt;
     f.close();
 }
 
 string lisp_mini::read_file(lisp_element *e)
 {
-    string path;    
+    string path;
     e->stringvalue(path);
 
-   std::ifstream f(path, std::ios::in | std::ios::binary);
+    std::ifstream f(path, std::ios::in | std::ios::binary);
     if (f.fail())
         throw new lisp_error(e, "Error: loading");
 
@@ -1623,7 +1635,7 @@ string lisp_mini::read_file(lisp_element *e)
 
 lisp_element *lisp_mini::load_program(lisp_element *program, lisp_element *path, vector<lisp_element *> &storage)
 {
-    lisp_element* e = path->eval(this);
+    lisp_element *e = path->eval(this);
     string codes = read_file(path);
     e->release();
     Segmentingtype infos;
@@ -1638,13 +1650,10 @@ lisp_element *lisp_mini::load_program(lisp_element *program, lisp_element *path,
     return program;
 }
 
-string execute_some_lisp(lisp_mini *lisp, string &code, string &filename, vector<string>& args)
+string lisp_mini::execute_some_code(string &code)
 {
-    if (lisp == NULL)
-        return "Error: lisp not initialized";
-
-    lisp->infos.clear();
-    error_tokenize e = code_segmenting(code, lisp->infos, &special_characters);
+    infos.clear();
+    error_tokenize e = code_segmenting(code, infos, &special_characters);
     std::stringstream os;
 
     if (e != e_no_error)
@@ -1654,33 +1663,16 @@ string execute_some_lisp(lisp_mini *lisp, string &code, string &filename, vector
         return os.str();
     }
 
-    // We create the _current variable that points to the file directory
-    lisp->set_file_name(filename);
     vector<lisp_element *> storage;
-
-    string name = "_current";
-    uint16_t c = get_code(name);
-    lisp->get_atom(c);
-    lisp->store_atom(c, new lisp_string(storage, lisp->current_directory));
-
-    name = "_args";
-    c = get_code(name);
-    lisp->get_atom(c);
-    lisp_list *program = new lisp_list(storage);
-    for (long i = 0; i < args.size(); i++) {
-        program->append(new lisp_string(storage, args[i]));
-    }
-    lisp->store_atom(c, program);
-
-    program = new lisp_list(storage);
+    lisp_list* program = new lisp_list(storage);
     long pos = 0;
-    lisp->compile(program, storage, pos, first_action);
+    compile(program, storage, pos, first_action);
 
     lisp_element *res = lisp_nil;
     try
     {
-        lisp->stop_execution = false;
-        res = program->eval(lisp);
+        stop_execution = false;
+        res = program->eval(this);
         res->string_to_os(os);
         res->release();
     }
@@ -1690,7 +1682,83 @@ string execute_some_lisp(lisp_mini *lisp, string &code, string &filename, vector
         l->release();
     }
 
-    lisp->clean(storage);
+    clean(storage);
+
+#ifdef DEBUGGER
+    cerr << "GB:" << garbages.size() << endl;
+#endif
+    return os.str();
+}
+
+string lisp_mini::execute_file(string &path, vector<string> &args)
+{
+
+    std::stringstream os;
+    std::ifstream f(path, std::ios::in | std::ios::binary);
+    if (f.fail())
+    {
+        os << "error loading file: " << path;
+        return os.str();
+    }
+
+    string line;
+    string code = "(block ";
+    while (!f.eof())
+    {
+        getline(f, line);
+        code += line + "\n";
+    }
+
+    code += ")";
+
+    infos.clear();
+    error_tokenize e = code_segmenting(code, infos, &special_characters);
+
+    if (e != e_no_error)
+    {
+        lisptokenizeerror->string_to_os(os);
+        os << ":" << e;
+        return os.str();
+    }
+
+    // We create the _current variable that points to the file directory
+    set_file_name(path);
+    vector<lisp_element *> storage;
+
+    string name = "_current";
+    uint16_t c = get_code(name);
+    get_atom(c);
+    store_atom(c, new lisp_string(storage, current_directory));
+
+    name = "_args";
+    c = get_code(name);
+    get_atom(c);
+    lisp_list *program = new lisp_list(storage);
+    for (long i = 0; i < args.size(); i++)
+    {
+        program->append(new lisp_string(storage, args[i]));
+    }
+    store_atom(c, program);
+
+    program = new lisp_list(storage);
+    long pos = 0;
+    compile(program, storage, pos, first_action);
+
+    lisp_element *res = lisp_nil;
+    try
+    {
+        stop_execution = false;
+        res = program->eval(this);
+        res->string_to_os(os);
+        res->release();
+    }
+    catch (lisp_error *l)
+    {
+        l->string_to_os(os);
+        l->release();
+    }
+
+    clean(storage);
 
 #ifdef DEBUGGER
     cerr << "GB:" << garbages.size() << endl;

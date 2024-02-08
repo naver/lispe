@@ -1,5 +1,7 @@
 #include "minilisp.h"
 
+string get_label(uint16_t);
+
 lisp_element *lisp_list::eval(lisp_mini *lisp)
 {
     lisp->check_stop();
@@ -272,9 +274,9 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
-            double d = e->code;
+            long d = e->code;
             e->release();
-            return new lisp_float(d);
+            return new lisp_string(get_label(d));
         }
         case l_consp:
             if (sz != 2)
