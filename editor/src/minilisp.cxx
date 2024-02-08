@@ -112,7 +112,7 @@ static void initialisation_static_values()
     }
 }
 //-------------------------------------------------------------------------------------
-lisp_element *lisp_element::methodBase(lisp_mini* lisp, lisp_element* v_base, bool toconvert)
+lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bool toconvert)
 {
     static vector<string> caracs;
     static std::unordered_map<unsigned char, long> mcaracs;
@@ -474,87 +474,117 @@ lisp_element *lisp_string::cdr()
 }
 
 //--------------------------------------------------------------------------------
-//------------------------------------------------------------------------------------------
-lisp_element* long_range(lisp_mini* lisp, long init, long limit, long inc) {
+lisp_element *long_range(lisp_mini *lisp, long init, long limit, long inc)
+{
     long d = (limit - init) / inc;
-    if (d<0)
+    if (d < 0)
         d *= -1;
-    
+
     if (init > limit && inc > 0)
         inc *= -1;
-    
-    if (d <= 100000) {
+
+    if (d <= 100000)
+    {
         if (inc == 0)
             return lisp_nil;
-        
-        //Integers ?
-        lisp_list* range_list = new lisp_list();
+
+        // Integers ?
+        lisp_list *range_list = new lisp_list();
         range_list->values.reserve((long)d);
-        if (inc > 0) {
-            for (long i = init; i < limit; i += inc) {
-                range_list->values.push_back(new lisp_integer(i));
+        if (inc > 0)
+        {
+            for (long i = init; i < limit; i += inc)
+            {
+                range_list->append(new lisp_integer(i));
             }
         }
-        else {
-            for (long i = init; i > limit; i += inc)
-                range_list->values.push_back(new lisp_integer(i));
-        }
-        return range_list;
-    }
-    throw new lisp_error(lisp_nil, "Error: Exceeding range");
-}
-
-lisp_element* double_range(lisp_mini* lisp, double init, double limit, double inc) {
-    double d = (limit - init) / inc;
-    if (d<0)
-        d *= -1;
-    
-    if (init > limit && inc > 0)
-        inc *= -1;
-    
-    if (d <= 100000) {
-        if (inc == 0)
-            return lisp_nil;
-        
-        lisp_list* range_list = new lisp_list();
-        range_list->values.reserve((long)d);
-        if (inc > 0) {
-            for (double i = init; i < limit; i += inc) {
-                range_list->values.push_back(new lisp_float(i));
-            }
-        }
-        else {
-            for (double i = init; i > limit; i += inc)
-                range_list->values.push_back(new lisp_float(i));
-        }
-        return range_list;
-    }
-    throw new lisp_error(lisp_nil, "Error: Exceeding range");
-}
-
-lisp_element* lisp_list::range(lisp_mini* lisp) {
-    
-    lisp_element* e1 = values[1]->eval(lisp);
-    lisp_element* e2 = values[2]->eval(lisp);
-    lisp_element* e3 = values[3]->eval(lisp);
-    lisp_element* e;
-    
-    try {
-        if (e1->is_integer() && e2->is_integer() && e3->is_integer())
-            e = long_range(lisp, e1->longvalue(), e2->longvalue(), e3->longvalue());
         else
-            e = double_range(lisp, e1->doublevalue(), e2->doublevalue(), e3->doublevalue());
+        {
+            for (long i = init; i > limit; i += inc)
+                range_list->append(new lisp_integer(i));
+        }
+        return range_list;
     }
-    catch(lisp_error* err) {
+    throw new lisp_error(lisp_nil, "Error: Exceeding range");
+}
+
+lisp_element *double_range(lisp_mini *lisp, double init, double limit, double inc)
+{
+    double d = (limit - init) / inc;
+    if (d < 0)
+        d *= -1;
+
+    if (init > limit && inc > 0)
+        inc *= -1;
+
+    if (d <= 100000)
+    {
+        if (inc == 0)
+            return lisp_nil;
+
+        lisp_list *range_list = new lisp_list();
+        range_list->values.reserve((long)d);
+        if (inc > 0)
+        {
+            for (double i = init; i < limit; i += inc)
+            {
+                range_list->append(new lisp_float(i));
+            }
+        }
+        else
+        {
+            for (double i = init; i > limit; i += inc)
+                range_list->append(new lisp_float(i));
+        }
+        return range_list;
+    }
+    throw new lisp_error(lisp_nil, "Error: Exceeding range");
+}
+
+lisp_element *lisp_list::range(lisp_mini *lisp)
+{
+
+    lisp_element *e1 = values[1]->eval(lisp);
+    lisp_element *e2 = values[2]->eval(lisp);
+    lisp_element *e3 = values[3]->eval(lisp);
+
+    lisp_element *e;
+
+    if (size() == 5)
+    {
+        try
+        {
+            if (e1->is_integer() && e2->is_integer() && e3->is_integer())
+                e = long_range(lisp, e1->longvalue(), e2->longvalue(), e3->longvalue());
+            else
+                e = double_range(lisp, e1->doublevalue(), e2->doublevalue(), e3->doublevalue());
+        }
+        catch (lisp_error *err)
+        {
+            e1->release();
+            e2->release();
+            e3->release();
+            throw err;
+        }
         e1->release();
         e2->release();
         e3->release();
-        throw err;
+        return e;
     }
-    e1->release();
-    e2->release();
-    e3->release();
-    return e;
+
+    if (size() == 4)
+    {
+        if (e1->is_integer() && e2->is_integer() && e3->is_integer())
+            e = new lisp_long_range(e1->longvalue(), e2->longvalue(), e3->longvalue());
+        else
+            e = new lisp_double_range(e1->doublevalue(), e2->doublevalue(), e3->doublevalue());
+        e1->release();
+        e2->release();
+        e3->release();
+        return e;
+    }
+
+    throw new lisp_error(this, lispargnbserror->message);
 }
 
 //--------------------------------------------------------------------------------
@@ -709,6 +739,98 @@ lisp_element *lisp_list::join(lisp_element *sep)
     }
     return new lisp_string(value);
 }
+//------------------------------------------------------------------------
+lisp_element *lisp_long_range::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var)
+{
+    if (!var->is_atom())
+        throw new lisp_error(var, lispunknownatom->message);
+    uint16_t variable = var->code;
+    lisp_integer *li = new lisp_integer(0);
+    lisp->insert(variable, li);
+    long sz = code->size();
+    lisp_element *r = lisp_nil;
+    if (inc > 0)
+    {
+        for (long i = init; i < limit; i += inc)
+        {
+            li->value = i;
+            for (long j = 3; j < sz && r != lisp_break; j++)
+            {
+                r = r->release();
+                r = code->values[j]->eval(lisp);
+            }
+            if (r == lisp_break)
+            {
+                r = lisp_nil;
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (long i = init; i > limit; i += inc)
+        {
+            li->value = i;
+            for (long j = 3; j < sz && r != lisp_break; j++)
+            {
+                r = r->release();
+                r = code->values[j]->eval(lisp);
+            }
+            if (r == lisp_break)
+            {
+                r = lisp_nil;
+                break;
+            }
+        }
+    }
+    return r;
+}
+
+lisp_element *lisp_double_range::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var)
+{
+    if (!var->is_atom())
+        throw new lisp_error(var, lispunknownatom->message);
+    uint16_t variable = var->code;
+    lisp_float *li = new lisp_float(0);
+    lisp->insert(variable, li);
+    long sz = code->size();
+    lisp_element *r = lisp_nil;
+    if (inc > 0)
+    {
+        for (double i = init; i < limit; i += inc)
+        {
+            li->value = i;
+            for (long j = 3; j < sz && r != lisp_break; j++)
+            {
+                r = r->release();
+                r = code->values[j]->eval(lisp);
+            }
+            if (r == lisp_break)
+            {
+                r = lisp_nil;
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (double i = init; i > limit; i += inc)
+        {
+            li->value = i;
+            for (long j = 3; j < sz && r != lisp_break; j++)
+            {
+                r = r->release();
+                r = code->values[j]->eval(lisp);
+            }
+            if (r == lisp_break)
+            {
+                r = lisp_nil;
+                break;
+            }
+        }
+    }
+    return r;
+}
 
 lisp_element *lisp_list::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var)
 {
@@ -728,7 +850,10 @@ lisp_element *lisp_list::loop(lisp_mini *lisp, lisp_list *code, lisp_element *va
             r = code->values[j]->eval(lisp);
         }
         if (r == lisp_break)
+        {
+            r = lisp_nil;
             break;
+        }
     }
     return r;
 }
@@ -758,7 +883,10 @@ lisp_element *lisp_string::loop(lisp_mini *lisp, lisp_list *code, lisp_element *
             r = code->values[j]->eval(lisp);
         }
         if (r == lisp_break)
+        {
+            r = lisp_nil;
             break;
+        }
     }
     return r;
 }
@@ -790,15 +918,93 @@ lisp_element *lisp_map::loop(lisp_mini *lisp, lisp_list *code, lisp_element *var
             r = code->values[j]->eval(lisp);
         }
         if (r == lisp_break)
+        {
+            r = lisp_nil;
             break;
+        }
     }
     return r;
+}
+
+lisp_element *lisp_long_range::mapcar(lisp_mini *lisp, lisp_element *op)
+{
+    lisp_list *result = new lisp_list();
+    lisp_list l(s_constant);
+
+    lisp_integer *li = new lisp_integer(0);
+    l.append(op);
+    l.append(li);
+
+    try
+    {
+        if (inc > 0)
+        {
+            for (long i = init; i < limit; i += inc)
+            {
+                li->value = i;
+                result->append(l.eval(lisp));
+            }
+        }
+        else
+        {
+            for (long i = init; i > limit; i += inc)
+            {
+                li->value = i;
+                result->append(l.eval(lisp));
+            }
+        }
+    }
+    catch (lisp_error *err)
+    {
+        l.clear();
+        result->release();
+        throw err;
+    }
+    l.clear();
+    return result;
+}
+
+lisp_element *lisp_double_range::mapcar(lisp_mini *lisp, lisp_element *op)
+{
+    lisp_list *result = new lisp_list();
+    lisp_list l(s_constant);
+
+    lisp_float *li = new lisp_float(0);
+    l.append(op);
+    l.append(li);
+
+    try
+    {
+        if (inc > 0)
+        {
+            for (double i = init; i < limit; i += inc)
+            {
+                li->value = i;
+                result->append(l.eval(lisp));
+            }
+        }
+        else
+        {
+            for (double i = init; i > limit; i += inc)
+            {
+                li->value = i;
+                result->append(l.eval(lisp));
+            }
+        }
+    }
+    catch (lisp_error *err)
+    {
+        l.clear();
+        result->release();
+        throw err;
+    }
+    l.clear();
+    return result;
 }
 
 lisp_element *lisp_list::mapcar(lisp_mini *lisp, lisp_element *op)
 {
     lisp_list *result = new lisp_list();
-
     lisp_list l(s_constant);
 
     l.append(op);
@@ -862,7 +1068,7 @@ lisp_element *lisp_map::mapcar(lisp_mini *lisp, lisp_element *op)
 {
     lisp_list *result = new lisp_list();
     lisp_list l(s_constant);
-    lisp_string* v = new lisp_string("");
+    lisp_string *v = new lisp_string("");
     l.append(op);
     l.append(v);
     l.append(lisp_nil);
@@ -887,6 +1093,97 @@ lisp_element *lisp_map::mapcar(lisp_mini *lisp, lisp_element *op)
     }
 
     l.values[2] = lisp_nil;
+    l.clear();
+    return result;
+}
+
+lisp_element *lisp_long_range::filtercar(lisp_mini *lisp, lisp_element *op)
+{
+    lisp_list *result = new lisp_list();
+    lisp_list l(s_constant);
+
+    lisp_integer *li = new lisp_integer(0);
+    l.append(op);
+    l.append(li);
+
+    lisp_element *r;
+    try
+    {
+        if (inc > 0)
+        {
+            for (long i = init; i < limit; i += inc)
+            {
+                li->value = i;
+                r = l.eval(lisp);
+                if (r->boolean())
+                    result->append(new lisp_integer(i));
+                r->release();
+            }
+        }
+        else
+        {
+            for (long i = init; i > limit; i += inc)
+            {
+                li->value = i;
+                r = l.eval(lisp);
+                if (r->boolean())
+                    result->append(new lisp_integer(i));
+                r->release();
+            }
+        }
+    }
+    catch (lisp_error *err)
+    {
+        l.clear();
+        result->release();
+        throw err;
+    }
+    l.clear();
+    return result;
+}
+
+lisp_element *lisp_double_range::filtercar(lisp_mini *lisp, lisp_element *op)
+{
+    lisp_list *result = new lisp_list();
+    lisp_list l(s_constant);
+
+    lisp_float *li = new lisp_float(0);
+    l.append(op);
+    l.append(li);
+
+    lisp_element *r;
+
+    try
+    {
+        if (inc > 0)
+        {
+            for (double i = init; i < limit; i += inc)
+            {
+                li->value = i;
+                r = l.eval(lisp);
+                if (r->boolean())
+                    result->append(new lisp_float(i));
+                r->release();
+            }
+        }
+        else
+        {
+            for (double i = init; i > limit; i += inc)
+            {
+                li->value = i;
+                r = l.eval(lisp);
+                if (r->boolean())
+                    result->append(new lisp_float(i));
+                r->release();
+            }
+        }
+    }
+    catch (lisp_error *err)
+    {
+        l.clear();
+        result->release();
+        throw err;
+    }
     l.clear();
     return result;
 }
@@ -966,7 +1263,7 @@ lisp_element *lisp_map::filtercar(lisp_mini *lisp, lisp_element *op)
     lisp_element *r;
     lisp_list *result = new lisp_list();
     lisp_list l(s_constant);
-    lisp_string* v = new lisp_string("");
+    lisp_string *v = new lisp_string("");
     l.append(op);
     l.append(v);
     l.append(lisp_nil);

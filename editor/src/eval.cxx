@@ -475,8 +475,10 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                     r = r->release();
                     r = values[i]->eval(lisp);
                 }
-                if (r == lisp_break)
+                if (r == lisp_break) {
+                    r = lisp_nil;
                     break;
+                }
                 cond = values[1]->eval(lisp);
             }
             cond->release();

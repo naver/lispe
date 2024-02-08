@@ -714,6 +714,46 @@ public:
     }
 };
 //-------------------------------------------------------------------------------------
+class lisp_long_range : public lisp_element {
+public:
+
+    long init, limit, inc;
+
+    lisp_long_range(long i, long l, long ic) : lisp_element(l_range) {
+        init = i;
+        limit = l;
+        inc = ic;
+
+        if (init > limit && inc > 0)
+            inc *= -1;
+    }
+
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
+    lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+    lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
+
+};
+
+class lisp_double_range : public lisp_element {
+public:
+
+    double init, limit, inc;
+
+    lisp_double_range(double i, double l, double ic) : lisp_element(l_range) {
+        init = i;
+        limit = l;
+        inc = ic;
+        if (init > limit && inc > 0)
+            inc *= -1;
+    }
+
+    lisp_element* loop(lisp_mini* lisp, lisp_list* code, lisp_element* variable);
+    lisp_element* mapcar(lisp_mini* lisp, lisp_element* oper);
+    lisp_element* filtercar(lisp_mini* lisp, lisp_element* oper);
+
+};
+
+//-------------------------------------------------------------------------------------
 class lisp_list : public lisp_element
 {
 public:
