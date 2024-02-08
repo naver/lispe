@@ -6,7 +6,7 @@ SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.c
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 SOURCEMINI = editor.cxx minilispmain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
 SOURCELISP = minimain.cxx
-SOURCELIB = tokens.cxx minilisp.cxx tools.cxx eval.cxx segment.cxx
+SOURCELIB = tokens.cxx minilisp.cxx tools.cxx eval.cxx compiling.cxx
 #------------------------------------------------------------
 OBJECTWITHLISPE = $(SOURCEWITHLISPE:%.cxx=objs/%.o)
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)

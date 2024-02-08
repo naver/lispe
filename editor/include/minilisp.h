@@ -238,6 +238,7 @@ public:
     virtual lisp_element *append(lisp_element *e);
     virtual lisp_element *append(string&, lisp_element *e);
     compile_action store(string& , lisp_element* e, compile_action a);
+    virtual void pop_raw() {}
     virtual void pop(lisp_element*);
     virtual lisp_element *push_first(lisp_element *e);
     virtual lisp_element *car();
@@ -820,6 +821,10 @@ public:
     virtual void unprotect();
 
     virtual lisp_element *release();
+    void pop_raw() {
+        values.pop_back();
+    }
+
     virtual void pop(lisp_element* e)
     {
         long sz = values.size();
@@ -1393,6 +1398,10 @@ public:
     //-------------------------------------------------------------------------------------
     bool compile(lisp_element *program, vector<lisp_element*>& storage, long &pos, compile_action first);
     lisp_element *run(string code);
+
+    bool check_atom(uint16_t c) {
+        return (variables.back().find(c) != variables.back().end());
+    }
     void insert(uint16_t c, lisp_element *l)
     {
         lisp_element *previous = variables.back()[c];
@@ -1407,16 +1416,8 @@ public:
         variables.back()[c] = l;
     }
 
-    void keep(uint16_t c, lisp_element *l)
+    void store_function(uint16_t c, lisp_element *l)
     {
-        lisp_element *previous = variables.back()[c];
-        if (previous != NULL)
-        {
-            if (previous == l)
-                return;
-            previous->unmark();
-        }
-        l->mark();
         variables.back()[c] = l;
     }
 

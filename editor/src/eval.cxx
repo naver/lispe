@@ -658,7 +658,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1];
             if (!e->is_atom())
                 return lispunknownatom->eval(lisp);
-            lisp->keep(e->code, this);
+            lisp->store_function(e->code, this);
             return e;
         case v_list:
         {
@@ -668,7 +668,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         }
         default:
             // it could be a function name
-            if (lisp->variables.back().find(e->code) != lisp->variables.back().end())
+            if (lisp->check_atom(e->code))
             {
                 return execute_function(lisp, lisp->variables.back()[e->code]);
             }

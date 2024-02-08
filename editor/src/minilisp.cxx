@@ -712,7 +712,7 @@ void lisp_map::remove()
 //--------------------------------------------------------------------------------
 lisp_element *lisp_atom::eval(lisp_mini *lisp)
 {
-    if (lisp->variables.back().find(code) != lisp->variables.back().end())
+    if (lisp->check_atom(code))
         return lisp->variables.back()[code];
 
     if (lisp->variables.size() > 1)
@@ -1363,125 +1363,6 @@ void lisp_mini::garbage_clean()
 #endif
 }
 
-//------------------------------------------------------------------------
-bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, long &pos, compile_action action)
-{
-    lisp_element *e;
-    string current_key;
-    long sz = infos.size();
-    if (action == one_action)
-        sz = pos + 1;
-
-    for (; pos < sz; pos++)
-    {
-        if (action == error_action)
-        {
-            cerr << infos.types[pos] << endl;
-            return false;
-        }
-
-        switch (infos.types[pos])
-        {
-        case jt_string:
-        {
-            if (action == map_key)
-                current_key = infos.strings[pos];
-            else
-            {
-                e = new lisp_string(storage, infos.strings[pos]);
-                action = program->store(current_key, e, action);
-            }
-            break;
-        }
-        case jt_emptystring:
-            action = program->store(current_key, lisp_emptystring, action);
-            break;
-        case jt_colon:
-            action = map_value;
-            break;
-        case jt_keyword:
-        {
-            uint16_t c = get_code(infos.strings[pos]);
-            if (c < l_final)
-                e = instructions_dictionary[c];
-            else
-                e = get_atom(c);
-            action = program->store(current_key, e, action);
-            break;
-        }
-        case jt_quote:
-        {
-            e = new lisp_list(storage);
-            e->append(instructions_dictionary[l_quote]);
-            action = program->store(current_key, e, action);
-            pos++;
-            compile(e, storage, pos, one_action);
-            pos--;
-            break;
-        }
-        case jt_quote_list:
-        {
-            e = new lisp_list(storage);
-            e->append(instructions_dictionary[l_quote]);
-            action = program->store(current_key, e, action);
-            pos++;
-            compile(e, storage, pos, parenthetic_action);
-            break;
-        }
-        case jt_number:
-            if (action == map_key)
-                current_key = infos.strings[pos];
-            else
-            {
-                if (infos.strings[pos].find(".") != -1)
-                    e = new lisp_float(storage, infos.numbers[pos]);
-                else
-                    e = new lisp_integer(storage, convertinginteger(infos.strings[pos]));
-                action = program->store(current_key, e, action);
-            }
-            break;
-        case jt_o_parenthesis:
-        {
-            if (action != first_action || program->size())
-            {
-                e = new lisp_list(storage);
-                action = program->store(current_key, e, action);
-            }
-            else
-                e = program;
-            pos++;
-            if (!compile(e, storage, pos, next_action))
-                return false;
-            if (action == parenthetic_action)
-                return true;
-            break;
-        }
-        case jt_c_parenthesis:
-            return true;
-        case jt_bracket:
-        {
-            lisp_list *l = new lisp_list(storage);
-            l->append(instructions_dictionary[l_command]);
-            l->append(new lisp_unix(storage, infos.strings[pos]));
-            action = program->store(current_key, l, action);
-            break;
-        }
-        case jt_o_brace:
-        {
-            lisp_map *m = new lisp_map(storage);
-            action = program->store(current_key, m, action);
-            pos++;
-            if (!compile(m, storage, pos, map_key))
-                return false;
-            break;
-        }
-        case jt_c_brace:
-            return true;
-        default:
-            cerr << infos.types[pos] << endl;
-        }
-    }
-}
 //-------------------------------------------------------------------------------------
 
 lisp_element *lisp_list::car()
