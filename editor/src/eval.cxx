@@ -651,6 +651,34 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             return r;
         }
+        case l_read: {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            string code = lisp->read_file(e);
+            e->release();
+            return new lisp_string(code);
+        }
+        case l_write: {
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            lisp->write_file(e, r);
+            e->release();
+            r->release();
+            return lisp_true;
+        }
+        case l_append: {
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            lisp->append_file(e, r);
+            e->release();
+            r->release();
+            return lisp_true;
+        }
         case l_defun:
             // We record a function name
             if (sz < 4)
@@ -658,7 +686,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1];
             if (!e->is_atom())
                 return lispunknownatom->eval(lisp);
-            lisp->store_function(e->code, this);
+            lisp->store_atom(e->code, this);
             return e;
         case v_list:
         {

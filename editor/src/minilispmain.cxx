@@ -18,7 +18,7 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 #endif
 
 //-------------------------------------------------------------------------------------------
-string execute_some_lisp(lisp_mini* lisp, string& code);
+string execute_some_lisp(lisp_mini* lisp, string& code, string& filename, vector<string>& args);
 //-------------------------------------------------------------------------------------------
 extern UTF8_Handler special_characters;
 //-------------------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ class minilisp_editor : public interpreter_editor {
         
         executing_code = true;
         cout << m_red;
-        cout << execute_some_lisp(lisp, codes) << endl;
+        cout << execute_some_lisp(lisp, codes, thecurrentfilename, arguments) << endl;
         cout << m_current;
         executing_code = false;
         return true;
@@ -158,7 +158,7 @@ class minilisp_editor : public interpreter_editor {
 
         executing_code = true;
         cout << m_red;
-        cout << execute_some_lisp(lisp, cmd) << endl;
+        cout << execute_some_lisp(lisp, cmd, thecurrentfilename, arguments) << endl;
         cout << m_current;
         executing_code = false;
         return true;

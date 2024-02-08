@@ -53,6 +53,10 @@ typedef enum
     l_setq,
     l_quote,
     l_print,
+    l_load,
+    l_read,
+    l_write,
+    l_append,
     l_if,
     l_cond,
     l_block,
@@ -1326,9 +1330,13 @@ public:
     std::map<uint16_t, lisp_atom*> atoms;
 
     Segmentingtype infos;
+    string current_directory;
+    string current_file_name;
     double count_data;
     bool stop_execution;
 
+
+    void set_file_name(string&);
     void garbage_clean();
 
     void stack_variables_on(std::map<uint16_t, lisp_element *> &local_vars)
@@ -1416,10 +1424,15 @@ public:
         variables.back()[c] = l;
     }
 
-    void store_function(uint16_t c, lisp_element *l)
+    void store_atom(uint16_t c, lisp_element *l)
     {
         variables.back()[c] = l;
     }
+
+    string read_file(lisp_element* e);
+    void write_file(lisp_element* e, lisp_element* txt);
+    void append_file(lisp_element* e, lisp_element* txt);
+    lisp_element* load_program(lisp_element* program, lisp_element* e, vector<lisp_element *>& storage);
 
     ~lisp_mini()
     {

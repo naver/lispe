@@ -322,9 +322,16 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, 
             
             //We store the function definition at compile time
             if (e->size() > 3 && e->at(0)->code == l_defun) {
-                store_function(e->at(1)->code, e);
+                store_atom(e->at(1)->code, e);
                 if (e != program)
                     program->pop_raw();
+            }
+
+            if (e->size() == 2 && e->at(0)->code == l_load) {
+                //We load some code locally from a file
+                if (e != program)
+                    program->pop_raw();
+                load_program(program, e->at(1), storage);
             }
             break;
         }
