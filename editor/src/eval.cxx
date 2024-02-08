@@ -269,6 +269,14 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->release();
             return e;
         }
+        case l_find: { //(find ct val)
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            lisp_element* res = e->find(r);
+            e->release();
+            r->release();
+            return res;
+        }
         case l_type:
         {
             if (sz != 2)

@@ -82,6 +82,7 @@ typedef enum
     l_sup,
     l_infeq,
     l_supeq,
+    l_find,
     l_loop,
     l_while,
     l_lambda,
@@ -188,6 +189,10 @@ public:
         {
             delete this;
         }
+    }
+
+    virtual lisp_element* find(lisp_element* v) {
+        return lisp_nil;
     }
 
     lisp_element *range(lisp_mini *lisp)
@@ -803,7 +808,141 @@ public:
         os << "(range " << init << " " << limit << " " << inc << ")";
     }
 };
+//-------------------------------------------------------------------------------------
+class lisp_string : public lisp_element
+{
+public:
+    string value;
 
+    lisp_string(uint16_t constant, string v) : value(v), lisp_element(constant, v_string) {}
+    lisp_string(vector<lisp_element *> &storage, string v) : value(v), lisp_element(storage, v_string) {}
+    lisp_string(string v) : value(v), lisp_element(v_string) {}
+    lisp_string(char v) : lisp_element(v_string)
+    {
+        value = v;
+    }
+
+    void clear()
+    {
+        value = "";
+    }
+
+    bool is_string()
+    {
+        return true;
+    }
+
+    lisp_element *clone(bool cst)
+    {
+        if (!status || (cst && s_status()))
+            return this;
+
+        return new lisp_string(value);
+    }
+
+    lisp_element* find(lisp_element* v) {
+        string val;
+        v->stringvalue(val);
+        long pos = value.find(val);
+        return new lisp_integer(pos);
+    }
+    
+    lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable);
+    lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
+    lisp_element *filtercar(lisp_mini *lisp, lisp_element *oper);
+
+    lisp_element *at_position(lisp_element *i);
+    lisp_element *at(long i);
+
+    lisp_element *sub(double b, double e);
+    lisp_element *car();
+    lisp_element *cdr();
+
+    void pop(lisp_element *e);
+    lisp_element *replace(lisp_element *a, lisp_element *v);
+
+    long size()
+    {
+        return size_c(value);
+    }
+
+    bool boolean()
+    {
+        return value.size();
+    }
+
+    lisp_element *plus(lisp_element *v)
+    {
+        string s;
+        v->stringvalue(s);
+        value += s;
+        return this;
+    }
+
+    lisp_element *split(lisp_element *splitter);
+
+    void stringvalue(string &v, bool into = false)
+    {
+        if (into)
+        {
+            v += "\"";
+            v += value;
+            v += "\"";
+        }
+        else
+            v += value;
+    }
+
+    void string_to_os(std::stringstream &os, bool into = false)
+    {
+        if (into)
+            os << "\"" << value << "\"";
+        else
+            os << value;
+    }
+
+    bool eq(lisp_element *v)
+    {
+        string w;
+        v->stringvalue(w);
+        return w == value;
+    }
+
+    bool neq(lisp_element *v)
+    {
+        string w;
+        v->stringvalue(w);
+        return w != value;
+    }
+
+    bool inf(lisp_element *v)
+    {
+        string w;
+        v->stringvalue(w);
+        return w < value;
+    }
+
+    bool sup(lisp_element *v)
+    {
+        string w;
+        v->stringvalue(w);
+        return w > value;
+    }
+
+    bool infeq(lisp_element *v)
+    {
+        string w;
+        v->stringvalue(w);
+        return w <= value;
+    }
+
+    bool supeq(lisp_element *v)
+    {
+        string w;
+        v->stringvalue(w);
+        return w >= value;
+    }
+};
 //-------------------------------------------------------------------------------------
 class lisp_list : public lisp_element
 {
@@ -832,6 +971,14 @@ public:
         for (long i = 0; i < size(); i++)
             l->append(values[i]);
         return l;
+    }
+
+    lisp_element* find(lisp_element* v) {
+        for (long i = 0; i < values.size(); i++) {
+            if (v->equal(values[i]))
+                return new lisp_integer(i);
+        }
+        return lisp_nil;
     }
 
     virtual lisp_element *append(lisp_element *e)
@@ -1106,6 +1253,14 @@ public:
     void unprotect();
     lisp_element *release();
 
+    lisp_element* find(lisp_element* v) {
+        for (const auto& a : values) {
+            if (v->equal(a.second))
+                return new lisp_string(a.first);
+        }
+        return lisp_nil;
+    }
+
     void pop(lisp_element *e)
     {
         string key;
@@ -1139,7 +1294,7 @@ public:
         return values.size();
     }
 
-    virtual lisp_element *at_position(lisp_element *k)
+    lisp_element *at_position(lisp_element *k)
     {
         string key;
         k->stringvalue(key);
@@ -1222,134 +1377,7 @@ public:
     }
 };
 
-//-------------------------------------------------------------------------------------
-class lisp_string : public lisp_element
-{
-public:
-    string value;
 
-    lisp_string(uint16_t constant, string v) : value(v), lisp_element(constant, v_string) {}
-    lisp_string(vector<lisp_element *> &storage, string v) : value(v), lisp_element(storage, v_string) {}
-    lisp_string(string v) : value(v), lisp_element(v_string) {}
-    lisp_string(char v) : lisp_element(v_string)
-    {
-        value = v;
-    }
-
-    void clear()
-    {
-        value = "";
-    }
-
-    bool is_string()
-    {
-        return true;
-    }
-
-    lisp_element *clone(bool cst)
-    {
-        if (!status || (cst && s_status()))
-            return this;
-
-        return new lisp_string(value);
-    }
-
-    lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable);
-    lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
-    lisp_element *filtercar(lisp_mini *lisp, lisp_element *oper);
-
-    lisp_element *at_position(lisp_element *i);
-    lisp_element *at(long i);
-
-    lisp_element *sub(double b, double e);
-    lisp_element *car();
-    lisp_element *cdr();
-
-    void pop(lisp_element *e);
-    lisp_element *replace(lisp_element *a, lisp_element *v);
-
-    long size()
-    {
-        return size_c(value);
-    }
-
-    bool boolean()
-    {
-        return value.size();
-    }
-
-    lisp_element *plus(lisp_element *v)
-    {
-        string s;
-        v->stringvalue(s);
-        value += s;
-        return this;
-    }
-
-    lisp_element *split(lisp_element *splitter);
-
-    void stringvalue(string &v, bool into = false)
-    {
-        if (into)
-        {
-            v += "\"";
-            v += value;
-            v += "\"";
-        }
-        else
-            v += value;
-    }
-
-    void string_to_os(std::stringstream &os, bool into = false)
-    {
-        if (into)
-            os << "\"" << value << "\"";
-        else
-            os << value;
-    }
-
-    bool eq(lisp_element *v)
-    {
-        string w;
-        v->stringvalue(w);
-        return w == value;
-    }
-
-    bool neq(lisp_element *v)
-    {
-        string w;
-        v->stringvalue(w);
-        return w != value;
-    }
-
-    bool inf(lisp_element *v)
-    {
-        string w;
-        v->stringvalue(w);
-        return w < value;
-    }
-
-    bool sup(lisp_element *v)
-    {
-        string w;
-        v->stringvalue(w);
-        return w > value;
-    }
-
-    bool infeq(lisp_element *v)
-    {
-        string w;
-        v->stringvalue(w);
-        return w <= value;
-    }
-
-    bool supeq(lisp_element *v)
-    {
-        string w;
-        v->stringvalue(w);
-        return w >= value;
-    }
-};
 //-------------------------------------------------------------------------------------
 class lisp_unix : public lisp_element
 {

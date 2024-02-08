@@ -60,6 +60,7 @@ static void initialisation_static_values()
         code_dictionary["mapcar"] = l_mapcar;
         code_dictionary["filtercar"] = l_filtercar;
         code_dictionary["key"] = l_key;
+        code_dictionary["find"] = l_find;
         code_dictionary["loop"] = l_loop;
         code_dictionary["while"] = l_while;
         code_dictionary["cond"] = l_cond;
