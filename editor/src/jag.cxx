@@ -34,7 +34,7 @@ void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 #endif
 
 //--------------------------------------------------------
-UTF8_Handler special_characters;
+extern UTF8_Handler special_characters;
 //--------------------------------------------------------
 
 

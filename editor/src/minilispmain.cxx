@@ -18,8 +18,6 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 #endif
 
 //-------------------------------------------------------------------------------------------
-extern UTF8_Handler special_characters;
-//-------------------------------------------------------------------------------------------
 //Change the class name minilisp_editor to what you fancy most...
 class minilisp_editor : public interpreter_editor {
     public:
@@ -43,14 +41,14 @@ class minilisp_editor : public interpreter_editor {
     //Initialisation of your interpreter
     void init_interpreter(bool reinitialize, string filename) {
         if (lisp == NULL) {
-            lisp = create_mini_lisp_instance();
+            lisp = new lisp_mini();
             if (thecurrentfilename == "")
                 thecurrentfilename = filename;
         }
         else {
             if (reinitialize) {
                 delete lisp;
-                lisp = create_mini_lisp_instance();
+                lisp = new lisp_mini();
             }
         }
     }
@@ -358,5 +356,4 @@ int main(int argc, char *argv[]) {
     JAGEDITOR->vt100 = vt100;
     JAGEDITOR->launchterminal(darkmode, 2, arguments, newcolors);
 }
-
 

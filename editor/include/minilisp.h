@@ -63,6 +63,7 @@ typedef enum
     l_read,
     l_write,
     l_append,
+    l_sort,
     l_if,
     l_cond,
     l_block,
@@ -137,8 +138,8 @@ extern lisp_error *lispstackerror;
 extern lisp_error *lisplambdaerror;
 extern lisp_error *lisp_end;
 
-extern std::map<std::string, uint16_t> code_dictionary;
-extern std::map<uint16_t, std::string> string_dictionary;
+extern std::map<u_ustring, uint16_t> code_dictionary;
+extern std::map<uint16_t, u_ustring> string_dictionary;
 extern std::map<uint16_t, lisp_element *> instructions_dictionary;
 
 uint16_t get_code(string &w);
@@ -201,6 +202,10 @@ public:
     }
     lisp_element *methodBase(lisp_mini *lisp, lisp_element *v_base, bool toconvert);
 
+    virtual lisp_element* sort(bool direction) {
+        return this;
+    }
+    
     virtual void clear() {}
     virtual lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable)
     {
@@ -256,7 +261,7 @@ public:
     virtual lisp_element *replace(lisp_element *a, lisp_element *v);
     virtual lisp_element *sub(double b, double e);
     virtual lisp_element *append(lisp_element *e);
-    virtual lisp_element *append(string &, lisp_element *e);
+    virtual lisp_element *append(u_ustring &, lisp_element *e);
     compile_action store(string &, lisp_element *e, compile_action a);
     virtual void pop_raw() {}
     virtual void pop(lisp_element *);
@@ -324,14 +329,16 @@ public:
         return 0;
     }
 
-    virtual void stringvalue(string &v, bool into = false)
+    virtual void stringvalue(u_ustring &v, bool into = false)
     {
         v += string_dictionary[code];
     }
 
     virtual void string_to_os(std::stringstream &os, bool into = false)
     {
-        os << string_dictionary[code];
+        string s;
+        s_unicode_to_utf8(s, string_dictionary[code]);
+        os << s;
     }
 
     virtual bool is_instruction()
@@ -393,15 +400,27 @@ public:
 class lisp_error : public lisp_element
 {
 public:
-    string message;
+    u_ustring message;
 
-    lisp_error(string m) : message(m), lisp_element(s_constant, v_error) {}
-    lisp_error(lisp_element *code, string m) : lisp_element(v_error)
+    lisp_error(u_ustring m) : message(m), lisp_element(s_constant, v_error) {}
+    lisp_error(string m) : lisp_element(s_constant, v_error) {
+        s_utf8_to_unicode(message, m, m.size());
+    }
+
+    lisp_error(lisp_element *code, u_ustring m) : lisp_element(v_error)
     {
         message = m;
-        message += " in '";
+        message += U" in '";
         code->stringvalue(message);
-        message += "'";
+        message += U"'";
+    }
+
+    lisp_error(lisp_element *code, string m) : lisp_element(v_error)
+    {
+        s_utf8_to_unicode(message, m, m.size());
+        message += U" in '";
+        code->stringvalue(message);
+        message += U"'";
     }
 
     lisp_element *eval(lisp_mini *)
@@ -409,14 +428,16 @@ public:
         throw this;
     }
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
         v += message;
     }
 
     void string_to_os(std::stringstream &os, bool into = false)
     {
-        os << message;
+        string s;
+        s_unicode_to_utf8(s, message);
+        os << s;
     }
 };
 //-------------------------------------------------------------------------------------
@@ -432,12 +453,12 @@ public:
         return value;
     }
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
         if (value)
-            v += "true";
+            v += U"true";
         else
-            v += "false";
+            v += U"nil";
     }
 
     void string_to_os(std::stringstream &os, bool into = false)
@@ -445,7 +466,7 @@ public:
         if (value)
             os << "true";
         else
-            os << "false";
+            os << "nil";
     }
 
     bool eq(lisp_element *v)
@@ -577,11 +598,9 @@ public:
         return value;
     }
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
-        std::stringstream os;
-        os << value;
-        v += os.str();
+        v += convertToUString(value);
     }
 
     void string_to_os(std::stringstream &os, bool into = false)
@@ -703,11 +722,9 @@ public:
         return value;
     }
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
-        std::stringstream os;
-        os << value;
-        v += os.str();
+        v += convertToUString(value);
     }
 
     void string_to_os(std::stringstream &os, bool into = false)
@@ -765,11 +782,13 @@ public:
     lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
     lisp_element *filtercar(lisp_mini *lisp, lisp_element *oper);
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
-        stringstream os;
-        os << "(range " << init << " " << limit << " " << inc << ")";
-        v += os.str();
+        std::wstringstream os;
+        os << L"(range " << init << L" " << limit << L" " << inc << L")";
+        wstring w = os.str();
+        for (long i = 0; i < w.size(); i++)
+            v += (u_uchar)w[i];
     }
 
     void string_to_os(std::stringstream &os, bool into = false)
@@ -796,11 +815,13 @@ public:
     lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
     lisp_element *filtercar(lisp_mini *lisp, lisp_element *oper);
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
-        stringstream os;
-        os << "(range " << init << " " << limit << " " << inc << ")";
-        v += os.str();
+        std::wstringstream os;
+        os << L"(range " << init << L" " << limit << L" " << inc << L")";
+        wstring w = os.str();
+        for (long i = 0; i < w.size(); i++)
+            v += (u_uchar)w[i];
     }
 
     void string_to_os(std::stringstream &os, bool into = false)
@@ -812,19 +833,29 @@ public:
 class lisp_string : public lisp_element
 {
 public:
-    string value;
+    u_ustring value;
 
-    lisp_string(uint16_t constant, string v) : value(v), lisp_element(constant, v_string) {}
-    lisp_string(vector<lisp_element *> &storage, string v) : value(v), lisp_element(storage, v_string) {}
-    lisp_string(string v) : value(v), lisp_element(v_string) {}
+    lisp_string(uint16_t constant, u_ustring v) : value(v), lisp_element(constant, v_string) {}
+    lisp_string(vector<lisp_element *> &storage, string v) : lisp_element(storage, v_string) {
+        s_utf8_to_unicode(value, v, v.size());
+    }
+    lisp_string(u_ustring v) : value(v), lisp_element(v_string) {}
+    lisp_string(string v) : lisp_element(v_string) {
+        s_utf8_to_unicode(value, v, v.size());
+    }
     lisp_string(char v) : lisp_element(v_string)
+    {
+        value = v;
+    }
+
+    lisp_string(u_uchar v) : lisp_element(v_string)
     {
         value = v;
     }
 
     void clear()
     {
-        value = "";
+        value = U"";
     }
 
     bool is_string()
@@ -840,12 +871,7 @@ public:
         return new lisp_string(value);
     }
 
-    lisp_element* find(lisp_element* v) {
-        string val;
-        v->stringvalue(val);
-        long pos = value.find(val);
-        return new lisp_integer(pos);
-    }
+    lisp_element* find(lisp_element* v);
     
     lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable);
     lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
@@ -863,7 +889,7 @@ public:
 
     long size()
     {
-        return size_c(value);
+        return value.size();
     }
 
     bool boolean()
@@ -873,7 +899,7 @@ public:
 
     lisp_element *plus(lisp_element *v)
     {
-        string s;
+        u_ustring s;
         v->stringvalue(s);
         value += s;
         return this;
@@ -881,13 +907,13 @@ public:
 
     lisp_element *split(lisp_element *splitter);
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
         if (into)
         {
-            v += "\"";
+            v += U"\"";
             v += value;
-            v += "\"";
+            v += U"\"";
         }
         else
             v += value;
@@ -895,50 +921,52 @@ public:
 
     void string_to_os(std::stringstream &os, bool into = false)
     {
+        string s;
+        s_unicode_to_utf8(s , value);
         if (into)
-            os << "\"" << value << "\"";
+            os << "\"" << s << "\"";
         else
-            os << value;
+            os << s;
     }
 
     bool eq(lisp_element *v)
     {
-        string w;
+        u_ustring w;
         v->stringvalue(w);
         return w == value;
     }
 
     bool neq(lisp_element *v)
     {
-        string w;
+        u_ustring w;
         v->stringvalue(w);
         return w != value;
     }
 
     bool inf(lisp_element *v)
     {
-        string w;
+        u_ustring w;
         v->stringvalue(w);
         return w < value;
     }
 
     bool sup(lisp_element *v)
     {
-        string w;
+        u_ustring w;
         v->stringvalue(w);
         return w > value;
     }
 
     bool infeq(lisp_element *v)
     {
-        string w;
+        u_ustring w;
         v->stringvalue(w);
         return w <= value;
     }
 
     bool supeq(lisp_element *v)
     {
-        string w;
+        u_ustring w;
         v->stringvalue(w);
         return w >= value;
     }
@@ -989,6 +1017,7 @@ public:
     }
 
     lisp_element *sub(double b, double e);
+    lisp_element* sort(bool direction);
     virtual void unmark();
     virtual void remove();
     virtual void protect();
@@ -1068,18 +1097,18 @@ public:
         return lisp_nil;
     }
 
-    virtual void stringvalue(string &v, bool into = false)
+    virtual void stringvalue(u_ustring &v, bool into = false)
     {
-        v += "(";
+        v += U"(";
         bool first = true;
         for (const auto &a : values)
         {
             if (!first)
-                v += " ";
+                v += U" ";
             first = false;
             a->stringvalue(v, true);
         }
-        v += ")";
+        v += U")";
     }
 
     virtual void string_to_os(std::stringstream &os, bool into = false)
@@ -1206,9 +1235,9 @@ public:
         return lisp_nil;
     }
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
-        v += "()";
+        v += U"()";
     }
 
     void string_to_os(std::stringstream &os, bool into = false)
@@ -1225,7 +1254,7 @@ public:
 class lisp_map : public lisp_element
 {
 public:
-    std::map<string, lisp_element *> values;
+    std::map<u_ustring, lisp_element *> values;
 
     lisp_map() : lisp_element(v_map) {}
     lisp_map(vector<lisp_element *> &storage) : lisp_element(storage, v_map) {}
@@ -1236,7 +1265,7 @@ public:
         return true;
     }
 
-    lisp_element *append(string &key, lisp_element *v)
+    lisp_element *append(u_ustring &key, lisp_element *v)
     {
         v->mark();
         values[key] = v;
@@ -1263,7 +1292,7 @@ public:
 
     void pop(lisp_element *e)
     {
-        string key;
+        u_ustring key;
         e->stringvalue(key);
 
         if (values.find(key) != values.end())
@@ -1296,39 +1325,44 @@ public:
 
     lisp_element *at_position(lisp_element *k)
     {
-        string key;
+        u_ustring key;
         k->stringvalue(key);
         if (values.find(key) != values.end())
             return values[key];
         return lisp_nil;
     }
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
-        v += "{";
+        v += U"{";
         bool first = true;
         for (const auto &a : values)
         {
             if (!first)
-                v += " ";
+                v += U" ";
             first = false;
             v += a.first;
-            v += ":";
+            v += U":";
             a.second->stringvalue(v, true);
         }
-        v += "}";
+        v += U"}";
     }
 
     virtual void string_to_os(std::stringstream &os, bool into = false)
     {
         os << "{";
         bool first = true;
+        string s;
+        u_ustring k;
         for (const auto &a : values)
         {
             if (!first)
                 os << " ";
             first = false;
-            os << a.first << ":";
+            s = "";
+            k = a.first;
+            s_unicode_to_utf8(s, k);
+            os << s << ":";
             a.second->string_to_os(os, true);
         }
         os << "}";
@@ -1382,25 +1416,33 @@ public:
 class lisp_unix : public lisp_element
 {
 public:
-    string value;
+    u_ustring value;
 
-    lisp_unix(vector<lisp_element *> &storage, string v) : value(v), lisp_element(storage, v_unix) {}
-    lisp_unix(uint16_t c, string v) : value(v), lisp_element(c, v_unix) {}
-    lisp_unix(string v) : value(v), lisp_element(v_unix) {}
+    lisp_unix(vector<lisp_element *> &storage, string v) : lisp_element(storage, v_unix) {
+        s_utf8_to_unicode(value, v, v.size());
+    }
+    lisp_unix(uint16_t c, string v) : lisp_element(c, v_unix) {
+        s_utf8_to_unicode(value, v, v.size());
+    }
+    lisp_unix(string v) : lisp_element(v_unix) {
+        s_utf8_to_unicode(value, v, v.size());
+    }
 
     lisp_element *command()
     {
-        string result = execute_unix_command(value);
+        string result;
+        s_unicode_to_utf8(result, value);
+        result = execute_unix_command(result);
         return new lisp_string(result);
     }
 
-    void stringvalue(string &v, bool into = false)
+    void stringvalue(u_ustring &v, bool into = false)
     {
         if (into)
         {
-            v += "\"";
+            v += U"\"";
             v += value;
-            v += "\"";
+            v += U"\"";
         }
         else
             v += value;
@@ -1408,10 +1450,12 @@ public:
 
     void string_to_os(std::stringstream &os, bool into = false)
     {
+        string s;
+        s_unicode_to_utf8(s, value);
         if (into)
-            os << "\"" << value << "\"";
+            os << "\"" << s << "\"";
         else
-            os << value;
+            os << s;
     }
 };
 //-------------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 #include "minilisp.h"
 
-string get_label(uint16_t);
+u_ustring get_label(uint16_t);
 
 lisp_element *lisp_list::eval(lisp_mini *lisp)
 {
@@ -143,7 +143,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             long pos = 0;
-            string value;
+            u_ustring value;
             e = values[1]->eval(lisp);
             e->stringvalue(value);
             e = e->release();
@@ -328,7 +328,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             if (e->is_number())
                 return e;
-            string v;
+            u_ustring v;
             long lg_value = 0;
             e->stringvalue(v);
             double d = convertingfloathexa(STR(v), lg_value);
@@ -342,7 +342,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             if (e->is_number())
                 return e;
-            string v;
+            u_ustring v;
             long lg_value = 0;
             e->stringvalue(v);
             long d = convertinginteger(v);
@@ -356,7 +356,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             if (e->code == v_string)
                 return e;
-            string v;
+            u_ustring v;
             e->stringvalue(v);
             e->release();
             return new lisp_string(v);
@@ -432,13 +432,13 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         case l_map:
         { //(map (key value) (key value) ..)
             e = new lisp_map();
-            string k;
+            u_ustring k;
             for (long i = 1; i < sz; i++)
             {
                 if (values[i]->code != v_list || values[i]->size() != 2)
                     throw new lisp_error(this, lispargnbserror->message);
                 r = values[i]->at(0)->eval(lisp);
-                k = "";
+                k = U"";
                 r->stringvalue(k);
                 r = r->release();
                 r = values[i]->at(1)->eval(lisp)->clone(false);
@@ -456,7 +456,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (!e->is_map())
                 throw new lisp_error(this, "Expecting a map");
             r = values[2]->eval(lisp);
-            string k;
+            u_ustring k;
             r->stringvalue(k);
             r = r->release();
             lisp_element *v = values[3]->eval(lisp);
@@ -652,7 +652,9 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (e->code == v_string)
             {
                 // We need to compile it...
-                r = lisp->run(((lisp_string *)e)->value);
+                string s;
+                s_unicode_to_utf8(s, ((lisp_string *)e)->value);
+                r = lisp->run(s);
                 e->release();
                 return r;
             }
@@ -660,6 +662,16 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r = e->eval(lisp);
             e->release();
             return r;
+        }
+        case l_sort: { //(sort lst true/nil)
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            
+            r = values[2]->eval(lisp);
+            bool drt = r->boolean();
+            e = values[1]->eval(lisp);
+            r->release();
+            return e->sort(drt);
         }
         case l_read: {
             if (sz != 2)

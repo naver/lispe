@@ -904,6 +904,25 @@ Exporting void c_unicode_to_utf16(wstring& w, u_uchar c) {
 }
 
 //------------------------------------------------------------------------
+wstring convertToWString(long d) {
+    wchar_t buff[20];
+    swprintf_s(buff, 20, L"%ld", d);
+    return buff;
+}
+
+u_ustring convertToUString(long d) {
+    return w_to_u(convertToWString(d));
+}
+
+wstring convertToWString(double d) {
+    wchar_t buff[20];
+    swprintf_s(buff, 20, L"%g", d);
+    return buff;
+}
+
+u_ustring convertToUString(double d) {
+    return w_to_u(convertToWString(d));
+}
 
 union bulongchar {
     uint64_t val;
@@ -1751,6 +1770,40 @@ long size_c(unsigned char* contenu, long sz) {
     }
 
     return size;
+}
+
+u_ustring s_uleft(u_ustring& s, long nb) {
+    if (nb <= 0)
+        return U"";
+    
+    long lg = s.size();
+    if (nb >= lg)
+        return s;
+    
+    return s.substr(0, nb);
+}
+
+u_ustring s_uright(u_ustring& s, long nb) {
+    if (nb <= 0)
+        return U"";
+
+    long lg = s.size();
+
+    long l = lg - nb;
+
+    if (l <= 0)
+        return s;
+    
+    return s.substr(l, lg);
+}
+
+u_ustring s_umiddle(u_ustring& s, long l, long nb) {
+    long lg = s.size();
+
+    if (l >= lg)
+        return U"";
+
+    return s.substr(l, nb);
 }
 
 long size_c(string& s) {
@@ -3871,6 +3924,21 @@ Exporting bool c_utf16_to_unicode(u_uchar& r, u_uchar code, bool second) {
     r = code;
     return false;
 }
+
+//----------------------------------------------------------------------------------------------------------------
+
+Exporting long c_bytetocharposition(unsigned char* contenu, long charpos) {
+    long i = 0;
+    long sz = 0;
+    while (i < charpos) {
+        if (!special_characters.scan_emoji(contenu, i))
+            i += c_test_utf8(contenu + i);
+        i++;
+        sz++;
+    }
+    return sz;
+}
+
 //----------------------------------------------------------------------------------------------------------------
 #ifdef WIN32
 Exporting wstring u_to_w(u_ustring u) {

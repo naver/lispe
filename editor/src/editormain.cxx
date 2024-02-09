@@ -17,7 +17,7 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 #endif
 
 //-------------------------------------------------------------------------------------------
-extern UTF8_Handler special_characters;
+UTF8_Handler special_characters;
 //-------------------------------------------------------------------------------------------
 //Change the class name my_editor to what you fancy most...
 class my_editor : public interpreter_editor {

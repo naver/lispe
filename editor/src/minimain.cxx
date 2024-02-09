@@ -1,7 +1,6 @@
 #include "minilisp.h"
 #include <unistd.h>
 
-UTF8_Handler special_characters;
 string current_directory;
 
 string execute_unix_command(string cmd)
@@ -89,9 +88,9 @@ int main(int argc, char *argv[])
                     code = "(print " + code + ")";
                 }
                 e = lisp.run(code);
-                string v;
-                e->stringvalue(v);
-                std::cout << v << std::endl;
+                stringstream v;
+                e->string_to_os(v);
+                std::cout << v.str() << std::endl;
                 code = "";
             }
             std::cout << "> ";

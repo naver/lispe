@@ -1,15 +1,16 @@
 #include "minilisp.h"
 
 // We want lists, numbers and dictionary
-extern UTF8_Handler special_characters;
 //------------------------------------------------------------------------
-static void initialisation_static_values()
+UTF8_Handler special_characters;
+//------------------------------------------------------------------------
+void initialisation_static_values()
 {
     if (lisp_nil == NULL)
     {
         lisp_nil = new lisp_list_nil();
         lisp_true = new lisp_boolean(true);
-        lisp_emptystring = new lisp_string(s_constant, "");
+        lisp_emptystring = new lisp_string(s_constant, U"");
         lisp_break = new lisp_atom(v_break);
 
         // Error messages
@@ -24,82 +25,83 @@ static void initialisation_static_values()
         lisplambdaerror = new lisp_error("Lambda error");
         lisp_end = new lisp_error("reset al");
 
-        code_dictionary["nil"] = v_nil;
-        code_dictionary["true"] = v_boolean;
-        code_dictionary["break"] = v_break;
+        code_dictionary[U"nil"] = v_nil;        
+        code_dictionary[U"true"] = v_boolean;
+        code_dictionary[U"break"] = v_break;
 
-        code_dictionary["atom_"] = v_atom;
-        code_dictionary["error_"] = v_error;
-        code_dictionary["string_"] = v_string;
-        code_dictionary["list_"] = v_list;
-        code_dictionary["float_"] = v_float;
-        code_dictionary["integer_"] = v_integer;
-        code_dictionary["unix_"] = v_unix;
+        code_dictionary[U"atom_"] = v_atom;
+        code_dictionary[U"error_"] = v_error;
+        code_dictionary[U"string_"] = v_string;
+        code_dictionary[U"list_"] = v_list;
+        code_dictionary[U"float_"] = v_float;
+        code_dictionary[U"integer_"] = v_integer;
+        code_dictionary[U"unix_"] = v_unix;
 
-        code_dictionary["lambda"] = l_lambda;
-        code_dictionary["defun"] = l_defun;
-        code_dictionary["eval"] = l_eval;
-        code_dictionary["+"] = l_plus;
-        code_dictionary["-"] = l_minus;
-        code_dictionary["*"] = l_multiply;
-        code_dictionary["/"] = l_divide;
-        code_dictionary["%"] = l_mod;
-        code_dictionary["car"] = l_car;
-        code_dictionary["cdr"] = l_cdr;
-        code_dictionary["cons"] = l_cons;
-        code_dictionary["split"] = l_split;
-        code_dictionary["load"] = l_load;
-        code_dictionary["read"] = l_read;
-        code_dictionary["write"] = l_write;
-        code_dictionary["append"] = l_append;
-        code_dictionary["replace"] = l_replace;
-        code_dictionary["print"] = l_print;
-        code_dictionary["at"] = l_at;
-        code_dictionary["list"] = l_list;
-        code_dictionary["map"] = l_map;
-        code_dictionary["mapcar"] = l_mapcar;
-        code_dictionary["filtercar"] = l_filtercar;
-        code_dictionary["key"] = l_key;
-        code_dictionary["find"] = l_find;
-        code_dictionary["loop"] = l_loop;
-        code_dictionary["while"] = l_while;
-        code_dictionary["cond"] = l_cond;
-        code_dictionary["if"] = l_if;
-        code_dictionary["not"] = l_not;
-        code_dictionary["="] = l_equal;
-        code_dictionary["!="] = l_different;
-        code_dictionary["eq"] = l_eq;
-        code_dictionary["neq"] = l_neq;
-        code_dictionary["<"] = l_inf;
-        code_dictionary[">"] = l_sup;
-        code_dictionary["<="] = l_infeq;
-        code_dictionary[">="] = l_supeq;
-        code_dictionary["setq"] = l_setq;
-        code_dictionary["'"] = l_quote;
-        code_dictionary["command"] = l_command;
-        code_dictionary["size"] = l_size;
-        code_dictionary["block"] = l_block;
-        code_dictionary["base"] = l_base;
-        code_dictionary["chr"] = l_chr;
-        code_dictionary["ord"] = l_ord;
-        code_dictionary["type"] = l_type;
-        code_dictionary["cons?"] = l_consp;
-        code_dictionary["zero?"] = l_zerop;
-        code_dictionary["null?"] = l_nullp;
-        code_dictionary["string?"] = l_stringp;
-        code_dictionary["number?"] = l_numberp;
-        code_dictionary["float"] = l_float;
-        code_dictionary["integer"] = l_integer;
-        code_dictionary["string"] = l_string;
-        code_dictionary["stats"] = l_stats;
-        code_dictionary["push"] = l_push;
-        code_dictionary["pop"] = l_pop;
-        code_dictionary["sub"] = l_sub;
-        code_dictionary["apply"] = l_apply;
-        code_dictionary["range"] = l_range;
-        code_dictionary["join"] = l_join;
+        code_dictionary[U"lambda"] = l_lambda;
+        code_dictionary[U"defun"] = l_defun;
+        code_dictionary[U"eval"] = l_eval;
+        code_dictionary[U"+"] = l_plus;
+        code_dictionary[U"-"] = l_minus;
+        code_dictionary[U"*"] = l_multiply;
+        code_dictionary[U"/"] = l_divide;
+        code_dictionary[U"%"] = l_mod;
+        code_dictionary[U"car"] = l_car;
+        code_dictionary[U"cdr"] = l_cdr;
+        code_dictionary[U"cons"] = l_cons;
+        code_dictionary[U"split"] = l_split;
+        code_dictionary[U"load"] = l_load;
+        code_dictionary[U"read"] = l_read;
+        code_dictionary[U"write"] = l_write;
+        code_dictionary[U"append"] = l_append;
+        code_dictionary[U"replace"] = l_replace;
+        code_dictionary[U"print"] = l_print;
+        code_dictionary[U"at"] = l_at;
+        code_dictionary[U"list"] = l_list;
+        code_dictionary[U"map"] = l_map;
+        code_dictionary[U"mapcar"] = l_mapcar;
+        code_dictionary[U"filtercar"] = l_filtercar;
+        code_dictionary[U"key"] = l_key;
+        code_dictionary[U"find"] = l_find;
+        code_dictionary[U"sort"] = l_sort;
+        code_dictionary[U"loop"] = l_loop;
+        code_dictionary[U"while"] = l_while;
+        code_dictionary[U"cond"] = l_cond;
+        code_dictionary[U"if"] = l_if;
+        code_dictionary[U"not"] = l_not;
+        code_dictionary[U"="] = l_equal;
+        code_dictionary[U"!="] = l_different;
+        code_dictionary[U"eq"] = l_eq;
+        code_dictionary[U"neq"] = l_neq;
+        code_dictionary[U"<"] = l_inf;
+        code_dictionary[U">"] = l_sup;
+        code_dictionary[U"<="] = l_infeq;
+        code_dictionary[U">="] = l_supeq;
+        code_dictionary[U"setq"] = l_setq;
+        code_dictionary[U"'"] = l_quote;
+        code_dictionary[U"command"] = l_command;
+        code_dictionary[U"size"] = l_size;
+        code_dictionary[U"block"] = l_block;
+        code_dictionary[U"base"] = l_base;
+        code_dictionary[U"chr"] = l_chr;
+        code_dictionary[U"ord"] = l_ord;
+        code_dictionary[U"type"] = l_type;
+        code_dictionary[U"cons?"] = l_consp;
+        code_dictionary[U"zero?"] = l_zerop;
+        code_dictionary[U"null?"] = l_nullp;
+        code_dictionary[U"string?"] = l_stringp;
+        code_dictionary[U"number?"] = l_numberp;
+        code_dictionary[U"float"] = l_float;
+        code_dictionary[U"integer"] = l_integer;
+        code_dictionary[U"string"] = l_string;
+        code_dictionary[U"stats"] = l_stats;
+        code_dictionary[U"push"] = l_push;
+        code_dictionary[U"pop"] = l_pop;
+        code_dictionary[U"sub"] = l_sub;
+        code_dictionary[U"apply"] = l_apply;
+        code_dictionary[U"range"] = l_range;
+        code_dictionary[U"join"] = l_join;
 
-        code_dictionary["€"] = l_final;
+        code_dictionary[U"€"] = l_final;
 
         for (const auto &a : code_dictionary)
         {
@@ -112,16 +114,16 @@ static void initialisation_static_values()
         instructions_dictionary[v_nil] = lisp_nil;
         instructions_dictionary[v_boolean] = lisp_true;
 
-        code_dictionary["quote"] = l_quote;
-        code_dictionary["true"] = v_boolean;
+        code_dictionary[U"quote"] = l_quote;        
+        code_dictionary[U"false"] = v_nil;
     }
 }
 //-------------------------------------------------------------------------------------
 lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bool toconvert)
 {
-    static vector<string> caracs;
-    static std::unordered_map<unsigned char, long> mcaracs;
-    string w;
+    static vector<u_ustring> caracs;
+    static std::unordered_map<u_uchar, long> mcaracs;
+    u_ustring w;
     long n, b;
 
     b = v_base->longvalue();
@@ -130,34 +132,34 @@ lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bo
 
     if (caracs.size() == 0)
     {
-        w = "0";
+        w = '0';
         for (n = 0; n < 10; n++)
         {
             mcaracs[w[0]] = caracs.size();
             caracs.push_back(w);
             w[0]++;
         }
-        w = "A";
+        w = 'A';
         for (n = 10; n < 36; n++)
         {
             mcaracs[w[0]] = caracs.size();
             caracs.push_back(w);
             w[0]++;
         }
-        w = "a";
+        w = 'a';
         for (n = 36; n < 62; n++)
         {
             mcaracs[w[0]] = caracs.size();
             caracs.push_back(w);
             w[0]++;
         }
-        w = "#";
+        w = '#';
         mcaracs[w[0]] = caracs.size();
         caracs.push_back(w);
-        w = "@";
+        w = '@';
         mcaracs[w[0]] = caracs.size();
         caracs.push_back(w);
-        w = "";
+        w = U"";
         if (!b)
             return lisp_true;
     }
@@ -173,7 +175,7 @@ lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bo
         // we convert a base 10 number into the local base
         v = longvalue();
         long rest;
-        string res = "";
+        u_ustring res = U"";
         while (v)
         {
             rest = v % b;
@@ -183,7 +185,7 @@ lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bo
         return new lisp_string(res);
     }
 
-    w = "";
+    w = U"";
     stringvalue(w);
     unsigned char wc;
     for (n = 0; n < w.size(); n++)
@@ -201,6 +203,10 @@ lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bo
 //-------------------------------------------------------------------------------------
 #ifdef DEBUGGER
 static std::set<lisp_element *> garbages;
+
+void displaygarbagesize() {
+    cerr << "GB:" << garbages.size() << endl;
+}
 
 lisp_element::lisp_element(uint16_t c) : code(c)
 {
@@ -266,7 +272,7 @@ void lisp_element::pop(lisp_element *)
     lisperror->eval(NULL);
 }
 
-lisp_element *lisp_element::append(string &k, lisp_element *e)
+lisp_element *lisp_element::append(u_ustring &k, lisp_element *e)
 {
     return lisperror->eval(NULL);
 }
@@ -316,8 +322,11 @@ lisp_element *lisp_element::mod(lisp_element *v)
     return lisperror->eval(NULL);
 }
 //-------------------------------------------------------------------------------------
-compile_action lisp_element::store(string &current_key, lisp_element *e, compile_action action)
+compile_action lisp_element::store(string &key, lisp_element *e, compile_action action)
 {
+    u_ustring current_key;
+    s_utf8_to_unicode(current_key, key, key.size());
+
     if (action == map_value)
     {
         append(current_key, e);
@@ -331,22 +340,27 @@ compile_action lisp_element::store(string &current_key, lisp_element *e, compile
     return action;
 }
 //-------------------------------------------------------------------------------------
+lisp_element* lisp_string::find(lisp_element* v) {
+    u_ustring val;
+    v->stringvalue(val);
+    return new lisp_integer(value.find(val));
+}
 
 lisp_element *lisp_string::replace(lisp_element *a, lisp_element *v)
 {
-    string to_be_replaced;
-    string with;
+    u_ustring to_be_replaced;
+    u_ustring with;
 
     a->stringvalue(to_be_replaced);
     v->stringvalue(with);
 
-    with = s_replacingstring(value, to_be_replaced, with);
+    with = s_ureplacestring(value, to_be_replaced, with);
     return new lisp_string(with);
 }
 
 lisp_element *lisp_string::split(lisp_element *search)
 {
-    string search_string;
+    u_ustring search_string;
     lisp_list *result = new lisp_list();
 
     if (search == lisp_nil)
@@ -359,31 +373,30 @@ lisp_element *lisp_string::split(lisp_element *search)
             c = value[i];
             if (c <= 32)
             {
-                if (search_string != "")
+                if (search_string != U"")
                 {
                     result->append(new lisp_string(search_string));
-                    search_string = "";
+                    search_string = U"";
                 }
             }
             else
                 search_string += c;
         }
-        if (search_string != "")
+        if (search_string != U"")
             result->append(new lisp_string(search_string));
         return result;
     }
 
     search->stringvalue(search_string);
 
-    string localvalue;
+    u_ustring localvalue;
     long pos = 0;
 
-    if (search_string == "")
+    if (search_string == U"")
     {
         long sz = value.size();
-        // we split the string into an array of characters
-        while (pos < sz)
-        {
+        //we split the string into an array of characters
+        while (pos < sz) {
             special_characters.getchar(value, localvalue, pos);
             result->append(new lisp_string(localvalue));
         }
@@ -397,7 +410,7 @@ lisp_element *lisp_string::split(lisp_element *search)
         if (found != string::npos)
         {
             localvalue = value.substr(pos, found - pos);
-            if (localvalue != "")
+            if (localvalue != U"")
             {
                 result->append(new lisp_string(localvalue));
             }
@@ -408,7 +421,7 @@ lisp_element *lisp_string::split(lisp_element *search)
     }
 
     localvalue = value.substr(pos, value.size() - pos);
-    if (localvalue != "")
+    if (localvalue != U"")
         result->append(new lisp_string(localvalue));
 
     return result;
@@ -426,47 +439,43 @@ void lisp_string::pop(lisp_element *e)
     }
 
     if (i == sz - 1)
-        value = s_left(value, i);
+        value = s_uleft(value, i);
     else
-        value = s_left(value, i) + s_right(value, sz - i - 1);
+        value = s_uleft(value, i) + s_uright(value, sz - i - 1);
 }
 
 lisp_element *lisp_string::at_position(lisp_element *e)
 {
-    long i = e->doublevalue();
-    string v;
-    if (!special_characters.getAtchar(value, v, i))
-        return lisp_nil;
-    return new lisp_string(v);
+    long i = e->longvalue();
+    if (i >= value.size())
+        return lisp_emptystring;
+    return new lisp_string(value[i]);
 }
 
 lisp_element *lisp_string::at(long i)
 {
-    string v;
-    if (!special_characters.getAtchar(value, v, i))
-        return lisp_nil;
-    return new lisp_string(v);
+    if (i >= value.size())
+        return lisp_emptystring;
+    return new lisp_string(value[i]);
 }
 
 lisp_element *lisp_string::sub(double b, double e)
 {
-    long lg = size_c(value);
+    long lg = value.size();
     if (e <= 0)
         e = lg + e;
     if (b < 0)
         b = lg + b;
     if (e <= b)
         return lisp_emptystring;
-    return new lisp_string(s_middle(value, b, e - b));
+    return new lisp_string(s_umiddle(value, b, e - b));
 }
 
 lisp_element *lisp_string::car()
 {
-    string v;
-    long i = 0;
-    if (!special_characters.getAtchar(value, v, i))
+    if (!value.size())
         return lisp_emptystring;
-    return new lisp_string(v);
+    return new lisp_string(value[0]);
 }
 
 lisp_element *lisp_string::cdr()
@@ -474,8 +483,8 @@ lisp_element *lisp_string::cdr()
     if (!value.size())
         return lisp_emptystring;
 
-    long lg = size_c(value);
-    return new lisp_string(s_right(value, lg - 1));
+    long lg = value.size();
+    return new lisp_string(s_uright(value, lg - 1));
 }
 
 //--------------------------------------------------------------------------------
@@ -591,7 +600,22 @@ lisp_element *lisp_list::range(lisp_mini *lisp)
 
     throw new lisp_error(this, lispargnbserror->message);
 }
+//--------------------------------------------------------------------------------
+bool compareElementsSup(lisp_element* e1, lisp_element* e2) {
+    return e1->sup(e2);
+}
 
+bool compareElementsInf(lisp_element* e1, lisp_element* e2) {
+    return e1->inf(e2);
+}
+
+lisp_element* lisp_list::sort(bool direction) {
+    if (direction)
+        std::sort(values.begin(), values.end(), compareElementsSup);
+    else
+        std::sort(values.begin(), values.end(), compareElementsInf);
+    return this;
+}
 //--------------------------------------------------------------------------------
 lisp_element *lisp_list::release()
 {
@@ -732,10 +756,10 @@ lisp_element *lisp_atom::eval(lisp_mini *lisp)
 //------------------------------------------------------------------------
 lisp_element *lisp_list::join(lisp_element *sep)
 {
-    string ssep;
+    u_ustring ssep;
     sep->stringvalue(ssep);
 
-    string value;
+    u_ustring value;
     for (long i = 0; i < values.size(); i++)
     {
         if (i)
@@ -870,12 +894,12 @@ lisp_element *lisp_string::loop(lisp_mini *lisp, lisp_list *code, lisp_element *
     uint16_t variable = var->code;
 
     lisp_element *r = lisp_nil;
-    lisp_string *v = new lisp_string("");
+    lisp_string *v = new lisp_string(U"");
     lisp->insert(variable, v);
 
     long pos = 0;
     long sz = value.size();
-    string localvalue;
+    u_ustring localvalue;
     long szc = code->size();
     // we split the string into an array of characters
     while (pos < sz)
@@ -1040,7 +1064,7 @@ lisp_element *lisp_string::mapcar(lisp_mini *lisp, lisp_element *op)
 {
     lisp_list l(s_constant);
 
-    lisp_string *v = new lisp_string("");
+    lisp_string *v = new lisp_string(U"");
 
     l.append(op);
     l.append(v);
@@ -1048,7 +1072,7 @@ lisp_element *lisp_string::mapcar(lisp_mini *lisp, lisp_element *op)
     lisp_list *result = new lisp_list();
     long pos = 0;
     long sz = value.size();
-    string localvalue;
+    u_ustring localvalue;
     // we split the string into an array of characters
     try
     {
@@ -1230,7 +1254,7 @@ lisp_element *lisp_string::filtercar(lisp_mini *lisp, lisp_element *op)
 {
     lisp_list l(s_constant);
 
-    lisp_string *v = new lisp_string("");
+    lisp_string *v = new lisp_string(U"");
 
     l.append(op);
     l.append(v);
@@ -1239,7 +1263,7 @@ lisp_element *lisp_string::filtercar(lisp_mini *lisp, lisp_element *op)
     lisp_list *result = new lisp_list();
     long pos = 0;
     long sz = value.size();
-    string localvalue;
+    u_ustring localvalue;
     // we split the string into an array of characters
     try
     {
@@ -1317,13 +1341,15 @@ lisp_error *lisp_end = NULL;
 lisp_error *lispstackerror = NULL;
 lisp_error *lisplambdaerror = NULL;
 
-std::map<std::string, uint16_t> code_dictionary;
+std::map<u_ustring, uint16_t> code_dictionary;
 std::map<uint16_t, lisp_element *> instructions_dictionary;
-std::map<uint16_t, std::string> string_dictionary;
+std::map<uint16_t, u_ustring> string_dictionary;
 //------------------------------------------------------------------------
-uint16_t get_code(string &w)
+uint16_t get_code(string &s)
 {
     uint16_t c;
+    u_ustring w;
+    s_utf8_to_unicode(w, s, s.size());
     if (code_dictionary.find(w) == code_dictionary.end())
     {
         c = code_dictionary.size();
@@ -1335,49 +1361,15 @@ uint16_t get_code(string &w)
     return c;
 }
 
-string get_label(uint16_t c)
+u_ustring get_label(uint16_t c)
 {
 
     if (string_dictionary.find(c) != string_dictionary.end()) {
         if (c < l_final)
             return string_dictionary[c];
-        return "atom_";
+        return U"atom_";
     }
-    return "unknown!!!";
-}
-
-//------------------------------------------------------------------------
-lisp_mini::lisp_mini()
-{
-    initialisation_static_values();
-    stop_execution = false;
-    count_data = 0;
-    std::map<uint16_t, lisp_element *> v;
-    variables.push_back(v);
-}
-
-void lisp_mini::garbage_clean()
-{
-#ifdef DEBUGGER
-    cerr << "GB:" << garbages.size() << endl;
-#endif
-
-    for (auto &v : variables)
-    {
-        for (auto &a : v)
-        {
-            a.second->remove();
-        }
-    }
-
-    variables.clear();
-    for (auto &a : atoms)
-    {
-        delete a.second;
-    }
-#ifdef DEBUGGER
-    cerr << "GB:" << garbages.size() << endl;
-#endif
+    return U"unknown!!!";
 }
 
 //-------------------------------------------------------------------------------------
@@ -1519,250 +1511,4 @@ lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *functio
     }
     lisp->stack_off(a);
     return a;
-}
-
-lisp_element *lisp_mini::run(string code)
-{
-    infos.clear();
-    error_tokenize e = code_segmenting(code, infos, &special_characters);
-    if (e != e_no_error)
-        return lisptokenizeerror->eval(this);
-
-    vector<lisp_element *> storage;
-    long pos = 0;
-    lisp_list *program = new lisp_list(storage);
-    compile(program, storage, pos, first_action);
-    stop_execution = false;
-    lisp_element *res;
-    try
-    {
-        res = program->eval(this);
-        res->protect();
-        clean(storage);
-        res->unprotect();
-        return res;
-    }
-    catch (lisp_error *err)
-    {
-        for (auto &a : storage)
-            delete a;
-        throw err;
-    }
-}
-
-lisp_mini *create_mini_lisp_instance()
-{
-    return new lisp_mini();
-}
-
-void lisp_mini::set_file_name(string &spath)
-{
-    char localpath[4100];
-
-#ifdef WIN32
-    _fullpath(localpath, STR(spath), 4096);
-#else
-    realpath(STR(spath), localpath);
-#endif
-
-    current_file_name = spath;
-
-#ifdef WIN32
-    string end_path = "\\";
-#else
-    string end_path = "/";
-#endif
-    long pos = spath.rfind(end_path);
-    if (pos == string::npos)
-    {
-        spath = localpath;
-        if (spath.back() != end_path[0])
-            spath += end_path;
-    }
-    else
-        spath = spath.substr(0, pos + 1);
-    current_directory = spath;
-}
-
-void lisp_mini::write_file(lisp_element *e, lisp_element *txt)
-{
-    string path;
-    e->stringvalue(path);
-
-    std::ofstream f(path, std::ios::out | std::ios::binary);
-    if (f.fail())
-        throw new lisp_error(e, "Error: writing");
-    path = "";
-    txt->stringvalue(path);
-
-    f << txt;
-    f.close();
-}
-
-void lisp_mini::append_file(lisp_element *e, lisp_element *txt)
-{
-    string path;
-    e->stringvalue(path);
-
-    std::ofstream f(path, std::ios::app | std::ios::binary);
-    if (f.fail())
-        throw new lisp_error(e, "Error: appending");
-    path = "";
-    txt->stringvalue(path);
-
-    f << txt;
-    f.close();
-}
-
-string lisp_mini::read_file(lisp_element *e)
-{
-    string path;
-    e->stringvalue(path);
-
-    std::ifstream f(path, std::ios::in | std::ios::binary);
-    if (f.fail())
-        throw new lisp_error(e, "Error: loading");
-
-    string line;
-    string codes;
-    while (!f.eof())
-    {
-        getline(f, line);
-        codes += line + "\n";
-    }
-    s_trim(codes);
-    return codes;
-}
-
-lisp_element *lisp_mini::load_program(lisp_element *program, lisp_element *path, vector<lisp_element *> &storage)
-{
-    lisp_element *e = path->eval(this);
-    string codes = read_file(path);
-    e->release();
-    Segmentingtype infos;
-    error_tokenize tk = code_segmenting(codes, infos, &special_characters);
-    if (tk != e_no_error)
-    {
-        throw new lisp_error(path, lisptokenizeerror->message);
-    }
-
-    long pos = 0;
-    compile(program, storage, pos, next_action);
-    return program;
-}
-
-string lisp_mini::execute_some_code(string &code)
-{
-    infos.clear();
-    error_tokenize e = code_segmenting(code, infos, &special_characters);
-    std::stringstream os;
-
-    if (e != e_no_error)
-    {
-        lisptokenizeerror->string_to_os(os);
-        os << ":" << e;
-        return os.str();
-    }
-
-    vector<lisp_element *> storage;
-    lisp_list* program = new lisp_list(storage);
-    long pos = 0;
-    compile(program, storage, pos, first_action);
-
-    lisp_element *res = lisp_nil;
-    try
-    {
-        stop_execution = false;
-        res = program->eval(this);
-        res->string_to_os(os);
-        res->release();
-    }
-    catch (lisp_error *l)
-    {
-        l->string_to_os(os);
-        l->release();
-    }
-
-    clean(storage);
-
-#ifdef DEBUGGER
-    cerr << "GB:" << garbages.size() << endl;
-#endif
-    return os.str();
-}
-
-string lisp_mini::execute_file(string &path, vector<string> &args)
-{
-
-    std::stringstream os;
-    std::ifstream f(path, std::ios::in | std::ios::binary);
-    if (f.fail())
-    {
-        os << "error loading file: " << path;
-        return os.str();
-    }
-
-    string line;
-    string code = "(block ";
-    while (!f.eof())
-    {
-        getline(f, line);
-        code += line + "\n";
-    }
-
-    code += ")";
-
-    infos.clear();
-    error_tokenize e = code_segmenting(code, infos, &special_characters);
-
-    if (e != e_no_error)
-    {
-        lisptokenizeerror->string_to_os(os);
-        os << ":" << e;
-        return os.str();
-    }
-
-    // We create the _current variable that points to the file directory
-    set_file_name(path);
-    vector<lisp_element *> storage;
-
-    string name = "_current";
-    uint16_t c = get_code(name);
-    get_atom(c);
-    store_atom(c, new lisp_string(storage, current_directory));
-
-    name = "_args";
-    c = get_code(name);
-    get_atom(c);
-    lisp_list *program = new lisp_list(storage);
-    for (long i = 0; i < args.size(); i++)
-    {
-        program->append(new lisp_string(storage, args[i]));
-    }
-    store_atom(c, program);
-
-    program = new lisp_list(storage);
-    long pos = 0;
-    compile(program, storage, pos, first_action);
-
-    lisp_element *res = lisp_nil;
-    try
-    {
-        stop_execution = false;
-        res = program->eval(this);
-        res->string_to_os(os);
-        res->release();
-    }
-    catch (lisp_error *l)
-    {
-        l->string_to_os(os);
-        l->release();
-    }
-
-    clean(storage);
-
-#ifdef DEBUGGER
-    cerr << "GB:" << garbages.size() << endl;
-#endif
-    return os.str();
 }

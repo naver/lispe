@@ -17,7 +17,7 @@ extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
 #endif
 
 //-------------------------------------------------------------------------------------------
-extern UTF8_Handler special_characters;
+UTF8_Handler special_characters;
 //-------------------------------------------------------------------------------------------
 //Change the class name shell_editor to what you fancy most...
 class shell_editor : public interpreter_editor {
@@ -28,6 +28,14 @@ class shell_editor : public interpreter_editor {
         //Change the message that is displayed when launching the editor
         title_string = "Shell";
         // do  you initialisation here
+    }
+
+    shell_editor(string fn, vector<string>& args) {
+        //Change the message that is displayed when launching the editor
+        title_string = "Shell";        
+        // do  you initialisation here
+        thecurrentfilename = fn;
+        arguments = args;
     }
 
     //Initialisation of your interpreter
@@ -96,6 +104,10 @@ class shell_editor : public interpreter_editor {
 
         string cmd = "sh ";
         cmd += thecurrentfilename;
+        for (const auto& a : arguments) {
+            cmd += " ";
+            cmd += a;
+        }
         cout << m_red;
         cout << execute_command(cmd);
         cout << m_current;
@@ -290,6 +302,8 @@ int main(int argc, char *argv[]) {
     
     if (file_name != "") {
         //Execute your file here
+        shell_editor sh(file_name, arguments);
+        sh.run_code();
         return 0;
     }
     

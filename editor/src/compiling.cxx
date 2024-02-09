@@ -1,5 +1,12 @@
 #include "minilisp.h"
 
+extern UTF8_Handler special_characters;
+void initialisation_static_values();
+
+#ifdef DEBUGGER
+void displaygarbagesize();
+#endif
+
 // We want lists, numbers and dictionary
 error_tokenize code_segmenting(string &code, Segmentingtype &infos, UTF8_Handler* special_characters)
 {
@@ -360,4 +367,292 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, 
             cerr << infos.types[pos] << endl;
         }
     }
+    return true;
+}
+
+void lisp_mini::set_file_name(string &spath)
+{
+    char localpath[4100];
+
+#ifdef WIN32
+    _fullpath(localpath, STR(spath), 4096);
+#else
+    realpath(STR(spath), localpath);
+#endif
+
+    current_file_name = spath;
+
+#ifdef WIN32
+    string end_path = "\\";
+#else
+    string end_path = "/";
+#endif
+    long pos = spath.rfind(end_path);
+    if (pos == string::npos)
+    {
+        spath = localpath;
+        if (spath.back() != end_path[0])
+            spath += end_path;
+    }
+    else
+        spath = spath.substr(0, pos + 1);
+    current_directory = spath;
+}
+
+void lisp_mini::write_file(lisp_element *e, lisp_element *txt)
+{
+    u_ustring upath;
+    e->stringvalue(upath);
+
+    string path;
+    s_unicode_to_utf8(path, upath);
+
+    std::ofstream f(path, std::ios::out | std::ios::binary);
+    if (f.fail())
+        throw new lisp_error(e, "Error: writing");
+    upath = U"";
+    txt->stringvalue(upath);
+
+    path = "";
+    s_unicode_to_utf8(path, upath);
+    f << path;
+    f.close();
+}
+
+void lisp_mini::append_file(lisp_element *e, lisp_element *txt)
+{
+u_ustring upath;
+    e->stringvalue(upath);
+
+    string path;
+    s_unicode_to_utf8(path, upath);
+
+    std::ofstream f(path, std::ios::app | std::ios::binary);
+    if (f.fail())
+        throw new lisp_error(e, "Error: writing");
+    upath = U"";
+    txt->stringvalue(upath);
+
+    path = "";
+    s_unicode_to_utf8(path, upath);
+    f << path;
+    f.close();}
+
+string lisp_mini::read_file(lisp_element *e)
+{
+    u_ustring upath;
+    e->stringvalue(upath);
+
+    string path;
+    s_unicode_to_utf8(path, upath);
+
+    std::ifstream f(path, std::ios::in | std::ios::binary);
+    if (f.fail())
+        throw new lisp_error(e, "Error: loading");
+
+    string line;
+    string codes;
+    while (!f.eof())
+    {
+        getline(f, line);
+        codes += line + "\n";
+    }
+    s_trim(codes);
+    return codes;
+}
+
+lisp_element *lisp_mini::load_program(lisp_element *program, lisp_element *path, vector<lisp_element *> &storage)
+{
+    lisp_element *e = path->eval(this);
+    string codes = read_file(path);
+    e->release();
+    Segmentingtype infos;
+    error_tokenize tk = code_segmenting(codes, infos, &special_characters);
+    if (tk != e_no_error)
+    {
+        throw new lisp_error(path, lisptokenizeerror->message);
+    }
+
+    long pos = 0;
+    compile(program, storage, pos, next_action);
+    return program;
+}
+
+lisp_element *lisp_mini::run(string code)
+{
+    infos.clear();
+    error_tokenize e = code_segmenting(code, infos, &special_characters);
+    if (e != e_no_error)
+        return lisptokenizeerror->eval(this);
+
+    vector<lisp_element *> storage;
+    long pos = 0;
+    lisp_list *program = new lisp_list(storage);
+    compile(program, storage, pos, first_action);
+    stop_execution = false;
+    lisp_element *res;
+    try
+    {
+        res = program->eval(this);
+        res->protect();
+        clean(storage);
+        res->unprotect();
+        return res;
+    }
+    catch (lisp_error *err)
+    {
+        for (auto &a : storage)
+            delete a;
+        throw err;
+    }
+}
+
+string lisp_mini::execute_some_code(string &code)
+{
+    infos.clear();
+    error_tokenize e = code_segmenting(code, infos, &special_characters);
+    std::stringstream os;
+
+    if (e != e_no_error)
+    {
+        lisptokenizeerror->string_to_os(os);
+        os << ":" << e;
+        return os.str();
+    }
+
+    vector<lisp_element *> storage;
+    lisp_list* program = new lisp_list(storage);
+    long pos = 0;
+    compile(program, storage, pos, first_action);
+
+    lisp_element *res = lisp_nil;
+    try
+    {
+        stop_execution = false;
+        res = program->eval(this);
+        res->string_to_os(os);
+        res->release();
+    }
+    catch (lisp_error *l)
+    {
+        l->string_to_os(os);
+        l->release();
+    }
+
+    clean(storage);
+
+#ifdef DEBUGGER
+    displaygarbagesize();
+#endif
+    return os.str();
+}
+
+string lisp_mini::execute_file(string &path, vector<string> &args)
+{
+
+    std::stringstream os;
+    std::ifstream f(path, std::ios::in | std::ios::binary);
+    if (f.fail())
+    {
+        os << "error loading file: " << path;
+        return os.str();
+    }
+
+    string line;
+    string code = "(block ";
+    while (!f.eof())
+    {
+        getline(f, line);
+        code += line + "\n";
+    }
+
+    code += ")";
+
+    infos.clear();
+    error_tokenize e = code_segmenting(code, infos, &special_characters);
+
+    if (e != e_no_error)
+    {
+        lisptokenizeerror->string_to_os(os);
+        os << ":" << e;
+        return os.str();
+    }
+
+    // We create the _current variable that points to the file directory
+    set_file_name(path);
+    vector<lisp_element *> storage;
+
+    string name = "_current";
+    uint16_t c = get_code(name);
+    get_atom(c);
+    store_atom(c, new lisp_string(storage, current_directory));
+
+    name = "_args";
+    c = get_code(name);
+    get_atom(c);
+    lisp_list *program = new lisp_list(storage);
+    for (long i = 0; i < args.size(); i++)
+    {
+        program->append(new lisp_string(storage, args[i]));
+    }
+    store_atom(c, program);
+
+    program = new lisp_list(storage);
+    long pos = 0;
+    compile(program, storage, pos, first_action);
+
+    lisp_element *res = lisp_nil;
+    try
+    {
+        stop_execution = false;
+        res = program->eval(this);
+        res->string_to_os(os);
+        res->release();
+    }
+    catch (lisp_error *l)
+    {
+        l->string_to_os(os);
+        l->release();
+    }
+
+    clean(storage);
+
+#ifdef DEBUGGER
+    displaygarbagesize();
+#endif
+    return os.str();
+}
+
+//------------------------------------------------------------------------
+lisp_mini::lisp_mini()
+{
+    initialisation_static_values();
+    stop_execution = false;
+    count_data = 0;
+    std::map<uint16_t, lisp_element *> v;
+    variables.push_back(v);
+}
+
+void lisp_mini::garbage_clean()
+{
+#ifdef DEBUGGER
+    displaygarbagesize();
+#endif
+
+    for (auto &v : variables)
+    {
+        for (auto &a : v)
+        {
+            a.second->remove();
+        }
+    }
+
+    variables.clear();
+    for (auto &a : atoms)
+    {
+        delete a.second;
+    }
+#ifdef DEBUGGER
+    displaygarbagesize();
+#endif
 }
