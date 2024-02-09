@@ -31,79 +31,80 @@ typedef enum
 {
     v_nil,
     v_atom,
-    v_error,
-    v_string,
-    v_list,
-    v_map,
-    v_float,
-    v_integer,
-    v_unix,
     v_boolean,
     v_break,
+    v_error,
+    v_float,
+    v_integer,
+    v_list,
+    v_map,
+    v_string,
+    v_unix,
 
-    l_plus,
-    l_minus,
-    l_multiply,
-    l_divide,
-    l_mod,
-    l_size,
-    l_chr,
-    l_ord,
+    l_append,
+    l_apply,
+    l_at,
+    l_base,
+    l_block,
     l_car,
     l_cdr,
-    l_cons,
-    l_split,
-    l_at,
-    l_list,
+    l_chr,
     l_command,
-    l_setq,
-    l_quote,
-    l_print,
-    l_load,
-    l_read,
-    l_write,
-    l_append,
-    l_sort,
-    l_if,
     l_cond,
-    l_block,
-    l_base,
+    l_cons,
+    l_consp,
+    l_defun,
+    l_different,
+    l_divide,
+    l_eq,
+    l_equal,
+    l_eval,
+    l_filtercar,
+    l_find,
+    l_float,
+    l_if,
+    l_inf,
+    l_infeq,
+    l_integer,
+    l_join,
+    l_key,
+    l_lambda,
+    l_list,
+    l_load,
+    l_loop,
     l_map,
     l_mapcar,
-    l_filtercar,
-    l_key,
-    l_range,
-    l_defun,
-    l_equal,
-    l_different,
-    l_not,
-    l_eq,
+    l_minus,
+    l_mod,
+    l_multiply,
     l_neq,
-    l_inf,
-    l_sup,
-    l_infeq,
-    l_supeq,
-    l_find,
-    l_loop,
-    l_while,
-    l_lambda,
-    l_eval,
-    l_float,
-    l_integer,
-    l_string,
-    l_consp,
-    l_zerop,
+    l_not,
     l_nullp,
-    l_stringp,
     l_numberp,
-    l_stats,
-    l_push,
+    l_ord,
+    l_plus,
     l_pop,
-    l_type,
-    l_sub,
-    l_apply,
+    l_print,
+    l_push,
+    l_quote,
+    l_range,
+    l_read,
     l_replace,
-    l_join,
+    l_setq,
+    l_size,
+    l_sort,
+    l_split,
+    l_stats,
+    l_string,
+    l_stringp,
+    l_sub,
+    l_sup,
+    l_supeq,
+    l_trim,
+    l_type,
+    l_while,
+    l_write,
+    l_zerop,
     l_final
 } lisp_instruction_code;
 
@@ -192,7 +193,8 @@ public:
         }
     }
 
-    virtual lisp_element* find(lisp_element* v) {
+    virtual lisp_element *find(lisp_element *v)
+    {
         return lisp_nil;
     }
 
@@ -202,10 +204,11 @@ public:
     }
     lisp_element *methodBase(lisp_mini *lisp, lisp_element *v_base, bool toconvert);
 
-    virtual lisp_element* sort(bool direction) {
+    virtual lisp_element *sort(bool direction)
+    {
         return this;
     }
-    
+
     virtual void clear() {}
     virtual lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable)
     {
@@ -403,7 +406,8 @@ public:
     u_ustring message;
 
     lisp_error(u_ustring m) : message(m), lisp_element(s_constant, v_error) {}
-    lisp_error(string m) : lisp_element(s_constant, v_error) {
+    lisp_error(string m) : lisp_element(s_constant, v_error)
+    {
         s_utf8_to_unicode(message, m, m.size());
     }
 
@@ -836,11 +840,13 @@ public:
     u_ustring value;
 
     lisp_string(uint16_t constant, u_ustring v) : value(v), lisp_element(constant, v_string) {}
-    lisp_string(vector<lisp_element *> &storage, string v) : lisp_element(storage, v_string) {
+    lisp_string(vector<lisp_element *> &storage, string v) : lisp_element(storage, v_string)
+    {
         s_utf8_to_unicode(value, v, v.size());
     }
     lisp_string(u_ustring v) : value(v), lisp_element(v_string) {}
-    lisp_string(string v) : lisp_element(v_string) {
+    lisp_string(string v) : lisp_element(v_string)
+    {
         s_utf8_to_unicode(value, v, v.size());
     }
     lisp_string(char v) : lisp_element(v_string)
@@ -871,8 +877,8 @@ public:
         return new lisp_string(value);
     }
 
-    lisp_element* find(lisp_element* v);
-    
+    lisp_element *find(lisp_element *v);
+
     lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable);
     lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
     lisp_element *filtercar(lisp_mini *lisp, lisp_element *oper);
@@ -922,7 +928,7 @@ public:
     void string_to_os(std::stringstream &os, bool into = false)
     {
         string s;
-        s_unicode_to_utf8(s , value);
+        s_unicode_to_utf8(s, value);
         if (into)
             os << "\"" << s << "\"";
         else
@@ -1001,8 +1007,10 @@ public:
         return l;
     }
 
-    lisp_element* find(lisp_element* v) {
-        for (long i = 0; i < values.size(); i++) {
+    lisp_element *find(lisp_element *v)
+    {
+        for (long i = 0; i < values.size(); i++)
+        {
             if (v->equal(values[i]))
                 return new lisp_integer(i);
         }
@@ -1017,7 +1025,7 @@ public:
     }
 
     lisp_element *sub(double b, double e);
-    lisp_element* sort(bool direction);
+    lisp_element *sort(bool direction);
     virtual void unmark();
     virtual void remove();
     virtual void protect();
@@ -1282,8 +1290,10 @@ public:
     void unprotect();
     lisp_element *release();
 
-    lisp_element* find(lisp_element* v) {
-        for (const auto& a : values) {
+    lisp_element *find(lisp_element *v)
+    {
+        for (const auto &a : values)
+        {
             if (v->equal(a.second))
                 return new lisp_string(a.first);
         }
@@ -1411,20 +1421,22 @@ public:
     }
 };
 
-
 //-------------------------------------------------------------------------------------
 class lisp_unix : public lisp_element
 {
 public:
     u_ustring value;
 
-    lisp_unix(vector<lisp_element *> &storage, string v) : lisp_element(storage, v_unix) {
+    lisp_unix(vector<lisp_element *> &storage, string v) : lisp_element(storage, v_unix)
+    {
         s_utf8_to_unicode(value, v, v.size());
     }
-    lisp_unix(uint16_t c, string v) : lisp_element(c, v_unix) {
+    lisp_unix(uint16_t c, string v) : lisp_element(c, v_unix)
+    {
         s_utf8_to_unicode(value, v, v.size());
     }
-    lisp_unix(string v) : lisp_element(v_unix) {
+    lisp_unix(string v) : lisp_element(v_unix)
+    {
         s_utf8_to_unicode(value, v, v.size());
     }
 
@@ -1574,7 +1586,7 @@ public:
     void append_file(lisp_element *e, lisp_element *txt);
     lisp_element *load_program(lisp_element *program, lisp_element *e, vector<lisp_element *> &storage);
     string execute_some_code(string &code);
-    string execute_file(string &filename, vector<string>& args);
+    string execute_file(string &filename, vector<string> &args);
 
     ~lisp_mini()
     {

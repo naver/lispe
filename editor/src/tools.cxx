@@ -1744,6 +1744,26 @@ string& s_trimright(string& strvalue) {
         strvalue = "";
     return strvalue;
 }
+
+u_ustring& u_trim(u_ustring& strvalue) {
+    long d, f;
+    for (d = 0; d<strvalue.size(); d++) {
+        if (strvalue[d]>32)
+            break;
+    }
+    
+    for (f = strvalue.size() - 1; f >= 0; f--) {
+        if (strvalue[f] > 32)
+            break;
+    }
+    long lg = f - d + 1;
+    if (lg >= 1)
+        strvalue = strvalue.substr(d, lg);
+    else
+        strvalue = U"";
+    return strvalue;
+}
+
 //------------------------------------------------------------------------
 long getindex(unsigned char* contenu, long lg, long i) {
     long x = 0;
