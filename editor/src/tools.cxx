@@ -2050,9 +2050,9 @@ double convertingfloathexa(const char* s) {
     //End of string...
     if (*s ==0 )
         return 0;
-
+    
     int sign = 1;
-
+    
     //Sign
     if (*s=='-') {
         sign = -1;
@@ -2061,14 +2061,25 @@ double convertingfloathexa(const char* s) {
     else
         if (*s=='+')
             ++s;
-
-    if (*s=='0' && s[1]=='x') {
-        s+=2;
-        return conversiontofloathexa(s, sign);
-    }
-
+    
     long v;
     if (isadigit(*s)) {
+        if (*s=='0') {
+            if (s[1]=='x') {
+                s+=2;
+                return conversiontofloathexa(s, sign);
+            }
+            
+            if (s[1]=='b') {
+                s+=2;
+                v = *s++ & 15;
+                while (*s == '1' || *s == '0') {
+                    v = (v << 1) + (*s++ & 15);
+                }
+                return v;
+            }
+        }
+        
         v = *s++ & 15;
         while (isadigit(*s)) {
             v = (v << 3) + (v << 1) + (*s++ & 15);
@@ -2078,9 +2089,9 @@ double convertingfloathexa(const char* s) {
     }
     else
         return 0;
-
+    
     double res = v;
-
+    
     if (*s=='.') {
         ++s;
         if (isadigit(*s)) {
@@ -2095,7 +2106,7 @@ double convertingfloathexa(const char* s) {
         else
             return res*sign;
     }
-
+    
     if ((*s &0xDF) == 'E') {
         ++s;
         long sgn = 1;
@@ -2107,17 +2118,18 @@ double convertingfloathexa(const char* s) {
             if (*s == '+')
                 ++s;
         }
-
+        
         if (isadigit(*s)) {
             v = *s++ & 15;
             while (isadigit(*s))
                 v = (v << 3) + (v << 1) + (*s++ & 15);
-
+            
             res *= power10(v*sgn);
         }
     }
     return res*sign;
 }
+
 //------------------------------------------------------------------------
 double conversiontofloathexa(const char* s, int sign, long& l) {
     long v = 0;
@@ -2511,9 +2523,9 @@ void noconvertingfloathexa(wchar_t* s, long& l) {
 
 long convertinginteger(string& number) {
     long ipos=0;
-
+    
     while (number[ipos]<=32) ++ipos;
-
+    
 
     int sign = 1;
     if (number[ipos] == '-') {
@@ -2523,30 +2535,40 @@ long convertinginteger(string& number) {
     else
         if (number[ipos] == '+')
             ++ipos;
-
+    
     long v = 0;
-
+    
     uchar c = number[ipos++];
     if (number.size() == ipos)
         return (c - 48)*sign;
 
-    if (c == '0' || number[ipos] == 'x') {
-        ipos++;
-        c = number[ipos++];
-        while (digitaction[c]) {
-            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+    if (c == '0') {
+        if (number[ipos] == 'x') {
+            ipos++;
             c = number[ipos++];
-        }
-        return v*sign;
-    }
-    else {
-        if (isadigit(c)) {
-            v = c & 15;
-            c = number[ipos++];
-            while (isadigit(c)) {
-                v = (v << 3) + (v << 1) + (c & 15);
+            while (c < 103 && digitaction[c]) {
+                v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
                 c = number[ipos++];
             }
+            return v*sign;
+        }
+        if (number[ipos] == 'b') {
+            ipos++;
+            c = number[ipos++];
+            while (c == '0' || c == '1') {
+                v = (v << 1) + (c & 15);
+                c = number[ipos++];
+            }
+            return v;
+        }
+    }
+    
+    if (isadigit(c)) {
+        v = c & 15;
+        c = number[ipos++];
+        while (isadigit(c)) {
+            v = (v << 3) + (v << 1) + (c & 15);
+            c = number[ipos++];
         }
     }
     return v*sign;

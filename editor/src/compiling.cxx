@@ -98,7 +98,7 @@ static void initialisation_static_values()
         code_dictionary[U"insert"] = l_insert;
         code_dictionary[U"integer"] = l_integer;
         code_dictionary[U"join"] = l_join;
-        code_dictionary[U"lambda"] = l_lambda;
+        code_dictionary[U"λ"] = l_lambda;
         code_dictionary[U"list"] = l_list;
         code_dictionary[U"load"] = l_load;
         code_dictionary[U"loop"] = l_loop;
@@ -148,6 +148,8 @@ static void initialisation_static_values()
         code_dictionary[U"false"] = v_nil;
         code_dictionary[U"@"] = l_at;
         code_dictionary[U"nth"] = l_at;
+        code_dictionary[U"lambda"] = l_lambda;
+        code_dictionary[U"\\"] = l_lambda;
     }
 }
 //------------------------------------------------------------------------
@@ -343,9 +345,8 @@ error_tokenize code_segmenting(string &code, Segmentingtype &infos, UTF8_Handler
             infos.append(buffer, jt_keyword, left + 1, right);
             break;
         }
-        case '9': // a float: contains a '.'
-            d = convertingfloathexa((char *)buffer.c_str(), lg_value);
-            infos.append(d, buffer, jt_number, left, right);
+        case '9': // a float: contains a '.'            
+            infos.append(buffer, jt_number, left, right);
             if (in_quote == 1)
                 in_quote = 0;
             break;
@@ -514,7 +515,7 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, 
             else
             {
                 if (infos.strings[pos].find(".") != -1)
-                    e = new lisp_float(storage, infos.numbers[pos]);
+                    e = new lisp_float(storage, convertingfloathexa(STR(infos.strings[pos])));
                 else
                     e = new lisp_integer(storage, convertinginteger(infos.strings[pos]));
                 action = program->store(current_key, e, action);
@@ -720,7 +721,7 @@ lisp_element *lisp_mini::run(string code)
     }
 }
 
-string lisp_mini::execute_some_code(string &code)
+string lisp_mini::execute_code(string &code)
 {
     infos.clear();
     error_tokenize e = code_segmenting(code, infos, &special_characters);
@@ -760,7 +761,7 @@ string lisp_mini::execute_some_code(string &code)
     return os.str();
 }
 
-string lisp_mini::execute_file(string &path, vector<string> &args)
+string lisp_mini::execute_file(string path, vector<string> &args)
 {
 
     std::stringstream os;

@@ -153,7 +153,7 @@ class minilisp_editor : public interpreter_editor {
 
         executing_code = true;
         cout << m_red;
-        cout << lisp->execute_some_code(cmd) << endl;
+        cout << lisp->execute_code(cmd) << endl;
         cout << m_current;
         executing_code = false;
         return true;

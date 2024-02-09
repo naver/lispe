@@ -369,6 +369,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->release();
             return res;
         }
+        case l_lambda:
+            return this;
         case l_list: //(list a1 a2 ...)
         {
             r = new lisp_list();

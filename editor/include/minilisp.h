@@ -1631,8 +1631,8 @@ public:
     void write_file(lisp_element *e, lisp_element *txt);
     void append_file(lisp_element *e, lisp_element *txt);
     lisp_element *load_program(lisp_element *program, lisp_element *e, vector<lisp_element *> &storage);
-    string execute_some_code(string &code);
-    string execute_file(string &filename, vector<string> &args);
+    string execute_code(string &code);
+    string execute_file(string filename, vector<string> &args);
 
     ~lisp_mini()
     {

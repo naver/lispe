@@ -13,7 +13,6 @@ typedef enum {
 class Segmentingtype {
 public:
     vector<std::string> strings;
-    vector<double> numbers;
     vector<jag_code> types;
     vector<long> positions;
 
@@ -21,7 +20,6 @@ public:
         types.clear();
         positions.clear();
         strings.clear();
-        numbers.clear();
     }
 
     long size() {
@@ -36,15 +34,6 @@ public:
 
     void append(std::string& s, jag_code t, long posbeg, long posend) {
         strings.push_back(s);
-        numbers.push_back(0);
-        types.push_back(t);
-        positions.push_back(posbeg);
-        positions.push_back(posend);
-    }
-
-    void append(double d, std::string& s, jag_code t, long posbeg, long posend) {
-        strings.push_back(s);
-        numbers.push_back(d);
         types.push_back(t);
         positions.push_back(posbeg);
         positions.push_back(posend);
