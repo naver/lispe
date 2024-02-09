@@ -248,7 +248,7 @@ lisp_element *lisp_element::replace(lisp_element *a, lisp_element *v)
     return lisp_emptystring;
 }
 
-lisp_element *lisp_element::sub(double b, double e)
+lisp_element *lisp_element::sub(long b, long e)
 {
     return lisperror->eval(NULL);
 }
@@ -460,7 +460,7 @@ lisp_element *lisp_string::at(long i)
     return new lisp_string(value[i]);
 }
 
-lisp_element *lisp_string::sub(double b, double e)
+lisp_element *lisp_string::sub(long b, long e)
 {
     long lg = value.size();
     if (e <= 0)
@@ -1393,7 +1393,7 @@ lisp_element *lisp_list::cdr()
     return l;
 }
 
-lisp_element *lisp_list::sub(double b, double e)
+lisp_element *lisp_list::sub(long b, long e)
 {
     if (e <= 0)
         e = values.size() + e;

@@ -598,7 +598,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return e->sort(drt);
         }
         case l_split:
-        {
+        {//(split e splitter)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -633,13 +633,13 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
             r = values[2]->eval(lisp);
-            double beg = r->doublevalue();
+            long beg = r->longvalue();
             r = r->release();
-            double end = 0;
+            long end = 0;
             if (sz == 4)
             {
                 r = values[3]->eval(lisp);
-                end = r->doublevalue();
+                end = r->longvalue();
                 r = r->release();
             }
             r = e->sub(beg, end);

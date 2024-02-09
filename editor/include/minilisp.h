@@ -262,7 +262,7 @@ public:
     }
 
     virtual lisp_element *replace(lisp_element *a, lisp_element *v);
-    virtual lisp_element *sub(double b, double e);
+    virtual lisp_element *sub(long b, long e);
     virtual lisp_element *append(lisp_element *e);
     virtual lisp_element *append(u_ustring &, lisp_element *e);
     compile_action store(string &, lisp_element *e, compile_action a);
@@ -693,7 +693,7 @@ public:
 
     lisp_element *mod(lisp_element *v)
     {
-        long d = (long)v->doublevalue();
+        long d = (long)v->longvalue();
         if (d == 0)
             return lisperrordivided0->eval(NULL);
         d = (long)value % d;
@@ -886,7 +886,7 @@ public:
     lisp_element *at_position(lisp_element *i);
     lisp_element *at(long i);
 
-    lisp_element *sub(double b, double e);
+    lisp_element *sub(long b, long e);
     lisp_element *car();
     lisp_element *cdr();
 
@@ -1024,7 +1024,7 @@ public:
         return this;
     }
 
-    lisp_element *sub(double b, double e);
+    lisp_element *sub(long b, long e);
     lisp_element *sort(bool direction);
     virtual void unmark();
     virtual void remove();
@@ -1092,7 +1092,7 @@ public:
 
     virtual lisp_element *at_position(lisp_element *e)
     {
-        long i = e->doublevalue();
+        long i = e->longvalue();
         if (i >= 0 && i < values.size())
             return values[i];
         return lisp_nil;
