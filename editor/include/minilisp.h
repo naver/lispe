@@ -67,9 +67,9 @@ typedef enum
     l_if,
     l_inf,
     l_infeq,
+    l_insert,
     l_integer,
     l_join,
-    l_key,
     l_lambda,
     l_list,
     l_load,
@@ -79,6 +79,7 @@ typedef enum
     l_minus,
     l_mod,
     l_multiply,
+    l_nconc,
     l_neq,
     l_not,
     l_nullp,
@@ -107,6 +108,7 @@ typedef enum
     l_while,
     l_write,
     l_zerop,
+    l_zip,
     l_final
 } lisp_instruction_code;
 
@@ -194,6 +196,7 @@ public:
         return lisp_nil;
     }
 
+    virtual void concatenate(lisp_element* c);
     lisp_element *range(lisp_mini *lisp)
     {
         return lisp_nil;
@@ -260,7 +263,8 @@ public:
     virtual lisp_element *replace(lisp_element *a, lisp_element *v);
     virtual lisp_element *sub(long b, long e);
     virtual lisp_element *append(lisp_element *e);
-    virtual lisp_element *append(u_ustring &, lisp_element *e);
+    virtual lisp_element *append(u_ustring& key, lisp_element *e);
+    virtual lisp_element *append(lisp_element* key, lisp_element *e);
     compile_action store(string &, lisp_element *e, compile_action a);
     virtual void pop_raw() {}
     virtual void pop(lisp_element *);
@@ -979,6 +983,16 @@ public:
         return true;
     }
 
+    void concatenate(lisp_element* c) {
+        if (c->is_list()) {
+            for (long i = 0; i < c->size(); i++) {
+                append(c->at(i));
+            }
+        }
+        else
+            append(c);
+    }
+
     lisp_element *range(lisp_mini *lisp);
     lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable);
     lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
@@ -1002,6 +1016,14 @@ public:
                 return new lisp_integer(i);
         }
         return lisp_nil;
+    }
+
+    virtual lisp_element *append(lisp_element* k, lisp_element *v)
+    {
+        long key = k->longvalue();
+        v->mark();
+        values.insert(values.begin() + key, v);
+        return this;
     }
 
     virtual lisp_element *append(lisp_element *e)
@@ -1165,6 +1187,13 @@ public:
         code = v_nil;
     }
 
+    lisp_element *append(lisp_element* k, lisp_element *v)
+    {
+        lisp_list* l = new lisp_list();
+        l->append(v);
+        return l;
+    }
+
     lisp_element *append(lisp_element *e)
     {
         lisp_list *l = new lisp_list();
@@ -1260,11 +1289,41 @@ public:
         return true;
     }
 
-    lisp_element *append(u_ustring &key, lisp_element *v)
+    lisp_element *append(lisp_element* k, lisp_element *v)
     {
+        u_ustring key;
+        k->stringvalue(key);
         v->mark();
+        k = values[key];
+        if (k != NULL)
+            k->unmark();
         values[key] = v;
         return this;
+    }
+
+    lisp_element *append(u_ustring& key, lisp_element *v)
+    {
+        v->mark();
+        lisp_element* k = values[key];
+        if (k != NULL)
+            k->unmark();
+        values[key] = v;
+        return this;
+    }
+
+    void concatenate(lisp_element* c) {
+        if (c->is_map()) {
+            lisp_map* m = (lisp_map*)c;
+            for (const auto& a : m->values) {
+                c = values[a.first];
+                if (c != NULL)
+                    c->unmark();
+                a.second->mark();
+                values[a.first] = a.second;
+            }
+        }
+        else
+            throw new lisp_error(c, "A map is expected here");
     }
 
     lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable);
@@ -1388,10 +1447,8 @@ public:
         lisp_map *val = (lisp_map *)v;
         for (const auto &a : values)
         {
-            if (val->values.find(a.first) == val->values.end())
-                return false;
-
-            if (!a.second->equal(val->values[a.first]))
+            if (val->values.find(a.first) == val->values.end() ||
+                !a.second->equal(val->values[a.first]))
                 return false;
         }
         return true;

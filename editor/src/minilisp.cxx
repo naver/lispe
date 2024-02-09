@@ -2,26 +2,7 @@
 
 // We want lists, numbers and dictionary
 //------------------------------------------------------------------------
-UTF8_Handler special_characters;
-//------------------------------------------------------------------------
-// These are elements, which are never deleted and common to all lisps
-//------------------------------------------------------------------------
-lisp_element *lisp_nil = NULL;
-lisp_element *lisp_true = NULL;
-lisp_string *lisp_emptystring = NULL;
-lisp_atom *lisp_break = NULL;
-
-lisp_error *lisperror = NULL;
-lisp_error *lispargnbserror = NULL;
-lisp_error *lisptokenizeerror = NULL;
-lisp_error *lisperrorrange = NULL;
-lisp_error *lisperrordivided0 = NULL;
-lisp_error *lispunknownatom = NULL;
-lisp_error *lispunknownmethod = NULL;
-lisp_error *lisp_end = NULL;
-lisp_error *lispstackerror = NULL;
-lisp_error *lisplambdaerror = NULL;
-
+extern UTF8_Handler special_characters;
 //------------------------------------------------------------------------
 lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bool toconvert)
 {
@@ -156,9 +137,14 @@ lisp_element *lisp_element::sub(long b, long e)
     return lisperror->eval(NULL);
 }
 
+void lisp_element::concatenate(lisp_element* r)
+{
+    throw new lisp_error(this, lisperror->message);
+}
+
 lisp_element *lisp_element::cons_apply(lisp_element *op)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::join(lisp_element *sep)
@@ -168,62 +154,67 @@ lisp_element *lisp_element::join(lisp_element *sep)
 
 lisp_element *lisp_element::append(lisp_element *e)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
-void lisp_element::pop(lisp_element *)
+void lisp_element::pop(lisp_element * e)
 {
-    lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
-lisp_element *lisp_element::append(u_ustring &k, lisp_element *e)
+lisp_element *lisp_element::append(lisp_element* k, lisp_element *e)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
+}
+
+lisp_element *lisp_element::append(u_ustring& k, lisp_element *e)
+{
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::push_first(lisp_element *e)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::car()
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::cdr()
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::command()
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::plus(lisp_element *v)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::minus(lisp_element *v)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::multiply(lisp_element *v)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::divide(lisp_element *v)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 lisp_element *lisp_element::mod(lisp_element *v)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 //-------------------------------------------------------------------------------------
 compile_action lisp_element::store(string &key, lisp_element *e, compile_action action)

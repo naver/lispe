@@ -1,11 +1,29 @@
 #include "minilisp.h"
 
-extern UTF8_Handler special_characters;
-
 #ifdef DEBUGGER
 void displaygarbagesize();
 #endif
 
+//------------------------------------------------------------------------
+UTF8_Handler special_characters;
+//------------------------------------------------------------------------
+// These are elements, which are never deleted and common to all lisps
+//------------------------------------------------------------------------
+lisp_element *lisp_nil = NULL;
+lisp_element *lisp_true = NULL;
+lisp_string *lisp_emptystring = NULL;
+lisp_atom *lisp_break = NULL;
+
+lisp_error *lisperror = NULL;
+lisp_error *lispargnbserror = NULL;
+lisp_error *lisptokenizeerror = NULL;
+lisp_error *lisperrorrange = NULL;
+lisp_error *lisperrordivided0 = NULL;
+lisp_error *lispunknownatom = NULL;
+lisp_error *lispunknownmethod = NULL;
+lisp_error *lisp_end = NULL;
+lisp_error *lispstackerror = NULL;
+lisp_error *lisplambdaerror = NULL;
 //------------------------------------------------------------------------
 static std::map<u_ustring, uint16_t> code_dictionary;
 static std::map<uint16_t, lisp_element *> instructions_dictionary;
@@ -77,15 +95,16 @@ static void initialisation_static_values()
         code_dictionary[U"find"] = l_find;
         code_dictionary[U"float"] = l_float;
         code_dictionary[U"if"] = l_if;
+        code_dictionary[U"insert"] = l_insert;
         code_dictionary[U"integer"] = l_integer;
         code_dictionary[U"join"] = l_join;
-        code_dictionary[U"key"] = l_key;
         code_dictionary[U"lambda"] = l_lambda;
         code_dictionary[U"list"] = l_list;
         code_dictionary[U"load"] = l_load;
         code_dictionary[U"loop"] = l_loop;
         code_dictionary[U"map"] = l_map;
         code_dictionary[U"mapcar"] = l_mapcar;
+        code_dictionary[U"nconc"] = l_nconc;
         code_dictionary[U"neq"] = l_neq;
         code_dictionary[U"not"] = l_not;
         code_dictionary[U"null?"] = l_nullp;
@@ -110,6 +129,7 @@ static void initialisation_static_values()
         code_dictionary[U"while"] = l_while;
         code_dictionary[U"write"] = l_write;
         code_dictionary[U"zero?"] = l_zerop;
+        code_dictionary[U"zip"] = l_zip;
 
         code_dictionary[U"€"] = l_final;
 
@@ -127,6 +147,7 @@ static void initialisation_static_values()
         code_dictionary[U"quote"] = l_quote;
         code_dictionary[U"false"] = v_nil;
         code_dictionary[U"@"] = l_at;
+        code_dictionary[U"nth"] = l_at;
     }
 }
 //------------------------------------------------------------------------

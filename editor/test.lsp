@@ -1,5 +1,5 @@
 (defun addmap(x)
-    (key {} "t" x)
+    (insert {} "t" x)
 )    
 
 (addmap 20)
