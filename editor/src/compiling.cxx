@@ -1,14 +1,203 @@
 #include "minilisp.h"
 
 extern UTF8_Handler special_characters;
-void initialisation_static_values();
 
 #ifdef DEBUGGER
 void displaygarbagesize();
 #endif
 
+//------------------------------------------------------------------------
+static std::map<u_ustring, uint16_t> code_dictionary;
+static std::map<uint16_t, lisp_element *> instructions_dictionary;
+static std::map<uint16_t, u_ustring> string_dictionary;
+//-------------------------------------------------------------------------------------
+static void initialisation_static_values()
+{
+    if (lisp_nil == NULL)
+    {
+        lisp_nil = new lisp_list_nil();
+        lisp_true = new lisp_boolean(true);
+        lisp_emptystring = new lisp_string(s_constant, U"");
+        lisp_break = new lisp_atom(v_break);
+
+        // Error messages
+        lisperror = new lisp_error("Error: wrong method for this element");
+        lispargnbserror = new lisp_error("Error: wrong number of arguments");
+        lisptokenizeerror = new lisp_error("Error: tokenization error");
+        lisperrorrange = new lisp_error("Error: out of range");
+        lisperrordivided0 = new lisp_error("Error: divided by 0");
+        lispunknownatom = new lisp_error("Error: unknown atom");
+        lispunknownmethod = new lisp_error("Error: unknown method");
+        lispstackerror = new lisp_error("Stack error");
+        lisplambdaerror = new lisp_error("Lambda error");
+        lisp_end = new lisp_error("reset al");
+
+        code_dictionary[U"nil"] = v_nil;
+        code_dictionary[U"true"] = v_boolean;
+        code_dictionary[U"break"] = v_break;
+
+        code_dictionary[U"atom_"] = v_atom;
+        code_dictionary[U"error_"] = v_error;
+        code_dictionary[U"string_"] = v_string;
+        code_dictionary[U"list_"] = v_list;
+        code_dictionary[U"float_"] = v_float;
+        code_dictionary[U"integer_"] = v_integer;
+        code_dictionary[U"unix_"] = v_unix;
+
+        code_dictionary[U"!="] = l_different;
+        code_dictionary[U"%"] = l_mod;
+        code_dictionary[U"'"] = l_quote;
+        code_dictionary[U"*"] = l_multiply;
+        code_dictionary[U"+"] = l_plus;
+        code_dictionary[U"-"] = l_minus;
+        code_dictionary[U"/"] = l_divide;
+        code_dictionary[U"<"] = l_inf;
+        code_dictionary[U"<="] = l_infeq;
+        code_dictionary[U"="] = l_equal;
+        code_dictionary[U">"] = l_sup;
+        code_dictionary[U">="] = l_supeq;
+        code_dictionary[U"append"] = l_append;
+        code_dictionary[U"apply"] = l_apply;
+        code_dictionary[U"at"] = l_at;
+        code_dictionary[U"atom"] = l_atom;
+        code_dictionary[U"atom?"] = l_atomp;
+        code_dictionary[U"base"] = l_base;
+        code_dictionary[U"block"] = l_block;
+        code_dictionary[U"car"] = l_car;
+        code_dictionary[U"cdr"] = l_cdr;
+        code_dictionary[U"chr"] = l_chr;
+        code_dictionary[U"command"] = l_command;
+        code_dictionary[U"cond"] = l_cond;
+        code_dictionary[U"cons"] = l_cons;
+        code_dictionary[U"cons?"] = l_consp;
+        code_dictionary[U"defun"] = l_defun;
+        code_dictionary[U"eq"] = l_eq;
+        code_dictionary[U"eval"] = l_eval;
+        code_dictionary[U"filtercar"] = l_filtercar;
+        code_dictionary[U"find"] = l_find;
+        code_dictionary[U"float"] = l_float;
+        code_dictionary[U"if"] = l_if;
+        code_dictionary[U"integer"] = l_integer;
+        code_dictionary[U"join"] = l_join;
+        code_dictionary[U"key"] = l_key;
+        code_dictionary[U"lambda"] = l_lambda;
+        code_dictionary[U"list"] = l_list;
+        code_dictionary[U"load"] = l_load;
+        code_dictionary[U"loop"] = l_loop;
+        code_dictionary[U"map"] = l_map;
+        code_dictionary[U"mapcar"] = l_mapcar;
+        code_dictionary[U"neq"] = l_neq;
+        code_dictionary[U"not"] = l_not;
+        code_dictionary[U"null?"] = l_nullp;
+        code_dictionary[U"number?"] = l_numberp;
+        code_dictionary[U"ord"] = l_ord;
+        code_dictionary[U"pop"] = l_pop;
+        code_dictionary[U"print"] = l_print;
+        code_dictionary[U"push"] = l_push;
+        code_dictionary[U"range"] = l_range;
+        code_dictionary[U"read"] = l_read;
+        code_dictionary[U"replace"] = l_replace;
+        code_dictionary[U"setq"] = l_setq;
+        code_dictionary[U"size"] = l_size;
+        code_dictionary[U"sort"] = l_sort;
+        code_dictionary[U"split"] = l_split;
+        code_dictionary[U"stats"] = l_stats;
+        code_dictionary[U"string"] = l_string;
+        code_dictionary[U"string?"] = l_stringp;
+        code_dictionary[U"sub"] = l_sub;
+        code_dictionary[U"trim"] = l_trim;
+        code_dictionary[U"type"] = l_type;
+        code_dictionary[U"while"] = l_while;
+        code_dictionary[U"write"] = l_write;
+        code_dictionary[U"zero?"] = l_zerop;
+
+        code_dictionary[U"€"] = l_final;
+
+        for (const auto &a : code_dictionary)
+        {
+            string_dictionary[a.second] = a.first;
+            if (a.second == v_nil || a.second == v_boolean)
+                continue;
+            instructions_dictionary[a.second] = new lisp_instruction(a.second);
+        }
+
+        instructions_dictionary[v_nil] = lisp_nil;
+        instructions_dictionary[v_boolean] = lisp_true;
+
+        code_dictionary[U"quote"] = l_quote;
+        code_dictionary[U"false"] = v_nil;
+        code_dictionary[U"@"] = l_at;
+    }
+}
+//------------------------------------------------------------------------
+uint16_t get_code(string &s)
+{
+    uint16_t c;
+    u_ustring w;
+    s_utf8_to_unicode(w, s, s.size());
+    if (code_dictionary.find(w) == code_dictionary.end())
+    {
+        c = code_dictionary.size();
+        code_dictionary[w] = c;
+        string_dictionary[c] = w;
+    }
+    else
+        c = code_dictionary[w];
+    return c;
+}
+
+uint16_t get_code(u_ustring &w)
+{
+    uint16_t c;
+    if (code_dictionary.find(w) == code_dictionary.end())
+    {
+        c = code_dictionary.size();
+        code_dictionary[w] = c;
+        string_dictionary[c] = w;
+    }
+    else
+        c = code_dictionary[w];
+    return c;
+}
+
+u_ustring get_label(uint16_t c)
+{
+
+    if (string_dictionary.find(c) != string_dictionary.end())
+    {
+        if (c < l_final)
+            return string_dictionary[c];
+        return U"atom_";
+    }
+    return U"unknown!!!";
+}
+
+lisp_atom *lisp_mini::get_atom(u_ustring &u)
+{
+    uint16_t a = get_code(u);
+    lisp_atom *la = atoms[a];
+    if (la == NULL)
+    {
+        la = new lisp_atom(a);
+        atoms[a] = la;
+    }
+    return la;
+}
+//-------------------------------------------------------------------------------------
+void lisp_element::stringvalue(u_ustring &v, bool into)
+{
+    v += string_dictionary[code];
+}
+
+void lisp_element::string_to_os(std::stringstream &os, bool into)
+{
+    string s;
+    s_unicode_to_utf8(s, string_dictionary[code]);
+    os << s;
+}
+//-------------------------------------------------------------------------------------
 // We want lists, numbers and dictionary
-error_tokenize code_segmenting(string &code, Segmentingtype &infos, UTF8_Handler* special_characters)
+error_tokenize code_segmenting(string &code, Segmentingtype &infos, UTF8_Handler *special_characters)
 {
     static tokenizer_automaton tok(special_characters);
 
@@ -319,23 +508,25 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, 
             }
             else
                 e = program;
-            
+
             pos++;
             if (!compile(e, storage, pos, next_action))
                 return false;
 
             if (action == parenthetic_action)
                 return true;
-            
-            //We store the function definition at compile time
-            if (e->size() > 3 && e->at(0)->code == l_defun) {
+
+            // We store the function definition at compile time
+            if (e->size() > 3 && e->at(0)->code == l_defun)
+            {
                 store_atom(e->at(1)->code, e);
                 if (e != program)
                     program->pop_raw();
             }
 
-            if (e->size() == 2 && e->at(0)->code == l_load) {
-                //We load some code locally from a file
+            if (e->size() == 2 && e->at(0)->code == l_load)
+            {
+                // We load some code locally from a file
                 if (e != program)
                     program->pop_raw();
                 load_program(program, e->at(1), storage);
@@ -421,7 +612,7 @@ void lisp_mini::write_file(lisp_element *e, lisp_element *txt)
 
 void lisp_mini::append_file(lisp_element *e, lisp_element *txt)
 {
-u_ustring upath;
+    u_ustring upath;
     e->stringvalue(upath);
 
     string path;
@@ -436,7 +627,8 @@ u_ustring upath;
     path = "";
     s_unicode_to_utf8(path, upath);
     f << path;
-    f.close();}
+    f.close();
+}
 
 string lisp_mini::read_file(lisp_element *e)
 {
@@ -521,7 +713,7 @@ string lisp_mini::execute_some_code(string &code)
     }
 
     vector<lisp_element *> storage;
-    lisp_list* program = new lisp_list(storage);
+    lisp_list *program = new lisp_list(storage);
     long pos = 0;
     compile(program, storage, pos, first_action);
 
@@ -582,20 +774,19 @@ string lisp_mini::execute_file(string &path, vector<string> &args)
     set_file_name(path);
     vector<lisp_element *> storage;
 
-    string name = "_current";
-    uint16_t c = get_code(name);
-    get_atom(c);
-    store_atom(c, new lisp_string(storage, current_directory));
+    u_ustring name = U"_current";
+    lisp_atom *a = get_atom(name);
+    store_atom(a->code, new lisp_string(storage, current_directory));
 
-    name = "_args";
-    c = get_code(name);
-    get_atom(c);
     lisp_list *program = new lisp_list(storage);
     for (long i = 0; i < args.size(); i++)
     {
         program->append(new lisp_string(storage, args[i]));
     }
-    store_atom(c, program);
+
+    name = U"_args";
+    a = get_atom(name);
+    store_atom(a->code, program);
 
     program = new lisp_list(storage);
     long pos = 0;

@@ -1,3 +1,11 @@
+(defun addmap(x)
+    (key {} "t" x)
+)    
+
+(addmap 20)
+(addmap 30)
+(addmap 40)
+    
 (defun fct(x)
     (setq l '(a b c))
     (push l x)

@@ -42,8 +42,10 @@ typedef enum
     v_unix,
 
     l_append,
-    l_apply,
+    l_apply,    
     l_at,
+    l_atom,
+    l_atomp,
     l_base,
     l_block,
     l_car,
@@ -138,12 +140,6 @@ extern lisp_error *lispunknownmethod;
 extern lisp_error *lispstackerror;
 extern lisp_error *lisplambdaerror;
 extern lisp_error *lisp_end;
-
-extern std::map<u_ustring, uint16_t> code_dictionary;
-extern std::map<uint16_t, u_ustring> string_dictionary;
-extern std::map<uint16_t, lisp_element *> instructions_dictionary;
-
-uint16_t get_code(string &w);
 
 const uint16_t s_constant = 65535;  // all bits set to 1
 const uint16_t s_protect = 32768;   // bit 15 set to 1
@@ -332,17 +328,8 @@ public:
         return 0;
     }
 
-    virtual void stringvalue(u_ustring &v, bool into = false)
-    {
-        v += string_dictionary[code];
-    }
-
-    virtual void string_to_os(std::stringstream &os, bool into = false)
-    {
-        string s;
-        s_unicode_to_utf8(s, string_dictionary[code]);
-        os << s;
-    }
+    virtual void stringvalue(u_ustring &v, bool into = false);
+    virtual void string_to_os(std::stringstream &os, bool into = false);
 
     virtual bool is_instruction()
     {
@@ -1501,6 +1488,8 @@ public:
         }
         return la;
     }
+
+    lisp_atom *get_atom(u_ustring& u);
 
     void stack_off(lisp_element *e)
     {

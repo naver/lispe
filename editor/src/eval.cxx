@@ -56,6 +56,26 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             v->unprotect();
             return v;
         }
+        case l_atom: {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            if (e->is_atom())
+                return e;
+            u_ustring a;
+            e->stringvalue(a);
+            r = lisp->get_atom(a);
+            e->release();
+            return r;
+        }
+        case l_atomp: {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            if (e->is_atom())
+                return lisp_true;
+            return lisp_nil;
+        }
         case l_base:
         { //(base value base conversion), if conversion is true base->base10 else base10->base
             bool conversion = false;
@@ -343,6 +363,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             if (!e->is_map())
                 throw new lisp_error(this, "Expecting a map");
+            e = e->clone(false);
             r = values[2]->eval(lisp);
             u_ustring k;
             r->stringvalue(k);
@@ -620,7 +641,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             return new lisp_string(v);
         }
-        case l_stringp:
+        case l_stringp: //(string? v)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
