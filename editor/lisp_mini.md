@@ -164,7 +164,7 @@ Here are descriptions of mini lisp mathematical functions:
 1. `_pi` or `π`: _pi_ value (3.14159)
 1. `_tau` or `τ`: 2 x π (6.28319)
 1. `_e` or `ℯ`: the Euler value (2.71828)
-1. `_phi` or `ϕ`: The Golden ration (1.61803)
+1. `_phi` or `ϕ`: The Golden ratio (1.61803)
 
 # Examples
 
