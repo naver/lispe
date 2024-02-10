@@ -111,7 +111,7 @@ Here are the descriptions for each available LISP function.
 1. `(write pathname txt)` — Writes the content of `txt` to `pathname`.
 1. `(zero? v)` — Tests whether `v` is zero.
 1. `(zip l1 l2 l3...)` — combines the elements from each input list into a list of tuples
-1. `((lambda (a1 a2) code) v1 v2)` — Anonymous function call with arguments `v1` and `v2`.
+1. `((lambda (a1 a2) code) v1 v2)` — Anonymous function call with arguments `v1` and `v2`. *lambdas* can also be written as `(\(a1 a2..) ..)` or `(λ(a1 a2..) ...)`.
 
 
 ## Mathematical Functions
