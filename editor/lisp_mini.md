@@ -159,29 +159,6 @@ Here are descriptions of mini lisp mathematical functions:
 1. `trunc`: Truncates `arg` to the nearest integer, discarding the fractional part.
 
 
-        name = U"π";
-        a = get_atom(name);
-        store_atom(a->code, lisp_pi);
-
-        name = U"_tau";
-        a = get_atom(name);
-        store_atom(a->code, lisp_tau);
-        name = U"τ";
-        a = get_atom(name);
-        store_atom(a->code, lisp_tau);
-
-        name = U"_e";
-        a = get_atom(name);
-        store_atom(a->code, lisp_e);
-        name = U"ℯ";
-        a = get_atom(name);
-        store_atom(a->code, lisp_e);
-
-        name = U"_phi";
-        a = get_atom(name);
-        store_atom(a->code, lisp_phi);
-        name = U"ϕ";
-
 ### Mathematical Values:
 
 1. `_pi` or `π`: _pi_ value (3.14159)
