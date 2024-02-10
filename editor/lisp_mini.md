@@ -48,10 +48,6 @@ Here are the descriptions for each available LISP function.
 
 **Note** that their implementation is in `eval.cxx`.
 
-# Markdown Document for Listed Lisp Functions
-
-Here's a summary of the listed Lisp functions along with brief descriptions:
-
 1. `(append pathname txt)` — Concatenates txt into file: `pathname``.
 1. `(apply 'operator list)` — Applies the operator to elements of the list.
 1. `(at e pos)` or `(@ e pos)` — Returns the character at position `pos` within the string `e`.
