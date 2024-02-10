@@ -67,7 +67,7 @@ Here are the descriptions for each available LISP function.
 1. `(eq e val)` — Tests whether `e` is equivalent to `val`.
 1. `(equal e val)` — Tests whether `e` is equal to `val`.
 1. `(eval expression)` — Evaluates the expression passed as argument.
-1. `(filtercar 'operator list)` — Filters the list `list` using the predicate `operator`. *Note that for `maps`, function should have two arguments.*
+1. `(filtercar 'function cnt)` — Filters the container `cnt` with predicate `function`. Returns a list. *Note that for `maps`, `function` should have two arguments.*
 1. `(find ct val)` — Searches for the first occurrence of `ct` in `val`.
 1. `(float v)` — Floats the numeric value `v`.
 1. `(if pred then else)` — Conditionally evaluates `then` if `pred` is true, otherwise evaluates `else`.
@@ -80,7 +80,7 @@ Here are the descriptions for each available LISP function.
 1. `(list a1 a2 ...)` — Constructs a list containing `a1`, `a2`, etc.
 1. `(loop a lst code)` — Iterative construct similar to C++ loops.
 1. `(map (key value) (key value) ..)` — Creates a map with a series of key/value
-1. `(mapcar 'function lst)` — applies function to lst. *Note that for `maps`, function should have two arguments.*
+1. `(mapcar 'function cnt)` — applies function to cnt. Returns a list. *Note that for `maps`, function should have two arguments.*
 1. `(- a1 a2 ...)` — Subtracts `a2` from `a1`, continuing leftward.
 1. `(% a1 a2 ..)` — Performs modulo operation between `a1` and `a2`, continuing leftward.
 1. `(* a1 a2 ..)` — Multiplies `a1` by `a2`, continuing leftward.
@@ -178,5 +178,8 @@ Here are descriptions of mini lisp mathematical functions:
 (setq r ())
 (push r 10)
 (print r)
+
+(mapcar (lambda (x y) (+ x y)) {"a":"b" "c":"d"})
+(mapcar (lambda(x) (* x 2)) (range 1 10 1))
 ```
 
