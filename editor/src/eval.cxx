@@ -1,7 +1,26 @@
 #include "minilisp.h"
 
 u_ustring get_label(uint16_t);
+long gcd_math(long a, long b)
+{
+    // Everything divides 0
+    if (a == 0)
+        return b;
+    if (b == 0)
+        return a;
+    // base case
+    if (a == b)
+        return a;
+    // a is greater
+    if (a > b)
+        return gcd_math(a-b, b);
+    return gcd_math(a, b-a);
+}
 
+long hcf_math(long x, long y) {
+    return (!y)?x:hcf_math(y, x%y);
+}
+//-----------------------------------------------------------------
 lisp_element *lisp_list::eval(lisp_mini *lisp)
 {
     lisp->check_stop();
@@ -28,7 +47,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return lisp_true;
         }
         case l_apply: //(apply 'operator list)
-        { 
+        {
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -44,7 +63,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return r;
         }
         case l_at:
-        {//(at e pos)
+        { //(at e pos)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -56,7 +75,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             v->unprotect();
             return v;
         }
-        case l_atom: { //(atom str)
+        case l_atom:
+        { //(atom str)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -68,7 +88,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             return r;
         }
-        case l_atomp: { //(atom? e)
+        case l_atomp:
+        { //(atom? e)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -173,7 +194,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->push_first(e);
             return r;
         }
-        case l_consp://(cons? l)
+        case l_consp: //(cons? l)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -214,7 +235,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return e;
         }
         case l_eq:
-        {//(eq e val)
+        { //(eq e val)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -225,7 +246,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return res;
         }
         case l_equal:
-        {//(equal e val)
+        { //(equal e val)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -288,7 +309,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return new lisp_float(d);
         }
         case l_if:
-        {//(if pred then else)
+        { //(if pred then else)
             if (sz != 3 && sz != 4)
                 throw new lisp_error(this, lispargnbserror->message);
 
@@ -394,7 +415,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         case l_map:
         { //(map (key value) (key value) ..)
             e = new lisp_map();
-            lisp_element* v;
+            lisp_element *v;
             for (long i = 1; i < sz; i++)
             {
                 if (values[i]->code != v_list || values[i]->size() != 2)
@@ -456,7 +477,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             }
             return e;
         }
-        case l_nconc: { //(nconc l ll)
+        case l_nconc:
+        { //(nconc l ll)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp)->clone(false);
@@ -519,7 +541,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return result;
         }
         case l_plus:
-        {       //(+ a1 a2 ..)
+        { //(+ a1 a2 ..)
             if (sz < 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp)->clone(false);
@@ -583,7 +605,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             return new lisp_string(code);
         }
-        case l_replace: 
+        case l_replace:
         { //(replace s a v) replace a in s with v
             if (sz != 4)
                 throw new lisp_error(this, lispargnbserror->message);
@@ -624,7 +646,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return e->sort(drt);
         }
         case l_split:
-        {//(split e splitter)
+        { //(split e splitter)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -694,7 +716,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->release();
             return res;
         }
-        case l_trim: { //(trim str)
+        case l_trim:
+        { //(trim str)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
@@ -752,37 +775,364 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r = (e->doublevalue() == 0 ? lisp_true : lisp_nil);
             e->release();
             return r;
-        case l_zip: {//(zip '(a b c) '(1 2 3) '("a" "b" "c") '(e f g))
+        case l_zip:
+        { //(zip '(a b c) '(1 2 3) '("a" "b" "c") '(e f g))
             if (sz == 1)
                 throw new lisp_error(this, lispargnbserror->message);
             r = new lisp_list();
             long sz = 0;
-            for (long i = 1; i < values.size(); i++) {
+            for (long i = 1; i < values.size(); i++)
+            {
                 e = values[i]->eval(lisp);
                 if (!e->is_list())
                     throw new lisp_error(this, "Expecting a list object");
                 if (i == 1)
                     sz = e->size();
-                else
-                    if (sz != e->size())
-                        throw new lisp_error(this, "lists should all have the same size");
+                else if (sz != e->size())
+                    throw new lisp_error(this, "lists should all have the same size");
                 r->append(e);
             }
-            //r-> ((a b c) (1 2 3) ("a" "b" "c") (e f g))
+            // r-> ((a b c) (1 2 3) ("a" "b" "c") (e f g))
             stringstream os;
             r->string_to_os(os);
             cerr << os.str() << endl;
             e = new lisp_list();
-            lisp_element* ll; 
-            for (long l = 0; l < sz; l++) {
+            lisp_element *ll;
+            for (long l = 0; l < sz; l++)
+            {
                 ll = new lisp_list();
                 e->append(ll);
-                for (long i = 0; i < r->size(); i++) {
+                for (long i = 0; i < r->size(); i++)
+                {
                     ll->append(r->at(i)->at(l));
                 }
             }
             r->release();
             return e;
+        }
+        case math_acos:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = acos(v);
+            return new lisp_float(v);
+        }
+        case math_acosh:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = acosh(v);
+            return new lisp_float(v);
+        }
+        case math_asin:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = asin(v);
+            return new lisp_float(v);
+        }
+        case math_asinh:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = asinh(v);
+            return new lisp_float(v);
+        }
+        case math_atan:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = atan(v);
+            return new lisp_float(v);
+        }
+        case math_atanh:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = atanh(v);
+            return new lisp_float(v);
+        }
+        case math_cbrt:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = cbrt(v);
+            return new lisp_float(v);
+        }
+        case math_cos:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = cos(v);
+            return new lisp_float(v);
+        }
+        case math_cosh:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = cosh(v);
+            return new lisp_float(v);
+        }
+        case math_degree:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = (v * 180) / M_PI;
+            return new lisp_float(v);
+        }
+        case math_erf:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = erf(v);
+            return new lisp_float(v);
+        }
+        case math_erfc:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = erfc(v);
+            return new lisp_float(v);
+        }
+        case math_exp:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = exp(v);
+            return new lisp_float(v);
+        }
+        case math_exp2:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = exp2(v);
+            return new lisp_float(v);
+        }
+        case math_expm1:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = expm1(v);
+            return new lisp_float(v);
+        }
+        case math_fabs:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = fabs(v);
+            return new lisp_float(v);
+        }
+        case math_floor:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = floor(v);
+            return new lisp_float(v);
+        }
+        case math_gcd:
+        {
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            long v = e->longvalue();
+            long vv = r->longvalue();
+            return new lisp_integer(gcd_math(v, vv));
+        }
+        case math_hcf:
+        {
+            e = values[1]->eval(lisp);
+            r = values[2]->eval(lisp);
+            long v = e->longvalue();
+            long vv = r->longvalue();
+            return new lisp_integer(hcf_math(v, vv));
+        }
+        case math_lgamma:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = lgamma(v);
+            return new lisp_float(v);
+        }
+        case math_log:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = log(v);
+            return new lisp_float(v);
+        }
+        case math_log10:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = log10(v);
+            return new lisp_float(v);
+        }
+        case math_log1p:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = log1p(v);
+            return new lisp_float(v);
+        }
+        case math_log2:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = log2(v);
+            return new lisp_float(v);
+        }
+        case math_logb:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = logb(v);
+            return new lisp_float(v);
+        }
+        case math_nearbyint:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = nearbyint(v);
+            return new lisp_float(v);
+        }
+        case math_radian:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = M_PI * (v / 180);
+            return new lisp_float(v);
+        }
+        case math_rint:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = rint(v);
+            return new lisp_float(v);
+        }
+        case math_round:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = round(v);
+            return new lisp_float(v);
+        }
+        case math_sin:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = sin(v);
+            return new lisp_float(v);
+        }
+        case math_sinh:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = sinh(v);
+            return new lisp_float(v);
+        }
+        case math_sqrt:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = sqrt(v);
+            return new lisp_float(v);
+        }
+        case math_tan:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = tan(v);
+            return new lisp_float(v);
+        }
+        case math_tanh:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = tanh(v);
+            return new lisp_float(v);
+        }
+        case math_tgamma:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = tgamma(v);
+            return new lisp_float(v);
+        }
+        case math_trunc:
+        {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            double v = e->doublevalue();
+            v = trunc(v);
+            return new lisp_float(v);
         }
         case v_list: //((lambda (a1 a2) code) v1 v2)
         {

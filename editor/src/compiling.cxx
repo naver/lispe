@@ -24,6 +24,15 @@ lisp_error *lispunknownmethod = NULL;
 lisp_error *lisp_end = NULL;
 lisp_error *lispstackerror = NULL;
 lisp_error *lisplambdaerror = NULL;
+
+lisp_float* lisp_pi = NULL;
+lisp_float* lisp_tau = NULL;
+lisp_float* lisp_e = NULL;
+lisp_float* lisp_phi = NULL;
+
+
+static const double M_GOLDEN = 1.61803398874989484820458683436563811772030917980576286213544862270526046281890244970720720418939113748475;
+
 //------------------------------------------------------------------------
 static std::map<u_ustring, uint16_t> code_dictionary;
 static std::map<uint16_t, lisp_element *> instructions_dictionary;
@@ -49,6 +58,12 @@ static void initialisation_static_values()
         lispstackerror = new lisp_error("Stack error");
         lisplambdaerror = new lisp_error("Lambda error");
         lisp_end = new lisp_error("reset al");
+
+        lisp_pi = new lisp_float(s_constant, M_PI);
+        lisp_tau = new lisp_float(s_constant, M_PI * 2);
+        lisp_e = new lisp_float(s_constant, M_E);
+        lisp_phi = new lisp_float(s_constant, M_GOLDEN);
+
 
         code_dictionary[U"nil"] = v_nil;
         code_dictionary[U"true"] = v_boolean;
@@ -131,6 +146,42 @@ static void initialisation_static_values()
         code_dictionary[U"zero?"] = l_zerop;
         code_dictionary[U"zip"] = l_zip;
 
+        code_dictionary[U"acos"] = math_acos;
+        code_dictionary[U"acosh"] = math_acosh;
+        code_dictionary[U"asin"] = math_asin;
+        code_dictionary[U"asinh"] = math_asinh;
+        code_dictionary[U"atan"] = math_atan;
+        code_dictionary[U"atanh"] = math_atanh;
+        code_dictionary[U"cbrt"] = math_cbrt;
+        code_dictionary[U"cos"] = math_cos;
+        code_dictionary[U"cosh"] = math_cosh;
+        code_dictionary[U"degree"] = math_degree;
+        code_dictionary[U"erf"] = math_erf;
+        code_dictionary[U"erfc"] = math_erfc;
+        code_dictionary[U"exp"] = math_exp;
+        code_dictionary[U"exp2"] = math_exp2;
+        code_dictionary[U"expm1"] = math_expm1;
+        code_dictionary[U"fabs"] = math_fabs;
+        code_dictionary[U"floor"] = math_floor;
+        code_dictionary[U"gcd"] = math_gcd;
+        code_dictionary[U"hcf"] = math_hcf;
+        code_dictionary[U"lgamma"] = math_lgamma;
+        code_dictionary[U"log"] = math_log;
+        code_dictionary[U"log10"] = math_log10;
+        code_dictionary[U"log1p"] = math_log1p;
+        code_dictionary[U"log2"] = math_log2;
+        code_dictionary[U"logb"] = math_logb;
+        code_dictionary[U"nearbyint"] = math_nearbyint;
+        code_dictionary[U"radian"] = math_radian;
+        code_dictionary[U"rint"] = math_rint;
+        code_dictionary[U"round"] = math_round;
+        code_dictionary[U"sin"] = math_sin;
+        code_dictionary[U"sinh"] = math_sinh;
+        code_dictionary[U"sqrt"] = math_sqrt;
+        code_dictionary[U"tan"] = math_tan;
+        code_dictionary[U"tanh"] = math_tanh;
+        code_dictionary[U"tgamma"] = math_tgamma;
+        code_dictionary[U"trunc"] = math_trunc;
         code_dictionary[U"€"] = l_final;
 
         for (const auto &a : code_dictionary)
@@ -150,6 +201,8 @@ static void initialisation_static_values()
         code_dictionary[U"nth"] = l_at;
         code_dictionary[U"lambda"] = l_lambda;
         code_dictionary[U"\\"] = l_lambda;
+        code_dictionary[U"√"] = math_sqrt;
+        code_dictionary[U"∛"] = math_cbrt;
     }
 }
 //------------------------------------------------------------------------
@@ -217,6 +270,36 @@ void lisp_element::string_to_os(std::stringstream &os, bool into)
     string s;
     s_unicode_to_utf8(s, string_dictionary[code]);
     os << s;
+}
+
+void lisp_mini::initmathvalues() {
+        u_ustring name = U"_pi";
+        lisp_atom* a = get_atom(name);
+        store_atom(a->code, lisp_pi);
+        name = U"π";
+        a = get_atom(name);
+        store_atom(a->code, lisp_pi);
+
+        name = U"_tau";
+        a = get_atom(name);
+        store_atom(a->code, lisp_tau);
+        name = U"τ";
+        a = get_atom(name);
+        store_atom(a->code, lisp_tau);
+
+        name = U"_e";
+        a = get_atom(name);
+        store_atom(a->code, lisp_e);
+        name = U"ℯ";
+        a = get_atom(name);
+        store_atom(a->code, lisp_e);
+
+        name = U"_phi";
+        a = get_atom(name);
+        store_atom(a->code, lisp_phi);
+        name = U"ϕ";
+        a = get_atom(name);
+        store_atom(a->code, lisp_phi);
 }
 //-------------------------------------------------------------------------------------
 // We want lists, numbers and dictionary
@@ -345,7 +428,7 @@ error_tokenize code_segmenting(string &code, Segmentingtype &infos, UTF8_Handler
             infos.append(buffer, jt_keyword, left + 1, right);
             break;
         }
-        case '9': // a float: contains a '.'            
+        case '9': // a float: contains a '.'
             infos.append(buffer, jt_number, left, right);
             if (in_quote == 1)
                 in_quote = 0;
@@ -844,6 +927,7 @@ lisp_mini::lisp_mini()
     count_data = 0;
     std::map<uint16_t, lisp_element *> v;
     variables.push_back(v);
+    initmathvalues();
 }
 
 void lisp_mini::garbage_clean()

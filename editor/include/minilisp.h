@@ -42,7 +42,7 @@ typedef enum
     v_unix,
 
     l_append,
-    l_apply,    
+    l_apply,
     l_at,
     l_atom,
     l_atomp,
@@ -109,6 +109,44 @@ typedef enum
     l_write,
     l_zerop,
     l_zip,
+
+    math_acos,
+    math_acosh,
+    math_asin,
+    math_asinh,
+    math_atan,
+    math_atanh,
+    math_cbrt,
+    math_cos,
+    math_cosh,
+    math_degree,
+    math_erf,
+    math_erfc,
+    math_exp,
+    math_exp2,
+    math_expm1,
+    math_fabs,
+    math_floor,
+    math_gcd,
+    math_hcf,
+    math_lgamma,
+    math_log,
+    math_log10,
+    math_log1p,
+    math_log2,
+    math_logb,
+    math_nearbyint,
+    math_radian,
+    math_rint,
+    math_round,
+    math_sin,
+    math_sinh,
+    math_sqrt,
+    math_tan,
+    math_tanh,
+    math_tgamma,
+    math_trunc,
+
     l_final
 } lisp_instruction_code;
 
@@ -196,7 +234,7 @@ public:
         return lisp_nil;
     }
 
-    virtual void concatenate(lisp_element* c);
+    virtual void concatenate(lisp_element *c);
     lisp_element *range(lisp_mini *lisp)
     {
         return lisp_nil;
@@ -263,8 +301,8 @@ public:
     virtual lisp_element *replace(lisp_element *a, lisp_element *v);
     virtual lisp_element *sub(long b, long e);
     virtual lisp_element *append(lisp_element *e);
-    virtual lisp_element *append(u_ustring& key, lisp_element *e);
-    virtual lisp_element *append(lisp_element* key, lisp_element *e);
+    virtual lisp_element *append(u_ustring &key, lisp_element *e);
+    virtual lisp_element *append(lisp_element *key, lisp_element *e);
     compile_action store(string &, lisp_element *e, compile_action a);
     virtual void pop_raw() {}
     virtual void pop(lisp_element *);
@@ -983,9 +1021,12 @@ public:
         return true;
     }
 
-    void concatenate(lisp_element* c) {
-        if (c->is_list()) {
-            for (long i = 0; i < c->size(); i++) {
+    void concatenate(lisp_element *c)
+    {
+        if (c->is_list())
+        {
+            for (long i = 0; i < c->size(); i++)
+            {
                 append(c->at(i));
             }
         }
@@ -1018,7 +1059,7 @@ public:
         return lisp_nil;
     }
 
-    virtual lisp_element *append(lisp_element* k, lisp_element *v)
+    virtual lisp_element *append(lisp_element *k, lisp_element *v)
     {
         long key = k->longvalue();
         v->mark();
@@ -1187,9 +1228,9 @@ public:
         code = v_nil;
     }
 
-    lisp_element *append(lisp_element* k, lisp_element *v)
+    lisp_element *append(lisp_element *k, lisp_element *v)
     {
-        lisp_list* l = new lisp_list();
+        lisp_list *l = new lisp_list();
         l->append(v);
         return l;
     }
@@ -1289,7 +1330,7 @@ public:
         return true;
     }
 
-    lisp_element *append(lisp_element* k, lisp_element *v)
+    lisp_element *append(lisp_element *k, lisp_element *v)
     {
         u_ustring key;
         k->stringvalue(key);
@@ -1301,20 +1342,23 @@ public:
         return this;
     }
 
-    lisp_element *append(u_ustring& key, lisp_element *v)
+    lisp_element *append(u_ustring &key, lisp_element *v)
     {
         v->mark();
-        lisp_element* k = values[key];
+        lisp_element *k = values[key];
         if (k != NULL)
             k->unmark();
         values[key] = v;
         return this;
     }
 
-    void concatenate(lisp_element* c) {
-        if (c->is_map()) {
-            lisp_map* m = (lisp_map*)c;
-            for (const auto& a : m->values) {
+    void concatenate(lisp_element *c)
+    {
+        if (c->is_map())
+        {
+            lisp_map *m = (lisp_map *)c;
+            for (const auto &a : m->values)
+            {
                 c = values[a.first];
                 if (c != NULL)
                     c->unmark();
@@ -1546,7 +1590,7 @@ public:
         return la;
     }
 
-    lisp_atom *get_atom(u_ustring& u);
+    lisp_atom *get_atom(u_ustring &u);
 
     void stack_off(lisp_element *e)
     {
@@ -1627,6 +1671,7 @@ public:
         variables.back()[c] = l;
     }
 
+    void initmathvalues();
     string read_file(lisp_element *e);
     void write_file(lisp_element *e, lisp_element *txt);
     void append_file(lisp_element *e, lisp_element *txt);
