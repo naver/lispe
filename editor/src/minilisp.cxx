@@ -605,7 +605,7 @@ void lisp_list::unprotect()
 
 void lisp_list::unmark()
 {
-    status -= (status && s_status());
+    status -= (status && status_not_constant());
     if (!status)
     {
         for (long i = 0; i < values.size(); i++)
@@ -620,7 +620,7 @@ void lisp_list::remove()
         return;
 
     status &= ~s_protected;
-    status -= (status && s_status());
+    status -= (status && status_not_constant());
     if (!status)
     {
         for (long i = 0; i < values.size(); i++)
@@ -666,7 +666,7 @@ void lisp_map::unprotect()
 
 void lisp_map::unmark()
 {
-    status -= (status && s_status());
+    status -= (status && status_not_constant());
     if (!status)
     {
         for (const auto &a : values)
@@ -681,7 +681,7 @@ void lisp_map::remove()
         return;
 
     status &= ~s_protected;
-    status -= (status && s_status());
+    status -= (status && status_not_constant());
     if (!status)
     {
         for (const auto &a : values)

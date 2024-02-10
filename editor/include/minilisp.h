@@ -203,24 +203,24 @@ public:
     lisp_element(uint16_t c);
     ~lisp_element();
 
-    inline uint16_t s_status()
+    inline uint16_t status_not_constant()
     {
         return ((status & s_check) == 0);
     }
 
     void mark()
     {
-        status += s_status();
+        status += status_not_constant();
     }
 
     void demark()
     {
-        status -= (status && s_status());
+        status -= (status && status_not_constant());
     }
 
     virtual void unmark()
     {
-        status -= (status && s_status());
+        status -= (status && status_not_constant());
         if (!status)
         {
             delete this;
@@ -412,7 +412,16 @@ public:
         return this;
     }
 
-    virtual lisp_element *clone(bool cst)
+/*
+    1. When duplicate_only_constant is true, only constant values are duplicated
+    2. When duplicate_only_constant is false, all values with status other than 0 are duplicated.
+
+    Basically, you use duplicate_only_constant when you want a regular value to be modified.
+    When duplicate_only_constant is false, you duplicate all values unless they are new. 
+    Numerical operations on values are typically done with duplicate_only_constant=false. 
+    It is then possible to locally modify a numerical value and reduce the creation of numerical or string values.
+*/
+    virtual lisp_element *clone(bool duplicate_only_constant)
     {
         return this;
     }
@@ -567,9 +576,9 @@ public:
         return this;
     }
 
-    lisp_element *clone(bool cst)
+    lisp_element *clone(bool duplicate_only_constant)
     {
-        if (!status || (cst && s_status()))
+        if (!status || (duplicate_only_constant && status_not_constant()))
             return this;
         return new lisp_integer(value);
     }
@@ -691,9 +700,9 @@ public:
         return this;
     }
 
-    lisp_element *clone(bool cst)
+    lisp_element *clone(bool duplicate_only_constant)
     {
-        if (!status || (cst && s_status()))
+        if (!status || (duplicate_only_constant && status_not_constant()))
             return this;
         return new lisp_float(value);
     }
@@ -897,9 +906,9 @@ public:
         return true;
     }
 
-    lisp_element *clone(bool cst)
+    lisp_element *clone(bool duplicate_only_constant)
     {
-        if (!status || (cst && s_status()))
+        if (!status || (duplicate_only_constant && status_not_constant()))
             return this;
 
         return new lisp_string(value);
@@ -1214,15 +1223,15 @@ public:
         os << ")";
     }
 
-    virtual lisp_element *clone(bool cst)
+    virtual lisp_element *clone(bool duplicate_only_constant)
     {
-        if (!status || (cst && s_status()))
+        if (!status || (duplicate_only_constant && status_not_constant()))
             return this;
 
         lisp_list *l = new lisp_list();
         for (long i = 0; i < values.size(); i++)
         {
-            l->append(values[i]->clone(cst));
+            l->append(values[i]->clone(duplicate_only_constant));
         }
         return l;
     }
@@ -1348,7 +1357,7 @@ public:
         os << "()";
     }
 
-    lisp_element *clone(bool cst)
+    lisp_element *clone(bool duplicate_only_constant)
     {
         return this;
     }
@@ -1518,16 +1527,16 @@ public:
         os << "}";
     }
 
-    lisp_element *clone(bool cst)
+    lisp_element *clone(bool duplicate_only_constant)
     {
-        if (!status || (cst && s_status()))
+        if (!status || (duplicate_only_constant && status_not_constant()))
             return this;
 
         lisp_map *m = new lisp_map();
         lisp_element *e;
         for (const auto &a : values)
         {
-            e = a.second->clone(cst);
+            e = a.second->clone(duplicate_only_constant);
             e->mark();
             m->values[a.first] = e;
         }

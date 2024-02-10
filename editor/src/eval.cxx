@@ -357,7 +357,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(this, lispargnbserror->message);
 
             e = values[1]->eval(lisp);
-            e = e->clone(false);
+            e = e->clone(true);
             r = values[2]->eval(lisp);
             lisp_element *v = values[3]->eval(lisp);
             e->insert(r, v);
@@ -397,7 +397,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r = new lisp_list();
             for (long i = 1; i < sz; i++)
             {
-                e = values[i]->eval(lisp)->clone(false);
+                e = values[i]->eval(lisp)->clone(true);
                 r->append(e);
             }
             return r;
@@ -421,7 +421,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 if (values[i]->code != v_list || values[i]->size() != 2)
                     throw new lisp_error(this, lispargnbserror->message);
                 r = values[i]->at(0)->eval(lisp);
-                v = values[i]->at(1)->eval(lisp)->clone(false);
+                v = values[i]->at(1)->eval(lisp)->clone(true);
                 e->put(r, v);
                 r = r->release();
                 v->release();
@@ -481,7 +481,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         { //(nconc l ll)
             if (sz != 3)
                 throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp)->clone(false);
+            e = values[1]->eval(lisp)->clone(true);
             r = values[2]->eval(lisp);
             e->concatenate(r);
             r->release();
@@ -598,7 +598,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(this, lispargnbserror->message);
 
             e = values[1]->eval(lisp);
-            e = e->clone(false);
+            e = e->clone(true);
             r = values[2]->eval(lisp);
             lisp_element *v = values[3]->eval(lisp);
             e->put(r, v);
