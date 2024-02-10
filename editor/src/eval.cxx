@@ -1,5 +1,9 @@
 #include "minilisp.h"
 
+//------------------------------------------------------------------------
+extern UTF8_Handler special_characters;
+//------------------------------------------------------------------------
+
 u_ustring get_label(uint16_t);
 long gcd_math(long a, long b)
 {
@@ -299,12 +303,16 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
-            if (e->is_number())
+            if (e->is_float())
                 return e;
+            if (e->is_integer()) {
+                r = new lisp_float(e->doublevalue());
+                e->release();
+                return r;
+            }
             u_ustring v;
-            long lg_value = 0;
             e->stringvalue(v);
-            double d = convertingfloathexa(STR(v), lg_value);
+            double d = convertingfloathexa(STR(v));
             e->release();
             return new lisp_float(d);
         }
@@ -370,10 +378,14 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
-            if (e->is_number())
+            if (e->is_integer())
                 return e;
+            if (e->is_float()) {
+                r = new lisp_integer(e->longvalue());
+                e->release();
+                return r;
+            }
             u_ustring v;
-            long lg_value = 0;
             e->stringvalue(v);
             long d = convertinginteger(v);
             e->release();
@@ -411,6 +423,16 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r = e->loop(lisp, this, values[1]);
             e->release();
             return r;
+        }
+        case l_lower: {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);            
+            u_ustring v;
+            e->stringvalue(v);
+            v =special_characters.u_to_lower(v);
+            e->release();
+            return new lisp_string(v);
         }
         case l_map:
         { //(map (key value) (key value) ..)
@@ -574,6 +596,20 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             stringstream os;
             for (long i = 1; i < sz; i++)
             {
+                e = values[i]->eval(lisp);
+                e->string_to_os(os);
+                e = e->release();
+            }
+            cerr << os.str();
+            return lisp_emptystring;
+        }
+        case l_println:
+        {
+            stringstream os;
+            for (long i = 1; i < sz; i++)
+            {
+                if (i != 1)
+                    os << " ";
                 e = values[i]->eval(lisp);
                 e->string_to_os(os);
                 e = e->release();
@@ -749,6 +785,16 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             long d = e->code;
             e->release();
             return new lisp_string(get_label(d));
+        }
+        case l_upper: {
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);            
+            u_ustring v;
+            e->stringvalue(v);
+            v =special_characters.u_to_upper(v);
+            e->release();
+            return new lisp_string(v);
         }
         case l_while: //(while condition code)
         {

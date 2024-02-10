@@ -1575,6 +1575,22 @@ wstring UTF8_Handler::s_to_upper(wstring& s) {
     return res;
 }
 
+u_ustring UTF8_Handler::u_to_lower(u_ustring& s) {
+    u_ustring res;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++)
+        res += (u_uchar)uc_to_lower(s[i]);
+    return res;
+}
+
+u_ustring UTF8_Handler::u_to_upper(u_ustring& s) {
+    u_ustring res;
+    long lg = s.size();
+    for (long i = 0; i < lg; i++)
+        res += (u_uchar)c_to_upper(s[i]);
+    return res;
+}
+
 bool UTF8_Handler::s_is_space(string& str) {
     long lg = str.size();
     uchar* contenu = USTR(str);
@@ -1595,7 +1611,6 @@ bool UTF8_Handler::s_is_space(wstring& str) {
     }
     return true;
 }
-
 
 bool s_is_digit(string& str) {
     long lg = str.size();

@@ -74,6 +74,7 @@ typedef enum
     l_list,
     l_load,
     l_loop,
+    l_lower,
     l_map,
     l_mapcar,
     l_minus,
@@ -88,6 +89,7 @@ typedef enum
     l_plus,
     l_pop,
     l_print,
+    l_println,
     l_push,
     l_put,
     l_quote,
@@ -106,6 +108,7 @@ typedef enum
     l_supeq,
     l_trim,
     l_type,
+    l_upper,
     l_while,
     l_write,
     l_zerop,
@@ -1630,6 +1633,31 @@ public:
     void stack_variables_on(std::map<uint16_t, lisp_element *> &local_vars)
     {
         variables.push_back(local_vars);
+    }
+
+    void stack_variables_in(std::map<uint16_t, lisp_element *> &local_vars)
+    {
+        //We merge and keep our variables locally
+        lisp_element* e;
+        for (const auto& a : local_vars) {
+            e = variables.back()[a.first];
+            variables.back()[a.first] = a.second;
+            a.second->mark();
+            local_vars[a.first] = e;
+        }
+    }
+
+    void stack_variables_out(std::map<uint16_t, lisp_element *> &local_vars)
+    {
+        //We merge and keep our variables locally
+        for (const auto& a : local_vars) {
+            variables.back()[a.first]->unmark();
+            if (a.second == NULL) {                
+                variables.back().erase(a.first);
+            }
+            else
+                variables.back()[a.first] = a.second;
+        }
     }
 
     lisp_atom *get_atom(uint16_t a)

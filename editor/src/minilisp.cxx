@@ -1342,12 +1342,11 @@ lisp_element *lisp_list::execute_lambda(lisp_mini *lisp, lisp_element *lmbd)
         }
         catch (lisp_error *err)
         {
-            for (auto &e : local_vars)
-                e.second->unmark();
+            lisp->stack_variables_out(local_vars);
             throw err;
         }
         // Then we push our local variables on the stack
-        lisp->stack_variables_on(local_vars);
+        lisp->stack_variables_in(local_vars);
         // We then execute our lambda
         r = lisp_nil;
         for (i = 2; i < lmbd->size(); i++)
@@ -1357,7 +1356,9 @@ lisp_element *lisp_list::execute_lambda(lisp_mini *lisp, lisp_element *lmbd)
         }
         // then we clean our stack and we keep the last value
         // that was returned...
-        lisp->stack_off(r);
+        r->protect();
+        lisp->stack_variables_out(local_vars);
+        r->unprotect();
         return r;
     }
     throw new lisp_error(this, lispunknownmethod->message);

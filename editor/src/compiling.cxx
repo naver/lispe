@@ -118,6 +118,7 @@ static void initialisation_static_values()
         code_dictionary[U"list"] = l_list;
         code_dictionary[U"load"] = l_load;
         code_dictionary[U"loop"] = l_loop;
+        code_dictionary[U"lower"] = l_lower;
         code_dictionary[U"map"] = l_map;
         code_dictionary[U"mapcar"] = l_mapcar;
         code_dictionary[U"nconc"] = l_nconc;
@@ -128,6 +129,7 @@ static void initialisation_static_values()
         code_dictionary[U"ord"] = l_ord;
         code_dictionary[U"pop"] = l_pop;
         code_dictionary[U"print"] = l_print;
+        code_dictionary[U"println"] = l_println;
         code_dictionary[U"push"] = l_push;
         code_dictionary[U"put"] = l_put;
         code_dictionary[U"range"] = l_range;
@@ -143,6 +145,7 @@ static void initialisation_static_values()
         code_dictionary[U"sub"] = l_sub;
         code_dictionary[U"trim"] = l_trim;
         code_dictionary[U"type"] = l_type;
+        code_dictionary[U"upper"] = l_upper;
         code_dictionary[U"while"] = l_while;
         code_dictionary[U"write"] = l_write;
         code_dictionary[U"zero?"] = l_zerop;
