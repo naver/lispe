@@ -360,7 +360,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = e->clone(false);
             r = values[2]->eval(lisp);
             lisp_element *v = values[3]->eval(lisp);
-            e->append(r, v);
+            e->insert(r, v);
             r->release();
             v->release();
             return e;
@@ -422,7 +422,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                     throw new lisp_error(this, lispargnbserror->message);
                 r = values[i]->at(0)->eval(lisp);
                 v = values[i]->at(1)->eval(lisp)->clone(false);
-                e->append(r, v);
+                e->put(r, v);
                 r = r->release();
                 v->release();
             }
@@ -590,6 +590,20 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(this, lisperror->message);
             r = values[2]->eval(lisp);
             e = e->append(r);
+            return e;
+        }
+        case l_put:
+        { //(put cts key value)
+            if (sz != 4)
+                throw new lisp_error(this, lispargnbserror->message);
+
+            e = values[1]->eval(lisp);
+            e = e->clone(false);
+            r = values[2]->eval(lisp);
+            lisp_element *v = values[3]->eval(lisp);
+            e->put(r, v);
+            r->release();
+            v->release();
             return e;
         }
         case l_quote:
@@ -817,6 +831,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = acos(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_acosh:
@@ -826,6 +841,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = acosh(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_asin:
@@ -835,6 +851,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = asin(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_asinh:
@@ -844,6 +861,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = asinh(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_atan:
@@ -853,6 +871,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = atan(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_atanh:
@@ -862,6 +881,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = atanh(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_cbrt:
@@ -871,6 +891,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = cbrt(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_cos:
@@ -880,6 +901,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = cos(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_cosh:
@@ -889,6 +911,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = cosh(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_degree:
@@ -898,6 +921,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = (v * 180) / M_PI;
+            e->release();
             return new lisp_float(v);
         }
         case math_erf:
@@ -907,6 +931,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = erf(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_erfc:
@@ -916,6 +941,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = erfc(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_exp:
@@ -925,6 +951,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = exp(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_exp2:
@@ -934,6 +961,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = exp2(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_expm1:
@@ -943,6 +971,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = expm1(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_fabs:
@@ -952,6 +981,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = fabs(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_floor:
@@ -961,6 +991,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = floor(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_gcd:
@@ -971,6 +1002,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r = values[2]->eval(lisp);
             long v = e->longvalue();
             long vv = r->longvalue();
+            e->release();
+            r->release();
             return new lisp_integer(gcd_math(v, vv));
         }
         case math_hcf:
@@ -979,6 +1012,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r = values[2]->eval(lisp);
             long v = e->longvalue();
             long vv = r->longvalue();
+            e->release();
+            r->release();
             return new lisp_integer(hcf_math(v, vv));
         }
         case math_lgamma:
@@ -988,6 +1023,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = lgamma(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_log:
@@ -997,6 +1033,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = log(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_log10:
@@ -1006,6 +1043,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = log10(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_log1p:
@@ -1015,6 +1053,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = log1p(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_log2:
@@ -1024,6 +1063,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = log2(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_logb:
@@ -1033,6 +1073,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = logb(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_nearbyint:
@@ -1042,6 +1083,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = nearbyint(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_radian:
@@ -1051,6 +1093,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = M_PI * (v / 180);
+            e->release();
             return new lisp_float(v);
         }
         case math_rint:
@@ -1060,6 +1103,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = rint(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_round:
@@ -1069,6 +1113,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = round(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_sin:
@@ -1078,6 +1123,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = sin(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_sinh:
@@ -1087,6 +1133,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = sinh(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_sqrt:
@@ -1096,6 +1143,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = sqrt(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_tan:
@@ -1105,6 +1153,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = tan(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_tanh:
@@ -1114,6 +1163,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = tanh(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_tgamma:
@@ -1123,6 +1173,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = tgamma(v);
+            e->release();
             return new lisp_float(v);
         }
         case math_trunc:
@@ -1132,6 +1183,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             double v = e->doublevalue();
             v = trunc(v);
+            e->release();
             return new lisp_float(v);
         }
         case v_list: //((lambda (a1 a2) code) v1 v2)

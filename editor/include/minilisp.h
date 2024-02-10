@@ -89,6 +89,7 @@ typedef enum
     l_pop,
     l_print,
     l_push,
+    l_put,
     l_quote,
     l_range,
     l_read,
@@ -299,7 +300,8 @@ public:
     virtual lisp_element *sub(long b, long e);
     virtual lisp_element *append(lisp_element *e);
     virtual lisp_element *append(u_ustring &key, lisp_element *e);
-    virtual lisp_element *append(lisp_element *key, lisp_element *e);
+    virtual lisp_element *insert(lisp_element *key, lisp_element *e);
+    virtual lisp_element *put(lisp_element *key, lisp_element *e);
     compile_action store(string &, lisp_element *e, compile_action a);
     virtual void pop_raw() {}
     virtual void pop(lisp_element *);
@@ -908,6 +910,14 @@ public:
     lisp_element *loop(lisp_mini *lisp, lisp_list *code, lisp_element *variable);
     lisp_element *mapcar(lisp_mini *lisp, lisp_element *oper);
     lisp_element *filtercar(lisp_mini *lisp, lisp_element *oper);
+    lisp_element *insert(lisp_element *k, lisp_element *v);
+    lisp_element *put(lisp_element *k, lisp_element *v);
+    lisp_element *append(lisp_element *v) {
+        u_ustring key;
+        v->stringvalue(key);
+        value += key;
+        return this;
+    }
 
     lisp_element *at_position(lisp_element *i);
     lisp_element *at(long i);
@@ -1056,11 +1066,35 @@ public:
         return lisp_nil;
     }
 
-    virtual lisp_element *append(lisp_element *k, lisp_element *v)
+    virtual lisp_element *put(lisp_element *k, lisp_element *v) {
+        long key = k->longvalue();
+        if (key < 0)
+            throw new lisp_error(this, "out of range");
+
+        v->mark();
+
+        if (key >= values.size())
+            values.push_back(v);
+        else {
+            lisp_element* e = values[key];
+            e->unmark();
+            values[key] = v;
+        }            
+        return this;
+    } 
+
+    virtual lisp_element *insert(lisp_element *k, lisp_element *v)
     {
         long key = k->longvalue();
+        if (key < 0)
+            throw new lisp_error(this, "out of range");
+
         v->mark();
-        values.insert(values.begin() + key, v);
+
+        if (key >= values.size())
+            values.push_back(v);
+        else
+            values.insert(values.begin() + key, v);
         return this;
     }
 
@@ -1225,7 +1259,14 @@ public:
         code = v_nil;
     }
 
-    lisp_element *append(lisp_element *k, lisp_element *v)
+    lisp_element *put(lisp_element *k, lisp_element *v)
+    {
+        lisp_list *l = new lisp_list();
+        l->append(v);
+        return l;
+    }
+
+    lisp_element *insert(lisp_element *k, lisp_element *v)
     {
         lisp_list *l = new lisp_list();
         l->append(v);
@@ -1327,7 +1368,19 @@ public:
         return true;
     }
 
-    lisp_element *append(lisp_element *k, lisp_element *v)
+    lisp_element *put(lisp_element *k, lisp_element *v)
+    {
+        u_ustring key;
+        k->stringvalue(key);
+        v->mark();
+        k = values[key];
+        if (k != NULL)
+            k->unmark();
+        values[key] = v;
+        return this;
+    }
+
+    lisp_element *insert(lisp_element *k, lisp_element *v)
     {
         u_ustring key;
         k->stringvalue(key);

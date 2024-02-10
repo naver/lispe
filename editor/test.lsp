@@ -1,11 +1,14 @@
+(setq r "abcdef")
+(setq r (put r 1 "BB"))
+
 (defun addmap(x)
     (insert {} "t" x)
-)    
+)
 
 (addmap 20)
 (addmap 30)
 (addmap 40)
-    
+
 (defun fct(x)
     (setq l '(a b c))
     (push l x)

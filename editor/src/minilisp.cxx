@@ -157,12 +157,17 @@ lisp_element *lisp_element::append(lisp_element *e)
     throw new lisp_error(this, lisperror->message);
 }
 
+lisp_element *lisp_element::put(lisp_element *k, lisp_element *e)
+{
+    throw new lisp_error(this, lisperror->message);
+}
+
 void lisp_element::pop(lisp_element * e)
 {
     throw new lisp_error(this, lisperror->message);
 }
 
-lisp_element *lisp_element::append(lisp_element* k, lisp_element *e)
+lisp_element *lisp_element::insert(lisp_element* k, lisp_element *e)
 {
     throw new lisp_error(this, lisperror->message);
 }
@@ -360,6 +365,49 @@ lisp_element *lisp_string::at(long i)
     if (i >= value.size())
         return lisp_emptystring;
     return new lisp_string(value[i]);
+}
+
+
+lisp_element *lisp_string::put(lisp_element* k, lisp_element* v) {
+    long key = k->longvalue();
+    if (key < 0)
+        throw new lisp_error(this, "out of range");
+
+    u_ustring val;
+    v->stringvalue(val);
+    long sz = value.size();
+
+    if (key >= sz)
+        value += val;
+    else {
+        if (val.size() == 1)
+            value[key] = val[0];
+        else {
+            value = s_uleft(value, key) + val + s_uright(value, sz - key - 1);
+        }
+    }
+    return this;
+}
+
+lisp_element *lisp_string::insert(lisp_element* k, lisp_element* v) {
+    long key = k->longvalue();
+    if (key < 0)
+        throw new lisp_error(this, "out of range");
+
+    u_ustring val;
+    v->stringvalue(val);
+    long sz = value.size();
+
+    if (key >= sz)
+        value += val;
+    else {
+        if (val.size() == 1)
+            value[key] = val[0];
+        else {
+            value = s_uleft(value, key) + val + s_uright(value, sz - key);
+        }
+    }
+    return this;
 }
 
 lisp_element *lisp_string::sub(long b, long e)

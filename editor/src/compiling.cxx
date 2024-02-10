@@ -129,6 +129,7 @@ static void initialisation_static_values()
         code_dictionary[U"pop"] = l_pop;
         code_dictionary[U"print"] = l_print;
         code_dictionary[U"push"] = l_push;
+        code_dictionary[U"put"] = l_put;
         code_dictionary[U"range"] = l_range;
         code_dictionary[U"read"] = l_read;
         code_dictionary[U"replace"] = l_replace;
@@ -183,6 +184,7 @@ static void initialisation_static_values()
         code_dictionary[U"tanh"] = math_tanh;
         code_dictionary[U"tgamma"] = math_tgamma;
         code_dictionary[U"trunc"] = math_trunc;
+
         code_dictionary[U"€"] = l_final;
 
         for (const auto &a : code_dictionary)
