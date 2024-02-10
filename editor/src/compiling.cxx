@@ -1,4 +1,5 @@
 #include "minilisp.h"
+#include <unistd.h>
 
 #ifdef DEBUGGER
 void displaygarbagesize();
@@ -952,4 +953,60 @@ void lisp_mini::garbage_clean()
 #ifdef DEBUGGER
     displaygarbagesize();
 #endif
+}
+//-------------------------------------------------------------------------------------
+string lisp_mini::execute_unix_command(string cmd)
+{
+    FILE *fp;
+    int status;
+
+    char res[PATH_MAX];
+
+    bool get_current = false;
+    if (cmd[0] == 'c' && cmd[1] == 'd' && (!cmd[2] || cmd[2] == ' '))
+    {
+        // In this case we do a fwrite to force the completion
+        get_current = true;
+        cmd += ";pwd";
+    }
+
+    if (current_directory != "")
+    {
+        chdir(STR(current_directory));
+    }
+
+#ifdef WIN32
+    fp = _popen(STR(cmd), "r");
+#else
+    fp = popen(STR(cmd), "r");
+#endif
+    if (fp == NULL)
+        return "Error: the pipe did not open properly\n";
+
+    string result;
+    while (fgets(res, PATH_MAX, fp) != NULL)
+    {
+        cmd = res;
+        result += cmd;
+    }
+
+#ifdef WIN32
+    status = _pclose(fp);
+#else
+    status = pclose(fp);
+#endif
+    if (status == -1)
+    {
+        result = "Error: when closing the pipe\n";
+    }
+    else
+    {
+        if (get_current)
+        {
+            current_directory = result;
+            s_trim(current_directory);
+            result = "true\n";
+        }
+    }
+    return result;
 }

@@ -159,7 +159,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
             e = values[1]->eval(lisp);
-            r = e->command();
+            r = e->command(lisp);
             e->release();
             return r;
         case l_cond: //(cond ((test) code) ((test) code) ...)

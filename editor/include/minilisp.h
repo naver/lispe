@@ -161,9 +161,6 @@ class lisp_atom;
 class lisp_boolean;
 class lisp_mini;
 
-lisp_mini *create_mini_lisp_instance();
-string execute_unix_command(string wcmd);
-
 extern lisp_element *lisp_nil;
 extern lisp_element *lisp_true;
 
@@ -317,7 +314,7 @@ public:
     {
         return lisp_nil;
     }
-    virtual lisp_element *command();
+    virtual lisp_element *command(lisp_mini*);
     virtual lisp_element *split(lisp_element *)
     {
         return lisp_nil;
@@ -1528,13 +1525,7 @@ public:
         s_utf8_to_unicode(value, v, v.size());
     }
 
-    lisp_element *command()
-    {
-        string result;
-        s_unicode_to_utf8(result, value);
-        result = execute_unix_command(result);
-        return new lisp_string(result);
-    }
+    lisp_element *command(lisp_mini* lisp);
 
     void stringvalue(u_ustring &v, bool into = false)
     {
@@ -1678,6 +1669,7 @@ public:
     lisp_element *load_program(lisp_element *program, lisp_element *e, vector<lisp_element *> &storage);
     string execute_code(string &code);
     string execute_file(string filename, vector<string> &args);
+    string execute_unix_command(string cmd);
 
     ~lisp_mini()
     {

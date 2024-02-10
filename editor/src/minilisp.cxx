@@ -187,7 +187,7 @@ lisp_element *lisp_element::cdr()
     throw new lisp_error(this, lisperror->message);
 }
 
-lisp_element *lisp_element::command()
+lisp_element *lisp_element::command(lisp_mini* lisp)
 {
     throw new lisp_error(this, lisperror->message);
 }
@@ -235,6 +235,14 @@ compile_action lisp_element::store(string &key, lisp_element *e, compile_action 
     return action;
 }
 //-------------------------------------------------------------------------------------
+lisp_element *lisp_unix::command(lisp_mini* lisp)
+{
+    string result;
+    s_unicode_to_utf8(result, value);
+    result = lisp->execute_unix_command(result);
+    return new lisp_string(result);
+}
+
 lisp_element* lisp_string::find(lisp_element* v) {
     u_ustring val;
     v->stringvalue(val);
