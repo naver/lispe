@@ -1,5 +1,6 @@
 ################################################################
 CPPLUSPLUS = g++
+#CPPLUSPLUS = clang++
 ################ Compiler SHELL #################################
 SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
@@ -22,7 +23,7 @@ OBJECTLIB = $(SOURCELIB:%.cxx=objs/lisp/%.o)
 #------------------------------------------------------------
 DEBUGMODE = -g -DDEBUGGER
 MODEFAST = -O3
-MODECLANG = -Ofast
+#MODECLANG = -Ofast
 
 # Choose DEBUGMODE instead of MODEFAST if you need to check the memory leaks
 OPTIONS = $(MODEFAST)
