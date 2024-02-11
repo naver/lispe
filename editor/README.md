@@ -2,38 +2,34 @@
 
 This directory contains the code to implement an editor to edit and run your own interpreter.
 
-## Detecting your compiling environment
-However before starting, you need to launch _configure.py_, which is in the top directory.
-
-This _python_ program will analyze your environment to initialize the proper parameters to compile your editor.
-This program will then create _Makefile.in_ that is requested to properly compile your interpreter.
-
 ### Compiling
 
-You can then compile two different versions:
+You can compile four different versions:
 
 * Your customizable editor: `make myeditor` (in that case, this directory is enough)
 * A demonstrator based on the shell interpreter: `make shell`
-* A demonstrator based on LispE: `make lispeditor` (you need to have compiled LispE beforehand)
+* A demonstrator based on lisp mini: `make mini` with the full fledged editor
+* A very simple interface to plat with lisp mini: `make lispmini`
 
 ## Documentation
 The documentation on how to use the editor is here: [Jag Editor](https://github.com/naver/lispe/wiki/1.2-Jag:-Terminal-Editor-With-Mouse-Support-and-Colour-Highlighting)
 
 ## Files
 
-We propose two files to show how to proceed.
+We propose different files to show how to proceed.
 
 1. [editormain.cxx](https://github.com/naver/lispe/tree/master/editor/src/editormain.cxx) contains a generic stub that you can modify to implement your own custom editor (use `make myeditor`)
 1. [shellmain.cxx](https://github.com/naver/lispe/tree/master/editor/src/shellmain.cxx) contains a simple example of the integration of a shell interpreter (use `make shell`)
-1. [lispemain.cxx](https://github.com/naver/lispe/tree/master/editor/src/lispemain.cxx) contains a specific implementation to execute LispE command. This is given as an example to help you better understand how to proceed (use `make lispeditor`).
+1. [minilispmain.cxx](https://github.com/naver/lispe/tree/master/editor/src/minilispmain.cxx) contains a specific implementation to execute lisp mini instructions. This is given as an example to help you better understand how to proceed (use `make mini`).
+1. [minimain.cxx](https://github.com/naver/lispe/tree/master/editor/src/minimain.cxx) contains a specific implementation to execute lisp mini instructions (make `lispmini`). The interface is very very limited to one instruction per line.
 
 
 ### Lisp Mini
 
-_Lisp Mini_ is a very simple lisp interpreter with very minimal garbage collecting capabilities. You can test it in two different ways:
+_Lisp Mini_ is a very simple lisp interpreter. You can test it in two different ways:
 
-1. `make mini` includes the jag editor to test _lisp mini_
-1. `make libmin lispmin` compiles the _lisp mini_ library and a very simple line by line interpreter.
+1. `make mini` includes the jag editor to test _lisp mini_. It also compiles the lispmini library.
+1. `make lispmin` compiles the _lisp mini_ library and a very simple line by line interpreter.
 
 You can read the document: [lisp mini](https://github.com/naver/lispe/tree/master/editor/lisp_mini.md) for more information.
 
