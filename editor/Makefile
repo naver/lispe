@@ -1,31 +1,38 @@
 ################################################################
 CPPLUSPLUS = g++
-################ Compiler LispE #################################
-SOURCEWITHLISPE = lispemain.cxx jag.cxx editor.cxx tokenize.cxx
+################ Compiler SHELL #################################
 SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
-SOURCEMINI = editor.cxx minilispmain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
-SOURCELISP = minimain.cxx
+
+################ Compiler LISP MINI #################################
 SOURCELIB = tokens.cxx minilisp.cxx tools.cxx eval.cxx compiling.cxx
+
+################ WITH A RICH EDITOR #################################
+SOURCEMINI = editor.cxx minilispmain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
+
+############## WITH A VERY POOR ONE #################################
+SOURCELISP = minimain.cxx
 #------------------------------------------------------------
-OBJECTWITHLISPE = $(SOURCEWITHLISPE:%.cxx=objs/%.o)
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
 OBJECTSHELL = $(SOURCESHELL:%.cxx=objs/shell/%.o)
+
 OBJECTMINI = $(SOURCEMINI:%.cxx=objs/mini/%.o)
 OBJECTLISP = $(SOURCELISP:%.cxx=objs/lisp/%.o)
 OBJECTLIB = $(SOURCELIB:%.cxx=objs/lisp/%.o)
 #------------------------------------------------------------
-INCLUDES = -Iinclude -I../include
-# Selon les compilateurs, il faudra peut-être choisir l'un des flags suivants
-#C++11Flag = -std=c++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
-#C++11Flag = -std=gnu++0x -w -c -fPIC $(COPTION) -DUNIX $(VTERM_MOUSE)
-LIBPATH = ../bin
-DEBUGMODE = -g -DDEBUGGER
-C++11Flag = -Ofast -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
-#------------------------------------------------------------
-objs/%.o: src/%.cxx
-	$(CPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
+INCLUDES = -Iinclude
 
+DEBUGMODE = -g -DDEBUGGER
+MODEFAST = -Ofast
+
+# Choose DEBUGMODE instead of MODEFAST if you need to check the memory leaks
+OPTIONS = $(MODEFAST)
+
+# Some compilers need the following options
+#C++11Flag = -std=c++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
+#C++11Flag = -std=gnu++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
+C++11Flag =  -fPIC -std=c++11 -w -c $(OPTIONS) $(VTERM_MOUSE)
+#------------------------------------------------------------
 objs/myeditor/%.o: src/%.cxx
 	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
 
@@ -40,25 +47,25 @@ objs/lisp/%.o: src/%.cxx
 #------------------------------------------------------------
 
 # For those who prefer a small executable linked with a dynamic library
-lispeditor: install $(OBJECTWITHLISPE)
-	$(CPPLUSPLUS) -o bin/lispeditor $(OBJECTWITHLISPE) -L$(LIBPATH) -llispe -ldl $(LIBBOOST) -lpthread
-
 myeditor: install $(OBJECTMYEDITOR)
-	$(CPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
+	$(CPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -ldl -lpthread
 
 shell: install $(OBJECTSHELL)
-	$(CPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
+	$(CPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -ldl -lpthread
 
-mini: install libmini $(OBJECTMINI)
-	$(CPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread  -Lbin -lminilisp
-
-lispmini: install libmini $(OBJECTLISP)
-	$(CPPLUSPLUS) -o bin/lisp $(OBJECTLISP) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread -Lbin -lminilisp
-
+#------------------------------------------------------------
+# With lib mini
+#------------------------------------------------------------
 libmini: install $(OBJECTLIB)
 	ar rcs bin/libminilisp.a $(OBJECTLIB)
 	ranlib bin/libminilisp.a
 
+mini: install libmini $(OBJECTMINI)
+	$(CPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -ldl -lpthread  -Lbin -lminilisp
+
+lispmini: install libmini $(OBJECTLISP)
+	$(CPPLUSPLUS) -o bin/lisp $(OBJECTLISP) -ldl -lpthread -Lbin -lminilisp
+#------------------------------------------------------------
 install:
 	mkdir -p bin
 	mkdir -p objs
