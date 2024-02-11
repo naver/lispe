@@ -23,7 +23,7 @@ OBJECTLIB = $(SOURCELIB:%.cxx=objs/lisp/%.o)
 #------------------------------------------------------------
 DEBUGMODE = -g -DDEBUGGER
 MODEFAST = -O3
-#MODECLANG = -Ofast
+MODECLANG = -Ofast
 
 # Choose DEBUGMODE instead of MODEFAST if you need to check the memory leaks
 OPTIONS = $(MODEFAST)
