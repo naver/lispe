@@ -92,38 +92,32 @@ static std::set<lisp_element *> garbages;
 void displaygarbagesize() {
     cerr << "GB:" << garbages.size() << endl;
 }
+#endif
 
 lisp_element::lisp_element(uint16_t c) : code(c)
 {
+#ifdef DEBUGGER 
     idx = garbages.size();
     garbages.insert(this);
+#endif
     status = 0;
 }
 
 lisp_element::lisp_element(std::vector<lisp_element *> &storage, uint16_t c) : status(s_protected), code(c)
 {
+#ifdef DEBUGGER
     idx = garbages.size();
     garbages.insert(this);
+#endif
     storage.push_back(this);
 }
 
 lisp_element::~lisp_element()
 {
+#ifdef DEBUGGER
     garbages.erase(this);
-}
-#else
-lisp_element::lisp_element(uint16_t c) : code(c)
-{
-    status = 0;
-}
-
-lisp_element::lisp_element(std::vector<lisp_element *> &storage, uint16_t c) : status(s_protected), code(c)
-{
-    storage.push_back(this);
-}
-
-lisp_element::~lisp_element() {}
 #endif
+}
 
 //-------------------------------------------------------------------------------------
 
@@ -132,9 +126,14 @@ lisp_element *lisp_element::replace(lisp_element *a, lisp_element *v)
     return lisp_emptystring;
 }
 
+lisp_element *lisp_element::join(lisp_element *sep)
+{
+    return lisp_emptystring;
+}
+
 lisp_element *lisp_element::sub(long b, long e)
 {
-    return lisperror->eval(NULL);
+    throw new lisp_error(this, lisperror->message);
 }
 
 void lisp_element::concatenate(lisp_element* r)
@@ -145,11 +144,6 @@ void lisp_element::concatenate(lisp_element* r)
 lisp_element *lisp_element::cons_apply(lisp_element *op)
 {
     throw new lisp_error(this, lisperror->message);
-}
-
-lisp_element *lisp_element::join(lisp_element *sep)
-{
-    return lisp_emptystring;
 }
 
 lisp_element *lisp_element::append(lisp_element *e)
