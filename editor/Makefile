@@ -20,8 +20,6 @@ OBJECTMINI = $(SOURCEMINI:%.cxx=objs/mini/%.o)
 OBJECTLISP = $(SOURCELISP:%.cxx=objs/lisp/%.o)
 OBJECTLIB = $(SOURCELIB:%.cxx=objs/lisp/%.o)
 #------------------------------------------------------------
-INCLUDES = -Iinclude
-
 DEBUGMODE = -g -DDEBUGGER
 MODEFAST = -Ofast
 
@@ -47,30 +45,34 @@ objs/lisp/%.o: src/%.cxx
 #------------------------------------------------------------
 
 # For those who prefer a small executable linked with a dynamic library
-myeditor: install $(OBJECTMYEDITOR)
+myeditor: installbase $(OBJECTMYEDITOR)
 	$(CPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -ldl -lpthread
 
-shell: install $(OBJECTSHELL)
+shell: installbase $(OBJECTSHELL)
 	$(CPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -ldl -lpthread
 
 #------------------------------------------------------------
 # With lib mini
 #------------------------------------------------------------
-libmini: install $(OBJECTLIB)
+libmini: installlisp $(OBJECTLIB)
 	ar rcs bin/libminilisp.a $(OBJECTLIB)
 	ranlib bin/libminilisp.a
 
-mini: install libmini $(OBJECTMINI)
+mini: installlisp libmini $(OBJECTMINI)
 	$(CPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -ldl -lpthread  -Lbin -lminilisp
 
-lispmini: install libmini $(OBJECTLISP)
+lispmini: installlisp libmini $(OBJECTLISP)
 	$(CPPLUSPLUS) -o bin/lisp $(OBJECTLISP) -ldl -lpthread -Lbin -lminilisp
 #------------------------------------------------------------
-install:
+installbase:
 	mkdir -p bin
 	mkdir -p objs
 	mkdir -p objs/myeditor
 	mkdir -p objs/shell
+
+installlisp:
+	mkdir -p bin
+	mkdir -p objs
 	mkdir -p objs/mini
 	mkdir -p objs/lisp
 
