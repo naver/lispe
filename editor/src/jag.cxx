@@ -2715,7 +2715,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
 #ifdef WIN32
 		case 8:
 #else
-#ifndef APPLE
+#ifdef __apple_build_version__
 		case 15:
 #endif
 		case 127: //back delete

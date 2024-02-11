@@ -135,7 +135,7 @@ const unsigned char u_shift_left[] = { 225, 75, 0 };
 #else
 const char u_c_right[] = { 27, 91, 49, 59, 53, 67, 0 };
 const char u_c_left[] = { 27, 91, 49, 59, 53, 68, 0 };
-#ifdef APPLE
+#ifdef __apple_build_version__
 const char u_c_up[] = { 27, 91, 53, 126, 0 };
 const char u_c_down[] = { 27, 91, 54, 126, 0 };
 #else

@@ -1,5 +1,5 @@
 ################################################################
-include ../Makefile.in
+CPPLUSPLUS = g++
 ################ Compiler LispE #################################
 SOURCEWITHLISPE = lispemain.cxx jag.cxx editor.cxx tokenize.cxx
 SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
@@ -24,36 +24,36 @@ DEBUGMODE = -g -DDEBUGGER
 C++11Flag = -Ofast -fPIC -std=c++11 -w -c $(COPTION) $(REGEX) -DUNIX $(VTERM_MOUSE)
 #------------------------------------------------------------
 objs/%.o: src/%.cxx
-	$(COMPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
+	$(CPPLUSPLUS) $(C++11Flag) $(INCLUDES) $< -o $@
 
 objs/myeditor/%.o: src/%.cxx
-	$(COMPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
 
 objs/shell/%.o: src/%.cxx
-	$(COMPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
 
 objs/mini/%.o: src/%.cxx
-	$(COMPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
 
 objs/lisp/%.o: src/%.cxx
-	$(COMPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
 #------------------------------------------------------------
 
 # For those who prefer a small executable linked with a dynamic library
 lispeditor: install $(OBJECTWITHLISPE)
-	$(COMPPLUSPLUS) -o bin/lispeditor $(OBJECTWITHLISPE) -L$(LIBPATH) -llispe -ldl $(LIBBOOST) -lpthread
+	$(CPPLUSPLUS) -o bin/lispeditor $(OBJECTWITHLISPE) -L$(LIBPATH) -llispe -ldl $(LIBBOOST) -lpthread
 
 myeditor: install $(OBJECTMYEDITOR)
-	$(COMPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
+	$(CPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
 
 shell: install $(OBJECTSHELL)
-	$(COMPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
+	$(CPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread
 
 mini: install libmini $(OBJECTMINI)
-	$(COMPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread  -Lbin -lminilisp
+	$(CPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread  -Lbin -lminilisp
 
 lispmini: install libmini $(OBJECTLISP)
-	$(COMPPLUSPLUS) -o bin/lisp $(OBJECTLISP) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread -Lbin -lminilisp
+	$(CPPLUSPLUS) -o bin/lisp $(OBJECTLISP) -L$(LIBPATH) -ldl $(LIBBOOST) -lpthread -Lbin -lminilisp
 
 libmini: install $(OBJECTLIB)
 	ar rcs bin/libminilisp.a $(OBJECTLIB)
