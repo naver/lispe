@@ -1,8 +1,9 @@
 ################################################################
 CPPLUSPLUS = g++
 #CPPLUSPLUS = clang++
-################ Compiler SHELL #####################################
+################ RAW EDITOR AND SHELL ###############################
 SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
+
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 
 ################ FILES TO COMPILE LISP MINI LIBRARY #################
@@ -17,7 +18,7 @@ SOURCELISP = lispminimain.cxx
 #------------------------------------------------------------
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
 OBJECTSHELL = $(SOURCESHELL:%.cxx=objs/shell/%.o)
-
+#------------------------------------------------------------
 OBJECTMINI = $(SOURCEMINI:%.cxx=objs/mini/%.o)
 OBJECTLISP = $(SOURCELISP:%.cxx=objs/lisp/%.o)
 OBJECTLIB = $(SOURCELIB:%.cxx=objs/lisp/%.o)
