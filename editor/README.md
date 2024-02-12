@@ -20,8 +20,8 @@ We propose different files to show how to proceed.
 
 1. [editormain.cxx](https://github.com/naver/lispe/tree/master/editor/src/editormain.cxx) contains a generic stub that you can modify to implement your own custom editor (use `make myeditor`)
 1. [shellmain.cxx](https://github.com/naver/lispe/tree/master/editor/src/shellmain.cxx) contains a simple example of the integration of a shell interpreter (use `make shell`)
-1. [minilispmain.cxx](https://github.com/naver/lispe/tree/master/editor/src/minilispmain.cxx) contains a specific implementation to execute lisp mini instructions. This is given as an example to help you better understand how to proceed (use `make mini`).
-1. [minimain.cxx](https://github.com/naver/lispe/tree/master/editor/src/minimain.cxx) contains a specific implementation to execute lisp mini instructions (make `lispmini`). The interface is very very limited to one instruction per line.
+1. [minimain.cxx](https://github.com/naver/lispe/tree/master/editor/src/minimain.cxx) contains a specific implementation to execute lisp mini instructions. This is given as an example to help you better understand how to proceed (use `make mini`).
+1. [lispminimain.cxx](https://github.com/naver/lispe/tree/master/editor/src/lispminimain.cxx) contains a specific implementation to execute lisp mini instructions (make `lispmini`). The interface is very very limited to one instruction per line.
 
 
 ### Lisp Mini

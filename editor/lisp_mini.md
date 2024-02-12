@@ -16,6 +16,14 @@ Every time an object is created, it is automatically recorded in the _garbages_ 
 When a function or lambda is executed, a local _garbages_ and a local _variables_ is created to keep track of each value.
 When the execution of a lambda or a function is terminated, these elements are deleted.
 
+## Compiling
+
+You can compile two different versions:
+
+1. [minimain.cxx](https://github.com/naver/lispe/tree/master/editor/src/minimain.cxx) contains a specific implementation to execute lisp mini instructions. This is given as an example to help you better understand how to proceed (use `make mini`).
+1. [lispminimain.cxx](https://github.com/naver/lispe/tree/master/editor/src/lispminimain.cxx) contains a specific implementation to execute lisp mini instructions (make `lispmini`). The interface is very very limited to one instruction per line.
+
+
 ## Creating a lisp interpreter
 
 It is pretty straightforward:

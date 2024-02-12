@@ -1,18 +1,18 @@
 ################################################################
 CPPLUSPLUS = g++
 #CPPLUSPLUS = clang++
-################ Compiler SHELL #################################
+################ Compiler SHELL #####################################
 SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 
-################ Compiler LISP MINI #################################
+################ FILES TO COMPILE LISP MINI LIBRARY #################
 SOURCELIB = tokens.cxx minilisp.cxx tools.cxx eval.cxx compiling.cxx
 
 ################ WITH A RICH EDITOR #################################
-SOURCEMINI = editor.cxx minilispmain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
+SOURCEMINI = editor.cxx minimain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
 
-############## WITH A VERY POOR ONE #################################
-SOURCELISP = minimain.cxx
+################ WITH A VERY POOR ONE ###############################
+SOURCELISP = lispminimain.cxx
 #------------------------------------------------------------
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
 OBJECTSHELL = $(SOURCESHELL:%.cxx=objs/shell/%.o)
