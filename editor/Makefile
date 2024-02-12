@@ -45,7 +45,7 @@ objs/myeditor/%.o: src/%.cxx
 
 objs/shell/%.o: src/%.cxx
 	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
-
+#------------------------------------------------------------
 objs/mini/%.o: src/%.cxx
 	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
 
