@@ -894,6 +894,12 @@ public:
         value = v;
     }
 
+    void concatenate(lisp_element *c) {
+        u_ustring str;
+        c->stringvalue(str);
+        value += str;
+    }
+    
     lisp_string(u_uchar v) : lisp_element(v_string)
     {
         value = v;
