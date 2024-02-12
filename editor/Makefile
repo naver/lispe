@@ -24,6 +24,8 @@ OBJECTLIB = $(SOURCELIB:%.cxx=objs/lisp/%.o)
 
 # Add this option to C++FLAGS below if your terminal is a VT100
 #to properly handle mouse control...
+# otherwise, you can use -vt100 as an option when launching the editor
+# to test if mouse control works better.
 MOUSEMODE = -DXTERM_MOUSE_VT100
 
 DEBUGMODE = -g -DDEBUGGER
