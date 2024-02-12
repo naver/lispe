@@ -6,13 +6,14 @@ SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.c
 SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 
 ################ FILES TO COMPILE LISP MINI LIBRARY #################
-SOURCELIB = tokens.cxx minilisp.cxx tools.cxx eval.cxx compiling.cxx
+SOURCELIB = minilisp.cxx eval.cxx compiling.cxx tokens.cxx tools.cxx
 
 ################ WITH A RICH EDITOR #################################
 SOURCEMINI = editor.cxx minimain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
 
 ################ WITH A VERY POOR ONE ###############################
 SOURCELISP = lispminimain.cxx
+
 #------------------------------------------------------------
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
 OBJECTSHELL = $(SOURCESHELL:%.cxx=objs/shell/%.o)
