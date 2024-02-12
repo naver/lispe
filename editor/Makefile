@@ -32,7 +32,7 @@ DEBUGMODE = -g -DDEBUGGER
 MODEFAST = -O3
 MODECLANG = -Ofast
 
-# Choose DEBUGMODE instead of MODEFAST if you need to check the memory leaks
+# Choose DEBUGMODE instead of MODEFAST if you need to check memory leaks
 OPTIONS = $(MODEFAST)
 
 # Some compilers need the following options
