@@ -1,8 +1,6 @@
 #include "minilisp.h"
 
 //------------------------------------------------------------------------
-extern UTF8_Handler special_characters;
-//------------------------------------------------------------------------
 
 u_ustring get_label(uint16_t);
 long gcd_math(long a, long b)

@@ -57,8 +57,6 @@
 #define strcat_s(a,c,b) strncat(a,b,c)
 bool evaluate_quotes(wstring& l);
 
-extern UTF8_Handler special_characters;
-
 const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#mapping","%","%=","&","&=",
     "*","*=","+","+=","-","-=","/","/=","<","<<",
     "<<=","<=","=",">",">=",">>",">>=","False","GPSdistance","Maybe",

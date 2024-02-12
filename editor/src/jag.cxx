@@ -34,8 +34,6 @@ void Returnscreensize(long& rs, long& cs, long& sr, long& sc);
 #endif
 
 //--------------------------------------------------------
-extern UTF8_Handler special_characters;
-//--------------------------------------------------------
 
 
 #ifdef APPLE_COPY

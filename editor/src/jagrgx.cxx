@@ -46,7 +46,6 @@ using std::wsregex_iterator;
 
 
 //--------------------------------------------------------------------
-extern UTF8_Handler special_characters;
 UTF8_Handler* Au_meta::met = &special_characters;
 //--------------------------------------------------------------------
 #define au_error -1

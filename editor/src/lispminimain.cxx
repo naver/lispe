@@ -1,6 +1,7 @@
 #include "minilisp.h"
-#include <unistd.h>
-
+//Important the next file contains the creation of the global variable: special_characters, which is used in many
+//places of the editor... It should be systematically included in the main of your application.
+#include "special_characters.h"
 
 // Minimale version without the internal editor
 int main(int argc, char *argv[])

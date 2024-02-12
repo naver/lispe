@@ -1,20 +1,27 @@
 ################################################################
 CPPLUSPLUS = g++
 #CPPLUSPLUS = clang++
-################ RAW EDITOR AND SHELL ###############################
-SOURCEMYEDITOR = editor.cxx editormain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
 
-SOURCESHELL = editor.cxx shellmain.cxx jag.cxx jagget.cxx jagrgx.cxx tools.cxx tokenize.cxx
+################ LIB EDITOR #########################################
+SOURCEEDITOR = editor.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx tools.cxx
+
+################ MYEDITOR AND SHELL #################################
+
+SOURCEMYEDITOR = editormain.cxx
+
+SOURCESHELL = shellmain.cxx
 
 ################ FILES TO COMPILE LISP MINI LIBRARY #################
 SOURCELIB = minilisp.cxx eval.cxx compiling.cxx tokens.cxx tools.cxx
 
 ################ WITH A RICH EDITOR #################################
-SOURCEMINI = editor.cxx minimain.cxx jag.cxx jagget.cxx jagrgx.cxx tokenize.cxx
+SOURCEMINI = minimain.cxx
 
 ################ WITH A VERY POOR ONE ###############################
 SOURCELISP = lispminimain.cxx
 
+#------------------------------------------------------------
+OBJECTEDITOR = $(SOURCEEDITOR:%.cxx=objs/editor/%.o)
 #------------------------------------------------------------
 OBJECTMYEDITOR = $(SOURCEMYEDITOR:%.cxx=objs/myeditor/%.o)
 OBJECTSHELL = $(SOURCESHELL:%.cxx=objs/shell/%.o)
@@ -42,6 +49,10 @@ OPTIONS = $(MODEFAST)
 #C++FLAGS = -std=gnu++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
 C++FLAGS =  -fPIC -std=c++11 -w -c $(OPTIONS) $(VTERM_MOUSE)
 #------------------------------------------------------------
+objs/editor/%.o: src/%.cxx
+	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
+
+#------------------------------------------------------------
 objs/myeditor/%.o: src/%.cxx
 	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
 
@@ -54,13 +65,16 @@ objs/mini/%.o: src/%.cxx
 objs/lisp/%.o: src/%.cxx
 	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
 #------------------------------------------------------------
-
+libeditor: $(OBJECTEDITOR)
+	ar rcs bin/libeditor.a $(OBJECTEDITOR)
+	ranlib bin/libeditor.a
+#------------------------------------------------------------
 # For those who prefer a small executable linked with a dynamic library
-myeditor: installbase $(OBJECTMYEDITOR)
-	$(CPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -ldl -lpthread
+myeditor: installbase libeditor $(OBJECTMYEDITOR)
+	$(CPPLUSPLUS) -o bin/myeditor $(OBJECTMYEDITOR) -ldl -lpthread -Lbin -leditor
 
-shell: installbase $(OBJECTSHELL)
-	$(CPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -ldl -lpthread
+shell: installbase libeditor $(OBJECTSHELL)
+	$(CPPLUSPLUS) -o bin/shelleditor $(OBJECTSHELL) -ldl -lpthread -Lbin -leditor
 
 #------------------------------------------------------------
 # With lib mini
@@ -69,8 +83,8 @@ libmini: installlisp $(OBJECTLIB)
 	ar rcs bin/libminilisp.a $(OBJECTLIB)
 	ranlib bin/libminilisp.a
 
-mini: installlisp libmini $(OBJECTMINI)
-	$(CPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -ldl -lpthread  -Lbin -lminilisp
+mini: installlisp libmini libeditor $(OBJECTMINI)
+	$(CPPLUSPLUS) -o bin/minilisp $(OBJECTMINI) -ldl -lpthread  -Lbin -lminilisp -leditor
 
 lispmini: installlisp libmini $(OBJECTLISP)
 	$(CPPLUSPLUS) -o bin/lisp $(OBJECTLISP) -ldl -lpthread -Lbin -lminilisp
@@ -78,12 +92,14 @@ lispmini: installlisp libmini $(OBJECTLISP)
 installbase:
 	mkdir -p bin
 	mkdir -p objs
+	mkdir -p objs/editor
 	mkdir -p objs/myeditor
 	mkdir -p objs/shell
 
 installlisp:
 	mkdir -p bin
 	mkdir -p objs
+	mkdir -p objs/editor
 	mkdir -p objs/mini
 	mkdir -p objs/lisp
 

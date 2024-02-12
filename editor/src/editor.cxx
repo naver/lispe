@@ -42,8 +42,6 @@ static void handle_ctrl_c(int theSignal) {
 class interpreter_editor;
 void resizewindow(int theSignal);
 
-extern UTF8_Handler special_characters;
-
 //------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------
 // The main editor class for handling LispE expressions

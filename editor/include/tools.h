@@ -414,6 +414,8 @@ public:
 };
 
 //------------------------------------------------------------
+extern UTF8_Handler special_characters;
+//------------------------------------------------------------
 
 void split_container(wchar_t* src, long lensrc, vector<long>&);
 void split_container(u_uchar* src, long lensrc, vector<long>&);

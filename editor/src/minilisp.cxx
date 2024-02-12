@@ -2,8 +2,6 @@
 
 // We want lists, numbers and dictionary
 //------------------------------------------------------------------------
-extern UTF8_Handler special_characters;
-//------------------------------------------------------------------------
 lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bool toconvert)
 {
     static vector<u_ustring> caracs;

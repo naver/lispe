@@ -6,8 +6,6 @@ void displaygarbagesize();
 #endif
 
 //------------------------------------------------------------------------
-UTF8_Handler special_characters;
-//------------------------------------------------------------------------
 // These are elements, which are never deleted and common to all lisps
 //------------------------------------------------------------------------
 lisp_element *lisp_nil = NULL;

@@ -56,9 +56,6 @@
 #define strcat_s(a,c,b) strncat(a,b,c)
 bool evaluate_quotes(wstring& l);
 
-extern UTF8_Handler special_characters;
-
-
 UTF8_Handler::~UTF8_Handler() {
     delete emojis_characters;
 }

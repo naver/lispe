@@ -12,6 +12,10 @@
 #include "editor.h"
 #include "minilisp.h"
 
+//Important the next file contains the creation of the global variable: special_characters, which is used in many
+//places of the editor... It should be systematically included in the main of your application.
+#include "special_characters.h"
+
 #if (_MSC_VER >= 1900)
 FILE _iob[] = { *stdin, *stdout, *stderr };
 extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
