@@ -21,6 +21,11 @@ OBJECTMINI = $(SOURCEMINI:%.cxx=objs/mini/%.o)
 OBJECTLISP = $(SOURCELISP:%.cxx=objs/lisp/%.o)
 OBJECTLIB = $(SOURCELIB:%.cxx=objs/lisp/%.o)
 #------------------------------------------------------------
+
+# Add this option to C++FLAGS below if your terminal is a VT100
+#to properly handle mouse control...
+MOUSEMODE = -DXTERM_MOUSE_VT100
+
 DEBUGMODE = -g -DDEBUGGER
 MODEFAST = -O3
 MODECLANG = -Ofast
@@ -29,21 +34,21 @@ MODECLANG = -Ofast
 OPTIONS = $(MODEFAST)
 
 # Some compilers need the following options
-#C++11Flag = -std=c++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
-#C++11Flag = -std=gnu++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
-C++11Flag =  -fPIC -std=c++11 -w -c $(OPTIONS) $(VTERM_MOUSE)
+#C++FLAGS = -std=c++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
+#C++FLAGS = -std=gnu++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
+C++FLAGS =  -fPIC -std=c++11 -w -c $(OPTIONS) $(VTERM_MOUSE)
 #------------------------------------------------------------
 objs/myeditor/%.o: src/%.cxx
-	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
 
 objs/shell/%.o: src/%.cxx
-	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
 
 objs/mini/%.o: src/%.cxx
-	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
 
 objs/lisp/%.o: src/%.cxx
-	$(CPPLUSPLUS) $(C++11Flag) -Iinclude $< -o $@
+	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
 #------------------------------------------------------------
 
 # For those who prefer a small executable linked with a dynamic library
