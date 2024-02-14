@@ -39,7 +39,8 @@ class my_editor : public interpreter_editor {
             cout << m_red << "Creating your interpreter ONLY if it is not available yet" << endl;
     }
 
-    //Load code from a file name
+    //Load code from a file into your own code before executing run_code()
+    //This function can left empty if you execute your code from within run_code directly
     void load_code(string& filename) {
         cout << m_red;
         cout << "Loading your code here:" << filename << endl;
@@ -49,6 +50,22 @@ class my_editor : public interpreter_editor {
 
     //Run a program
     bool run_code() {
+        string cmd;
+        if (thecurrentfilename == "")
+        {
+            //We simply access the code lines that are stored in memory
+            cmd = the_code();
+        }
+        else
+        {
+            //Or we try to execute a filename...
+            //Note that before executing run_code, load_code has been executed first
+            cmd = thecurrentfilename;
+        }
+        cout << m_red;
+        cout << cmd << endl;
+        cout << m_current;
+
         cout << m_red;
         cout << "Running your code here" << endl;
         cout << m_current;

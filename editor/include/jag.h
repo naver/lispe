@@ -1340,9 +1340,13 @@ public:
         return false;
     }
 
-    string thecode() {
+    string the_code() {
         wstring c = lines.code();
         return convert(c);
+    }
+
+    wstring the_wcode() {
+        return lines.code();
     }
 
 };
