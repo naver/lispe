@@ -45,10 +45,19 @@ MODECLANG = -Ofast
 # Choose DEBUGMODE instead of MODEFAST if you need to check memory leaks
 OPTIONS = $(MODEFAST)
 
+#------------------------------------------------------------
+## For REGEX, if your compiler is very ancient, it might rely on boost
+# Uses the option: BOOSTPOSIXREGEX
+# For more modern compilers, the default option is POSIXREGEX (Regex is now available as a STL template)
+
+#REGEX = -DBOOSTPOSIXREGEX
+REGEX = -DPOSIXREGEX
+#------------------------------------------------------------
+
 # Some compilers need the following options
-#C++FLAGS = -std=c++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
-#C++FLAGS = -std=gnu++0x -w -c $(OPTIONS) $(VTERM_MOUSE)
-C++FLAGS =  -fPIC -std=c++11 -w -c $(OPTIONS) $(VTERM_MOUSE)
+#C++FLAGS = -std=c++0x -w -c $(OPTIONS) $(VTERM_MOUSE) $(REGEX)
+#C++FLAGS = -std=gnu++0x -w -c $(OPTIONS) $(VTERM_MOUSE) $(REGEX)
+C++FLAGS =  -fPIC -std=c++11 -w -c $(OPTIONS) $(VTERM_MOUSE) $(REGEX)
 #------------------------------------------------------------
 objs/editor/%.o: src/%.cxx
 	$(CPPLUSPLUS) $(C++FLAGS) -Iinclude $< -o $@
