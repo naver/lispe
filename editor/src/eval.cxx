@@ -170,6 +170,15 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             r->demark();
             return r;
+        case l_cadar:
+            if (sz != 2)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1]->eval(lisp);
+            r = e->cadar((lisp_cadar*)values[0]);
+            r->mark();
+            r->release();
+            r->demark();
+            return r;
         case l_cdr: //(cdr l)
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);

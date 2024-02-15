@@ -180,6 +180,11 @@ lisp_element *lisp_element::car()
     throw new lisp_error(this, lisperror->message);
 }
 
+lisp_element *lisp_element::cadar(lisp_cadar*)
+{
+    throw new lisp_error(this, lisperror->message);
+}
+
 lisp_element *lisp_element::cdr()
 {
     throw new lisp_error(this, lisperror->message);
@@ -429,13 +434,26 @@ lisp_element *lisp_string::car()
     return new lisp_string(value[0]);
 }
 
+lisp_element *lisp_string::cadar(lisp_cadar* c) {
+    u_ustring v = value;
+    
+    for (long i = c->action.size()-1; i>= 0 && v.size(); i--) {
+        if (c->action[i] == 'a')
+            v = v[0];
+        else            
+            v = s_uright(v, v.size() - 1);
+    }
+    if (v== U"")
+        return lisp_emptystring;
+    return new lisp_string(v);
+}
+
 lisp_element *lisp_string::cdr()
 {
     if (!value.size())
         return lisp_emptystring;
 
-    long lg = value.size();
-    return new lisp_string(s_uright(value, lg - 1));
+    return new lisp_string(s_uright(value, value.size() - 1));
 }
 
 //--------------------------------------------------------------------------------
@@ -1284,6 +1302,22 @@ lisp_element *lisp_list::car()
     if (values.size())
         return values[0];
     return lisp_nil;
+}
+
+lisp_element *lisp_list::cadar(lisp_cadar* c) {
+    lisp_element* v = this;
+    lisp_element* previous = this;
+    
+    for (long i = c->action.size()-1; i>= 0 && v->size(); i--) {
+        if (c->action[i] == 'a')
+            v = previous->car();
+        else            
+            v = previous->cdr();
+        if (previous != this)
+            previous->release();
+        previous = v;
+    }
+    return v;
 }
 
 lisp_element *lisp_list::cdr()

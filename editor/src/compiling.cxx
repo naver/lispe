@@ -100,6 +100,7 @@ static void initialisation_static_values()
         code_dictionary[U"base"] = l_base;
         code_dictionary[U"block"] = l_block;
         code_dictionary[U"car"] = l_car;
+        code_dictionary[U"cadar"] = l_cadar;
         code_dictionary[U"cdr"] = l_cdr;
         code_dictionary[U"chr"] = l_chr;
         code_dictionary[U"command"] = l_command;
@@ -447,11 +448,25 @@ error_tokenize code_segmenting(string &code, Segmentingtype &infos, UTF8_Handler
             if (in_quote)
                 in_quote--;
             break;
-        case 'A': // a simple token
-            infos.append(buffer, jt_keyword, left, right);
+        case 'A': {// a simple token
+            jag_code iscadar = jt_keyword;
+            if (buffer[0] == 'c' && buffer.back() == 'r' && buffer.size() > 3) {
+                iscadar = jt_cadar;
+                //It could be a variation on cadar
+                for (long u = 1; u < buffer.size() - 1; u++) {
+                    if (buffer[u] != 'a' && buffer[u] != 'd') {
+                        iscadar = jt_keyword;
+                        break;
+                    }
+                }
+                if (iscadar == jt_cadar)
+                    buffer = buffer.substr(1, buffer.size()-2);
+            }
+            infos.append(buffer, iscadar, left, right);
             if (in_quote == 1)
                 in_quote = 0;
             break;
+        }
         case '(': // (
             nb_parentheses++;
             if (in_quote == 1 && infos.types.back() == jt_quote)
@@ -582,6 +597,10 @@ bool lisp_mini::compile(lisp_element *program, vector<lisp_element *> &storage, 
             action = program->store(current_key, e, action);
             break;
         }
+        case jt_cadar:
+            e = new lisp_cadar(storage, infos.strings[pos]);
+            action = program->store(current_key, e, action);
+            break;
         case jt_quote:
         {
             e = new lisp_list(storage);

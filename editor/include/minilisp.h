@@ -52,6 +52,7 @@ typedef enum
     l_car,
     l_cdr,
     l_chr,
+    l_cadar,
     l_command,
     l_cond,
     l_cons,
@@ -165,6 +166,7 @@ class lisp_string;
 class lisp_error;
 class lisp_atom;
 class lisp_boolean;
+class lisp_cadar;
 class lisp_mini;
 
 extern lisp_element *lisp_nil;
@@ -314,6 +316,7 @@ public:
     virtual void pop(lisp_element *);
     virtual lisp_element *push_first(lisp_element *e);
     virtual lisp_element *car();
+    virtual lisp_element *cadar(lisp_cadar*);
     virtual lisp_element *cdr();
     virtual lisp_element *at_position(lisp_element *i)
     {
@@ -562,6 +565,29 @@ public:
     }
 };
 
+class lisp_cadar : public  lisp_element {
+public:
+    string action;
+
+    lisp_cadar(vector<lisp_element *> &storage, string a) : action(a), lisp_element(storage, l_cadar) {}
+    
+    void stringvalue(u_ustring &v, bool into = false)
+    {
+        for (long i = 0; i < action.size(); i++)
+            v += (u_uchar)action[i];
+    }
+
+    void string_to_os(std::stringstream &os, bool into = false)
+    {
+        os << action;
+    }
+
+    bool is_instruction()
+    {
+        return true;
+    }
+
+};
 //-------------------------------------------------------------------------------------
 class lisp_integer : public lisp_element
 {
@@ -946,6 +972,7 @@ public:
 
     lisp_element *sub(long b, long e);
     lisp_element *car();
+    lisp_element *cadar(lisp_cadar*);
     lisp_element *cdr();
 
     void pop(lisp_element *e);
@@ -1191,6 +1218,7 @@ public:
     virtual lisp_element *eval(lisp_mini *);
 
     virtual lisp_element *car();
+    virtual lisp_element *cadar(lisp_cadar*);
     virtual lisp_element *cdr();
 
     virtual lisp_element *at_position(lisp_element *e)
@@ -1346,6 +1374,11 @@ public:
     }
 
     lisp_element *car()
+    {
+        return this;
+    }
+
+    lisp_element *cadar(lisp_cadar*)
     {
         return this;
     }
