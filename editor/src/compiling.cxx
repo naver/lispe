@@ -11,7 +11,9 @@ void displaygarbagesize();
 lisp_element *lisp_nil = NULL;
 lisp_element *lisp_true = NULL;
 lisp_string *lisp_emptystring = NULL;
+
 lisp_atom *lisp_break = NULL;
+lisp_atom *lisp_tail = NULL;
 
 lisp_error *lisperror = NULL;
 lisp_error *lispargnbserror = NULL;
@@ -45,6 +47,7 @@ static void initialisation_static_values()
         lisp_true = new lisp_boolean(true);
         lisp_emptystring = new lisp_string(s_constant, U"");
         lisp_break = new lisp_atom(v_break);
+        lisp_tail = new lisp_atom(v_tail);
 
         // Error messages
         lisperror = new lisp_error("Error: wrong method for this element");
@@ -67,6 +70,7 @@ static void initialisation_static_values()
         code_dictionary[U"nil"] = v_nil;
         code_dictionary[U"true"] = v_boolean;
         code_dictionary[U"break"] = v_break;
+        code_dictionary[U"tail#"] = v_tail;
 
         code_dictionary[U"atom_"] = v_atom;
         code_dictionary[U"error_"] = v_error;
@@ -112,6 +116,7 @@ static void initialisation_static_values()
         code_dictionary[U"insert"] = l_insert;
         code_dictionary[U"integer"] = l_integer;
         code_dictionary[U"join"] = l_join;
+        code_dictionary[U"label"] = l_label;
         code_dictionary[U"λ"] = l_lambda;
         code_dictionary[U"list"] = l_list;
         code_dictionary[U"load"] = l_load;
@@ -830,6 +835,7 @@ string lisp_mini::execute_code(string &code)
     try
     {
         stop_execution = false;
+        stack.clear();
         res = program->eval(this);
         res->string_to_os(os);
         res->release();
@@ -905,6 +911,7 @@ string lisp_mini::execute_file(string path, vector<string> &args)
     try
     {
         stop_execution = false;
+        stack.clear();
         res = program->eval(this);
         res->string_to_os(os);
         res->release();
@@ -928,7 +935,6 @@ lisp_mini::lisp_mini()
 {
     initialisation_static_values();
     stop_execution = false;
-    count_data = 0;
     std::map<uint16_t, lisp_element *> v;
     variables.push_back(v);
     initmathvalues();

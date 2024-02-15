@@ -40,6 +40,7 @@ typedef enum
     v_map,
     v_string,
     v_unix,
+    v_tail,
 
     l_append,
     l_apply,
@@ -70,6 +71,7 @@ typedef enum
     l_insert,
     l_integer,
     l_join,
+    l_label,
     l_lambda,
     l_list,
     l_load,
@@ -170,6 +172,8 @@ extern lisp_element *lisp_true;
 
 extern lisp_string *lisp_emptystring;
 extern lisp_atom *lisp_break;
+
+extern lisp_atom *lisp_tail;
 
 extern lisp_error *lisperror;
 extern lisp_error *lispargnbserror;
@@ -1626,11 +1630,12 @@ class lisp_mini
 public:
     vector<std::map<uint16_t, lisp_element *>> variables;
     std::map<uint16_t, lisp_atom *> atoms;
+    vector<uint16_t> stack;
 
     Segmentingtype infos;
     string current_directory;
     string current_file_name;
-    double count_data;
+
     bool stop_execution;
 
     void set_file_name(string &);
@@ -1639,6 +1644,17 @@ public:
     void stack_variables_on(std::map<uint16_t, lisp_element *> &local_vars)
     {
         variables.push_back(local_vars);
+    }
+
+    void stack_variables_replace(std::map<uint16_t, lisp_element *> &local_vars)
+    {
+        //We merge and keep our variables locally
+        lisp_element* e;
+        for (const auto& a : local_vars) {
+            e = variables.back()[a.first];
+            variables.back()[a.first] = a.second;
+            e->unmark();
+        }
     }
 
     void stack_variables_in(std::map<uint16_t, lisp_element *> &local_vars)
@@ -1683,12 +1699,12 @@ public:
     {
         if (variables.size() == 0)
             lispstackerror->eval(this);
-        e->protect();
+        e->mark();
         for (auto &v : variables.back())
         {
             v.second->unmark();
         }
-        e->unprotect();
+        e->demark();
         variables.pop_back();
     }
 
@@ -1739,6 +1755,25 @@ public:
     {
         return (variables.back().find(c) != variables.back().end());
     }
+
+    bool check_function(uint16_t c)
+    {
+        return (variables[0].find(c) != variables[0].end());
+    }
+
+    void insert_bottom(uint16_t c, lisp_element *l) {
+        lisp_element *previous = variables[0][c];
+        if (previous != NULL)
+        {
+            if (previous == l)
+                return;
+            previous->unmark();
+        }
+        l = l->clone(true);
+        l->mark();
+        variables[0][c] = l;
+    }
+
     void insert(uint16_t c, lisp_element *l)
     {
         lisp_element *previous = variables.back()[c];

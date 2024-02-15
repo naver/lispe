@@ -87,14 +87,15 @@ lisp_element *lisp_element::methodBase(lisp_mini *lisp, lisp_element *v_base, bo
 #ifdef DEBUGGER
 static std::set<lisp_element *> garbages;
 
-void displaygarbagesize() {
+void displaygarbagesize()
+{
     cerr << "GB:" << garbages.size() << endl;
 }
 #endif
 
 lisp_element::lisp_element(uint16_t c) : code(c)
 {
-#ifdef DEBUGGER 
+#ifdef DEBUGGER
     idx = garbages.size();
     garbages.insert(this);
 #endif
@@ -134,7 +135,7 @@ lisp_element *lisp_element::sub(long b, long e)
     throw new lisp_error(this, lisperror->message);
 }
 
-void lisp_element::concatenate(lisp_element* r)
+void lisp_element::concatenate(lisp_element *r)
 {
     throw new lisp_error(this, lisperror->message);
 }
@@ -154,17 +155,17 @@ lisp_element *lisp_element::put(lisp_element *k, lisp_element *e)
     throw new lisp_error(this, lisperror->message);
 }
 
-void lisp_element::pop(lisp_element * e)
+void lisp_element::pop(lisp_element *e)
 {
     throw new lisp_error(this, lisperror->message);
 }
 
-lisp_element *lisp_element::insert(lisp_element* k, lisp_element *e)
+lisp_element *lisp_element::insert(lisp_element *k, lisp_element *e)
 {
     throw new lisp_error(this, lisperror->message);
 }
 
-lisp_element *lisp_element::append(u_ustring& k, lisp_element *e)
+lisp_element *lisp_element::append(u_ustring &k, lisp_element *e)
 {
     throw new lisp_error(this, lisperror->message);
 }
@@ -184,7 +185,7 @@ lisp_element *lisp_element::cdr()
     throw new lisp_error(this, lisperror->message);
 }
 
-lisp_element *lisp_element::command(lisp_mini* lisp)
+lisp_element *lisp_element::command(lisp_mini *lisp)
 {
     throw new lisp_error(this, lisperror->message);
 }
@@ -232,7 +233,7 @@ compile_action lisp_element::store(string &key, lisp_element *e, compile_action 
     return action;
 }
 //-------------------------------------------------------------------------------------
-lisp_element *lisp_unix::command(lisp_mini* lisp)
+lisp_element *lisp_unix::command(lisp_mini *lisp)
 {
     string result;
     s_unicode_to_utf8(result, value);
@@ -240,7 +241,8 @@ lisp_element *lisp_unix::command(lisp_mini* lisp)
     return new lisp_string(result);
 }
 
-lisp_element* lisp_string::find(lisp_element* v) {
+lisp_element *lisp_string::find(lisp_element *v)
+{
     u_ustring val;
     v->stringvalue(val);
     return new lisp_integer(value.find(val));
@@ -295,8 +297,9 @@ lisp_element *lisp_string::split(lisp_element *search)
     if (search_string == U"")
     {
         long sz = value.size();
-        //we split the string into an array of characters
-        while (pos < sz) {
+        // we split the string into an array of characters
+        while (pos < sz)
+        {
             special_characters.getchar(value, localvalue, pos);
             result->append(new lisp_string(localvalue));
         }
@@ -359,8 +362,8 @@ lisp_element *lisp_string::at(long i)
     return new lisp_string(value[i]);
 }
 
-
-lisp_element *lisp_string::put(lisp_element* k, lisp_element* v) {
+lisp_element *lisp_string::put(lisp_element *k, lisp_element *v)
+{
     long key = k->longvalue();
     if (key < 0)
         throw new lisp_error(this, "out of range");
@@ -371,17 +374,20 @@ lisp_element *lisp_string::put(lisp_element* k, lisp_element* v) {
 
     if (key >= sz)
         value += val;
-    else {
+    else
+    {
         if (val.size() == 1)
             value[key] = val[0];
-        else {
+        else
+        {
             value = s_uleft(value, key) + val + s_uright(value, sz - key - 1);
         }
     }
     return this;
 }
 
-lisp_element *lisp_string::insert(lisp_element* k, lisp_element* v) {
+lisp_element *lisp_string::insert(lisp_element *k, lisp_element *v)
+{
     long key = k->longvalue();
     if (key < 0)
         throw new lisp_error(this, "out of range");
@@ -392,10 +398,12 @@ lisp_element *lisp_string::insert(lisp_element* k, lisp_element* v) {
 
     if (key >= sz)
         value += val;
-    else {
+    else
+    {
         if (val.size() == 1)
             value[key] = val[0];
-        else {
+        else
+        {
             value = s_uleft(value, key) + val + s_uright(value, sz - key);
         }
     }
@@ -544,15 +552,18 @@ lisp_element *lisp_list::range(lisp_mini *lisp)
     throw new lisp_error(this, lispargnbserror->message);
 }
 //--------------------------------------------------------------------------------
-bool compareElementsSup(lisp_element* e1, lisp_element* e2) {
+bool compareElementsSup(lisp_element *e1, lisp_element *e2)
+{
     return e1->sup(e2);
 }
 
-bool compareElementsInf(lisp_element* e1, lisp_element* e2) {
+bool compareElementsInf(lisp_element *e1, lisp_element *e2)
+{
     return e1->inf(e2);
 }
 
-lisp_element* lisp_list::sort(bool direction) {
+lisp_element *lisp_list::sort(bool direction)
+{
     if (direction)
         std::sort(values.begin(), values.end(), compareElementsSup);
     else
@@ -1302,108 +1313,3 @@ lisp_element *lisp_list::sub(long b, long e)
     return l;
 }
 
-lisp_element *lisp_list::execute_lambda(lisp_mini *lisp, lisp_element *lmbd)
-{
-    if (lmbd->size() && lmbd->at(0)->code == l_lambda)
-    {
-        // then we have ((lambda (p1 .. p2) code) a1..a2)
-        // e is (lambda (p1 .. p2 ) code)
-        if (lmbd->size() < 3 || lmbd->at(1)->size() != values.size() - 1)
-            throw new lisp_error(this, lispargnbserror->message);
-        // first we push a new stack element
-        lisp_element *r;
-        lisp_element *a;
-        lisp_element *p;
-        long i;
-        std::map<uint16_t, lisp_element *> local_vars;
-        r = lmbd->at(1);
-        // We prepare a place where to store our values
-        try
-        {
-            for (i = 0; i < r->size(); i++)
-            {
-                p = r->at(i);
-                if (!p->is_atom())
-                    throw new lisp_error(this, lispunknownatom->message);
-                a = values[i + 1]->eval(lisp);
-                // we keep our variables in a local map
-                // in order to access the local variables
-                local_vars[p->code] = a;
-                a->mark();
-            }
-        }
-        catch (lisp_error *err)
-        {
-            lisp->stack_variables_out(local_vars);
-            throw err;
-        }
-        // Then we push our local variables on the stack
-        lisp->stack_variables_in(local_vars);
-        // We then execute our lambda
-        r = lisp_nil;
-        for (i = 2; i < lmbd->size(); i++)
-        {
-            r = r->release();
-            r = lmbd->at(i)->eval(lisp);
-        }
-        // then we clean our stack and we keep the last value
-        // that was returned...
-        r->protect();
-        lisp->stack_variables_out(local_vars);
-        r->unprotect();
-        return r;
-    }
-    throw new lisp_error(this, lispunknownmethod->message);
-}
-
-lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *function)
-{
-    lisp_element *e = values[0];
-    if (!function->is_list() || function->size() < 4 || function->at(0)->code != l_defun)
-        throw new lisp_error(this, lispunknownmethod->message);
-
-    // We are executing a function
-    // First we need to initialize the arguments
-    lisp_element *args = function->at(2);
-    if (args->size() != values.size() - 1)
-        throw new lisp_error(this, lispargnbserror->message);
-
-    lisp_element *a;
-    lisp_element *p;
-    long i;
-    std::map<uint16_t, lisp_element *> local_vars;
-
-    // We prepare our garbage environment
-    try
-    {
-        for (i = 0; i < args->size(); i++)
-        {
-            p = args->at(i);
-            if (!p->is_atom())
-                throw new lisp_error(this, lispunknownatom->message);
-            a = values[i + 1]->eval(lisp);
-            // we keep our variables in a local map
-            // in order to access the local variables
-            local_vars[p->code] = a;
-            a->mark();
-        }
-    }
-    catch (lisp_error *err)
-    {
-        // In case of error, we clean our garbage
-        for (auto &e : local_vars)
-            e.second->unmark();
-        throw err;
-    }
-
-    // Then we push our local variables on the stack
-    lisp->stack_variables_on(local_vars);
-    a = lisp_nil;
-    for (i = 3; i < function->size(); i++)
-    {
-        a->release();
-        a = function->at(i)->eval(lisp);
-    }
-    lisp->stack_off(a);
-    return a;
-}

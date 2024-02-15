@@ -23,6 +23,26 @@ long hcf_math(long x, long y) {
     return (!y)?x:hcf_math(y, x%y);
 }
 //-----------------------------------------------------------------
+class stack_action {
+public:
+    bool pop;
+    lisp_mini* lisp;
+    stack_action(lisp_mini* l, uint16_t c) {
+        pop = true;
+        l->stack.push_back(c);
+        lisp = l;
+    }
+    ~stack_action() {
+        if (pop)
+            lisp->stack.pop_back();
+    }
+
+    void disable() {
+        pop = false;
+        lisp->stack.pop_back();
+    }
+};
+//-----------------------------------------------------------------
 lisp_element *lisp_list::eval(lisp_mini *lisp)
 {
     lisp->check_stop();
@@ -32,6 +52,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
 
     lisp_element *e = values[0];
     lisp_element *r = lisp_nil;
+    stack_action st(lisp, e->code);
 
     try
     {
@@ -123,12 +144,17 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         }
         case l_block:
         {
-            for (long i = 1; i < sz; i++)
+            for (long i = 1; i < sz - 1; i++)
             {
                 r = r->release();
                 r = values[i]->eval(lisp);
             }
-            return r;
+            
+            //For the last instruction of the block
+            //We clean the stack in order to detect tail calls.
+            st.disable();
+            r->release();
+            return values[sz-1]->eval(lisp);
         }
         case l_car: //(car l)
             if (sz != 2)
@@ -174,8 +200,11 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                     r = e->at(0)->eval(lisp);
                     bool b = r->boolean();
                     r = r->release();
-                    if (b)
+                    if (b) {
+                        //In a cond, a potential tail call is possible
+                        st.disable();
                         return e->at(1)->eval(lisp);
+                    }
                 }
             }
             return lisp_nil;
@@ -318,13 +347,15 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         { //(if pred then else)
             if (sz != 3 && sz != 4)
                 throw new lisp_error(this, lispargnbserror->message);
-
+            
             e = values[1]->eval(lisp);
             if (e->boolean())
             {
                 e = e->release();
                 if (sz < 3)
                     throw new lisp_error(this, lispargnbserror->message);
+                //This is a potential tail call, we clean the stack from its "if" value
+                st.disable();
                 return values[2]->eval(lisp);
             }
             else
@@ -332,6 +363,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 e = e->release();
                 if (sz != 4)
                     throw new lisp_error(this, lispargnbserror->message);
+                //This is a potential tail call, we clean the stack from its "if" value
+                st.disable();
                 return values[3]->eval(lisp);
             }
         }
@@ -400,6 +433,15 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->release();
             return res;
         }
+        case l_label: //(label e code)
+            if (sz != 3)
+                throw new lisp_error(this, lispargnbserror->message);
+            e = values[1];
+            if (!e->is_atom())
+                throw new lisp_error(this, lispunknownatom->message);
+            r = values[2]->eval(lisp);
+            lisp->insert_bottom(e->code, r);
+            return r;            
         case l_lambda:
             return this;
         case l_list: //(list a1 a2 ...)
@@ -1238,9 +1280,13 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         }
         default:
             // it could be a function name
-            if (lisp->check_atom(e->code))
+            if (lisp->check_function(e->code))
             {
-                return execute_function(lisp, lisp->variables.back()[e->code]);
+                //If we don't clean the stack now from this call
+                //Lisp will confuse this stack top with a tail call
+                //So we clean the stack preventely 
+                st.disable();
+                return execute_function(lisp, lisp->variables[0][e->code]);
             }
             throw new lisp_error(this, lispunknownmethod->message);
         }
@@ -1252,4 +1298,154 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->release();
         throw err;
     }
+}
+
+//-----------------------------------------------------------------
+
+lisp_element *lisp_list::execute_lambda(lisp_mini *lisp, lisp_element *lmbd)
+{
+    if (lmbd->size() && lmbd->at(0)->code == l_lambda)
+    {
+        // then we have ((lambda (p1 .. p2) code) a1..a2)
+        // e is (lambda (p1 .. p2 ) code)
+        if (lmbd->size() < 3 || lmbd->at(1)->size() != values.size() - 1)
+            throw new lisp_error(this, lispargnbserror->message);
+        // first we push a new stack element
+        lisp_element *r;
+        lisp_element *a;
+        lisp_element *p;
+        long i;
+        std::map<uint16_t, lisp_element *> local_vars;
+        r = lmbd->at(1);
+        // We prepare a place where to store our values
+        try
+        {
+            for (i = 0; i < r->size(); i++)
+            {
+                p = r->at(i);
+                if (!p->is_atom())
+                    throw new lisp_error(this, lispunknownatom->message);
+                a = values[i + 1]->eval(lisp);
+                // we keep our variables in a local map
+                // in order to access the local variables
+                local_vars[p->code] = a;
+                a->mark();
+            }
+        }
+        catch (lisp_error *err)
+        {
+            lisp->stack_variables_out(local_vars);
+            throw err;
+        }
+        /*
+        Then we merge our local variables with the top of the stack
+        This is different from what we do with a function call...
+        A lambda can benefit from the environment variable, in which it is executed...
+
+        ((lambda (x)
+            (lambda (u) (+ x u))) 100)
+
+        So we need to have access to x even if we are in a sub-lambda
+        */
+        lisp->stack_variables_in(local_vars);
+        // We then execute our lambda
+        r = lisp_nil;
+        for (i = 2; i < lmbd->size(); i++)
+        {
+            r = r->release();
+            r = lmbd->at(i)->eval(lisp);
+        }
+        // then we clean our stack and we keep the last value
+        // that was returned...
+        r->mark();
+        lisp->stack_variables_out(local_vars);
+        r->demark();
+        return r;
+    }
+    throw new lisp_error(this, lispunknownmethod->message);
+}
+
+//-----------------------------------------------------------------
+
+lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *function)
+{
+    lisp_element *a = function->at(0);
+    
+    // The first case corresponds to: (label tst (lambda(x) (+ x 10))) for instance
+    if (a->code == l_lambda)
+        return execute_lambda(lisp, function);
+
+    long sz = function->size();
+    if (a->code != l_defun || sz < 4)
+        throw new lisp_error(this, lispunknownmethod->message);
+
+    lisp_list* lfunction = (lisp_list*)function;
+    // We are executing a function
+    // First we need to initialize the arguments
+    lisp_element *args = lfunction->values[2];
+    if (args->size() != values.size() - 1)
+        throw new lisp_error(this, lispargnbserror->message);
+
+    lisp_element *p;
+    long i;
+    std::map<uint16_t, lisp_element *> local_vars;
+
+    // We prepare our garbage environment
+    try
+    {
+        for (i = 0; i < args->size(); i++)
+        {
+            p = args->at(i);
+            if (!p->is_atom())
+                throw new lisp_error(this, lispunknownatom->message);
+            a = values[i + 1]->eval(lisp);
+            // we keep our variables in a local map
+            // in order to access the local variables
+            local_vars[p->code] = a;
+            a->mark();
+        }
+    }
+    catch (lisp_error *err)
+    {
+        // In case of error, we clean our garbage
+        for (auto &e : local_vars)
+            e.second->unmark();
+        throw err;
+    }
+    
+    uint16_t name = lfunction->values[1]->code;
+
+    //This is a tail call. The top of the stack is the same as the current name
+    if (lisp->stack.back() == name)
+    {
+        //We replace the values in the stack with the new values
+        //Basically, we are going to loop on the same stack over and over again
+        //The previous values are cleaned.
+        lisp->stack_variables_replace(local_vars);
+        //lisp_tail is a very important flag that indicates that 
+        //a new loop should be made on the function instructions
+        //see below
+        return lisp_tail;
+    }
+    
+    // Then we push our local variables on the stack    
+    lisp->stack_variables_on(local_vars);
+    a = lisp_tail;
+    while (a == lisp_tail)
+    {
+        for (i = 3; i < sz - 1; i++)
+        {
+            a->release();
+            a = lfunction->values[i]->eval(lisp);
+        }
+        a->release();
+        //For the last instruction of our list of instructions
+        //we push the name on top of the stack to prepare
+        //for a potential tail call.
+        lisp->stack.push_back(name);
+        a = lfunction->values[sz - 1]->eval(lisp);
+        lisp->stack.pop_back();
+    }
+    lisp->stack_off(a);    
+    return a;
 }
