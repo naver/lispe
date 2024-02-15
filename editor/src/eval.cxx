@@ -15,29 +15,34 @@ long gcd_math(long a, long b)
         return a;
     // a is greater
     if (a > b)
-        return gcd_math(a-b, b);
-    return gcd_math(a, b-a);
+        return gcd_math(a - b, b);
+    return gcd_math(a, b - a);
 }
 
-long hcf_math(long x, long y) {
-    return (!y)?x:hcf_math(y, x%y);
+long hcf_math(long x, long y)
+{
+    return (!y) ? x : hcf_math(y, x % y);
 }
 //-----------------------------------------------------------------
-class stack_action {
+class stack_action
+{
 public:
     bool pop;
-    lisp_mini* lisp;
-    stack_action(lisp_mini* l, uint16_t c) {
+    lisp_mini *lisp;
+    stack_action(lisp_mini *l, uint16_t c)
+    {
         pop = true;
         l->stack.push_back(c);
         lisp = l;
     }
-    ~stack_action() {
+    ~stack_action()
+    {
         if (pop)
             lisp->stack.pop_back();
     }
 
-    void disable() {
+    void disable()
+    {
         pop = false;
         lisp->stack.pop_back();
     }
@@ -149,12 +154,12 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 r = r->release();
                 r = values[i]->eval(lisp);
             }
-            
-            //For the last instruction of the block
-            //We clean the stack in order to detect tail calls.
+
+            // For the last instruction of the block
+            // We clean the stack in order to detect tail calls.
             st.disable();
             r->release();
-            return values[sz-1]->eval(lisp);
+            return values[sz - 1]->eval(lisp);
         }
         case l_car: //(car l)
             if (sz != 2)
@@ -200,8 +205,9 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                     r = e->at(0)->eval(lisp);
                     bool b = r->boolean();
                     r = r->release();
-                    if (b) {
-                        //In a cond, a potential tail call is possible
+                    if (b)
+                    {
+                        // In a cond, a potential tail call is possible
                         st.disable();
                         return e->at(1)->eval(lisp);
                     }
@@ -332,7 +338,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             if (e->is_float())
                 return e;
-            if (e->is_integer()) {
+            if (e->is_integer())
+            {
                 r = new lisp_float(e->doublevalue());
                 e->release();
                 return r;
@@ -347,14 +354,14 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
         { //(if pred then else)
             if (sz != 3 && sz != 4)
                 throw new lisp_error(this, lispargnbserror->message);
-            
+
             e = values[1]->eval(lisp);
             if (e->boolean())
             {
                 e = e->release();
                 if (sz < 3)
                     throw new lisp_error(this, lispargnbserror->message);
-                //This is a potential tail call, we clean the stack from its "if" value
+                // This is a potential tail call, we clean the stack from its "if" value
                 st.disable();
                 return values[2]->eval(lisp);
             }
@@ -363,7 +370,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 e = e->release();
                 if (sz != 4)
                     throw new lisp_error(this, lispargnbserror->message);
-                //This is a potential tail call, we clean the stack from its "if" value
+                // This is a potential tail call, we clean the stack from its "if" value
                 st.disable();
                 return values[3]->eval(lisp);
             }
@@ -411,7 +418,8 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e = values[1]->eval(lisp);
             if (e->is_integer())
                 return e;
-            if (e->is_float()) {
+            if (e->is_float())
+            {
                 r = new lisp_integer(e->longvalue());
                 e->release();
                 return r;
@@ -441,7 +449,7 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
                 throw new lisp_error(this, lispunknownatom->message);
             r = values[2]->eval(lisp);
             lisp->insert_bottom(e->code, r);
-            return r;            
+            return r;
         case l_lambda:
             return this;
         case l_list: //(list a1 a2 ...)
@@ -464,13 +472,14 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             return r;
         }
-        case l_lower: {
+        case l_lower:
+        {
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);            
+            e = values[1]->eval(lisp);
             u_ustring v;
             e->stringvalue(v);
-            v =special_characters.u_to_lower(v);
+            v = special_characters.u_to_lower(v);
             e->release();
             return new lisp_string(v);
         }
@@ -826,13 +835,14 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             e->release();
             return new lisp_string(get_label(d));
         }
-        case l_upper: {
+        case l_upper:
+        {
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);            
+            e = values[1]->eval(lisp);
             u_ustring v;
             e->stringvalue(v);
-            v =special_characters.u_to_upper(v);
+            v = special_characters.u_to_upper(v);
             e->release();
             return new lisp_string(v);
         }
@@ -911,174 +921,118 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             return e;
         }
         case math_acos:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = acos(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_acosh:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = acosh(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_asin:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = asin(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_asinh:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = asinh(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_atan:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = atan(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_atanh:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = atanh(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_cbrt:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = cbrt(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_cos:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = cos(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_cosh:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = cosh(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_degree:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = (v * 180) / M_PI;
-            e->release();
-            return new lisp_float(v);
-        }
         case math_erf:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = erf(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_erfc:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = erfc(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_exp:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = exp(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_exp2:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = exp2(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_expm1:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = expm1(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_fabs:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = fabs(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case math_floor:
+        case math_lgamma:
+        case math_log:
+        case math_log10:
+        case math_log1p:
+        case math_log2:
+        case math_logb:
+        case math_nearbyint:
+        case math_radian:
+        case math_rint:
+        case math_round:
+        case math_sin:
+        case math_sinh:
+        case math_sqrt:
+        case math_tan:
+        case math_tanh:
+        case math_tgamma:
+        case math_trunc:
         {
             if (sz != 2)
                 throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = floor(v);
-            e->release();
-            return new lisp_float(v);
+            r = values[1]->eval(lisp);
+            double v = r->doublevalue();
+            r->release();
+            switch (e->code)
+            {
+            case math_acos:
+                return new lisp_float(acos(v));
+            case math_acosh:
+                return new lisp_float(acosh(v));
+            case math_asin:
+                return new lisp_float(asin(v));
+            case math_asinh:
+                return new lisp_float(asinh(v));
+            case math_atan:
+                return new lisp_float(atan(v));
+            case math_atanh:
+                return new lisp_float(atanh(v));
+            case math_cbrt:
+                return new lisp_float(cbrt(v));
+            case math_cos:
+                return new lisp_float(cos(v));
+            case math_cosh:
+                return new lisp_float(cosh(v));
+            case math_degree:
+                v = (v * 180) / M_PI;
+                return new lisp_float(v);
+            case math_erf:
+                return new lisp_float(erf(v));
+            case math_erfc:
+                return new lisp_float(erfc(v));
+            case math_exp:
+                return new lisp_float(exp(v));
+            case math_exp2:
+                return new lisp_float(exp2(v));
+            case math_expm1:
+                return new lisp_float(expm1(v));
+            case math_fabs:
+                return new lisp_float(fabs(v));
+            case math_floor:
+                return new lisp_float(floor(v));
+            case math_lgamma:
+                return new lisp_float(lgamma(v));
+            case math_log:
+                return new lisp_float(log(v));
+            case math_log10:
+                return new lisp_float(log10(v));
+            case math_log1p:
+                return new lisp_float(log1p(v));
+            case math_log2:
+                return new lisp_float(log2(v));
+            case math_logb:
+                return new lisp_float(logb(v));
+            case math_nearbyint:
+                return new lisp_float(nearbyint(v));
+            case math_radian:
+                v = M_PI * (v / 180);
+                return new lisp_float(v);
+            case math_rint:
+                return new lisp_float(rint(v));
+            case math_round:
+                return new lisp_float(round(v));
+            case math_sin:
+                return new lisp_float(sin(v));
+            case math_sinh:
+                return new lisp_float(sinh(v));
+            case math_sqrt:
+                return new lisp_float(sqrt(v));
+            case math_tan:
+                return new lisp_float(tan(v));
+            case math_tanh:
+                return new lisp_float(tanh(v));
+            case math_tgamma:
+                return new lisp_float(tgamma(v));
+            case math_trunc:
+                return new lisp_float(trunc(v));
+            }
         }
         case math_gcd:
         {
@@ -1102,176 +1056,6 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             r->release();
             return new lisp_integer(hcf_math(v, vv));
         }
-        case math_lgamma:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = lgamma(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_log:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = log(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_log10:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = log10(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_log1p:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = log1p(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_log2:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = log2(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_logb:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = logb(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_nearbyint:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = nearbyint(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_radian:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = M_PI * (v / 180);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_rint:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = rint(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_round:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = round(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_sin:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = sin(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_sinh:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = sinh(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_sqrt:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = sqrt(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_tan:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = tan(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_tanh:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = tanh(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_tgamma:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = tgamma(v);
-            e->release();
-            return new lisp_float(v);
-        }
-        case math_trunc:
-        {
-            if (sz != 2)
-                throw new lisp_error(this, lispargnbserror->message);
-            e = values[1]->eval(lisp);
-            double v = e->doublevalue();
-            v = trunc(v);
-            e->release();
-            return new lisp_float(v);
-        }
         case v_list: //((lambda (a1 a2) code) v1 v2)
         {
             // in this case, it might be a lambda function
@@ -1282,9 +1066,9 @@ lisp_element *lisp_list::eval(lisp_mini *lisp)
             // it could be a function name
             if (lisp->check_function(e->code))
             {
-                //If we don't clean the stack now from this call
-                //Lisp will confuse this stack top with a tail call
-                //So we clean the stack preventely 
+                // If we don't clean the stack now from this call
+                // Lisp will confuse this stack top with a tail call
+                // So we clean the stack preventely
                 st.disable();
                 return execute_function(lisp, lisp->variables[0][e->code]);
             }
@@ -1370,7 +1154,7 @@ lisp_element *lisp_list::execute_lambda(lisp_mini *lisp, lisp_element *lmbd)
 lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *function)
 {
     lisp_element *a = function->at(0);
-    
+
     // The first case corresponds to: (label tst (lambda(x) (+ x 10))) for instance
     if (a->code == l_lambda)
         return execute_lambda(lisp, function);
@@ -1379,7 +1163,7 @@ lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *functio
     if (a->code != l_defun || sz < 4)
         throw new lisp_error(this, lispunknownmethod->message);
 
-    lisp_list* lfunction = (lisp_list*)function;
+    lisp_list *lfunction = (lisp_list *)function;
     // We are executing a function
     // First we need to initialize the arguments
     lisp_element *args = lfunction->values[2];
@@ -1412,23 +1196,23 @@ lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *functio
             e.second->unmark();
         throw err;
     }
-    
+
     uint16_t name = lfunction->values[1]->code;
 
-    //This is a tail call. The top of the stack is the same as the current name
+    // This is a tail call. The top of the stack is the same as the current name
     if (lisp->stack.back() == name)
     {
-        //We replace the values in the stack with the new values
-        //Basically, we are going to loop on the same stack over and over again
-        //The previous values are cleaned.
+        // We replace the values in the stack with the new values
+        // Basically, we are going to loop on the same stack over and over again
+        // The previous values are cleaned.
         lisp->stack_variables_replace(local_vars);
-        //lisp_tail is a very important flag that indicates that 
-        //a new loop should be made on the function instructions
-        //see below
+        // lisp_tail is a very important flag that indicates that
+        // a new loop should be made on the function instructions
+        // see below
         return lisp_tail;
     }
-    
-    // Then we push our local variables on the stack    
+
+    // Then we push our local variables on the stack
     lisp->stack_variables_on(local_vars);
     a = lisp_tail;
     while (a == lisp_tail)
@@ -1439,13 +1223,13 @@ lisp_element *lisp_list::execute_function(lisp_mini *lisp, lisp_element *functio
             a = lfunction->values[i]->eval(lisp);
         }
         a->release();
-        //For the last instruction of our list of instructions
-        //we push the name on top of the stack to prepare
-        //for a potential tail call.
+        // For the last instruction of our list of instructions
+        // we push the name on top of the stack to prepare
+        // for a potential tail call.
         lisp->stack.push_back(name);
         a = lfunction->values[sz - 1]->eval(lisp);
         lisp->stack.pop_back();
     }
-    lisp->stack_off(a);    
+    lisp->stack_off(a);
     return a;
 }
