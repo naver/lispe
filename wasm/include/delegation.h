@@ -85,6 +85,26 @@ public:
     
 };
 //------------------------------------------------------------
+class ThreadElement {
+public:
+    std::atomic<bool> cleaning;
+    std::thread* thid;
+    LispE* thread_lisp;
+    
+    ThreadElement(LispE* l) {
+        thread_lisp = l;
+        cleaning = false;
+    }
+
+    ~ThreadElement() {
+        if (cleaning == true) {
+            thid->join();
+            delete thid;
+        }
+    }
+
+};
+//------------------------------------------------------------
 //Delegation is common to all threads
 //It basically stores everything that is common to all threads
 //and won't budge after loading or compilation
@@ -94,16 +114,21 @@ class Delegation {
 public:
     BlockThread trace_lock;
     ThreadLock lock;
+    ThreadLock lock_thread;
     methodEval evals[l_final];
+    Listincode* straight_eval[l_final];
+    
     binHashe<u_ustring> code_to_string;
     binHashe<string> instructions;
-    binHash<Listincode*> straight_eval;
     
     binHash<int16_t> data_ancestor;
     vecte<binHash<Element*>* > function_pool;
     vecte<binHash<Element*>* > bodies;
     vecte<unordered_map<int16_t, unordered_map<int16_t, vector<Element*> > >* > method_pool;
+    std::vector<ThreadElement*> currentthreads;
+    
     binHash<Element*> data_pool;
+    vector<long> idxinfos;
     
     binSet assignors;
     binSet operators;
@@ -116,7 +141,7 @@ public:
     binHash<Element*> operator_pool;
     binSet atom_basic_pool;
     binHash<unsigned long> arities;
-    binHash<Element*> macros;
+    binHash<vector<Element*> > macros;
     binSet number_types;
     
     Stackelement thread_stack;
@@ -185,6 +210,8 @@ public:
     long i_current_line;
     long i_current_file;
     int16_t stop_execution;
+    
+    bool* windowmode;
     bool next_stop;
     char add_to_listing;
     uint32_t mark;
@@ -208,6 +235,27 @@ public:
     
     char checking() {
         return trace_lock.check();
+    }
+
+    
+    void clean_threads(ThreadElement* the = NULL) {
+        lock_thread.locking(true);
+        long sz = currentthreads.size() - 1;
+        for (long i = sz; i >= 0; i--) {
+            if (currentthreads[i] != NULL && currentthreads[i]->cleaning) {
+                ThreadElement* te =  currentthreads[i];
+                if (i == sz) {
+                    currentthreads.pop_back();
+                    sz--;
+                }
+                else
+                    currentthreads.erase(currentthreads.begin()+i);
+                delete te;
+            }
+        }
+        if (the != NULL)
+            currentthreads.push_back(the);
+        lock_thread.unlocking(true);
     }
 
     
@@ -257,6 +305,24 @@ public:
         return (type == l_plus || type == l_minus || comparators.check(type) || logicals.check(type));
     }
 
+    int set_idx_info(long line) {
+        int idx = (int)idxinfos.size();
+        if (idx) {
+            if (idxinfos[idx - 2] == line && idxinfos[idx - 1] == i_current_file)
+                return idx - 2;
+        }
+        
+        idxinfos.push_back(line);
+        idxinfos.push_back(i_current_file);
+        return idx;
+    }
+
+    
+    bool check_straight(int16_t type) {
+        return (type < l_final && straight_eval[type] != NULL);
+    }
+
+    
     bool isComparator(int16_t type) {
         return comparators.check(type);
     }
@@ -500,6 +566,21 @@ public:
         u_ustring n;
         s_utf8_to_unicode(n, name, name.size());
         code_to_string[instruction_code] = n;
+        cln->multiple = (P_ATLEASTFIVE == (P_ATLEASTFIVE & arity));
+    }
+
+    inline void set_instruction(lisp_code instruction_code,
+                                string name,
+                                unsigned long arity,
+                                Listincode* cln) {
+        straight_eval[instruction_code] = cln;
+        instructions[instruction_code] = name;
+        arities[instruction_code] = arity;
+        evals[instruction_code] = &List::eval_list_instruction;
+        u_ustring n;
+        s_utf8_to_unicode(n, name, name.size());
+        code_to_string[instruction_code] = n;
+        cln->multiple = (P_ATLEASTFIVE == (P_ATLEASTFIVE & arity));
     }
 
     inline void set_pure_instruction(lisp_code instruction_code, string name,  unsigned long arity) {
@@ -626,16 +707,10 @@ inline Element* recordingData(Element* e, int16_t label, int16_t ancestor) {
     }
 
     
-inline Element* recordingMacro(LispE* lisp, Element* e, int16_t label) {
-   if (macros.check(label))
-      return new Error("Error: This macro has already been recorded");
-
-   if (!e->replaceVariableNames(lisp))
-      return new Error("Error: The definition of a parameter should not be 'nil'");
-   macros[label] = e;
-   return e;
-}
-
+    inline Element* recordingMacro(LispE* lisp, Element* e, int16_t label) {
+        macros[label].push_back(e);
+        return e;
+    }
 
     
     void setError(Error* err) {
@@ -896,10 +971,10 @@ inline void checkExecution() {
 
     
     
-    inline void set_context(long l, long f) {
-        if (!current_error) {
-            i_current_line = l;
-            i_current_file = f;
+    inline void set_context(int idxinfo) {
+        if (!current_error && idxinfo >= 0 && idxinfo < idxinfos.size()) {
+            i_current_line = idxinfos[idxinfo];
+            i_current_file = idxinfos[idxinfo + 1];
         }
     }
 
@@ -923,12 +998,12 @@ inline void checkExecution() {
     }
 
     
-    inline void set_error_context(Error* err, long l, long f) {
-        if (!current_error) {
+    inline void set_error_context(Error* err, int idx_info) {
+        if (!current_error && idx_info < idxinfos.size()) {
             current_error = err;
             current_error->increment();
-            i_current_line = l;
-            i_current_file = f;
+            i_current_line = idxinfos[idx_info];
+            i_current_file = idxinfos[idx_info + 1];
         }
     }
 

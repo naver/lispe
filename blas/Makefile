@@ -1,15 +1,13 @@
-### This version compiles with the C BLAS library (apt-get install libblas-dev)
 include ../Makefile.in
-include Makefile.loc
 #------------------------------------------------------------
-sourceblas = $(FILE_BLAS)
+sourceblas = lispe_blas.cxx
 #------------------------------------------------------------
 LBINPATH = ../bin
 LOBJPATH = ../objs
 #------------------------------------------------------------
 objectblas = $(sourceblas:%.cxx=$(LOBJPATH)/blas/%.o)
 #------------------------------------------------------------
-C++11Flag = -std=c++11 -fPIC -w -c $(COPTION) -DUNIX $(IBLAS)
+C++11Flag = -std=c++11 -fPIC -w -c $(COPTION) -DUNIX -DACCELERATE_NEW_LAPACK -DACCELERATE_LAPACK_ILP64
 LIBPATH = ../bin
 #------------------------------------------------------------
 INCLUDEPATH = -I../include -Iinclude
@@ -25,6 +23,7 @@ install:
 
 all: install blas
 	$(blas)
+	cp $(BLASLIB) $(LBINPATH)
 
 clean:
 	rm -f $(LOBJPATH)/blas/*.o

@@ -9,6 +9,7 @@
 //
 #ifndef ontology_h
 #define ontology_h
+#include <cstdint>
 class Granule {
     
 public:

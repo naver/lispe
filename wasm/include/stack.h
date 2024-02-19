@@ -38,19 +38,7 @@ public:
     }
 
     
-    bool recordargument(LispE* lisp, Element* e, int16_t label) {
-        if (variables.check(label))
-            return variables.at(label)->unify(lisp,e, false);
-        
-        e = e->duplicate_constant(lisp);
-        variables[label] = e;
-        if (e->status != s_constant) {
-            e->increment();
-            names.push(label);
-        }
-        return true;
-    }
-
+    bool recordargument(LispE* lisp, Element* e, int16_t label);
     
     bool recordingunique(Element* e, int16_t label) {
         if (variables.check(label))
@@ -234,7 +222,7 @@ public:
         return NULL;
     }
 
-    void replacingvalue(Element* e, int16_t label) {
+    void replace_stack_value(Element* e, int16_t label) {
         if (names.check(label)) {
             Element* v = variables.at(label);
             if (v == e)
@@ -254,6 +242,23 @@ public:
         variables.put(label, e);
     }
 
+    void put_and_keep(Element* v, Element* keep, int16_t label) {
+        Element* e = variables.at(label);
+        if (e == keep)
+            e->decrementkeep();
+        else
+            e->decrement();
+        if (v == NULL) {
+            names.erase(label);
+            variables.erase(label);
+        }
+        else {
+            v->decrement();
+            variables.put(label, v);
+        }
+    }
+
+    
     inline Element* get(int16_t label) {
         return variables.search(label);
     }
@@ -283,6 +288,7 @@ public:
 
     u_ustring asUString(LispE*);
     wstring asString(LispE*);
+    string toString(LispE*);
     List* atomes(LispE*);
     
     void copy(Stackelement* stack) {

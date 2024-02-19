@@ -9,6 +9,7 @@
 //
 #ifndef lispe_h
 #define lispe_h
+#include <cstdint>
 #include "segmentation.h"
 #include "listes.h"
 #include "llistes.h"
@@ -43,10 +44,11 @@ public:
     tokenizer_result<u_ustring> r_parse;
     
     bool select_bool_as_one;
+    bool macro_mode;
     vecte<Floatpool*> float_pool;
     vecte<Numberpool*> number_pool;
     vecte<Integerpool*> integer_pool;
-    vecte<Complexpool*> complex_pool;
+    vecte<Complexepool*> complex_pool;
     vecte<Infiniterangenumber*> rangenumber_pool;
     vecte<Infiniterangeinteger*> rangeinteger_pool;
     vecte<Stringpool*> string_pool;
@@ -61,7 +63,9 @@ public:
     vecte<Dictionarypool*> dictionary_pool;
     vecte<Dictionary_npool*> dictionaryn_pool;
     vecte<Dictionary_ipool*> dictionaryi_pool;
-    
+    vecte<Treepool*> tree_pool;
+    vecte<Tree_npool*> treen_pool;
+    vecte<Tree_ipool*> treei_pool;
     vecte<Listpool*> list_pool;
     
     vecte<Quotedpool*> quoted_pool;
@@ -74,6 +78,7 @@ public:
     unordered_map<wstring, Element*> pools;
     vector<Element*> vpools;
     
+    unordered_map<u_ustring, Stringbyte*> const_stringbyte_pool;
     unordered_map<u_ustring, String*> const_string_pool;
     unordered_map<long, Integer*> const_integer_pool;
     unordered_map<double, Number*> const_number_pool;
@@ -97,6 +102,7 @@ public:
     Element* n_true;
     Element* n_zero;
     Element* n_one;
+    Element* n_compose;
     
     
     std::atomic<int16_t> nbjoined;
@@ -109,12 +115,13 @@ public:
     bool isThread;
     bool hasThread;
     bool check_arity_on_fly;
-    bool preparingthread;
+    bool create_in_thread;
     bool clean_utf8;
     bool check_thread_stack;
 	bool current_path_set;
     
     LispE(UTF8_Handler* hnd = NULL) : segmenter(hnd) {
+        macro_mode = false;
         max_size = 50;
         larger_max_size = 200;
 		current_path_set = false;
@@ -123,10 +130,14 @@ public:
         current_space = 0;
         initpoolsize();
         initpools();
-        preparingthread = false;
+        create_in_thread = false;
         check_arity_on_fly = false;
         id_thread = 0;
+#ifdef LISPE_WASM
         max_stack_size = 10000;
+#else
+        max_stack_size = 50000;
+#endif
         trace = debug_none;
         delegation = new Delegation;
         isThread = false;
@@ -168,6 +179,9 @@ public:
         dictionary_pool.setsize(max_size + 1);
         dictionaryn_pool.setsize(max_size + 1);
         dictionaryi_pool.setsize(max_size + 1);
+        tree_pool.setsize(max_size + 1);
+        treen_pool.setsize(max_size + 1);
+        treei_pool.setsize(max_size + 1);
         quoted_pool.setsize(max_size + 1);
         rangenumber_pool.setsize(max_size + 1);
         rangeinteger_pool.setsize(max_size + 1);
@@ -181,20 +195,20 @@ public:
     
     inline void initpools() {
         for (long i = 0; i < 25; i++) {
-            list_pool.push_max(larger_max_size, new Listpool(this));
-            number_pool.push_max(larger_max_size, new Numberpool(this, 0));
-            float_pool.push_max(larger_max_size, new Floatpool(this, 0));
-            integer_pool.push_max(larger_max_size, new Integerpool(this, 0));
-            string_pool.push_max(larger_max_size, new Stringpool(this));
+            list_pool.push_raw(new Listpool(this));
+            number_pool.push_raw(new Numberpool(this, 0));
+            float_pool.push_raw(new Floatpool(this, 0));
+            integer_pool.push_raw(new Integerpool(this, 0));
+            string_pool.push_raw(new Stringpool(this));
             
-            quoted_pool.push_max(max_size, new Quotedpool(this));
-            rangenumber_pool.push_max(max_size, new Infiniterangenumber(this, 0,0));
-            rangeinteger_pool.push_max(max_size, new Infiniterangeinteger(this, 0,0));
-            complex_pool.push_max(max_size, new Complexpool(this, 0, 0));
-            strings_pool.push_max(max_size, new Stringspool(this));
-            numbers_pool.push_max(max_size, new Numberspool(this));
-            floats_pool.push_max(max_size, new Floatspool(this));
-            integers_pool.push_max(max_size, new Integerspool(this));
+            quoted_pool.push_raw(new Quotedpool(this));
+            rangenumber_pool.push_raw(new Infiniterangenumber(this, 0,0));
+            rangeinteger_pool.push_raw(new Infiniterangeinteger(this, 0,0));
+            complex_pool.push_raw(new Complexepool(this, 0, 0));
+            strings_pool.push_raw(new Stringspool(this));
+            numbers_pool.push_raw(new Numberspool(this));
+            floats_pool.push_raw(new Floatspool(this));
+            integers_pool.push_raw(new Integerspool(this));
         }
     }
 
@@ -222,12 +236,12 @@ public:
     }
 
     
-    inline Element* True() {
+    inline Element* isTrue() {
         return _BOOLEANS[select_bool_as_one][1];
     }
 
     
-    inline Element* False() {
+    inline Element* isFalse() {
         return _BOOLEANS[select_bool_as_one][0];
     }
 
@@ -527,10 +541,14 @@ public:
     Element* compile_lisp_code(u_ustring& code);
     Element* compile_eval(u_ustring& code);
     Element* load(string chemin);
+    void precompile(string chemin);
     lisp_code segmenting(string& code, Tokenizer& s);
     lisp_code segmenting(u_ustring& code, Tokenizer& s);
     Element* tokenize(wstring& code, bool keepblanks = false);
     Element* tokenize(u_ustring& code, bool keepblanks, short decimalpoint);
+    Element* tokenize(string& code, bool keepblanks, short decimalpoint);
+    Element* compileLocalStructure(Element* current_program, Element* element, Tokenizer& parse, Element*& check_composition_depth, uint16_t currentspace, bool& cont);
+    Element* for_composition(Element* current_program, Element* element, Tokenizer& parse);
     Element* abstractSyntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
     Element* syntaxTree(Element* courant, Tokenizer& s, long& index, long quoting);
     void arguments(std::vector<string>& args);
@@ -604,6 +622,12 @@ public:
         return (depth_stack >= max_stack_size?0x200:delegation->stop_execution);
     }
 
+    inline void setwindowmode(bool* wnd) {
+        *wnd = false;
+        delegation->windowmode = wnd;
+    }
+
+    
 #ifdef LISPE_WASM
     inline bool sendError() {
         delegation->set_end();
@@ -703,7 +727,6 @@ inline void sendEnd() {
 }
 
 
-    
 inline bool sendError(u_ustring msg) {
    {
       delegation->set_error(new Error(msg));
@@ -854,11 +877,17 @@ inline bool unboundAtomError(int16_t label) {
     }
 
     
-    Element* check_error(List* l,Error* err, long idx, long fileidx);
+    //We borrow from the class a copy that will share the same liste.item object
+    List* borrowing(List* l, long sz) {
+        return delegation->straight_eval[check_arity(l, sz)]->borrowing(l);
+    }
+
+    
+    Element* check_error(List* l,Error* err, int idxinfo);
     
     inline void trace_and_context(Listincode* e) {
         //in the case of a goto, we only take into account breakpoints
-        delegation->set_context(e->line, e->fileidx);
+        delegation->set_context(e->idxinfo);
         if (trace == debug_goto)
             delegation->next_stop = false;
         
@@ -1021,7 +1050,7 @@ inline bool unboundAtomError(int16_t label) {
             if (label == l_key || label == l_keyn) {
                 if (*dico == NULL) {
                     *dico = new Dictionary_as_list;
-                    garbaging(*dico);
+                    storeforgarbage(*dico);
                     if (label == l_key)
                         (*dico)->type = t_dictionary;
                     else
@@ -1140,7 +1169,7 @@ inline Element* recordingMethod(Element* e, int16_t label) {
     }
 
     
-    Element* generate_macro(Element* code);
+    int16_t generate_macro(Element* code, int16_t lab);
     inline Element* recordingMacro(Element* e, int16_t label) {
         return delegation->recordingMacro(this, e, label);
     }
@@ -1182,8 +1211,12 @@ inline Element* recordingunique(Element* e, int16_t label) {
         execution_stack.back()->record_argument(e, label);
     }
 
-    inline void replacingvalue(Element* e, int16_t label) {
-        execution_stack.back()->replacingvalue(e->duplicate_constant(this), label);
+    inline void replacestackvalue(Element* e, int16_t label) {
+        execution_stack.back()->replace_stack_value(e->duplicate_constant(this), label);
+    }
+
+    inline void put_and_keep(Element* e, Element* keep, int16_t label) {
+        execution_stack.back()->put_and_keep(e, keep, label);
     }
 
     inline Element* recording_variable(Element* e, int16_t label) {
@@ -1319,7 +1352,7 @@ void create_name_space(int16_t label) {
     
     // In this way, we keep elements that we want to destroy at the end of execution.
     //such as for example, the objects corresponding to the compilation of a code
-    inline void garbaging(Element* e) {
+    inline void storeforgarbage(Element* e) {
         //This status is used to avoid the destruction of the objects out of the garbage .
         e->status = s_constant;
         garbages.push_back(e);
@@ -1407,6 +1440,15 @@ void create_name_space(int16_t label) {
         return c;
     }
 
+    inline Stringbyte* provideConststringbyte(u_ustring& u) {
+        Stringbyte* c = const_stringbyte_pool[u];
+        if (c == NULL) {
+            c = new Conststringbyte(u);
+            const_stringbyte_pool[u] = c;
+        }
+        return c;
+    }
+
     inline Integer* provideConstinteger(long u) {
         Integer* c = const_integer_pool[u];
         if (c == NULL) {
@@ -1437,10 +1479,8 @@ void create_name_space(int16_t label) {
         List* call;
         if (op->is_straight_eval())
             call = (List*)op;
-        else {
-            call = list_pool.last?list_pool.backpop(): new Listpool(this);
-            call->append(op);
-        }
+        else
+            call = new List_eval(this, op);
         while (nb) {
             call->append(quoted());
             nb--;
@@ -1448,7 +1488,37 @@ void create_name_space(int16_t label) {
         return call;
     }
 
-    
+    //(maplist '(- _ 10) (iota 10))
+    //(maplist '(- 10 _) (iota 10)) <=> (maplist '(- 10) (iota 10))
+    //where _ is the slot filling for our variable
+    inline List* provideCallforTWO(Element* op, int16_t& ps) {
+        List* call;
+        int16_t posvar = 0;
+        Element* e = op->index(0);
+        if (e->isInstruction()) {
+            call = cloning(e->label());
+            call->type = t_eval;
+        }
+        else
+            call = provideList();
+        call->append(e);
+        
+        for (ps = 1; ps < op->size(); ps++) {
+            if (op->index(ps) == n_null) {
+                //This is the position where the variable should be
+                call->append(quoted());
+                posvar = ps;
+            }
+            else
+                call->append(op->index(ps));
+        }
+        if (posvar)
+            ps = posvar;
+        else
+            call->append(quoted());
+        return call;
+    }
+
     inline List* provideList() {
         return list_pool.last?list_pool.backpop(): new Listpool(this);
     }
@@ -1463,6 +1533,18 @@ void create_name_space(int16_t label) {
 
     inline Dictionary_i* provideDictionary_i() {
         return dictionaryi_pool.last?dictionaryi_pool.backpop(): new Dictionary_ipool(this);
+    }
+
+    inline Tree* provideTree() {
+        return tree_pool.last?tree_pool.backpop(): new Treepool(this);
+    }
+
+    inline Tree_n* provideTree_n() {
+        return treen_pool.last?treen_pool.backpop(): new Tree_npool(this);
+    }
+
+    inline Tree_i* provideTree_i() {
+        return treei_pool.last?treei_pool.backpop(): new Tree_ipool(this);
     }
 
     inline Set_s* provideSet_s() {
@@ -1560,6 +1642,10 @@ void create_name_space(int16_t label) {
         return strings_pool.last?strings_pool.backpop():new Stringspool(this);
     }
 
+    inline Strings* provideStrings(long nb, u_ustring v) {
+        return strings_pool.last?strings_pool.backpop()->set(nb, v):new Stringspool(this, nb, v);
+    }
+
     inline Strings* provideStrings(Strings* n) {
         return strings_pool.last?strings_pool.backpop()->set(n):new Stringspool(this, n);
     }
@@ -1576,12 +1662,12 @@ void create_name_space(int16_t label) {
         return integer_pool.last?integer_pool.backpop()->set(d):new Integerpool(this, d);
     }
 
-    inline Complex* provideComplex(double d, double imaginary) {
-        return complex_pool.last?complex_pool.backpop()->set(d, imaginary):new Complexpool(this, d, imaginary);
+    inline Complexe* provideComplex(double d, double imaginary) {
+        return complex_pool.last?complex_pool.backpop()->set(d, imaginary):new Complexepool(this, d, imaginary);
     }
 
-    inline Complex* provideComplex(std::complex<double>& d) {
-        return complex_pool.last?complex_pool.backpop()->set(d):new Complexpool(this, d);
+    inline Complexe* provideComplex(std::complex<double>& d) {
+        return complex_pool.last?complex_pool.backpop()->set(d):new Complexepool(this, d);
     }
 
     inline Infiniterangenumber* providerange_Number(double v, double i) {

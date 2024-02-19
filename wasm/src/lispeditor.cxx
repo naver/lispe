@@ -179,25 +179,6 @@ void lispe_editor::displaythehelp(long i) {
     cerr << endl;
 }
 
-void lispe_editor::initlisp(bool reinitialize, bool setpath) {
-    if (lispe == NULL) {
-        lispe = new LispE(&special_characters);
-        lispe->arguments(arguments);
-        if (setpath)
-            lispe->set_pathname(thecurrentfilename);
-        return;
-    }
-    
-    if (reinitialize) {
-        if (lispe != NULL)
-            delete lispe;
-        lispe = new LispE(&special_characters);
-        lispe->arguments(arguments);
-        if (setpath)
-            lispe->set_pathname(thecurrentfilename);
-    }
-}
-
 bool checkOtherCases(u_ustring& u) {
     return (u == U"_current" || u == U"_args" || u == U"_pi" || u == U"_e" || u == U"_tau" || u == U"_phi" || u == U"π" || u ==U"τ" || u == U"ℯ" || u == U"ϕ");
 }
@@ -309,7 +290,7 @@ string lispe_editor::coloringline(string line_of_code, long current_pos, bool th
         return line_of_code;
     }
     
-    initlisp(false, true);
+    init_interpreter(false, true);
     
     bool add = false;
     
@@ -353,7 +334,7 @@ string lispe_editor::coloringline(string line_of_code, long current_pos, bool th
                     add = true;
                 }
                 else {
-                    if (lispe->is_instruction(segments.stack[isegment]) || checkOtherCases(segments.stack[isegment])) {
+                    if (isInstruction(segments.stack[isegment]) || checkOtherCases(segments.stack[isegment])) {
                         subline += from_ascii(colors[2]);
                         add = true;
                     }
@@ -449,21 +430,6 @@ bool lispe_editor::checkcommand(char c) {
     return false;
 }
 
-bool lispe_editor::evallocalcode(string code, bool disp) {
-    s_trim(code);
-    initlisp(false, true);
-    Element* e = lispe->eval(code);
-    cout << m_redbold;
-    cout << e->toString(lispe) << endl;
-    cout << m_current;
-    if (e->isError()) {
-        e->release();
-        return false;
-    }
-    e->release();
-    return true;
-}
-
 long lispe_editor::handlingcommands(long pos, bool& dsp) {
     
     typedef enum {cmd_none, cmd_filename, cmd_spaces, cmd_select, cmd_edit, cmd_run, cmd_debug, cmd_cls, cmd_help, cmd_list, cmd_syntax, cmd_colors,
@@ -521,24 +487,39 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                     
                     //We launch a Unix command...
                     code = line.substr(1, line.size() - 1);
-                    long iquote = line.find(L"\"");
-                    long iequal = line.find(L"=");
-                    if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
-                        code = line.substr(iequal + 1, line.size() - iequal);
-                        line = line.substr(1, iequal - 1);
-                        line = L"(setq " + line + L" ";
+                    if (code[0] == 'c' && code[1] == 'd' && (!code[2] || code[2] == '/' || code[2]==' ')) {
+                        code += L";pwd";
+                        line = L"(setq _pwd_ ";
                         line += L"(command \"";
                         line += code;
                         line += L"\"))";
+                        execute_code(line);
+                        string cd = "(at _pwd_ 0)";
+                        Element* dirt = lispe->execute(cd);
+                        current_directory = dirt->toString(lispe);
+                        s_trim(current_directory);
+                        dirt->release();
                     }
                     else {
-                        line = L"(command \"";
-                        line += code;
-                        line += L"\")";
+                        long iquote = line.find(L"\"");
+                        long iequal = line.find(L"=");
+                        if (iequal != -1 && (iquote == -1 || iequal < iquote)) {
+                            code = line.substr(iequal + 1, line.size() - iequal);
+                            line = line.substr(1, iequal - 1);
+                            line = L"(setq " + line + L" ";
+                            line += L"(command \"";
+                            line += code;
+                            line += L"\"))";
+                        }
+                        else {
+                            line = L"(command \"";
+                            line += code;
+                            line += L"\")";
+                        }
+                        if (current_directory != "")
+                            chdir(STR(current_directory));
+                        execute_code(line);
                     }
-                    
-                    Executesomecode(line);
-                    
                     code = WListing();
                     lines.setcode(code, false);
                     lines.pop_back();
@@ -640,7 +621,8 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             }
             
             addcommandline(line);
-            prefix = ">>";
+            prefix = editor_prefix;
+            wprefix = editor_wprefix;
             
             if (lines.size() == 0) {
                 lines.push(L"");
@@ -667,7 +649,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                 if (isempty(current_code))
                     return pos;
                 
-                initlisp(true, true);
+                init_interpreter(true, true);
                 
                 line = L"";
                 editmode = false;
@@ -678,9 +660,9 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             }
             
             if (loadfile(v[1])) {
-                initlisp(true, false);
+                init_interpreter(true, false);
                 cout << m_red;
-                lispe->load(thecurrentfilename);
+                load_code(thecurrentfilename);
                 cout << m_current;
             }
             else
@@ -696,26 +678,15 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                 if (isempty(current_code))
                     return pos;
                 
-                initlisp(true, true);
+                init_interpreter(true, true);
                 for (i = 0; i < ifilenames.size(); i++) {
                     if (ifilenames[i] == thecurrentfilename)
                         continue;
-                    lispe->add_pathname(ifilenames[i]);
+                    store_path(ifilenames[i]);
                 }
                 
                 //We initialize the breakpoints and the trace mode
-                if (editor_breakpoints.size()) {
-                    lispe->delegation->breakpoints.clear();
-                    for (auto& a: editor_breakpoints) {
-                        long idfile = lispe->id_file(a.first);
-                        for (auto& e: a.second)
-                            lispe->delegation->breakpoints[idfile][e.first] = e.second;
-                    }
-                    
-                    lispe->stop_at_next_line(debug_goto);
-                }
-                else
-                    lispe->stop_at_next_line(debug_next);
+                initialize_breakpoints();
                 
                 line = L"";
                 editmode = false;
@@ -726,9 +697,9 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             }
             
             if (loadfile(v[1])) {
-                initlisp(true, false);
+                init_interpreter(true, false);
                 cout << m_red;
-                lispe->load(thecurrentfilename);
+                load_code(thecurrentfilename);
                 cout << m_current;
                 debugmode = true;
             }
@@ -1112,7 +1083,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             if (loadfile(v[1]))
                 cerr << m_red << "ok." << m_current << endl;
             
-            initlisp(false, true);
+            init_interpreter(false, true);
             return pos;
         case cmd_create:
             addcommandline(line);
@@ -1147,7 +1118,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             
             //if this is a first saving of this code...
             if (filenames.find(thecurrentfilename) == filenames.end()) {
-                initlisp(false, true);
+                init_interpreter(false, true);
                 currentfileid = ifilenames.size();
                 ifilenames.push_back(thecurrentfilename);
                 filenames[thecurrentfilename] = currentfileid;
@@ -1218,7 +1189,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             
             line = L"";
             posinstring = 0;
-            initlisp(true, true);
+            init_interpreter(true, true);
             pos = 0;
             return pos;
         case cmd_reinit:
@@ -1228,7 +1199,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
             lines.clear();
             line = L"";
             posinstring = 0;
-            initlisp(true, true);
+            init_interpreter(true, true);
             editor_breakpoints.clear();
             pos = 0;
             return pos;
@@ -1237,7 +1208,7 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
     
     //Adding a line into the code
     if (line.size()) {
-        Executesomecode(line);
+        execute_code(line);
         code = WListing();
         
         lines.setcode(code,false);
@@ -1246,21 +1217,6 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
     }
     
     return pos;
-}
-
-void lispe_editor::clean_breakpoints(long idline) {
-    long idfile = lispe->id_file(thecurrentfilename);
-    try {
-        editor_breakpoints.at(thecurrentfilename).at(idline) = 1 - editor_breakpoints.at(thecurrentfilename).at(idline);
-    }
-    catch(const std::out_of_range& oor) {
-        editor_breakpoints[thecurrentfilename][idline] = true;
-    }
-    
-    lispe->delegation->breakpoints[idfile][idline] = editor_breakpoints[thecurrentfilename][idline];
-    
-    cout << back << m_dore << prefixstring(idline) << m_current;
-    movetoposition();
 }
 
 void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& args, vector<string>& newcolors) {
@@ -1300,7 +1256,7 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
     
     switch (noinit) {
         case 1:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             pos = 1;
             line = L"";
             lines.push_back(line);
@@ -1310,9 +1266,9 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             printline(pos+1);
             break;
         case 2:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
-            initlisp(false, false);
+            init_interpreter(false, false);
             lines.push(L"");
             poslines.push_back(0);
             line = L"";
@@ -1329,13 +1285,13 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
             //launch debug
             line = L"debug";
             pos = handlingcommands(pos, dsp);
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             pos = 0;
             line = L"";
             printline(pos+1);
             break;
         default:
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             cerr << endl << m_red << "help: display available commands" << m_current << endl << endl;
             printline(pos+1);
     }
@@ -1387,123 +1343,9 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
         }
         
         if (debugmode) {
-            if (buff == "$") {
-                cout << endl << endl;
-                cout.flush();
-                debugmode = false;
-                lispe = master_lisp;
-                lispe->delegation->display_string_function = &lispe_displaystring;
-                lispe->releasing_trace_lock();
-                lispe->stop_trace();
-                line = L"";
+            if (check_debug_command(buff))
                 continue;
-            }
-            
-            if (buff == "!") {
-                debugmode = false;
-                lispe = master_lisp;
-                lispe->stop();
-                lispe->stop_trace();
-                lispe->releasing_trace_lock();
-                line = L"";
-                continue;
-            }
-            
-            if (buff == left) {
-                //Adding or removing breakpoints
-                //You cannot modify the breakpoints in multi-threading
-                if (lispe->threaded())
-                    continue;
-                
-                string file_name = lispe->name_file(current_file_debugger);
-                try {
-                    editor_breakpoints.at(file_name).at(current_line_debugger) =
-                    1 - editor_breakpoints.at(file_name).at(current_line_debugger);
-                    lispe->delegation->breakpoints[current_file_debugger][current_line_debugger] =
-                    1 - lispe->delegation->breakpoints[current_file_debugger][current_line_debugger];
-                }
-                catch(const std::out_of_range& oor) {
-                    editor_breakpoints[file_name][current_line_debugger] = true;
-                    lispe->delegation->breakpoints[current_file_debugger][current_line_debugger] = true;
-                }
-                
-                displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
-                display_indication();
-                continue;
-            }
-            
-            if (buff == right) {
-                current_line_debugger = -1;
-                current_file_debugger = -1;
-                current_thread_id = -1;
-                lispe->stop_at_next_line(debug_goto);
-                lispe->releasing_trace_lock();
-                cout << endl << endl;
-                continue;
-            }
-            
-            if (buff == "%") {
-                display_variables(lispe, NULL, this, true);
-                display_indication();
-                continue;
-            }
-            
-            if (buff == "&") {
-                displaying_print = 1 - displaying_print;
-                displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
-                display_indication();
-                continue;
-            }
-            
-            if (buff == "#") {
-                displaying_local_variables = 1 - displaying_local_variables;
-                displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
-                display_indication();
-                continue;
-            }
-            
-            if (buff == down) {
-                lispe->stop_at_next_line(debug_inside_function);
-                lispe->releasing_trace_lock();
-                cout << endl << endl;
-                cout.flush();
-                continue;
-            }
-            
-            if (buff == up) {
-                lispe->stop_at_next_line(debug_none);
-                lispe->releasing_trace_lock();
-                cout << endl << endl;
-                cout.flush();
-                continue;
-            }
-            
-            if (buff[0] == 10 || buff[0] == 13) {
-                if (line.size()) {
-                    char tr = lispe->trace;
-                    lispe->trace = debug_none;
-                    string var = "%";
-                    if (line.find(L"(") == -1) {
-                        var = "";
-                        s_unicode_to_utf8(var, line);
-                        line = L"(string " + line + L")";
-                    }
-                    Element* e = lispe->eval(line);
-                    cout << endl << endl << colors[2] << var << ": " <<  e->toString(lispe) << m_red << endl << endl;
-                    e->release();
-                    lispe->trace = tr;
-                    line = L"";
-                    displaygo(true);
-                    continue;
-                }
-                lispe->stop_at_next_line(debug_next);
-                lispe->releasing_trace_lock();
-                cout << endl << endl;
-                cout.flush();
-                continue;
-            }
         }
-        
         if (linematch == -2) {
             displaygo(true);
             movetoposition();
@@ -1620,12 +1462,34 @@ void lispe_editor::launchterminal(bool darkmode, char noinit, vector<string>& ar
     }
 }
 
-bool lispe_editor::Executesomecode(wstring& c) {
+//-------------------------------------------------------------------------------------------
+// LispE Calls
+//-------------------------------------------------------------------------------------------
+void lispe_editor::init_interpreter(bool reinitialize, bool setpath) {
+    if (lispe == NULL) {
+        lispe = new LispE(&special_characters);
+        lispe->arguments(arguments);
+        if (setpath)
+            lispe->set_pathname(thecurrentfilename);
+        return;
+    }
+    
+    if (reinitialize) {
+        if (lispe != NULL)
+            delete lispe;
+        lispe = new LispE(&special_characters);
+        lispe->arguments(arguments);
+        if (setpath)
+            lispe->set_pathname(thecurrentfilename);
+    }
+}
+
+bool lispe_editor::execute_code(wstring& c) {
     debugmode = false;
     
     string code = convert(c);
     
-    initlisp(false, true);
+    init_interpreter(false, true);
     bool storecode = true;
     //Seulement un nom de variable
     if (code.find("(") == -1 && code.find(")") == -1) {
@@ -1653,9 +1517,170 @@ bool lispe_editor::Executesomecode(wstring& c) {
     return true;
 }
 
+bool lispe_editor::isInstruction(u_ustring n) {
+    return lispe->is_instruction(n);
+}
+
+void lispe_editor::load_code(string& n) {
+    lispe->load(thecurrentfilename);
+}
+
+void lispe_editor::store_path(string n) {
+    lispe->add_pathname(n);
+}
+
+void lispe_editor::initialize_breakpoints() {
+    if (editor_breakpoints.size()) {
+        lispe->delegation->breakpoints.clear();
+        for (auto& a: editor_breakpoints) {
+            long idfile = lispe->id_file(a.first);
+            for (auto& e: a.second)
+                lispe->delegation->breakpoints[idfile][e.first] = e.second;
+        }
+        
+        lispe->stop_at_next_line(debug_goto);
+    }
+    else
+        lispe->stop_at_next_line(debug_next);
+}
+
 //-------------------------------------------------------------------------------------------
 // Debug Functions
 //-------------------------------------------------------------------------------------------
+bool lispe_editor::check_debug_command(string& buff) {
+    if (buff == "$") {
+        cout << endl << endl;
+        cout.flush();
+        debugmode = false;
+        lispe = master_lisp;
+        lispe->delegation->display_string_function = &lispe_displaystring;
+        lispe->releasing_trace_lock();
+        lispe->stop_trace();
+        line = L"";
+        return true;
+    }
+    
+    if (buff == "!") {
+        debugmode = false;
+        lispe = master_lisp;
+        lispe->stop();
+        lispe->stop_trace();
+        lispe->releasing_trace_lock();
+        line = L"";
+        return true;
+    }
+    
+    if (buff == left) {
+        //Adding or removing breakpoints
+        //You cannot modify the breakpoints in multi-threading
+        if (lispe->threaded())
+            return true;
+        
+        string file_name = lispe->name_file(current_file_debugger);
+        try {
+            editor_breakpoints.at(file_name).at(current_line_debugger) =
+            1 - editor_breakpoints.at(file_name).at(current_line_debugger);
+            lispe->delegation->breakpoints[current_file_debugger][current_line_debugger] =
+            1 - lispe->delegation->breakpoints[current_file_debugger][current_line_debugger];
+        }
+        catch(const std::out_of_range& oor) {
+            editor_breakpoints[file_name][current_line_debugger] = true;
+            lispe->delegation->breakpoints[current_file_debugger][current_line_debugger] = true;
+        }
+        
+        displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
+        display_indication();
+        return true;
+    }
+    
+    if (buff == right) {
+        current_line_debugger = -1;
+        current_file_debugger = -1;
+        current_thread_id = -1;
+        lispe->stop_at_next_line(debug_goto);
+        lispe->releasing_trace_lock();
+        cout << endl << endl;
+        return true;
+    }
+    
+    if (buff == "%") {
+        display_variables(lispe, NULL, this, true);
+        display_indication();
+        return true;
+    }
+    
+    if (buff == "&") {
+        displaying_print = 1 - displaying_print;
+        displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
+        display_indication();
+        return true;
+    }
+    
+    if (buff == "#") {
+        displaying_local_variables = 1 - displaying_local_variables;
+        displaying_current_lines(lispe, current_file_debugger, current_line_debugger, this);
+        display_indication();
+        return true;
+    }
+    
+    if (buff == down) {
+        lispe->stop_at_next_line(debug_inside_function);
+        lispe->releasing_trace_lock();
+        cout << endl << endl;
+        cout.flush();
+        return true;
+    }
+    
+    if (buff == up) {
+        lispe->stop_at_next_line(debug_none);
+        lispe->releasing_trace_lock();
+        cout << endl << endl;
+        cout.flush();
+        return true;
+    }
+    
+    if (buff[0] == 10 || buff[0] == 13) {
+        if (line.size()) {
+            char tr = lispe->trace;
+            lispe->trace = debug_none;
+            string var = "%";
+            if (line.find(L"(") == -1) {
+                var = "";
+                s_unicode_to_utf8(var, line);
+                line = L"(string " + line + L")";
+            }
+            Element* e = lispe->eval(line);
+            cout << endl << endl << colors[2] << var << ": " <<  e->toString(lispe) << m_red << endl << endl;
+            e->release();
+            lispe->trace = tr;
+            line = L"";
+            displaygo(true);
+            return true;
+        }
+        lispe->stop_at_next_line(debug_next);
+        lispe->releasing_trace_lock();
+        cout << endl << endl;
+        cout.flush();
+        return true;
+    }
+    return false;
+}
+
+void lispe_editor::clean_breakpoints(long idline) {
+    long idfile = lispe->id_file(thecurrentfilename);
+    try {
+        editor_breakpoints.at(thecurrentfilename).at(idline) = 1 - editor_breakpoints.at(thecurrentfilename).at(idline);
+    }
+    catch(const std::out_of_range& oor) {
+        editor_breakpoints[thecurrentfilename][idline] = true;
+    }
+    
+    lispe->delegation->breakpoints[idfile][idline] = editor_breakpoints[thecurrentfilename][idline];
+    
+    cout << back << m_dore << prefixstring(idline) << m_current;
+    movetoposition();
+}
+
 void displaying_current_lines(LispE* lisp, long current_file, long current_line, lispe_editor* editor) {
 #ifdef WIN32
     system("cls");

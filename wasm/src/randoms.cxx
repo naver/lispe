@@ -759,7 +759,6 @@ Element* Proc_shuffle(LispE* lisp) {
 
     
     Element* _eval(LispE* lisp) {
-        //eval is either: command, setenv or getenv...
         switch (rnd) {
             case rnd_random: {
                 long nb = lisp->get_variable(v_nb)->asInteger();

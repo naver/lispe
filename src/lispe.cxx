@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2024.1.15.13.49";
+static std::string version = "1.2024.2.19.14.18";
 string LispVersion() {
     return version;
 }
@@ -73,6 +73,13 @@ Element* Error::check_if_error(LispE* lisp) {
     vector<Element*> __indexes;
 #endif
 //------------------------------------------------------------
+string Stackelement::toString(LispE* lisp) {
+    wstring w = asString(lisp);
+    string s;
+    s_unicode_to_utf8(s, w);
+    return s;
+}
+
 wstring Stackelement::asString(LispE* lisp) {
     std::wstringstream message;
     binHash<Element*>::iterator a(variables);
@@ -91,6 +98,20 @@ List* Stackelement::atomes(LispE* lisp) {
             liste->append(lisp->provideAtom(a->first));
     }
     return liste;
+}
+
+bool Stackelement::recordargument(LispE* lisp, Element* e, int16_t label) {
+    if (variables.check(label))
+        return variables.at(label)->unify(lisp,e, false);
+    
+    if (!lisp->macro_mode)
+        e = e->duplicate_constant(lisp);
+    variables[label] = e;
+    if (e->status != s_constant) {
+        e->increment();
+        names.push(label);
+    }
+    return true;
 }
 //------------------------------------------------------------
 jag_get* get_jag_handler();
@@ -1189,6 +1210,7 @@ void LispE::cleaning() {
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) : segmenter(lisp->handlingutf8){
+    macro_mode = false;
     max_size = 25;
     larger_max_size = 100;
     initpoolsize();
@@ -1795,13 +1817,26 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 element = lm;
                 break;
             }
-            case l_defmacro:
             case l_data:
             case l_dethread:
             case l_defun:
                 element->eval(this);
                 cont = true;
                 return element;
+            case l_defmacro: {
+                //This is a hack to transform the list of parameters
+                //into a unifiable object. Basically, we transform the parameters
+                //into one single object, which allows us to apply unfiy on complex lists
+                //of arguments: (a b $ e) --> ((a b $ e))
+                Element* parameters = element->index(2);
+                List arguments;
+                arguments.liste.push_raw(parameters);
+                arguments.transformargument(this);
+                ((List*)element)->liste.put(2, arguments.liste[0]);
+                element->eval(this);
+                cont = true;
+                return element;
+            }
             case l_defpat: {
                 Element* arguments = element->index(2);
                 Element* a;
@@ -2866,13 +2901,34 @@ void LispE::add_pathname(string pathname) {
 //We duplicate our macro into new code that will replace the current call...
 void Element::generate_body_from_macro(LispE* lisp, Listincode* code, binHash<Element*>& dico_variables) {
     Element* e;
-    for (long i = 0;i < size(); i++) {
+    Element* v;
+    long sz = size();
+    for (long i = 0; i < sz; i++) {
         e = index(i);
         if (e->isAtom()) {
-            if (dico_variables.check(e->label()))
-                code->append(dico_variables[e->label()]);
-            else
-                code->append(e);
+            if (dico_variables.check(e->label())) {
+                v = dico_variables[e->label()];
+                code->append(v);
+                if (v->not_protected())
+                    lisp->storeforgarbage(v);
+            }
+            else {
+                //When a list should be extended instead of being inserted...
+                if (e == separator_ &&
+                    i < sz - 1 &&
+                    index(i+1)->isAtom() &&
+                    dico_variables.check(index(i+1)->label()) &&
+                    dico_variables[index(i+1)->label()]->isList()) {
+                    List* l = (List*)dico_variables[index(i+1)->label()];
+                    for (long j = 0; j < l->size(); j++) {
+                        code->append(l->index(j));
+                    }
+                    //we skip the next element
+                    i++;
+                }
+                else
+                    code->append(e);
+            }
         }
         else {
             if (e->isList()) {
@@ -2902,26 +2958,41 @@ int16_t LispE::generate_macro(Element* code, int16_t lab) {
 
     int16_t label = code->index(0)->label();
     
-    Element* macro_rule = delegation->macros.search(label);
-    if (macro_rule != NULL) {
-        Element* macro_parameters = macro_rule->index(2);
-        if (macro_parameters->size() != code->size()-1)
-            throw new Error("Error: parameter size does not match argument");
-        //Now we need to create a place where to store our parameters...
-        long i;
-        binHash<Element*> dico_variables;
-        //Keeping track of the what to replace
-        for (i = 0; i < macro_parameters->size(); i++) {
-            label = macro_parameters->index(i)->label();
-            dico_variables[label] = code->index(i+1);
-        }
-        
+    if (delegation->macros.check(label)) {
         //We reuse the code that we need to replace with our macro...
         Listincode* lcode = (Listincode*)code;
+        Element* macro_rule = NULL;
+        Element* parameters;
+        macro_mode = true;
+
+        //We skip the label, we do a virtual CDR on the list
+        lcode->liste.home = 1;
+        push(n_null);
+        for (Element* m : delegation->macros[label]) {
+            parameters = m->index(2);
+            if (parameters->unify(this, code, true)) {
+                macro_rule = m;
+                break;
+            }
+            clear_top_stack();
+        }
+        
+        lcode->liste.home = 0;
+        macro_mode = false;
+
+        if (macro_rule == NULL) {
+            pop(n_null);
+            stringstream st;
+            st << "Error: cannot apply this macro: " << toString(label) << " to '" << lcode->toString(this) << "'";
+            throw new Error(st.str());
+        }
+        
         //We clear it... We have already saved the important parts of the code
         //within our macro variables...
         lcode->liste.clear();
-        macro_rule->index(3)->generate_body_from_macro(this, lcode, dico_variables);
+        Stackelement* top = topstack();
+        macro_rule->index(3)->generate_body_from_macro(this, lcode, top->variables);
+        pop(n_null);
         return lcode->size()?lcode->index(0)->label():lab;
     }
     return lab;
@@ -3059,6 +3130,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

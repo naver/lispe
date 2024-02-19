@@ -40,18 +40,7 @@ public:
         return variables.size();
     }
     
-    bool recordargument(LispE* lisp, Element* e, int16_t label) {
-        if (variables.check(label))
-            return variables.at(label)->unify(lisp,e, false);
-        
-        e = e->duplicate_constant(lisp);
-        variables[label] = e;
-        if (e->status != s_constant) {
-            e->increment();
-            names.push(label);
-        }
-        return true;
-    }
+    bool recordargument(LispE* lisp, Element* e, int16_t label);
     
     bool recordingunique(Element* e, int16_t label) {
         if (variables.check(label))
@@ -303,6 +292,7 @@ public:
 
     u_ustring asUString(LispE*);
     wstring asString(LispE*);
+    string toString(LispE*);
     List* atomes(LispE*);
     
     void copy(Stackelement* stack) {

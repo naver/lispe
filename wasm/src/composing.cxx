@@ -245,7 +245,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
       if (action->isLambda()) {
          if (action->type != t_call_lambda) {
             action = new List_lambda_eval((Listincode*)action);
-            lisp->garbaging(action);
+            lisp->storeforgarbage(action);
          }
          if (((List_lambda_eval*)action)->parameters->size() != 1) {
             wstring err = L"Error: Wrong number of arguments for: '";
@@ -254,7 +254,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
             return new Error(err);
          }
          List_call_lambda* a = new List_call_lambda();
-         lisp->garbaging(a);
+         lisp->storeforgarbage(a);
          a->append(action);
          a->append(var);
          action = a;
@@ -265,7 +265,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
          long i;
          if (action->index(0)->isOperator()) {
             List* a = create_instruction_class(lisp, action->index(0)->label());
-            lisp->garbaging(a);
+            lisp->storeforgarbage(a);
             a->append(action->index(0));
             a->append(var);
             for (i = 1; i < sz; i++)
@@ -280,7 +280,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
             a->append(action->index(i));
             a->append(var);
             action = a;
-            lisp->garbaging(action);
+            lisp->storeforgarbage(action);
             return this;
          }
       }
@@ -293,22 +293,22 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
          Element* body = (*lisp->delegation->function_pool[0])[lab];
          switch (body->index(0)->label()) {
             case l_deflib: {
-               List* a = new List_library_eval((List*)body);
-               lisp->garbaging(a);
+               List* a = new List_library_eval((List*)body, 1);
+               lisp->storeforgarbage(a);
                a->append(var);
                action = a;
                return this;
             }
             case l_defun: {
-               List* a = new List_function_eval(lisp, (List*)body);
-               lisp->garbaging(a);
+               List* a = new List_function_eval(lisp, (List*)body, 1);
+               lisp->storeforgarbage(a);
                a->append(var);
                action = a;
                return this;
             }
             case l_defpat: {
                List* a = new List_pattern_eval((List*)body);
-               lisp->garbaging(a);
+               lisp->storeforgarbage(a);
                a->append(var);
                action = a;
                return this;
@@ -330,7 +330,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
    else
       action = a;
 
-   lisp->garbaging(action);
+   lisp->storeforgarbage(action);
    return this;
 }
 
@@ -381,7 +381,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
       if (condition->isLambda()) {
          if (condition->type != t_call_lambda) {
             condition = new List_lambda_eval((Listincode*)condition);
-            lisp->garbaging(condition);
+            lisp->storeforgarbage(condition);
          }
          if (((List_lambda_eval*)condition)->parameters->size() != 1) {
             wstring err = L"Error: Wrong number of arguments for: '";
@@ -391,7 +391,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
          }
 
          List_call_lambda* a = new List_call_lambda();
-         lisp->garbaging(a);
+         lisp->storeforgarbage(a);
          a->append(condition);
          a->append(var);
          c = a;
@@ -406,8 +406,9 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
                a->append(var);
                for (i = 1; i < sz; i++)
                a->append(condition->index(i));
+
                c = a;
-               lisp->garbaging(c);
+               lisp->storeforgarbage(c);
             }
             else {
                if (lisp->isComparator(condition->index(sz - 1))) {
@@ -417,7 +418,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
                   a->append(condition->index(i));
                   a->append(var);
                   c = a;
-                  lisp->garbaging(c);
+                  lisp->storeforgarbage(c);
                }
                else
                   return new Error("Error: missing operator");
@@ -435,7 +436,7 @@ Element* compose(LispE* lisp, Element* var, Element* e) {
       }
       else
          c = a;
-      lisp->garbaging(c);
+      lisp->storeforgarbage(c);
    }
 
 
@@ -596,7 +597,7 @@ public:
         counter = c;
         recipient = rec_var;
         List* a = new Listincode;
-        lisp->garbaging(a);
+        lisp->storeforgarbage(a);
         a->append(action);
         switch (type) {
             case l_foldl:
@@ -634,7 +635,7 @@ Element* List::evall_repeat_cps(LispE* lisp) {
 
    Element* e = new Infinitelist(lisp);
    e->append(liste[1]);
-   lisp->garbaging(e);
+   lisp->storeforgarbage(e);
    lisp->composition_stack.push_back(e);
    return e;
 }
@@ -648,7 +649,7 @@ Element* List::evall_cycle_cps(LispE* lisp) {
       return new Error("Error: cannot apply 'cycle' with a context");
    Element* c = new Cyclelist(lisp);
    c->append(liste[1]);
-   lisp->garbaging(c);
+   lisp->storeforgarbage(c);
    lisp->composition_stack.push_back(c);
    return c;
 }
@@ -920,252 +921,257 @@ Element* List::evall_scanr1_cps(LispE* lisp) {
 
 //The compose method itself
 Element* LispE::compose(Element* fin) {
-    static u_uchar idx_var = 48;
-    
-    
-    u_ustring s_idx(U"%i");
-    s_idx += idx_var;
-    u_ustring s_recipient(U"%v");
-    s_recipient += idx_var;
-    u_ustring s_counter(U"%c");
-    s_counter += idx_var;
-    
-    u_ustring s_content(U"%content");
-    s_content += idx_var;
-    
-    Element* idx = provideAtom(s_idx);
-    Element* basic_idx = idx;
-    Element* recipient = provideAtom(s_recipient);
-    Element* current_recipient = recipient;
-    Element* content = provideAtom(s_content);
-    Element* counter = provideAtom(s_counter);
-    
-    Element* e;
-    char usedvar = false;
-    
-    vector<Element*> composed;
-    composed.push_back(composition_stack[1]->compose(this, idx, NULL));
-    Element* last = composed.back();
-    if (last->label() == l_for) {
-        idx = last->next_element();
-        basic_idx = idx;
-        e = last->to_code(this, recipient, NULL);
-        composed.pop_back();
-        composed.push_back(e);
-        usedvar = true;
-    }
-    
-    int16_t act;
-    long i;
-    for (i = 2; i < composition_stack.size(); i++) {
-        last = composed.back();
-        act = composition_stack[i]->label();
-        if (act == last->label() && last->label() != t_code && act < l_for) {
-            e = composition_stack[i]->compose(this, idx, last);
-            if (e != last) {
-                composed.pop_back();
-                composed.push_back(e);
+   static u_uchar idx_var = 48;
+   if (composition_stack.size() < 2) {
+      composition_stack.clear();
+      return new Error("Error: This instruction must be composed with other instructions such as 'drop' or 'take'");
+   }
+
+   u_ustring s_idx(U"%i");
+   s_idx += idx_var;
+   u_ustring s_recipient(U"%v");
+   s_recipient += idx_var;
+   u_ustring s_counter(U"%c");
+   s_counter += idx_var;
+
+   u_ustring s_content(U"%content");
+   s_content += idx_var;
+
+   Element* idx = provideAtom(s_idx);
+   Element* basic_idx = idx;
+   Element* recipient = provideAtom(s_recipient);
+   Element* current_recipient = recipient;
+   Element* content = provideAtom(s_content);
+   Element* counter = provideAtom(s_counter);
+
+   Element* e;
+   char usedvar = false;
+
+   vector<Element*> composed;
+
+   composed.push_back(composition_stack[1]->compose(this, idx, NULL));
+   Element* last = composed.back();
+   if (last->label() == l_for) {
+      idx = last->next_element();
+      basic_idx = idx;
+      e = last->to_code(this, recipient, NULL);
+      composed.pop_back();
+      composed.push_back(e);
+      usedvar = true;
+   }
+
+   int16_t act;
+   long i;
+   for (i = 2; i < composition_stack.size(); i++) {
+      last = composed.back();
+      act = composition_stack[i]->label();
+      if (act == last->label() && last->label() != t_code && act < l_for) {
+         e = composition_stack[i]->compose(this, idx, last);
+         if (e != last) {
+            composed.pop_back();
+            composed.push_back(e);
+         }
+      }
+      else {
+         if (act == l_for) {
+            idx = composition_stack[i]->next_element();
+            basic_idx = idx;
+         }
+         e = last->to_code(this, recipient, counter);
+         act = last->label();
+         if (last->hasAction()) {
+            usedvar = true;
+            idx = recipient;
+            s_recipient += U"_";
+            current_recipient = recipient;
+            recipient = provideAtom(s_recipient);
+         }
+         if (e == last) {
+            if (act >= l_foldl && act <= l_scanr1) {
+               //We use a counter then
+               s_counter += U"_";
+               counter = provideAtom(s_counter);
             }
-        }
-        else {
-            if (act == l_for) {
-                idx = composition_stack[i]->next_element();
-                basic_idx = idx;
-            }
-            e = last->to_code(this, recipient, counter);
-            act = last->label();
-            if (last->hasAction()) {
-                usedvar = true;
-                idx = recipient;
-                s_recipient += U"_";
-                current_recipient = recipient;
-                recipient = provideAtom(s_recipient);
-            }
-            if (e == last) {
-                if (act >= l_foldl && act <= l_scanr1) {
-                    //We use a counter then
-                    s_counter += U"_";
-                    counter = provideAtom(s_counter);
-                }
-            }
-            else {
-                composed.pop_back();
-                composed.push_back(e);
-            }
-            composed.push_back(composition_stack[i]->compose(this, idx, NULL));
-        }
-    }
-    
-    last = composed.back();
-     
-    act = last->label();
-    e = last->to_code(this, recipient, counter);
-    if (last->hasAction()) {
-        current_recipient = recipient;
-        usedvar = true;
-    }
-    
-    if (e == last) {
-        if (act >= l_foldl && act <= l_scanr1) {
-            //We use a counter then
-            s_counter += U"_";
-            counter = provideAtom(s_counter);
-        }
-    }
-    else {
-        composed.pop_back();
-        composed.push_back(e);
-    }
-    
-    List* initialisations = C_INS(l_block);
-    List* default_init = C_INS(l_setq, content, n_emptylist);
-    
-    Element* loop_on_list = composition_stack[0];
-    Element* return_result = content;
-    Element* current = new Listincode;
-    garbaging(current);
-    Element* base = current;
-    Element* root = NULL;
-    Fold* fold;
-    
-    u_ustring s_to_loop_on(U"#l");
-    s_to_loop_on += idx_var;
-    Element* to_loop_on = provideAtom(s_to_loop_on);
-    
-    bool content_initialisation = false;
-    for (i= 0; i < composed.size(); i++) {
-        last = composed[i];
-        act = last->label();
-        switch (act) {
-            case t_condition:
-                last = last->next_element();
-                current->append(last);
-                current = last;
-                break;
-            case t_countertake:
-                last = last->next_element();
-                e = C_INS(l_ife, C_INS(l_eq, C_INS(l_size,content), last), C_INS(l_break));
-                if (root != NULL)
-                    ((List*)e)->extend((List*)root);
-                root = e;
-                break;
-            case t_counterdrop:
-                last = last->next_element();
-                return_result = C_INS(l_extract, return_result, last, n_zero);
-                break;
-            case t_conditiontake:
-                last = last->next_element();
-                e = C_INS(l_ife, C_INS(l_not, last), C_INS(l_break));
-                current->append(e);
-                current = e;
-                break;
-            case t_conditiondrop:
-                last = last->next_element();
-                initialisations->append(C_INS(l_setq, counter, n_null));
-                e = C_INS(l_ncheck, counter, C_INS(l_if, (C_INS(l_not, last)), C_INS(l_setq, counter, n_true)));
-                current->append(e);
-                current = e;
-                s_counter += U"_";
-                counter = provideAtom(s_counter);
-                break;
-                
-            case l_foldr:
-                loop_on_list = C_INS(l_reverse, loop_on_list);
-            case l_foldl:
-                fold = (Fold*)last;
-                usedvar = 2;
-                default_init = C_INS(l_setq, content, fold->counter);
-                initialisations->append(C_INS(l_setq, fold->counter, fold->initial));
-                current->append(C_INS(l_setq, fold->counter, fold->action));
-                current->append(C_INS(l_setq, fold->recipient, fold->counter));
-                break;
-            case l_scanr:
-                loop_on_list = C_INS(l_reverse, loop_on_list);
-            case l_scanl:
-                fold = (Fold*)last;
-                initialisations->append(C_INS(l_setq, fold->counter, fold->initial));
-                current->append(C_INS(l_setq, fold->counter, fold->action));
-                current->append(C_INS(l_setq, fold->recipient, fold->counter));
-                default_init->release();
-                if (act == l_scanl)
-                    default_init = C_INS(l_setq, content, C_INS(l_list, fold->counter));
-                else
-                    default_init = C_INS(l_setq, content, C_INS(l_llist, fold->counter));
-                content_initialisation = true;
-                break;
-            case l_foldr1:
-                initialisations->append(C_INS(l_setq, to_loop_on, C_INS(l_reverse, loop_on_list)));
-            case l_foldl1:
-                fold = (Fold*)last;
-                usedvar = 2;
-                default_init->release();
-                default_init = C_INS(l_setq, content, fold->counter);
-                if (act == l_foldl1)
-                    initialisations->append(C_INS(l_setq, to_loop_on, loop_on_list));
-                loop_on_list = C_INS(l_cdr, to_loop_on);
-                initialisations->append(C_INS(l_setq, fold->counter, C_INS(l_car, to_loop_on)));
-                current->append(C_INS(l_setq, fold->counter, fold->action));
-                current->append(C_INS(l_setq, fold->recipient, fold->counter));
-                break;
-            case l_scanr1:
-                initialisations->append(C_INS(l_setq, to_loop_on, C_INS(l_reverse, loop_on_list)));
-            case l_scanl1:
-                fold = (Fold*)last;
-                if (act == l_scanl1)
-                    initialisations->append(C_INS(l_setq, to_loop_on, loop_on_list));
-                loop_on_list = C_INS(l_cdr, to_loop_on);
-                initialisations->append(C_INS(l_setq, fold->counter, C_INS(l_car, to_loop_on)));
-                current->append(C_INS(l_setq, fold->counter, fold->action));
-                current->append(C_INS(l_setq, fold->recipient, fold->counter));
-                default_init->release();
-                if (act == l_scanl1)
-                    default_init = C_INS(l_setq, content, C_INS(l_list, fold->counter));
-                else
-                    default_init = C_INS(l_setq, content, C_INS(l_llist, fold->counter));
-                content_initialisation = true;
-                break;
-            default:
-                last = last->next_element();
-                current->append(last);
-        }
-    }
-    
-    List* code = C_INS(l_loop, basic_idx, loop_on_list);
-    initialisations->append(default_init);
-    
-    if (usedvar) {
-        if (usedvar == 2)
-            e = C_INS(l_setq, content, current_recipient);
-        else
-            e = C_INS(l_push, content, current_recipient);
-    }
-    else
-        e = C_INS(l_push, content, idx);
-                            
-    current->append(e);
-    
-    if (root == NULL)
-        code->extend((List*)base);
-    else {
-        ((List*)root)->extend((List*)base);
-        code->append((List*)root);
-    }
-    
-    initialisations->append(code);
-    code = initialisations;
-    
-    //Final value that is returned
-    code->append(return_result);
-    //cerr << code->toString(this) << endl;
-    idx_var++;
-    if (idx_var == 58)
-        idx_var = 48;
-    
-    clean_compositions.clean();
-    composition_stack.clear();
-    fin->append(code);
-    return fin;
+         }
+         else {
+            composed.pop_back();
+            composed.push_back(e);
+         }
+         composed.push_back(composition_stack[i]->compose(this, idx, NULL));
+      }
+   }
+
+   last = composed.back();
+
+   act = last->label();
+   e = last->to_code(this, recipient, counter);
+   if (last->hasAction()) {
+      current_recipient = recipient;
+      usedvar = true;
+   }
+
+   if (e == last) {
+      if (act >= l_foldl && act <= l_scanr1) {
+         //We use a counter then
+         s_counter += U"_";
+         counter = provideAtom(s_counter);
+      }
+   }
+   else {
+      composed.pop_back();
+      composed.push_back(e);
+   }
+
+   List* initialisations = C_INS(l_block);
+   List* default_init = C_INS(l_setq, content, n_emptylist);
+
+   Element* loop_on_list = composition_stack[0];
+   Element* return_result = content;
+   Element* current = new Listincode;
+   storeforgarbage(current);
+   Element* base = current;
+   Element* root = NULL;
+   Fold* fold;
+
+   u_ustring s_to_loop_on(U"#l");
+   s_to_loop_on += idx_var;
+   Element* to_loop_on = provideAtom(s_to_loop_on);
+
+   bool content_initialisation = false;
+   for (i= 0; i < composed.size(); i++) {
+      last = composed[i];
+      act = last->label();
+      switch (act) {
+         case t_condition:
+            last = last->next_element();
+         current->append(last);
+         current = last;
+         break;
+      case t_countertake:
+         last = last->next_element();
+         e = C_INS(l_ife, C_INS(l_eq, C_INS(l_size,content), last), C_INS(l_break));
+            if (root != NULL)
+               ((List*)e)->extend((List*)root);
+            root = e;
+         break;
+         case t_counterdrop:
+            last = last->next_element();
+         return_result = C_INS(l_extract, return_result, last, n_zero);
+         break;
+      case t_conditiontake:
+         last = last->next_element();
+         e = C_INS(l_ife, C_INS(l_not, last), C_INS(l_break));
+         current->append(e);
+         current = e;
+         break;
+         case t_conditiondrop:
+         last = last->next_element();
+         initialisations->append(C_INS(l_setq, counter, n_null));
+         e = C_INS(l_ncheck, counter, C_INS(l_if, (C_INS(l_not, last)), C_INS(l_setq, counter, n_true)));
+         current->append(e);
+         current = e;
+         s_counter += U"_";
+         counter = provideAtom(s_counter);
+         break;
+
+         case l_foldr:
+         loop_on_list = C_INS(l_reverse, loop_on_list);
+         case l_foldl:
+         fold = (Fold*)last;
+         usedvar = 2;
+         default_init = C_INS(l_setq, content, fold->counter);
+         initialisations->append(C_INS(l_setq, fold->counter, fold->initial));
+         current->append(C_INS(l_setq, fold->counter, fold->action));
+         current->append(C_INS(l_setq, fold->recipient, fold->counter));
+         break;
+         case l_scanr:
+         loop_on_list = C_INS(l_reverse, loop_on_list);
+         case l_scanl:
+         fold = (Fold*)last;
+         initialisations->append(C_INS(l_setq, fold->counter, fold->initial));
+         current->append(C_INS(l_setq, fold->counter, fold->action));
+         current->append(C_INS(l_setq, fold->recipient, fold->counter));
+         default_init->release();
+            if (act == l_scanl)
+               default_init = C_INS(l_setq, content, C_INS(l_list, fold->counter));
+            else
+               default_init = C_INS(l_setq, content, C_INS(l_llist, fold->counter));
+         content_initialisation = true;
+         break;
+         case l_foldr1:
+            initialisations->append(C_INS(l_setq, to_loop_on, C_INS(l_reverse, loop_on_list)));
+      case l_foldl1:
+         fold = (Fold*)last;
+         usedvar = 2;
+         default_init->release();
+         default_init = C_INS(l_setq, content, fold->counter);
+            if (act == l_foldl1)
+               initialisations->append(C_INS(l_setq, to_loop_on, loop_on_list));
+            loop_on_list = C_INS(l_cdr, to_loop_on);
+         initialisations->append(C_INS(l_setq, fold->counter, C_INS(l_car, to_loop_on)));
+         current->append(C_INS(l_setq, fold->counter, fold->action));
+         current->append(C_INS(l_setq, fold->recipient, fold->counter));
+         break;
+         case l_scanr1:
+            initialisations->append(C_INS(l_setq, to_loop_on, C_INS(l_reverse, loop_on_list)));
+      case l_scanl1:
+         fold = (Fold*)last;
+            if (act == l_scanl1)
+               initialisations->append(C_INS(l_setq, to_loop_on, loop_on_list));
+            loop_on_list = C_INS(l_cdr, to_loop_on);
+         initialisations->append(C_INS(l_setq, fold->counter, C_INS(l_car, to_loop_on)));
+         current->append(C_INS(l_setq, fold->counter, fold->action));
+         current->append(C_INS(l_setq, fold->recipient, fold->counter));
+         default_init->release();
+         if (act == l_scanl1)
+            default_init = C_INS(l_setq, content, C_INS(l_list, fold->counter));
+         else
+            default_init = C_INS(l_setq, content, C_INS(l_llist, fold->counter));
+         content_initialisation = true;
+         break;
+         default:
+            last = last->next_element();
+         current->append(last);
+      }
+   }
+
+   List* code = C_INS(l_loop, basic_idx, loop_on_list);
+   initialisations->append(default_init);
+
+   if (usedvar) {
+      if (usedvar == 2)
+         e = C_INS(l_setq, content, current_recipient);
+      else
+         e = C_INS(l_push, content, current_recipient);
+   }
+   else
+      e = C_INS(l_push, content, idx);
+
+   current->append(e);
+
+   if (root == NULL)
+      code->extend((List*)base);
+   else {
+      ((List*)root)->extend((List*)base);
+      code->append((List*)root);
+   }
+
+   initialisations->append(code);
+   code = initialisations;
+
+   //Final value that is returned
+   code->append(return_result);
+   //cerr << code->toString(this) << endl;
+   idx_var++;
+   if (idx_var == 58)
+      idx_var = 48;
+
+   clean_compositions.clean();
+   composition_stack.clear();
+   fin->append(code);
+   return fin;
 }
+
 
 //------------------------------------------------------------
 void List_switch_eval::build(LispE* lisp) {
@@ -1233,7 +1239,7 @@ Element* List::transformargument(LispE* lisp) {
          if (liste[i-1]->argumentvalue() != NULL) {
             sz--;
             element = new Listkleene(liste[i-1], liste[i-1]->argumentvalue(), element->label());
-            lisp->garbaging(element);
+            lisp->storeforgarbage(element);
             liste[i-1] = element;
             liste.erase(i--);
          }
@@ -1314,7 +1320,7 @@ Element* List::transformargument(LispE* lisp) {
          return new Error("Error: The Kleene operators (*+%) can only apply to a function call");
       sz--;
       element = new Listkleene(element, element->argumentvalue(), element->label());
-      lisp->garbaging(element);
+      lisp->storeforgarbage(element);
       liste[0] = element;
       liste.erase(1);
    }
@@ -1326,5 +1332,120 @@ Element* List::transformargument(LispE* lisp) {
       return lisp->push_in_garbage(element);
    }
    return this;
+}
+
+
+Element* LispE::for_composition(Element* current_program,Element* current_element,Tokenizer& parse) {
+
+   #ifdef LISPE_WASM
+   LispE* lisp = this;
+   #endif
+   Element* check_composition_depth = NULL;
+   uint16_t currentspace = current_space;
+   int16_t label;
+   List* list = (List*)current_element;
+   Element* element;
+   long sz = list->size();
+   //Each function is separated from the next with a "."
+   //We go to the last separator
+   long x = 0;
+   List* stack = provideList();
+   Element* sub = NULL;
+   for (x = 0; x < sz; x++) {
+      if (list->liste[x] == n_compose) {
+         if (sub != NULL) {
+            if (!sub->size())
+               continue;
+            stack->append(sub);
+         }
+         sub = provideList();
+      }
+      else
+         sub->append(list->liste[x]);
+   }
+
+   if (sub != NULL) {
+      if (!sub->size())
+         sub->release();
+      else
+         stack->append(sub);
+   }
+
+   if (!stack->size()) {
+      stack->release();
+      return new Error("Error: wrong composition");
+   }
+
+   long last = stack->size() - 1;
+   element = NULL;
+   Listincode* lic = NULL;
+   bool cont = false;
+   bool high_level = false;
+
+   while (last >= 0) {
+      label = stack->liste[last]->index(0)->label();
+      //We need to keep track of high level function composition such as:
+      //(filter '(< 100) . map '* '(1 3 9 10 12 34 5 7))
+      //(scanl '+ 10 . take 3 '(1 2 3 4))
+      if (label >= l_map && label <= l_scanr1) {
+         high_level = true;
+         //if we have just produced a drop or a take, we must process it locally before anything else
+         if (element != NULL && (element->label() == t_countertake || element->label() == t_counterdrop)) {
+            List lst;
+            compose(&lst);
+            composition_stack.push_back(lst.liste[0]);
+            //It has been consumed, we can propagate it to the next element
+            element = NULL;
+         }
+
+         bool popvalue = false;
+         if (element != NULL) {
+            //We must push the current element into the list we are processing
+            stack->liste[last]->append(element);
+            popvalue = true;
+         }
+
+         //We then create the corresponding structure in composition_stack
+         //The evaluation of map, filter etc... calls for specific associated functions
+         //such as evall_map_cps or evall_filter_cps (see above)
+         element = stack->liste[last]->eval(this);
+
+         if (popvalue) {
+            //We remove the previous value without deleting it...
+            ((List*)stack->liste[last])->liste.item->last--;
+         }
+      }
+      else {
+         if (high_level) {
+            //This is a combination of high level functions with regular functions
+            //(sqrt . sum . filter '(< 100) . map '* '(1 3 9 10 12 34 5 7))
+            List lst;
+            compose(&lst);
+            element = lst.liste[0];
+            high_level = false;
+         }
+         lic = new Listincode(list->infoIdx());
+         for (x  = 0; x < stack->liste[last]->size(); x++)
+         lic->append(stack->liste[last]->index(x));
+         if (element != NULL)
+            lic->append(element);
+         storeforgarbage(lic);
+         element = compileLocalStructure(current_program, lic, parse, check_composition_depth, currentspace, cont);
+      }
+      last--;
+   }
+   if (high_level) {
+      List lst;
+      compose(&lst);
+      element = lst.liste[0];
+   }
+   removefromgarbage(list);
+   stack->release();
+
+   if (delegation->current_error) {
+      stack->release();
+      return delegation->set_error(delegation->current_error);
+   }
+   return element;
 }
 

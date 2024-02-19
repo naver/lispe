@@ -189,7 +189,6 @@ public:
         first = NULL;
     }
 
-    
     u_links(u_links& l, long from) {
         mark = l.mark;
         u_link* e = l.at(from);
@@ -533,6 +532,8 @@ public:
     }
 
     
+    Element* negate(LispE* lisp);
+    
     bool element_container() {
         return true;
     }
@@ -576,6 +577,31 @@ public:
     }
 
     
+    void copyfrom(Element* x) {
+        liste.clear();
+        LList* l = (LList*)x;
+        u_link* a = l->liste.last();
+        if (a == NULL)
+            return;
+        
+        u_link* tail = NULL;
+        bool cyclic = (a->_next != NULL);
+        for (; a != NULL; a = a->previous()) {
+            push_front(a->value->fullcopy(), a->isFinal());
+            if (cyclic) {
+                tail = liste.first;
+                cyclic = false;
+            }
+        }
+        
+        if (tail != NULL) {
+            //there is a cycle
+            //we need to reproduce it...
+            liste.first->_previous = tail;
+            tail->_next = liste.first;
+        }
+    }
+
     void* begin_iter() {
         u_links* u = new u_links(liste.mark);
         u->first = liste.begin();
@@ -667,7 +693,7 @@ public:
         bool cyclic = (a->_next != NULL);
         u_link* tail = NULL;
         for (; a != NULL; a = a->previous()) {
-            l->push_front(a->value->copying(false), a->isFinal());
+            l->push_front(a->value->copying(true), a->isFinal());
             if (cyclic) {
                 tail = l->liste.first;
                 cyclic = false;
@@ -692,10 +718,16 @@ public:
 
     Element* quoted(LispE*);
     Element* unique(LispE* lisp);
-    Element* rotate(bool left);
+    Element* rotating(LispE* lisp, bool left);
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
     void flatten(LispE*, Floats* l);
+    void flatten(LispE*, Integers* l);
+    void flatten(LispE*, Strings* l);
+    void flatten(LispE*, Shorts* l);
+    void flatten(LispE*, Stringbytes* l);
+    
+    Element* takenb(LispE* lisp, long nb, bool direction);
     
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
@@ -926,9 +958,9 @@ public:
     }
 
     
-    bool compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j);
-    void sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax);
-    void sorting(LispE* lisp, List* comparison);
+    //bool compare(LispE* lisp, List* comparison, int16_t instruction, long i, long j);
+    //void sorting(LispE* lisp, List* comparison, int16_t instruction, long rmin, long rmax);
+    //void sorting(LispE* lisp, List* comparison);
     void push_element(LispE* lisp, List* l);
     void push_element_true(LispE* lisp, List* l);
     void push_element_front(LispE* lisp, List* l);

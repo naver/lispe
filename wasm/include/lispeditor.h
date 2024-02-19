@@ -78,6 +78,7 @@ public:
     long current_thread_id;
     
     std::atomic<bool> reading;
+    string current_directory;
     string input_string;
     string output_string;
     bool debugmode;
@@ -115,27 +116,31 @@ public:
     }
 
     
+    bool isInstruction(u_ustring n);
+    bool execute_code(wstring& c);
+    void load_code(string& n);
+    void init_interpreter(bool init, bool setpath);
+    void store_path(string n);
+    void initialize_breakpoints();
+    bool check_debug_command(string& buff);
     wstring WListing() {
         return wconvert(current_code);
     }
 
     
     bool emode() {
-        if (editmode && option == x_none)
-            return true;
+        if (editmode)
+            return (option == x_none);
         noprefix = false;
         return false;
     }
 
-    
     
     string coloringline(wstring& l, long i) {
         string line = convert(l);
         return coloringline(line, i, false);
     }
 
-    
-    void initlisp(bool init, bool setpath);
     
     //long splitline(wstring& l, long linenumber, vector<wstring>& subs);
     string coloringline(string line, long i, bool thread);
@@ -265,7 +270,8 @@ public:
                         printline(lines.numeros[pos], line, pos);
                     else {
                         string prf = prefix;
-                        prefix = ">>";
+                        prefix = editor_prefix;
+                        wprefix = editor_wprefix;
                         printline(lines.numeros[pos], line, pos);
                         prefix = prf;
                     }
@@ -546,7 +552,6 @@ public:
     }
 
     
-    bool evallocalcode(string code, bool disp=false);
     long handlingcommands(long pos, bool& dsp);
     
     void init() {
@@ -607,7 +612,7 @@ public:
         string l = m_red;
         l += "console";
         l += m_current;
-        prefix = "<>";
+        prefix = cmd_line_prefix;
         printline(pos+1, l);
         cout << endl;
         clearline();
@@ -638,7 +643,7 @@ public:
             string l = m_red;
             l += "console";
             l += m_current;
-            prefix = "<>";
+            prefix = cmd_line_prefix;
             printline(pos+1, l);
             cout << endl;
             clearline();
@@ -798,7 +803,6 @@ public:
     }
 
     
-    bool Executesomecode(wstring& c);
     bool runcode() {
         cout << m_red;
         Element* e = lispe->execute(current_code, thecurrentfilename);
