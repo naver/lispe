@@ -3548,82 +3548,81 @@ Element* List::evall_setg(LispE* lisp) {
 
 #ifdef LISPE_WASM
 Element* List::evall_let(LispE* lisp) {
-    long i_atom = 1;
     long i;
+    vector<uint16_t> labels;
     vector<Element*> values;
     long sz = size();
     Element* e;
     Element* current;
-    while (liste[i_atom]->isAtom()) {
-        if (i_atom == sz) {
-            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
-                lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
-            return lisp->delegation->set_error(new Error("Error: unbalanced list of variables"));
-        }
-        e = liste[i_atom+1]->eval(lisp);
+
+    List* variable_list = (List*)liste[1];
+    long sz_varlist = variable_list->size();
+    for (i = 0; i < sz_varlist; i++) {
+        current = variable_list->liste[i];
+        e = current->index(1)->eval(lisp);
         if (thrown_error) {
-            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
-                lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
+            for (i = 0; i < values.size(); i++)
+                lisp->put_and_keep(values[i], NULL, labels[i]);
             return e;
         }
-        current = lisp->record_or_replace(e, liste[i_atom]->label());
+        labels.push_back(current->index(0)->label());
+        current = lisp->record_or_replace(e, labels.back());
         values.push_back(current);
-        i_atom += 2;
     }
-    
-    if (i_atom < sz) {
-        e = null_;
-        for (i = i_atom; i < sz && !thrown_error; i++) {
-            e->release();
-            e = liste[i]->eval(lisp);
-        }
-        for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i+= 2)
-            lisp->put_and_keep(values[i_atom], e, liste[i]->label());
-        return e;
+
+    e = null_;
+    for (i = 2; i < sz && !thrown_error; i++) {
+        e->release();
+        e = liste[i]->eval(lisp);
     }
-    
-    return True_;
+
+    e->increment();
+    for (i = 0; i < values.size(); i++)
+        lisp->put_and_keep(values[i], NULL, labels[i]);
+    e->decrementkeep();
+    return e;
 }
 #else
 Element* List::evall_let(LispE* lisp) {
-    long i_atom = 1;
     long i;
+    vector<uint16_t> labels;
     vector<Element*> values;
     long sz = size();
     Element* e;
     Element* current;
     try {
-        while (liste[i_atom]->isAtom()) {
-            if (i_atom == sz)
-                throw new Error("Error: unbalanced list of variables");
-            e = liste[i_atom+1]->eval(lisp);
-            current = lisp->record_or_replace(e, liste[i_atom]->label());
+        List* variable_list = (List*)liste[1];
+        long sz_varlist = variable_list->size();
+        for (i = 0; i < sz_varlist; i++) {
+            current = variable_list->liste[i];
+            e = current->index(1)->eval(lisp);
+            labels.push_back(current->index(0)->label());
+            current = lisp->record_or_replace(e, labels.back());
             values.push_back(current);
-            i_atom += 2;
         }
     }
     catch(Error* err) {
-        for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
-            lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
+        for (i = 0; i < values.size(); i++)
+            lisp->put_and_keep(values[i], NULL, labels[i]);
         throw err;
     }
-        
-    if (i_atom < sz) {
-        e = null_;
-        try {
-            for (i = i_atom; i < sz; i++) {
-                e->release();
-                e = liste[i]->eval(lisp);
-            }
-            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i+= 2)
-                lisp->put_and_keep(values[i_atom], e, liste[i]->label());
-            return e;
+    
+    e = null_;
+    try {
+        for (i = 2; i < sz; i++) {
+            e->release();
+            e = liste[i]->eval(lisp);
         }
-        catch (Error* err) {
-            for (i_atom = 0, i = 1; i_atom < values.size(); i_atom++, i += 2)
-                lisp->put_and_keep(values[i_atom], NULL, liste[i]->label());
-            throw err;
-        }
+        e->increment();
+        for (i = 0; i < values.size(); i++)
+            lisp->put_and_keep(values[i], NULL, labels[i]);
+        e->decrementkeep();
+        return e;
+    }
+    catch (Error* err) {
+        for (i = 0; i < values.size(); i++)
+            lisp->put_and_keep(values[i], NULL, labels[i]);
+        throw err;
     }
 
     return True_;

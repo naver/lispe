@@ -17,7 +17,7 @@
 #include <sys/resource.h>
 #endif
 //------------------------------------------------------------
-static std::string version = "1.2024.2.19.14.18";
+static std::string version = "1.2024.2.21.12.0";
 string LispVersion() {
     return version;
 }
@@ -1716,7 +1716,6 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             element = for_composition(current_program, element, parse);
             return element;
          }
-         case l_let:
          case l_set_range:
          case l_set_shape:
          case l_setq:
@@ -1740,6 +1739,19 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             }
          }
          break;
+         case l_let:{
+            if (element->size() < 3)
+               return new Error("Error: unbalanced list of variables in 'let'");
+
+            Element* arguments = element->index(1);
+            if (!arguments->isList() || !arguments->size())
+               return new Error("Error: unbalanced list of variables in 'let'");
+            for (long i = 0; i < arguments->size(); i++) {
+               if (!arguments->index(i)->isList() || arguments->index(i)->size() != 2)
+                  return new Error("Error: unbalanced list of variables in 'let'");
+            }
+            break;
+         }
          case l_plusequal:
          case l_minusequal:
          case l_multiplyequal:

@@ -14,16 +14,13 @@
 )
 
 (defun cosine(v1 v2)
-   (maybe
-      (/ (dot v1 v2) (* (norme v1) (norme v2)))
-      0
-   )
-)
+   (let ( (d (dot v1 v2))
+         (n1 (norme v1))
+         (n2 (norme v2)))
+      (maybe
+         (/ d (* n1 n2))
+         0)))
 
 (cosine v1 v2)
-
-
-
-
 
 
