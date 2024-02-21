@@ -173,7 +173,7 @@ Finally, __LispE__ can also be used as a _Shell_: [Shell](https://github.com/nav
 
 Come and discover __LispE__: the __Lisp Elémentaire__.
 
-We provide a fun little program to discover some of the most interesting aspects of LispE: [minzork](https://github.com/naver/lispe/blob/master/examples/patterns/minizork_en.lisp)
+We provide a fun little program to discover some of the most interesting aspects of LispE: [minizork](https://github.com/naver/lispe/blob/master/examples/patterns/minizork_en.lisp)
 
 _Have a look and try it_
 
