@@ -3022,6 +3022,116 @@ Element* List_droplist_eval::eval(LispE* lisp) {
     return emptylist_;
 }
 
+Element* List_scanlist_eval::eval(LispE* lisp) {
+    long listsz = liste.size();
+    
+    Element* current_list = null_;
+    Element* op = null_;
+    Element* result = null_;
+    
+    bool sb = lisp->set_true_as_one();
+    int16_t ps = 1;
+    List* call = NULL;
+    Element* save_variable = this;
+    int16_t label = -1;
+    void* iter = NULL;
+    
+    try {
+        lisp->checkState(this);
+        current_list = liste[2]->eval(lisp);
+
+        listsz = current_list->size();
+        if (!listsz) {
+            current_list->release();
+            lisp->reset_to_true(sb);
+            lisp->resetStack();
+            return result;
+        }
+        
+        op = liste[1];
+                
+        if (op->isLambda()) {
+            if (!op->index(1)->size())
+                throw new Error("Error: Wrong number of arguments");
+            label = op->index(1)->index(0)->label();
+            if (label < l_final)
+                throw new Error("Error: Wrong argument");
+
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
+
+            //if there is already a variable with this name on the stack
+            //we record it to restore it later...
+            save_variable = lisp->record_or_replace(nxt, label);
+            while (nxt != emptyatom_) {
+                lisp->replacestackvalue(nxt, label);
+                result = op->eval_lambda_min(lisp);
+                if (result != null_)
+                    break;
+                nxt = current_list->next_iter_exchange(lisp, iter);
+            }
+            current_list->clean_iter(iter);
+            lisp->reset_in_stack(save_variable, label);
+        }
+        else {
+            Element* e = op;
+            if (op->is_quote())
+                e = op->eval(lisp);
+
+            if (e->isList()) {
+                if (e->size())
+                    call = lisp->provideCallforTWO(e, ps);
+                else
+                    throw new Error("Error: empty list not accepted here");
+            }
+            else {
+                op = eval_body_as_argument(lisp, op);
+                if (op->is_straight_eval())
+                    call = (List*)op;
+                else
+                    call = new List_eval(lisp, op);
+                ps = 1;
+                call->append(lisp->quoted());
+            }
+
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
+
+            while (nxt != emptyatom_) {
+                call->in_quote(ps, nxt);
+                result = call->eval(lisp);
+                if (result != null_)
+                    break;
+                nxt = current_list->next_iter_exchange(lisp, iter);
+            }
+            current_list->clean_iter(iter);
+            call->force_release();
+        }
+        current_list->release();
+        lisp->reset_to_true(sb);
+        lisp->resetStack();
+        return result;
+    }
+    catch (Error* err) {
+        if (op->isLambda()) {
+            if (save_variable != this)
+                lisp->reset_in_stack(save_variable, label);
+        }
+        else {
+            if (call != NULL)
+                call->force_release();
+        }
+
+        if (iter != NULL)
+            current_list->clean_iter(iter);
+        lisp->reset_to_true(sb);
+        current_list->release();
+        result->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    return emptylist_;
+}
+
 Element* List_takenb_eval::eval(LispE* lisp) {
     long nb;
     

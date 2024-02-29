@@ -37,30 +37,17 @@
 (defpat match ( [POS $ current_pos] [w $ sentence] consume)
    (setq rule (key grammar POS))
    (if (consp rule)
-      (loop r rule
-         (setq  poslst (match (nconcn r current_pos) (cons w sentence) consume))
-         (if poslst
-            (return poslst)
-         )
-      )
-      (if (in (key grammar rule) w)
-         (match current_pos sentence (nconcn consume w))
-      )
-   )
-)
+      ; Stop at the first non-null value
+      (scanlist (λ(r) (match (nconcn r current_pos) (cons w sentence) consume)) rule)
+      (if (in (@ grammar rule) w)
+         (match current_pos sentence (nconcn consume w)))))
 
 ; POS is the first rule we start our analysis with
 (defun parse (s POS tree) 
    (setq r (key grammar POS))
-   (match (car r) s ())
-)
+   (match (car r) s ()))
 
 (defun analyse(sentence)
    (setq sentence (parse (segment sentence) "S" ()))
-   (@@ sentence 0 -1)
-)
-
-
-
-
+   (@@ sentence 0 -1))
 
