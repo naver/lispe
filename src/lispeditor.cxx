@@ -526,9 +526,12 @@ long lispe_editor::handlingcommands(long pos, bool& dsp) {
                             line += L"\")";
                         }
 
-                        if (current_directory != "")
+						if (current_directory != "")
+#ifdef WIN32
+							SetCurrentDirectoryA(STR(current_directory));
+#else
                             chdir(STR(current_directory));
-
+#endif
                         execute_code(line);
                     }
                     code = WListing();

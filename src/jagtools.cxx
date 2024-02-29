@@ -2655,6 +2655,25 @@ void s_unicode_to_utf16(std::u16string& w, u_ustring& u) {
     }
 }
 
+#ifdef WIN32
+void s_unicode_to_utf16(std::wstring& w, u_ustring& u) {
+	w.clear();
+	u_uchar c;
+	u_uchar c16;
+
+	for (long i = 0; i < u.size(); i++) {
+		c = u[i];
+		if (!(c & 0xFFFF0000)) {
+			w += (wchar_t)c;
+			continue;
+		}
+
+		c16 = 0xD800 | ((c & 0xFC00) >> 10) | ((((c & 0x1F0000) >> 16) - 1) << 6);
+		w += (wchar_t)c16;
+		w += (wchar_t)(0xDC00 | (c & 0x3FF));
+	}
+}
+#endif
 //------------------------------------------------------------------------
 void s_unicode_to_utf8_clean(string& s, wstring& str) {
     s = "";
