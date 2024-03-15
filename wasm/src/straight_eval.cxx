@@ -285,7 +285,7 @@ Element* List_cons_eval::_eval(LispE* lisp) {
       lisp->resetStack();
       return second_element->insert(lisp, first_element, 0);
       case t_list: {
-         second_element = second_element->duplicate_constant(lisp);
+         second_element = second_element->duplicate_cdr(lisp);
          if (second_element->status) {
             second_element->insert(lisp, first_element, 0);
             Listpool* third_element = new Listpool(lisp, (List*)second_element, 0);
@@ -389,7 +389,7 @@ Element* List_consb_eval::_eval(LispE* lisp) {
          lisp->resetStack();
          return second_element->insert(lisp, first_element, 0);
          case t_list: {
-            second_element = second_element->duplicate_constant(lisp);
+            second_element = second_element->duplicate_cdr(lisp);
             if (second_element->status) {
                second_element->insert(lisp, first_element, 0);
                Element* third_element = new Listpool(lisp, (List*)second_element, 0);
@@ -3371,6 +3371,187 @@ Element* List_droplist_eval::_eval(LispE* lisp) {
          return current_list;
       }
    }
+   return result;
+
+   if (thrown_error) {
+      if (op->isLambda()) {
+         if (save_variable != this)
+            lisp->reset_in_stack(save_variable, label);
+      }
+      else {
+         if (call != NULL)
+            call->force_release();
+      }
+      if (iter != NULL)
+         current_list->clean_iter(iter);
+      lisp->reset_to_true(sb);
+      current_list->release();
+      result->release();
+      return lisp->check_error(this, thrown_error, idxinfo);
+   }
+   return emptylist_;
+}
+
+
+Element* List_scanlist_eval::_eval(LispE* lisp) {
+   long listsz = liste.size();
+
+   Element* current_list = null_;
+   Element* op = null_;
+   Element* result = null_;
+
+   bool sb = lisp->set_true_as_one();
+   int16_t ps = 1;
+   List* call = NULL;
+   Element* save_variable = this;
+   int16_t label = -1;
+   void* iter = NULL;
+
+
+   lisp->checkState(this);
+   current_list = liste[2]->eval(lisp);
+   listsz = current_list->size();
+   if (!listsz) {
+      current_list->release();
+      lisp->reset_to_true(sb);
+      if (thrown_error) {
+         if (op->isLambda()) {
+            if (save_variable != this)
+               lisp->reset_in_stack(save_variable, label);
+         }
+         else {
+            if (call != NULL)
+               call->force_release();
+         }
+         if (iter != NULL)
+            current_list->clean_iter(iter);
+         lisp->reset_to_true(sb);
+         current_list->release();
+         result->release();
+         return lisp->check_error(this, thrown_error, idxinfo);
+      }
+      lisp->resetStack();
+      return result;
+   }
+
+   op = liste[1];
+
+   if (op->isLambda()) {
+      if (!op->index(1)->size())
+         {
+         if (op->isLambda()) {
+            if (save_variable != this)
+               lisp->reset_in_stack(save_variable, label);
+         }
+         else {
+            if (call != NULL)
+               call->force_release();
+         }
+         if (iter != NULL)
+            current_list->clean_iter(iter);
+         lisp->reset_to_true(sb);
+         current_list->release();
+         result->release();
+         return lisp->check_error(this,  new Error("Error: Wrong number of arguments"), idxinfo);
+      }
+      label = op->index(1)->index(0)->label();
+      if (label < l_final)
+         {
+         if (op->isLambda()) {
+            if (save_variable != this)
+               lisp->reset_in_stack(save_variable, label);
+         }
+         else {
+            if (call != NULL)
+               call->force_release();
+         }
+         if (iter != NULL)
+            current_list->clean_iter(iter);
+         lisp->reset_to_true(sb);
+         current_list->release();
+         result->release();
+         return lisp->check_error(this,  new Error("Error: Wrong argument"), idxinfo);
+      }
+      iter = current_list->begin_iter();
+      Element* nxt = current_list->next_iter_exchange(lisp, iter);
+      //if there is already a variable with this name on the stack
+      //we record it to restore it later...
+      save_variable = lisp->record_or_replace(nxt, label);
+      while (nxt != emptyatom_) {
+         lisp->replacestackvalue(nxt, label);
+         result = op->eval_lambda_min(lisp);
+         if (result != null_)
+            break;
+         nxt = current_list->next_iter_exchange(lisp, iter);
+      }
+      current_list->clean_iter(iter);
+      lisp->reset_in_stack(save_variable, label);
+   }
+   else {
+      Element* e = op;
+      if (op->is_quote())
+         e = op->eval(lisp);
+      if (e->isList()) {
+         if (e->size())
+            call = lisp->provideCallforTWO(e, ps);
+         else
+            {
+            if (op->isLambda()) {
+               if (save_variable != this)
+                  lisp->reset_in_stack(save_variable, label);
+            }
+            else {
+               if (call != NULL)
+                  call->force_release();
+            }
+            if (iter != NULL)
+               current_list->clean_iter(iter);
+            lisp->reset_to_true(sb);
+            current_list->release();
+            result->release();
+            return lisp->check_error(this,  new Error("Error: empty list not accepted here"), idxinfo);
+         }
+      }
+      else {
+         op = eval_body_as_argument(lisp, op);
+         if (op->is_straight_eval())
+            call = (List*)op;
+         else
+            call = new List_eval(lisp, op);
+         ps = 1;
+         call->append(lisp->quoted());
+      }
+      iter = current_list->begin_iter();
+      Element* nxt = current_list->next_iter_exchange(lisp, iter);
+      while (nxt != emptyatom_) {
+         call->in_quote(ps, nxt);
+         result = call->eval(lisp);
+         if (result != null_)
+            break;
+         nxt = current_list->next_iter_exchange(lisp, iter);
+      }
+      current_list->clean_iter(iter);
+      call->force_release();
+   }
+   current_list->release();
+   lisp->reset_to_true(sb);
+   if (thrown_error) {
+      if (op->isLambda()) {
+         if (save_variable != this)
+            lisp->reset_in_stack(save_variable, label);
+      }
+      else {
+         if (call != NULL)
+            call->force_release();
+      }
+      if (iter != NULL)
+         current_list->clean_iter(iter);
+      lisp->reset_to_true(sb);
+      current_list->release();
+      result->release();
+      return lisp->check_error(this, thrown_error, idxinfo);
+   }
+   lisp->resetStack();
    return result;
 
    if (thrown_error) {

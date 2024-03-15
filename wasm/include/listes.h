@@ -811,6 +811,7 @@ public:
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
     virtual Element* duplicate_constant(LispE* lisp);
+    Element* duplicate_cdr(LispE* lisp);
     
     virtual bool isList() {
         return true;
@@ -5794,6 +5795,36 @@ public:
     
     List* cloning() {
         return new List_droplist_eval(multiple);
+    }
+
+    
+    Element* _eval(LispE* lisp);
+};
+class List_scanlist_eval : public Listincode {
+public:
+    
+    List_scanlist_eval(Listincode* l) : Listincode(l) {}
+    List_scanlist_eval(List* l) : Listincode(l) {}
+    List_scanlist_eval() {}
+    List_scanlist_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+
+    
+    List* borrowing(List* e) {
+        return new List_scanlist_eval(e);
+    }
+
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_scanlist_eval(e);
+    }
+
+    
+    List* cloning() {
+        return new List_scanlist_eval(multiple);
     }
 
     

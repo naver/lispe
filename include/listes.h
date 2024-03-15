@@ -726,6 +726,7 @@ public:
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
     virtual Element* duplicate_constant(LispE* lisp);
+    Element* duplicate_cdr(LispE* lisp);
     
     virtual bool isList() {
         return true;

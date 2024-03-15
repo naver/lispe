@@ -2855,8 +2855,19 @@ Element* LList::replace_in(LispE* lisp, List* l) {
 
 Element* List::duplicate_constant(LispE* lisp) {
     if (status == s_constant) {
-        List* l;
-        l = lisp->provideList();
+        List* l = lisp->provideList();
+        for (long i = 0; i < liste.size(); i++) {
+            l->append(liste[i]->copying(true));
+        }
+        return l;
+    }
+    return this;
+}
+
+//If we are dealing with a cdr, we need to copy it
+Element* List::duplicate_cdr(LispE* lisp) {
+    if (liste.home || status == s_constant) {
+        List* l = lisp->provideList();
         for (long i = 0; i < liste.size(); i++) {
             l->append(liste[i]->copying(true));
         }

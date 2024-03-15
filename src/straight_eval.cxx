@@ -268,7 +268,7 @@ Element* List_cons_eval::eval(LispE* lisp) {
                 lisp->resetStack();
                 return second_element->insert(lisp, first_element, 0);
             case t_list: {
-                second_element = second_element->duplicate_constant(lisp);
+                second_element = second_element->duplicate_cdr(lisp);
                 if (second_element->status) {
                     second_element->insert(lisp, first_element, 0);
                     Listpool* third_element = new Listpool(lisp, (List*)second_element, 0);
@@ -340,7 +340,7 @@ Element* List_consb_eval::eval(LispE* lisp) {
                     lisp->resetStack();
                     return second_element->insert(lisp, first_element, 0);
                 case t_list: {
-                    second_element = second_element->duplicate_constant(lisp);
+                    second_element = second_element->duplicate_cdr(lisp);
                     if (second_element->status) {
                         second_element->insert(lisp, first_element, 0);
                         Element* third_element = new Listpool(lisp, (List*)second_element, 0);

@@ -508,7 +508,11 @@ public:
     virtual Element* duplicate_constant(LispE* lisp) {
         return this;
     }
-    
+
+    virtual Element* duplicate_cdr(LispE* lisp) {
+        return this;
+    }
+
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
     virtual void flatten(LispE*, Integers* l);
