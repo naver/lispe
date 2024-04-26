@@ -120,7 +120,8 @@ typedef enum {
     //Comparisons
         
     l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
-    l_fread, l_fwrite, l_fappend, l_bread, l_bwrite, l_bappend,
+    l_fread, l_fwrite, l_fappend, l_fget, l_fput, l_fsize, l_fseek, l_ftell, l_fopen, l_fclose, l_fileelement,
+    l_bread, l_bwrite, l_bappend,
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
@@ -288,6 +289,10 @@ public:
     }
 
     virtual bool isMultiple() {
+        return false;
+    }
+
+    virtual bool isFile() {
         return false;
     }
 

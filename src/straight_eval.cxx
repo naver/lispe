@@ -8,12 +8,20 @@
 //
 //
 
+#include <stdio.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+
 #include "lispe.h"
 #include"avl.h"
 #include <math.h>
 #include <algorithm>
 #include <thread>
 #include <chrono>
+
+#ifdef __apple_build_version__
+#define APPLE 1
+#endif
 
 Element* range(LispE* lisp, long init, long limit, long inc);
 Element* range(LispE* lisp, double init, double limit, double inc);
@@ -7438,6 +7446,165 @@ Element* List_fread_eval::eval(LispE* lisp) {
         element->release();
         return lisp->check_error(this, err, idxinfo);
     }
+}
+
+
+class File_element : public Element {
+public:
+    FILE* f;
+    string op;
+
+    File_element() : Element(l_fileelement) {
+        f = NULL;
+        op = "";
+    }
+    
+    File_element(LispE* lisp, Element* n, string o) : Element(l_fileelement) {
+        op = o;
+        string filename = n->toString(lisp);
+        n->release();
+#ifdef WIN32
+        fopen_s(&f, STR(filename), STR(op));
+#else
+        f = fopen(STR(filename), STR(op));
+#endif
+    }
+    
+    ~File_element() {
+        if (f != NULL)
+            fclose(f);
+    }
+    
+    bool isFile() {
+        return (f != NULL);
+    }
+
+    void close() {
+        if (f != NULL)
+            fclose(f);
+        f = NULL;
+    }
+};
+
+Element* List_fopen_eval::eval(LispE* lisp) {
+    Element* element;
+    string op = "r";
+    if (size() == 3) {
+        element = liste[2]->eval(lisp);
+        op = element->toString(lisp);
+        element->release();
+    }
+    element = liste[1]->eval(lisp);
+    return new File_element(lisp, element, op);
+}
+
+Element* List_fclose_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    ((File_element*)element)->close();
+    element->release();
+    return True_;
+}
+
+Element* List_fseek_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    FILE* f = ((File_element*)element)->f;
+    long nb;
+    evalAsInteger(2, lisp, nb);
+    fseek(f, nb, 0);
+    element->release();
+    return True_;
+}
+
+Element* List_ftell_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    FILE* f = ((File_element*)element)->f;
+    long nb = ftell(f);
+    element->release();
+    return lisp->provideInteger(nb);
+}
+
+Element* List_fgetchars_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    FILE* f = ((File_element*)element)->f;
+    long nb;
+    evalAsInteger(2, lisp, nb);
+    char* buffer = new char[nb + 1];
+    fread(buffer, nb, 1, f);
+    string b(buffer);
+    delete[] buffer;
+    element->release();
+    return lisp->provideString(b);
+}
+
+Element* List_fputchars_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    string s = element->toString(lisp);
+    element->release();
+    
+    element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    File_element* fe = (File_element*)element;
+    if (fe->op[0] != 'r') {
+        FILE* f = fe->f;
+        
+        for (long i = 0; i < s.size(); i++)
+            fputc(s[i], f);
+        
+        fe->release();
+        return True_;
+    }
+    fe->release();
+    return False_;
+}
+
+Element* List_fsize_eval::eval(LispE* lisp) {
+    struct stat scible;
+    int stcible = -1;
+    long size = -1;
+    
+    string name;
+
+    FILE* thefile;
+    
+    Element* element = liste[1]->eval(lisp);
+    if (element->type != l_fileelement)
+        element = new File_element(lisp, element, "r");
+
+    thefile = ((File_element*)element)->f;
+    
+    if (thefile != NULL) {
+#ifdef LISPE_WASM
+        stcible = fstat(fileno(thefile), &scible);
+#else
+#if (_MSC_VER >= 1900)
+        stcible = fstat(_fileno(thefile), &scible);
+#else
+#if  defined(WIN32) | defined(APPLE)
+        stcible = fstat(thefile->_file, &scible);
+#else
+        stcible = fstat(thefile->_fileno, &scible);
+#endif
+#endif
+#endif
+        if (stcible >= 0)
+            size = scible.st_size;
+    }
+    element->release();
+    return lisp->provideInteger(size);
 }
 
 

@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2024.3.15.10.6";
+static std::string version = "1.2024.4.26.15.12";
 string LispVersion() {
     return version;
 }
@@ -379,7 +379,14 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_flip, "flip", P_TWO,  new List_flip_eval());
     set_instruction(l_bread, "bread", P_TWO,  new List_bread_eval());
     set_instruction(l_bwrite, "bwrite", P_THREE,  new List_bwrite_eval());
+    set_instruction(l_fclose, "fclose", P_ONE,  new List_fclose_eval());
     set_instruction(l_fread, "fread", P_TWO,  new List_fread_eval());
+    set_instruction(l_fget, "fgetchars", P_TWO,  new List_fgetchars_eval());
+    set_instruction(l_fopen, "fopen", P_ONE | P_TWO,  new List_fopen_eval());
+    set_instruction(l_fput, "fputchars", P_TWO,  new List_fputchars_eval());
+    set_instruction(l_fsize, "fsize", P_ONE,  new List_fsize_eval());
+    set_instruction(l_fseek, "fseek", P_TWO,  new List_fseek_eval());
+    set_instruction(l_ftell, "ftell", P_ONE,  new List_ftell_eval());
     set_instruction(l_fwrite, "fwrite", P_THREE,  new List_fwrite_eval());
     set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater, new List_greater_eval());
     set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal, new List_greaterorequal_eval());
@@ -3143,6 +3150,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
