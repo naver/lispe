@@ -70,7 +70,7 @@ typedef enum {
     t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
-    t_call, t_call_lambda, t_eval,
+    t_call, t_call_lambda, t_eval, t_fileelement,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
@@ -120,7 +120,7 @@ typedef enum {
     //Comparisons
         
     l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
-    l_fread, l_fwrite, l_fappend, l_fget, l_fput, l_fsize, l_fseek, l_ftell, l_fopen, l_fclose, l_fileelement,
+    l_fread, l_fwrite, l_fappend, l_fget, l_fput, l_fsize, l_fseek, l_ftell, l_fopen, l_fclose,
     l_bread, l_bwrite, l_bappend,
     
     //mutable operations

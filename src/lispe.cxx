@@ -684,6 +684,7 @@ void Delegation::initialisation(LispE* lisp) {
         operator_pool[ito.first] = e;
     }
 
+    code_to_string[t_fileelement] = U"file_element_";
     code_to_string[t_string] = U"string_";
     code_to_string[t_stringbyte] = U"stringbyte_";
     code_to_string[t_number] = U"number_";

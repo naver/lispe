@@ -7454,12 +7454,12 @@ public:
     FILE* f;
     string op;
 
-    File_element() : Element(l_fileelement) {
+    File_element() : Element(t_fileelement) {
         f = NULL;
         op = "";
     }
     
-    File_element(LispE* lisp, Element* n, string o) : Element(l_fileelement) {
+    File_element(LispE* lisp, Element* n, string o) : Element(t_fileelement) {
         op = o;
         string filename = n->toString(lisp);
         n->release();
@@ -7581,7 +7581,7 @@ Element* List_fsize_eval::eval(LispE* lisp) {
     FILE* thefile;
     
     Element* element = liste[1]->eval(lisp);
-    if (element->type != l_fileelement)
+    if (element->type != t_fileelement)
         element = new File_element(lisp, element, "r");
 
     thefile = ((File_element*)element)->f;
