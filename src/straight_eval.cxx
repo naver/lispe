@@ -7545,7 +7545,7 @@ Element* List_fgetchars_eval::eval(LispE* lisp) {
     string b(buffer);
     delete[] buffer;
     element->release();
-    return lisp->provideString(b);
+    return new Stringbyte(b);
 }
 
 Element* List_fputchars_eval::eval(LispE* lisp) {
