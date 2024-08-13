@@ -853,7 +853,7 @@ Element *Lispe_blas::trsv(LispE *lisp)
     long incx = lisp->get_variable(L"incx")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     bool uplo = lisp->get_variable(L"uplo")->Boolean();
-    long trans = lisp->get_variable(L"trans")->Boolean();
+    long trans = lisp->get_variable(L"trans")->asInteger();
     bool diag = lisp->get_variable(L"diag")->Boolean();
 
     if (A->size() != n * n)
