@@ -585,7 +585,7 @@ Element *Lispe_blas::ger(LispE *lisp)
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
-       try
+        try
         {
             blas::ger(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         }
@@ -656,7 +656,7 @@ Element *Lispe_blas::geru(LispE *lisp)
         float *xbuff = ((Floats *)x)->liste.items->buffer;
         float *ybuff = ((Floats *)y)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
-       try
+        try
         {
             blas::geru(lay, m, n, alpha, xbuff, incx, ybuff, incy, a, lda);
         }
@@ -897,7 +897,7 @@ Element *Lispe_blas::syr(LispE *lisp)
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *xbuff = ((Numbers *)x)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
-       try
+        try
         {
             blas::syr(lay, up, n, alpha, xbuff, incx, a, lda);
         }
@@ -1305,7 +1305,7 @@ Element *Lispe_blas::trsv(LispE *lisp)
     }
 }
 
-//deflib blas_gemm(A m n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (transA 0) (transB 0))
+// deflib blas_gemm(A m n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (transA 0) (transB 0))
 Element *Lispe_blas::gemm(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1366,7 +1366,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
     {
         float *a = ((Floats *)A)->liste.items->buffer;
         float *b = ((Floats *)B)->liste.items->buffer;
-        ((Floats*)C)->reserve(n*m);
+        ((Floats *)C)->reserve(n * m);
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
@@ -1386,7 +1386,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
     {
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *b = ((Numbers *)B)->liste.items->buffer;
-        ((Numbers*)C)->reserve(n*m);
+        ((Numbers *)C)->reserve(n * m);
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
@@ -1407,7 +1407,7 @@ Element *Lispe_blas::gemm(LispE *lisp)
     }
 }
 
-//deflib blas_hemm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))
+// deflib blas_hemm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))
 Element *Lispe_blas::hemm(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1422,18 +1422,20 @@ Element *Lispe_blas::hemm(LispE *lisp)
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     blas::Side sd = blas::Side::Left;
     if (!side)
         sd = blas::Side::Right;
 
-    if (side) {   
+    if (side)
+    {
         if (A->size() != m * m)
             throw new Error("Error: the size of A does not match mxn");
     }
-    else {
+    else
+    {
         if (A->size() != n * n)
             throw new Error("Error: the size of A does not match mxn");
     }
@@ -1455,7 +1457,7 @@ Element *Lispe_blas::hemm(LispE *lisp)
     {
         float *a = ((Floats *)A)->liste.items->buffer;
         float *b = ((Floats *)B)->liste.items->buffer;
-        ((Floats*)C)->reserve(m*m);
+        ((Floats *)C)->reserve(m * m);
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
@@ -1475,7 +1477,7 @@ Element *Lispe_blas::hemm(LispE *lisp)
     {
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *b = ((Numbers *)B)->liste.items->buffer;
-        ((Numbers*)C)->reserve(m*m);
+        ((Numbers *)C)->reserve(m * m);
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
@@ -1496,7 +1498,7 @@ Element *Lispe_blas::hemm(LispE *lisp)
     }
 }
 
-//deflib blas_symm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))
+// deflib blas_symm(A m n lda B ldb C ldc (alpha 1) (beta 1) (layout true) (side true) (uplo true))
 Element *Lispe_blas::symm(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1511,18 +1513,20 @@ Element *Lispe_blas::symm(LispE *lisp)
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     blas::Side sd = blas::Side::Left;
     if (!side)
         sd = blas::Side::Right;
 
-    if (side) {   
+    if (side)
+    {
         if (A->size() != m * m)
             throw new Error("Error: the size of A does not match mxn");
     }
-    else {
+    else
+    {
         if (A->size() != n * n)
             throw new Error("Error: the size of A does not match mxn");
     }
@@ -1544,7 +1548,7 @@ Element *Lispe_blas::symm(LispE *lisp)
     {
         float *a = ((Floats *)A)->liste.items->buffer;
         float *b = ((Floats *)B)->liste.items->buffer;
-        ((Floats*)C)->reserve(m*m);
+        ((Floats *)C)->reserve(m * m);
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
@@ -1564,7 +1568,7 @@ Element *Lispe_blas::symm(LispE *lisp)
     {
         double *a = ((Numbers *)A)->liste.items->buffer;
         double *b = ((Numbers *)B)->liste.items->buffer;
-        ((Numbers*)C)->reserve(m*m);
+        ((Numbers *)C)->reserve(m * m);
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
@@ -1585,7 +1589,7 @@ Element *Lispe_blas::symm(LispE *lisp)
     }
 }
 
-//deflib blas_herk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
+// deflib blas_herk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
 Element *Lispe_blas::herk(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1599,11 +1603,11 @@ Element *Lispe_blas::herk(LispE *lisp)
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
-    
+
     blas::Layout lay = blas::Layout::ColMajor;
     if (!layout)
         lay = blas::Layout::RowMajor;
@@ -1630,7 +1634,7 @@ Element *Lispe_blas::herk(LispE *lisp)
     case t_floats:
     {
         float *a = ((Floats *)A)->liste.items->buffer;
-        ((Floats*)C)->reserve(n*n);
+        ((Floats *)C)->reserve(n * n);
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
@@ -1649,7 +1653,7 @@ Element *Lispe_blas::herk(LispE *lisp)
     case t_numbers:
     {
         double *a = ((Numbers *)A)->liste.items->buffer;
-        ((Numbers*)C)->reserve(n*n);
+        ((Numbers *)C)->reserve(n * n);
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
@@ -1670,7 +1674,7 @@ Element *Lispe_blas::herk(LispE *lisp)
     }
 }
 
-//deflib blas_syrk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
+// deflib blas_syrk(A n k lda C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
 Element *Lispe_blas::syrk(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1684,11 +1688,11 @@ Element *Lispe_blas::syrk(LispE *lisp)
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
-    
+
     blas::Layout lay = blas::Layout::ColMajor;
     if (!layout)
         lay = blas::Layout::RowMajor;
@@ -1715,7 +1719,7 @@ Element *Lispe_blas::syrk(LispE *lisp)
     case t_floats:
     {
         float *a = ((Floats *)A)->liste.items->buffer;
-        ((Floats*)C)->reserve(n*n);
+        ((Floats *)C)->reserve(n * n);
         float *c = ((Floats *)C)->liste.items->buffer;
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
@@ -1734,7 +1738,7 @@ Element *Lispe_blas::syrk(LispE *lisp)
     case t_numbers:
     {
         double *a = ((Numbers *)A)->liste.items->buffer;
-        ((Numbers*)C)->reserve(n*n);
+        ((Numbers *)C)->reserve(n * n);
         double *c = ((Numbers *)C)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
@@ -1755,7 +1759,7 @@ Element *Lispe_blas::syrk(LispE *lisp)
     }
 }
 
-//deflib blas_her2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
+// deflib blas_her2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
 Element *Lispe_blas::her2k(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1768,10 +1772,10 @@ Element *Lispe_blas::her2k(LispE *lisp)
     long k = lisp->get_variable(L"k")->asInteger();
     long lda = lisp->get_variable(L"lda")->asInteger();
     long ldb = lisp->get_variable(L"ldb")->asInteger();
-    long ldc = lisp->get_variable(L"ldc")->asInteger();        
+    long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
@@ -1809,7 +1813,7 @@ Element *Lispe_blas::her2k(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
 
-        ((Floats*)C)->reserve(n*n);
+        ((Floats *)C)->reserve(n * n);
         float *c = ((Floats *)C)->liste.items->buffer;
         try
         {
@@ -1829,7 +1833,7 @@ Element *Lispe_blas::her2k(LispE *lisp)
         double *b = ((Numbers *)B)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
-        ((Numbers*)C)->reserve(n*n);
+        ((Numbers *)C)->reserve(n * n);
         double *c = ((Numbers *)C)->liste.items->buffer;
         try
         {
@@ -1848,8 +1852,7 @@ Element *Lispe_blas::her2k(LispE *lisp)
     }
 }
 
-
-//deflib blas_syr2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
+// deflib blas_syr2k(A n k lda B ldb C ldc (alpha 1) (beta 1) (layout true) (uplo true) (trans 0))
 Element *Lispe_blas::syr2k(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1862,10 +1865,10 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     long k = lisp->get_variable(L"k")->asInteger();
     long lda = lisp->get_variable(L"lda")->asInteger();
     long ldb = lisp->get_variable(L"ldb")->asInteger();
-    long ldc = lisp->get_variable(L"ldc")->asInteger();        
+    long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
@@ -1903,7 +1906,7 @@ Element *Lispe_blas::syr2k(LispE *lisp)
         float alpha = lisp->get_variable(L"alpha")->asFloat();
         float beta = lisp->get_variable(L"beta")->asFloat();
 
-        ((Floats*)C)->reserve(n*n);
+        ((Floats *)C)->reserve(n * n);
         float *c = ((Floats *)C)->liste.items->buffer;
         try
         {
@@ -1923,7 +1926,7 @@ Element *Lispe_blas::syr2k(LispE *lisp)
         double *b = ((Numbers *)B)->liste.items->buffer;
         double alpha = lisp->get_variable(L"alpha")->asNumber();
         double beta = lisp->get_variable(L"beta")->asNumber();
-        ((Numbers*)C)->reserve(n*n);
+        ((Numbers *)C)->reserve(n * n);
         double *c = ((Numbers *)C)->liste.items->buffer;
         try
         {
@@ -1942,7 +1945,7 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     }
 }
 
-//deflib blas_trmm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))
+// deflib blas_trmm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))
 Element *Lispe_blas::trmm(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -1955,11 +1958,11 @@ Element *Lispe_blas::trmm(LispE *lisp)
     long lda = lisp->get_variable(L"lda")->asInteger();
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
     bool diag = lisp->get_variable(L"diag")->Boolean();
-    long trans = lisp->get_variable(L"trans")->asInteger();    
-    
+    long trans = lisp->get_variable(L"trans")->asInteger();
+
     blas::Side sd = blas::Side::Left;
     if (!side)
         sd = blas::Side::Right;
@@ -1968,11 +1971,13 @@ Element *Lispe_blas::trmm(LispE *lisp)
     if (!diag)
         unit = blas::Diag::NonUnit;
 
-    if (side) {   
+    if (side)
+    {
         if (A->size() != m * m)
             throw new Error("Error: the size of A does not match mxn");
     }
-    else {
+    else
+    {
         if (A->size() != n * n)
             throw new Error("Error: the size of A does not match mxn");
     }
@@ -2042,7 +2047,7 @@ Element *Lispe_blas::trmm(LispE *lisp)
     }
 }
 
-//deflib blas_trsm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))
+// deflib blas_trsm(A m n lda B ldb (alpha 1) (layout true) (side true) (uplo true) (trans 0) (diag  true))
 Element *Lispe_blas::trsm(LispE *lisp)
 {
     Element *A = lisp->get_variable(L"A");
@@ -2055,11 +2060,11 @@ Element *Lispe_blas::trsm(LispE *lisp)
     long lda = lisp->get_variable(L"lda")->asInteger();
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
     bool diag = lisp->get_variable(L"diag")->Boolean();
-    long trans = lisp->get_variable(L"trans")->asInteger();    
-    
+    long trans = lisp->get_variable(L"trans")->asInteger();
+
     blas::Side sd = blas::Side::Left;
     if (!side)
         sd = blas::Side::Right;
@@ -2068,11 +2073,13 @@ Element *Lispe_blas::trsm(LispE *lisp)
     if (!diag)
         unit = blas::Diag::NonUnit;
 
-    if (side) {   
+    if (side)
+    {
         if (A->size() != m * m)
             throw new Error("Error: the size of A does not match mxn");
     }
-    else {
+    else
+    {
         if (A->size() != n * n)
             throw new Error("Error: the size of A does not match mxn");
     }
@@ -2141,7 +2148,6 @@ Element *Lispe_blas::trsm(LispE *lisp)
         throw new Error("Error: 'blas_trsm' only apply to floats_ and numbers_");
     }
 }
-
 
 Element *Lispe_blas::eval(LispE *lisp)
 {
@@ -2433,5 +2439,3 @@ extern "C"
         return true;
     }
 }
-
-
