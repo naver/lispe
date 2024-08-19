@@ -3736,7 +3736,7 @@ void Listincode::protecting(bool protection, LispE* lisp) {
     else {
         if (status == s_protect) {
             status = s_constant;
-            lisp->storeforgarbage(this);
+            //lisp->storeforgarbage(this);
         }
     }
     
