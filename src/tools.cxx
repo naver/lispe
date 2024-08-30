@@ -7153,6 +7153,13 @@ void tokenizer_automaton::setrules() {
      
      IMPORTANT: spaces are considered characters except in disjunctions
      
+     Three more rules:
+     
+     ...=:NN -> '=:' in this context forces the evaluation to be handled iteratively, which avoids recursive explosion of the stack for very long strings
+     ...=!NN -> '=!' means that the rule has been flagged with flag_blocking_gate. It is basically deactivated.
+     ...=# -> the '#' means that the token will be recognized but not stored in the final list of tokens
+     
+     The flag_blocking_gate can be used to activate or deactivate rules on the fly
      */
     
     //Spaces, skipped in the parsing string

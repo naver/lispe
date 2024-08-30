@@ -468,6 +468,36 @@ Exporting void get_one_char(string& utf, string& res, long& i) {
     }
 }
 
+Exporting void add_one_char(string& utf, string& res, long& i) {
+    res += utf[i];
+    
+    unsigned char check = utf[i] & 0xF0;
+    
+    switch (check) {
+        case 0xC0:
+            if ((utf[i + 1] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                i += 1;
+            }
+            break;
+        case 0xE0:
+            if ((utf[i + 1] & 0x80)== 0x80 && (utf[i + 2] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                i += 2;
+            }
+            break;
+        case 0xF0:
+            if ((utf[i + 1] & 0x80) == 0x80 && (utf[i + 2] & 0x80)== 0x80 && (utf[i + 3] & 0x80)== 0x80) {
+                res += utf[i + 1];
+                res += utf[i + 2];
+                res += utf[i + 3];
+                i += 3;
+            }
+            break;
+    }
+}
+
 #ifdef WIN32
 UWCHAR getonechar(unsigned char* s, long& i) {
     UWCHAR result, code;
@@ -503,6 +533,18 @@ UWCHAR getonechar(string& s, long& i) {
 }
 
 #endif
+string UTF8_Handler::insert_sep(string& s, string sep) {
+    string res;
+    long lg = s.size();
+    long i = 0;
+    while (i < lg) {
+        if (i)
+            res += sep;
+        getandaddchar(s, res, i);
+    }
+    return res;
+}
+
 u_ustring UTF8_Handler::u_insert_sep(u_ustring& s, u_ustring sep) {
     u_ustring res;
     long lg = s.size();
@@ -510,7 +552,7 @@ u_ustring UTF8_Handler::u_insert_sep(u_ustring& s, u_ustring sep) {
     while (i < lg) {
         if (i)
             res += sep;
-        getandaddchar(s, res, i, lg);
+        getandaddchar(s, res, i);
     }
     return res;
 }
@@ -521,16 +563,78 @@ UWCHAR UTF8_Handler::getachar(u_ustring& s, long& i) {
     return res;
 }
 
-void UTF8_Handler::getchar(u_ustring& s, u_ustring& res,  long& i, long sz) {
+string UTF8_Handler::getachar(string& s, long& i) {
+    string res;
+    if (!get_emoji(s, res, i))
+        get_one_char(s, res, i);
+    return res;
+}
+
+void UTF8_Handler::getchar(u_ustring& s, u_ustring& res,  long& i) {
     if (!get_emoji(s, res, i))
         res = s[i];
     i++;
 }
 
-void UTF8_Handler::getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz) {
+void UTF8_Handler::getchar(string& s, string& res,  long& i) {
+    if (!get_emoji(s, res, i))
+        get_one_char(s, res, i);
+    i++;
+}
+
+void UTF8_Handler::getandaddchar(u_ustring& s, u_ustring& res, long& i) {
     if (!store_emoji(s, res, i))
         res += s[i];
     i++;
+}
+
+void UTF8_Handler::getandaddchar(string& s, string& res, long& i) {
+    if (!store_emoji(s, res, i))
+        add_one_char(s, res, i);
+    i++;
+}
+
+void UTF8_Handler::getAtchar(string& s, string& res, long nb) {
+    long i = 0;
+    long sz = s.size();
+    while (nb) {
+        if (i >= sz)
+            return;
+        if (!scan_emoji(s, i))
+            i += c_test_utf8(s, i);
+        i++;
+        nb--;
+    }
+    get_one_char(s, res, i);
+}
+
+//Transforms a character position into a byte position
+//utf8 characters can occupy up to 4 bytes
+long UTF8_Handler::charTobyte(string& s, long nb) {
+    long i = 0;
+    long sz = s.size();
+    while (nb) {
+        if (i >= sz)
+            return -1;
+        if (!scan_emoji(s, i))
+            i += c_test_utf8(s, i);
+        i++;
+        nb--;
+    }
+    return i;
+}
+
+//Transforms a byte position into a character position
+long UTF8_Handler::byteTochar(string& s, long sz) {
+    long nb = 0;
+    long i = 0;
+    while (i < sz) {
+        if (!scan_emoji(s, i))
+            i += c_test_utf8(s, i);
+        i++;
+        nb++;
+    }
+    return nb;
 }
 
 //------------------------------------------------------------------------
@@ -1432,15 +1536,27 @@ wchar_t UTF8_Handler::c_to_upper(wchar_t c) {
 }
 
 string UTF8_Handler::u_to_lower(string& u) {
-	u_ustring res;
-	u_ustring s;
-	s_utf8_to_unicode(s, u, u.size());
-	long lg = s.size();
-	for (long i = 0; i < lg; i++)
-		res += (u_uchar)uc_to_lower(s[i]);
-	string r;
-	s_unicode_to_utf8(r, res);
-	return r;
+    u_ustring res;
+    u_ustring s;
+    s_utf8_to_unicode(s, u, u.size());
+    long lg = s.size();
+    for (long i = 0; i < lg; i++)
+        res += (u_uchar)uc_to_lower(s[i]);
+    string r;
+    s_unicode_to_utf8(r, res);
+    return r;
+}
+
+string UTF8_Handler::u_to_upper(string& u) {
+    u_ustring res;
+    u_ustring s;
+    s_utf8_to_unicode(s, u, u.size());
+    long lg = s.size();
+    for (long i = 0; i < lg; i++)
+        res += (u_uchar)uc_to_upper(s[i]);
+    string r;
+    s_unicode_to_utf8(r, res);
+    return r;
 }
 
 wstring UTF8_Handler::s_to_lower(wstring& s) {
@@ -1566,6 +1682,17 @@ Exporting bool s_is_utf8(string& contenu, long longueur) {
 //------------------------------------------------------------------------
 wstring& s_trim0(wstring& strvalue) {
     if (strvalue.find(L".") != -1) {
+        long i = strvalue.size() - 1;
+        while (strvalue[i] == '0') i--;
+        if (strvalue[i] == '.')
+            i--;
+        strvalue = strvalue.substr(0, i + 1);
+    }
+    return strvalue;
+}
+
+string& s_trim0(string& strvalue) {
+    if (strvalue.find(".") != -1) {
         long i = strvalue.size() - 1;
         while (strvalue[i] == '0') i--;
         if (strvalue[i] == '.')
@@ -1965,6 +2092,30 @@ u_ustring s_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep) {
 
 long nb_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep) {
     u_ustring neo;
+    
+    long gsz = reg.size();
+    if (!gsz)
+        return 0;
+    
+    long rsz = s.size();
+    long from = 0;
+    long nb = 0;
+    long foundHere;
+    while ((foundHere = s.find(reg, from)) != string::npos) {
+        if (foundHere != from)
+            neo += s.substr(from, foundHere - from);
+        neo += rep;
+        from = foundHere + gsz;
+        nb++;
+    }
+    if (from < rsz)
+        neo += s.substr(from, rsz - from);
+    s = neo;
+    return nb;
+}
+
+long nb_replacestring(string& s, string reg, string rep) {
+    string neo;
     
     long gsz = reg.size();
     if (!gsz)
@@ -2486,6 +2637,142 @@ double conversiontofloathexa(u_ustring& s, long& i, int sign) {
 }
 
 double convertingfloathexa(u_ustring& s) {
+    long i = 0;
+    while (s[i]!=0 && s[i]<=32) i++;
+    
+    //End of string...
+    if (s[i] == 0 )
+        return 0;
+    
+    int sign = 1;
+    
+    //Sign
+    if (s[i]=='-') {
+        sign = -1;
+        ++i;
+    }
+    else
+        if (s[i]=='+')
+            i++;
+    
+    long v;
+    if (isadigit(s[i])) {
+        if (s[i] == '0') {
+            if (s[i+1] == 'x') {
+                i+=2;
+                return conversiontofloathexa(s, i, sign);
+            }
+            if (s[i+1] == 'b') {
+                i+=2;
+                v = 0;
+                while (s[i] == '0' || s[i] == '1') {
+                    v = (v << 1) + (s[i++] & 15);
+                }
+                return v;
+            }
+        }
+        
+        v = s[i++] & 15;
+        while (isadigit(s[i])) {
+            v = (v << 3) + (v << 1) + (s[i++] & 15);
+        }
+        if (!s[i])
+            return v*sign;
+    }
+    else
+        return 0;
+    
+    double res = v;
+    
+    if (s[i]=='.') {
+        i++;
+        if (isadigit(s[i])) {
+            uchar mantissa = 1;
+            v = s[i++] & 15;
+            while (isadigit(s[i])) {
+                v = (v << 3) + (v << 1) + (s[i++] & 15);
+                ++mantissa;
+            }
+            res += (double)v / power10(mantissa);
+        }
+        else
+            return res*sign;
+    }
+    
+    if ((s[i] &0xDF) == 'E') {
+        i++;
+        long sgn = 1;
+        if (s[i] == '-') {
+            sgn = -1;
+            i++;
+        }
+        else {
+            if (s[i] == '+')
+                i++;
+        }
+        
+        if (isadigit(s[i])) {
+            v = s[i++] & 15;
+            while (isadigit(s[i]))
+                v = (v << 3) + (v << 1) + (s[i++] & 15);
+            
+            res *= power10(v*sgn);
+        }
+    }
+    return res*sign;
+}
+
+double conversiontofloathexa(string& s, long& i, int sign) {
+    long v = 0;
+    uchar c = s[i++];
+    while (c < 103 && digitaction[c]) {
+        v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+        c = s[i++];
+    }
+    
+    double res = v;
+    
+    if (c == '.') {
+        uchar mantissa = 0;
+        v = 0;
+        c = s[i++];
+        while (c < 103 && digitaction[c]) {
+            v = ( (v << 4) | (c & 0xF) | ((c & 64) >> 3)) + ((c & 64) >> 6);
+            c = s[i++];
+            mantissa += 4;
+        }
+        
+        res += (double)v/(double)(1 << mantissa);
+    }
+    
+    
+    if ((c &0xDF) == 'P') {
+        bool sgn = false;
+        if (s[i] == '-') {
+            sgn = true;
+            i++;
+        }
+        else {
+            if (s[i] == '+')
+                i++;
+        }
+        
+        v = s[i++] & 15;
+        while (isadigit(s[i])) {
+            v = (v << 3) + (v << 1) + (s[i++] & 15);
+        }
+        v = 1 << v;
+        if (sgn)
+            res *= 1 / (double)v;
+        else
+            res *= v;
+        
+    }
+    
+    return res*sign;
+}
+
+double convertingfloathexa(string& s) {
     long i = 0;
     while (s[i]!=0 && s[i]<=32) i++;
     
@@ -5003,36 +5290,36 @@ Element* LispE::load_library(string nom_bib) {
          return new Error(message.str());
       }
 
-      char erreur = 0;
       string ldlibpath;
-
       #ifdef __apple_build_version__
-      if (erreur) {
-         ldlibpath="";
-         //Specific to MAC OS
-         if (getenv("DYLD_LIBRARY_PATH") != NULL)
-            ldlibpath = getenv("DYLD_LIBRARY_PATH");
-
-         if (ldlibpath.find(atanlib) == -1) {
-            stringstream message;
-            message << "On Mac OS you need to initialize DYLD_LIBRARY_PATH." << endl;
-            message << "Place this initialisation in your bash or zsh profile:" << endl;
-            message << "\texport DYLD_LIBRARY_PATH=$LISPEPATH:$DYLD_LIBRARY_PATH" << endl;
-            return new Error(message.str());
-         }
+      if (getenv("DYLD_LIBRARY_PATH") != NULL) {
+         ldlibpath = getenv("DYLD_LIBRARY_PATH");
       }
-      #else
-         if (getenv("LD_LIBRARY_PATH") != NULL)
-         ldlibpath = getenv("LD_LIBRARY_PATH");
+
       if (ldlibpath.find(atanlib) == -1) {
-         stringstream message;
-         message << "Error: on most platforms, you need to initialize LD_LIBRARY_PATH." << endl;
-         message << "Place this initialisation in your bash or zsh profile:" << endl;
-         message << "\texport LD_LIBRARY_PATH=$LISPEPATH:$LD_LIBRARY_PATH" << endl;
-         return new Error(message.str());
+         ldlibpath = "/usr/local/lib:" + atanlib + ":" + ldlibpath;
+         setenv("DYLD_LIBRARY_PATH", ldlibpath.c_str(), 1);
       }
       #endif
+      ldlibpath="";
+      if (getenv("LD_LIBRARY_PATH") != NULL) {
+         ldlibpath = getenv("LD_LIBRARY_PATH");
+      }
 
+      if (ldlibpath.find(atanlib) == -1) {
+         ldlibpath = atanlib + ":" + ldlibpath;
+         setenv("LD_LIBRARY_PATH", ldlibpath.c_str(), 1);
+      }
+
+      ldlibpath = "";
+      if (getenv("PATH") != NULL) {
+         ldlibpath = getenv("PATH");
+      }
+
+      if (ldlibpath.find(atanlib) == -1) {
+         ldlibpath = atanlib + ":" + ldlibpath;
+         setenv("PATH", ldlibpath.c_str(), 1);
+      }
       if (atanlib.back() != '/')
          atanlib += "/";
 
@@ -5844,8 +6131,8 @@ template<> void tokenizer_result<u_ustring>::getnext() {
     }
     
     sz_read = 1;
-    currentchr = (*buffer)[position++];
     line += (currentchr == '\n');
+    currentchr = (*buffer)[position++];
 }
 
 template<> void tokenizer_result<wstring>::getnext() {
@@ -5855,11 +6142,11 @@ template<> void tokenizer_result<wstring>::getnext() {
     }
     
     sz_read = 1;
+    line += (currentchr == '\n');
     if (c_utf16_to_unicode(currentchr, (*buffer)[position++], false)) {
         sz_read = 2;
         c_utf16_to_unicode(currentchr, (*buffer)[position++], true);
     }
-    line += (currentchr == '\n');
 }
 
 template<> void tokenizer_result<u16string>::getnext() {
@@ -5869,11 +6156,11 @@ template<> void tokenizer_result<u16string>::getnext() {
     }
     
     sz_read = 1;
+    line += (currentchr == '\n');
     if (c_utf16_to_unicode(currentchr, (*buffer)[position++], false)) {
         sz_read = 2;
         c_utf16_to_unicode(currentchr, (*buffer)[position++], true);
     }
-    line += (currentchr == '\n');
 }
 
 template<> void tokenizer_result<string>::getnext() {
@@ -5882,9 +6169,9 @@ template<> void tokenizer_result<string>::getnext() {
         return;
     }
     
+    line += (currentchr == '\n');
     sz_read = 1 + c_utf8_to_unicode(buffer, position, currentchr);
     position += sz_read;
-    line += (currentchr == '\n');
 }
 
 template<> void tokenizer_result<u_ustring>::store_currentchr() {
@@ -6702,6 +6989,13 @@ void tokenizer_automaton::setrules() {
      
      IMPORTANT: spaces are considered characters except in disjunctions
      
+     Three more rules:
+     
+     ...=:NN -> '=:' in this context forces the evaluation to be handled iteratively, which avoids recursive explosion of the stack for very long strings
+     ...=!NN -> '=!' means that the rule has been flagged with flag_blocking_gate. It is basically deactivated.
+     ...=# -> the '#' means that the token will be recognized but not stored in the final list of tokens
+     
+     The flag_blocking_gate can be used to activate or deactivate rules on the fly
      */
     
     //Spaces, skipped in the parsing string
@@ -6733,7 +7027,9 @@ void tokenizer_automaton::setrules() {
     //Strings
     rules.push_back(U"\"\"\"?*\"\"\"=:96");                   //long strings Python way """.."""
     rules.push_back(U"\"{[\\-\"] ~%r}*\"=:34");     //string "" does not contain CR and can escape characters
+    rules.push_back(U"b\"{[\\-\"] ~%r}*\"=:34");     //string "" does not contain CR and can escape characters
     rules.push_back(U"`?*`=:96");                   //long strings Unix way
+    rules.push_back(U"b`?*`=:97");                   //long strings Unix way
 #ifdef WIN32
     //In Windows, strings are always stored as UTF-8 strings...
     //For this reason, we need to handle them through their code...
@@ -6742,12 +7038,22 @@ void tokenizer_automaton::setrules() {
     rules.push_back(U"#8216?*#8217=:96");                   //long strings with single quotes (English)
     rules.push_back(U"#8222?*#8221=:96");                //long strings German/Polish
     rules.push_back(U"#10077?*#10078=:96");                   //long strings
+    rules.push_back(U"b#171?*#187=:96");                   //long strings French way
+    rules.push_back(U"b#8220?*#8221=:96");                   //long strings English
+    rules.push_back(U"b#8216?*#8217=:96");                   //long strings with single quotes (English)
+    rules.push_back(U"b#8222?*#8221=:96");                //long strings German/Polish
+    rules.push_back(U"b#10077?*#10078=:96");                   //long strings
 #else
     rules.push_back(U"«?*»=:96");                   //long strings French way
     rules.push_back(U"“?*”=:96");                   //long strings English
     rules.push_back(U"‘?*’=:96");                   //long strings with single quotes (English)
     rules.push_back(U"„?*”=:96");                //long strings German/Polish
     rules.push_back(U"❝?*❞=:96");                   //long strings
+    rules.push_back(U"b«?*»=:96");                   //long strings French way
+    rules.push_back(U"b“?*”=:96");                   //long strings English
+    rules.push_back(U"b‘?*’=:96");                   //long strings with single quotes (English)
+    rules.push_back(U"b„?*”=:96");                //long strings German/Polish
+    rules.push_back(U"b❝?*❞=:96");                   //long strings
 #endif
     
     //The definition of a rule is divided into metarules for better clarity

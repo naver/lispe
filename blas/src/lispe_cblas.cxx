@@ -853,7 +853,7 @@ Element *Lispe_blas::trsv(LispE *lisp)
     long incx = lisp->get_variable(L"incx")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     bool uplo = lisp->get_variable(L"uplo")->Boolean();
-    long trans = lisp->get_variable(L"trans")->Boolean();
+    long trans = lisp->get_variable(L"trans")->asInteger();
     bool diag = lisp->get_variable(L"diag")->Boolean();
 
     if (A->size() != n * n)
@@ -998,8 +998,8 @@ Element *Lispe_blas::hemm(LispE *lisp)
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     CBLAS_SIDE sd = side ? CblasLeft : CblasRight;
 
@@ -1061,8 +1061,8 @@ Element *Lispe_blas::symm(LispE *lisp)
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     CBLAS_SIDE sd = side ? CblasLeft : CblasRight;
 
@@ -1124,7 +1124,7 @@ Element *Lispe_blas::herk(LispE *lisp)
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
@@ -1186,7 +1186,7 @@ Element *Lispe_blas::syrk(LispE *lisp)
     long ldc = lisp->get_variable(L"ldc")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
@@ -1251,7 +1251,7 @@ Element *Lispe_blas::her2k(LispE *lisp)
     long ldc = lisp->get_variable(L"ldc")->asInteger();        
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
@@ -1323,7 +1323,7 @@ Element *Lispe_blas::syr2k(LispE *lisp)
     long ldc = lisp->get_variable(L"ldc")->asInteger();        
     bool layout = lisp->get_variable(L"layout")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
 
     if (A->size() != k * n)
         throw new Error("Error: the size of A does not match mxn");
@@ -1390,8 +1390,8 @@ Element *Lispe_blas::trmm(LispE *lisp)
     long lda = lisp->get_variable(L"lda")->asInteger();
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
     bool diag = lisp->get_variable(L"diag")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();    
 
@@ -1461,8 +1461,8 @@ Element *Lispe_blas::trsm(LispE *lisp)
     long lda = lisp->get_variable(L"lda")->asInteger();
     long ldb = lisp->get_variable(L"ldb")->asInteger();
     bool layout = lisp->get_variable(L"layout")->Boolean();
-    long side = lisp->get_variable(L"side")->asInteger();
-    long uplo = lisp->get_variable(L"uplo")->asInteger();
+    bool side = lisp->get_variable(L"side")->Boolean();
+    bool uplo = lisp->get_variable(L"uplo")->Boolean();
     bool diag = lisp->get_variable(L"diag")->Boolean();
     long trans = lisp->get_variable(L"trans")->asInteger();
 

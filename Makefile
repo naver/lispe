@@ -71,4 +71,5 @@ libs: liblispe
 	$(MAKE) -C transducer all
 	$(MAKE) -C pythonlispe all
 	$(MAKE) -C gui all
+	$(MAKE) -C blas all
 

@@ -17,7 +17,7 @@
 #include <sys/resource.h>
 #endif
 //------------------------------------------------------------
-static std::string version = "1.2023.3.29.11.53";
+static std::string version = "1.2024.3.15.10.6";
 string LispVersion() {
     return version;
 }
@@ -67,6 +67,13 @@ Element* Error::check_if_error(LispE* lisp) {
     vector<Element*> __indexes;
 #endif
 //------------------------------------------------------------
+string Stackelement::toString(LispE* lisp) {
+    wstring w = asString(lisp);
+    string s;
+    s_unicode_to_utf8(s, w);
+    return s;
+}
+
 wstring Stackelement::asString(LispE* lisp) {
     std::wstringstream message;
     binHash<Element*>::iterator a(variables);
@@ -85,6 +92,20 @@ List* Stackelement::atomes(LispE* lisp) {
             liste->append(lisp->provideAtom(a->first));
     }
     return liste;
+}
+
+bool Stackelement::recordargument(LispE* lisp, Element* e, int16_t label) {
+    if (variables.check(label))
+        return variables.at(label)->unify(lisp,e, false);
+    
+    if (!lisp->macro_mode)
+        e = e->duplicate_constant(lisp);
+    variables[label] = e;
+    if (e->status != s_constant) {
+        e->increment();
+        names.push(label);
+    }
+    return true;
 }
 
 //------------------------------------------------------------
@@ -108,6 +129,7 @@ static u_ustring U(string x) {
 Delegation::Delegation() : main_tokenizer(NULL) {
     mark = 0;
     current_error = NULL;
+    windowmode = NULL;
     
 #ifdef LISPE_WASM
     input_handler = NULL;
@@ -133,7 +155,11 @@ Delegation::Delegation() : main_tokenizer(NULL) {
     i_current_line = -1;
     i_current_file = -1;
 #ifdef UNIX
+#ifdef APPLE
+    const rlim_t kStackSize = 10240;
+#else
     const rlim_t kStackSize = 32 * 1024 * 1024;   // min stack size = 32 MB
+#endif
     struct rlimit rl;
     int result;
     result = getrlimit(RLIMIT_STACK, &rl);
@@ -156,6 +182,8 @@ Delegation::~Delegation() {
 #ifndef LISPE_WASM
     clean_get_handler(input_handler);
 #endif
+    //In the case, some residual threads have left some data
+    clean_threads();
     reset_error();
     function_pool.cleaning();
     method_pool.cleaning();
@@ -163,9 +191,11 @@ Delegation::~Delegation() {
         a.second.clear();
     for (const auto& a: locks)
         delete a.second;
-    binHash<Listincode*>::iterator al(straight_eval);
-    for (; !al.end(); al++)
-        delete al->second;
+    
+    for (long al = 0; al != l_final; al++) {
+        if (straight_eval[al] != NULL)
+            delete straight_eval[al];
+    }
     binhash<Element*>::iterator h(atom_pool);
 	for (; !h.end(); h++)
         delete h->second;
@@ -175,6 +205,7 @@ Delegation::~Delegation() {
     delete _EMPTYDICTIONARY;
     delete _BREAK;
     delete _THEEND;
+    
 }
 
 //------------------------------------------------------------
@@ -203,6 +234,7 @@ void Delegation::initialisation(LispE* lisp) {
     //For the others we will Throw an exception...
     for (long i = 0; i < l_final; i++) {
         evals[i] = &List::eval_error;
+        straight_eval[i] = NULL;
     }
     //These are not exactly instructions, but we need to set their arity nonetheless
     //since they belong to the List::eval method
@@ -233,50 +265,60 @@ void Delegation::initialisation(LispE* lisp) {
     //root_ on the other hand is the variable that points to the whole code
     set_instruction(l_root, "__root__", P_ATLEASTONE, &List::evall_root);
     code_to_string[l_code] = U"_root";
-    set_instruction(l_and, "and", P_ATLEASTTHREE, &List::evall_and, new List_and_eval());
-    set_instruction(l_andvalue, "andvalue", P_ATLEASTTHREE, &List::evall_andvalue, new List_andvalue_eval());
-    set_instruction(l_apply, "apply", P_THREE, &List::evall_apply, new List_apply_eval());
-    set_instruction(l_at, "at", P_ATLEASTTHREE, &List::evall_at, new List_at_eval());
-    set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR, &List::evall_at_shape, new List_at_shape_eval());
-    set_instruction(l_atom, "atom", P_TWO, &List::evall_converttoatom, new List_converttoatom_eval());
-    set_instruction(l_atomise, "explode", P_TWO, &List::evall_atomise, new List_atomise_eval());
     set_instruction(l_atomp, "atomp", P_TWO, &List::evall_atomp, new List_atomp_eval());
-    set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
-    set_instruction(l_bitand, "&", P_ATLEASTTWO, &List::evall_bitand);
-    set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
-    set_instruction(l_bitandnot, "&~", P_ATLEASTTWO, &List::evall_bitandnot);
-    set_instruction(l_bitandnotequal, "&~=", P_ATLEASTTHREE, &List::evall_bitandnotequal);
-    set_instruction(l_bitnot, "~", P_TWO, &List::evall_bitnot);
-    set_instruction(l_bitor, "|", P_ATLEASTTWO, &List::evall_bitor);
-    set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE, &List::evall_bitorequal);
-    set_instruction(l_bitxor, "^", P_ATLEASTTWO, &List::evall_bitxor);
-    set_instruction(l_bitxorequal, "^=", P_ATLEASTTHREE, &List::evall_bitxorequal);
-    set_instruction(l_block, "block", P_ATLEASTONE, &List::evall_block, new List_block_eval());
-    set_instruction(l_bodies, "bodies", P_TWO, &List::evall_bodies, new List_bodies_eval());
-    set_instruction(l_break, "break", P_ONE, &List::evall_break);
-    set_instruction(l_cadr, "cadr", P_TWO, &List::evall_cadr, new List_cadr_eval());
-    set_instruction(l_car, "car", P_TWO, &List::evall_car, new List_car_eval());
-    set_instruction(l_catch, "catch", P_ATLEASTTWO, &List::evall_catch, new List_catch_eval());
-    set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr, new List_cdr_eval());
-    set_instruction(l_check, "check", P_ATLEASTTWO, &List::evall_check, new List_check_eval());
-    set_instruction(l_compile, "loadcode", P_TWO | P_THREE, &List::evall_compile);
-    set_instruction(l_cond, "cond", P_ATLEASTTWO, &List::evall_cond, new List_cond_eval());
-    set_instruction(l_cons, "cons", P_THREE, &List::evall_cons, new List_cons_eval());
-    set_instruction(l_consb, "consb", P_THREE, &List::evall_consb, new List_consb_eval());
     set_instruction(l_consp, "consp", P_TWO, &List::evall_consp, new List_consp_eval());
-    set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
-    set_instruction(l_count, "count", P_THREE|P_FOUR, &List::evall_count, new List_count_eval());
-    set_instruction(l_cutlist, "cutlist", P_THREE, &List::evall_cutlist, new List_cutlist_eval());
     set_instruction(l_cyclic, "cyclicp", P_TWO, &List::evall_cyclicp, new List_cyclicp_eval());
+    set_instruction(l_emptyp, "emptyp", P_TWO, &List::evall_emptyp, new List_emptyp_eval());
+    set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp, new List_nullp_eval());
+    set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp, new List_numberp_eval());
+    set_instruction(l_signp, "signp", P_TWO,  new List_signp_eval());
+    set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp, new List_stringp_eval());
+    set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop, new List_zerop_eval());
+    set_instruction(l_and, "and", P_ATLEASTTHREE,  new List_and_eval());
+    set_instruction(l_andvalue, "andvalue", P_ATLEASTTHREE,  new List_andvalue_eval());
+    set_instruction(l_apply, "apply", P_THREE,  new List_apply_eval());
+    set_instruction(l_at, "at", P_ATLEASTTHREE, new List_at_eval());
+    set_instruction(l_at_shape, "atshape", P_ATLEASTFOUR,  new List_at_shape_eval());
+    set_instruction(l_atom, "atom", P_TWO,  new List_converttoatom_eval());
+    set_instruction(l_atoms, "atoms", P_ONE, &List::evall_atoms);
+    set_instruction(l_bitand, "&", P_ATLEASTTWO,  new List_bitand());
+    set_instruction(l_bitandequal, "&=", P_ATLEASTTHREE, &List::evall_bitandequal);
+    set_instruction(l_bitandnot, "&~", P_ATLEASTTWO,  new List_bitandnot());
+    set_instruction(l_bitandnotequal, "&~=", P_ATLEASTTHREE, &List::evall_bitandnotequal);
+    set_instruction(l_bitnot, "~", P_TWO,  new List_bitnot);
+    set_instruction(l_bitor, "|", P_ATLEASTTWO,  new List_bitor());
+    set_instruction(l_bitorequal, "|=", P_ATLEASTTHREE, &List::evall_bitorequal);
+    set_instruction(l_bitxor, "^", P_ATLEASTTWO,  new List_bitxor());
+    set_instruction(l_bitxorequal, "^=", P_ATLEASTTHREE, &List::evall_bitxorequal);
+    set_instruction(l_bytes, "bytes", P_TWO,  new List_bytes_eval());
+    set_instruction(l_block, "block", P_ATLEASTONE, &List::evall_block, new List_block_eval());
+    set_instruction(l_bodies, "bodies", P_TWO,  new List_bodies_eval());
+    set_instruction(l_break, "break", P_ONE, &List::evall_break);
+    set_instruction(l_cadr, "cadr", P_TWO,  new List_cadr_eval());
+    set_instruction(l_car, "car", P_TWO,  new List_car_eval());
+    set_instruction(l_catch, "catch", P_ATLEASTTWO,  new List_catch_eval());
+    set_instruction(l_cdr, "cdr", P_TWO, &List::evall_cdr, new List_cdr_eval());
+    set_instruction(l_check, "check", P_ATLEASTTWO,  new List_check_eval());
+    set_instruction(l_compile, "loadcode", P_TWO | P_THREE, &List::evall_compile);
+    set_instruction(l_cond, "cond", P_ATLEASTTWO,  new List_cond_eval());
+    set_instruction(l_cons, "cons", P_THREE, new List_cons_eval());
+    set_instruction(l_consb, "consb", P_THREE,  new List_consb_eval());
+    set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
+    set_instruction(l_count, "count", P_THREE|P_FOUR,  new List_count_eval());
+    set_instruction(l_slice, "slice", P_THREE,  new List_slice_eval());
     set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
+    set_instruction(l_enumerate, "enum", P_TWO | P_THREE, new List_enumerate_eval());
     set_instruction(l_float, "float", P_TWO, &List::evall_converttofloat, new List_converttofloat_eval());
     set_instruction(l_complex, "complex", P_THREE, &List::evall_complex, new List_complex_eval());
     set_instruction(l_real, "real", P_TWO, &List::evall_real, new List_real_eval());
     set_instruction(l_imaginary, "imaginary", P_TWO, &List::evall_imaginary, new List_imaginary_eval());
+    set_instruction(l_mask, "mask", P_THREE | P_FOUR,  new List_mask_eval());
     set_instruction(l_number, "number", P_TWO, &List::evall_converttonumber, new List_number_eval());
     set_instruction(l_string, "string", P_TWO, &List::evall_converttostring, new List_string_eval());
+    set_instruction(l_stringbyte, "stringbyte", P_TWO, &List::evall_converttostringbyte, new List_stringbyte_eval());
     set_instruction(l_data, "data", P_ATLEASTTWO, &List::evall_data);
+    set_instruction(l_data_eval, "%data", P_ATLEASTTWO, new List_data_eval());
     set_instruction(l_deflib, "deflib", P_THREE, &List::evall_deflib);
     set_instruction(l_deflibpat, "deflibpat", P_THREE, &List::evall_deflibpat);
     set_instruction(l_defmacro, "defmacro", P_FOUR, &List::evall_defmacro);
@@ -284,158 +326,174 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_defspace, "defspace", P_TWO, &List::evall_defspace);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
-    set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTHREE, &List::evall_dictionary, new List_dictionary_eval());
-    set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryi, new List_dictionaryi_eval());
-    set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTHREE, &List::evall_dictionaryn, new List_dictionaryn_eval());
+    set_instruction(l_dictionary, "dictionary", P_ONE | P_ATLEASTTWO,  new List_dictionary_eval());
+    set_instruction(l_dictionaryi, "dictionaryi", P_ONE | P_ATLEASTTWO,  new List_dictionaryi_eval());
+    set_instruction(l_dictionaryn, "dictionaryn", P_ONE | P_ATLEASTTWO,  new List_dictionaryn_eval());
+    set_instruction(l_tree, "dictionarytree", P_ONE | P_ATLEASTTWO,  new List_tree_eval());
+    set_instruction(l_treei, "dictionarytreei", P_ONE | P_ATLEASTTWO,  new List_treei_eval());
+    set_instruction(l_treen, "dictionarytreen", P_ONE | P_ATLEASTTWO,  new List_treen_eval());
     set_instruction(l_different, "!=", P_ATLEASTTHREE, &List::evall_different, new List_different_eval());
     set_instruction(l_divide, "/", P_ATLEASTTWO, &List::evall_divide, new List_dividen());
     set_instruction(l_divideequal, "/=", P_ATLEASTTHREE, &List::evall_divideequal);
     set_instruction(l_clone, "clone", P_TWO, &List::evall_clone, new List_clone_eval());
-    set_instruction(l_elapse, "elapse", P_ATLEASTONE, &List::evall_elapse, new List_elapse_eval());
-    set_instruction(l_emptyp, "emptyp", P_TWO, &List::evall_emptyp, new List_emptyp_eval());
-    set_instruction(l_eq, "eq", P_ATLEASTTHREE, &List::evall_eq, new List_eq_eval());
-    set_instruction(l_equal, "=", P_THREE, &List::evall_equal, new List_equal_eval());
-    set_instruction(l_eval, "eval", P_TWO, &List::evall_eval, new List_eval_eval());
-    set_instruction(l_extend, "extend", P_THREE, &List::evall_extend, new List_extend_eval());
-    set_instruction(l_extract, "extract", P_THREE|P_FOUR|P_FIVE|P_SIX, &List::evall_extract, new List_extract_eval());
-    set_instruction(l_factorial, "!", P_TWO, &List::evall_factorial, new List_factorial_eval());
-    set_instruction(l_fappend, "fappend", P_THREE, &List::evall_fappend, new List_fappend_eval());
-    set_instruction(l_stringf, "stringf", P_THREE, &List::evall_stringf, new List_stringf_eval());
-    set_instruction(l_filterlist, "filterlist", P_THREE | P_FOUR, &List::evall_filterlist, new List_filterlist_eval());
-    set_instruction(l_droplist, "droplist", P_THREE | P_FOUR, &List::evall_droplist, new List_droplist_eval());
-    set_instruction(l_takelist, "takelist", P_THREE | P_FOUR, &List::evall_takelist, new List_takelist_eval());
-    set_instruction(l_filtercar, "filtercar", P_THREE, &List::evall_filterlist, new List_filterlist_eval());
-    set_instruction(l_dropcar, "dropcar", P_THREE, &List::evall_droplist, new List_droplist_eval());
-    set_instruction(l_takecar, "takecar", P_THREE, &List::evall_takelist, new List_takelist_eval());
-    set_instruction(l_flatten, "flatten", P_TWO, &List::evall_flatten, new List_flatten_eval());
-    set_instruction(l_flip, "flip", P_TWO, &List::evall_flip, new List_flip_eval());
-    set_instruction(l_fread, "fread", P_TWO, &List::evall_fread, new List_fread_eval());
-    set_instruction(l_fwrite, "fwrite", P_THREE, &List::evall_fwrite, new List_fwrite_eval());
+    set_instruction(l_elapse, "elapse", P_ATLEASTONE,  new List_elapse_eval());
+    set_instruction(l_eq, "eq", P_ATLEASTTHREE,  new List_eq_eval());
+    set_instruction(l_equal, "=", P_ATLEASTTHREE,  &List::evall_equal, new List_equal_eval());
+    set_instruction(l_eval, "eval", P_TWO,  new List_eval_eval());
+    set_instruction(l_extend, "extend", P_THREE,  new List_extend_eval());
+    set_instruction(l_extract, "extract", P_THREE|P_FOUR|P_FIVE|P_SIX,  new List_extract_eval());
+    set_instruction(l_factorial, "!", P_TWO,  new List_factorial_eval());
+    set_instruction(l_bappend, "bappend", P_THREE,  new List_bappend_eval());
+    set_instruction(l_fappend, "fappend", P_THREE,  new List_fappend_eval());
+    set_instruction(l_stringf, "stringf", P_THREE,  new List_stringf_eval());
+    set_instruction(l_filterlist, "filterlist", P_THREE | P_FOUR,  new List_filterlist_eval());
+    set_instruction(l_droplist, "droplist", P_THREE | P_FOUR,  new List_droplist_eval());
+    set_instruction(l_takelist, "takelist", P_THREE | P_FOUR,  new List_takelist_eval());
+    set_instruction(l_takenb, "takenb", P_THREE | P_FOUR,  new List_takenb_eval());
+    set_instruction(l_filtercar, "filtercar", P_THREE,  new List_filterlist_eval());
+    set_instruction(l_dropcar, "dropcar", P_THREE,  new List_droplist_eval());
+    set_instruction(l_takecar, "takecar", P_THREE,  new List_takelist_eval());
+    set_instruction(l_flatten, "flatten", P_TWO,  new List_flatten_eval());
+    set_instruction(l_flip, "flip", P_TWO,  new List_flip_eval());
+    set_instruction(l_bread, "bread", P_TWO,  new List_bread_eval());
+    set_instruction(l_bwrite, "bwrite", P_THREE,  new List_bwrite_eval());
+    set_instruction(l_fread, "fread", P_TWO,  new List_fread_eval());
+    set_instruction(l_fwrite, "fwrite", P_THREE,  new List_fwrite_eval());
     set_instruction(l_greater, ">", P_ATLEASTTHREE, &List::evall_greater, new List_greater_eval());
     set_instruction(l_greaterorequal, ">=", P_ATLEASTTHREE, &List::evall_greaterorequal, new List_greaterorequal_eval());
     set_instruction(l_if, "if", P_THREE | P_FOUR, &List::evall_if, new List_if_eval());
     set_instruction(l_ife, "ife", P_ATLEASTFOUR, &List::evall_ife, new List_ife_eval());
-    set_instruction(l_in, "in", P_THREE, &List::evall_in, new List_in_eval());
+    set_instruction(l_in, "in", P_THREE,  new List_in_eval());
     set_instruction(l_infix, "infix", P_TWO, &List::evall_infix, new List_infix_eval());
 #ifndef LISPE_WASM
     set_instruction(l_getchar, "getchar", P_ONE, &List::evall_getchar);
     set_instruction(l_input, "input", P_ONE | P_TWO, &List::evall_input);
 #endif
-    set_instruction(l_insert, "insert", P_THREE | P_FOUR, &List::evall_insert, new List_insert_eval());
+    set_instruction(l_insert, "insert", P_THREE | P_FOUR,  new List_insert_eval());
     set_instruction(l_addr_, "addr_", P_TWO, &List::evall_addr_);
-    set_instruction(l_shorts, "shorts", P_ATLEASTONE, &List::evall_shorts, new List_shorts_eval());
-    set_instruction(l_integers, "integers", P_ATLEASTONE, &List::evall_integers, new List_integers_eval());
-    set_instruction(l_irange, "irange", P_THREE | P_FOUR, &List::evall_irange, new List_irange_eval());
-    set_instruction(l_irangein, "irangein", P_THREE | P_FOUR, &List::evall_irangein, new List_irangein_eval());
-    set_instruction(l_join, "join", P_TWO | P_THREE, &List::evall_join, new List_join_eval());
-    set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE, &List::evall_key, new List_key_eval());
-    set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE, &List::evall_keyi, new List_keyi_eval());
-    set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE, &List::evall_keyn, new List_keyn_eval());
-    set_instruction(l_keys, "keys@", P_TWO, &List::evall_keys, new List_keys_eval());
-    set_instruction(l_label, "label", P_THREE, &List::evall_label, new List_label_eval());
+    set_instruction(l_shorts, "shorts", P_ATLEASTONE,  new List_shorts_eval());
+    set_instruction(l_integers, "integers", P_ATLEASTONE,  new List_integers_eval());
+    set_instruction(l_irange, "irange", P_THREE | P_FOUR,  new List_irange_eval());
+    set_instruction(l_irangein, "irangein", P_THREE | P_FOUR,  new List_irangein_eval());
+    set_instruction(l_join, "join", P_TWO | P_THREE,  new List_join_eval());
+    set_instruction(l_key, "key", P_ONE|P_ATLEASTTHREE,  new List_key_eval());
+    set_instruction(l_keyi, "keyi", P_ONE|P_ATLEASTTHREE,  new List_keyi_eval());
+    set_instruction(l_keyn, "keyn", P_ONE|P_ATLEASTTHREE,  new List_keyn_eval());
+    set_instruction(l_keys, "keys@", P_TWO,  &List::evall_keys, new List_keys_eval());
+    set_instruction(l_label, "label", P_THREE,  new List_label_eval());
     set_instruction(l_lambda, "λ", P_ATLEASTTHREE, &List::evall_lambda, new List_lambda_eval());
     set_instruction(l_last, "last", P_TWO, &List::evall_last, new List_last_eval());
-    set_instruction(l_leftshift, "<<", P_ATLEASTTWO, &List::evall_leftshift, new List_leftshift_eval());
+    set_instruction(l_leftshift, "<<", P_ATLEASTTWO,  new List_leftshift_eval());
     set_instruction(l_leftshiftequal, "<<=", P_ATLEASTTHREE, &List::evall_leftshiftequal);
     set_instruction(l_link, "link", P_THREE, &List::evall_link);
-    set_instruction(l_list, "list", P_ATLEASTONE, &List::evall_list, new List_list_eval());
-    set_instruction(l_llist, "llist", P_ATLEASTONE, &List::evall_llist, new List_llist_eval());
-    set_instruction(l_listand, "&&&", P_ATLEASTTWO, &List::evall_listand, new List_listand_eval());
-    set_instruction(l_listor, "|||", P_ATLEASTTWO, &List::evall_listor, new List_listor_eval());
-    set_instruction(l_listxor, "^^^", P_ATLEASTTWO, &List::evall_listxor, new List_listxor_eval());
-    set_instruction(l_to_list, "to_list", P_TWO | P_THREE, &List::evall_to_list, new List_to_list_eval());
-    set_instruction(l_to_llist, "to_llist", P_TWO, &List::evall_to_llist, new List_to_llist_eval());
-    set_instruction(l_let, "let", P_THREE, &List::evall_let, new List_let_eval());
+    set_instruction(l_list, "list", P_ATLEASTONE,  new List_list_eval());
+    set_instruction(l_llist, "llist", P_ATLEASTONE,  new List_llist_eval());
+    set_instruction(l_listand, "&&&", P_ATLEASTTWO,  new List_listand_eval());
+    set_instruction(l_listor, "|||", P_ATLEASTTWO,  new List_listor_eval());
+    set_instruction(l_listxor, "^^^", P_ATLEASTTWO,  new List_listxor_eval());
+    set_instruction(l_to_list, "⊂", P_TWO | P_THREE,  new List_to_list_eval());
+    set_instruction(l_to_llist, "to_llist", P_TWO,  new List_to_llist_eval());
+    set_instruction(l_to_tensor, "⊃", P_TWO | P_THREE,  new List_to_tensor_eval());
+    set_instruction(l_let, "let", P_ATLEASTTHREE, &List::evall_let, new List_let_eval());
     set_instruction(l_load, "load", P_TWO | P_THREE, &List::evall_load);
-    set_instruction(l_lock, "lock", P_ATLEASTTWO, &List::evall_lock, new List_lock_eval());
-    set_instruction(l_loop, "loop", P_ATLEASTFOUR, &List::evall_loop, new List_loop_eval());
-    set_instruction(l_mloop, "mloop", P_ATLEASTFOUR, &List::mloop, new List_mloop_eval());
-    set_instruction(l_lloop, "lloop", P_ATLEASTFOUR, &List::lloop, new List_lloop_eval());
-    set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE, &List::evall_loopcount, new List_loopcount_eval());
+    set_instruction(l_lock, "lock", P_ATLEASTTWO,  new List_lock_eval());
+    set_instruction(l_loop, "loop", P_ATLEASTFOUR,  new List_loop_eval());
+    set_instruction(l_mloop, "mloop", P_ATLEASTFOUR, new List_mloop_eval());
+    set_instruction(l_lloop, "lloop", P_ATLEASTFOUR, new List_lloop_eval());
+    set_instruction(l_loopcount, "loopcount", P_ATLEASTTHREE,  new List_loopcount_eval());
     set_instruction(l_compare, ">=<", P_THREE, &List::evall_compare, new List_compare_eval());
     set_instruction(l_lower, "<", P_ATLEASTTHREE, &List::evall_lower, new List_lower_eval());
     set_instruction(l_lowerorequal, "<=", P_ATLEASTTHREE, &List::evall_lowerorequal, new List_lowerorequal_eval());
-    set_instruction(l_maplist, "maplist", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
-    set_instruction(l_mapcar, "mapcar", P_THREE, &List::evall_maplist, new List_maplist_eval());
-    set_instruction(l_mark, "mark", P_THREE | P_TWO, &List::evall_mark, new List_mark_eval());
-    set_instruction(l_matrix, "matrix", P_TWO | P_THREE | P_FOUR, &List::evall_matrix, new List_matrix_eval());
-    set_instruction(l_matrix_float, "matrix_float", P_TWO | P_THREE | P_FOUR, &List::evall_matrix_float, new List_matrix_float_eval());
-    set_instruction(l_minmax, "minmax", P_ATLEASTTWO, &List::evall_minmax, new List_minmax_eval());
-    set_instruction(l_max, "max", P_ATLEASTTWO, &List::evall_max, new List_max_eval());
-    set_instruction(l_maybe, "maybe", P_ATLEASTTWO, &List::evall_maybe, new List_maybe_eval());
-    set_instruction(l_min, "min", P_ATLEASTTWO, &List::evall_min, new List_min_eval());
+    set_instruction(l_maplist, "↑↑", P_THREE | P_FOUR, &List::evall_maplist, new List_maplist_eval());
+    set_instruction(l_mapcar, "mapcar", P_THREE,&List::evall_maplist, new List_maplist_eval());
+    set_instruction(l_mark, "mark", P_THREE | P_TWO,  new List_mark_eval());
+    set_instruction(l_matrix_stringbyte, "matrix_stringbyte", P_TWO | P_THREE | P_FOUR,  new List_matrix_stringbyte_eval());
+    set_instruction(l_matrix_string, "matrix_string", P_TWO | P_THREE | P_FOUR,  new List_matrix_string_eval());
+    set_instruction(l_matrix_short, "matrix_short", P_TWO | P_THREE | P_FOUR,  new List_matrix_short_eval());
+    set_instruction(l_matrix_integer, "matrix_integer", P_TWO | P_THREE | P_FOUR,  new List_matrix_integer_eval());
+    set_instruction(l_matrix_number, "matrix_number", P_TWO | P_THREE | P_FOUR,  new List_matrix_number_eval());
+    set_instruction(l_matrix_float, "matrix_float", P_TWO | P_THREE | P_FOUR,  new List_matrix_float_eval());
+    set_instruction(l_minmax, "minmax", P_ATLEASTTWO,  new List_minmax_eval());
+    set_instruction(l_max, "max", P_ATLEASTTWO,  new List_max_eval());
+    set_instruction(l_maybe, "maybe", P_ATLEASTTWO,  new List_maybe_eval());
+    set_instruction(l_min, "min", P_ATLEASTTWO, new List_min_eval());
     set_instruction(l_minus, "-", P_ATLEASTTWO, &List::evall_minus, new List_minusn());
     set_instruction(l_minusequal, "-=", P_ATLEASTTHREE, &List::evall_minusequal);
-    set_instruction(l_mod, "%", P_ATLEASTTWO, &List::evall_mod, new List_mod_eval());
+    set_instruction(l_mod, "%", P_ATLEASTTWO,  new List_mod_eval());
     set_instruction(l_modequal, "%=", P_ATLEASTTHREE, &List::evall_modequal);
     set_instruction(l_multiply, "*", P_ATLEASTTWO, &List::evall_multiply, new List_multiplyn());
     set_instruction(l_multiplyequal, "*=", P_ATLEASTTHREE, &List::evall_multiplyequal);
-    set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE, &List::evall_ncheck, new List_ncheck_eval());
-    set_instruction(l_nconc, "nconc", P_ATLEASTONE, &List::evall_nconc, new List_nconc_eval());
-    set_instruction(l_nconcn, "nconcn", P_ATLEASTONE, &List::evall_nconcn, new List_nconcn_eval());
-    set_instruction(l_neq, "neq", P_ATLEASTTHREE, &List::evall_neq, new List_neq_eval());
+    set_instruction(l_ncheck, "ncheck", P_ATLEASTTHREE,  new List_ncheck_eval());
+    set_instruction(l_nconc, "nconc", P_ATLEASTONE,  new List_nconc_eval());
+    set_instruction(l_nconcn, "nconcn", P_ATLEASTONE,  new List_nconcn_eval());
+    set_instruction(l_neq, "neq", P_ATLEASTTHREE, new List_neq_eval());
     set_instruction(l_not, "¬", P_TWO, &List::evall_not, new List_not_eval());
-    set_instruction(l_nullp, "nullp", P_TWO, &List::evall_nullp, new List_nullp_eval());
-    set_instruction(l_numberp, "numberp", P_TWO, &List::evall_numberp, new List_numberp_eval());
-    set_instruction(l_floats, "floats", P_ATLEASTONE, &List::evall_floats, new List_floats_eval());
-    set_instruction(l_numbers, "numbers", P_ATLEASTONE, &List::evall_numbers, new List_numbers_eval());
-    set_instruction(l_or, "or", P_ATLEASTTHREE, &List::evall_or, new List_or_eval());
-    set_instruction(l_pipe, "pipe", P_ONE, &List::evall_pipe, new List_pipe_eval());
-    set_instruction(l_plus, "+", P_ATLEASTTWO, &List::evall_plus, new List_plusn());
+    set_instruction(l_floats, "floats", P_ATLEASTONE,  new List_floats_eval());
+    set_instruction(l_numbers, "numbers", P_ATLEASTONE,  new List_numbers_eval());
+    set_instruction(l_or, "or", P_ATLEASTTHREE,  new List_or_eval());
+    set_instruction(l_over, "over", P_THREE,  new List_over_eval());
+    set_instruction(l_pipe, "pipe", P_ONE,  new List_pipe_eval());
+    set_instruction(l_plus, "+", P_ATLEASTTWO,  &List::evall_plus, new List_plusn());
     set_instruction(l_plusequal, "+=", P_ATLEASTTHREE, &List::evall_plusequal);
-    set_instruction(l_pop, "pop", P_TWO | P_THREE, &List::evall_pop, new List_pop_eval());
-    set_instruction(l_popfirst, "popfirst", P_TWO, &List::evall_popfirst, new List_popfirst_eval());
-    set_instruction(l_poplast, "poplast", P_TWO, &List::evall_poplast, new List_poplast_eval());
+    set_instruction(l_plusmultiply, "+*", P_FIVE,  new List_plusmultiply());
+    set_instruction(l_pop, "pop", P_TWO | P_THREE,  new List_pop_eval());
+    set_instruction(l_popfirst, "popfirst", P_TWO,  new List_popfirst_eval());
+    set_instruction(l_poplast, "poplast", P_TWO,  new List_poplast_eval());
     set_instruction(l_power, "^^", P_ATLEASTTWO, &List::evall_power);
     set_instruction(l_powerequal, "^^=", P_ATLEASTTHREE, &List::evall_powerequal);
-    set_instruction(l_prettify, "prettify", P_TWO | P_THREE, &List::evall_prettify, new List_prettify_eval());
-    set_instruction(l_print, "print", P_ATLEASTONE, &List::evall_print, new List_print_eval());
-    set_instruction(l_printerr, "printerr", P_ATLEASTONE, &List::evall_printerr, new List_printerr_eval());
-    set_instruction(l_printerrln, "printerrln", P_ATLEASTONE, &List::evall_printerrln, new List_printerrln_eval());
-    set_instruction(l_println, "println", P_ATLEASTONE, &List::evall_println, new List_println_eval());
-    set_instruction(l_product, "∏", P_TWO, &List::evall_product, new List_product_eval());
-    set_instruction(l_push, "push", P_ATLEASTTHREE, &List::evall_push, new List_push_eval());
-    set_instruction(l_pushtrue, "pushtrue", P_ATLEASTTHREE, &List::evall_pushtrue, new List_pushtrue_eval());
-    set_instruction(l_pushfirst, "pushfirst", P_ATLEASTTHREE, &List::evall_pushfirst, new List_pushfirst_eval());
-    set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE, &List::evall_pushlast, new List_pushlast_eval());
+    set_instruction(l_prettify, "prettify", P_TWO | P_THREE,  new List_prettify_eval());
+    set_instruction(l_print, "print", P_ATLEASTONE,  new List_print_eval());
+    set_instruction(l_printerr, "printerr", P_ATLEASTONE,  new List_printerr_eval());
+    set_instruction(l_printerrln, "printerrln", P_ATLEASTONE,  new List_printerrln_eval());
+    set_instruction(l_println, "println", P_ATLEASTONE,  new List_println_eval());
+    set_instruction(l_product, "∏", P_TWO,  new List_product_eval());
+    set_instruction(l_push, "push", P_ATLEASTTHREE,  new List_push_eval());
+    set_instruction(l_pushtrue, "pushtrue", P_ATLEASTTHREE,  new List_pushtrue_eval());
+    set_instruction(l_pushfirst, "pushfirst", P_ATLEASTTHREE,  new List_pushfirst_eval());
+    set_instruction(l_pushlast, "pushlast", P_ATLEASTTHREE,  new List_pushlast_eval());
     set_instruction(l_quote, "quote", P_TWO, &List::evall_quote);
-    set_instruction(l_range, "range", P_FOUR, &List::evall_range, new List_range_eval());
-    set_instruction(l_rangein, "rangein", P_FOUR, &List::evall_rangein, new List_rangein_eval());
+    set_instruction(l_range, "range", P_FOUR,  new List_range_eval());
+    set_instruction(l_rangein, "rangein", P_FOUR,  new List_rangein_eval());
     set_instruction(l_resetmark, "resetmark", P_TWO, &List::evall_resetmark, new List_resetmark_eval());
     set_instruction(l_return, "return", P_ONE | P_TWO , &List::evall_return);
-    set_instruction(l_replaceall, "replaceall", P_FOUR, &List::evall_replaceall, new List_replaceall_eval());
-    set_instruction(l_reverse, "⌽", P_TWO | P_THREE, &List::evall_reverse, new List_reverse_eval());
-    set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR, &List::evall_revertsearch, new List_revertsearch_eval());
-    set_instruction(l_rightshift, ">>", P_ATLEASTTWO, &List::evall_rightshift, new List_rightshift_eval());
+    set_instruction(l_replaceall, "replaceall", P_FOUR,  new List_replaceall_eval());
+    set_instruction(l_reverse, "reverse", P_TWO | P_THREE,  new List_reverse_eval());
+    set_instruction(l_revertsearch, "rfind", P_THREE | P_FOUR,  new List_revertsearch_eval());
+    set_instruction(l_rightshift, ">>", P_ATLEASTTWO,  new List_rightshift_eval());
     set_instruction(l_rightshiftequal, ">>=", P_ATLEASTTHREE, &List::evall_rightshiftequal);
-    set_instruction(l_rotate, "rotate", P_TWO | P_THREE, &List::evall_rotate, new List_rotate_eval());
-    set_instruction(l_search, "find", P_THREE|P_FOUR, &List::evall_search, new List_search_eval());
-    set_instruction(l_searchall, "findall", P_THREE|P_FOUR, &List::evall_searchall, new List_searchall_eval());
-    set_instruction(l_select, "select", P_ATLEASTTWO, &List::evall_select, new List_select_eval());
+    set_instruction(l_rotate, "⌽", P_TWO | P_THREE | P_FOUR,  new List_rotate_eval());
+    set_instruction(l_scanlist, "scanlist", P_THREE, new List_scanlist_eval());
+    set_instruction(l_search, "find", P_THREE|P_FOUR,  new List_search_eval());
+    set_instruction(l_searchall, "findall", P_THREE|P_FOUR,  new List_searchall_eval());
+    set_instruction(l_select, "select", P_ATLEASTTWO,  new List_select_eval());
     set_instruction(l_self, "self", P_ATLEASTONE, &List::eval_call_self);
-    set_instruction(l_set_range, "setrange", P_FOUR|P_FIVE|P_SIX|P_SEVEN, &List::evall_set_range, new List_set_range_eval());
-    set_instruction(l_set, "set", P_ATLEASTONE, &List::evall_set, new List_set_eval());
-    set_instruction(l_sets, "sets", P_ATLEASTONE, &List::evall_sets, new List_sets_eval());
-    set_instruction(l_seti, "seti", P_ATLEASTONE, &List::evall_seti, new List_seti_eval());
-    set_instruction(l_setn, "setn", P_ATLEASTONE, &List::evall_setn, new List_setn_eval());
+    set_instruction(l_set_range, "setrange", P_FOUR|P_FIVE|P_SIX|P_SEVEN,  new List_set_range_eval());
+    set_instruction(l_set, "set", P_ATLEASTONE,  new List_set_eval());
+    set_instruction(l_sets, "sets", P_ATLEASTONE,  new List_sets_eval());
+    set_instruction(l_seti, "seti", P_ATLEASTONE,  new List_seti_eval());
+    set_instruction(l_setn, "setn", P_ATLEASTONE,  new List_setn_eval());
     set_instruction(l_set_at, "set@", P_ATLEASTTHREE, &List::evall_set_at, new List_set_at_eval());
     set_instruction(l_set_const, "setconst", P_THREE, &List::evall_set_const, new List_set_const_eval());
-    set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE, &List::evall_set_shape, new List_set_shape_eval());
+    set_instruction(l_set_shape, "setshape", P_ATLEASTFIVE,  new List_set_shape_eval());
     set_instruction(l_setg, "setg", P_THREE, &List::evall_setg, new List_setg_eval());
     set_instruction(l_setq, "setq", P_THREE, &List::evall_setq, new List_setq_eval());
     set_instruction(l_seth, "seth", P_THREE, &List::evall_seth, new List_seth_eval());
     set_instruction(l_sign, "sign", P_TWO, &List::evall_sign, new List_sign_eval());
-    set_instruction(l_signp, "signp", P_TWO, &List::evall_signp, new List_signp_eval());
     set_instruction(l_size, "size", P_TWO, &List::evall_size, new List_size_eval());
     set_instruction(l_sleep, "sleep", P_TWO, &List::evall_sleep, new List_sleep_eval());
-    set_instruction(l_sort, "sort", P_THREE, &List::evall_sort, new List_sort_eval());
-    set_instruction(l_space, "space", P_ATLEASTTHREE, &List::evall_space, new List_space_eval());
-    set_instruction(l_stringp, "stringp", P_TWO, &List::evall_stringp, new List_stringp_eval());
-    set_instruction(l_strings, "strings", P_ATLEASTONE, &List::evall_strings, new List_strings_eval());
+    set_instruction(l_sort, "sort", P_THREE,  new List_sort_eval());
+    set_instruction(l_space, "space", P_ATLEASTTHREE,  new List_space_eval());
+    set_instruction(l_strings, "strings", P_ATLEASTONE,  new List_strings_eval());
+    set_instruction(l_stringbytes, "stringbytes", P_ATLEASTONE,  new List_stringbytes_eval());
     set_instruction(l_switch, "switch", P_ATLEASTTHREE, &List::evall_switch);
-    set_instruction(l_sum, "∑", P_TWO, &List::evall_sum, new List_sum_eval());
-    set_instruction(l_tensor, "tensor", P_ATLEASTTWO, &List::evall_tensor, new List_tensor_eval());
-    set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO, &List::evall_tensor_float, new List_tensor_float_eval());
+    set_instruction(l_sum, "∑", P_TWO,  new List_sum_eval());
+    set_instruction(l_tally, "≢", P_TWO, &List::evall_tally, new List_tally_eval());
+    set_instruction(l_tensor_stringbyte, "tensor_stringbyte", P_ATLEASTTWO,  new List_tensor_stringbyte_eval());
+    set_instruction(l_tensor_string, "tensor_string", P_ATLEASTTWO,  new List_tensor_string_eval());
+    set_instruction(l_tensor_short, "tensor_short", P_ATLEASTTWO,  new List_tensor_short_eval());
+    set_instruction(l_tensor_number, "tensor_number", P_ATLEASTTWO,  new List_tensor_number_eval());
+    set_instruction(l_tensor_float, "tensor_float", P_ATLEASTTWO,  new List_tensor_float_eval());
+    set_instruction(l_tensor_integer, "tensor_integer", P_ATLEASTTWO,  new List_tensor_integer_eval());
     set_instruction(l_threadclear, "threadclear", P_ONE | P_TWO, &List::evall_threadclear);
     set_instruction(l_threadretrieve, "threadretrieve", P_ONE | P_TWO, &List::evall_threadretrieve);
     set_instruction(l_threadstore, "threadstore", P_THREE, &List::evall_threadstore);
@@ -443,7 +501,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_throw, "throw", P_TWO, &List::evall_throw);
     set_instruction(l_trace, "trace", P_ONE | P_TWO, &List::evall_trace);
     set_instruction(l_transpose, "⍉", P_TWO, &List::evall_transpose, new List_transpose_eval());
-    set_instruction(l_heap, "heap", P_ATLEASTONE, &List::evall_heap, new List_heap_eval());
+    set_instruction(l_heap, "heap", P_ATLEASTONE,  new List_heap_eval());
     set_instruction(l_trigger, "trigger", P_TWO, &List::evall_trigger, new List_trigger_eval());
     set_instruction(l_type, "type", P_TWO, &List::evall_type, new List_type_eval());
     set_instruction(l_unique, "unique", P_TWO, &List::evall_unique, new List_unique_eval());
@@ -451,11 +509,11 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_values, "values@", P_TWO, &List::evall_values, new List_values_eval());
     set_instruction(l_wait, "wait", P_ONE, &List::evall_wait, new List_wait_eval());
     set_instruction(l_waiton, "waiton", P_TWO, &List::evall_waiton, new List_waiton_eval());
-    set_instruction(l_while, "while", P_ATLEASTTHREE, &List::evall_while, new List_while_eval());
-    set_instruction(l_xor, "xor", P_ATLEASTTHREE, &List::evall_xor, new List_xor_eval());
-    set_instruction(l_zerop, "zerop", P_TWO, &List::evall_zerop, new List_zerop_eval());
-    set_instruction(l_zip, "zip", P_ATLEASTTHREE, &List::evall_zip, new List_zip_eval());
-    set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR, &List::evall_zipwith, new List_zipwith_eval());
+    set_instruction(l_while, "while", P_ATLEASTTHREE,  new List_while_eval());
+    set_instruction(l_whilein, "whilein", P_ATLEASTFIVE,  new List_whilein_eval());
+    set_instruction(l_xor, "xor", P_ATLEASTTHREE,  new List_xor_eval());
+    set_instruction(l_zip, "zip", P_ATLEASTTHREE,  new List_zip_eval());
+    set_instruction(l_zipwith, "zipwith", P_ATLEASTFOUR,  &List::evall_zipwith, new List_zipwith_eval());
 #ifdef MACDEBUG
     set_instruction(l_debug_function, "f_debug", P_FULL, &List::List::evall_debug_function);
 #endif
@@ -472,7 +530,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_for, "for", P_FOUR, &List::evall_for_cps);
     set_instruction(l_map, "map", P_THREE, &List::evall_map_cps);
     set_instruction(l_repeat, "repeat", P_TWO, &List::evall_repeat_cps);
-    set_instruction(l_replicate, "replicate", P_THREE, &List::evall_replicate, new List_replicate_eval());
+    set_instruction(l_replicate, "replicate", P_THREE,  new List_replicate_eval());
     set_instruction(l_scanl, "scanl", P_FOUR, &List::evall_scanl_cps);
     set_instruction(l_scanl1, "scanl1", P_THREE, &List::evall_scanl1_cps);
     set_instruction(l_scanr, "scanr", P_FOUR, &List::evall_scanr_cps);
@@ -481,31 +539,31 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_takewhile, "takewhile", P_THREE, &List::evall_takewhile_cps);
     
     //APL-like
-    set_instruction(l_innerproduct, ".", P_FIVE, &List::evall_innerproduct, new List_innerproduct_eval());
-    set_instruction(l_outerproduct, "°", P_FOUR, &List::evall_outerproduct, new List_outerproduct_eval());
-    set_instruction(l_iota, "⍳", P_ATLEASTTWO, &List::evall_iota, new List_iota_eval());
-    set_instruction(l_invert, "⌹", P_TWO | P_THREE, &List::evall_invert, new List_invert_eval());
-    set_instruction(l_solve, "solve", P_THREE, &List::evall_solve, new List_solve_eval());
-    set_instruction(l_determinant, "determinant", P_TWO, &List::evall_determinant, new List_determinant_eval());
-    set_instruction(l_ludcmp, "ludcmp", P_TWO, &List::evall_ludcmp, new List_ludcmp_eval());
-    set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE, &List::evall_lubksb, new List_lubksb_eval());
-    set_instruction(l_iota0, "⍳0", P_ATLEASTTWO, &List::evall_iota0, new List_iota0_eval());
-    set_instruction(l_irank, "irank", P_ATLEASTTHREE, &List::evall_irank, new List_irank_eval());
-    set_instruction(l_reduce, "reduce", P_TWO | P_THREE, &List::evall_reduce, new List_reduce_eval());
-    set_instruction(l_scan, "scan", P_THREE, &List::evall_scan, new List_scan_eval());
-    set_instruction(l_backreduce, "⌿", P_TWO | P_THREE, &List::evall_backreduce, new List_backreduce_eval());
-    set_instruction(l_backscan, "⍀", P_THREE, &List::evall_backscan, new List_backscan_eval());
-    set_instruction(l_rank, "⍤", P_ATLEASTTWO, &List::evall_rank, new List_rank_eval());
+    set_instruction(l_innerproduct, ".", P_FIVE,  new List_innerproduct_eval());
+    set_instruction(l_outerproduct, "°", P_FOUR,  new List_outerproduct_eval());
+    set_instruction(l_iota, "⍳", P_ATLEASTTWO,  new List_iota_eval());
+    set_instruction(l_invert, "⌹", P_TWO | P_THREE,  new List_invert_eval());
+    set_instruction(l_solve, "solve", P_THREE,  new List_solve_eval());
+    set_instruction(l_determinant, "determinant", P_TWO,  new List_determinant_eval());
+    set_instruction(l_ludcmp, "ludcmp", P_TWO,  new List_ludcmp_eval());
+    set_instruction(l_lubksb, "lubksb", P_FOUR | P_THREE,  new List_lubksb_eval());
+    set_instruction(l_iota0, "⍳0", P_ATLEASTTWO,  new List_iota0_eval());
+    set_instruction(l_irank, "irank", P_ATLEASTTHREE,  new List_irank_eval());
+    set_instruction(l_reduce, "↗", P_TWO | P_THREE | P_FOUR,  new List_reduce_eval());
+    set_instruction(l_scan, "↘", P_THREE | P_FOUR,  new List_scan_eval());
+    set_instruction(l_backreduce, "⌿", P_TWO | P_THREE | P_FOUR,  new List_backreduce_eval());
+    set_instruction(l_backscan, "⍀", P_THREE | P_FOUR,  new List_backscan_eval());
+    set_instruction(l_rank, "⍤", P_ATLEASTTWO,  new List_rank_eval());
     set_instruction(l_equalonezero, "==", P_THREE, &List::evall_equalonezero, new List_equalonezero_eval());
-    set_instruction(l_rho, "⍴", P_ATLEASTTWO, &List::evall_rho, new List_rho_eval());
-    set_instruction(l_member, "∈", P_THREE, &List::evall_member, new List_member_eval());
-    set_instruction(l_concatenate, ",", P_TWO|P_THREE, &List::evall_concatenate, new List_concatenate_eval());
+    set_instruction(l_rho, "⍴", P_ATLEASTTWO,  new List_rho_eval());
+    set_instruction(l_member, "∈", P_THREE,  new List_member_eval());
+    set_instruction(l_concatenate, ",", P_TWO|P_THREE,  new List_concatenate_eval());
     //This line is necessary to apply a lambda as an argument (see apply)
     straight_eval[t_call_lambda] = new List_call_lambda();
     //The void function
     lisp->void_function = new Listincode;
     lisp->void_function->liste.push_raw(provideAtomOrInstruction(l_void));
-    lisp->garbaging(lisp->void_function);
+    lisp->storeforgarbage(lisp->void_function);
     //Operators
     operators[l_bitnot] = true;
     operators[l_bitand] = true;
@@ -559,7 +617,6 @@ void Delegation::initialisation(LispE* lisp) {
     comparators[l_lowerorequal] = true;
     comparators[l_greaterorequal] = true;
     comparators[l_concatenate] = true;
-    comparators[l_compare] = true;
     assignors[l_equal] = true;
     assignors[l_bitandequal] = true;
     assignors[l_bitorequal] = true;
@@ -584,6 +641,7 @@ void Delegation::initialisation(LispE* lisp) {
         operator_pool[ito.first] = e;
     }
     code_to_string[t_string] = U"string_";
+    code_to_string[t_stringbyte] = U"stringbyte_";
     code_to_string[t_number] = U"number_";
     code_to_string[t_float] = U"float_";
     code_to_string[t_floats] = U"floats_";
@@ -593,17 +651,29 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_short] = U"short_";
     code_to_string[t_strings] = U"strings_";
     code_to_string[t_integers] = U"integers_";
+    code_to_string[t_stringbytes] = U"stringbytes_";
     code_to_string[t_shorts] = U"shorts_";
     code_to_string[t_list] = U"list_";
     code_to_string[t_llist] = U"llist_";
-    code_to_string[t_matrix] = U"matrix_";
-    code_to_string[t_matrix_float] = U"matrix_float";
-    code_to_string[t_tensor] = U"tensor_";
+    code_to_string[t_matrix_number] = U"matrix_number_";
+    code_to_string[t_matrix_float] = U"matrix_float_";
+    code_to_string[t_matrix_integer] = U"matrix_integer_";
+    code_to_string[t_matrix_short] = U"matrix_short_";
+    code_to_string[t_matrix_string] = U"matrix_string_";
+    code_to_string[t_matrix_stringbyte] = U"matrix_stringbyte_";
+    code_to_string[t_tensor_number] = U"tensor_number_";
+    code_to_string[t_tensor_stringbyte] = U"tensor_stringbyte_";
+    code_to_string[t_tensor_string] = U"tensor_string_";
     code_to_string[t_tensor_float] = U"tensor_float_";
+    code_to_string[t_tensor_integer] = U"tensor_integer_";
+    code_to_string[t_tensor_short] = U"tensor_short_";
     code_to_string[t_data] = U"data_";
     code_to_string[t_dictionary] = U"dictionary_";
     code_to_string[t_dictionaryn] = U"dictionary_n_";
     code_to_string[t_dictionaryi] = U"dictionary_i_";
+    code_to_string[t_tree] = U"dictionarytree_";
+    code_to_string[t_treen] = U"dictionarytree_n_";
+    code_to_string[t_treei] = U"dictionarytree_i_";
     code_to_string[t_sets] = U"set_s_";
     code_to_string[t_setn] = U"set_n_";
     code_to_string[t_seti] = U"set_i_";
@@ -704,15 +774,18 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_list);
     provideAtomType(t_heap);
     provideAtomType(t_llist);
-    provideAtomType(t_matrix);
+    provideAtomType(t_matrix_number);
     provideAtomType(t_matrix_float);
-    provideAtomType(t_tensor);
+    provideAtomType(t_tensor_number);
     provideAtomType(t_tensor_float);
     provideAtomType(t_data);
     provideAtomType(t_maybe);
     provideAtomType(t_dictionary);
     provideAtomType(t_dictionaryn);
     provideAtomType(t_dictionaryi);
+    provideAtomType(t_tree);
+    provideAtomType(t_treen);
+    provideAtomType(t_treei);
     provideAtomType(t_set);
     provideAtomType(t_seti);
     provideAtomType(t_sets);
@@ -737,15 +810,18 @@ void Delegation::initialisation(LispE* lisp) {
     recordingData(lisp->create_instruction(t_shorts, _NULL), t_shorts, v_null);
     recordingData(lisp->create_instruction(t_list, _NULL), t_list, v_null);
     recordingData(lisp->create_instruction(t_llist, _NULL), t_llist, v_null);
-    recordingData(lisp->create_instruction(t_matrix, _NULL), t_matrix, v_null);
+    recordingData(lisp->create_instruction(t_matrix_number, _NULL), t_matrix_number, v_null);
     recordingData(lisp->create_instruction(t_matrix_float, _NULL), t_matrix_float, v_null);
-    recordingData(lisp->create_instruction(t_tensor, _NULL), t_tensor, v_null);
+    recordingData(lisp->create_instruction(t_tensor_number, _NULL), t_tensor_number, v_null);
     recordingData(lisp->create_instruction(t_tensor_float, _NULL), t_tensor_float, v_null);
     recordingData(lisp->create_instruction(t_data, _NULL), t_data, v_null);
     recordingData(lisp->create_instruction(t_maybe, _NULL), t_maybe, v_null);
     recordingData(lisp->create_instruction(t_dictionary, _NULL), t_dictionary, v_null);
     recordingData(lisp->create_instruction(t_dictionaryn, _NULL), t_dictionaryn, v_null);
     recordingData(lisp->create_instruction(t_dictionaryi, _NULL), t_dictionaryi, v_null);
+    recordingData(lisp->create_instruction(t_tree, _NULL), t_tree, v_null);
+    recordingData(lisp->create_instruction(t_treen, _NULL), t_treen, v_null);
+    recordingData(lisp->create_instruction(t_treei, _NULL), t_treei, v_null);
     recordingData(lisp->create_instruction(t_set, _NULL), t_set, v_null);
     recordingData(lisp->create_instruction(t_seti, _NULL), t_seti, v_null);
     recordingData(lisp->create_instruction(t_sets, _NULL), t_sets, v_null);
@@ -755,6 +831,18 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce _ as a substitute to nil
     w = U"_";
     string_to_code[w] = v_null;
+    
+    w = U"inner";
+    string_to_code[w] = l_innerproduct;
+    
+    w = U"outer";
+    string_to_code[w] = l_outerproduct;
+    w = U"**";
+    string_to_code[w] = l_power;
+    w = U"**=";
+    string_to_code[w] = l_powerequal;
+    w = U"cutlist";
+    string_to_code[w] = l_slice;
     //We introduce @ as a substitute to at
     w = U"@";
     string_to_code[w] = l_at;
@@ -783,6 +871,10 @@ void Delegation::initialisation(LispE* lisp) {
     //We introduce containervalues as a substitute to values@
     w = U"containervalues";
     string_to_code[w] = l_values;
+    w = U("to_list");
+    string_to_code[w] = l_to_list;
+    w = U("to_tensor");
+    string_to_code[w] = l_to_tensor;
     w = U("§");
     string_to_code[w] = l_infix;
     
@@ -791,6 +883,12 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U"/\\";
     string_to_code[w] = l_infix;
+    
+    w = U("maplist");
+    string_to_code[w] = l_maplist;
+        
+    w = U("¨");
+    string_to_code[w] = l_maplist;
     //But also 'false', which is a substitute to nil as well
     w = U"false";
     string_to_code[w] = v_null;
@@ -803,8 +901,11 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U"//";
     string_to_code[w] = l_reduce;
-    
+    w = U"reduce";
+    string_to_code[w] = l_reduce;
     w = U"\\\\";
+    string_to_code[w] = l_scan;
+    w = U"scan";
     string_to_code[w] = l_scan;
     w = U"-//";
     string_to_code[w] = l_backreduce;
@@ -824,8 +925,8 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U("transpose");
     string_to_code[w] = l_transpose;
-    w = U("reverse");
-    string_to_code[w] = l_reverse;
+    w = U("rotate");
+    string_to_code[w] = l_rotate;
     w = U("not");
     string_to_code[w] = l_not;
     w = U("sum");
@@ -839,7 +940,26 @@ void Delegation::initialisation(LispE* lisp) {
     
     w = U("member");
     string_to_code[w] = l_member;
-    
+    w = U("tally");
+    string_to_code[w] = l_tally;
+    w = U("atom?");
+    string_to_code[w] =  l_atomp;
+    w = U("cons?");
+    string_to_code[w] =  l_consp;
+    w = U("cyclic?");
+    string_to_code[w] =  l_cyclic;
+    w = U("empty?");
+    string_to_code[w] =  l_emptyp;
+    w = U("null?");
+    string_to_code[w] =  l_nullp;
+    w = U("number?");
+    string_to_code[w] =  l_numberp;
+    w = U("sign?");
+    string_to_code[w] =  l_signp;
+    w = U("string?");
+    string_to_code[w] =  l_stringp;
+    w = U("zero?");
+    string_to_code[w] =  l_zerop;
     //Small tip, to avoid problems
     // indeed, the instruction cadr is already linked to its own code
     e = new Cadr("cadr");
@@ -859,6 +979,7 @@ void Delegation::initialisation(LispE* lisp) {
     lisp->provideAtom(c_colon);
     lisp->provideAtom(c_opening_bracket);
     lisp->provideAtom(c_closing_bracket);
+    lisp->n_compose = provideAtom(l_compose);
     
     //We add an extension to the language... see systeme.cxx
     moduleSysteme(lisp);
@@ -881,9 +1002,9 @@ void Delegation::initialisation(LispE* lisp) {
     number_types.push(t_floats);
     number_types.push(t_integers);
     number_types.push(t_numbers);
-    number_types.push(t_matrix);
+    number_types.push(t_matrix_number);
     number_types.push(t_matrix_float);
-    number_types.push(t_tensor);
+    number_types.push(t_tensor_number);
     number_types.push(t_tensor_float);
     number_types.push(t_seti);
     number_types.push(t_setn);
@@ -933,11 +1054,17 @@ void LispE::cleaning() {
     dictionary_pool.cleaning();
     dictionaryi_pool.cleaning();
     dictionaryn_pool.cleaning();
+    tree_pool.cleaning();
+    treei_pool.cleaning();
+    treen_pool.cleaning();
     sets_pool.cleaning();
     setn_pool.cleaning();
     seti_pool.cleaning();
     set_pool.cleaning();
     for (const auto& a : const_string_pool) {
+        delete a.second;
+    }
+    for (const auto& a : const_stringbyte_pool) {
         delete a.second;
     }
     for (const auto& a : const_integer_pool) {
@@ -971,6 +1098,7 @@ void LispE::cleaning() {
 }
 
 LispE::LispE(LispE* lisp, List* function, List* body) : segmenter(lisp->handlingutf8){
+    macro_mode = false;
     max_size = 25;
     larger_max_size = 100;
     initpoolsize();
@@ -978,7 +1106,7 @@ LispE::LispE(LispE* lisp, List* function, List* body) : segmenter(lisp->handling
     depth_stack = 0;
     current_space = 0;
     void_function = lisp->void_function;
-    preparingthread = false;
+    create_in_thread = false;
     check_arity_on_fly = false;
     delegation = lisp->delegation;
     
@@ -1117,7 +1245,14 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
             case '\n': //Carriage return
                 continue;
             case '"': //a string
-                buffer = buffer.substr(1, buffer.size() - 2);
+                if (buffer[0] == 'b') {
+                    lc = t_stringbyte;
+                    buffer = buffer.substr(2, buffer.size() - 3);
+                }
+                else {
+                    lc = t_string;
+                    buffer = buffer.substr(1, buffer.size() - 2);
+                }
                 lg_value = buffer.find(U"\\");
                 if (lg_value != -1) {
                     u_ustring intermediate = buffer.substr(0, lg_value);
@@ -1149,15 +1284,22 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 if (buffer == U"")
                     infos.append(buffer, t_emptystring, line_number, left, right);
                 else
-                    infos.append(buffer, t_string, line_number, left, right);
+                    infos.append(buffer, (lisp_code)lc, line_number, left, right);
                 if (in_quote == 1) in_quote = 0;
                 break;
             case '`': //a long string
-                buffer = buffer.substr(1, buffer.size() - 2);
+                if (buffer[0] == 'b') {
+                    lc = t_stringbyte;
+                    buffer = buffer.substr(2, buffer.size() - 3);
+                }
+                else {
+                    lc = t_string;
+                    buffer = buffer.substr(1, buffer.size() - 2);
+                }
                 if (buffer == U"")
                     infos.append(buffer, t_emptystring, line_number, left, right);
                 else
-                    infos.append(buffer, t_string, line_number, left, right);
+                    infos.append(buffer, (lisp_code)lc, line_number, left, right);
                 if (in_quote == 1) in_quote = 0;
                 break;
             case '\'': //a quote
@@ -1203,7 +1345,7 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                 break;
             case '?': //operators and comparators
                 lc = delegation->is_atom(buffer);
-                if (lc >= l_minus_plus && lc <= l_modequal)
+                if (delegation->operators.check(lc))
                     infos.append(buffer, t_operator, line_number, left, right);
                 else
                     infos.append(buffer, t_atom, line_number, left, right);
@@ -1212,8 +1354,11 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
             case 'A': // a simple token
                 if (checkcadr(buffer, buffer.size()))
                     infos.append(buffer, l_cadr, line_number, left, right);
-                else
+                else {
                     infos.append(buffer, t_atom, line_number, left, right);
+                    if (delegation->windowmode != NULL && buffer.find(U"fltk_") != -1)
+                        *delegation->windowmode = true;
+                }
                 if (in_quote == 1) in_quote = 0;
                 break;
             case '.':
@@ -1221,8 +1366,12 @@ lisp_code LispE::segmenting(u_ustring& code, Tokenizer& infos) {
                     in_quote = 0;
                     infos.append(buffer, t_atom, line_number, left, right);
                 }
-                else
-                    infos.append(buffer, c_point, line_number, left, right);
+                else {
+                    if (infos.types.size() && infos.types.back() == c_opening)
+                        infos.append(buffer, c_point, line_number, left, right);
+                    else
+                        infos.append(buffer, l_compose, line_number, left, right);
+                }
                 break;
             case ':':
                 if (in_quote == 1) {
@@ -1380,6 +1529,22 @@ Element* LispE::tokenize(u_ustring& code, bool keepblanks, short decimalseparato
     return res;
 }
 
+Element* LispE::tokenize(string& code, bool keepblanks, short decimalseparator) {
+    if (!segmenter.loaded) {
+        segmenter.setrules();
+        segmenter.compile();
+    }
+    
+    segmenter.keepblanks(keepblanks);
+    segmenter.setdecimalmode(decimalseparator);
+    
+    Stringbytes* res = new Stringbytes();
+    tokenizer_result<string> tokres(&res->liste, false);
+    
+    segmenter.tokenize<string>(code, tokres);
+    return res;
+}
+
 Element* LispE::tokenize(wstring& code, bool keepblanks) {
     Strings* res = provideStrings();
     long idx;
@@ -1480,6 +1645,348 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
     return res;
 }
 
+Element* LispE::compileLocalStructure(Element* current_program,Element* element,Tokenizer& parse,Element*& check_depth,uint16_t space,bool& cont) {
+   #ifdef LISPE_WASM
+   LispE* lisp = this;
+   #endif
+   int16_t lab = -1;
+   bool equal_op_list = false;
+
+   if (element->size() >= 1) {
+      lab = element->index(0)->label();
+      //if it is a high level function, then we push it into composition_stack
+      //otherwise, we compose the expressions in composition_stack,
+      //beforehand.
+      if (composition_stack.size() && (lab < l_map || lab > l_scanr1))
+         compose(element);
+
+      switch(lab) {
+         //for defmacro and link, we evaluate these expressions on the fly
+         case l_defspace:
+            current_space = space;
+         cont = true;
+         return element;
+      case l_set_const:
+         case l_lambda:
+         element->eval(this);
+         break;
+         case t_call_lambda: {
+            //This is a lambda call with arguments
+            Element* lm = new List_call_lambda(this, (Listincode*)element);
+            removefromgarbage(element);
+            storeforgarbage(lm);
+            element = lm;
+            break;
+         }
+         case l_data:
+         case l_dethread:
+         case l_defun:
+         element->eval(this);
+         cont = true;
+         return element;
+         case l_defmacro: {
+            //This is a hack to transform the list of parameters
+            //into a unifiable object. Basically, we transform the parameters
+            //into one single object, which allows us to apply unfiy on complex lists
+            //of arguments: (a b $ e) --> ((a b $ e))
+            Element* parameters = element->index(2);
+            List arguments;
+            arguments.liste.push_raw(parameters);
+            arguments.transformargument(this);
+            ((List*)element)->liste.put(2, arguments.liste[0]);
+            element->eval(this);
+            cont = true;
+            return element;
+         }
+         case l_defpat: {
+            Element* arguments = element->index(2);
+            Element* a;
+            Element* idx;
+            for (long i = 0; i < arguments->size(); i++) {
+               idx = arguments->index(i);
+               a = idx->transformargument(this);
+               if (a != idx)
+                  ((List*)arguments)->liste.put(i, a);
+            }
+            element->eval(this);
+            cont = true;
+            return element;
+         }
+         case l_compose: {
+            //In this case, we build in advance all our calling lists...
+            element = for_composition(current_program, element, parse);
+            return element;
+         }
+         case l_set_range:
+         case l_set_shape:
+         case l_setq:
+         case l_seth:
+         case l_set_at:
+         case l_setg:
+            if (element->size() > 1) {
+            if (element->index(1)->label() < l_final) {
+               wstring msg = L"Error: Invalid variable name: '";
+               msg += element->index(1)->asString(this);
+               msg += L"' (keyword)";
+               return new Error(msg);
+            }
+            else {
+               if (delegation->const_values.check(element->index(1)->label())) {
+                  wstring msg = L"Error: '";
+                  msg += element->index(1)->asString(this);
+                  msg += L"' is a constant value";
+                  return new Error(msg);
+               }
+            }
+         }
+         break;
+         case l_let:{
+            if (element->size() < 3)
+               return new Error("Error: unbalanced list of variables in 'let'");
+
+            Element* arguments = element->index(1);
+            if (!arguments->isList() || !arguments->size())
+               return new Error("Error: unbalanced list of variables in 'let'");
+            for (long i = 0; i < arguments->size(); i++) {
+               if (!arguments->index(i)->isList() || arguments->index(i)->size() != 2)
+                  return new Error("Error: unbalanced list of variables in 'let'");
+            }
+            break;
+         }
+         case l_plusequal:
+         case l_minusequal:
+         case l_multiplyequal:
+         case l_powerequal:
+         case l_leftshiftequal:
+         case l_rightshiftequal:
+         case l_bitandequal:
+         case l_bitandnotequal:
+         case l_bitorequal:
+         case l_bitxorequal:
+         case l_divideequal:
+         case l_modequal:
+            if (element->size() > 1) {
+            Element* nxt = element->index(1);
+            if (nxt->label() < l_final) {
+               if (nxt->isList()) {
+                  if (nxt->size() < 2 || nxt->index(0)->label() != l_at) {
+                     wstring msg = L"Error: Expecting an index access with 'at'";
+                     return new Error(msg);
+                  }
+                  equal_op_list = true;
+               }
+               else {
+                  wstring msg = L"Error: Invalid variable name: '";
+                  msg += element->index(1)->asString(this);
+                  msg += L"' (keyword)";
+                  return new Error(msg);
+               }
+            }
+            else {
+               if (delegation->const_values.check(element->index(1)->label())) {
+                  wstring msg = L"Error: '";
+                  msg += element->index(1)->asString(this);
+                  msg += L"' is a constant value";
+                  return new Error(msg);
+               }
+            }
+         }
+         break;
+         case l_link:
+            element->eval(this);
+         removefromgarbage(element);
+         cont = true;
+         return element;
+      case l_if:
+            if (element->size() == 3)
+               element->append(void_function);
+            break;
+         case l_infix: {
+            Element* inter = ((Listincode*)element)->eval_infix(this);
+            if (inter != element) {
+               removefromgarbage(element);
+               element = inter;
+               lab = element->index(0)->label();
+            }
+            else
+               break;
+         }
+         default: {
+            if (lab >= l_map && lab <= l_scanr1) {
+               if (composition_stack.size() && (composition_stack.back()->label() == t_countertake || composition_stack.back()->label() == t_counterdrop)) {
+                  List lst;
+                  compose(&lst);
+                  composition_stack.push_back(lst.liste[0]);
+               }
+               element = element->eval(this);
+               check_depth = current_program;
+               cont = true;
+               return element;
+            }
+            if (lab > l_final && checkDataStructure(lab)) {
+               Element* inter = new List_data_eval((Listincode*)element);
+               removefromgarbage(element);
+               element = inter;
+               storeforgarbage(element);
+               return element;
+            }
+         }
+      }
+   }
+
+   lab = generate_macro(element, lab);
+
+   if (lab > l_final) {
+      if (parse.defun_functions.check(lab)) {
+         Element* body = parse.defun_functions[lab];
+         //This is a call to a function: t_atom, a1, a2...
+         if (body->index(0)->label() == l_defun)
+            body = new List_function_eval(this, (Listincode*)element, (List*)body);
+         else
+            body = new List_pattern_eval((Listincode*)element, (List*)body);
+
+         storeforgarbage(body);
+         removefromgarbage(element);
+         element = body;
+      }
+      else {
+         if (delegation->function_pool[current_space]->check(lab)) {
+            Element* body = (*delegation->function_pool[current_space])[lab];
+            if (body->index(0)->label() == l_deflib) {
+               body = new List_library_eval((Listincode*)element, (List*)body);
+               storeforgarbage(body);
+               removefromgarbage(element);
+               element = body;
+            }
+         }
+      }
+   }
+   /*
+    We detect if it is an instruction beforehand, in order
+    to limit the call to lisp->delegation->evals during the execution (see Listincode::eval)
+    - List_basic_instruction is used for instructions that do not fail, which means that we do not need to record
+    their position and even trace them back.
+    - List_instruction on the other hand will set the position of the current instruction.
+    */
+   if (delegation->instructions.check(lab)) {
+      Element* lm = NULL;
+      long nbarguments = element->size();
+      switch (lab) {
+         case l_break:
+            if (nbarguments != 1)
+               return new Error("Error: break does not take any arguments");
+            removefromgarbage(element);
+         element = &delegation->_BREAKEVAL;
+         break;
+         case l_return:
+            if (element->size() == 1)
+               lm = new Listreturn();
+            else
+               lm = new Listreturnelement((Listincode*)element);
+         break;
+         case l_switch:
+            lm = new List_switch_eval((Listincode*)element);
+         ((List_switch_eval*)lm)->build(this);
+         break;
+      case l_power:
+            if (nbarguments == 3 && element->index(2)->equalvalue((long)2))
+               lm = new List_power2((Listincode*)element);
+            else
+               lm = new List_powern((Listincode*)element);
+         break;
+         case l_divide:
+            if (nbarguments == 2)
+               lm = new List_divide2((Listincode*)element);
+            else
+               if (nbarguments == 3)
+               lm = new List_divide3((Listincode*)element);
+            else
+               lm = new List_dividen((Listincode*)element);
+         break;
+         case l_plus:
+            if (nbarguments == 2)
+               lm = new List_plus2((Listincode*)element);
+            else
+               if (nbarguments == 3)
+               lm = new List_plus3((Listincode*)element);
+            else
+               lm = new List_plusn((Listincode*)element);
+         break;
+         case l_minus:
+            if (nbarguments == 2)
+               lm = new List_minus2((Listincode*)element);
+            else
+               if (nbarguments == 3)
+               lm = new List_minus3((Listincode*)element);
+            else
+               lm = new List_minusn((Listincode*)element);
+         break;
+         case l_multiply:
+            if (nbarguments == 2)
+               lm = new List_multiply2((Listincode*)element);
+            else
+               if (nbarguments == 3)
+               lm = new List_multiply3((Listincode*)element);
+            else
+               lm = new List_multiplyn((Listincode*)element);
+         break;
+         case l_divideequal:
+            if (equal_op_list)
+               lm = new List_divideequal_list((Listincode*)element);
+            else
+               lm = new List_divideequal_var((Listincode*)element);
+         break;
+         case l_plusequal:
+            if (equal_op_list)
+               lm = new List_plusequal_list((Listincode*)element);
+            else
+               lm = new List_plusequal_var((Listincode*)element);
+         break;
+         case l_minusequal:
+            if (equal_op_list)
+               lm = new List_minusequal_list((Listincode*)element);
+            else
+               lm = new List_minusequal_var((Listincode*)element);
+         break;
+         case l_multiplyequal:
+            if (equal_op_list)
+               lm = new List_multiplyequal_list((Listincode*)element);
+            else
+               lm = new List_multiplyequal_var((Listincode*)element);
+         break;
+         case l_mapcar:
+         case l_maplist:
+            if (element->index(1)->isLambda())
+               lm = new List_maplist_lambda_eval((Listincode*)element);
+            else
+               lm = new List_maplist_eval((Listincode*)element);
+         break;
+         case l_zipwith:
+            if (element->index(1)->isLambda())
+               lm = new List_zipwith_lambda_eval((Listincode*)element);
+            else
+               lm = new List_zipwith_eval((Listincode*)element);
+         break;
+         default:
+            lm = cloning((Listincode*)element, lab);
+      }
+
+      if (lm != NULL) {
+         storeforgarbage(lm);
+         if (!delegation->checkArity(lab, nbarguments)) {
+            wstring err = L"Error: Wrong number of arguments for: '";
+            err += delegation->asString(lab);
+            err += L"'";
+            return new Error(err);
+         }
+         removefromgarbage(element);
+         element = lm;
+      }
+   }
+   return element;
+}
+
+
 /*
  As far as possible, we will try to avoid the multiplication of objects.
  status == s_constant means that the object is a constant and can never be destroyed...
@@ -1488,6 +1995,9 @@ Element* LispE::tokenize(wstring& code, bool keepblanks) {
  build a sub-list...
  */
 Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, long& index, long quoting) {
+   #ifdef LISPE_WASM
+   LispE* lisp = this;
+   #endif
    Element* element = NULL;
    int16_t lab = -1;
    Element* check_composition_depth = NULL;
@@ -1507,7 +2017,6 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
             }
             else {
                uint16_t currentspace = current_space;
-               bool equal_op_list = false;
 
                //If we are dealing with two compositional elements (map, filter, take etc...)
                //which are at the same level, then we must first compose our composition stack
@@ -1515,13 +2024,13 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                   compose(current_program);
 
                check_composition_depth = NULL;
-               element = new Listincode(parse.lines[index], delegation->i_current_file);
-               garbaging(element);
+               element = new Listincode(delegation->set_idx_info(parse.lines[index]));
+               storeforgarbage(element);
                abstractSyntaxTree(element, parse, index, quoting);
                if (quoting) {
                   if (element->size() && element->index(0)->label() == l_conspoint) {
                      Element* a = element->eval(this);
-                     garbaging(a);
+                     storeforgarbage(a);
                      removefromgarbage(element);
                      current_program->append(a);
                      quoting--;
@@ -1529,297 +2038,13 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                   }
                }
                else {
-                  if (element->size() >= 1) {
-                     lab = element->index(0)->label();
-
-                     //if it is a high level function, then we push it into composition_stack
-                     //otherwise, we compose the expressions in composition_stack,
-                     //beforehand.
-                     if (composition_stack.size() && (lab < l_map || lab > l_scanr1))
-                        compose(element);
-
-                     switch(lab) {
-                        //for defmacro and link, we evaluate these expressions on the fly
-                        case l_defspace:
-                           current_space = currentspace;
-                        continue;
-                     case l_set_const:
-                        case l_lambda:
-                        element->eval(this);
-                        break;
-                        case t_call_lambda: {
-                           //This is a lambda call with arguments
-                           Element* lm = new List_call_lambda(this, (Listincode*)element);
-                           removefromgarbage(element);
-                           garbaging(lm);
-                           element = lm;
-                           break;
-                        }
-                        case l_defmacro:
-                        case l_data:
-                        case l_dethread:
-                        case l_defun:
-                        element->eval(this);
-                        continue;
-                        case l_defpat: {
-                           Element* arguments = element->index(2);
-                           Element* a;
-                           Element* idx;
-                           for (long i = 0; i < arguments->size(); i++) {
-                              idx = arguments->index(i);
-                              a = idx->transformargument(this);
-                              if (a != idx)
-                                 ((List*)arguments)->liste.put(i, a);
-                           }
-                           element->eval(this);
-                           continue;
-                        }
-                        case l_let:
-                        case l_set_range:
-                        case l_set_shape:
-                        case l_setq:
-                        case l_seth:
-                        case l_set_at:
-                        case l_setg:
-                           if (element->size() > 1) {
-                           if (element->index(1)->label() < l_final) {
-                              wstring msg = L"Error: Invalid variable name: '";
-                              msg += element->index(1)->asString(this);
-                              msg += L"' (keyword)";
-                              return new Error(msg);
-                           }
-                           else {
-                              if (delegation->const_values.check(element->index(1)->label())) {
-                                 wstring msg = L"Error: '";
-                                 msg += element->index(1)->asString(this);
-                                 msg += L"' is a constant value";
-                                 return new Error(msg);
-                              }
-                           }
-                        }
-                        break;
-                        case l_plusequal:
-                        case l_minusequal:
-                        case l_multiplyequal:
-                        case l_powerequal:
-                        case l_leftshiftequal:
-                        case l_rightshiftequal:
-                        case l_bitandequal:
-                        case l_bitandnotequal:
-                        case l_bitorequal:
-                        case l_bitxorequal:
-                        case l_divideequal:
-                        case l_modequal:
-                           if (element->size() > 1) {
-                           Element* nxt = element->index(1);
-                           if (nxt->label() < l_final) {
-                              if (nxt->isList()) {
-                                 if (nxt->size() < 2 || nxt->index(0)->label() != l_at) {
-                                    wstring msg = L"Error: Expecting an index access with 'at'";
-                                    return new Error(msg);
-                                 }
-                                 equal_op_list = true;
-                              }
-                              else {
-                                 wstring msg = L"Error: Invalid variable name: '";
-                                 msg += element->index(1)->asString(this);
-                                 msg += L"' (keyword)";
-                                 return new Error(msg);
-                              }
-                           }
-                           else {
-                              if (delegation->const_values.check(element->index(1)->label())) {
-                                 wstring msg = L"Error: '";
-                                 msg += element->index(1)->asString(this);
-                                 msg += L"' is a constant value";
-                                 return new Error(msg);
-                              }
-                           }
-                        }
-                        break;
-                        case l_link:
-                           element->eval(this);
-                        removefromgarbage(element);
-                        continue;
-                     case l_if:
-                           if (element->size() == 3)
-                              element->append(void_function);
-                           break;
-                        case l_infix: {
-                           Element* inter = ((Listincode*)element)->eval_infix(this);
-                           if (inter != element) {
-                              removefromgarbage(element);
-                              element = inter;
-                              lab = element->index(0)->label();
-                           }
-                           else
-                              break;
-                        }
-                        default: {
-                           if (lab >= l_map && lab <= l_scanr1) {
-                              if (composition_stack.size() && (composition_stack.back()->label() == t_countertake || composition_stack.back()->label() == t_counterdrop)) {
-                                 List lst;
-                                 compose(&lst);
-                                 composition_stack.push_back(lst.liste[0]);
-                              }
-                              element = element->eval(this);
-                              check_composition_depth = current_program;
-                              continue;
-                           }
-                        }
-                     }
-                  }
-
-                  element = generate_macro(element);
-
-                  if (lab > l_final) {
-                     if (parse.defun_functions.check(lab)) {
-                        Element* body = parse.defun_functions[lab];
-                        //This is a call to a function: t_atom, a1, a2...
-                        if (body->index(0)->label() == l_defun)
-                           body = new List_function_eval(this, (Listincode*)element, (List*)body);
-                        else
-                           body = new List_pattern_eval((Listincode*)element, (List*)body);
-
-                        garbaging(body);
-                        removefromgarbage(element);
-                        element = body;
-                     }
-                     else {
-                        if (delegation->function_pool[current_space]->check(lab)) {
-                           Element* body = (*delegation->function_pool[current_space])[lab];
-                           if (body->index(0)->label() == l_deflib) {
-                              body = new List_library_eval((Listincode*)element, (List*)body);
-                              garbaging(body);
-                              removefromgarbage(element);
-                              element = body;
-                           }
-                        }
-                     }
-                  }
-                  /*
-                        We detect if it is an instruction beforehand, in order
-                        to limit the call to lisp->delegation->evals during the execution (see Listincode::eval)
-                        - List_basic_instruction is used for instructions that do not fail, which means that we do not need to record
-                        their position and even trace them back.
-                        - List_instruction on the other hand will set the position of the current instruction.
-                        */
-                  if (delegation->instructions.check(lab)) {
-                     Element* lm = NULL;
-                     long nbarguments = element->size();
-                     switch (lab) {
-                        case l_break:
-                           if (nbarguments != 1)
-                              return new Error("Error: break does not take any arguments");
-                           removefromgarbage(element);
-                        element = &delegation->_BREAKEVAL;
-                        break;
-                        case l_return:
-                           if (element->size() == 1)
-                              lm = new Listreturn();
-                           else
-                              lm = new Listreturnelement((Listincode*)element);
-                        break;
-                        case l_switch:
-                           lm = new List_switch_eval((Listincode*)element);
-                        ((List_switch_eval*)lm)->build(this);
-                        break;
-                     case l_power:
-                           if (nbarguments == 3 && element->index(2)->equalvalue((long)2))
-                              lm = new List_power2((List*)element);
-                           else
-                              lm = new List_execute((Listincode*)element, delegation->evals[lab]);
-                        break;
-                        case l_divide:
-                           if (nbarguments == 2)
-                              lm = new List_divide2((List*)element);
-                           else
-                              if (nbarguments == 3)
-                              lm = new List_divide3((List*)element);
-                           else
-                              lm = new List_dividen((List*)element);
-                        break;
-                        case l_plus:
-                           if (nbarguments == 2)
-                              lm = new List_plus2((List*)element);
-                           else
-                              if (nbarguments == 3)
-                              lm = new List_plus3((List*)element);
-                           else
-                              lm = new List_plusn((List*)element);
-                        break;
-                        case l_minus:
-                           if (nbarguments == 2)
-                              lm = new List_minus2((List*)element);
-                           else
-                              if (nbarguments == 3)
-                              lm = new List_minus3((List*)element);
-                           else
-                              lm = new List_minusn((List*)element);
-                        break;
-                        case l_multiply:
-                           if (nbarguments == 2)
-                              lm = new List_multiply2((List*)element);
-                           else
-                              if (nbarguments == 3)
-                              lm = new List_multiply3((List*)element);
-                           else
-                              lm = new List_multiplyn((List*)element);
-                        break;
-                        case l_divideequal:
-                           if (equal_op_list)
-                              lm = new List_divideequal_list((List*)element);
-                           else
-                              lm = new List_divideequal_var((List*)element);
-                        break;
-                        case l_plusequal:
-                           if (equal_op_list)
-                              lm = new List_plusequal_list((List*)element);
-                           else
-                              lm = new List_plusequal_var((List*)element);
-                        break;
-                        case l_minusequal:
-                           if (equal_op_list)
-                              lm = new List_minusequal_list((List*)element);
-                           else
-                              lm = new List_minusequal_var((List*)element);
-                        break;
-                        case l_multiplyequal:
-                           if (equal_op_list)
-                              lm = new List_multiplyequal_list((List*)element);
-                           else
-                              lm = new List_multiplyequal_var((List*)element);
-                        break;
-                        case l_maplist:
-                           if (element->index(1)->isLambda())
-                              lm = new List_maplist_lambda_eval((Listincode*)element);
-                           else
-                              lm = new List_maplist_eval((Listincode*)element);
-                        break;
-                        case l_zipwith:
-                           if (element->index(1)->isLambda())
-                              lm = new List_zipwith_lambda_eval((Listincode*)element);
-                           else
-                              lm = new List_zipwith_eval((Listincode*)element);
-                        break;
-                        default:
-                           lm = cloning((Listincode*)element, lab);                                    
-                     }
-
-                     if (lm != NULL) {
-                        garbaging(lm);
-                        if (!delegation->checkArity(lab, nbarguments)) {
-                           wstring err = L"Error: Wrong number of arguments for: '";
-                           err += delegation->asString(lab);
-                           err += L"'";
-                           return new Error(err);
-                        }
-                        removefromgarbage(element);
-                        element = lm;
-                     }
-                  }
+                  bool cont = false;
+                  element = compileLocalStructure(current_program, element, parse, check_composition_depth, currentspace, cont);
+                  if (cont)
+                     continue;
                }
             }
+
             if (element->size() || element->isComposable())
                current_program->append(element);
             else {
@@ -1843,7 +2068,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                Dictionary_as_list dico;
                abstractSyntaxTree(&dico, parse, index, quoting);
                element = dico.dictionary(this);
-               garbaging(element);
+               storeforgarbage(element);
                if (element->isList()) {
                   //Then in that case, we need to provide a protection
                   //for each of its elements...
@@ -1864,7 +2089,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                Dictionary_as_buffer dico(this);
                abstractSyntaxTree(&dico, parse, index, quoting);
                element = dico.dictionary(this);
-               garbaging(element);
+               storeforgarbage(element);
             }
             current_program->append(element);
             break;
@@ -1881,12 +2106,17 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
          current_program->append(element);
          index++;
          break;
+         case t_stringbyte:
+         element = provideConststringbyte(parse.tokens[index]);
+         current_program->append(element);
+         index++;
+         break;
          case t_complex: {
             //We need to extract it twice
             double real = parse.numbers[index++];
             double imag = parse.numbers[index++];
             element = provideComplex(real, imag);
-            garbaging(element);
+            storeforgarbage(element);
             current_program->append(element);
             break;
          }
@@ -1947,6 +2177,16 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
             current_program->append(element);
          }
          break;
+         case l_compose:
+            index++;
+         if (!current_program->size())
+               return new Error("Error: unknown operation: '.'");
+            if (current_program->index(0) != n_compose)
+               ((List*)current_program)->liste.insert(0, n_compose);
+            if (current_program->last() == n_compose)
+               return new Error("Error: two '.' in a row. Composition is impossible");
+            current_program->append(n_compose);
+         break;
          case t_atom:
             element = provideAtom(encode(parse.tokens[index]));
          index++;
@@ -1975,9 +2215,9 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
          }
          break;
          case l_quote:
-            element = new List_quote_eval(parse.lines[index], delegation->i_current_file);
+            element = new List_quote_eval(delegation->set_idx_info(parse.lines[index]));
          index++;
-         garbaging(element);
+         storeforgarbage(element);
          element->append(provideAtom(l_quote));
          current_program->append(element);
          abstractSyntaxTree(element, parse, index, true);
@@ -2018,7 +2258,7 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
                if (quoting) {
                   if (e->size() && e->index(0)->label() == l_conspoint) {
                      Element* a = e->eval(this);
-                     garbaging(a);
+                     storeforgarbage(a);
                      removefromgarbage(e);
                      e = a;
                   }
@@ -2070,6 +2310,11 @@ Element* LispE::syntaxTree(Element* courant, Tokenizer& parse, long& index, long
          break;
          case t_string:
          e = provideConststring(parse.tokens[index]);
+         courant->append(e);
+         index++;
+         break;
+         case t_stringbyte:
+         e = provideConststringbyte(parse.tokens[index]);
          courant->append(e);
          index++;
          break;
@@ -2205,7 +2450,7 @@ List* LispE::create_instruction(int16_t label,Element* e1,Element* e2,Element* e
             l = provideList();
     }
     
-    garbaging(l);
+    storeforgarbage(l);
     l->append(provideAtom(label));
     if (!l->append_not_null(e1))
         return l;
@@ -2301,6 +2546,31 @@ Element* LispE::load(string pathname) {
 }
 
 
+#ifdef LISPE_WASM
+void LispE::precompile(string pathname) {
+}
+
+#else
+void LispE::precompile(string pathname) {
+    pathname = NormalizePathname(pathname);
+    delegation->i_current_line = 0;
+    std::ifstream f(pathname.c_str(),std::ios::in|std::ios::binary);
+    if (f.fail())
+        return;
+    string code_base;
+    string ln;
+    while (!f.eof()) {
+        getline(f, ln);
+        code_base += ln + "\n";
+    }
+    u_ustring code;
+    s_utf8_to_unicode(code, code_base, code_base.size());
+    code = U"(__root__ " + code + U")";
+    Tokenizer parse;
+    segmenting(code, parse);
+}
+
+#endif
 Element* LispE::compile_eval(u_ustring& code) {
 
    Element* tree = compile_lisp_code(code);
@@ -2404,7 +2674,7 @@ Element* LispE::extension(string code, Element* etendre) {
          return new Error("Error: missing end of string");
       default:
          current_list = new Listincode;
-      garbaging(current_list);
+      storeforgarbage(current_list);
    }
 
    long index = 0;
@@ -2412,7 +2682,7 @@ Element* LispE::extension(string code, Element* etendre) {
    Element* body = current_list->eval(this);
    if (etendre != NULL) {
       body->append(etendre);
-      garbaging(etendre);
+      storeforgarbage(etendre);
    }
    return body;
 
@@ -2477,20 +2747,40 @@ void LispE::add_pathname(string pathname) {
 //We duplicate our macro into new code that will replace the current call...
 void Element::generate_body_from_macro(LispE* lisp, Listincode* code, binHash<Element*>& dico_variables) {
     Element* e;
-    for (long i = 0;i < size(); i++) {
+    Element* v;
+    long sz = size();
+    for (long i = 0; i < sz; i++) {
         e = index(i);
         if (e->isAtom()) {
-            if (dico_variables.check(e->label()))
-                code->append(dico_variables[e->label()]);
-            else
-                code->append(e);
+            if (dico_variables.check(e->label())) {
+                v = dico_variables[e->label()];
+                code->append(v);
+                if (v->not_protected())
+                    lisp->storeforgarbage(v);
+            }
+            else {
+                //When a list should be extended instead of being inserted...
+                if (e == separator_ &&
+                    i < sz - 1 &&
+                    index(i+1)->isAtom() &&
+                    dico_variables.check(index(i+1)->label()) &&
+                    dico_variables[index(i+1)->label()]->isList()) {
+                    List* l = (List*)dico_variables[index(i+1)->label()];
+                    for (long j = 0; j < l->size(); j++) {
+                        code->append(l->index(j));
+                    }
+                    //we skip the next element
+                    i++;
+                }
+                else
+                    code->append(e);
+            }
         }
         else {
             if (e->isList()) {
                 Listincode* lcode = new Listincode(s_constant);
-                lisp->garbaging(lcode);
-                lcode->line = ((Listincode*)code)->line;
-                lcode->fileidx = ((Listincode*)code)->fileidx;
+                lisp->storeforgarbage(lcode);
+                lcode->idxinfo = ((Listincode*)code)->idxinfo;
                 code->append(lcode);
                 e->generate_body_from_macro(lisp, lcode, dico_variables);
             }
@@ -2507,35 +2797,48 @@ void Element::generate_body_from_macro(LispE* lisp, Listincode* code, binHash<El
 //First, we associate the macro variables with their replacement code...
 //Then we generate a copy of the macro, in which the variables are replaced with
 //their local interpretation...
-Element* LispE::generate_macro(Element* code) {
+int16_t LispE::generate_macro(Element* code, int16_t lab) {
    //code is our basis, the first element points to macro
    if (code->size() == 0)
-      return code;
+      return lab;
    int16_t label = code->index(0)->label();
 
-   Element* macro_rule = delegation->macros.search(label);
-   if (macro_rule != NULL) {
-      Element* macro_parameters = macro_rule->index(2);
-      if (macro_parameters->size() != code->size()-1)
-         return new Error("Error: parameter size does not match argument");
-      //Now we need to create a place where to store our parameters...
-      long i;
-      binHash<Element*> dico_variables;
-      //Keeping track of the what to replace
-      for (i = 0; i < macro_parameters->size(); i++) {
-         label = macro_parameters->index(i)->label();
-         dico_variables[label] = code->index(i+1);
-      }
-
+   if (delegation->macros.check(label)) {
       //We reuse the code that we need to replace with our macro...
       Listincode* lcode = (Listincode*)code;
+      Element* macro_rule = NULL;
+      Element* parameters;
+      macro_mode = true;
+      //We skip the label, we do a virtual CDR on the list
+      lcode->liste.home = 1;
+      push(n_null);
+      for (Element* m : delegation->macros[label]) {
+         parameters = m->index(2);
+         if (parameters->unify(this, code, true)) {
+            macro_rule = m;
+            break;
+         }
+         clear_top_stack();
+      }
+
+      lcode->liste.home = 0;
+      macro_mode = false;
+      if (macro_rule == NULL) {
+         pop(n_null);
+         stringstream st;
+         st << "Error: cannot apply this macro: " << toString(label) << " to '" << lcode->toString(this) << "'";
+         throw new Error(st.str());
+      }
+
       //We clear it... We have already saved the important parts of the code
       //within our macro variables...
       lcode->liste.clear();
-      macro_rule->index(3)->generate_body_from_macro(this, lcode, dico_variables);
-      return lcode;
+      Stackelement* top = topstack();
+      macro_rule->index(3)->generate_body_from_macro(this, lcode, top->variables);
+      pop(n_null);
+      return lcode->size()?lcode->index(0)->label():lab;
    }
-   return code;
+   return lab;
 }
 
 
@@ -2621,6 +2924,8 @@ void LispE::current_path() {
 	if (current_path_set)
 		return;
     u_ustring nom = U"_current";
+    u_ustring sep = U"_sep";
+    
     string spath;
     Element* e;
     
@@ -2647,6 +2952,11 @@ void LispE::current_path() {
 		else
 			spath = spath.substr(0, pos + 1);
         e = provideString(spath);
+        execution_stack.back()->storing_variable(e, encode(nom));
+        e->release();
+        
+        nom = U"_sep";
+        e = provideString(end_path);
         execution_stack.back()->storing_variable(e, encode(nom));
         e->release();
     }

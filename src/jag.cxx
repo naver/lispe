@@ -343,8 +343,8 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
 
     linematch = -1;
 
-    prefix = ">>";
-    wprefix = L">>";
+    prefix = editor_prefix;
+    wprefix = editor_wprefix;
 
     replaceall = false;
     modified = true;

@@ -669,7 +669,7 @@ Element* Ontology::loop(LispE* lisp, int16_t label, List* code) {
    long sz = code->liste.size();
    for (const auto& a : indexes) {
       element = a.second;
-      lisp->replacingvalue(element, label);
+      lisp->replacestackvalue(element, label);
       e = null_;
       //We then execute our instructions
       for (i_loop = 3; i_loop < sz && thrown_error == NULL && e->type != l_return; i_loop++) {

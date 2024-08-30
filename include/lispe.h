@@ -51,6 +51,7 @@ public:
     tokenizer_result<u_ustring> r_parse;
     
     bool select_bool_as_one;
+    bool macro_mode;
 
 
     vecte<Floatpool*> float_pool;
@@ -138,6 +139,7 @@ public:
 	bool current_path_set;
     
     LispE(UTF8_Handler* hnd = NULL) : segmenter(hnd) {
+        macro_mode = false;
         max_size = 50;
         larger_max_size = 200;
 		current_path_set = false;

@@ -53,7 +53,7 @@ Element* Set_spool::newInstance() {
 }
 
 Element* Set_spool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_s(ensemble);
     else
         return lisp->provideSet_s(this);
@@ -64,10 +64,10 @@ Element* Set_spool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_s(ensemble);
     else
         return lisp->provideSet_s(this);
@@ -112,7 +112,7 @@ Element* Set_ipool::newInstance() {
 }
 
 Element* Set_ipool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_i(ensemble);
     else
         return lisp->provideSet_i(this);
@@ -123,10 +123,10 @@ Element* Set_ipool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_i(ensemble);
     else
         return lisp->provideSet_i(this);
@@ -173,7 +173,7 @@ Element* Set_npool::newInstance() {
 }
 
 Element* Set_npool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_n(ensemble);
     else
         return lisp->provideSet_n(this);
@@ -184,10 +184,10 @@ Element* Set_npool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set_n(ensemble);
     else
         return lisp->provideSet_n(this);
@@ -225,7 +225,7 @@ Element* Set_s::fullcopy() {
 }
 
 Element* Set_s::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->preparingthread)
+    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
         return new Set_s(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -321,8 +321,19 @@ Element* Set_s::loop(LispE* lisp, int16_t label, List* code) {
    lisp->recording(element, label);
    long sz = code->liste.size();
    for (auto & a: ensemble) {
-      element->content = a;
-      _releasing(e);
+      e->release();
+      e = lisp->get_variable(label);
+      if (e != element) {
+         if (e->type != t_string) {
+            e = lisp->provideString();
+            lisp->recording(e, label);
+         }
+         ((String*)e)->content = a;
+         element = (String*)e;
+      }
+      else
+         element->content = a;
+      e = null_;
       //We then execute our instructions
       for (i_loop = 3; i_loop < sz && thrown_error == NULL && e->type != l_return; i_loop++) {
          e->release();
@@ -798,7 +809,7 @@ Element* Set_i::fullcopy() {
 }
 
 Element* Set_i::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->preparingthread)
+    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
         return new Set_i(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -885,8 +896,20 @@ Element* Set_i::loop(LispE* lisp, int16_t label, List* code) {
    lisp->recording(element, label);
    long sz = code->liste.size();
    for (auto & a: ensemble) {
-      element->content = a;
-      _releasing(e);
+      e->release();
+      e = lisp->get_variable(label);
+      if (e != element) {
+         if (e->type != t_integer) {
+            e = lisp->provideInteger(a);
+            lisp->recording(e, label);
+         }
+         else
+            ((Integer*)e)->content = a;
+         element = (Integer*)e;
+      }
+      else
+         element->content = a;
+      e = null_;
       //We then execute our instructions
       for (i_loop = 3; i_loop < sz && thrown_error == NULL && e->type != l_return; i_loop++) {
          e->release();
@@ -1035,7 +1058,7 @@ Element* Set_n::fullcopy() {
 }
 
 Element* Set_n::copying(bool duplicate) {
-    if (exchange_value.provide && exchange_value.lisp->preparingthread)
+    if (exchange_value.provide && exchange_value.lisp->create_in_thread)
         return new Set_n(ensemble);
     
     if (!is_protected() && !duplicate)
@@ -1122,8 +1145,20 @@ Element* Set_n::loop(LispE* lisp, int16_t label, List* code) {
    lisp->recording(element, label);
    long sz = code->liste.size();
    for (auto & a: ensemble) {
-      _releasing(e);
-      element->content = a;
+      e->release();
+      e = lisp->get_variable(label);
+      if (e != element) {
+         if (e->type != t_number) {
+            e = lisp->provideNumber(a);
+            lisp->recording(e, label);
+         }
+         else
+            ((Number*)e)->content = a;
+         element = (Number*)e;
+      }
+      else
+         element->content = a;
+      e = null_;
       //We then execute our instructions
       for (i_loop = 3; i_loop < sz && thrown_error == NULL && e->type != l_return; i_loop++) {
          e->release();
@@ -1484,7 +1519,7 @@ Element* Set::loop(LispE* lisp, int16_t label, List* code) {
    long sz = code->liste.size();
    for (const auto& a: dictionary) {
       element = a.second;
-      lisp->replacingvalue(element, label);
+      lisp->replacestackvalue(element, label);
       _releasing(e);
       //We then execute our instructions
       for (i_loop = 3; i_loop < sz && thrown_error == NULL && e->type != l_return; i_loop++) {
@@ -1799,7 +1834,7 @@ Element* Setpool::newInstance() {
 }
 
 Element* Setpool::fullcopy() {
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set(dictionary, true);
     else
         return lisp->provideSet(this);
@@ -1810,10 +1845,10 @@ Element* Setpool::copying(bool duplicate) {
     //copy it as non pool objects
     //to avoid pool objects to access a lisp thread environment
     //through the wrong lisp pointer
-    if (!lisp->preparingthread && !is_protected() && !duplicate)
+    if (!lisp->create_in_thread && !is_protected() && !duplicate)
         return this;
     
-    if (lisp->preparingthread)
+    if (lisp->create_in_thread)
         return new Set(dictionary, true);
     else
         return lisp->provideSet(this);
@@ -2273,7 +2308,7 @@ void Avl::insertion(LispE* lisp, Avl** courant, Element* ajout, List* compare, s
     if (*courant==NULL)
         *courant= new Avl(ajout);
     else {
-        lisp->replacingvalue((*courant)->value, label);
+        lisp->replacestackvalue((*courant)->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             Avl* dernier=*courant;
@@ -2296,7 +2331,7 @@ Element* Avl::search(LispE* lisp, Element* element, List* compare, short label) 
     Avl* e = this;
     int16_t test;
     while (e != NULL) {
-        lisp->replacingvalue(e->value, label);
+        lisp->replacestackvalue(e->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             while (e != NULL) {
@@ -2319,7 +2354,7 @@ bool Avl::check(LispE* lisp, Element* element, List* compare, short label) {
     Avl* e = this;
     int16_t test;
     while (e != NULL) {
-        lisp->replacingvalue(e->value, label);
+        lisp->replacestackvalue(e->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             while (e != NULL) {
@@ -2344,7 +2379,7 @@ bool Avl::erase(LispE* lisp, Avl** root, Element* current, List* compare, short 
     int16_t test;
     char origin = 0;
     while (e != NULL) {
-        lisp->replacingvalue(e->value, label);
+        lisp->replacestackvalue(e->value, label);
         test = compare->eval_lambda_min(lisp)->asShort();
         if (!test) {
             Avl* clean = e;
@@ -2920,7 +2955,7 @@ Element* Heap::loop(LispE* lisp, int16_t label, List* code) {
    long sz = code->liste.size();
    Element* element = iter.next();
    while (element != NULL) {
-      lisp->replacingvalue(element, label);
+      lisp->replacestackvalue(element, label);
       _releasing(e);
       //We then execute our instructions
       for (i_loop = 3; i_loop < sz && thrown_error == NULL && e->type != l_return; i_loop++) {
@@ -2984,11 +3019,11 @@ bool Heaplambda::check_element(LispE* lisp, Element* element_value) {
 
    if (thrown_error) {
       lisp->reset_in_stack(e2, lab2);
-      lisp->reset_in_stack(e1, lab1);
+      lisp->reset_in_stack(e1, lab1, element_value);
       return lisp->delegation->set_error(thrown_error);
    }
    lisp->reset_in_stack(e2, lab2);
-   lisp->reset_in_stack(e1, lab1);
+   lisp->reset_in_stack(e1, lab1, element_value);
 
    return res;
 }
@@ -3008,12 +3043,12 @@ Element* Heaplambda::search_element(LispE* lisp, Element* element_value, long id
 
    if (thrown_error) {
       lisp->reset_in_stack(e2, lab2);
-      lisp->reset_in_stack(e1, lab1);
+      lisp->reset_in_stack(e1, lab1, element_value);
       return lisp->delegation->set_error(thrown_error);
    }
 
    lisp->reset_in_stack(e2, lab2);
-   lisp->reset_in_stack(e1, lab1);
+   lisp->reset_in_stack(e1, lab1, element_value);
    return (res == NULL)?null_:res;
 }
 
@@ -3035,11 +3070,11 @@ Element* Heaplambda::insert(LispE* lisp, Element* element, long idx) {
 
    if (thrown_error) {
       lisp->reset_in_stack(e2, lab2);
-      lisp->reset_in_stack(e1, lab1);
+      lisp->reset_in_stack(e1, lab1, element);
       return lisp->delegation->set_error(thrown_error);
    }
    lisp->reset_in_stack(e2, lab2);
-   lisp->reset_in_stack(e1, lab1);
+   lisp->reset_in_stack(e1, lab1, element);
    return this;
 }
 
@@ -3060,11 +3095,11 @@ Element* Heaplambda::insert(LispE* lisp, Element* element) {
 
    if (thrown_error) {
       lisp->reset_in_stack(e2, lab2);
-      lisp->reset_in_stack(e1, lab1);
+      lisp->reset_in_stack(e1, lab1, element);
       return lisp->delegation->set_error(thrown_error);
    }
    lisp->reset_in_stack(e2, lab2);
-   lisp->reset_in_stack(e1, lab1);
+   lisp->reset_in_stack(e1, lab1, element);
    return this;
 }
 
@@ -3084,11 +3119,11 @@ bool Heaplambda::remove(LispE* lisp, Element* element) {
 
    if (thrown_error) {
       lisp->reset_in_stack(e2, lab2);
-      lisp->reset_in_stack(e1, lab1);
+      lisp->reset_in_stack(e1, lab1, element);
       return lisp->delegation->set_error(thrown_error);
    }
    lisp->reset_in_stack(e2, lab2);
-   lisp->reset_in_stack(e1, lab1);
+   lisp->reset_in_stack(e1, lab1, element);
    return del;
 }
 

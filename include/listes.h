@@ -726,6 +726,7 @@ public:
     //In the case of a container for push, key and keyn
     // We must force the copy when it is a constant
     virtual Element* duplicate_constant(LispE* lisp);
+    Element* duplicate_cdr(LispE* lisp);
     
     virtual bool isList() {
         return true;
@@ -1973,6 +1974,34 @@ public:
         return new List_insert_eval(multiple);
     }
 };
+
+class List_data_eval : public Listincode {
+public:
+    
+    List_data_eval(Listincode* l) : Listincode(l) {}
+    List_data_eval(List* l) : Listincode(l) {}
+    List_data_eval() {}
+    List_data_eval(bool m)  {multiple = m;}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_data_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_data_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_data_eval(multiple);
+    }
+};
+
 
 class List_keys_eval : public Listincode {
 public:
@@ -5238,6 +5267,33 @@ public:
     Element* eval(LispE* lisp);
 };
 
+class List_scanlist_eval : public Listincode {
+public:
+    
+    List_scanlist_eval(Listincode* l) : Listincode(l) {}
+    List_scanlist_eval(List* l) : Listincode(l) {}
+    List_scanlist_eval() {}
+    List_scanlist_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_scanlist_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_scanlist_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_scanlist_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
 
 class List_filterlist_eval : public Listincode {
 public:
@@ -6591,6 +6647,195 @@ public:
     List* cloning() {
         return new List_fread_eval(multiple);
     }
+    Element* eval(LispE* lisp);
+};
+
+class List_fsize_eval : public Listincode {
+public:
+    
+    List_fsize_eval(Listincode* l) : Listincode(l) {}
+    List_fsize_eval(List* l) : Listincode(l) {}
+    List_fsize_eval() {}
+    List_fsize_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fsize_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fsize_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fsize_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_fgetchars_eval : public Listincode {
+public:
+    
+    List_fgetchars_eval(Listincode* l) : Listincode(l) {}
+    List_fgetchars_eval(List* l) : Listincode(l) {}
+    List_fgetchars_eval() {}
+    List_fgetchars_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fgetchars_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fgetchars_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fgetchars_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_fputchars_eval : public Listincode {
+public:
+    
+    List_fputchars_eval(Listincode* l) : Listincode(l) {}
+    List_fputchars_eval(List* l) : Listincode(l) {}
+    List_fputchars_eval() {}
+    List_fputchars_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fputchars_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fputchars_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fputchars_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_fclose_eval : public Listincode {
+public:
+    
+    List_fclose_eval(Listincode* l) : Listincode(l) {}
+    List_fclose_eval(List* l) : Listincode(l) {}
+    List_fclose_eval() {}
+    List_fclose_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fclose_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fclose_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fclose_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_fopen_eval : public Listincode {
+public:
+    
+    List_fopen_eval(Listincode* l) : Listincode(l) {}
+    List_fopen_eval(List* l) : Listincode(l) {}
+    List_fopen_eval() {}
+    List_fopen_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fopen_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fopen_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fopen_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_ftell_eval : public Listincode {
+public:
+    
+    List_ftell_eval(Listincode* l) : Listincode(l) {}
+    List_ftell_eval(List* l) : Listincode(l) {}
+    List_ftell_eval() {}
+    List_ftell_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_ftell_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_ftell_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_ftell_eval(multiple);
+    }
+    
+    Element* eval(LispE* lisp);
+};
+
+class List_fseek_eval : public Listincode {
+public:
+    
+    List_fseek_eval(Listincode* l) : Listincode(l) {}
+    List_fseek_eval(List* l) : Listincode(l) {}
+    List_fseek_eval() {}
+    List_fseek_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_fseek_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_fseek_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_fseek_eval(multiple);
+    }
+    
     Element* eval(LispE* lisp);
 };
 

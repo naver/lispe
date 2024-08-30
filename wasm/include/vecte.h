@@ -9,6 +9,7 @@
 //
 #ifndef vecte_h
 #define vecte_h
+#include <cstdint>
 class List;
 template <class Z> class vecte {
 public:
@@ -516,6 +517,11 @@ public:
         buffer[last++] = val;
     }
 
+    inline void push_raw(Z val) {
+        //sinon on ajoute l'element en queue...
+        buffer[last++] = val;
+    }
+
     inline long counting(long home, Z v) {
         long count = 0;
         for (long i = home; i < last; i++)
@@ -669,7 +675,7 @@ public:
         home = 0;
         items = new item_a<Z>(nb);
         while (nb > 0) {
-            items->push_back(v);
+            items->push_raw(v);
             nb--;
         }
     }
@@ -690,7 +696,10 @@ public:
         items->reserve(t);
     }
 
-    
+    inline void reset() {
+        items->last = 0;
+    }
+
     inline void put(long pos, Z val) {
         items->buffer[pos + home] = val;
     }
@@ -756,6 +765,10 @@ public:
 
     inline void push_back(Z val) {
         items->push_back(val);
+    }
+
+    inline void push_raw(Z val) {
+        items->push_raw(val);
     }
 
     inline void extend(vecte_a<Z>* val) {
@@ -1040,6 +1053,11 @@ public:
         buffer[last++] = val;
     }
 
+    inline void push_raw(Z& val) {
+        //sinon on ajoute l'element en queue...
+        buffer[last++] = val;
+    }
+
     void plus(long home, Z& v) {
         for (long i = home; i < last; i++)
             buffer[i] += v;
@@ -1142,7 +1160,7 @@ public:
         home = 0;
         items = new item_n<Z>(nb);
         while (nb > 0) {
-            items->push_back(v);
+            items->push_raw(v);
             nb--;
         }
     }
@@ -1224,6 +1242,10 @@ public:
 
     inline void push_back(Z val) {
         items->push_back(val);
+    }
+
+    inline void push_raw(Z val) {
+        items->push_raw(val);
     }
 
     inline void extend(vecte_n<Z>* val) {

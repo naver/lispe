@@ -145,7 +145,7 @@ public:
     binHash<Element*> operator_pool;
     binSet atom_basic_pool;
     binHash<unsigned long> arities;
-    binHash<Element*> macros;
+    binHash<vector<Element*> > macros;
 
     binSet number_types;
     
@@ -704,12 +704,7 @@ public:
     }
     
     inline Element* recordingMacro(LispE* lisp, Element* e, int16_t label) {
-        if (macros.check(label))
-            throw new Error("Error: This macro has already been recorded");
-        
-        if (!e->replaceVariableNames(lisp))
-            throw new Error("Error: The definition of a parameter should not be 'nil'");
-        macros[label] = e;
+        macros[label].push_back(e);
         return e;
     }
     

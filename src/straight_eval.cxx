@@ -8,12 +8,20 @@
 //
 //
 
+#include <stdio.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+
 #include "lispe.h"
 #include"avl.h"
 #include <math.h>
 #include <algorithm>
 #include <thread>
 #include <chrono>
+
+#ifdef __apple_build_version__
+#define APPLE 1
+#endif
 
 Element* range(LispE* lisp, long init, long limit, long inc);
 Element* range(LispE* lisp, double init, double limit, double inc);
@@ -268,7 +276,7 @@ Element* List_cons_eval::eval(LispE* lisp) {
                 lisp->resetStack();
                 return second_element->insert(lisp, first_element, 0);
             case t_list: {
-                second_element = second_element->duplicate_constant(lisp);
+                second_element = second_element->duplicate_cdr(lisp);
                 if (second_element->status) {
                     second_element->insert(lisp, first_element, 0);
                     Listpool* third_element = new Listpool(lisp, (List*)second_element, 0);
@@ -340,7 +348,7 @@ Element* List_consb_eval::eval(LispE* lisp) {
                     lisp->resetStack();
                     return second_element->insert(lisp, first_element, 0);
                 case t_list: {
-                    second_element = second_element->duplicate_constant(lisp);
+                    second_element = second_element->duplicate_cdr(lisp);
                     if (second_element->status) {
                         second_element->insert(lisp, first_element, 0);
                         Element* third_element = new Listpool(lisp, (List*)second_element, 0);
@@ -1960,6 +1968,44 @@ Element* List_library_eval::eval(LispE* lisp) {
     return lisp->pop(element);
 }
 
+Element* List_data_eval::eval(LispE* lisp) {
+    Element* first = liste[0];
+    if (first->isList())
+        first = first->eval(lisp);
+    Element* data = lisp->getDataStructure(first->label());
+    List* values = lisp->provideList();
+    values->append(first);
+    Element* element;
+    long nbarguments = liste.size()-1;
+    try {
+        for (long i = 1; i <= nbarguments; i++) {
+            element = liste[i]->eval(lisp);
+            values->append(element->duplicate_constant(lisp));
+        }
+    }
+    catch (Error* err) {
+        values->clear();
+        delete values;
+        throw err;
+    }
+    
+    char res = data->check_match(lisp,values);
+    if (res != check_ok) {
+        values->clear();
+        delete values;
+        if (res == check_mismatch)
+            throw new Error(L"Error: Size mismatch between argument list and data structure definition");
+        else {
+            std::wstringstream message;
+            message << L"Error: Mismatch on argument: " << (int)res;
+            message << " (" << lisp->asString(data->index((int)res)->label()) << " required)";
+            throw new Error(message.str());
+        }
+    }
+    values->type = t_data;
+    return values;
+}
+
 Element* List_pattern_eval::eval(LispE* lisp) {
     List* arguments = lisp->provideList();
     Element* element;
@@ -2962,6 +3008,116 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                 return current_list;
             }
         }
+        return result;
+    }
+    catch (Error* err) {
+        if (op->isLambda()) {
+            if (save_variable != this)
+                lisp->reset_in_stack(save_variable, label);
+        }
+        else {
+            if (call != NULL)
+                call->force_release();
+        }
+
+        if (iter != NULL)
+            current_list->clean_iter(iter);
+        lisp->reset_to_true(sb);
+        current_list->release();
+        result->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+    return emptylist_;
+}
+
+Element* List_scanlist_eval::eval(LispE* lisp) {
+    long listsz = liste.size();
+    
+    Element* current_list = null_;
+    Element* op = null_;
+    Element* result = null_;
+    
+    bool sb = lisp->set_true_as_one();
+    int16_t ps = 1;
+    List* call = NULL;
+    Element* save_variable = this;
+    int16_t label = -1;
+    void* iter = NULL;
+    
+    try {
+        lisp->checkState(this);
+        current_list = liste[2]->eval(lisp);
+
+        listsz = current_list->size();
+        if (!listsz) {
+            current_list->release();
+            lisp->reset_to_true(sb);
+            lisp->resetStack();
+            return result;
+        }
+        
+        op = liste[1];
+                
+        if (op->isLambda()) {
+            if (!op->index(1)->size())
+                throw new Error("Error: Wrong number of arguments");
+            label = op->index(1)->index(0)->label();
+            if (label < l_final)
+                throw new Error("Error: Wrong argument");
+
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
+
+            //if there is already a variable with this name on the stack
+            //we record it to restore it later...
+            save_variable = lisp->record_or_replace(nxt, label);
+            while (nxt != emptyatom_) {
+                lisp->replacestackvalue(nxt, label);
+                result = op->eval_lambda_min(lisp);
+                if (result != null_)
+                    break;
+                nxt = current_list->next_iter_exchange(lisp, iter);
+            }
+            current_list->clean_iter(iter);
+            lisp->reset_in_stack(save_variable, label);
+        }
+        else {
+            Element* e = op;
+            if (op->is_quote())
+                e = op->eval(lisp);
+
+            if (e->isList()) {
+                if (e->size())
+                    call = lisp->provideCallforTWO(e, ps);
+                else
+                    throw new Error("Error: empty list not accepted here");
+            }
+            else {
+                op = eval_body_as_argument(lisp, op);
+                if (op->is_straight_eval())
+                    call = (List*)op;
+                else
+                    call = new List_eval(lisp, op);
+                ps = 1;
+                call->append(lisp->quoted());
+            }
+
+            iter = current_list->begin_iter();
+            Element* nxt = current_list->next_iter_exchange(lisp, iter);
+
+            while (nxt != emptyatom_) {
+                call->in_quote(ps, nxt);
+                result = call->eval(lisp);
+                if (result != null_)
+                    break;
+                nxt = current_list->next_iter_exchange(lisp, iter);
+            }
+            current_list->clean_iter(iter);
+            call->force_release();
+        }
+        current_list->release();
+        lisp->reset_to_true(sb);
+        lisp->resetStack();
         return result;
     }
     catch (Error* err) {
@@ -7290,6 +7446,165 @@ Element* List_fread_eval::eval(LispE* lisp) {
         element->release();
         return lisp->check_error(this, err, idxinfo);
     }
+}
+
+
+class File_element : public Element {
+public:
+    FILE* f;
+    string op;
+
+    File_element() : Element(t_fileelement) {
+        f = NULL;
+        op = "";
+    }
+    
+    File_element(LispE* lisp, Element* n, string o) : Element(t_fileelement) {
+        op = o;
+        string filename = n->toString(lisp);
+        n->release();
+#ifdef WIN32
+        fopen_s(&f, STR(filename), STR(op));
+#else
+        f = fopen(STR(filename), STR(op));
+#endif
+    }
+    
+    ~File_element() {
+        if (f != NULL)
+            fclose(f);
+    }
+    
+    bool isFile() {
+        return (f != NULL);
+    }
+
+    void close() {
+        if (f != NULL)
+            fclose(f);
+        f = NULL;
+    }
+};
+
+Element* List_fopen_eval::eval(LispE* lisp) {
+    Element* element;
+    string op = "r";
+    if (size() == 3) {
+        element = liste[2]->eval(lisp);
+        op = element->toString(lisp);
+        element->release();
+    }
+    element = liste[1]->eval(lisp);
+    return new File_element(lisp, element, op);
+}
+
+Element* List_fclose_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    ((File_element*)element)->close();
+    element->release();
+    return True_;
+}
+
+Element* List_fseek_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    FILE* f = ((File_element*)element)->f;
+    long nb;
+    evalAsInteger(2, lisp, nb);
+    fseek(f, nb, 0);
+    element->release();
+    return True_;
+}
+
+Element* List_ftell_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    FILE* f = ((File_element*)element)->f;
+    long nb = ftell(f);
+    element->release();
+    return lisp->provideInteger(nb);
+}
+
+Element* List_fgetchars_eval::eval(LispE* lisp) {
+    Element* element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    FILE* f = ((File_element*)element)->f;
+    long nb;
+    evalAsInteger(2, lisp, nb);
+    char* buffer = new char[nb + 1];
+    fread(buffer, nb, 1, f);
+    string b(buffer);
+    delete[] buffer;
+    element->release();
+    return new Stringbyte(b);
+}
+
+Element* List_fputchars_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    string s = element->toString(lisp);
+    element->release();
+    
+    element = liste[1]->eval(lisp);
+    if (!element->isFile())
+        throw new Error("Error: Not a file element");
+    
+    File_element* fe = (File_element*)element;
+    if (fe->op[0] != 'r') {
+        FILE* f = fe->f;
+        
+        for (long i = 0; i < s.size(); i++)
+            fputc(s[i], f);
+        
+        fe->release();
+        return True_;
+    }
+    fe->release();
+    return False_;
+}
+
+Element* List_fsize_eval::eval(LispE* lisp) {
+    struct stat scible;
+    int stcible = -1;
+    long size = -1;
+    
+    string name;
+
+    FILE* thefile;
+    
+    Element* element = liste[1]->eval(lisp);
+    if (element->type != t_fileelement)
+        element = new File_element(lisp, element, "r");
+
+    thefile = ((File_element*)element)->f;
+    
+    if (thefile != NULL) {
+#ifdef LISPE_WASM
+        stcible = fstat(fileno(thefile), &scible);
+#else
+#if (_MSC_VER >= 1900)
+        stcible = fstat(_fileno(thefile), &scible);
+#else
+#if  defined(WIN32) | defined(APPLE)
+        stcible = fstat(thefile->_file, &scible);
+#else
+        stcible = fstat(thefile->_fileno, &scible);
+#endif
+#endif
+#endif
+        if (stcible >= 0)
+            size = scible.st_size;
+    }
+    element->release();
+    return lisp->provideInteger(size);
 }
 
 

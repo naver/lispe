@@ -70,7 +70,7 @@ typedef enum {
     t_heap, t_data, t_maybe,
     t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
-    t_call, t_call_lambda, t_eval,
+    t_call, t_call_lambda, t_eval, t_fileelement,
     
     //System instructions
     l_void, l_set_max_stack_size, l_addr_, l_trace, l_eval, l_use, l_terminal, l_link, l_debug_function, 
@@ -120,7 +120,8 @@ typedef enum {
     //Comparisons
         
     l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
-    l_fread, l_fwrite, l_fappend, l_bread, l_bwrite, l_bappend,
+    l_fread, l_fwrite, l_fappend, l_fget, l_fput, l_fsize, l_fseek, l_ftell, l_fopen, l_fclose,
+    l_bread, l_bwrite, l_bappend,
     
     //mutable operations
     l_key, l_keyn, l_keyi, l_keys, l_values, l_pop, l_popfirst, l_poplast,
@@ -139,9 +140,10 @@ typedef enum {
     l_while, l_loop, l_loopcount, l_range, l_rangein, l_irange, l_irangein, l_mloop, l_lloop,
     l_atoms, l_atomise, l_join, l_sort, l_whilein,
     l_compile, l_load, l_input, l_getchar, l_pipe, l_type,  l_return, l_break, l_reverse,
-    l_apply, l_over, l_slice, l_maplist, l_filterlist, l_droplist, l_takelist, l_takenb,
+    l_apply, l_over, l_slice,
+    l_maplist, l_filterlist, l_droplist, l_takelist, l_takenb, l_scanlist,
     l_mapcar, l_filtercar, l_dropcar, l_takecar,
-    l_checking, l_data, l_replicate,
+    l_checking, l_data, l_replicate, l_data_eval,
     
     l_map, l_filter, l_take, l_repeat, l_cycle, l_drop, l_takewhile, l_dropwhile,
     l_for, l_foldl, l_scanl, l_foldr, l_scanr, l_foldl1, l_scanl1, l_foldr1, l_scanr1,
@@ -287,6 +289,10 @@ public:
     }
 
     virtual bool isMultiple() {
+        return false;
+    }
+
+    virtual bool isFile() {
         return false;
     }
 
@@ -507,7 +513,11 @@ public:
     virtual Element* duplicate_constant(LispE* lisp) {
         return this;
     }
-    
+
+    virtual Element* duplicate_cdr(LispE* lisp) {
+        return this;
+    }
+
     virtual void flatten(LispE*, List* l);
     virtual void flatten(LispE*, Numbers* l);
     virtual void flatten(LispE*, Integers* l);

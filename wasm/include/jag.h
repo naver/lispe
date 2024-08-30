@@ -62,6 +62,9 @@ using std::ofstream;
 #include "tools.h"
 #define hmap std::unordered_map
 #define uchar unsigned char
+const char editor_prefix[] = "";
+const wchar_t editor_wprefix[] = L"";
+const char cmd_line_prefix[] = "<>";
 class jag_editor;
 extern jag_editor* JAGEDITOR;
 const string colordenomination[] = {"string", "definition", "instruction", "quote", "comment", "call", "selection"};
@@ -80,7 +83,7 @@ public:
     }
 
 };
-typedef enum {no_type, clike_type, lisp_type, python_type, tamgu_type} file_types;
+typedef enum {no_type, c_like_type, lisp_type, python_type, tamgu_type} file_types;
 class editor_lines {
 public:
     jag_editor* jag;
@@ -301,7 +304,7 @@ public:
             case tamgu_type:
                 detecttamgu();
                 break;
-            case clike_type:
+            case c_like_type:
                 detectclike();
                 break;
             default:
@@ -698,7 +701,7 @@ public:
                         thecurrentfilename.find(".cxx") != -1 ||
                         thecurrentfilename.find(".hpp") != -1 ||
                         thecurrentfilename.find(".h") != -1)
-                        filetype = clike_type;
+                        filetype = c_like_type;
                     else
                         filetype = no_type;
             }
@@ -800,8 +803,8 @@ public:
         }
         else {
             margin = margin_value_reference;
-            prefix = ">>";
-            wprefix = L">>";
+            prefix = editor_prefix;
+            wprefix = editor_wprefix;
             setprefixesize(lines.size());
         }
         resetscreen();
@@ -916,7 +919,7 @@ public:
 	long prefixe() {
 		if (noprefix)
 			return 0;
-		return (4 + prefixsize);
+		return (2 + prefix.size() + prefixsize);
 	}
 
     virtual long prefixego() {

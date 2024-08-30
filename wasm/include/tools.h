@@ -91,6 +91,7 @@ double convertingfloathexa(const wchar_t* s);
 double convertingfloathexa(u_uchar* s, long& l);
 double convertingfloathexa(const u_uchar* s);
 double convertingfloathexa(u_ustring& u);
+double convertingfloathexa(string& u);
 #ifdef WIN32
 Exporting wstring u_to_w(u_ustring u);
 Exporting u_ustring w_to_u(wstring w);
@@ -122,6 +123,7 @@ wstring s_wreplacestring(wstring& s, wstring reg, wstring rep);
 u_ustring s_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep);
 u_ustring s_ureplacechar(u_ustring& s, u_uchar reg, u_ustring rep);
 long nb_ureplacestring(u_ustring& s, u_ustring reg, u_ustring rep);
+long nb_replacestring(string& s, string reg, string rep);
 string s_left(string& s, long nb);
 string s_right(string& s, long nb);
 string s_middle(string& s, long g, long nb);
@@ -134,6 +136,7 @@ u_ustring s_umiddle(u_ustring& s, long g, long nb);
 string& s_trim(string& strvalue);
 string& s_trimleft(string& strvalue);
 string& s_trimright(string& strvalue);
+string& s_trim0(string& strvalue);
 wstring& s_trim0(wstring& strvalue);
 wstring& s_trim(wstring& strvalue);
 wstring& s_trimleft(wstring& strvalue);
@@ -247,7 +250,9 @@ public:
     bool s_is_space(u_ustring& str);
     bool s_is_space(wstring& str);
     bool s_is_space(string& str);
-	string u_to_lower(string& s);
+	
+    string u_to_lower(string& s);
+    string u_to_upper(string& s);
     wstring s_to_lower(wstring& s);
     wstring s_to_upper(wstring& s);
     u_ustring u_to_lower(u_ustring& s);
@@ -258,9 +263,16 @@ public:
     wchar_t c_to_upper(wchar_t c);
     
     u_ustring u_insert_sep(u_ustring& s, u_ustring sep);
-    void getchar(u_ustring& s, u_ustring& res, long& i, long sz);
-    void getandaddchar(u_ustring& s, u_ustring& res, long& i, long sz);
+    string insert_sep(string& s, string sep);
+    void getchar(string& s, string& res, long& i);
+    void getchar(u_ustring& s, u_ustring& res, long& i);
+    void getandaddchar(u_ustring& s, u_ustring& res, long& i);
+    void getandaddchar(string& s, string& res, long& i);
+    void getAtchar(string& s, string& res, long i);
+    long charTobyte(string& s, long i);
+    long byteTochar(string& s, long i);
     UWCHAR getachar(u_ustring& s, long& i);
+    string getachar(string& s, long& i);
     bool c_is_emojicomp(UWCHAR c);
     bool c_is_emoji(UWCHAR c);
     long getonchar(wstring& w, long position);

@@ -308,8 +308,8 @@ jag_editor::jag_editor() : lines(this), jag_get(true) {
     currentfindpos = 0;
     currentposinstring = -1;
     linematch = -1;
-    prefix = ">>";
-    wprefix = L">>";
+    prefix = editor_prefix;
+    wprefix = editor_wprefix;
     replaceall = false;
     modified = true;
     tobesaved = false;
@@ -3161,7 +3161,7 @@ void editor_lines::setcode(wstring& code, bool clean) {
     long u;
     vector<wstring> subs;
     if (clean) {
-        while (buff.back() == L"") {
+        while (buff.size() && buff.back() == L"") {
             buff.pop_back();
         }
         buff.push_back(L"");
