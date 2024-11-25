@@ -66,6 +66,15 @@ string PyAsString(PyObject* po) {
 
 #endif
 
+#ifdef UNIX
+#include <signal.h>
+#endif
+
+void clean_signal() {
+#ifndef WIN32
+    signal(SIGINT,NULL);
+#endif
+}
 
 static Element* toLispE(LispE* lisp, PyObject* po) {
     if (po == Py_None || PyBool_Check(po) == 1) {
@@ -586,7 +595,62 @@ public:
         return true_;
     }
 
-    Element* methodRun(LispE* lisp, string& code) {
+    Element* Run_simple(string& code, short idthread, PyObject* py_dict)
+    {
+
+        PyObject *py_result = PyRun_StringFlags(code.c_str(), Py_file_input, py_dict, py_dict, nullptr);
+
+        if (!py_result)
+        {
+            if (PyErr_Occurred())
+            {
+                string return_variable = "PYT(997):";
+                return_variable += python_error_string();
+                // Imprime l'erreur ou la traite selon vos besoins.
+                throw new Error(return_variable);
+            }
+        }
+        else
+        {
+            Py_DECREF(py_result); // Nettoie le résultat si rien ne s'est mal passé
+        }
+        return true_;
+    }
+
+    // Function to run the Python script in a separate thread
+    Element* Run_elapse(string& code, int elapse_time, short idthread, PyObject* py_dict) {
+        static char* import_code = "import signal\nimport time\n";
+        static char* func_code = "def timeout_handler(signum, frame):\n  signal.signal(signal.SIGALRM, signal.SIG_DFL)\n  signal.alarm(0)\n  raise TimeoutError(\"Time out\")\n";
+        static char* init_code = "signal.signal(signal.SIGALRM, timeout_handler)\nsignal.alarm(";
+        const char* clean_code = "signal.signal(signal.SIGALRM, signal.SIG_DFL)\nsignal.alarm(0)\n";
+        
+        stringstream c;
+        c << import_code << func_code << init_code << elapse_time << ")\n";
+        string cde = c.str();
+        PyRun_StringFlags(cde.c_str(), Py_file_input, py_dict, py_dict, nullptr);
+
+        PyObject* py_result = PyRun_StringFlags(code.c_str(), Py_file_input, py_dict, py_dict, nullptr);
+
+        if (!py_result) {
+            if (PyErr_Occurred()) {
+                cde = "PYT(997):";
+                cde += python_error_string();
+                cerr << cde << endl;
+                if (cde.find("Time out") == -1)
+                    PyRun_StringFlags(clean_code, Py_file_input, py_dict, py_dict, nullptr);
+                // Handle the error as needed
+                throw new Error(cde);
+            }
+        } else {
+            Py_DECREF(py_result); // Clean up the result if nothing went wrong
+        }
+
+        //we clean our signal before leaving
+        PyRun_StringFlags(clean_code, Py_file_input, py_dict, py_dict, nullptr);
+        return true_;
+    }
+
+    Element* methodRun(LispE* lisp, string& code, string& returnvariable, double elapse_time) {
 
         lisp->lock();
         if (!init_python) {
@@ -598,32 +662,55 @@ public:
 
         //0 is the first parameter and so on...
         if (code != "") {
-            if (pModule == NULL)
-                pModule = PyImport_AddModule("__main__");
-            
-            if (pDict == NULL && pModule != NULL)
-                pDict = PyModule_GetDict(pModule);
-            
-            if (pLocalDict == NULL)
-                pLocalDict = PyDict_New();
-
-            PyObject* pstr  = PyRun_String(STR(code), Py_single_input, pDict, pLocalDict);
-            if (PyErr_Occurred()) {
-                string err = "Error: PYT(997):";
-                err += python_error_string();
-                lisp->unlock();
-                throw new Error(err);
+            Element* kcmd;
+            try {
+                //First, we test if the syntax is correct:
+                PyObject *compiled_code = Py_CompileString(code.c_str(), "<string>", Py_file_input);
+                if (compiled_code == NULL) {
+                    return_variable = "PYT(996):";
+                    return_variable += python_error_string();
+                    // Imprime l'erreur ou la traite selon vos besoins.
+                    throw new Error(return_variable);
+                } else {
+                    Py_DECREF(compiled_code);
+                    if (elapse_time == -1)
+                        kcmd = Run_simple(code, idthread, py_dict);
+                    else {
+        #ifndef WIN32
+                        struct sigaction old_action;
+                        sigaction(SIGALRM, nullptr, &old_action);
+                        kcmd = Run_elapse(code, elapse_time, idthread, py_dict);
+                        sigaction(SIGALRM, &old_action, nullptr);
+        #else
+                        kcmd = Run_elapse(code, elapse_time, idthread, py_dict);
+        #endif
+                    }
+                }
             }
-
-            lisp->unlock();
-            Element* e = toLispE(lisp, pstr);
-            Py_DECREF(pstr);
-            return e;
+        }
+        catch(Error* e) {
+            clean_signal();
+            methodClose();
+            throw e;
         }
 
+        Element* returning_value = true_;
+        if (return_variable != "") {
+            PyObject* py_result_val = PyDict_GetItemString(py_dict, return_variable.c_str());
+            if (py_result_val != NULL) {
+                returning_value = toLispE(py_result_val);
+            } else {
+                return_variable += ": This Python variable is unknown";
+                throw new Error(return_variable);
+            }
+        }
+
+        methodClose();
+        clean_signal();
         lisp->unlock();
-        //you may return any value of course...
-        return true_;
+
+        // You may return any value of course...
+        return returning_value;
     }
 
     Element* methodRunFile(LispE* lisp, string& pathname) {
@@ -766,7 +853,9 @@ public:
                 return new Pythoninterpreter(python_type);
             case python_run: {
                 string code = lisp->get_variable(U"code")->toString(lisp);
-                return py->methodRun(lisp, code);
+                double timeout = lisp->get_variable(U"timeout")->Number();
+                string returnvariable = lisp->get_variable(U"variable")->toString(lisp);
+                return py->methodRun(lisp, code, timeout);
             }
             case python_runfile: {
                 string path = lisp->get_variable(U"path")->toString(lisp);
@@ -829,7 +918,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     wstring w = L"python_";
     short type_python = lisp->encode(w);
     lisp->extension("deflib python()", new Pythonmethod(lisp, python_new, type_python));
-    lisp->extension("deflib python_run(py code)", new Pythonmethod(lisp, python_run, type_python));
+    lisp->extension("deflib python_run(py code (variable "") (timeout -1))", new Pythonmethod(lisp, python_run, type_python));
     lisp->extension("deflib python_runfile(py path)", new Pythonmethod(lisp, python_runfile, type_python));
     lisp->extension("deflib python_setpath(py path)", new Pythonmethod(lisp, python_setpath, type_python));
     lisp->extension("deflib python_import(py path)", new Pythonmethod(lisp, python_import, type_python));
