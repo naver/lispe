@@ -1798,13 +1798,15 @@ Element* List::eval_predicate(LispE* lisp, int16_t function_label) {
         
         bool success = true;
         try {
-            nbarguments = body->size();
-            if (nbarguments == 4)
+            long nbinstructions = body->size();
+            if (nbinstructions == 4) {
                 element = body->index(3)->eval(lisp);
+                success = element->Boolean();
+            }
             else {
                 element = true_;
                 success = true;
-                for (i = 3; i < nbarguments && element->type != l_return && success; i++) {
+                for (i = 3; i < nbinstructions && element->type != l_return && success; i++) {
                     element->release();
                     element = body->index(i)->eval(lisp);
                     success = element->Boolean();

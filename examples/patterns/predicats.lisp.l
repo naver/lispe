@@ -4,17 +4,23 @@
 
 
 (defpred teste ([]) 
-   (println 'vide)
    true
 )
 
 (defpred teste ([a $ b])
-   (setq e (+ a "_a"))
-   (println e)
+   (< a 10)
+   (println a)
    (teste b)
 )
 
+(defpred teste (l)
+   (println "We stop" l)
+)
 
-(teste '("a" "b"))
+(teste '(1 2 11 12 13))
+
+
+
+
 
 
