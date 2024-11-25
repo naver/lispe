@@ -317,6 +317,13 @@ public:
                         action = a;
                         return this;
                     }
+                    case l_defpred: {
+                        List* a = new List_predicate_eval((List*)body);
+                        lisp->storeforgarbage(a);
+                        a->append(var);
+                        action = a;
+                        return this;
+                    }
                 }
             }
         }
@@ -1304,7 +1311,7 @@ Element* List::transformargument(LispE* lisp) {
                         }
                     }
                     if (!element->isAtom())
-                        throw new Error("Error: Missing argument in defpat function");
+                        throw new Error("Error: Missing argument in defpat/defpred function");
                 }
                 element = new Listargumentfunction(this, element);
             }

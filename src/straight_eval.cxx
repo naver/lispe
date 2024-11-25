@@ -53,6 +53,9 @@ Element* eval_body_as_argument_min(LispE* lisp, Element* function, unsigned long
     
     if (function->isList()) {
         switch(function->function_label(lisp)) {
+            case l_defpred:
+                function = new List_predicate_eval((List*)function);
+                break;
             case l_defpat:
                 function = new List_pattern_eval((List*)function);
                 break;
@@ -2164,6 +2167,172 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
+
+Element* List_predicate_eval::eval(LispE* lisp) {
+    List* arguments = lisp->provideList();
+    Element* element;
+    Element* body;
+    
+    long i;
+    //We calculate our values in advance, in the case of a recursive call, we must
+    //use current values on the stack
+    long nbarguments = liste.size()-1;
+    int16_t ilabel = -1;
+    int16_t sublabel = -1;
+    char match;
+    char depth = lisp->depths[function_label] - 1;
+
+    try {
+        lisp->checkState(this);
+        for (i = 1; i <= nbarguments; i++) {
+            element = liste[i]->eval(lisp);
+            
+            ilabel = lisp->extractdynamiclabel(element, depth);
+            if (ilabel > l_final && element->type != t_data) {
+                match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
+                if (match != check_ok) {
+                    arguments->clear();
+                    throw &lisp->delegation->predicate_error;
+                }
+            }
+            //We keep the track of the first element as it used as an index to gather pattern methods
+            if (i == 1)
+                sublabel = ilabel;
+            arguments->append(element->duplicate_constant(lisp));
+        }
+    }
+    catch (Error* err) {
+        arguments->release();
+#ifndef LISPE_WASM
+        err->release();
+#endif
+        return null_;
+    }
+
+    char tr = lisp->check_trace_in_function();
+
+    body = NULL;
+    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
+    auto subfunction = functions.find(sublabel);
+    if (subfunction == functions.end()) {
+        sublabel = v_null;
+        //We check, if we have a rollback function
+        subfunction = functions.find(sublabel);
+        if (subfunction == functions.end()) {
+            arguments->release();
+            lisp->resetStack();
+            return null_;
+        }
+    }
+
+    body = subfunction->second[0];
+
+    ilabel = 1;
+    match = 0;
+    long sz = subfunction->second.size();
+    lisp->push(body);
+    
+    while (body != NULL) {
+        match = false;
+        while (!match && body != NULL) {
+            element = body->index(2);
+            if (element->size() == nbarguments) {
+                match = true;
+                for (i = 0; i < nbarguments && match; i++) {
+                    match = element->index(i)->unify(lisp, arguments->liste[i], true);
+                }
+                
+                if (match) {
+                    lisp->setstackfunction(body);
+                    break;
+                }
+                
+                lisp->clear_top_stack();
+            }
+            body = NULL;
+            if (ilabel < sz)
+                body = subfunction->second[ilabel++];
+            else {
+                if (sublabel != v_null) {
+                    sublabel = v_null;
+                    ilabel = 1;
+                    //We check, if we have a rollback function
+                    subfunction = functions.find(sublabel);
+                    if (subfunction != functions.end()) {
+                        body = subfunction->second[0];
+                        sz = subfunction->second.size();
+                    }
+                }
+            }
+        }
+        if (!match) {
+            lisp->pop();
+            arguments->release();
+            lisp->resetStack();
+            return null_;
+        }
+        
+        bool success = true;
+        try {
+            nbarguments = body->size();
+            if (nbarguments == 4)
+                element = body->index(3)->eval(lisp);
+            else {
+                element = true_;
+                success = true;
+                for (i = 3; i < nbarguments && element->type != l_return && success; i++) {
+                    element->release();
+                    element = body->index(i)->eval(lisp);
+                    success = element->Boolean();
+                }
+            }
+            if (element->type == l_return) {
+                body = element->eval(lisp);
+                element->release();
+                //This version protects 'e' from being destroyed in the stack.
+                arguments->release(body);
+                lisp->resetStack();
+                lisp->check_end_trace(tr);
+                return lisp->pop(body);
+            }
+        }
+        catch (Error* err) {
+            element->release();
+#ifndef LISPE_WASM
+        err->release();
+#endif
+            success = false;
+        }
+        if (success) {
+            arguments->release(element);
+            lisp->resetStack();
+            lisp->check_end_trace(tr);
+            //This version protects 'e' from being destroyed in the stack.
+            return lisp->pop(element);
+        }
+        element->release();
+        body = NULL;
+        if (ilabel < sz)
+            body = subfunction->second[ilabel++];
+        else {
+            if (sublabel != v_null) {
+                sublabel = v_null;
+                ilabel = 1;
+                //We check, if we have a rollback function
+                subfunction = functions.find(sublabel);
+                if (subfunction != functions.end()) {
+                    body = subfunction->second[0];
+                    sz = subfunction->second.size();
+                }
+            }
+        }
+    }
+    lisp->pop(null_);
+    lisp->resetStack();
+    lisp->check_end_trace(tr);
+    return null_;
+}
+
 
 Element* List_maplist_lambda_eval::eval(LispE* lisp) {
     Element* current_list = null_;
@@ -7117,7 +7286,8 @@ Element* List_converttoatom_eval::eval(LispE* lisp) {
 
 Element* List_bodies_eval::eval(LispE* lisp) {
     Element* function = liste[1]->eval(lisp);
-    if (function->protected_index(lisp, (long)0)->type == l_defpat) {
+    int16_t ty = function->protected_index(lisp, (long)0)->type;
+    if (ty == l_defpat || ty == l_defpred) {
         List* functions =  lisp->provideList();
         int16_t label = function->protected_index(lisp, (long)1)->label();
         lisp->checkState(this);

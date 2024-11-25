@@ -68,7 +68,7 @@ typedef enum {
     t_dictionary, t_dictionaryi, t_dictionaryn,
     t_tree, t_treei, t_treen,
     t_heap, t_data, t_maybe,
-    t_error, t_function, t_library_function, t_pattern, t_lambda, t_thread,
+    t_error, t_function, t_library_function, t_predicate, t_pattern, t_lambda, t_thread,
     t_action, t_condition, t_conditiontake, t_conditiondrop, t_initialisation, t_counter, t_countertake, t_counterdrop, t_code,
     t_call, t_call_lambda, t_eval, t_fileelement,
     
@@ -84,7 +84,7 @@ typedef enum {
     
     //Recording in the stack or in memory
     l_sleep, l_wait, l_infix,
-    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
+    l_lambda, l_defun, l_dethread, l_deflib, l_deflibpat, l_defpred, l_defpat, l_defmacro, l_defspace, l_space, l_lib, l_self,l_label,
     l_set_const, l_setq, l_setg, l_seth, l_at, l_set_at, l_extract, l_set_range, l_at_shape, l_set_shape, l_let,
     l_block, l_root, l_elapse, l_code,
     l_if, l_ife,  l_ncheck, l_check, l_cond, l_select, l_switch,

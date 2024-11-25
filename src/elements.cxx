@@ -888,14 +888,14 @@ void Element::prettyfying(LispE* lisp, string& code, long mx) {
         
         Element* params;
         
-        if (type == l_defun || type == l_defpat || type == l_deflib) {
+        if (type == l_defun || type == l_defpat || type == l_deflib || type == l_defpred) {
             code += "(";
             code += lisp->toString(type);
             code += " ";
             code += index(1)->toString(lisp);
             code += " ";
             params = index(2);
-            if (type == l_defpat) {
+            if (type == l_defpat || type == l_defpred) {
                 code += "(";
                 string local;
                 for (long i = 0; i < params->size(); i++) {

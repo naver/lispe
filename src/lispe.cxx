@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2024.8.19.20.17";
+static std::string version = "1.2024.11.25.15.47";
 string LispVersion() {
     return version;
 }
@@ -131,10 +131,12 @@ static u_ustring U(string x) {
 }
 //------------------------------------------------------------
 
-Delegation::Delegation() : main_tokenizer(NULL) {
+Delegation::Delegation() : main_tokenizer(NULL), predicate_error("Predicate Error") {
     mark = 0;
     current_error = NULL;
     windowmode = NULL;
+    
+    predicate_error.status = s_constant;
     
 #ifdef LISPE_WASM
     input_handler = NULL;
@@ -257,6 +259,7 @@ void Delegation::initialisation(LispE* lisp) {
     evals[t_function] = &List::evalt_function;
     evals[t_library_function] = &List::evalt_library_function;
     evals[t_pattern] = &List::evalt_pattern;
+    evals[t_predicate] = &List::evalt_predicate;
     evals[t_lambda] = &List::evalt_lambda;
     evals[t_thread] = &List::evalt_thread;
     evals[t_data] = &List::evalt_data;
@@ -345,6 +348,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_deflibpat, "deflibpat", P_THREE, &List::evall_deflibpat);
     set_instruction(l_defmacro, "defmacro", P_FOUR, &List::evall_defmacro);
     set_instruction(l_defpat, "defpat", P_ATLEASTFOUR, &List::evall_defpat);
+    set_instruction(l_defpred, "defpred", P_ATLEASTFOUR, &List::evall_defpred);
     set_instruction(l_defspace, "defspace", P_TWO, &List::evall_defspace);
     set_instruction(l_defun, "defun", P_ATLEASTFOUR, &List::evall_defun);
     set_instruction(l_dethread, "dethread", P_ATLEASTFOUR, &List::evall_defun);
@@ -734,6 +738,7 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[t_function] = U"function_";
     code_to_string[t_library_function] = U"library_function_";
     code_to_string[t_pattern] = U"pattern_";
+    code_to_string[t_predicate] = U"predicate_";
     code_to_string[t_lambda] = U"lambda_";
     code_to_string[t_thread] = U"thread_";
     
@@ -769,6 +774,7 @@ void Delegation::initialisation(LispE* lisp) {
     _TRUE = (Atome*)lisp->provideAtomOrInstruction(v_true);
     _EMPTYATOM = (Atome*)lisp->provideAtomOrInstruction(v_emptyatom);
     _DEFPAT = (Atome*)lisp->provideAtomOrInstruction(l_defpat);
+    _DEFPRED = (Atome*)lisp->provideAtomOrInstruction(l_defpred);
 
     _DICO_STRING = (Atome*)lisp->provideAtomOrInstruction(l_dictionary);
     _DICO_INTEGER = (Atome*)lisp->provideAtomOrInstruction(l_dictionaryi);
@@ -863,6 +869,7 @@ void Delegation::initialisation(LispE* lisp) {
     provideAtomType(t_function);
     provideAtomType(t_library_function);
     provideAtomType(t_pattern);
+    provideAtomType(t_predicate);
     provideAtomType(t_lambda);
     provideAtomType(t_thread);
     
@@ -1846,6 +1853,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 cont = true;
                 return element;
             }
+            case l_defpred:
             case l_defpat: {
                 Element* arguments = element->index(2);
                 Element* a;
@@ -1991,7 +1999,10 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
             if (body->index(0)->label() == l_defun)
                 body = new List_function_eval(this, (Listincode*)element, (List*)body);
             else
-                body = new List_pattern_eval((Listincode*)element, (List*)body);
+                if (body->index(0)->label() == l_defpred)
+                    body = new List_predicate_eval((Listincode*)element, (List*)body);
+                else
+                    body = new List_pattern_eval((Listincode*)element, (List*)body);
             
             storeforgarbage(body);
             removefromgarbage(element);
@@ -2359,6 +2370,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     }
                     if (current_program->size() == 1 &&
                         (current_program->index(0)->label() == l_defun ||
+                         current_program->index(0)->label() == l_defpred ||
                          current_program->index(0)->label() == l_defpat)) {
                         //We are defining a function, we can record it now...
                         parse.defun_functions[element->label()] = current_program;
@@ -3151,6 +3163,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 

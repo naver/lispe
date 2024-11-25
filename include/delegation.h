@@ -176,6 +176,7 @@ public:
     std::atomic<long> id_pool;
 
     Error* current_error;
+    Error predicate_error;
     
     reading_string reading_string_function;
     reading_string display_string_function;
@@ -191,6 +192,7 @@ public:
     Atome* _EMPTYATOM;
     Atome* _LISTSEPARATOR;
     Atome* _DEFPAT;
+    Atome* _DEFPRED;
     Atome* _DICO_INTEGER;
     Atome* _DICO_NUMBER;
     Atome* _DICO_STRING;

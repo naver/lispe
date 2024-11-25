@@ -1053,6 +1053,7 @@ public:
     }
     
     Element* eval_pattern(LispE* lisp, int16_t function_name);
+    Element* eval_predicate(LispE* lisp, int16_t function_name);
     
     void evalthread(LispE*, List* body);
     Element* evalfunction(LispE*, Element* body);
@@ -1335,6 +1336,7 @@ public:
     Element* evall_deflibpat(LispE* lisp);
     Element* evall_defmacro(LispE* lisp);
     Element* evall_defpat(LispE* lisp);
+    Element* evall_defpred(LispE* lisp);
     Element* evall_defspace(LispE* lisp);
     Element* evall_defun(LispE* lisp);
     Element* evall_divide(LispE* lisp);
@@ -1467,7 +1469,12 @@ public:
         //In this case, it must be a pattern function call (t_pattern)
         return eval_pattern(lisp, ((Atomefonction*)liste[0])->function_label);
     }
-    
+
+    inline Element* evalt_predicate(LispE* lisp) {
+        //In this case, it must be a pattern function call (t_predicate)
+        return eval_predicate(lisp, ((Atomefonction*)liste[0])->function_label);
+    }
+
     inline Element* evalt_lambda(LispE* lisp) {
         //In this case, it must be a self call (t_self)
         return eval_lambda(lisp, (List*)((Atomefonction*)liste[0])->body);
@@ -4458,6 +4465,37 @@ public:
     }
     
     List_pattern_eval(List* b) : body(b) {
+        liste.push_element(b);
+        type = t_eval;
+        status = s_constant;
+        function_label = body->liste[1]->label();
+    }
+    
+    bool eval_Boolean(LispE* lisp, int16_t instruction);
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    int16_t label() {
+        return t_call;
+    }
+    
+};
+
+class List_predicate_eval : public Listincode {
+public:
+    List* body;
+    int16_t function_label;
+    
+    List_predicate_eval(Listincode* l, List* b) : body(b), Listincode(l) {
+        type = t_call;
+        status = s_constant;
+        function_label = body->liste[1]->label();
+    }
+    
+    List_predicate_eval(List* b) : body(b) {
         liste.push_element(b);
         type = t_eval;
         status = s_constant;

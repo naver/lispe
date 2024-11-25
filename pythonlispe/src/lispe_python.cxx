@@ -518,6 +518,7 @@ public:
     PyObject* pDict;
     PyObject* pLocalDict;
     bool init_python;
+    std::unordered_map<string, PyObject*> dictionaries;
 
     Pythoninterpreter(short ty) : Element(ty) {
         pModule = NULL;
@@ -595,7 +596,7 @@ public:
         return true_;
     }
 
-    Element* Run_simple(string& code, short idthread, PyObject* py_dict)
+    Element* Run_simple(LispE* lisp, string& code, PyObject* py_dict)
     {
 
         PyObject *py_result = PyRun_StringFlags(code.c_str(), Py_file_input, py_dict, py_dict, nullptr);
@@ -618,7 +619,7 @@ public:
     }
 
     // Function to run the Python script in a separate thread
-    Element* Run_elapse(string& code, int elapse_time, short idthread, PyObject* py_dict) {
+    Element* Run_elapse(LispE* lisp, string& code, int elapse_time, PyObject* py_dict) {
         static char* import_code = "import signal\nimport time\n";
         static char* func_code = "def timeout_handler(signum, frame):\n  signal.signal(signal.SIGALRM, signal.SIG_DFL)\n  signal.alarm(0)\n  raise TimeoutError(\"Time out\")\n";
         static char* init_code = "signal.signal(signal.SIGALRM, timeout_handler)\nsignal.alarm(";
@@ -650,7 +651,7 @@ public:
         return true_;
     }
 
-    Element* methodRun(LispE* lisp, string& code, string& returnvariable, double elapse_time) {
+    Element* methodRun(LispE* lisp, string& code, string& return_variable, double elapse_time) {
 
         lisp->lock();
         if (!init_python) {
@@ -674,38 +675,38 @@ public:
                 } else {
                     Py_DECREF(compiled_code);
                     if (elapse_time == -1)
-                        kcmd = Run_simple(code, idthread, py_dict);
+                        kcmd = Run_simple(lisp, code, pDict);
                     else {
         #ifndef WIN32
                         struct sigaction old_action;
                         sigaction(SIGALRM, nullptr, &old_action);
-                        kcmd = Run_elapse(code, elapse_time, idthread, py_dict);
+                        kcmd = Run_elapse(lisp, code, elapse_time, pDict);
                         sigaction(SIGALRM, &old_action, nullptr);
         #else
-                        kcmd = Run_elapse(code, elapse_time, idthread, py_dict);
+                        kcmd = Run_elapse(lisp, code, elapse_time, pDict);
         #endif
                     }
                 }
             }
+            catch(Error* e) {
+                clean_signal();
+                methodClose(lisp);
+                lisp->unlock();
+                throw e;
+            }
         }
-        catch(Error* e) {
-            clean_signal();
-            methodClose();
-            throw e;
-        }
-
         Element* returning_value = true_;
         if (return_variable != "") {
-            PyObject* py_result_val = PyDict_GetItemString(py_dict, return_variable.c_str());
+            PyObject* py_result_val = PyDict_GetItemString(pDict, return_variable.c_str());
             if (py_result_val != NULL) {
-                returning_value = toLispE(py_result_val);
+                returning_value = toLispE(lisp, py_result_val);
             } else {
                 return_variable += ": This Python variable is unknown";
                 throw new Error(return_variable);
             }
         }
 
-        methodClose();
+        methodClose(lisp);
         clean_signal();
         lisp->unlock();
 
@@ -745,6 +746,142 @@ public:
         lisp->unlock();
         //you may return any value of course...
         return true_;
+    }
+
+    Element* methodRunModule(LispE* lisp, string& name, string& code, string& return_variable)
+    {
+
+        lisp->lock();
+        if (!init_python)
+        {
+            initialize();
+        }
+
+        // 0 is the first parameter and so on...
+        PyObject *py_main = PyImport_AddModule("__main__");
+        PyObject *py_dict = PyModule_GetDict(py_main);
+
+        PyObject *local_dict = NULL;
+
+        if (code != "")
+        {
+            try {
+                PyObject *compiled_code = Py_CompileString(code.c_str(), "<string>", Py_file_input);            
+                if (compiled_code == NULL) {
+                    return_variable = "PYT(996):";
+                    return_variable += python_error_string();
+                    // Imprime l'erreur ou la traite selon vos besoins.
+                    throw new Error(return_variable);
+                }
+                Py_DECREF(compiled_code);
+
+                local_dict = PyDict_New();
+                PyObject *py_result = PyRun_StringFlags(code.c_str(), Py_file_input, py_dict, local_dict, nullptr);
+
+                if (!py_result)
+                {
+                    if (PyErr_Occurred())
+                    {
+                        Py_DECREF(local_dict);
+                        return_variable = "PYT(997):";
+                        return_variable += python_error_string();
+                        // Imprime l'erreur ou la traite selon vos besoins.
+                        throw new Error(return_variable);
+                    }
+                }
+                else
+                {
+                    Py_DECREF(py_result); // Nettoie le résultat si rien ne s'est mal passé
+                }
+                dictionaries[name] = local_dict;
+            }
+            catch (Error* err) {
+                lisp->unlock();
+                clean_signal();                
+                throw err;
+            }
+        }
+
+        Element* return_value = true_;
+        if (return_variable != "") {
+            
+            PyObject* py_result_val = PyDict_GetItemString(local_dict, return_variable.c_str());
+            if (py_result_val != NULL) {
+                return_value = toLispE(lisp, py_result_val);
+            }
+            else {
+                return_variable += ": This Python variable is unknown";
+                lisp->unlock();
+                clean_signal();
+                throw new Error(return_variable);
+            }
+        }
+
+        lisp->unlock();
+        clean_signal();
+        // you may return any value of course...
+        return return_value;
+    }
+
+    Element* methodGetModule(LispE* lisp, string& module_name, string& return_variable)
+    {        
+        if (!init_python)    
+        {
+            throw new Error("No Python interpreter has been initialized");
+        }
+
+        lisp->lock();
+        // 0 is the first parameter and so on...
+        if (dictionaries.find(module_name) == dictionaries.end()) {
+            module_name += "is unknown";
+            lisp->unlock();
+            throw new Error(module_name);
+        }
+
+        PyObject *local_dict = dictionaries[module_name];
+        Element *tmg;
+
+        if (return_variable == "")
+        {
+            Dictionary* variables = new Dictionary();
+            // Access local variables in local_dict
+            PyObject *local_keys = PyDict_Keys(local_dict);
+            Py_ssize_t num_locals = PyList_Size(local_keys);
+            for (Py_ssize_t i = 0; i < num_locals; i++)
+            {
+                PyObject *key = PyList_GetItem(local_keys, i);     // Get each variable name (key)
+                PyObject *value = PyDict_GetItem(local_dict, key); // Get the corresponding value
+
+                // Convert the key (variable name) to a string and print the variable name and value
+                const char *variable_name = PyUnicode_AsUTF8(key);
+
+                if (variable_name != NULL && value != NULL)
+                {
+                    module_name = variable_name;
+                    tmg = toLispE(lisp, value);
+                    variables->recording(module_name, tmg);
+                }
+            }
+
+            Py_DECREF(local_keys); // Clean up the keys list
+
+            clean_signal();
+            lisp->unlock();
+            return variables;
+        }
+        else
+        {
+            PyObject *py_result_val = PyDict_GetItemString(local_dict, return_variable.c_str());
+            if (py_result_val != NULL)
+            {
+                lisp->unlock();
+                return toLispE(lisp, py_result_val);
+            }
+        }
+
+        lisp->unlock();
+        return_variable += ": This Python variable is unknown";
+        throw new Error(return_variable);
     }
 
     Element* methodImport(LispE* lisp, string& pythonfilename) {
@@ -824,7 +961,7 @@ public:
 
 };
 
-typedef enum {python_new, python_run, python_runfile, python_setpath, python_import, python_execute, python_simplestring, python_close} pythonery;
+typedef enum {python_new, python_run, python_runfile, python_setpath, python_import, python_execute, python_simplestring, python_close, python_runmodule, python_getmodule} pythonery;
 
 class Pythonmethod : public Element {
 public:
@@ -853,13 +990,24 @@ public:
                 return new Pythoninterpreter(python_type);
             case python_run: {
                 string code = lisp->get_variable(U"code")->toString(lisp);
-                double timeout = lisp->get_variable(U"timeout")->Number();
+                double timeout = lisp->get_variable(U"timeout")->asNumber();
                 string returnvariable = lisp->get_variable(U"variable")->toString(lisp);
-                return py->methodRun(lisp, code, timeout);
+                return py->methodRun(lisp, code, returnvariable, timeout);
             }
             case python_runfile: {
                 string path = lisp->get_variable(U"path")->toString(lisp);
                 return py->methodRunFile(lisp, path);
+            }
+            case python_runmodule: {
+                string name = lisp->get_variable(U"name")->toString(lisp);
+                string code = lisp->get_variable(U"code")->toString(lisp);
+                string returnvariable = lisp->get_variable(U"variable")->toString(lisp);
+                return py->methodRunModule(lisp, name, code, returnvariable);
+            }
+            case python_getmodule: {
+                string name = lisp->get_variable(U"name")->toString(lisp);
+                string returnvariable = lisp->get_variable(U"variable")->toString(lisp);
+                return py->methodGetModule(lisp, name, returnvariable);
             }
             case python_setpath:{
                 string path = lisp->get_variable(U"path")->toString(lisp);
@@ -910,23 +1058,25 @@ public:
         return L"";
     }
 
+
 };
 
 
 extern "C" {
-Exporting bool InitialisationModule(LispE* lisp) {
-    wstring w = L"python_";
-    short type_python = lisp->encode(w);
-    lisp->extension("deflib python()", new Pythonmethod(lisp, python_new, type_python));
-    lisp->extension("deflib python_run(py code (variable "") (timeout -1))", new Pythonmethod(lisp, python_run, type_python));
-    lisp->extension("deflib python_runfile(py path)", new Pythonmethod(lisp, python_runfile, type_python));
-    lisp->extension("deflib python_setpath(py path)", new Pythonmethod(lisp, python_setpath, type_python));
-    lisp->extension("deflib python_import(py path)", new Pythonmethod(lisp, python_import, type_python));
-    lisp->extension("deflib python_execute(py name arguments)", new Pythonmethod(lisp, python_execute, type_python));
-    lisp->extension("deflib python_simple(py code)", new Pythonmethod(lisp, python_simplestring, type_python));
-    lisp->extension("deflib python_close(py)", new Pythonmethod(lisp, python_close, type_python));
-    return true;
-}
-
+    Exporting bool InitialisationModule(LispE* lisp) {
+        wstring w = L"python_";
+        short type_python = lisp->encode(w);
+        lisp->extension("deflib python()", new Pythonmethod(lisp, python_new, type_python));
+        lisp->extension("deflib python_run(py code (variable "") (timeout -1))", new Pythonmethod(lisp, python_run, type_python));
+        lisp->extension("deflib python_runmodule(py name code (variable ""))", new Pythonmethod(lisp, python_runmodule, type_python));
+        lisp->extension("deflib python_getmodule(py name (variable ""))", new Pythonmethod(lisp, python_getmodule, type_python));
+        lisp->extension("deflib python_runfile(py path)", new Pythonmethod(lisp, python_runfile, type_python));
+        lisp->extension("deflib python_setpath(py path)", new Pythonmethod(lisp, python_setpath, type_python));
+        lisp->extension("deflib python_import(py path)", new Pythonmethod(lisp, python_import, type_python));
+        lisp->extension("deflib python_execute(py name arguments)", new Pythonmethod(lisp, python_execute, type_python));
+        lisp->extension("deflib python_simple(py code)", new Pythonmethod(lisp, python_simplestring, type_python));
+        lisp->extension("deflib python_close(py)", new Pythonmethod(lisp, python_close, type_python));
+        return true;
+    }
 }
 

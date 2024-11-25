@@ -3777,7 +3777,7 @@ static const char* _keywords[] = { "!","!=","#checking","#compose","#folding","#
     "concept","cond","connect","cons","consp","const","constmap","constvector","content","continue",
     "copy","cos","cosh","count","counter","create","created","createdirectory","createserver","curl",
     "current","cursor","cursorchar","cursorstyle","curve","cut","cycle","data","date","day",
-    "deaccentuate","decimal","decode","def","default","define","definitions","deflib","defmacro","defpat",
+    "deaccentuate","decimal","decode","def","default","define","definitions","deflib","defmacro","defpat","defpred",
     "defun","degree","delete","dependencies","dependency","deriving","deselect","determinant","dethread","dimension",
     "dloop","do","document","dos","dostoutf8","double","doublemetaphone","drawcolor","drawtext","drop",
     "dropWhile","dropwhile","dthrough","dvector","e_arabic","e_baltic","e_celtic","e_cp1252","e_cyrillic","e_greek",
