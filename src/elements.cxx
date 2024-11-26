@@ -3049,12 +3049,12 @@ Element* String::extraction(LispE* lisp, List* liste) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }
@@ -3259,12 +3259,12 @@ Element* Stringbyte::extraction(LispE* lisp, List* liste) {
         case t_integer:
         case t_number:
             upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }
@@ -3479,12 +3479,12 @@ Element* String::replace_in(LispE* lisp, List* liste) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }
@@ -3697,12 +3697,12 @@ Element* Stringbyte::replace_in(LispE* lisp, List* liste) {
         case t_integer:
         case t_number:
             upto = lisp->handlingutf8->charTobyte(content, e_upto->asInteger());
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = content.size() + upto;
                 }

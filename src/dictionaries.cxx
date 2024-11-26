@@ -146,6 +146,16 @@ void Dictionarypool::release() {
     }
 }
 
+void Dictionarypool::append(Element* e) {
+    if (choice)
+        u_key = e->asUString(NULL);
+    else {
+        dictionary[u_key] = e;
+        e->increment();
+        reversechoice();
+    }
+}
+
 void Dictionarypool::append(LispE* lisp, u_ustring& k) {
     if (choice)
         u_key = k;

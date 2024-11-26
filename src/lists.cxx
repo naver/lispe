@@ -2030,12 +2030,12 @@ Element* List::extraction(LispE* lisp, List* l) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = sz + upto;
                 }
@@ -2247,12 +2247,12 @@ Element* LList::extraction(LispE* lisp, List* l) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = sz + upto;
                 }
@@ -2491,12 +2491,12 @@ Element* List::replace_in(LispE* lisp, List* l) {
             case t_integer:
             case t_number:
                 upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
+                if (firstisString != -1 && upto > 0) {
                     //in this case upto is a number of characters, not a position
                     upto += from + firstisString;
                 }
                 else {
-                    if (upto < 0) {
+                    if (upto <= 0) {
                         //We start from the end...
                         upto = size() + upto;
                     }
@@ -2738,12 +2738,12 @@ Element* LList::replace_in(LispE* lisp, List* l) {
             case t_integer:
             case t_number:
                 upto = e_upto->asInteger();
-                if (firstisString != -1 && upto >= 0) {
+                if (firstisString != -1 && upto > 0) {
                     //in this case upto is a number of characters, not a position
                     upto += from + firstisString;
                 }
                 else {
-                    if (upto < 0) {
+                    if (upto <= 0) {
                         //We start from the end...
                         upto = sz + upto;
                     }
@@ -5151,12 +5151,12 @@ Element* Strings::extraction(LispE* lisp, List* l) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = sz + upto;
                 }
@@ -5370,12 +5370,12 @@ Element* Strings::replace_in(LispE* lisp, List* l) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = size() + upto;
                 }
@@ -6163,12 +6163,12 @@ Element* Stringbytes::extraction(LispE* lisp, List* l) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = sz + upto;
                 }
@@ -6382,12 +6382,12 @@ Element* Stringbytes::replace_in(LispE* lisp, List* l) {
         case t_integer:
         case t_number:
             upto = e_upto->asInteger();
-            if (firstisString != -1 && upto >= 0) {
+            if (firstisString != -1 && upto > 0) {
                 //in this case upto is a number of characters, not a position
                 upto += from + firstisString;
             }
             else {
-                if (upto < 0) {
+                if (upto <= 0) {
                     //We start from the end...
                     upto = size() + upto;
                 }

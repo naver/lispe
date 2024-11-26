@@ -262,11 +262,9 @@ static void Init() {
 
 //Callback function
 static size_t call_writing(char *ptr, size_t size, size_t nmemb, Lispe_curl* userdata) {
-    int max = size*nmemb;
-    for (int i = 0; i < max; i++)
-        userdata->data += ptr[i];
-
-    return max;
+    long real_size = size*nmemb;
+    userdata->data.append(static_cast<char*>(ptr), real_size);
+    return real_size;
 }
 
 //-------------------------------------------------------------------------------------------
@@ -404,8 +402,9 @@ Element* Lispe_curl_function::MethodExecute(LispE* lisp) {
     CURLcode res = curl_easy_perform(lcurl->curl);
     if (tmp != NULL)
         fclose(tmp);
-    if (res == 0)
-        return lcurl;
+    if (res == 0) {
+        return lisp->provideString(lcurl->data);
+    }
     return errormsg(res);
 }
 

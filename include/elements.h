@@ -1229,7 +1229,16 @@ public:
     }
     
     wstring jsonString(LispE* lisp) {
-        return wjsonstring(name);
+        switch (atome) {
+            case v_null:
+                return L"false";
+            case v_emptylist:
+                return L"[]";
+            case v_true:
+                return L"true";
+            default:
+                return wjsonstring(name);
+        }
     }
     
     Element* eval(LispE* lisp);
@@ -3716,6 +3725,7 @@ public:
     Element* newInstance();
     Element* copyatom(LispE* lisp, uint16_t s);
     
+    void append(Element* e);
     void append(LispE* lisp, u_ustring& k);
     void append(LispE* lisp, double v);
     void append(LispE* lisp, long v);
