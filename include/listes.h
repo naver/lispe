@@ -915,7 +915,7 @@ public:
             buffer += liste[i]->jsonString(lisp);
         }
         buffer += L"]";
-        liste.setmark(true);
+        liste.setmark(false);
         return buffer;
     }
     
