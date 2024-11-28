@@ -15,6 +15,9 @@
 class Lispe_curl : public Element {
 public:
     LispE* lisp;
+    
+    Element* function;
+    Element* argument;
 
     string data;
 
@@ -24,6 +27,8 @@ public:
     int urlsize;
 
     Lispe_curl(LispE* l, short idcurl) : Element(idcurl) {
+        function = NULL;
+        argument = NULL;
         lisp = l;
         curl = curl_easy_init();
         urlsize = 2048;
@@ -35,6 +40,8 @@ public:
             free(urlbuffer);
         if (curl != NULL)
             curl_easy_cleanup(curl);
+        if (argument != NULL)
+            argument->decrement();
     }
     
     void clear() {
@@ -55,7 +62,7 @@ public:
     Element* extraction(LispE* lisp, List* l);
 };
 
-typedef enum {curl_curl, curl_passwrd, curl_proxy, curl_url, curl_options, curl_execute } curl_type;
+typedef enum {curl_curl, curl_passwrd, curl_proxy, curl_url, curl_options, curl_execute, curl_function} curl_type;
 
 class Lispe_curl_function : public Element {
 public:
@@ -72,6 +79,7 @@ public:
     Element* MethodURL(LispE* lisp);
     Element* MethodExecute(LispE* lisp);
     Element* MethodOptions(LispE* lisp);
+    Element* MethodCallback(LispE* lisp);
     
     Element* eval(LispE* lisp);
 

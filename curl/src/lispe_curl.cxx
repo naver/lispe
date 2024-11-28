@@ -261,9 +261,31 @@ static void Init() {
 
 
 //Callback function
+Element* eval_body_as_argument(LispE* lisp, Element* function, const unsigned long arity);
 static size_t call_writing(char *ptr, size_t size, size_t nmemb, Lispe_curl* userdata) {
     long real_size = size*nmemb;
-    userdata->data.append(static_cast<char*>(ptr), real_size);
+    if (userdata->function != NULL) {
+        LispE* lisp = userdata->lisp;
+        userdata->data.assign(static_cast<char*>(ptr), real_size);
+        if (userdata->data == "404 page not found")
+            return real_size;
+        Element* data = lisp->provideString(userdata->data);
+        List* call = (List*)eval_body_as_argument(lisp, userdata->function, P_THREE);
+        call->append(data);
+        call->append(lisp->quoted(userdata->argument));
+        Element* e = userdata->lisp->n_null;
+        try {
+            e = call->eval(userdata->lisp);
+        }
+        catch (Error* err) {
+            cerr << err->toString(userdata->lisp) << endl;
+            err->release();
+        }
+        call->force_release();
+        e->release();
+    }
+    else
+        userdata->data.append(static_cast<char*>(ptr), real_size);
     return real_size;
 }
 
@@ -408,6 +430,20 @@ Element* Lispe_curl_function::MethodExecute(LispE* lisp) {
     return errormsg(res);
 }
 
+Element* Lispe_curl_function::MethodCallback(LispE* lisp) {
+    Element* crl = lisp->get_variable("crl");
+    if (crl->type != idcurl)
+        throw new Error("Error: first argument is not a 'curl' objet");
+
+    Lispe_curl* lcurl = (Lispe_curl*)crl;
+    lcurl->function = lisp->get_variable("function");
+    if (lcurl->argument != NULL)
+        lcurl->argument->decrement();
+    lcurl->argument = lisp->get_variable("data");
+    lcurl->argument->increment();
+    return true_;
+}
+
 Element* Lispe_curl_function::MethodOptions(LispE* lisp) {
     Element* crl = lisp->get_variable("crl");
     if (crl->type != idcurl)
@@ -462,6 +498,8 @@ Element* Lispe_curl_function::eval(LispE* lisp) {
             return MethodExecute(lisp);
         case curl_options:
             return MethodOptions(lisp);
+        case curl_function:
+            return MethodCallback(lisp);
     }
     return null_;
 }
@@ -480,6 +518,8 @@ wstring Lispe_curl_function::asString(LispE* lisp) {
             return L"Execution with storage in a file";
         case curl_options:
             return L"Initialisation of an option";
+        case curl_function:
+            return L"Set a callback function and an object";
     }
 	return L"";
 }
@@ -495,6 +535,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib curl_proxy (crl str)", new Lispe_curl_function(lisp, curl_proxy));
     lisp->extension("deflib curl_execute (crl (filename))", new Lispe_curl_function(lisp, curl_execute));
     lisp->extension("deflib curl_options (crl str data)", new Lispe_curl_function(lisp, curl_options));
+    lisp->extension("deflib curl_set_function (crl function data)", new Lispe_curl_function(lisp, curl_function));
 
     return true;
 }
