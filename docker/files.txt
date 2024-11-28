@@ -1,0 +1,10 @@
+jag
+libgui.so
+liblispe.a
+liblispe_blas.so
+liblispe_curl.so
+liblispe_sqlite.so
+liblispe_transducer.so
+liblispe_xml.so
+pylispe.so
+lispe
