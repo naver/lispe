@@ -79,15 +79,21 @@ void copy_to_clipboard(string buffer) {
     exec_command(cmd.str().c_str());
 }
 #else
-bool copyToClipboard(const std::string& text);
 string paste_from_clipboard() {
     return "";
 }
+#ifdef APPLE
+bool copyToClipboard(const std::string& text);
+#else
+bool copyToClipboard(const std::string& text) {
+	return true;
+}
+#endif
+
 void copy_to_clipboard(string buffer) {
     copyToClipboard(buffer);
 }
 #endif
-
 
 using std::stringstream;
 

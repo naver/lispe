@@ -2273,6 +2273,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
         }
         
         bool success = true;
+		element = true_;
         try {
             long nbinstructions = body->size();
             if (nbinstructions == 4) {

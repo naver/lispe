@@ -1797,6 +1797,7 @@ Element* List::eval_predicate(LispE* lisp, int16_t function_label) {
         }
         
         bool success = true;
+		element = true_;
         try {
             long nbinstructions = body->size();
             if (nbinstructions == 4) {
