@@ -79,10 +79,13 @@ void copy_to_clipboard(string buffer) {
     exec_command(cmd.str().c_str());
 }
 #else
+bool copyToClipboard(const std::string& text);
 string paste_from_clipboard() {
     return "";
 }
-void copy_to_clipboard(string buffer) {}
+void copy_to_clipboard(string buffer) {
+    copyToClipboard(buffer);
+}
 #endif
 
 
@@ -2523,8 +2526,10 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     else
                         last = convertinginteger(line);
                     line = L"";
-                    if (first >= 0 && first < last && last < lines.size())
+                    if (first >= 0 && first < last && last < lines.size()) {
                         copybuffer = lines.code(first, last);
+                        copy_to_clipboard(convert(copybuffer));
+                    }
 
                     st << line << " copied";
                     line = lines[poslines[currentline]];
@@ -2533,6 +2538,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                     return true;
                 case x_pasteselect:
                     copybuffer = kbuffer;
+                    copy_to_clipboard(convert(copybuffer));
                     line = lines[poslines[currentline]];
                     option = x_none;
                     displayonlast(true);
@@ -2544,6 +2550,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                             last = lines.size() - 1;
                             if (option == x_cutting) {
                                 copybuffer = lines.code(first, last+1);
+                                copy_to_clipboard(convert(copybuffer));
                                 st << line << " cut";
                                 displayonlast(true);
                             }
@@ -2561,6 +2568,7 @@ bool jag_editor::checkaction(string& buff, long& first, long& last, bool lisp) {
                         if (first >= 0 && first < last && last < lines.size()) {
                             if (option == x_cutting) {
                                 copybuffer = lines.code(first, last);
+                                copy_to_clipboard(convert(copybuffer));
                                 st << line << " cut";
                                 displayonlast(true);
                             }

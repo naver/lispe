@@ -16,8 +16,8 @@ if ostype == b"Darwin":
     f.write("COMPPLUSPLUS = clang++\n")
     f.write("CURLLIB = -lcurl\n")
     f.write("SQLITELIB = -lsqlite3\n")
-    f.write("REGEX = -DPOSIXREGEX\n")
-    f.write("LIBBOOST = -L/usr/lib/\n")
+    f.write("REGEX = -DPOSIXREGEX -x objective-c++\n")
+    f.write("LIBBOOST = -L/usr/lib/ -framework Cocoa\n")
     lb = "/Library/Frameworks/Python.framework/Versions/"
     versionpython = "Current"
 
