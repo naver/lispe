@@ -82,12 +82,12 @@ void copy_to_clipboard(string buffer) {
 string paste_from_clipboard() {
     return "";
 }
-#ifdef APPLE
-bool copyToClipboard(const std::string& text);
-#else
+#ifdef WIN32
 bool copyToClipboard(const std::string& text) {
 	return true;
 }
+#else
+bool copyToClipboard(const std::string& text);
 #endif
 
 void copy_to_clipboard(string buffer) {
