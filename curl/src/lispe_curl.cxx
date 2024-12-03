@@ -444,6 +444,25 @@ Element* Lispe_curl_function::MethodCallback(LispE* lisp) {
     return true_;
 }
 
+Element* Lispe_curl_function::MethodHeaders(LispE* lisp) {
+    Element* crl = lisp->get_variable("crl");
+    if (crl->type != idcurl)
+        throw new Error("Error: first argument is not a 'curl' objet");
+
+    Lispe_curl* lcurl = (Lispe_curl*)crl;
+
+
+    string data = lisp->get_variable("data")->toString(lisp);
+    if (data.size() >= lcurl->urlsize) {
+        free(lcurl->urlbuffer);
+        lcurl->urlsize = data.size()*1.5;
+        lcurl->urlbuffer = (char*)malloc(lcurl->urlsize);
+    }
+    strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(data));
+    lcurl->headers = curl_slist_append(lcurl->headers, lcurl->urlbuffer);
+    return true_;
+}
+
 Element* Lispe_curl_function::MethodOptions(LispE* lisp) {
     Element* crl = lisp->get_variable("crl");
     if (crl->type != idcurl)
@@ -461,20 +480,27 @@ Element* Lispe_curl_function::MethodOptions(LispE* lisp) {
 
     CURLcode res;
     CURLoption noption = curloptions[option];
-    Element*  kdata = lisp->get_variable("data");
-    if (kdata->isString()) {
-        string data = kdata->toString(lisp);
-        if (data.size() >= lcurl->urlsize) {
-            free(lcurl->urlbuffer);
-            lcurl->urlsize = data.size()*1.5;
-            lcurl->urlbuffer = (char*)malloc(lcurl->urlsize);
-        }
-        strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(data));
-        res = curl_easy_setopt(lcurl->curl, noption, lcurl->urlbuffer);
+    if (noption == CURLOPT_HTTPHEADER) {
+        if (lcurl->headers == NULL)
+            throw new Error("No headers provided with 'curl_set_headers'");
+        res = curl_easy_setopt(lcurl->curl, noption, lcurl->headers);   
     }
     else {
-        long data = kdata->asInteger();
-        res = curl_easy_setopt(lcurl->curl, noption, data);
+        Element*  kdata = lisp->get_variable("data");
+        if (kdata->isString()) {
+            string data = kdata->toString(lisp);
+            if (data.size() >= lcurl->urlsize) {
+                free(lcurl->urlbuffer);
+                lcurl->urlsize = data.size()*1.5;
+                lcurl->urlbuffer = (char*)malloc(lcurl->urlsize);
+            }
+            strcpy_s(lcurl->urlbuffer, lcurl->urlsize, STR(data));
+            res = curl_easy_setopt(lcurl->curl, noption, lcurl->urlbuffer);
+        }
+        else {
+            long data = kdata->asInteger();
+            res = curl_easy_setopt(lcurl->curl, noption, data);
+        }
     }
     if (res == 0)
         return true_;
@@ -500,6 +526,9 @@ Element* Lispe_curl_function::eval(LispE* lisp) {
             return MethodOptions(lisp);
         case curl_function:
             return MethodCallback(lisp);
+        case curl_headers:
+            return MethodHeaders(lisp);
+
     }
     return null_;
 }
@@ -520,6 +549,8 @@ wstring Lispe_curl_function::asString(LispE* lisp) {
             return L"Initialisation of an option";
         case curl_function:
             return L"Set a callback function and an object";
+        case curl_headers:
+            return L"Set the headers for CURLOPT_HTTPHEADER";
     }
 	return L"";
 }
@@ -536,6 +567,7 @@ Exporting bool InitialisationModule(LispE* lisp) {
     lisp->extension("deflib curl_execute (crl (filename))", new Lispe_curl_function(lisp, curl_execute));
     lisp->extension("deflib curl_options (crl str data)", new Lispe_curl_function(lisp, curl_options));
     lisp->extension("deflib curl_set_function (crl function data)", new Lispe_curl_function(lisp, curl_function));
+    lisp->extension("deflib curl_set_headers (crl data)", new Lispe_curl_function(lisp, curl_headers));
 
     return true;
 }

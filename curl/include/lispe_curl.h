@@ -22,6 +22,7 @@ public:
     string data;
 
     CURL *curl;
+    struct curl_slist *headers;
     
     char* urlbuffer;
     int urlsize;
@@ -33,6 +34,7 @@ public:
         curl = curl_easy_init();
         urlsize = 2048;
         urlbuffer = (char*)malloc(urlsize);
+        headers = NULL;
     }
 
     ~Lispe_curl() {
@@ -42,6 +44,8 @@ public:
             curl_easy_cleanup(curl);
         if (argument != NULL)
             argument->decrement();
+        if (headers != NULL)
+            curl_slist_free_all(headers);
     }
     
     void clear() {
@@ -62,7 +66,7 @@ public:
     Element* extraction(LispE* lisp, List* l);
 };
 
-typedef enum {curl_curl, curl_passwrd, curl_proxy, curl_url, curl_options, curl_execute, curl_function} curl_type;
+typedef enum {curl_curl, curl_passwrd, curl_proxy, curl_url, curl_options, curl_execute, curl_function, curl_headers} curl_type;
 
 class Lispe_curl_function : public Element {
 public:
@@ -80,6 +84,7 @@ public:
     Element* MethodExecute(LispE* lisp);
     Element* MethodOptions(LispE* lisp);
     Element* MethodCallback(LispE* lisp);
+    Element* MethodHeaders(LispE* lisp);
     
     Element* eval(LispE* lisp);
 

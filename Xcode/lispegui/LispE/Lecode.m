@@ -262,7 +262,7 @@ BOOL dark = false;
     NSSavePanel* saveDlg = [NSSavePanel savePanel];
     
     // Enable the selection of files in the dialog.
-    
+    [saveDlg setAllowedFileTypes:@[@"lisp"]];
     // Display the dialog.  If the OK button was pressed,
     // process the files.
     if ( [saveDlg runModal] == NSModalResponseOK ) {
