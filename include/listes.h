@@ -48,7 +48,7 @@ public:
     Element** buffer;
     uint64_t last;
     uint64_t sz;
-    uint64_t status;
+    std::atomic<uint64_t> status;
     
     ITEM(long t) {
         status = 0; //this is the reference counter
