@@ -2823,10 +2823,10 @@ Element* List::eval_list_instruction(LispE* lisp) {
         e = l->eval(lisp);
     }
     catch(Error* err) {
-        delete l;
+        lisp->relax(l);
         return lisp->check_error(this, err, -1);
     }
-    delete l;
+    lisp->relax(l);
     return e;
 }
 

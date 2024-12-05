@@ -833,9 +833,18 @@ public:
     
     //We borrow from the class a copy that will share the same liste.item object
     List* borrowing(List* l, long sz) {
-        return delegation->straight_eval[check_arity(l, sz)]->borrowing(l);
+        delegation->lock_thread.locking(isThread);
+        l = delegation->straight_eval[check_arity(l, sz)]->borrowing(l);
+        delegation->lock_thread.unlocking(isThread);
+        return l;
     }
-    
+
+    void relax(List* l) {
+        delegation->lock_thread.locking(isThread);
+        delete l;
+        delegation->lock_thread.unlocking(isThread);
+    }
+
     Element* check_error(List* l,Error* err, int idxinfo);
     
     inline void trace_and_context(Listincode* e) {

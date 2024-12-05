@@ -5578,6 +5578,12 @@ bool LispEJsonCompiler::compile(LispE* lisp, u_ustring& s) {
     return true;
 }
 
+static void displaytoken(u_ustring& tok) {
+    string stok;
+    s_unicode_to_utf8(stok, tok);
+    cerr << stok << endl;
+}
+
 char LispEJsonCompiler::buildexpression(LispE* lisp, Element* container) {
     bool checknext = false;
     to = 0;
