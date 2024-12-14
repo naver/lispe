@@ -109,11 +109,18 @@ public:
     
     inline void pop_back() {
         if (last) {
-            last--;
-            buffer[last]->decrement();
+            buffer[--last]->decrement();
         }
     }
     
+    inline Element* back() {
+        return (last)?buffer[last-1]:NULL;
+    }
+
+    inline Element* popback() {
+        return (last)?buffer[--last]:NULL;
+    }
+
     inline void insert(long pos, Element* val) {
         resize(last);
         
@@ -338,11 +345,11 @@ public:
     }
     
     inline Element* back() {
-        return item->buffer[item->last - 1];
+        return item->back();
     }
     
     inline Element* popback() {
-        return item->buffer[--item->last];
+        return item->popback();
     }
     
     inline void push_element(Element* val) {
