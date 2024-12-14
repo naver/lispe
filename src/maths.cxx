@@ -8910,7 +8910,7 @@ public:
             case math_iabs: {
                 long v = val_v->asInteger();
                 v = (v < 0)?v*-1:v;
-                return lisp->provideNumber(v);
+                return lisp->provideInteger(v);
             }
             case math_acos: {
                 v = val_v->asNumber();

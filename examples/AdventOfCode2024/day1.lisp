@@ -7,7 +7,8 @@
 (setq colon1 (sort '< (maplist (\(x) (@ x 0)) v)))
 (setq colon2 (sort '< (maplist (\(x) (@ x 1)) v)))
 
-(setq r (+ (zipwith (\(x y) (integer (fabs (- x y)))) colon1 colon2)))
+(setq r (+ (zipwith (\(x y) (iabs (- x y))) colon1 colon2)))
+(println r)
 
 (+ (maplist (\(x) (* x (count colon2 x))) colon1))
 
@@ -23,6 +24,7 @@
 
    
  
+
 
 
 
