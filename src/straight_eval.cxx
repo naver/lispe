@@ -6299,6 +6299,10 @@ Element* List_sort_eval::eval(LispE* lisp) {
         case t_strings:
         case t_stringbytes: { // (sort (\(x y) (< y x)) (iota 10))
             try {
+                complist = NULL;
+                if (!comparator->isList())
+                    throw new Error("Error: Expecting a list");
+                
                 complist = (List*)comparator;
                 complist->append(null_);
                 complist->append(null_);
@@ -6310,9 +6314,11 @@ Element* List_sort_eval::eval(LispE* lisp) {
                 return container;
             }
             catch (Error* err) {
-                complist->liste[1] = null_;
-                complist->liste[2] = null_;
-                complist->force_release();
+                if (complist != NULL) {
+                    complist->liste[1] = null_;
+                    complist->liste[2] = null_;
+                    complist->force_release();
+                }
                 container->release();
                 return lisp->check_error(this, err, idxinfo);
             }

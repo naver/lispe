@@ -25,7 +25,7 @@
 
 typedef enum {str_lowercase, str_uppercase, str_is_vowel, str_is_consonant, str_deaccentuate, str_is_emoji, str_is_lowercase, str_is_uppercase, str_is_alpha, str_remplace, str_left, str_right, str_middle, str_trim, str_trim0, str_trimleft, str_trimright, str_base, str_is_digit,
     str_segment_lispe, str_segment_empty, str_split, str_split_empty, str_ord, str_chr, str_is_punctuation,
-    str_format, str_padding, str_fill, str_getstruct, str_startwith, str_endwith,
+    str_format, str_padding, str_fill, str_getstruct, str_startwith, str_endwith, str_sprintf,
     str_edit_distance, str_read_json, str_parse_json, str_string_json, str_ngrams,
     str_tokenizer_rules, str_tokenizer_display_rules, str_tokenize_rules, str_tokenizer_main,
     str_get_rules, str_set_rules, str_get_operators, str_set_operators, str_segmenter, str_indent
@@ -361,6 +361,44 @@ public:
         return new Stringbyte(sformat);
     }
 
+    Element* methodSprintf(LispE* lisp) {
+        string sformat =  lisp->get_variable(v_str)->toString(lisp);
+        Element* e = lisp->get_variable(v_nb);
+        char value[100];
+        
+        try {
+            switch (e->type) {
+                case t_integer: {
+                    long nb = e->asInteger();
+                    sprintf_s(value, 100, STR(sformat), nb);
+                    break;
+                }
+                case t_float: {
+                    float nb = e->asFloat();
+                    sprintf_s(value, 100, STR(sformat), nb);
+                    break;
+                }
+                case t_short: {
+                    short nb = e->asShort();
+                    sprintf_s(value, 100, STR(sformat), nb);
+                    break;
+                }
+                case t_number: {
+                    double nb = e->asNumber();
+                    sprintf_s(value, 100, STR(sformat), nb);
+                    break;
+                }
+                default:
+                    throw new Error("Error: 'spritnf' can only be used with numerical values");
+            }
+        }
+        catch(...) {
+            throw new Error("Error: wrong format");
+        }
+        sformat = value;
+        return lisp->provideString(sformat);
+    }
+    
     Element* methodFormat(LispE* lisp) {
         Element* val = lisp->get_variable(v_str);
         if (val->type == t_stringbyte)
@@ -1411,6 +1449,9 @@ public:
             case str_format: {
                 return methodFormat(lisp);
             }
+            case str_sprintf: {
+                return methodSprintf(lisp);
+            }
             case str_fill: {
                 return methodFill(lisp);
             }
@@ -1529,6 +1570,8 @@ public:
                 return L"Return LispE internal tokenizer";
             case str_format:
                 return L"Takes as input a format and a list of variables. Variables in the format of the form: %n, where 1<=n<=9 are replaced with their corresponding arguments";
+            case str_sprintf:
+                return L"Uses 'sprintf' format to display values";
             case str_padding:
                 return L"(padding str c nb): padds the string str with c up to 'nb' characters";
             case str_fill:
@@ -1566,6 +1609,7 @@ void moduleChaines(LispE* lisp) {
     lisp->extension("deflib trimright (str)", new Stringmethod(lisp, str_trimright));
     lisp->extension("deflib lower (str)", new Stringmethod(lisp, str_lowercase));
     lisp->extension("deflib format (str n1 (n2) (n3) (n4) (n5) (n6) (n7) (n8) (n9))", new Stringmethod(lisp, str_format));
+    lisp->extension("deflib sprintf (nb str)", new Stringmethod(lisp, str_sprintf));
     lisp->extension("deflib upper (str)", new Stringmethod(lisp, str_uppercase));
     lisp->extension("deflib replace (str fnd rep (index))", new Stringmethod(lisp, str_remplace));
     lisp->extension("deflib convert_in_base (str b (convert))", new Stringmethod(lisp, str_base));
