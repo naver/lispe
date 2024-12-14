@@ -2414,7 +2414,7 @@ Element* List_maplist_lambda_eval::eval(LispE* lisp) {
                     break;
                 
                 check_tensor |= e->isPureList();
-                check_tensor |= !e->is_same_tensor(container->last());
+                check_tensor |= !e->is_same_tensor(container->last(lisp));
                 e = e->copying(false);
                 container->append(e);
                 e->release();
@@ -2562,7 +2562,7 @@ Element* List_maplist_eval::eval(LispE* lisp) {
             call->in_quote(ps, nxt);
             e = call->eval(lisp)->copying(false);
             check_tensor |= e->isPureList();
-            check_tensor |= !e->is_same_tensor(container->last());
+            check_tensor |= !e->is_same_tensor(container->last(lisp));
             container->append(e);
             e->release();
             nxt = current_list->next_iter_exchange(lisp, iter);
@@ -2705,7 +2705,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                         e->release();
                         e = nxt->copying(false);
                         check_tensor |= e->isPureList();
-                        check_tensor |= !e->is_same_tensor(result->last());
+                        check_tensor |= !e->is_same_tensor(result->last(lisp));
                         result->append(e);
                     }
                     e->release();
@@ -2750,7 +2750,7 @@ Element* List_filterlist_eval::eval(LispE* lisp) {
                     e = nxt->copying(false);
                     check_tensor |= e->isPureList();
                     if (check_tensor == a_tensor && result->size())
-                        check_tensor |= !e->is_same_tensor(result->last());
+                        check_tensor |= !e->is_same_tensor(result->last(lisp));
                     result->append(e);
                 }
                 e->release();
@@ -2903,7 +2903,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                         e->release();
                         e = nxt->copying(false);
                         check_tensor |= e->isPureList();
-                        check_tensor |= !e->is_same_tensor(result->last());
+                        check_tensor |= !e->is_same_tensor(result->last(lisp));
                         result->append(e);
                     }
                     else {
@@ -2953,7 +2953,7 @@ Element* List_takelist_eval::eval(LispE* lisp) {
                     e = nxt->copying(false);
                     check_tensor |= e->isPureList();
                     if (check_tensor == a_tensor && result->size())
-                        check_tensor |= !e->is_same_tensor(result->last());
+                        check_tensor |= !e->is_same_tensor(result->last(lisp));
                     result->append(e);
                     e->release();
                 }
@@ -3113,7 +3113,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                         e->release();
                         e = nxt->copying(false);
                         check_tensor |= e->isPureList();
-                        check_tensor |= !e->is_same_tensor(result->last());
+                        check_tensor |= !e->is_same_tensor(result->last(lisp));
                         result->append(e);
                         add = true;
                     }
@@ -3160,7 +3160,7 @@ Element* List_droplist_eval::eval(LispE* lisp) {
                     e = nxt->copying(false);
                     check_tensor |= e->isPureList();
                     if (check_tensor == a_tensor && result->size())
-                        check_tensor |= !e->is_same_tensor(result->last());
+                        check_tensor |= !e->is_same_tensor(result->last(lisp));
                     result->append(e);
                     add = true;
                 }

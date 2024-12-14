@@ -404,7 +404,7 @@ public:
     virtual void swap(long, long) {}
     
     virtual Element* last_element(LispE* lisp);
-    virtual Element* last() {
+    virtual Element* last(LispE*) {
         return this;
     }
     

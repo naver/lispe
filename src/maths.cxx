@@ -225,7 +225,7 @@ void List::combine(LispE* lisp, Element* res, Element* l1, Element* l2, List* ac
         else {
             char_tensor |= e->isPureList();            
             if (res->size())
-                char_tensor |= !e->is_same_tensor(res->last());
+                char_tensor |= !e->is_same_tensor(res->last(lisp));
         }
 
         res->append(e->copying(false));

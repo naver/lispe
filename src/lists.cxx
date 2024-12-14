@@ -24,7 +24,59 @@ List_eval::List_eval(LispE* lisp, Element* a) : met(lisp->delegation->evals[a->t
     liste.push_element(a);
 }
 //--------------------------------------------------------------------------------
+Element* List::last(LispE* lisp) {
+    return (size())?liste.back():null_;
+}
 
+Element* Floats::last(LispE* lisp) {
+    if (size()) {
+        exchange_value.content = liste.back();
+        return &exchange_value;
+    }
+    return null_;
+}
+
+Element* Integers::last(LispE* lisp) {
+    if (size()) {
+        exchange_value.content = liste.back();
+        return &exchange_value;
+    }
+    return null_;
+}
+
+Element* Numbers::last(LispE* lisp) {
+    if (size()) {
+        exchange_value.content = liste.back();
+        return &exchange_value;
+    }
+    return null_;
+}
+
+Element* Shorts::last(LispE* lisp) {
+    if (size()) {
+        exchange_value.content = liste.back();
+        return &exchange_value;
+    }
+    return null_;
+}
+
+Element* Strings::last(LispE* lisp) {
+    if (size()) {
+        exchange_value.content = liste.back();
+        return &exchange_value;
+    }
+    return null_;
+}
+
+Element* Stringbytes::last(LispE* lisp) {
+    if (size()) {
+        exchange_value.content = liste.back();
+        return &exchange_value;
+    }
+    return null_;
+}
+
+//--------------------------------------------------------------------------------
 void u_links::push_front(Element* v, bool is_final) {
     u_link* e;
     if (is_final)

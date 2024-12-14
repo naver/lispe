@@ -2346,7 +2346,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     throw new Error("Error: unknown operation: '.'");
                 if (current_program->index(0) != n_compose)
                     ((List*)current_program)->liste.insert(0, n_compose);
-                if (current_program->last() == n_compose)
+                if (current_program->last(this) == n_compose)
                     throw new Error("Error: two '.' in a row. Composition is impossible");
                 current_program->append(n_compose);
                 break;

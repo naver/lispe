@@ -3393,7 +3393,7 @@ Element* List::evall_defpat(LispE* lisp) {
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
         throw new Error(L"Error: List of missing parameters in a function declaration");
-    last()->setterminal();
+    last(lisp)->setterminal();
     return lisp->recordingMethod(this, label);
 }
 
@@ -3416,7 +3416,7 @@ Element* List::evall_defpred(LispE* lisp) {
         throw new Error(L"Error: Missing name in the declaration of a function");
     if (!liste[2]->isList())
         throw new Error(L"Error: List of missing parameters in a function declaration");
-    last()->setterminal();
+    last(lisp)->setterminal();
     return lisp->recordingMethod(this, label);
 }
 
@@ -3454,10 +3454,10 @@ Element* List::evall_defun(LispE* lisp) {
             nm += L"' already declared";
             throw new Error(nm);
         }
-        last()->setterminal();
+        last(lisp)->setterminal();
         return this;
     }
-    last()->setterminal();
+    last(lisp)->setterminal();
     return lisp->recordingunique(this, label);
 }
 
@@ -3650,7 +3650,7 @@ Element* List::evall_lambda(LispE* lisp) {
 
     if (!liste[1]->isList())
         throw new Error(L"Error: Missing parameter list in a lambda declaration");
-    last()->setterminal();
+    last(lisp)->setterminal();
     return this;
 }
 

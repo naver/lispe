@@ -605,9 +605,7 @@ public:
     
     virtual Element* last_element(LispE* lisp);
     
-    Element* last() {
-        return liste.back();
-    }
+    Element* last(LispE* lisp);
     
     void swap(long i, long j) {
         liste.swap(i, j);
@@ -8782,7 +8780,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a != NULL && a->type == type && liste.size() == a->size());
+        return (a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -8956,10 +8954,7 @@ public:
         return &exchange_value;
     }
     
-    Element* last() {
-        exchange_value.content = liste.back();
-        return &exchange_value;
-    }
+    Element* last(LispE* lisp);
     
     void flatten(LispE*, List* l);
     void flatten(LispE*, Floats* l);
@@ -9282,7 +9277,7 @@ public:
     Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
     
     bool is_same_tensor(Element* a) {
-        return (a != NULL && a->type == type && liste.size() == a->size());
+        return (a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -9461,10 +9456,7 @@ public:
         return &exchange_value;
     }
     
-    Element* last() {
-        exchange_value.content = liste.back();
-        return &exchange_value;
-    }
+    Element* last(LispE* lisp);
     
     void flatten(LispE*, List* l);
     void flatten(LispE*, Numbers* l);
@@ -9948,10 +9940,7 @@ public:
         return &exchange_value;
     }
     
-    Element* last() {
-        exchange_value.content = liste.back();
-        return &exchange_value;
-    }
+    Element* last(LispE* lisp);
     
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
@@ -9960,7 +9949,7 @@ public:
     Element* minmax(LispE*);
     
     bool is_same_tensor(Element* a) {
-        return (a != NULL && a->type == type && liste.size() == a->size());
+        return (a->type == type && liste.size() == a->size());
     }
     
     void flatten(LispE*, List* l);
@@ -10237,7 +10226,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a != NULL && a->type == type && liste.size() == a->size());
+        return (a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -10401,10 +10390,7 @@ public:
         return &exchange_value;
     }
     
-    Element* last() {
-        exchange_value.content = liste.back();
-        return &exchange_value;
-    }
+    Element* last(LispE* lisp);
     
     Element* equal(LispE* lisp, Element* e);
     bool egal(Element* e);
@@ -10760,7 +10746,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a != NULL && a->type == type && liste.size() == a->size());
+        return (a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -10899,10 +10885,7 @@ public:
         return &exchange_value;
     }
     
-    Element* last() {
-        exchange_value.content = liste.back();
-        return &exchange_value;
-    }
+    Element* last(LispE* lisp);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -11249,7 +11232,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a != NULL && a->type == type && liste.size() == a->size());
+        return (a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -11388,10 +11371,7 @@ public:
         return &exchange_value;
     }
     
-    Element* last() {
-        exchange_value.content = liste.back();
-        return &exchange_value;
-    }
+    Element* last(LispE* lisp);
     
     Element* minimum(LispE*);
     Element* maximum(LispE*);
@@ -12045,7 +12025,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        if (a != NULL && a->type == type) {
+        if (a->type == type) {
             vecte<long> sa;
             a->getShape(sa);
             return (shape == sa);
@@ -12252,7 +12232,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        if (a != NULL && a->type == type) {
+        if (a->type == type) {
             vecte<long> sa;
             a->getShape(sa);
             return (sa.size() == 2 && size_x == sa[0] && size_y == sa[1]);
