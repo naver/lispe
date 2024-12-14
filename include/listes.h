@@ -8775,7 +8775,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a->type == type && liste.size() == a->size());
+        return (a != NULL && a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -9275,7 +9275,7 @@ public:
     Element* matrix_product(LispE* lisp, Element* mat, long sh, long sh10, long sh21);
     
     bool is_same_tensor(Element* a) {
-        return (a->type == type && liste.size() == a->size());
+        return (a != NULL && a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -9953,7 +9953,7 @@ public:
     Element* minmax(LispE*);
     
     bool is_same_tensor(Element* a) {
-        return (a->type == type && liste.size() == a->size());
+        return (a != NULL && a->type == type && liste.size() == a->size());
     }
     
     void flatten(LispE*, List* l);
@@ -10230,7 +10230,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a->type == type && liste.size() == a->size());
+        return (a != NULL && a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -10753,7 +10753,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a->type == type && liste.size() == a->size());
+        return (a != NULL && a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -11242,7 +11242,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        return (a->type == type && liste.size() == a->size());
+        return (a != NULL && a->type == type && liste.size() == a->size());
     }
     
     Element* newTensor(LispE* lisp, List* l);
@@ -12038,7 +12038,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        if (a->type == type) {
+        if (a != NULL && a->type == type) {
             vecte<long> sa;
             a->getShape(sa);
             return (shape == sa);
@@ -12245,7 +12245,7 @@ public:
     }
     
     bool is_same_tensor(Element* a) {
-        if (a->type == type) {
+        if (a != NULL && a->type == type) {
             vecte<long> sa;
             a->getShape(sa);
             return (sa.size() == 2 && size_x == sa[0] && size_y == sa[1]);
