@@ -8701,7 +8701,7 @@ Element* List::evall_powerequal2(LispE* lisp) {
 
 //------------------------------------------------------------------------------------------
 
-typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf} math;
+typedef enum {math_fabs,math_acos,math_acosh,math_asin,math_asinh,math_atan,math_atanh,math_cbrt,math_cos,math_cosh,math_erf,math_erfc,math_exp,math_exp2,math_expm1,math_floor,math_iabs,math_lgamma,math_log,math_log10,math_log1p,math_log2,math_logb,math_nearbyint,math_rint,math_round,math_sin,math_sinh,math_sqrt,math_tan,math_tanh,math_tgamma,math_trunc, math_radian, math_degree, math_gcd, math_hcf} math;
 
 
 long gcd_math(long a, long b)
@@ -8905,6 +8905,11 @@ public:
             case math_fabs: {
                 v = val_v->asNumber();
                 v = fabs(v);
+                return lisp->provideNumber(v);
+            }
+            case math_iabs: {
+                long v = val_v->asInteger();
+                v = (v < 0)?v*-1:v;
                 return lisp->provideNumber(v);
             }
             case math_acos: {
@@ -9225,6 +9230,7 @@ void moduleMaths(LispE* lisp) {
     lisp->extension("deflib floor (val)", new Math(lisp, math_floor));
     lisp->extension("deflib gcd (val vaal)", new Math(lisp, math_gcd));
     lisp->extension("deflib hcf (val vaal)", new Math(lisp, math_hcf));
+    lisp->extension("deflib iabs (val)", new Math(lisp, math_iabs));
     lisp->extension("deflib lgamma (val)", new Math(lisp, math_lgamma));
     lisp->extension("deflib log (val)", new Math(lisp, math_log));
     lisp->extension("deflib log10 (val)", new Math(lisp, math_log10));
