@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2024.12.14.20.43";
+static std::string version = "1.2024.12.16.17.37";
 string LispVersion() {
     return version;
 }
@@ -330,6 +330,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_consb, "consb", P_THREE,  new List_consb_eval());
     set_instruction(l_conspoint, "conspoint", P_ATLEASTTWO, &List::evall_conspoint);
     set_instruction(l_count, "count", P_THREE|P_FOUR,  new List_count_eval());
+    set_instruction(l_shift, "shift", P_THREE | P_FOUR,  new List_shift_eval());
     set_instruction(l_slice, "slice", P_THREE,  new List_slice_eval());
     set_instruction(l_short, "int16_t", P_TWO, &List::evall_converttoshort, new List_converttoshort_eval());
     set_instruction(l_integer, "integer", P_TWO, &List::evall_converttointeger, new List_integer_eval());
@@ -3163,6 +3164,8 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
+
 
 
 

@@ -586,7 +586,8 @@ public:
     }
     
     void set_in(LispE* lisp, Element* e, long i) {
-        liste[i]->decrement();
+        if (i < size())
+            liste[i]->decrement();
         liste[i] = e;
         e->increment();
     }
@@ -6259,6 +6260,32 @@ public:
     
     List* cloning() {
         return new List_apply_eval(multiple);
+    }
+    Element* eval(LispE* lisp);
+};
+
+class List_shift_eval : public Listincode {
+public:
+    
+    List_shift_eval(Listincode* l) : Listincode(l) {}
+    List_shift_eval(List* l) : Listincode(l) {}
+    List_shift_eval() {}
+    List_shift_eval(bool m)  {multiple = m;}
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_shift_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_shift_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_shift_eval(multiple);
     }
     Element* eval(LispE* lisp);
 };

@@ -1124,7 +1124,7 @@ public:
     
 
     Element* newInstance() {
-        return new List;
+        return new LList(liste.mark);
     }
 
     Element* bit_not(LispE* l);

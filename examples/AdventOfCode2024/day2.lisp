@@ -5,28 +5,44 @@
 
 (setq v (maplist (\(x) (integers (split x " "))) (split (fread (+ _current "data/day2.txt")) "\n")))
 
-(size (filterlist
-      (\(x) (and (not (in x 1000)) (eq (size x) (iabs (+ (maplist 'signp x))))))
-      (maplist 
-         (\(l) 
-            (zipwith 
-               (\(x y) 
-                  (setq d (- x y)) 
-                  (if 
-                     (and 
-                        d 
-                        (< (iabs d) 4)
-                     )
-                     d
-                     1000
-                  )
-               )         
-               (@@ l 0 -1) 
-               (cdr l)
+(defun verifie(l)
+   (eq 
+      (- (size l) 1) 
+      (fabs (sum 
+            (maplist 
+               (\(x) (if (< (fabs x) 4) (signp x) 0))
+               (- (@@ l 0 -1) (cdr l))
             )
          )
-         v
       )
    )
 )
+
+(defun compte(v) 
+   (filterlist
+      'verifie
+      v
+   )
+)
+
+
+(setq enigm1 (size (compte v)))
+(println enigm1)
+
+(setq nb 0)
+(size (filterlist
+      (\(l)
+         (if (verifie l)
+            (return true)
+            (loop i (irange 0 (size l) 1)
+               (check (verifie (pop (clone l) i))
+                  (return true)
+               )
+            )
+         )
+      )
+      v
+   )
+)
+
 
