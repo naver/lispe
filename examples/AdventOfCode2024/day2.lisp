@@ -10,8 +10,8 @@
       (- (size l) 1) 
       (fabs (sum 
             (maplist 
-               (\(x) (if (< (fabs x) 4) (signp x) 0))
-               (- (@@ l 0 -1) (cdr l))
+               (\(x) (if (< (iabs x) 4) (signp x) 0))
+               (shift '- l)
             )
          )
       )
@@ -44,5 +44,6 @@
       v
    )
 )
+
 
 

@@ -7306,10 +7306,11 @@ Element* List_shift_eval::eval(LispE* lisp) {
                     call = lisp->delegation->straight_eval[lab]->cloning();
                 call->append(function);
                 List* l1 = lisp->provideList();
-                List* l2 = lisp->provideList();
+                List* l2;
                 if (arguments->type == t_llist) {
                     change_to_llist = true;
                     LList* l = (LList*)arguments;
+                    l2 = lisp->provideList();
                     i = 0;
                     for (u_link* a = l->liste.begin(); a != NULL; a = a->next()) {
                         if (i >= nb)
@@ -7320,12 +7321,9 @@ Element* List_shift_eval::eval(LispE* lisp) {
                     }
                 }
                 else {
-                    for (i = 0; i < sz; i++) {
-                        if (i >= nb)
-                            l2->append(((List*)arguments)->liste[i]);
-                        if (i < sz - nb)
-                            l1->append(((List*)arguments)->liste[i]);
-                    }
+                    l2 = new List((List*)arguments, nb);
+                    for (i = 0; i < sz - nb; i++)
+                        l1->append(((List*)arguments)->liste[i]);
                 }
                 call->append(lisp->quoted());
                 call->append(lisp->quoted());
@@ -7355,22 +7353,54 @@ Element* List_shift_eval::eval(LispE* lisp) {
         }
 
         if (!arguments->isList())
-            throw new Error("Error: arguments to 'apply' should be given as a list");
+            throw new Error("Error: arguments to 'shift' should be given as a list");
 
         if (use_list)
             call = lisp->provideList();
         else
             call = lisp->delegation->straight_eval[lab]->cloning();
         call->append(function);
-        Element* l1 = arguments->newInstance();
-        Element* l2 = arguments->newInstance();
-        
-        
-        for (i = 0; i < sz; i++) {
-            if (i >= nb)
-                l2->append(arguments->index(i));
-            if (i < sz - nb)
-                l1->append(arguments->index(i));
+        Element* l1;
+        Element* l2;
+        switch (arguments->type) {
+            case t_shorts:
+                l1 = new Shorts();
+                for (i = 0; i < sz - nb; i++)
+                    ((Shorts*)l1)->liste.push_back(((Shorts*)arguments)->liste[i]);
+                l2 = new Shorts((Shorts*)arguments, nb);
+                break;
+            case t_integers:
+                l1 = lisp->provideIntegers();
+                for (i = 0; i < sz - nb; i++)
+                    ((Integers*)l1)->liste.push_back(((Integers*)arguments)->liste[i]);
+                l2 = lisp->provideIntegers((Integers*)arguments, nb);
+                break;
+            case t_floats:
+                l1 = lisp->provideFloats();
+                for (i = 0; i < sz - nb; i++)
+                    ((Floats*)l1)->liste.push_back(((Floats*)arguments)->liste[i]);
+                l2 = lisp->provideFloats((Floats*)arguments, nb);
+                break;
+            case t_numbers:
+                l1 = lisp->provideNumbers();
+                for (i = 0; i < sz - nb; i++)
+                    ((Numbers*)l1)->liste.push_back(((Numbers*)arguments)->liste[i]);
+                l2 = lisp->provideNumbers((Numbers*)arguments, nb);
+                break;
+            case t_strings:
+                l1 = lisp->provideStrings();
+                for (i = 0; i < sz - nb; i++)
+                    ((Strings*)l1)->liste.push_back(((Strings*)arguments)->liste[i]);
+                l2 = new Strings((Strings*)arguments, nb);
+                break;
+            case t_stringbytes:
+                l1 = new Stringbytes();
+                for (i = 0; i < sz - nb; i++)
+                    ((Stringbytes*)l1)->liste.push_back(((Stringbytes*)arguments)->liste[i]);
+                l2 = new Stringbytes((Stringbytes*)arguments, nb);
+                break;
+            default:
+                throw new Error("Error: arguments to 'shift' should be given as a list");
         }
         
         call->append(null_);
