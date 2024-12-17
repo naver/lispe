@@ -5584,7 +5584,8 @@ Element* List_divide3::eval(LispE* lisp) {
         lisp->checkState(this);
         second_element = liste[2]->eval(lisp);
         first_element = first_element->divide_direct(lisp, second_element);
-        second_element->release();
+        if (first_element != second_element)
+            second_element->release();
     }
     catch (Error* err) {
         second_element->release();
@@ -5783,7 +5784,8 @@ Element* List_minus3::eval(LispE* lisp) {
         lisp->checkState(this);
         Element* second_element = liste[2]->eval(lisp);
         first_element = first_element->minus_direct(lisp, second_element);
-        second_element->release();
+        if (first_element != second_element)
+            second_element->release();
     }
     catch (Error* err) {
         lisp->resetStack();
@@ -6003,7 +6005,8 @@ Element* List_multiply3::eval(LispE* lisp) {
         lisp->checkState(this);
         Element* second_element = liste[2]->eval(lisp);
         first_element = first_element->multiply_direct(lisp, second_element);
-        second_element->release();
+        if (first_element != second_element)
+            second_element->release();
     }
     catch (Error* err) {
         first_element->release();
@@ -6228,7 +6231,8 @@ Element* List_plus3::eval(LispE* lisp) {
         lisp->checkState(this);
         Element* second_element = liste[2]->eval(lisp);
         first_element = first_element->plus_direct(lisp, second_element);
-        second_element->release();
+        if (first_element != second_element)
+            second_element->release();
     }
     catch (Error* err) {
         first_element->release();

@@ -9,6 +9,23 @@
 
 (setq instructions (rgx_findall (rgx "mul%(%d+,%d+%)") code))
 
-(maplist (apply '* (\(x) (integers (rgx_findall (rgx "%d+") x)))) instructions)
+(println (+ (maplist (\(x) (* (integers (rgx_findall (rgx "%d+") x)))) instructions)))
 
+(setq instructions (rgx_findall (rgx "{[don't%(%)][mul%(%d+,%d+%)][do%(%)]}") code))
+(setq result 0)
+(setq ajoute true)
+(loop s instructions
+   (cond
+      ((= s "don't()")
+         (setq ajoute false)
+      )
+      ((= s "do()")
+         (setq ajoute true)
+      )
+      (ajoute
+         (+= result (* (integers (rgx_findall (rgx "%d+") s))))
+      )
+   )
+)
 
+(println result)
