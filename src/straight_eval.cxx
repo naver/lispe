@@ -7192,6 +7192,11 @@ Element* List_apply_eval::eval(LispE* lisp) {
             call = lisp->delegation->straight_eval[lab]->cloning();
         call->append(function);
         call = (List*)arguments->asList(lisp, call);
+        if (call == arguments) {
+            call = NULL;
+            arguments = NULL;
+            throw new Error("Error: wrong use of 'apply'");
+        }
 
         lisp->check_arity(lab, call->size());
         result = call->eval(lisp);
