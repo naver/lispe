@@ -2361,6 +2361,34 @@ public:
     
 };
 
+class List_swap_eval : public Listincode {
+public:
+    
+    List_swap_eval(Listincode* l) : Listincode(l) {}
+    List_swap_eval(List* l) : Listincode(l) {}
+    List_swap_eval() {}
+    List_swap_eval(bool m)  {multiple = m;}
+    
+    Element* eval(LispE* lisp);
+    
+    bool is_straight_eval() {
+        return true;
+    }
+    
+    List* borrowing(List* e) {
+        return new List_swap_eval(e);
+    }
+    
+    List* cloning(Listincode* e, methodEval m) {
+        return new List_swap_eval(e);
+    }
+    
+    List* cloning() {
+        return new List_swap_eval(multiple);
+    }
+    
+};
+
 class List_block_eval : public Listincode {
 public:
     List_block_eval(Listincode* l) : Listincode(l) {

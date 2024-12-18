@@ -119,7 +119,7 @@ typedef enum {
     
     //Comparisons
         
-    l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip,
+    l_in, l_search, l_revertsearch, l_count, l_replaceall, l_searchall, l_cyclic, l_car, l_cdr, l_cadr, l_last, l_flip, l_swap,
     l_fread, l_fwrite, l_fappend, l_fget, l_fput, l_fsize, l_fseek, l_ftell, l_fopen, l_fclose,
     l_bread, l_bwrite, l_bappend,
     

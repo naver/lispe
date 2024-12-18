@@ -5116,6 +5116,50 @@ Element* List_flip_eval::eval(LispE* lisp) {
     return null_;
 }
 
+Element* List_swap_eval::eval(LispE* lisp) {
+    Element* first_element = liste[1]->eval(lisp);
+    
+    try {
+        lisp->checkState(this);
+        long beg;
+        long end;
+        long sz = first_element->size();
+        evalAsInteger(2, lisp, beg);
+        if (size() == 4)
+            evalAsInteger(3, lisp, end);
+        else
+            end = beg + 1;
+        if (beg < 0 || end >= sz)
+            throw new Error("Error: cannot swap values in this list");
+        
+        switch (first_element->type) {
+            case t_floats:
+            case t_numbers:
+            case t_shorts:
+            case t_integers:
+            case t_strings:
+            case t_stringbytes:
+            case t_list:
+                if (sz < 2) {
+                    lisp->resetStack();
+                    return first_element;
+                }
+                first_element->swap(beg, end);
+                lisp->resetStack();
+                return first_element;
+            default:
+                throw new Error("Error: cannot swap in this element");
+        }
+    }
+    catch (Error* err) {
+        first_element->release();
+        return lisp->check_error(this, err, idxinfo);
+    }
+
+    return null_;
+}
+
+
 Element* List_equal_eval::eval(LispE* lisp) {
     Element* first_element = liste[1]->eval(lisp);
     Element* second_element;

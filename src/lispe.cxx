@@ -406,6 +406,7 @@ void Delegation::initialisation(LispE* lisp) {
     set_instruction(l_insert, "insert", P_THREE | P_FOUR,  new List_insert_eval());
     set_instruction(l_addr_, "addr_", P_TWO, &List::evall_addr_);
     set_instruction(l_shorts, "shorts", P_ATLEASTONE,  new List_shorts_eval());
+    set_instruction(l_swap, "swap", P_THREE|P_FOUR,  new List_swap_eval());
     set_instruction(l_integers, "integers", P_ATLEASTONE,  new List_integers_eval());
     set_instruction(l_irange, "irange", P_THREE | P_FOUR,  new List_irange_eval());
     set_instruction(l_irangein, "irangein", P_THREE | P_FOUR,  new List_irangein_eval());
