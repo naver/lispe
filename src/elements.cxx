@@ -1958,8 +1958,7 @@ Element* String::search_element(LispE* lisp, Element* valeur, long ix) {
 Element* Stringbyte::search_element(LispE* lisp, Element* valeur, long ix) {
     string val = valeur->toString(lisp);
     ix =  content.find(val, ix);
-    ix = lisp->handlingutf8->byteTochar(content, ix);
-    return (ix == -1)?null_:lisp->provideInteger(ix);
+    return (ix == -1)?null_:lisp->provideInteger(lisp->handlingutf8->byteTochar(content, ix));
 }
 
 //------------------------------------------------------------------------------------------
