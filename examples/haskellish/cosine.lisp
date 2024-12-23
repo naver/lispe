@@ -5,12 +5,12 @@
 ; dot product: sum of the product of two vectors
 ; note that zipwith will apply * to each element of v1 with v2
 (defun dot(v1 v2)
-   (∑ (∏ v1 v2))
+   (∑ (* v1 v2))
 )
 
 ; norm: √∑(x²)
 (defun norm(v)
-   (√ (∑ (map '* v)))
+   (√ (∑ (* v v)))
 )
 
 ; cosine distance: (v1 . v2) / ∏(norm(v1) norm(v2))
@@ -26,6 +26,7 @@
 
 
 (cosine '(1 2 3) '(4 5 6))
+
 
 
 

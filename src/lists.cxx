@@ -2854,7 +2854,7 @@ Element* List::duplicate_constant(LispE* lisp) {
 
 //If we are dealing with a cdr, we need to copy it
 Element* List::duplicate_cdr(LispE* lisp) {
-    if (liste.home || status == s_constant) {
+    if (liste.home || status) {
         List* l = lisp->provideList();
         for (long i = 0; i < liste.size(); i++) {
             l->append(liste[i]->copying(true));

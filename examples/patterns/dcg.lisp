@@ -28,8 +28,9 @@
 ; we start with an incomplete sequence of words
 ; we start with an incomplete sequence of words
 (loopcount 50
-   (println (join (analyse "a big cat") " "))
+   (println (join (analyse "a big") " "))
 )
+
 
 
 
