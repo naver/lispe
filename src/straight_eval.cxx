@@ -7348,47 +7348,40 @@ Element* List_shift_eval::eval(LispE* lisp) {
         bool change_to_llist = false;
 
         if (arguments->type == t_list || arguments->type == t_llist) {
-            if (arguments->status) {
-                if (use_list)
-                    call = lisp->provideList();
-                else
-                    call = lisp->delegation->straight_eval[lab]->cloning();
-                call->append(function);
-                List* l1 = lisp->provideList();
-                List* l2;
-                if (arguments->type == t_llist) {
-                    change_to_llist = true;
-                    LList* l = (LList*)arguments;
-                    l2 = lisp->provideList();
-                    i = 0;
-                    for (u_link* a = l->liste.begin(); a != NULL; a = a->next()) {
-                        if (i >= nb)
-                            l2->append(a->value);
-                        if (i < sz - nb)
-                            l1->append(a->value);
-                        i++;
-                    }
+            if (use_list)
+                call = lisp->provideList();
+            else
+                call = lisp->delegation->straight_eval[lab]->cloning();
+            call->append(function);
+            List* l1 = lisp->provideList();
+            List* l2;
+            if (arguments->type == t_llist) {
+                change_to_llist = true;
+                LList* l = (LList*)arguments;
+                l2 = lisp->provideList();
+                i = 0;
+                for (u_link* a = l->liste.begin(); a != NULL; a = a->next()) {
+                    if (i >= nb)
+                        l2->append(a->value);
+                    if (i < sz - nb)
+                        l1->append(a->value);
+                    i++;
                 }
-                else {
-                    l2 = new List((List*)arguments, nb);
-                    for (i = 0; i < sz - nb; i++)
-                        l1->append(((List*)arguments)->liste[i]);
-                }
-                call->append(lisp->quoted());
-                call->append(lisp->quoted());
-                call->in_quote(1+right, l1);
-                call->in_quote(2-right, l2);
-                arguments = call;
-                call = NULL;
             }
             else {
-                if (!arguments->insertion(function, 0))
-                    throw new Error("Error: cannot insert this element in this list");
+                l2 = new List((List*)arguments, nb);
+                for (i = 0; i < sz - nb; i++)
+                    l1->append(((List*)arguments)->liste[i]);
             }
+            call->append(lisp->quoted());
+            call->append(lisp->quoted());
+            call->in_quote(1+right, l1);
+            call->in_quote(2-right, l2);
             
             lisp->check_arity(lab, P_TWO);
-            result = arguments->eval(lisp);
-            arguments->force_release();
+            result = call->eval(lisp);
+            call->force_release();
+            arguments->release();
             lisp->resetStack();
             if (change_to_llist) {
                 LList* nl = new LList(&lisp->delegation->mark);
@@ -7472,7 +7465,7 @@ Element* List_shift_eval::eval(LispE* lisp) {
             if (arguments == NULL)
                 function->release();
             else
-                arguments->force_release();
+                arguments->release();
         }
         return lisp->check_error(this, err, idxinfo);
     }
