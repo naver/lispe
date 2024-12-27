@@ -5463,8 +5463,9 @@ public:
 
     Element* index(long i) {
         idx.content = i + init;
-        element.liste[1]->release();
+        element.liste[1]->decrement();
         element.liste[1] = lst->index(i);
+        element.liste[1]->increment();
         return &element;
     }
 
@@ -5488,40 +5489,45 @@ public:
     Element* eval(LispE* lisp);
     Element* loop(LispE* lisp, int16_t label,  List* code);
     Element* protected_index(LispE* lisp,long i) {
-        element.liste[1]->release();
+        element.liste[1]->decrement();
         element.liste[1] = lst->protected_index(lisp, i);
+        element.liste[1]->increment();
         idx.content = i + init;
         return &element;
     }
     
     Element* value_from_index(LispE* lisp, long i)  {
-        element.liste[1]->release();
+        element.liste[1]->decrement();
         element.liste[1] = lst->protected_index(lisp, i);
         idx.content = i + init;
         return &element;
     }
     Element* value_on_index(LispE* lisp, long i)  {
-        element.liste[1]->release();
+        element.liste[1]->decrement();
         element.liste[1] = lst->value_on_index(lisp, i);
+        element.liste[1]->increment();
         idx.content = i + init;
         return &element;
     }
     
     Element* value_on_index(LispE* lisp, Element* i)  {
-        element.liste[1]->release();
+        element.liste[1]->decrement();
         element.liste[1] = lst->value_on_index(lisp, i);
+        element.liste[1]->increment();
         idx.content = i->asInteger() + init;
         return &element;
     }
     
     Element* protected_index(LispE* lisp, Element* i)  {
-        element.liste[1]->release();
+        element.liste[1]->decrement();
         element.liste[1] = lst->protected_index(lisp, i);
+        element.liste[1]->increment();
         idx.content = i->asInteger() + init;
         return &element;
     }
     
     ~Enumlist() {
+        element.liste[1]->decrement();
         lst->release();
     }
     
