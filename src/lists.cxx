@@ -1040,6 +1040,7 @@ Element* Enumlist::loop(LispE* lisp, int16_t label, List* code) {
                 return null_;
             return e;
         }
+        lsz = size();
     }
     return e;
 }

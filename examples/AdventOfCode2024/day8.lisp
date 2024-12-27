@@ -26,6 +26,63 @@
    )
 )
 
+(defun valide (x y)
+   (and 
+      (>= x 0)
+      (< x sz)
+      (>= y 0)
+      (< y sz)
+      (set@ réponses x y "#")
+   )
+)
 
-(shift 'print (to_list (@ positions "3")))
+(loop c positions
+   (setq l (to_list (@ positions c)))
+   (loop p (irange 0 (- (size l) 1) 1)
+      (setq e (@ l p))
+      (setq suite (@@ l (+ p 1) 0))
+      (setq d (maplist (\(x) (- x e)) suite))
+      (setq a (+ suite d))
+      (nconc a (maplist (\(x) (- e x)) d))
+      (maplist (\(x) (valide (@ x 0) (@ x 1))) a)      
+   )
+)
+
+(println (+ (maplist (\(x) (count x "#")) réponses)))
+
+(loop l (enum carte)
+   (loop c (enum (@ l 1))
+      (set@ réponses (@ l 0) (@ c 0) (@ c 1))
+   )
+)
+
+
+(loop c positions
+   (setq l (to_list (@ positions c)))
+   (loop p (irange 0 (- (size l) 1) 1)
+      (setq e (@ l p))
+      (setq suite (@@ l (+ p 1) 0))
+      (setq dt (maplist (\(x) (- x e)) suite))
+      (mloop (s d) suite dt
+         (setq bas (+ s d))
+         (while (valide (@ bas 0) (@ bas 1))
+            (+= bas d)
+         )
+         (setq haut (- e d))
+         (while (valide (@ haut 0) (@ haut 1))
+            (-= haut d)
+         )
+      )
+   )
+)
+
+(push codes "#")
+(println 
+   (+ 
+      (maplist (\(x) 
+            (+ (maplist (\(u) (count x u)) codes)))
+         réponses
+      )
+   )
+)
 
