@@ -149,8 +149,8 @@ public:
                     e->increment();
                 else
                     names.erase(label);
-                v->decrement();
                 variables.put(label, e);
+                v->decrement();
                 return;
             }
 

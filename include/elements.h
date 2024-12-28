@@ -465,7 +465,7 @@ public:
      
      */
 
-    virtual bool element_container() {
+    virtual bool element_container(Element* e) {
         return false;
     }
     
@@ -3322,7 +3322,12 @@ public:
         return dictionary.empty();
     }
 
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
     
@@ -3772,10 +3777,15 @@ public:
         return new Dictionary_n;
     }
 
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
-    
+
     bool isContainer() {
         return true;
     }
@@ -4192,10 +4202,15 @@ public:
         return new Dictionary_i;
     }
 
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
-    
+
     bool isContainer() {
         return true;
     }
@@ -5783,10 +5798,15 @@ public:
         return tree.empty();
     }
 
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
-    
+
     bool isDictionary() {
         return true;
     }
@@ -6232,10 +6252,15 @@ public:
         return new Tree_n;
     }
 
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
-    
+
     bool isContainer() {
         return true;
     }
@@ -6652,10 +6677,15 @@ public:
         return new Tree_i;
     }
 
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
-    
+
     bool isContainer() {
         return true;
     }

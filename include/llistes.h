@@ -521,7 +521,12 @@ public:
     
     Element* negate(LispE* lisp);
     
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
 

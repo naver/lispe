@@ -738,10 +738,15 @@ public:
         return true;
     }
     
-    bool element_container() {
+    bool element_container(Element* e) {
+        if (!status) {
+            e->increment();
+            release();
+            e->decrementkeep();
+        }
         return true;
     }
-    
+
     bool isLambda() {
         return (liste.size() && liste.item->buffer[0]->type == l_lambda);
     }
@@ -5459,6 +5464,7 @@ public:
         element.append(&idx);
         element.append(nul);
         lst = l;
+        lst->increment();
     }
 
     Element* index(long i) {
@@ -5528,7 +5534,7 @@ public:
     
     ~Enumlist() {
         element.liste[1]->decrement();
-        lst->release();
+        lst->decrement();
     }
     
     wstring asString(LispE* lisp) {

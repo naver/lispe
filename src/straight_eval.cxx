@@ -138,12 +138,7 @@ Element* List_cadr_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         cdr_result = liste[0]->cadr(lisp, container);
-        if (container->element_container()) {
-            cdr_result->increment();
-            container->release();
-            cdr_result->decrementkeep();
-        }
-        else
+        if (!container->element_container(cdr_result))
             container->release();
     }
     catch (Error* err) {
@@ -162,12 +157,7 @@ Element* List_car_eval::eval(LispE* lisp) {
     try {
         lisp->checkState(this);
         car_result = container->car(lisp);
-        if (container->element_container()) {
-            car_result->increment();
-            container->release();
-            car_result->decrementkeep();
-        }
-        else
+        if (!container->element_container(car_result))
             container->release();
     }
     catch (Error* err) {
@@ -497,12 +487,7 @@ Element* List_at_eval::eval(LispE* lisp) {
             result = result->protected_index(lisp, value);
             _releasing(value);
         }
-        if (container->element_container()) {
-            result->increment();
-            container->release();
-            result->decrementkeep();
-        }
-        else
+        if (!container->element_container(result))
             container->release();
     }
     catch (Error* err) {
@@ -539,12 +524,7 @@ Element* List_set_at_eval::eval(LispE* lisp) {
         result->replace(lisp, ix, value);
         value->release();
         ix->release();
-        if (container->element_container()) {
-            result->increment();
-            container->release();
-            result->decrementkeep();
-        }
-        else
+        if (!container->element_container(result))
             container->release();
     }
     catch (Error* err) {
@@ -7648,12 +7628,7 @@ Element* List_eval_eval::eval(LispE* lisp) {
         result = code->eval(lisp);
         lisp->check_arity_on_fly = false;
         if (result != code) {
-            if (code->element_container()) {
-                result->increment();
-                code->release();
-                result->decrementkeep();
-            }
-            else
+            if (!code->element_container(result))
                 code->release();
         }
     }

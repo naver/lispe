@@ -3164,12 +3164,7 @@ Element* List::evall_cdr(LispE* lisp) {
     
     try {
         c = lst->cdr(lisp);
-        if (lst->element_container()) {
-            c->increment();
-            lst->release();
-            c->decrementkeep();
-        }
-        else
+        if (!lst->element_container(c))
             lst->release();
     }
     catch (Error* err) {
@@ -3526,12 +3521,7 @@ Element* List::evall_index_zero(LispE* lisp) {
             return zero_;
         }
         
-        if (container->element_container()) {
-            result->increment();
-            container->release();
-            result->decrementkeep();
-        }
-        else
+        if (!container->element_container(result))
             container->release();
     }
     catch (Error* err) {
