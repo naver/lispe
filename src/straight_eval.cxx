@@ -803,6 +803,34 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
         return dico;
     }
 
+    if (listsize == 3) {
+        Dictionary* dico = lisp->provideDictionary();
+        Element* l1 = liste[1]->eval(lisp);
+        Element* l2 = liste[2]->eval(lisp);
+        if (l1->isList() && l2->isList()) {
+            if (l1->size() != l2->size())
+                throw new Error("Error: the two lists should have the same size 'dictionary'");
+            long sz = l1->size();
+            Element* idx;
+            Element* val;
+            Element* v;
+            for (long i = 0; i < sz; i++) {
+                idx = l1->value_on_index(lisp, i);
+                val = l2->value_on_index(lisp, i);
+                v = val->copying(false);
+                v->increment();
+                dico->dictionary[idx->asUString(lisp)] = v;
+                idx->release();
+            }
+        }
+        else
+            dico->dictionary[l1->asUString(lisp)] = l2->copying(false);
+        
+        l1->release();
+        l2->release();
+        return dico;
+    }
+
     if (!(listsize % 2 ))
         throw new Error("Error: wrong number of arguments for 'dictionary'");
 
@@ -864,6 +892,34 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
         return dico;
     }
 
+    if (listsize == 3) {
+        Dictionary_i* dico = lisp->provideDictionary_i();
+        Element* l1 = liste[1]->eval(lisp);
+        Element* l2 = liste[2]->eval(lisp);
+        if (l1->isList() && l2->isList()) {
+            if (l1->size() != l2->size())
+                throw new Error("Error: the two lists should have the same size 'dictionaryi'");
+            long sz = l1->size();
+            Element* idx;
+            Element* val;
+            Element* v;
+            for (long i = 0; i < sz; i++) {
+                idx = l1->value_on_index(lisp, i);
+                val = l2->value_on_index(lisp, i);
+                v = val->copying(false);
+                v->increment();
+                dico->dictionary[idx->asInteger()] = v;
+                idx->release();
+            }
+        }
+        else
+            dico->dictionary[l1->asInteger()] = l2->copying(false);
+        
+        l1->release();
+        l2->release();
+        return dico;
+    }
+
     if (!(listsize % 2 ))
         throw new Error("Error: wrong number of arguments for 'dictionary'");
 
@@ -921,6 +977,34 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
         }
         d->clean_iter(iter);
         d->release();
+        return dico;
+    }
+
+    if (listsize == 3) {
+        Dictionary_n* dico = lisp->provideDictionary_n();
+        Element* l1 = liste[1]->eval(lisp);
+        Element* l2 = liste[2]->eval(lisp);
+        if (l1->isList() && l2->isList()) {
+            if (l1->size() != l2->size())
+                throw new Error("Error: the two lists should have the same size 'dictionaryn'");
+            long sz = l1->size();
+            Element* idx;
+            Element* val;
+            Element* v;
+            for (long i = 0; i < sz; i++) {
+                idx = l1->value_on_index(lisp, i);
+                val = l2->value_on_index(lisp, i);
+                v = val->copying(false);
+                v->increment();
+                dico->dictionary[idx->asNumber()] = v;
+                idx->release();
+            }
+        }
+        else
+            dico->dictionary[l1->asNumber()] = l2->copying(false);
+        
+        l1->release();
+        l2->release();
         return dico;
     }
 
