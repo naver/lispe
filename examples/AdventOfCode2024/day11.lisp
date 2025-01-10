@@ -2,34 +2,41 @@
 ;Author: Claude Roux
 ;Description: Advent of code 2024 day 11
 
-
 (setq r (integers (split (fread (+ _current "data/day11.txt")) " ")))
-      
+
 (defmacro even(x) (zerop (% (size (string x)) 2)))
 
-(println (size r))
-
 (defun blink(l)
-   (setq res (integers))
+   (setq res (dictionaryi))
    (loop b l
+      (setq nb (@ l b))
       (cond
-         ((eq b 0)
-            (push res 1)
+         ((zerop b)
+            (+= (@ res 1) nb)
          )
          ((even b)
             (setq s (string b))
             (setq half (/ (size s) 2))
-            (push res (integer (@@ s 0 half)))
-            (push res (integer (@@ s half -)))
+            (setq left (integer (@@ s 0 half)))
+            (setq right (integer (@@ s half -)))
+            
+            (+= (@ res left) nb)
+            (+= (@ res right) nb)
          )
          (true
-            (push res (* b 2024))
+            (+= (@ res (* b 2024)) nb)
          )
       )
-      
    )
    res
 )
 
 (setq d (dictionaryi))
+(maplist (\(x) (set@ d x 1)) r)
+
+(loopcount 75
+   (setq d (blink d))
+)
+
+(println (+ (values@ d)))
 
