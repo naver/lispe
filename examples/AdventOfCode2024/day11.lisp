@@ -2,7 +2,8 @@
 ;Author: Claude Roux
 ;Description: Advent of code 2024 day 11
 
-(setq r (integers (split (fread (+ _current "data/day11.txt")) " ")))
+(setq d (dictionaryi))
+(maplist (\(x) (set@ d x 1)) (integers (split (fread (+ _current "data/day11.txt")) " ")))
 
 (defmacro even(x) (zerop (% (size (string x)) 2)))
 
@@ -31,13 +32,12 @@
    res
 )
 
-(setq d (dictionaryi))
-(maplist (\(x) (set@ d x 1)) r)
+(loopcount 25
+   (setq d (blink d))
+)
+(println (+ (values@ d)))
 
-(loop i (irange 0 75 1)
-   (if (eq i 25)
-      (println (+ (values@ d)))
-   )
+(loopcount 50
    (setq d (blink d))
 )
 
