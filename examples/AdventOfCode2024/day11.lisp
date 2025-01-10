@@ -34,7 +34,10 @@
 (setq d (dictionaryi))
 (maplist (\(x) (set@ d x 1)) r)
 
-(loopcount 75
+(loop i (irange 0 75 1)
+   (if (eq i 25)
+      (println (+ (values@ d)))
+   )
    (setq d (blink d))
 )
 
