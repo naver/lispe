@@ -188,8 +188,8 @@ public:
             removeonly(label);
         }
         else {
-            e->status = status.backpop();
             if (last != e) {
+                e->status = status.backpop();
                 if (last == keep)
                     last->decrementkeep();
                 else
@@ -202,11 +202,12 @@ public:
     Element* record_or_replace(Element* e, int16_t label) {
         Element* ret = variables.search(label);
         if (ret != NULL) {
+            if (ret == e)
+                return e;
+            
             //we keep track of the current status...
             status.push_back(ret->status);
             ret->increment();
-            if (ret == e)
-                return e;
             
             if (e->status != s_constant)
                 e->increment();

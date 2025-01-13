@@ -1090,7 +1090,7 @@ public:
     }
     
     int16_t function_label(LispE* lisp) {
-        return liste[0]->label();
+        return (liste.empty()?0:liste[0]->label());
     }
     
     Element* reverse(LispE*, bool duplique = true);
