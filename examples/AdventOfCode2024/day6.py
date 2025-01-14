@@ -22,7 +22,6 @@ for r in range(R):
 
 for o_r in range(R):
     for o_c in range(C):
-        print(o_r, o_c)
         r,c = sr,sc
         d = 0 # 0=up, 1=right, 2=down, 3=left
         SEEN = set()

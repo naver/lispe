@@ -1875,12 +1875,41 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 element = for_composition(current_program, element, parse);
                 return element;
             }
-            case l_set_range:
-            case l_set_shape:
             case l_setq:
             case l_seth:
-            case l_set_at:
             case l_setg:
+                if (element->size() > 1) {
+                    if (element->index(1)->type == t_list) {
+                        for (long a = 0; a < element->index(1)->size(); a++) {
+                            if (element->index(1)->index(a)->label() < l_final) {
+                                wstring msg = L"Error: Invalid variable name: '";
+                                msg += element->index(1)->asString(this);
+                                msg += L"' (keyword)";
+                                throw new Error(msg);
+                            }
+                        }
+                    }
+                    else {
+                        if (element->index(1)->label() < l_final) {
+                            wstring msg = L"Error: Invalid variable name: '";
+                            msg += element->index(1)->asString(this);
+                            msg += L"' (keyword)";
+                            throw new Error(msg);
+                        }
+                        else {
+                            if (delegation->const_values.check(element->index(1)->label())) {
+                                wstring msg = L"Error: '";
+                                msg += element->index(1)->asString(this);
+                                msg += L"' is a constant value";
+                                throw new Error(msg);
+                            }
+                        }
+                    }
+                }
+                break;
+            case l_set_range:
+            case l_set_shape:
+            case l_set_at:
                 if (element->size() > 1) {
                     if (element->index(1)->label() < l_final) {
                         wstring msg = L"Error: Invalid variable name: '";
