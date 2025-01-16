@@ -8362,7 +8362,7 @@ Element* List_mloop_eval::eval(LispE* lisp) {
             _releasing(e);
             for (var = 0; var < nbvars; var++) {
                 ix = indexes->liste[var]->index(indexe);
-                e = values->liste[var]->value_on_index(lisp, ix);
+                e = values->liste[var]->protected_index(lisp, ix);
                 label = liste[1]->index(var)->label();
                 lisp->replacestackvalue(e, label);
             }
