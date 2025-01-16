@@ -45,7 +45,7 @@
    nb
 )
 
-(defun marque (il ic c)
+(defun marque (il ic c ma)
    (setq sub ())
    (check 
       (and
@@ -56,11 +56,11 @@
          (= (@ m il ic) c)
       )
       (push sub (integers il ic))
-      (set@ m il ic "")
-      (nconc sub (marque il (- ic 1) c))
-      (nconc sub (marque (- il 1) ic c))
-      (nconc sub (marque il (+ ic 1) c))
-      (nconc sub (marque (+ il 1) ic c))
+      (set@ m il ic (+ c ma))
+      (nconc sub (marque il (- ic 1) c 0))
+      (nconc sub (marque (- il 1) ic c 0))
+      (nconc sub (marque il (+ ic 1) c 0))
+      (nconc sub (marque (+ il 1) ic c 0))
    )
    sub
 )
@@ -73,11 +73,9 @@
    (loop il (irange 0 sz 1)
       (loop ic (irange 0 sz 1)
          (check (= (@ m il ic) c)
-            (setq ligne (marque il ic c))
+            (setq ligne (marque il ic c 1))
             (push total ligne)
             (setq sub ())
-            (loop e ligne
-            )
          )
       )
    )
@@ -97,4 +95,5 @@
 )
 
 (println total)
+
 
