@@ -978,8 +978,7 @@ Element* LList::loop(LispE* lisp, int16_t label, List* code) {
     Element* element;
     long sz = code->liste.size();
     for (u_link* a = liste.begin(); a != NULL; a = a->next()) {
-        element = a->value->copying(false);
-        lisp->replacestackvalue(element, label);
+        lisp->replacestackvalue(a->value, label);
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
@@ -1002,8 +1001,7 @@ Element* List::loop(LispE* lisp, int16_t label, List* code) {
     Element* element;
     long sz = code->liste.size();
     for (long i = 0; i < liste.size(); i++) {
-        element = liste[i]->copyatom(lisp, 1);
-        lisp->replacestackvalue(element, label);
+        lisp->replacestackvalue(liste[i], label);
         _releasing(e);
         //We then execute our instructions
         for (i_loop = 3; i_loop < sz && e->type != l_return; i_loop++) {
