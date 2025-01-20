@@ -807,13 +807,13 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
         Dictionary* dico = lisp->provideDictionary();
         Element* l1 = liste[1]->eval(lisp);
         Element* l2 = liste[2]->eval(lisp);
+        Element* v;
         if (l1->isList() && l2->isList()) {
             if (l1->size() != l2->size())
                 throw new Error("Error: the two lists should have the same size 'dictionary'");
             long sz = l1->size();
             Element* idx;
             Element* val;
-            Element* v;
             for (long i = 0; i < sz; i++) {
                 idx = l1->value_on_index(lisp, i);
                 val = l2->value_on_index(lisp, i);
@@ -823,9 +823,11 @@ Element* List_dictionary_eval::eval(LispE* lisp) {
                 idx->release();
             }
         }
-        else
-            dico->dictionary[l1->asUString(lisp)] = l2->copying(false);
-        
+        else {
+            v = l2->copying(false);
+            dico->dictionary[l1->asUString(lisp)] = v;
+            v->increment();
+        }
         l1->release();
         l2->release();
         return dico;
@@ -896,13 +898,13 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
         Dictionary_i* dico = lisp->provideDictionary_i();
         Element* l1 = liste[1]->eval(lisp);
         Element* l2 = liste[2]->eval(lisp);
+        Element* v;
         if (l1->isList() && l2->isList()) {
             if (l1->size() != l2->size())
                 throw new Error("Error: the two lists should have the same size 'dictionaryi'");
             long sz = l1->size();
             Element* idx;
             Element* val;
-            Element* v;
             for (long i = 0; i < sz; i++) {
                 idx = l1->value_on_index(lisp, i);
                 val = l2->value_on_index(lisp, i);
@@ -912,9 +914,12 @@ Element* List_dictionaryi_eval::eval(LispE* lisp) {
                 idx->release();
             }
         }
-        else
-            dico->dictionary[l1->asInteger()] = l2->copying(false);
-        
+        else {
+            v = l2->copying(false);
+            dico->dictionary[l1->asInteger()] = v;
+            v->increment();
+        }
+
         l1->release();
         l2->release();
         return dico;
@@ -984,13 +989,13 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
         Dictionary_n* dico = lisp->provideDictionary_n();
         Element* l1 = liste[1]->eval(lisp);
         Element* l2 = liste[2]->eval(lisp);
+        Element* v;
         if (l1->isList() && l2->isList()) {
             if (l1->size() != l2->size())
                 throw new Error("Error: the two lists should have the same size 'dictionaryn'");
             long sz = l1->size();
             Element* idx;
             Element* val;
-            Element* v;
             for (long i = 0; i < sz; i++) {
                 idx = l1->value_on_index(lisp, i);
                 val = l2->value_on_index(lisp, i);
@@ -1000,9 +1005,12 @@ Element* List_dictionaryn_eval::eval(LispE* lisp) {
                 idx->release();
             }
         }
-        else
-            dico->dictionary[l1->asNumber()] = l2->copying(false);
-        
+        else {
+            v = l2->copying(false);
+            dico->dictionary[l1->asFloat()] = v;
+            v->increment();
+        }
+
         l1->release();
         l2->release();
         return dico;
@@ -6564,6 +6572,7 @@ Element* List_setq_eval::eval(LispE* lisp) {
             label = liste[1]->index(i)->label();
             lisp->storing_variable(element->index(i), label);
         }
+        element->release();
     }
     else
         lisp->storing_variable(element, liste[1]->label());
@@ -6584,6 +6593,7 @@ Element* List_setq_eval::eval(LispE* lisp) {
             label = liste[1]->index(i)->label();
             lisp->storing_variable(element->index(i), label);
         }
+        element->release();
     }
     else
         lisp->storing_variable(element, liste[1]->label());
@@ -6620,6 +6630,7 @@ Element* List_setg_eval::eval(LispE* lisp) {
             if (!lisp->delegation->replaceFunction(element->index(i), label, lisp->current_space))
                 lisp->storing_global(element->index(i), label);
         }
+        element->release();
         lisp->resetStack();
         return True_;
     }
@@ -6647,6 +6658,7 @@ Element* List_seth_eval::eval(LispE* lisp) {
                 label = liste[1]->index(i)->label();
                 lisp->delegation->thread_stack.storing_variable(element->index(i)->duplicate_constant(lisp), liste[1]->label());
             }
+            element->release();
             lisp->resetStack();
             return True_;
         }

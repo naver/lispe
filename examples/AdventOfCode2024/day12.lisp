@@ -3,7 +3,7 @@
 ;Description: Advent of Code 2024 day 12
 
 
-(setq m . maplist '(split _ "") . split (fread (+ _current "data/day12_example.txt")) "\n")
+(setq m . maplist '(split _ "") . split (string (fread (+ _current "data/day12_example.txt"))) "\n")
 
 (setq sz . size m)
 
@@ -83,17 +83,28 @@
 )
 
 
+
+(setq d2 (dictionary))
+
 (setq total 0)
+
 (loop c veg
+   ;(setq dicoligne (dictionary c (list)))
+   ;(setq dicocol (dictionary c (list)))
    (loop i (@ dico c)
       (setq nb 0)
       (loop e i
-         (+= nb (compte carte e c))
+         (+= nb 0)
+         (+= nb (compte carte e c))         
+         ;(push (@ dicoligne c (@ e 0)) e)
+         ;(push (@ dicocol c (@ e 1)) e)
       )
       (+= total (* (size i) nb))
-   )
+   )   
 )
 
 (println total)
+
+
 
 
