@@ -603,10 +603,7 @@ Element* Set_s::value_on_index(LispE* lisp, Element* ix) {
 }
 
 Element* Set_s::protected_index(LispE* lisp, Element* ix) {
-    u_ustring k = ix->asUString(lisp);
-    if (!ensemble.count(k))
-        throw new Error("Error: index out of bounds");
-    return lisp->provideString(k);
+    return value_from_index(lisp, ix->asInteger());
 }
 
 Element* Set_s::join_in_list(LispE* lisp, u_ustring& sep) {
@@ -1029,10 +1026,7 @@ Element* Set_i::value_on_index(LispE* lisp, Element* ix) {
 }
 
 Element* Set_i::protected_index(LispE* lisp, Element* ix) {
-    long k = ix->asInteger();
-    if (!ensemble.count(k))
-        throw new Error("Error: index out of bounds");
-    return lisp->provideInteger(k);
+    return value_from_index(lisp, ix->asInteger());
 }
 
 Element* Set_i::join_in_list(LispE* lisp, u_ustring& sep) {
@@ -1396,10 +1390,7 @@ Element* Set_n::value_on_index(LispE* lisp, Element* ix) {
 }
 
 Element* Set_n::protected_index(LispE* lisp, Element* ix) {
-    double k = ix->asNumber();
-    if (!ensemble.count(k))
-        throw new Error("Error: index out of bounds");
-    return lisp->provideNumber(k);
+    return value_from_index(lisp, ix->asInteger());
 }
 
 Element* Set_n::join_in_list(LispE* lisp, u_ustring& sep) {
@@ -1784,12 +1775,7 @@ Element* Set::value_on_index(LispE* lisp, Element* ix) {
 }
 
 Element* Set::protected_index(LispE* lisp, Element* ix) {
-    u_ustring k = ix->asUString(lisp);
-    auto it = dictionary.find(k);
-    if (it == dictionary.end())
-        throw new Error("Error: index out of bounds");
-    
-    return it->second;
+    return value_from_index(lisp, ix->asInteger());
 }
 
 Element* Set::join_in_list(LispE* lisp, u_ustring& sep) {

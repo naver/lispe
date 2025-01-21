@@ -9,8 +9,8 @@
    (and
       (>= r 0)
       (>= c 0)
-      (< r sz)
-      (< c sz)
+      (< r num_rows)
+      (< c num_cols)
    )
 )
 
@@ -25,24 +25,25 @@
    (loop e ds
       (push neighbors (integers (+ r (@ e 0)) (+ c (@ e 1))))
    )
-   (filterlist (\(n) (in_bound n)) neighbors)
+   (filterlist (\(n) (in_bounds n)) neighbors)
 )
 
 (defun get_plant_neighbors(rc)
-   (filterlist (\(n) (= (get_plan n) (get_plan rc))) (get_neighbors rc))
+   (filterlist (\(n) (= (get_plant n) (get_plant rc))) (get_neighbors rc))
 )
 
 (defun get_region(rc)
    (setq visited (set))
    (setq region (set))
-   (setq queue '(rc))
+   (setq queue (list rc))
    (while queue
-      (setq node (popfirst queue))
+      (setq node (car queue))
+      (popfirst queue)
       (check (nullp (in visited node))
          (insert visited node)
          (insert region node)
          (setq neighbors (get_plant_neighbors node))
-         (setq unvisited_neighbors (filterlist (\(n) (nullp (in visited n))) neighbors))
+         (setq unvisited_neighbors (filterlist (\(n) (not (in visited n))) neighbors))
          (extend queue unvisited_neighbors)
       )
    )
@@ -108,16 +109,21 @@
       )
    )
 )
-;;
-(setq total_price 0)
-(loop region regions
-   (setq plant (get_plant(next(iter(region)))
-         area = len(region)
-         edges = calc_edges(region)
-         price = area * edges
-         total_price += price
-         # print(f'{plant} (area: {area}, edges: {edges}): {region}')
 
-         print(total_price)
-         ;;
+(setq total_price 0)
+
+;;
+(loop region regions
+   (println (type region))
+)
+  
+(setq plant (get_plant(next(iter(region)))
+      area = len(region)
+      edges = calc_edges(region)
+      price = area * edges
+      total_price += price
+      # print(f'{plant} (area: {area}, edges: {edges}): {region}')
+
+      print(total_price)
+      ;;
 
