@@ -6564,7 +6564,7 @@ Element* List_setq_eval::eval(LispE* lisp) {
     if (liste[1]->type == t_list) {
         if (liste[1]->size() != element->size()) {
             element->release();
-            return new Error("Error: a list of variable should have the same as its value.");
+            return new Error("Error: a list of variable should have the same size as its value.");
         }
         long sz = liste[1]->size();
         uint16_t label;
@@ -6585,7 +6585,7 @@ Element* List_setq_eval::eval(LispE* lisp) {
     if (liste[1]->type == t_list) {
         if (liste[1]->size() != element->size()) {
             element->release();
-            throw new Error("Error: a list of variable should have the same as its value.");
+            throw new Error("Error: a list of variable should have the same size as its value.");
         }
         long sz = liste[1]->size();
         uint16_t label;
@@ -6620,7 +6620,7 @@ Element* List_setg_eval::eval(LispE* lisp) {
     if (liste[1]->type == t_list) {
         if (liste[1]->size() != element->size()) {
             element->release();
-            throw new Error("Error: a list of variable should have the same as its value.");
+            throw new Error("Error: a list of variable should have the same size as its value.");
         }
         long sz = liste[1]->size();
         uint16_t label;
@@ -6649,7 +6649,7 @@ Element* List_seth_eval::eval(LispE* lisp) {
         if (liste[1]->type == t_list) {
             if (liste[1]->size() != element->size()) {
                 element->release();
-                throw new Error("Error: a list of variable should have the same as its value.");
+                throw new Error("Error: a list of variable should have the same size as its value.");
             }
             long sz = liste[1]->size();
             uint16_t label;

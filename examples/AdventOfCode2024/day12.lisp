@@ -3,7 +3,7 @@
 ;Description: Advent of Code 2024 day 12
 
 
-(setq m . maplist '(split _ "") . split (string (fread (+ _current "data/day12_example.txt"))) "\n")
+(setq m . maplist '(split _ "") . split (string (fread (+ _current "data/day12.txt"))) "\n")
 
 (setq sz . size m)
 
@@ -45,6 +45,33 @@
    nb
 )
 
+(defun comptesides(m region)
+   (setq sides 0)
+   (loop coord region
+      (setq (x y) coord)
+      (setq (xm ym xp yp) (list (- x 1) (- y 1) (+ x 1) (+ y 1)))
+
+      ; Check left side
+      (if (or (zerop x) (!= (@ m xm y) (@ m x y)))
+         (+= sides 1)
+      )
+      ; Check right side
+      (if (or (= xp sz) (!= (@ m xp y) (@ m x y)))
+         (+= sides 1)
+      )
+      ; Check top side
+      (if (or (zerop y) (!= (@ m x ym) (@ m x y)))
+         (+= sides 1)
+      )
+      ; Check bottom side
+      (if (or (= yp sz) (!= (@ m x yp) (@ m x y)))
+         (+= sides 1)
+      )
+   )
+   ; Divide by 2 since each internal fence is counted twice
+   (/ sides 2)
+)
+
 (defun marque (il ic c ma)
    (setq sub ())
    (check 
@@ -84,27 +111,15 @@
 
 
 
-(setq d2 (dictionary))
-
 (setq total 0)
-
 (loop c veg
-   ;(setq dicoligne (dictionary c (list)))
-   ;(setq dicocol (dictionary c (list)))
    (loop i (@ dico c)
       (setq nb 0)
       (loop e i
-         (+= nb 0)
-         (+= nb (compte carte e c))         
-         ;(push (@ dicoligne c (@ e 0)) e)
-         ;(push (@ dicocol c (@ e 1)) e)
+         (+= nb (compte carte e c))
       )
       (+= total (* (size i) nb))
    )   
 )
 
 (println total)
-
-
-
-
