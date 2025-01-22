@@ -5239,12 +5239,9 @@ Element* List_equal_eval::eval(LispE* lisp) {
 
     try {
         lisp->checkState(this);
-        for (long i = 2; i < size(); i++) {
+        for (long i = 2; i < size() && test; i++) {
             second_element = liste[i]->eval(lisp);
-            if (!first_element->isequal(lisp, second_element)) {
-                test = false;
-                break;
-            }
+            test = first_element->isequal(lisp, second_element);
             first_element->release();
             first_element = second_element;
         }

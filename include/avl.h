@@ -259,7 +259,7 @@ public:
         return this;
     }
 
-    Element* fullcopy() {
+    virtual Element* fullcopy() {
         Heap* tree = new Heap(compare);
         if (root == NULL)
             return tree;
@@ -267,7 +267,7 @@ public:
         return tree;
     }
     
-    Element* copyatom(LispE* lisp, uint16_t s) {
+    virtual Element* copyatom(LispE* lisp, uint16_t s) {
         if (status < s)
             return this;
         
@@ -278,7 +278,7 @@ public:
         return tree;
     }
 
-    Element* copying(bool duplicate = true) {
+    virtual Element* copying(bool duplicate = true) {
         if (!status)
             return this;
         
@@ -356,14 +356,43 @@ public:
 class Heaplambda : public Heap {
 public:
     
-    Heaplambda(List* c) : Heap(c) {}
-  
+    Heaplambda(List* c) : Heap(c) {} 
     
     bool remove(LispE* lisp, Element* e);
     Element* insert(LispE* lisp, Element* e, long idx);
     Element* insert(LispE* lisp, Element* e);
     bool check_element(LispE* lisp, Element* element_value);
     Element* search_element(LispE*, Element* element_value, long idx);
+
+    Element* fullcopy() {
+        Heaplambda* tree = new Heaplambda(compare);
+        if (root == NULL)
+            return tree;
+        tree->root = root->fullcopy();
+        return tree;
+    }
+    
+    Element* copyatom(LispE* lisp, uint16_t s) {
+        if (status < s)
+            return this;
+        
+        Heaplambda* tree = new Heaplambda(compare);
+        if (root == NULL)
+            return tree;
+        tree->root = root->copy();
+        return tree;
+    }
+
+    Element* copying(bool duplicate = true) {
+        if (!status)
+            return this;
+        
+        Heaplambda* tree = new Heaplambda(compare);
+        if (root == NULL)
+            return tree;
+        tree->root = root->copy();
+        return tree;
+    }
 
 };
 
