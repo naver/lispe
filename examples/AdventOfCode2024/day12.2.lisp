@@ -1,8 +1,12 @@
 (setq inp . maplist '(split _ "") . split (string (fread (+ _current "data/day12.txt"))) "\n")
 
-(defmacro tas() (heap (\(a b) (select (>=< (@ a 0) (@ b 0)) (>=< (@ a 1) (@ b 1))))))
 (setq num_rows (size inp))
 (setq num_cols (size (@ inp 0)))
+
+(defmacro get_plant(rc)
+   (@ inp (@ rc 0) (@ rc 1))
+)
+
 
 (defun in_bounds(rc)
    (setq (r c)  rc)
@@ -14,10 +18,6 @@
    )
 )
 
-(defun get_plant(rc)
-   (@ inp (@ rc 0) (@ rc 1))
-)
-
 (defun get_neighbors(rc)
    (setq neighbors ())
    (setq ds '((-1 0) (0 1) (1 0) (0 -1)))
@@ -27,13 +27,13 @@
    (filterlist (\(n) (in_bounds n)) neighbors)
 )
 
-(defun get_plant_neighbors(rc)
+(defmacro get_plant_neighbors(rc)
    (filterlist (\(n) (= (get_plant n) (get_plant rc))) (get_neighbors rc))
 )
 
 (defun get_region(rc)
-   (setq visited (tas))
-   (setq region (tas))
+   (setq visited (set))
+   (setq region (set))
    (setq queue (list rc))
    (while queue
       (setq node (car queue))
@@ -50,12 +50,15 @@
 )
 
 (defun calc_edges(region)
+   (setq ds '((-1 0) (0 -1) (-1 -1) (1 0) (1 -1) (0 1) (-1 1)))
    (setq edges 0)
    (loop e region
-      (setq (r c) e)
-      (setq north_n (integers (- r 1) c))
-      (setq west_n (integers (- r 1) c))
-      (setq nw_n (integers (- r 1) (- c 1)))
+      (setq corners ())
+      (loop de ds
+         (push corners (+ e de))
+      )
+
+      (setq (north_n west_n nw_n south_n sw_n east_n ne_n) corners)
 
       (check (nullp (in region north_n))
          (setq same_edge (and (in region west_n) (nullp (in region nw_n))))
@@ -63,9 +66,6 @@
             (+= edges 1)
          )
       )
-
-      (setq south_n (integers (+ r 1) c))
-      (setq sw_n (integers (+ r 1) (- c 1)))
 
       (check (nullp (in region south_n))
          (setq same_edge (and (in region west_n) (nullp (in region sw_n))))
@@ -80,9 +80,6 @@
             (+= edges 1)
          )
       )
-
-      (setq east_n (integers r (+ c 1)))
-      (setq ne_n (integers (- r 1) (+ c 1)))
 
       (check (nullp (in region east_n))
          (setq same_edge (and (in region north_n) (nullp (in region ne_n))))
