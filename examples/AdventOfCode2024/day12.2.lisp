@@ -49,40 +49,38 @@
    region
 )
 
-(defun calc_edges(region)
+(defun edge_count(region)
    (setq ds '((-1 0) (0 -1) (-1 -1) (1 0) (1 -1) (0 1) (-1 1)))
    (setq edges 0)
    (loop e region
-      (setq corners ())
-      (loop de ds
-         (push corners (+ e de))
+      (setq 
+         (up_node left_node up_left_node down_node down_left_node right_node up_right_node) 
+         (maplist '(+ e) ds)
       )
-
-      (setq (north_n west_n nw_n south_n sw_n east_n ne_n) corners)
-
-      (check (nullp (in region north_n))
-         (setq same_edge (and (in region west_n) (nullp (in region nw_n))))
+      
+      (check (nullp (in region up_node))
+         (setq same_edge (and (in region left_node) (nullp (in region up_left_node))))
          (if (nullp same_edge)
             (+= edges 1)
          )
       )
 
-      (check (nullp (in region south_n))
-         (setq same_edge (and (in region west_n) (nullp (in region sw_n))))
+      (check (nullp (in region down_node))
+         (setq same_edge (and (in region left_node) (nullp (in region down_left_node))))
          (if (nullp same_edge)
             (+= edges 1)
          )
       )
 
-      (check (nullp (in region west_n))
-         (setq same_edge (and (in region north_n) (nullp (in region nw_n))))
+      (check (nullp (in region left_node))
+         (setq same_edge (and (in region up_node) (nullp (in region up_left_node))))
          (if (nullp same_edge)
             (+= edges 1)
          )
       )
 
-      (check (nullp (in region east_n))
-         (setq same_edge (and (in region north_n) (nullp (in region ne_n))))
+      (check (nullp (in region right_node))
+         (setq same_edge (and (in region up_node) (nullp (in region up_right_node))))
          (if (nullp same_edge)
             (+= edges 1)
          )
@@ -113,10 +111,10 @@
 (loop region regions
    (setq plant (get_plant (@ region 0)))
    (setq area (size region))
-   (setq edges (calc_edges region))
-   (setq price  (* area edges))
-   (+= total_price price)
+   (setq edges (edge_count region))
+   (+= total_price (* area edges))
 )
 
 (print total_price)
+
 
