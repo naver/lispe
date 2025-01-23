@@ -3,12 +3,12 @@
 ## Overview
 This project implements a chat system using LispE, a Lisp interpreter, with Ollama for language model interactions.
 
-## Files
+### Files
 - `prompting.lisp`: Main script for problem-solving and chat interaction
 - `ollama.lisp`: Handles Ollama API connections via cURL
 - `formatting.lisp`: Provides text formatting utilities
 
-## Prerequisites
+### Prerequisites
 - LispE interpreter
 - Ollama installed
 - cURL library (comes with the interpreter itself)
@@ -37,6 +37,14 @@ This project implements a chat system using LispE, a Lisp interpreter, with Olla
 (setprofile "http://localhost:9000" "llama2" 2000 0.5)
 ```
 
+### Notes
+- Omitted arguments retain previous values
+- Passing `nil` keeps existing value
+
+## Usage
+1. Set system prompt and problem statement in `prompting.lisp`
+2. Run the script to generate a response
+
 ## Chat Function `tchat()`
 ### Function Signature
 ```lisp
@@ -57,14 +65,6 @@ This project implements a chat system using LispE, a Lisp interpreter, with Olla
 ; Continue conversation
 (setq next_msg (tchat msg "Can you explain how you solved that?"))
 ```
-
-### Notes
-- Omitted arguments retain previous values
-- Passing `nil` keeps existing value
-
-## Usage
-1. Set system prompt and problem statement in `prompting.lisp`
-2. Run the script to generate a response
 
 ### Example
 ```lisp
