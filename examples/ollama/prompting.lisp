@@ -11,8 +11,9 @@
 
 (setq problem `Sara and Joe have a combined height of 120 inches. Joe is 6 inches more than double Sara's height. How tall is Joe?`)
 
-; We initialze our server address, by default it is http://localhost:11434
+; We initialize our server address, by default it is http://localhost:11434
 (setprofile "http://192.168.1.125:11434")
+
 (setq msg (tchat () (replace prompt "{context}" problem) system))
 (formatcontent (@ msg -1 "content"))
 
