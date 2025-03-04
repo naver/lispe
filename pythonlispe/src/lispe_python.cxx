@@ -690,7 +690,7 @@ public:
             }
             catch(Error* e) {
                 clean_signal();
-                methodClose(lisp);
+                //methodClose(lisp);
                 lisp->unlock();
                 throw e;
             }
@@ -706,7 +706,7 @@ public:
             }
         }
 
-        methodClose(lisp);
+        //methodClose(lisp);
         clean_signal();
         lisp->unlock();
 
@@ -991,7 +991,10 @@ public:
             case python_run: {
                 string code = lisp->get_variable(U"code")->toString(lisp);
                 double timeout = lisp->get_variable(U"timeout")->asNumber();
-                string returnvariable = lisp->get_variable(U"variable")->toString(lisp);
+                Element* ret = lisp->get_variable(U"variable");
+                string returnvariable;
+                if (ret != null_)
+                    returnvariable = ret->toString(lisp);
                 return py->methodRun(lisp, code, returnvariable, timeout);
             }
             case python_runfile: {
@@ -1001,12 +1004,18 @@ public:
             case python_runmodule: {
                 string name = lisp->get_variable(U"name")->toString(lisp);
                 string code = lisp->get_variable(U"code")->toString(lisp);
-                string returnvariable = lisp->get_variable(U"variable")->toString(lisp);
+                Element* ret = lisp->get_variable(U"variable");
+                string returnvariable;
+                if (ret != null_)
+                    returnvariable = ret->toString(lisp);
                 return py->methodRunModule(lisp, name, code, returnvariable);
             }
             case python_getmodule: {
                 string name = lisp->get_variable(U"name")->toString(lisp);
-                string returnvariable = lisp->get_variable(U"variable")->toString(lisp);
+                Element* ret = lisp->get_variable(U"variable");
+                string returnvariable;
+                if (ret != null_)
+                    returnvariable = ret->toString(lisp);
                 return py->methodGetModule(lisp, name, returnvariable);
             }
             case python_setpath:{
