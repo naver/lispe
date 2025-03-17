@@ -14,7 +14,7 @@
 
 const uint16_t binBits = 6;
 const uint16_t binSize = 1 << binBits;
-const uint16_t binMin = 0x3F;
+const uint16_t binMin = binSize - 1;
 const uint64_t binOne = 1;
  
 const uint64_t binVal64[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
