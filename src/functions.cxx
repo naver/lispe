@@ -341,6 +341,12 @@ Element* List_data_eval::eval(LispE* lisp) {
     return values;
 }
 
+/*
+ ------------------------------------------------------------------------
+ Evaluation of defpat rules
+ ------------------------------------------------------------------------
+*/
+
 Element* List_pattern_eval::eval(LispE* lisp) {
     List* arguments = lisp->provideList();
     Element* element;
@@ -499,6 +505,12 @@ Element* List_pattern_eval::eval(LispE* lisp) {
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
 }
+
+/*
+ ------------------------------------------------------------------------
+ Evaluation of defpred rules
+ ------------------------------------------------------------------------
+*/
 
 Element* List_predicate_eval::eval(LispE* lisp) {
     List* arguments = lisp->provideList();
@@ -670,332 +682,26 @@ Element* List_predicate_eval::eval(LispE* lisp) {
 
 /*
  ------------------------------------------------------------------------
- Evaluation of defpat rules
+ Evaluation of defpat rule  in a eval
  ------------------------------------------------------------------------
 */
 
 Element* List::eval_pattern(LispE* lisp, int16_t function_label) {
-    List* arguments = lisp->provideList();
-    Element* element;
-    Element* body;
-    
-    long i;
-    //We calculate our values in advance, in the case of a recursive call, we must
-    //use current values on the stack
-    long nbarguments = liste.size()-1;
-    int16_t ilabel = -1;
-    int16_t sublabel = -1;
-    char match;
-    char depth = lisp->depths[function_label] - 1;
-
-    try {
-        lisp->setStack();
-        for (i = 1; i <= nbarguments; i++) {
-            element = liste[i]->eval(lisp);
-            
-            ilabel = lisp->extractdynamiclabel(element, depth);
-            if (ilabel > l_final && element->type != t_data) {
-                match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
-                if (match != check_ok) {
-                    arguments->clear();
-                    if (match == check_mismatch)
-                        throw new Error(L"Error: Size mismatch between argument list and data structure definition");
-                    else {
-                        std::wstringstream message;
-                        message << L"Error: Mismatch on argument: " << match;
-                        message << " (" << lisp->asString(lisp->getDataStructure(ilabel)->index(match)->label()) << " required)";
-                        throw new Error(message.str());
-                    }
-                }
-            }
-            //We keep the track of the first element as it used as an index to gather pattern methods
-            if (i == 1)
-                sublabel = ilabel;
-            arguments->append(element->duplicate_constant(lisp));
-        }
-    }
-    catch (Error* err) {
-        arguments->release();
-        lisp->resetStack();
-        throw err;
-    }
-
-    body = NULL;
-    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
-    auto subfunction = functions.find(sublabel);
-    if (subfunction == functions.end()) {
-        sublabel = v_null;
-        //We check, if we have a rollback function
-        subfunction = functions.find(sublabel);
-        if (subfunction == functions.end()) {
-            arguments->release();
-            wstring message = L"Error: Could not find a match for function: '";
-            message += lisp->asString(function_label);
-            message += L"'";
-            lisp->resetStack();
-            throw new Error(message);
-        }
-    }
-
-    body = subfunction->second[0];
-
-    ilabel = 1;
-    match = 0;
-    long sz = subfunction->second.size();
-    lisp->push(body);
-
-    while (body != NULL) {
-        lisp->setstackfunction(body);
-        element = body->index(2);
-        if (element->size() == nbarguments) {
-            match = true;
-            for (i = 0; i < nbarguments && match; i++) {
-                match = element->index(i)->unify(lisp, arguments->liste[i], true);
-            }
-            if (match)
-                break;
-            
-            lisp->clear_top_stack();
-        }
-        body = NULL;
-        if (ilabel < sz)
-            body = subfunction->second[ilabel++];
-        else {
-            if (sublabel != v_null) {
-                sublabel = v_null;
-                ilabel = 1;
-                //We check, if we have a rollback function
-                subfunction = functions.find(sublabel);
-                if (subfunction != functions.end()) {
-                    body = subfunction->second[0];
-                    sz = subfunction->second.size();
-                }
-            }
-        }
-    }
-
-    if (!match) {
-        lisp->pop();
-        arguments->release();
-        wstring message = L"Error: Could not find a match for function: '";
-        message += lisp->asString(function_label);
-        message += L"'";
-        lisp->resetStack();
-        throw new Error(message);
-    }
-        
-    try {
-        nbarguments = body->size();
-        if (nbarguments == 4)
-            element = body->index(3)->eval(lisp);
-        else {
-            element = null_;
-            for (i = 3; i < nbarguments && element->type != l_return; i++) {
-                element->release();
-                element = body->index(i)->eval(lisp);
-            }
-        }
-        if (element->type == l_return) {
-            body = element->eval(lisp);
-            element->release();
-            //This version protects 'e' from being destroyed in the stack.
-            arguments->release(body);
-            lisp->resetStack();
-            return lisp->pop(body);
-        }
-    }
-    catch (Error* err) {
-        arguments->release();
-        lisp->pop();
-        lisp->resetStack();
-        throw err;
-    }
-
-    arguments->release(element);
-    lisp->resetStack();
-    //This version protects 'e' from being destroyed in the stack.
-    return lisp->pop(element);
+    List_pattern_eval lpe(this, function_label);
+    return lpe.eval(lisp);
 }
-
 
 /*
  ------------------------------------------------------------------------
- Evaluation of defpred rules
+ Evaluation of defpred rule in an eval
  ------------------------------------------------------------------------
 */
 
 Element* List::eval_predicate(LispE* lisp, int16_t function_label) {
-    List* arguments = lisp->provideList();
-    Element* element;
-    Element* body;
-    
-    long i;
-    //We calculate our values in advance, in the case of a recursive call, we must
-    //use current values on the stack
-    long nbarguments = liste.size()-1;
-    int16_t ilabel = -1;
-    int16_t sublabel = -1;
-    char match;
-    char depth = lisp->depths[function_label] - 1;
-
-    try {
-        lisp->setStack();
-        for (i = 1; i <= nbarguments; i++) {
-            element = liste[i]->eval(lisp);
-            
-            ilabel = lisp->extractdynamiclabel(element, depth);
-            if (ilabel > l_final && element->type != t_data) {
-                match = lisp->getDataStructure(ilabel)->check_match(lisp,element);
-                if (match != check_ok) {
-                    arguments->clear();
-                    throw &lisp->delegation->predicate_error;
-                }
-            }
-            //We keep the track of the first element as it used as an index to gather pattern methods
-            if (i == 1)
-                sublabel = ilabel;
-            arguments->append(element->duplicate_constant(lisp));
-        }
-    }
-    catch (Error* err) {
-        arguments->release();
-        lisp->resetStack();
-#ifndef LISPE_WASM
-        err->release();
-#endif
-        return null_;
-    }
-
-    body = NULL;
-    auto& functions = lisp->delegation->method_pool[lisp->current_space]->at(function_label);
-    auto subfunction = functions.find(sublabel);
-    if (subfunction == functions.end()) {
-        sublabel = v_null;
-        //We check, if we have a rollback function
-        subfunction = functions.find(sublabel);
-        if (subfunction == functions.end()) {
-            arguments->release();
-            lisp->resetStack();
-            return null_;
-        }
-    }
-
-    body = subfunction->second[0];
-
-    ilabel = 1;
-    match = 0;
-    long sz = subfunction->second.size();
-    lisp->push(body);
-
-    //The gist of this function is the following:
-    //a) First, we find a function, whose parameters match the arguments
-    //b) Then we execute the body
-    //c) if any calls in the body returns false, we then check the next function in line
-    //d) if the function fully executes and ends with return, we return its value
-    //e) If the function fully executes and there is no call to return, we push the value into a list
-    //e) else we return false
-    
-    while (body != NULL) {
-        match = false;
-        while (!match && body != NULL) {
-            lisp->setstackfunction(body);
-            element = body->index(2);
-            if (element->size() == nbarguments) {
-                match = true;
-                //We check if the arguments match the parameter definition
-                for (i = 0; i < nbarguments && match; i++) {
-                    match = element->index(i)->unify(lisp, arguments->liste[i], true);
-                }
-                if (match)
-                    break;
-                
-                lisp->clear_top_stack();
-            }
-            body = NULL;
-            if (ilabel < sz)
-                body = subfunction->second[ilabel++];
-            else {
-                if (sublabel != v_null) {
-                    sublabel = v_null;
-                    ilabel = 1;
-                    //We check, if we have a rollback function
-                    subfunction = functions.find(sublabel);
-                    if (subfunction != functions.end()) {
-                        body = subfunction->second[0];
-                        sz = subfunction->second.size();
-                    }
-                }
-            }
-        }
-        if (!match) {
-            lisp->pop();
-            arguments->release();
-            lisp->resetStack();
-            return null_;
-        }
-        
-        bool success = true;
-        element = true_;
-        try {
-            //If any calls return false, we look for the next function
-            long nbinstructions = body->size();
-            if (nbinstructions == 4) {
-                element = body->index(3)->eval(lisp);
-                success = element->Boolean();
-            }
-            else {
-                element = true_;
-                success = true;
-                for (i = 3; i < nbinstructions && element->type != l_return && success; i++) {
-                    element->release();
-                    element = body->index(i)->eval(lisp);
-                    success = element->Boolean();
-                }
-            }
-            if (element->type == l_return) {
-                body = element->eval(lisp);
-                element->release();
-                //This version protects 'e' from being destroyed in the stack.
-                arguments->release(body);
-                lisp->resetStack();
-                return lisp->pop(body);
-            }
-        }
-        catch (Error* err) {
-            arguments->release();
-#ifndef LISPE_WASM
-        err->release();
-#endif
-            success = false;
-        }
-        if (success) {
-            arguments->release(element);
-            lisp->resetStack();
-            //This version protects 'e' from being destroyed in the stack.
-            return lisp->pop(element);
-        }
-        element->release();
-        body = NULL;
-        if (ilabel < sz)
-            body = subfunction->second[ilabel++];
-        else {
-            if (sublabel != v_null) {
-                sublabel = v_null;
-                ilabel = 1;
-                //We check, if we have a rollback function
-                subfunction = functions.find(sublabel);
-                if (subfunction != functions.end()) {
-                    body = subfunction->second[0];
-                    sz = subfunction->second.size();
-                }
-            }
-        }
-    }
-
-    lisp->pop(null_);
-    lisp->resetStack();
-    return null_;
+    List_predicate_eval lpe(this,function_label);
+    return lpe.eval(lisp);
 }
+
 //------------------------------------------------------------------------------------------
 #ifdef LISPE_WASM
 void List::evalthread(LispE* lisp, List* body) {

@@ -48,5 +48,5 @@ function callResetLispE(); which resets the current Tamgu interpreter
 ```
 
 ### lispe.wasm
-This is the WASM library, which is loaded with lispe.js.
+This is the WASM library, which is loaded with tamgu_run.js.
 

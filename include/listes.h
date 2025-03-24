@@ -4509,7 +4509,14 @@ public:
         status = s_constant;
         function_label = body->liste[1]->label();
     }
-    
+
+    List_pattern_eval(List* b, int16_t flabel) : body(b) {
+        liste.push_element(b);
+        type = t_eval;
+        status = s_constant;
+        function_label = flabel;
+    }
+
     bool eval_Boolean(LispE* lisp, int16_t instruction);
     Element* eval(LispE* lisp);
     
@@ -4540,7 +4547,14 @@ public:
         status = s_constant;
         function_label = body->liste[1]->label();
     }
-    
+
+    List_predicate_eval(List* b, int16_t flabel) : body(b) {
+        liste.push_element(b);
+        type = t_eval;
+        status = s_constant;
+        function_label = flabel;
+    }
+
     bool eval_Boolean(LispE* lisp, int16_t instruction);
     Element* eval(LispE* lisp);
     
