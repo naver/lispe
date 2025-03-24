@@ -171,6 +171,8 @@
     <ClCompile Include="..\..\src\jagwin.cxx" />
     <ClCompile Include="..\..\src\jagget.cxx" />
     <ClCompile Include="..\..\src\eval.cxx" />
+    <ClCompile Include="..\..\src\unify.cxx" />
+    <ClCompile Include="..\..\src\functions.cxx" />
     <ClCompile Include="..\..\src\composing.cxx" />
     <ClCompile Include="..\..\src\lispe.cxx" />
     <ClCompile Include="..\..\src\lists.cxx" />

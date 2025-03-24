@@ -15,6 +15,566 @@
 #include <math.h>
 #include <algorithm>
 
+//We recursively traverse the structure to find a match for value variables that complies with the keys...
+//We want to handle cases such as: pattern ( {x:v y:v}) with a constraint on v being the same value
+bool Dictionary_as_list::traverse(LispE* lisp, Dictionary* d, Strings* keys, Integers* consummed, long di, long i, bool record) {
+    if (i == keyvalues.size()) {
+        return (consummed->size() == keys->size());
+    }
+    
+    Element* k = keyvalues[i];
+    Element* v = valuevalues[i];
+    if (k == separator_) {
+        if (v == null_)
+            return true;
+        if (consummed->size() == keys->size())
+            return v->unify(lisp, emptydictionary_, record);
+        long ii,jj;
+        bool found = false;
+        Dictionary* dico = lisp->provideDictionary();
+        for (ii = 0; ii < keys->size(); ii++) {
+            found = false;
+            for (jj = 0; jj < consummed->size(); jj++) {
+                if (consummed->liste[jj] == ii) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            dico->recording(keys->liste[ii], d->dictionary[keys->liste[ii]]);
+        }
+        if (!v->unify(lisp, dico, record)) {
+            dico->release();
+            return false;
+        }
+        dico->release();
+        return true;
+    }
+    
+    if (di == keys->size())
+        return false;
+    
+    
+    bool removekey = false;
+    bool removevalue = false;
+    if (record) {
+        removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
+        removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
+    }
+    Element* e = lisp->provideString(keys->liste[di]);
+    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp,e, record)) {
+        consummed->liste.push_back(di);
+        e->release();
+        if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
+            return true;
+        consummed->liste.pop_back();
+    }
+    else
+        e->release();
+    if (removekey)
+        lisp->removefromstack(k->label());
+    if (removevalue)
+        lisp->removefromstack(v->label());
+    return traverse(lisp, d, keys, consummed, di+1, i, record);
+}
+
+bool Dictionary_as_list::traverse(LispE* lisp, Dictionary_n* d, Numbers* keys, Integers* consummed, long di, long i, bool record) {
+    if (i == keyvalues.size()) {
+        return (consummed->size() == keys->size());
+    }
+    
+    Element* k = keyvalues[i];
+    Element* v = valuevalues[i];
+    if (k == separator_) {
+        if (v == null_)
+            return true;
+        if (consummed->size() == keys->size())
+            return v->unify(lisp, emptydictionary_, record);
+        long ii,jj;
+        bool found = false;
+        Dictionary_n* dico = lisp->provideDictionary_n();
+        for (ii = 0; ii < keys->size(); ii++) {
+            found = false;
+            for (jj = 0; jj < consummed->size(); jj++) {
+                if (consummed->liste[jj] == ii) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            dico->recording(keys->liste[ii], d->dictionary[keys->liste[ii]]);
+        }
+        if (!v->unify(lisp, dico, record)) {
+            dico->release();
+            return false;
+        }
+        return true;
+    }
+    
+    if (di == keys->size())
+        return false;
+    
+    bool removekey = false;
+    bool removevalue = false;
+    if (record) {
+        removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
+        removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
+    }
+    Element* e = lisp->provideNumber(keys->liste[di]);
+    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp, e, record)) {
+        consummed->liste.push_back(di);
+        e->release();
+        if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
+            return true;
+        consummed->liste.pop_back();
+    }
+    else
+        e->release();
+    if (removekey)
+        lisp->removefromstack(k->label());
+    if (removevalue)
+        lisp->removefromstack(v->label());
+    return traverse(lisp, d, keys, consummed, di+1, i, record);
+}
+
+
+bool Dictionary_as_list::traverse(LispE* lisp, Dictionary_i* d, Integers* keys, Integers* consummed, long di, long i, bool record) {
+    if (i == keyvalues.size()) {
+        return (consummed->size() == keys->size());
+    }
+    
+    Element* k = keyvalues[i];
+    Element* v = valuevalues[i];
+    if (k == separator_) {
+        if (v == null_)
+            return true;
+        if (consummed->size() == keys->size())
+            return v->unify(lisp, emptydictionary_, record);
+        long ii,jj;
+        bool found = false;
+        Dictionary_i* dico = lisp->provideDictionary_i();
+        for (ii = 0; ii < keys->size(); ii++) {
+            found = false;
+            for (jj = 0; jj < consummed->size(); jj++) {
+                if (consummed->liste[jj] == ii) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            dico->recording(keys->liste[ii], d->dictionary[keys->liste[ii]]);
+        }
+        if (!v->unify(lisp, dico, record)) {
+            dico->release();
+            return false;
+        }
+        return true;
+    }
+    
+    if (di == keys->size())
+        return false;
+    
+    bool removekey = false;
+    bool removevalue = false;
+    if (record) {
+        removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
+        removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
+    }
+    Element* e = lisp->provideInteger(keys->liste[di]);
+    if (v->unify(lisp, d->dictionary[keys->liste[di]], record) && k->unify(lisp, e, record)) {
+        consummed->liste.push_back(di);
+        e->release();
+        if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
+            return true;
+        consummed->liste.pop_back();
+    }
+    else
+        e->release();
+    if (removekey)
+        lisp->removefromstack(k->label());
+    if (removevalue)
+        lisp->removefromstack(v->label());
+    return traverse(lisp, d, keys, consummed, di+1, i, record);
+}
+
+//We recursively traverse the structure to find a match for value variables that complies with the keys...
+//We want to handle cases such as: pattern ( {x:v y:v}) with a constraint on v being the same value
+bool Dictionary_as_list::traverse(LispE* lisp, Tree* d, Strings* keys, Integers* consummed, long di, long i, bool record) {
+    if (i == keyvalues.size()) {
+        return (consummed->size() == keys->size());
+    }
+    
+    Element* k = keyvalues[i];
+    Element* v = valuevalues[i];
+    if (k == separator_) {
+        if (v == null_)
+            return true;
+        if (consummed->size() == keys->size())
+            return v->unify(lisp, emptydictionary_, record);
+        long ii,jj;
+        bool found = false;
+        Tree* dico = lisp->provideTree();
+        for (ii = 0; ii < keys->size(); ii++) {
+            found = false;
+            for (jj = 0; jj < consummed->size(); jj++) {
+                if (consummed->liste[jj] == ii) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            dico->recording(keys->liste[ii], d->tree[keys->liste[ii]]);
+        }
+        if (!v->unify(lisp, dico, record)) {
+            dico->release();
+            return false;
+        }
+        dico->release();
+        return true;
+    }
+    
+    if (di == keys->size())
+        return false;
+    
+    
+    bool removekey = false;
+    bool removevalue = false;
+    if (record) {
+        removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
+        removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
+    }
+    Element* e = lisp->provideString(keys->liste[di]);
+    if (v->unify(lisp, d->tree[keys->liste[di]], record) && k->unify(lisp,e, record)) {
+        consummed->liste.push_back(di);
+        e->release();
+        if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
+            return true;
+        consummed->liste.pop_back();
+    }
+    else
+        e->release();
+    if (removekey)
+        lisp->removefromstack(k->label());
+    if (removevalue)
+        lisp->removefromstack(v->label());
+    return traverse(lisp, d, keys, consummed, di+1, i, record);
+}
+
+bool Dictionary_as_list::traverse(LispE* lisp, Tree_n* d, Numbers* keys, Integers* consummed, long di, long i, bool record) {
+    if (i == keyvalues.size()) {
+        return (consummed->size() == keys->size());
+    }
+    
+    Element* k = keyvalues[i];
+    Element* v = valuevalues[i];
+    if (k == separator_) {
+        if (v == null_)
+            return true;
+        if (consummed->size() == keys->size())
+            return v->unify(lisp, emptydictionary_, record);
+        long ii,jj;
+        bool found = false;
+        Tree_n* dico = lisp->provideTree_n();
+        for (ii = 0; ii < keys->size(); ii++) {
+            found = false;
+            for (jj = 0; jj < consummed->size(); jj++) {
+                if (consummed->liste[jj] == ii) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            dico->recording(keys->liste[ii], d->tree[keys->liste[ii]]);
+        }
+        if (!v->unify(lisp, dico, record)) {
+            dico->release();
+            return false;
+        }
+        return true;
+    }
+    
+    if (di == keys->size())
+        return false;
+    
+    bool removekey = false;
+    bool removevalue = false;
+    if (record) {
+        removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
+        removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
+    }
+    Element* e = lisp->provideNumber(keys->liste[di]);
+    if (v->unify(lisp, d->tree[keys->liste[di]], record) && k->unify(lisp, e, record)) {
+        consummed->liste.push_back(di);
+        e->release();
+        if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
+            return true;
+        consummed->liste.pop_back();
+    }
+    else
+        e->release();
+    if (removekey)
+        lisp->removefromstack(k->label());
+    if (removevalue)
+        lisp->removefromstack(v->label());
+    return traverse(lisp, d, keys, consummed, di+1, i, record);
+}
+
+
+bool Dictionary_as_list::traverse(LispE* lisp, Tree_i* d, Integers* keys, Integers* consummed, long di, long i, bool record) {
+    if (i == keyvalues.size()) {
+        return (consummed->size() == keys->size());
+    }
+    
+    Element* k = keyvalues[i];
+    Element* v = valuevalues[i];
+    if (k == separator_) {
+        if (v == null_)
+            return true;
+        if (consummed->size() == keys->size())
+            return v->unify(lisp, emptydictionary_, record);
+        long ii,jj;
+        bool found = false;
+        Tree_i* dico = lisp->provideTree_i();
+        for (ii = 0; ii < keys->size(); ii++) {
+            found = false;
+            for (jj = 0; jj < consummed->size(); jj++) {
+                if (consummed->liste[jj] == ii) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                continue;
+            dico->recording(keys->liste[ii], d->tree[keys->liste[ii]]);
+        }
+        if (!v->unify(lisp, dico, record)) {
+            dico->release();
+            return false;
+        }
+        return true;
+    }
+    
+    if (di == keys->size())
+        return false;
+    
+    bool removekey = false;
+    bool removevalue = false;
+    if (record) {
+        removekey = (k != null_ && k->isAtom() && !lisp->checkLabel(k->label()));
+        removevalue = (v != null_ && v->isAtom() && !lisp->checkLabel(v->label()));
+    }
+    Element* e = lisp->provideInteger(keys->liste[di]);
+    if (v->unify(lisp, d->tree[keys->liste[di]], record) && k->unify(lisp, e, record)) {
+        consummed->liste.push_back(di);
+        e->release();
+        if (traverse(lisp, d, keys, consummed, di+1, i+1, record))
+            return true;
+        consummed->liste.pop_back();
+    }
+    else
+        e->release();
+    if (removekey)
+        lisp->removefromstack(k->label());
+    if (removevalue)
+        lisp->removefromstack(v->label());
+    return traverse(lisp, d, keys, consummed, di+1, i, record);
+}
+
+
+bool Dictionary_as_list::unify(LispE* lisp, Element* value, bool record) {
+    if (!value->isDictionary())
+        return false;
+    
+    long ksz = keyvalues.size();
+    if (ksz == 0)
+        return value->isEmpty();
+    
+    
+    /*
+     We have different cases:
+     
+     a) purekeys means that all keys in the pattern are actual values: string or number
+     b) mxkeyvalue defines the position of the last true value in the list of keys: (k1 k2 k3 var1 var2...)
+     c) the rest of the patterns after mxkeyvalue are variables that must be instantiated with the arguments (var1 var2...)
+     d) the last element in the pattern might be the rest of the dictionary operator: (k1:v k2:v $:var)
+     */
+    
+    long i = 0;
+    Element* e;
+    if (purekeys) {
+        //it is a perfect match
+        if (value->size() != ksz)
+            return false;
+        
+        //Each key is a value, not an atom...
+        for (; i < ksz; i++) {
+            e = value->checkkey(lisp, keyvalues[i]);
+            if (e == null_ || !valuevalues[i]->unify(lisp, e, record))
+                return false;
+        }
+        return true;
+    }
+    
+    if (keyvalues.back() == separator_) {
+        if (value->size() < ksz-1)
+            return false;
+    }
+    else {
+        if (value->size() != ksz)
+            return false;
+    }
+    
+    if (mxkeyvalue) {
+        for (i = 0; i < mxkeyvalue; i++) {
+            e = value->checkkey(lisp, keyvalues[i]);
+            if (e == null_ || !valuevalues[i]->unify(lisp, e, record))
+                return false;
+        }
+    }
+    
+    bool found;
+    long j;
+    Integers* consummed = lisp->provideIntegers();
+    switch (value->type) {
+        case t_dictionary:{
+            Strings* keys = lisp->provideStrings();
+            u_ustring k;
+            for (const auto& a : ((Dictionary*)value)->dictionary) {
+                k = a.first;
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(k)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(k);
+            }
+            
+            found = traverse(lisp, (Dictionary*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+        case t_tree: {
+            Strings* keys = lisp->provideStrings();
+            u_ustring k;
+            for (const auto& a : ((Tree*)value)->tree) {
+                k = a.first;
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(k)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(k);
+            }
+            
+            found = traverse(lisp, (Tree*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+        case t_dictionaryn:{
+            Numbers* keys = lisp->provideNumbers();
+            for (const auto& a : ((Dictionary_n*)value)->dictionary) {
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(a.first)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(a.first);
+            }
+            found = traverse(lisp, (Dictionary_n*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+        case t_treen: {
+            Numbers* keys = lisp->provideNumbers();
+            for (const auto& a : ((Tree_n*)value)->tree) {
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(a.first)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(a.first);
+            }
+            found = traverse(lisp, (Tree_n*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+        case t_dictionaryi: {
+            Integers* keys = lisp->provideIntegers();
+            for (const auto& a : ((Dictionary_i*)value)->dictionary) {
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(a.first)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(a.first);
+            }
+            found = traverse(lisp, (Dictionary_i*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+        default: {
+            Integers* keys = lisp->provideIntegers();
+            for (const auto& a : ((Tree_i*)value)->tree) {
+                if (mxkeyvalue) {
+                    found = false;
+                    for (j = 0; j < mxkeyvalue; j++) {
+                        if (keyvalues[j]->equalvalue(a.first)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found)
+                        continue;
+                }
+                keys->liste.push_back(a.first);
+            }
+            found = traverse(lisp, (Tree_i*)value, keys, consummed, 0, mxkeyvalue, record);
+            keys->release();
+            consummed->release();
+            return found;
+        }
+    }
+}
 
 Dictionary_as_list::Dictionary_as_list(LispE* lisp, List* l) : Element(t_dictionary) {
     choice = true;
