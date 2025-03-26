@@ -644,7 +644,6 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             }
         }
         catch (Error* err) {
-            element->release();
 #ifndef LISPE_WASM
         err->release();
 #endif
