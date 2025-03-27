@@ -3662,6 +3662,28 @@ Element* List_xor_eval::eval(LispE* lisp) {
 }
 
 #ifdef LISPE_WASM
+Element* List_setqv_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    if (thrown_error)
+        return element;
+    if (liste[1]->type == t_list) {
+        if (liste[1]->size() != element->size()) {
+            element->release();
+            return new Error("Error: a list of variable should have the same size as its value.");
+        }
+        long sz = liste[1]->size();
+        uint16_t label;
+        for (long i = 0; i < sz; i++) {
+            label = liste[1]->index(i)->label();
+            lisp->storing_variable(element->index(i), label);
+        }
+        element->release();
+    }
+    else
+        lisp->storing_variable(element, liste[1]->label());
+    return element;
+}
+
 Element* List_setq_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     if (thrown_error)
@@ -3683,7 +3705,30 @@ Element* List_setq_eval::eval(LispE* lisp) {
         lisp->storing_variable(element, liste[1]->label());
     return True_;
 }
+
 #else
+Element* List_setqv_eval::eval(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    lisp->checkState(this);
+    if (liste[1]->type == t_list) {
+        if (liste[1]->size() != element->size()) {
+            element->release();
+            throw new Error("Error: a list of variable should have the same size as its value.");
+        }
+        long sz = liste[1]->size();
+        uint16_t label;
+        for (long i = 0; i < sz; i++) {
+            label = liste[1]->index(i)->label();
+            lisp->storing_variable(element->index(i), label);
+        }
+        element->release();
+    }
+    else
+        lisp->storing_variable(element, liste[1]->label());
+    lisp->resetStack();
+    return element;
+}
+
 Element* List_setq_eval::eval(LispE* lisp) {
     Element* element = liste[2]->eval(lisp);
     lisp->checkState(this);

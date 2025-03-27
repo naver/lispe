@@ -297,7 +297,14 @@ Element* List_library_eval::eval(LispE* lisp) {
         lisp->pop();
         return lisp->check_error(this, err, idxinfo);
     }
-    
+#ifndef LISPE_WASM
+    catch (void* x) {
+        lisp->pop();
+        if (((Error*)x)->type == t_error)
+            return lisp->check_error(this, (Error*)x, idxinfo);
+        return lisp->check_error(this, new Error("Unknown error"), idxinfo);
+    }
+#endif
     lisp->resetStack();
     //This version protects 'e' from being destroyed in the stack.
     return lisp->pop(element);
@@ -575,6 +582,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     match = 0;
     long sz = subfunction->second.size();
     lisp->push(body);
+    Element* copying;
     
     while (body != NULL) {
         match = false;
@@ -582,15 +590,17 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             element = body->index(2);
             if (element->size() == nbarguments) {
                 match = true;
+                copying = null_;
                 for (i = 0; i < nbarguments && match; i++) {
-                    match = element->index(i)->unify(lisp, arguments->liste[i], true);
+                    copying = arguments->liste[i]->fullcopy();
+                    match = element->index(i)->unify(lisp, copying, true);
                 }
                 
                 if (match) {
                     lisp->setstackfunction(body);
                     break;
                 }
-                
+                copying->release();
                 lisp->clear_top_stack();
             }
             body = NULL;
@@ -637,7 +647,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
                 body = element->eval(lisp);
                 element->release();
                 //This version protects 'e' from being destroyed in the stack.
-                arguments->release(body);
+                arguments->release();
                 lisp->resetStack();
                 lisp->check_end_trace(tr);
                 return lisp->pop(body);
@@ -650,7 +660,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
             success = false;
         }
         if (success) {
-            arguments->release(element);
+            arguments->release();
             lisp->resetStack();
             lisp->check_end_trace(tr);
             //This version protects 'e' from being destroyed in the stack.
@@ -658,8 +668,10 @@ Element* List_predicate_eval::eval(LispE* lisp) {
         }
         element->release();
         body = NULL;
-        if (ilabel < sz)
+        if (ilabel < sz) {
+            lisp->clear_top_stack();
             body = subfunction->second[ilabel++];
+        }
         else {
             if (sublabel != v_null) {
                 sublabel = v_null;
@@ -667,12 +679,14 @@ Element* List_predicate_eval::eval(LispE* lisp) {
                 //We check, if we have a rollback function
                 subfunction = functions.find(sublabel);
                 if (subfunction != functions.end()) {
+                    lisp->clear_top_stack();
                     body = subfunction->second[0];
                     sz = subfunction->second.size();
                 }
             }
         }
     }
+    arguments->release();
     lisp->pop(null_);
     lisp->resetStack();
     lisp->check_end_trace(tr);

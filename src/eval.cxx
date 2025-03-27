@@ -1461,6 +1461,12 @@ Element* List::evall_setq(LispE* lisp) {
     return True_;
 }
 
+Element* List::evall_setqv(LispE* lisp) {
+    Element* element = liste[2]->eval(lisp);
+    lisp->storing_variable(element, liste[1]->label());
+    return element;
+}
+
 Element* List::evall_seth(LispE* lisp) {
     if (lisp->check_thread_stack) {
         Element* element = liste[2]->eval(lisp);
