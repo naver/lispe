@@ -299,6 +299,7 @@ static string python_error_string() {
     if (ptraceback != NULL)
         Py_XDECREF(ptraceback);
 
+    PyErr_Clear();
     return err;
 }
 
@@ -516,14 +517,12 @@ public:
     string pythonfilename;
     PyObject* pModule;
     PyObject* pDict;
-    PyObject* pLocalDict;
     bool init_python;
     std::unordered_map<string, PyObject*> dictionaries;
 
     Pythoninterpreter(short ty) : Element(ty) {
         pModule = NULL;
         pDict = NULL;
-        pLocalDict = NULL;
         init_python = false;
     }
 
@@ -557,7 +556,7 @@ public:
         PyRun_SimpleString(code.str().c_str());
 
         if (PyErr_Occurred()) {
-            string err = "Error: PYT(996):";
+            string err = "Error: PYT(991):";
             err += python_error_string();
             lisp->unlock();
             throw new Error(err);
@@ -574,7 +573,7 @@ public:
         PyRun_SimpleString(STR(code));
 
         if (PyErr_Occurred()) {
-            string err = "Error: PYT(996):";
+            string err = "Error: PYT(992):";
             err += python_error_string();
             lisp->unlock();
             throw new Error(err);
@@ -588,14 +587,35 @@ public:
     Element* methodClose(LispE* lisp) {
         if (init_python == false)
             return null_;
-        lisp->lock();
         Py_Finalize();
-        lisp->unlock();
         init_python = false;
         pModule = NULL;
         return true_;
     }
 
+    Element* reset_python_state(LispE* lisp, string skip) {
+        if (init_python) {
+            string code = "import sys\nmods = {k: v for k, v in sys.modules.items()}\nfor mod in mods:\n";
+            if (skip != "nil") {
+                code += "    if mod not in ('sys', 'builtins', '__main__', 'numpy',";
+                code += skip;
+                code += "):\n";
+            }
+            else {
+                code += "    if mod not in ('sys', 'builtins', '__main__', 'numpy'):\n";
+            }            
+            code += "        del sys.modules[mod]\n";
+
+            PyErr_Clear();
+            PyRun_SimpleString("import sys\n"
+                            "main = sys.modules['__main__']\n"
+                            "main.__dict__.clear()\n");
+            PyRun_SimpleString(code.c_str());
+            return true_;
+        }
+        return null_;
+    }
+    
     Element* Run_simple(LispE* lisp, string& code, PyObject* py_dict)
     {
 
@@ -605,7 +625,7 @@ public:
         {
             if (PyErr_Occurred())
             {
-                string return_variable = "PYT(997):";
+                string return_variable = "PYT(993):";
                 return_variable += python_error_string();
                 // Imprime l'erreur ou la traite selon vos besoins.
                 throw new Error(return_variable);
@@ -634,7 +654,7 @@ public:
 
         if (!py_result) {
             if (PyErr_Occurred()) {
-                cde = "PYT(997):";
+                cde = "PYT(994):";
                 cde += python_error_string();
                 cerr << cde << endl;
                 if (cde.find("Time out") == -1)
@@ -653,13 +673,13 @@ public:
 
     Element* methodRun(LispE* lisp, string& code, string& return_variable, double elapse_time) {
 
-        lisp->lock();
         if (!init_python) {
             initialize();
             pModule = PyImport_AddModule("__main__");
             pDict = PyModule_GetDict(pModule);
-            pLocalDict = PyDict_New();
         }
+
+        lisp->lock();
 
         //0 is the first parameter and so on...
         if (code != "") {
@@ -668,7 +688,7 @@ public:
                 //First, we test if the syntax is correct:
                 PyObject *compiled_code = Py_CompileString(code.c_str(), "<string>", Py_file_input);
                 if (compiled_code == NULL) {
-                    return_variable = "PYT(996):";
+                    return_variable = "PYT(995):";
                     return_variable += python_error_string();
                     // Imprime l'erreur ou la traite selon vos besoins.
                     throw new Error(return_variable);
@@ -690,7 +710,6 @@ public:
             }
             catch(Error* e) {
                 clean_signal();
-                //methodClose(lisp);
                 lisp->unlock();
                 throw e;
             }
@@ -702,6 +721,8 @@ public:
                 returning_value = toLispE(lisp, py_result_val);
             } else {
                 return_variable += ": This Python variable is unknown";
+                clean_signal();
+                lisp->unlock();
                 throw new Error(return_variable);
             }
         }
@@ -733,7 +754,7 @@ public:
             PyRun_SimpleFile(fp, STR(pathname));
 
             if (PyErr_Occurred()) {
-                string err = "Error: PYT(997):";
+                string err = "Error: PYT(996):";
                 err += python_error_string();
                 lisp->unlock();
                 throw new Error(err);
@@ -768,7 +789,7 @@ public:
             try {
                 PyObject *compiled_code = Py_CompileString(code.c_str(), "<string>", Py_file_input);            
                 if (compiled_code == NULL) {
-                    return_variable = "PYT(996):";
+                    return_variable = "PYT(997):";
                     return_variable += python_error_string();
                     // Imprime l'erreur ou la traite selon vos besoins.
                     throw new Error(return_variable);
@@ -783,7 +804,7 @@ public:
                     if (PyErr_Occurred())
                     {
                         Py_DECREF(local_dict);
-                        return_variable = "PYT(997):";
+                        return_variable = "PYT(998):";
                         return_variable += python_error_string();
                         // Imprime l'erreur ou la traite selon vos besoins.
                         throw new Error(return_variable);
@@ -961,7 +982,8 @@ public:
 
 };
 
-typedef enum {python_new, python_run, python_runfile, python_setpath, python_import, python_execute, python_simplestring, python_close, python_runmodule, python_getmodule} pythonery;
+typedef enum {python_new, python_run, python_runfile, python_setpath, python_import, python_reset,
+    python_execute, python_simplestring, python_close, python_runmodule, python_getmodule} pythonery;
 
 class Pythonmethod : public Element {
 public:
@@ -1037,6 +1059,10 @@ public:
                 string code = lisp->get_variable(U"code")->toString(lisp);
                 return py->methodSimpleString(lisp, code);
             }
+            case python_reset: {
+                string skip = lisp->get_variable(U"skip")->toString(lisp);
+                return py->reset_python_state(lisp, skip);
+            }
             case python_close:{
                 return py->methodClose(lisp);
             }
@@ -1061,6 +1087,8 @@ public:
                 return L"Execute a function that was imported with the arguments as a list";
             case python_simplestring:
                 return L"Execute a piece of code";
+            case python_reset:
+                return L"Reset the memory of the current interpreter";
             case python_close:
                 return L"Close the Python interpreter";
         }
@@ -1085,6 +1113,7 @@ extern "C" {
         lisp->extension("deflib python_execute(py name arguments)", new Pythonmethod(lisp, python_execute, type_python));
         lisp->extension("deflib python_simple(py code)", new Pythonmethod(lisp, python_simplestring, type_python));
         lisp->extension("deflib python_close(py)", new Pythonmethod(lisp, python_close, type_python));
+        lisp->extension("deflib python_reset(py (skip ""))", new Pythonmethod(lisp, python_reset, type_python));
         return true;
     }
 }
