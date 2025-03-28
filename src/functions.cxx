@@ -583,6 +583,7 @@ Element* List_predicate_eval::eval(LispE* lisp) {
     long sz = subfunction->second.size();
     lisp->push(body);
     Element* copying;
+    Element* ele;
     
     while (body != NULL) {
         match = false;
@@ -592,8 +593,15 @@ Element* List_predicate_eval::eval(LispE* lisp) {
                 match = true;
                 copying = null_;
                 for (i = 0; i < nbarguments && match; i++) {
-                    copying = arguments->liste[i]->fullcopy();
-                    match = element->index(i)->unify(lisp, copying, true);
+                    ele = element->index(i);
+                    if (ele->isUnifiable()) {
+                        copying = arguments->liste[i]->fullcopy();
+                        match = ele->unify(lisp, copying, true);
+                    }
+                    else {
+                        copying = null_;
+                        match = ele->unify(lisp,arguments->liste[i], true);
+                    }
                 }
                 
                 if (match) {

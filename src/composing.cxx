@@ -1206,12 +1206,21 @@ void List_switch_eval::build(LispE* lisp) {
 
 //--------------------------------------------------------------------------------
 Element* Atome::transformargument(LispE* lisp) {
-    if (name.back() == '+' || name.back() == '*' || name.back() == '%') {
-        char a = name.back();
-        u_ustring bare_name = name.substr(0, name.size()-1);
-        int16_t l_name = lisp->encode(bare_name);
-        Element* e = new Atomekleene(l_name, bare_name, a);
-        return lisp->push_in_garbage(e);
+    char a = name.back();
+    Element* e;
+    switch (a) {
+        case '+':
+        case '*':
+        case '%': {
+            u_ustring bare_name = name.substr(0, name.size()-1);
+            e = new Atomekleene(lisp->encode(bare_name), bare_name, a);
+            return lisp->push_in_garbage(e);
+        }
+        case '@': {
+            u_ustring bare_name = name.substr(0, name.size()-1);
+            e = new Atomenotunifiable(lisp->encode(bare_name), bare_name);
+            return lisp->push_in_garbage(e);
+        }
     }
     return this;
 }

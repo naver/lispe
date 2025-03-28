@@ -28,8 +28,8 @@ if ostype == b"Darwin":
         f.write("PYTHONLIB = /Library/Frameworks/Python.framework/Versions/"+versionpython+"/Python\n")
         f.write("# Update the two lines after to point to the version you are currently using\n")
         f.write("# See: 'https://github.com/shogun-toolbox/shogun/issues/4068' for an explanation\n")
-        f.write("#INCLUDEPYTHON = -I/opt/anaconda3/include/python3.8\n")
-        f.write("#PYTHONLIB = -undefined dynamic_lookup\n")
+        f.write("#INCLUDEPYTHON = -I~/opt/anaconda3/include/python3.xx\n")
+        f.write("#PYTHONLIB = -undefined dynamic_lookup -L~/opt/anaconda3/lib -lpython3.xx\n")
         print("Please check 'Makefile.in' if you need to compile against the Python version in Conda")
     else:
         print("No Python 3.x version found")

@@ -725,6 +725,11 @@ public:
     virtual bool isComposable() {
         return false;
     }
+    
+    virtual bool isUnifiable() {
+        return true;
+    }
+    
     //-----------------
     
 #ifdef LISPE_WASM
@@ -1314,6 +1319,15 @@ public:
         return check_ok*(atome == value->type_element());
     }
 
+};
+
+class Atomenotunifiable : public Atome {
+public:
+    
+    Atomenotunifiable(int16_t a, u_ustring w) : Atome(a, w) {}
+    bool isUnifiable() {
+        return false;
+    }
 };
 
 class Atomekleene : public Atome {
