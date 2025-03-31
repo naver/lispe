@@ -525,6 +525,7 @@ public:
     Element* compile_lisp_code(string& code);
     Element* compile_lisp_code(u_ustring& code);
     Element* compile_eval(u_ustring& code);
+    Element* compile_string(u_ustring& code);
 
     Element* load(string chemin);
     void precompile(string chemin);

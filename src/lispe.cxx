@@ -21,7 +21,7 @@
 #endif
 
 //------------------------------------------------------------
-static std::string version = "1.2025.3.28.11.18";
+static std::string version = "1.2025.3.31.14.0";
 string LispVersion() {
     return version;
 }
@@ -762,6 +762,8 @@ void Delegation::initialisation(LispE* lisp) {
     code_to_string[c_opening_data_brace] = U"@{";
 
     code_to_string[l_minus_plus] = U"-+";
+
+    code_to_string[l_format] = U"f_";
 
     binHashe<u_ustring>::iterator it(code_to_string);
     for (; !it.end(); it++)
@@ -1876,7 +1878,61 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                 element = for_composition(current_program, element, parse);
                 return element;
             }
+            case l_format: {
+                if (element->size() == 2) {
+                    u_ustring u = element->index(1)->asUString(this);
+                    long posinit = 0;
+                    long posbeg = u.find(U"{");
+                    long posend;
+                    u_ustring sub;
+                    vector<u_ustring> v;
+                    while (posbeg != -1) {
+                        posend = u.find(U"}", posbeg);
+                        if (posend == -1)
+                            throw new Error("Wrong format");
+                        sub = u.substr(posinit, posbeg-posinit);
+                        if (sub.size())
+                            v.push_back(sub);
+                        sub = u.substr(posbeg, posend-posbeg+1);
+                        posbeg = u.find(U"{",posend);
+                        v.push_back(sub);
+                        posinit = posend + 1;
+                    }
+                                        
+                    if (!v.size())
+                        return element;
+
+                    if (posinit < u.size()) {
+                        sub = u.substr(posinit, u.size());
+                        if (sub.size())
+                            v.push_back(sub);
+                    }
+
+                    removefromgarbage(element);
+                    element = new Listincode();
+                    storeforgarbage(element);
+                    element->append(provideAtom(l_plus));
+                    for (u_ustring s : v) {
+                        if (s[0] == '{' && s.back() == '}') {
+                            if (s.find(U" ") == -1)
+                                element->append(provideAtom(s.substr(1,s.size()-2)));
+                            else {
+                                s[0] = '(';
+                                s.back() = ')';
+                                element->append(compile_string(s));
+                            }
+                        }
+                        else {
+                            element->append(provideConststring(s));
+                        }
+                    }
+                }
+                else
+                    throw new Error("Wrong use of 'f_'");
+                break;
+            }
             case l_setq:
+            case l_setqv:
             case l_seth:
             case l_setg:
                 if (element->size() > 1) {
@@ -2403,6 +2459,7 @@ Element* LispE::abstractSyntaxTree(Element* current_program, Tokenizer& parse, l
                     if (current_program->size() == 1 &&
                         (current_program->index(0)->label() == l_defun ||
                          current_program->index(0)->label() == l_defpred ||
+                         current_program->index(0)->label() == l_dethread ||
                          current_program->index(0)->label() == l_defpat)) {
                         //We are defining a function, we can record it now...
                         parse.defun_functions[element->label()] = current_program;
@@ -2785,6 +2842,61 @@ Element* LispE::compile_eval(u_ustring& code) {
         delegation->forceClean();
         throw err;
     }
+}
+
+Element* LispE::compile_string(u_ustring& code) {
+    clearStop();
+    
+#ifdef LISPE_WASM
+    //In this case, errors are no longer treated as exceptions.
+    delegation->reset_error();
+#endif
+    
+    //A little trick to compile code sequences
+    Tokenizer parse;
+    lisp_code retour = segmenting(code, parse);
+    
+    List courant;
+    long index;
+    switch (retour) {
+        case e_error_brace:
+            throw new Error("Error: braces do not balance");
+        case e_error_bracket:
+            throw new Error("Error: brackets do not balance");
+        case e_error_parenthesis:
+            throw new Error("Error: parentheses do not balance");
+        case e_error_string:
+            delegation->i_current_line = 1;
+            if (parse.current != -1 && parse.current < parse.lines.size())
+                delegation->i_current_line = parse.lines[parse.current];
+            else
+                delegation->i_current_line = parse.lines.back();
+            throw new Error("Error: missing end of string");
+        default:
+            index = 0;
+    }
+
+    try {
+        abstractSyntaxTree(&courant, parse, index, false);
+    }
+    catch (Error* err) {
+        delegation->i_current_line = 1;
+        if (parse.current != -1 && parse.current < parse.lines.size())
+            delegation->i_current_line = parse.lines[parse.current];
+        else
+            if (parse.lines.size())
+                delegation->i_current_line = parse.lines.back();
+        delegation->forceClean();
+        throw err;
+    }
+
+    Element* e = courant.liste[0];
+    
+    if (e->size() == 2) {
+        //The block contains only one element that can be evaluated immediately
+        e = e->index(1);
+    }
+    return e;
 }
 
 Element* LispE::compile_lisp_code(u_ustring& code) {
@@ -3195,6 +3307,7 @@ void LispE::current_path() {
     e->release();
 	current_path_set = true;
 }
+
 
 
 
