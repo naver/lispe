@@ -1912,8 +1912,11 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                     element = new Listincode();
                     storeforgarbage(element);
                     element->append(provideAtom(l_plus));
+                    bool first = true;
                     for (u_ustring s : v) {
                         if (s[0] == '{' && s.back() == '}') {
+                            if (first)
+                                element->append(delegation->_EMPTYSTRING);
                             if (s.find(U" ") == -1)
                                 element->append(provideAtom(s.substr(1,s.size()-2)));
                             else {
@@ -1925,6 +1928,7 @@ Element* LispE::compileLocalStructure(Element* current_program,Element* element,
                         else {
                             element->append(provideConststring(s));
                         }
+                        first = false;
                     }
                 }
                 else
